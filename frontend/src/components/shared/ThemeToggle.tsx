@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
+  const t = useTranslations("Header");
   const [mounted, setMounted] = useState(false);
 
   // Required next-themes pattern: theme is unknown until after hydration.
@@ -21,7 +23,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      aria-label={isDark ? "ჩართე ღია რეჟიმი" : "ჩართე მუქი რეჟიმი"}
+      aria-label={isDark ? t("switchToLight") : t("switchToDark")}
       className="flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary"
     >
       {isDark ? (

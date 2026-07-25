@@ -1,0 +1,39 @@
+{
+  "Metadata": {
+    "title": "MotoStock — Moto Gear & Accessories",
+    "description": "Accessories, clothing, helmets, and parts for motorcycles."
+  },
+  "Nav": {
+    "home": "Home",
+    "helmets": "Helmets",
+    "clothing": "Clothing",
+    "parts": "Parts",
+    "accessories": "Accessories"
+  },
+  "Header": {
+    "login": "Log in",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "switchToDark": "Switch to dark mode",
+    "switchToLight": "Switch to light mode",
+    "language": "Language"
+  },
+  "Home": {
+    "heroTitle": "Gear you can trust on the <hl>road</hl>",
+    "heroSubtitle": "Helmets, clothing, parts, and accessories for reliable motorcycles — all in one place.",
+    "browseCatalog": "Browse catalog",
+    "categoriesTitle": "Categories"
+  },
+  "Footer": {
+    "description": "Accessories, clothing, helmets, and parts for motorcycles.",
+    "catalogTitle": "Catalog",
+    "companyTitle": "Company",
+    "aboutUs": "About us",
+    "contactTitle": "Contact",
+    "rights": "All rights reserved."
+  },
+  "Account": {
+    "title": "My Account",
+    "description": "The account page is coming soon."
+  }
+}

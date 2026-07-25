@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Link, usePathname } from "@/i18n/navigation";
 import { siteConfig } from "@/config/site";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
 export function Header() {
   const pathname = usePathname();
+  const t = useTranslations("Nav");
+  const tHeader = useTranslations("Header");
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -49,19 +52,20 @@ export function Header() {
                   isActive ? "text-primary" : "text-foreground"
                 }`}
               >
-                {item.label}
+                {t(item.key)}
               </Link>
             );
           })}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageSwitcher />
           <ThemeToggle />
           <Link
             href="/account"
             className="hidden rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover md:inline-flex"
           >
-            შესვლა
+            {tHeader("login")}
           </Link>
 
           <button
@@ -69,7 +73,7 @@ export function Header() {
             onClick={() => setIsOpen((open) => !open)}
             aria-expanded={isOpen}
             aria-controls="mobile-nav"
-            aria-label={isOpen ? "მენიუს დახურვა" : "მენიუს გახსნა"}
+            aria-label={isOpen ? tHeader("closeMenu") : tHeader("openMenu")}
             className="flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary md:hidden"
           >
             <svg
@@ -111,7 +115,7 @@ export function Header() {
                     isActive ? "text-primary" : "text-foreground"
                   }`}
                 >
-                  {item.label}
+                  {t(item.key)}
                 </Link>
               );
             })}
@@ -120,7 +124,7 @@ export function Header() {
               onClick={() => setIsOpen(false)}
               className="mt-2 rounded-full bg-primary px-4 py-2.5 text-center font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
             >
-              შესვლა
+              {tHeader("login")}
             </Link>
           </nav>
         </div>
