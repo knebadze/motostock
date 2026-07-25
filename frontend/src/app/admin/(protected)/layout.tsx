@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUserFromServer } from "@/lib/api/server";
-import { AdminTopbar } from "@/components/admin/AdminTopbar";
+import { AdminShell } from "@/components/admin/AdminShell";
 
 export default async function ProtectedAdminLayout({
   children,
@@ -13,12 +13,5 @@ export default async function ProtectedAdminLayout({
     redirect("/admin/login");
   }
 
-  return (
-    <main className="flex-1">
-      <AdminTopbar userName={user.name} />
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        {children}
-      </div>
-    </main>
-  );
+  return <AdminShell userName={user.name}>{children}</AdminShell>;
 }
