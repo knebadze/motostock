@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <div className="py-24 text-center">
+    <main className="flex flex-1 items-center justify-center px-4 py-24 text-center">
       <div className="mx-auto max-w-md">
         <h1 className="text-3xl font-bold tracking-tight">
           რაღაც ავარიულად წავიდა
@@ -28,6 +28,6 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

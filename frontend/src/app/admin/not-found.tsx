@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <div className="py-24 text-center">
+    <main className="flex flex-1 items-center justify-center px-4 py-24 text-center">
       <div className="mx-auto max-w-md">
         <p className="text-sm font-semibold text-primary">404</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">
@@ -18,6 +18,6 @@ export default function NotFound() {
           ადმინ პანელზე დაბრუნება
         </Link>
       </div>
-    </div>
+    </main>
   );
 }

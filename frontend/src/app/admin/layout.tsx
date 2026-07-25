@@ -11,13 +11,5 @@ export default function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <RootShell lang="ka">
-      <main className="flex-1">
-        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-          {children}
-        </div>
-      </main>
-    </RootShell>
-  );
+  return <RootShell lang="ka">{children}</RootShell>;
 }

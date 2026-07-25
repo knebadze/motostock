@@ -4,7 +4,7 @@ import { registry } from "./registry.js";
 export const userResponseSchema = registry.register(
   "User",
   z.object({
-    id: z.string().openapi({ example: "cms0cyxdh0000d4uadh5vnt3e" }),
+    id: z.int().openapi({ example: 1 }),
     email: z.email().openapi({ example: "rider@motostock.ge" }),
     name: z.string().openapi({ example: "Nika Beridze" }),
     role: z.enum(["USER", "ADMIN"]),
