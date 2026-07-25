@@ -1,17 +1,8 @@
-import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../lib/ApiError.js";
+import { usersRepository } from "./users.repository.js";
 
 export async function getUserById(id: number) {
-  const user = await prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      createdAt: true,
-      role: { select: { name: true } },
-    },
-  });
+  const user = await usersRepository.findById(id);
 
   if (!user) {
     throw new ApiError(404, "User not found");

@@ -1,8 +1,9 @@
-import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { comparePassword, hashPassword } from "../../lib/password.js";
 import { signJwt } from "../../lib/jwt.js";
 import { ROLES, type RoleName } from "../../lib/roles.js";
+import { usersRepository } from "../users/users.repository.js";
+import { rolesRepository } from "../roles/roles.repository.js";
 import type { LoginInput, RegisterInput } from "./auth.schema.js";
 
 function toSafeUser(user: {
@@ -22,20 +23,22 @@ function toSafeUser(user: {
 }
 
 export async function registerUser(input: RegisterInput) {
-  const existing = await prisma.user.findUnique({ where: { email: input.email } });
+  const existing = await usersRepository.findByEmail(input.email);
   if (existing) {
     throw new ApiError(409, "Email already in use");
   }
 
+  const userRole = await rolesRepository.findByName(ROLES.USER);
+  if (!userRole) {
+    throw new ApiError(500, "Default role is not configured");
+  }
+
   const passwordHash = await hashPassword(input.password);
-  const user = await prisma.user.create({
-    data: {
-      email: input.email,
-      name: input.name,
-      passwordHash,
-      role: { connect: { name: ROLES.USER } },
-    },
-    include: { role: true },
+  const user = await usersRepository.create({
+    email: input.email,
+    name: input.name,
+    passwordHash,
+    roleId: userRole.id,
   });
 
   const token = signJwt({ sub: user.id, role: ROLES.USER });
@@ -43,10 +46,7 @@ export async function registerUser(input: RegisterInput) {
 }
 
 export async function loginUser(input: LoginInput) {
-  const user = await prisma.user.findUnique({
-    where: { email: input.email },
-    include: { role: true },
-  });
+  const user = await usersRepository.findByEmail(input.email);
   if (!user) {
     throw new ApiError(401, "Invalid email or password");
   }
