@@ -2,9 +2,11 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import swaggerUi from "swagger-ui-express";
 import { pinoHttp } from "pino-http";
 import { env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
+import { generateOpenApiDocument } from "./docs/openapi.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
@@ -23,5 +25,27 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
+
+// registerPath() calls above already ran as a side effect of importing the
+// routers, so the registry is fully populated by the time this generates.
+const openApiDocument = generateOpenApiDocument();
+
+app.use(
+  "/api/docs",
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        "script-src": ["'self'", "'unsafe-inline'"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+      },
+    },
+  }),
+  swaggerUi.serve,
+  swaggerUi.setup(openApiDocument),
+);
+app.get("/api/openapi.json", (_req, res) => {
+  res.status(200).json(openApiDocument);
+});
 
 app.use(errorMiddleware);
