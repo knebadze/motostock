@@ -35,5 +35,16 @@
   "Account": {
     "title": "My Account",
     "description": "The account page is coming soon."
+  },
+  "NotFound": {
+    "heading": "Page not found",
+    "description": "The page you're looking for doesn't exist or has been moved.",
+    "backHome": "Back to homepage"
+  },
+  "Error": {
+    "heading": "Something went wrong",
+    "description": "Please try again, or come back later.",
+    "retry": "Try again",
+    "backHome": "Back to homepage"
   }
 }

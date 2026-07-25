@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { Toaster } from "@/components/shared/Toaster";
 import "@/app/globals.css";
 
 const geistSans = Geist({
@@ -28,6 +29,7 @@ export function RootShell({
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
