@@ -8,25 +8,31 @@ import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
 import { FormActions } from "@/components/shared/FormActions";
 import { createModel, updateModel, type Model } from "@/lib/api/models";
 import type { Brand } from "@/lib/api/brands";
+import type { Category } from "@/lib/api/categories";
 import { ApiRequestError } from "@/lib/api/client";
-import { slugify } from "@/lib/categories-tree";
+import { flattenTree, slugify } from "@/lib/categories-tree";
 
 export function ModelFormModal({
   open,
   onClose,
   onSaved,
   brands,
+  categories,
   model,
 }: {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
   brands: Brand[];
+  categories: Category[];
   model: Model | null;
 }) {
   const isEditing = model !== null;
   const [brandId, setBrandId] = useState<string>(
     model ? String(model.brandId) : brands[0] ? String(brands[0].id) : "",
+  );
+  const [categoryId, setCategoryId] = useState<string>(
+    model?.categoryId != null ? String(model.categoryId) : "",
   );
   const [nameKa, setNameKa] = useState(model?.name.ka ?? "");
   const [nameEn, setNameEn] = useState(model?.name.en ?? "");
@@ -36,6 +42,10 @@ export function ModelFormModal({
   const [loading, setLoading] = useState(false);
 
   const brandOptions = brands.map((brand) => ({ value: String(brand.id), label: brand.name.ka }));
+  const categoryOptions = flattenTree(categories).map((category) => ({
+    value: String(category.id),
+    label: `${"— ".repeat(category.depth)}${category.name.ka}`,
+  }));
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -48,6 +58,7 @@ export function ModelFormModal({
     try {
       const input = {
         brandId: Number(brandId),
+        categoryId: categoryId ? Number(categoryId) : null,
         name: { ka: nameKa.trim(), en: nameEn.trim(), ru: nameRu.trim() },
         slug: slug.trim(),
       };
@@ -76,6 +87,17 @@ export function ModelFormModal({
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium">მარკა</label>
           <Select options={brandOptions} value={brandId} onChange={setBrandId} searchable />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium">ტიპი (კატეგორია)</label>
+          <Select
+            options={categoryOptions}
+            value={categoryId}
+            onChange={setCategoryId}
+            searchable
+            placeholder="— არცერთი —"
+          />
         </div>
 
         <LocalizedNameFields

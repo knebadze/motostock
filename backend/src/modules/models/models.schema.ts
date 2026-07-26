@@ -17,6 +17,7 @@ export const createModelSchema = registry.register(
   "CreateModelInput",
   z.object({
     brandId: z.int().positive(),
+    categoryId: z.int().positive().nullable().optional(),
     name: localizedNameField,
     slug: slugField,
   }),
@@ -43,6 +44,8 @@ export const modelResponseSchema = registry.register(
     id: z.int().openapi({ example: 1 }),
     brandId: z.int(),
     brand: z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() }),
+    categoryId: z.int().nullable(),
+    category: z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() }).nullable(),
     name: localizedNameField,
     slug: z.string().openapi({ example: "cbr600rr" }),
     createdAt: z.iso.datetime(),

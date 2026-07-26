@@ -1,14 +1,16 @@
 model Model {
-  id        Int              @id @default(autoincrement())
-  brandId   Int
-  brand     Brand            @relation(fields: [brandId], references: [id])
-  nameKa    String
-  nameEn    String
-  nameRu    String
-  slug      String
-  vehicles  VehicleCatalog[]
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  id         Int              @id @default(autoincrement())
+  brandId    Int
+  brand      Brand            @relation(fields: [brandId], references: [id])
+  categoryId Int?
+  category   Category?        @relation(fields: [categoryId], references: [id])
+  nameKa     String
+  nameEn     String
+  nameRu     String
+  slug       String
+  vehicles   VehicleCatalog[]
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
   @@unique([brandId, slug])
   @@schema("cla")

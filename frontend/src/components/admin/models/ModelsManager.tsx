@@ -8,6 +8,7 @@ import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { deleteModel, listModels, type Model } from "@/lib/api/models";
 import type { Brand } from "@/lib/api/brands";
+import type { Category } from "@/lib/api/categories";
 import { ApiRequestError } from "@/lib/api/client";
 import { ModelFormModal } from "./ModelFormModal";
 
@@ -16,15 +17,22 @@ const columns: DataTableColumn<Model>[] = [
   { header: "სახელი", render: (model) => model.name.ka },
   { header: "სახელი (EN)", render: (model) => model.name.en, cellClassName: "text-muted-foreground" },
   { header: "სახელი (RU)", render: (model) => model.name.ru, cellClassName: "text-muted-foreground" },
+  {
+    header: "ტიპი",
+    render: (model) => model.category?.name.ka ?? "—",
+    cellClassName: "text-muted-foreground",
+  },
   { header: "Slug", render: (model) => model.slug, cellClassName: "font-mono text-muted-foreground" },
 ];
 
 export function ModelsManager({
   initialModels,
   brands,
+  categories,
 }: {
   initialModels: Model[];
   brands: Brand[];
+  categories: Category[];
 }) {
   const [models, setModels] = useState(initialModels);
   const [brandFilter, setBrandFilter] = useState<string>("");
@@ -119,6 +127,7 @@ export function ModelsManager({
         onClose={() => setFormOpen(false)}
         onSaved={refresh}
         brands={brands}
+        categories={categories}
         model={editingModel}
       />
 

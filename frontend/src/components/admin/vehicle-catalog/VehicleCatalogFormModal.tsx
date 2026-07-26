@@ -128,6 +128,16 @@ export function VehicleCatalogFormModal({
     if (!stillValid) setModelId("");
   }
 
+  function handleModelChange(nextModelId: string) {
+    setModelId(nextModelId);
+    // Prefill the type from the model's default (e.g. Yamaha R3 → Sport), but
+    // the admin can still override it afterward.
+    const model = models.find((item) => String(item.id) === nextModelId);
+    if (model?.category) {
+      setCategoryId(String(model.category.id));
+    }
+  }
+
   function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
     setImageFile(file);
@@ -230,7 +240,7 @@ export function VehicleCatalogFormModal({
             <Select
               options={modelOptions}
               value={modelId}
-              onChange={setModelId}
+              onChange={handleModelChange}
               searchable
               disabled={!brandId}
               placeholder={brandId ? "აირჩიეთ მოდელი" : "ჯერ აირჩიეთ მარკა"}

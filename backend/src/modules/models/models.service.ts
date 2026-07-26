@@ -1,30 +1,37 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { brandsRepository } from "../brands/brands.repository.js";
+import { categoriesRepository } from "../categories/categories.repository.js";
 import { modelsRepository } from "./models.repository.js";
 import type { CreateModelInput, UpdateModelInput } from "./models.schema.js";
+
+type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
 
 type ModelRow = {
   id: number;
   brandId: number;
+  categoryId: number | null;
   nameKa: string;
   nameEn: string;
   nameRu: string;
   slug: string;
   createdAt: Date;
   updatedAt: Date;
-  brand: { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
+  brand: NamedRefRow;
+  category: NamedRefRow | null;
 };
+
+function toNamedRef(row: NamedRefRow) {
+  return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
+}
 
 function toResponse(model: ModelRow) {
   return {
     id: model.id,
     brandId: model.brandId,
-    brand: {
-      id: model.brand.id,
-      name: { ka: model.brand.nameKa, en: model.brand.nameEn, ru: model.brand.nameRu },
-      slug: model.brand.slug,
-    },
+    brand: toNamedRef(model.brand),
+    categoryId: model.categoryId,
+    category: model.category ? toNamedRef(model.category) : null,
     name: { ka: model.nameKa, en: model.nameEn, ru: model.nameRu },
     slug: model.slug,
     createdAt: model.createdAt,
@@ -36,6 +43,14 @@ async function assertBrandExists(brandId: number) {
   const brand = await brandsRepository.findById(brandId);
   if (!brand) {
     throw new ApiError(400, "მითითებული მარკა არ არსებობს");
+  }
+}
+
+async function assertCategoryExists(categoryId: number | null | undefined) {
+  if (categoryId == null) return;
+  const category = await categoriesRepository.findById(categoryId);
+  if (!category) {
+    throw new ApiError(400, "მითითებული ტიპი (კატეგორია) არ არსებობს");
   }
 }
 
@@ -54,6 +69,7 @@ export async function getModel(id: number) {
 
 export async function createModel(input: CreateModelInput) {
   await assertBrandExists(input.brandId);
+  await assertCategoryExists(input.categoryId);
 
   const existing = await modelsRepository.findByBrandAndSlug(input.brandId, input.slug);
   if (existing) {
@@ -62,6 +78,7 @@ export async function createModel(input: CreateModelInput) {
 
   const model = await modelsRepository.create({
     brandId: input.brandId,
+    categoryId: input.categoryId ?? null,
     nameKa: input.name.ka,
     nameEn: input.name.en,
     nameRu: input.name.ru,
@@ -79,6 +96,9 @@ export async function updateModel(id: number, input: UpdateModelInput) {
   if (input.brandId !== undefined) {
     await assertBrandExists(input.brandId);
   }
+  if (input.categoryId !== undefined) {
+    await assertCategoryExists(input.categoryId);
+  }
 
   const targetBrandId = input.brandId ?? existing.brandId;
   if (input.slug && (input.slug !== existing.slug || targetBrandId !== existing.brandId)) {
@@ -90,6 +110,7 @@ export async function updateModel(id: number, input: UpdateModelInput) {
 
   const model = await modelsRepository.update(id, {
     ...(input.brandId !== undefined ? { brandId: input.brandId } : {}),
+    ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
     ...(input.name !== undefined
       ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
       : {}),

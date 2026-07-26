@@ -1,9 +1,15 @@
 import { prisma } from "../../config/prisma.js";
 
 const brandSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
+const categorySelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
+const modelInclude = {
+  brand: { select: brandSelect },
+  category: { select: categorySelect },
+} as const;
 
 type ModelWriteData = {
   brandId: number;
+  categoryId?: number | null;
   nameKa: string;
   nameEn: string;
   nameRu: string;
@@ -14,7 +20,7 @@ export const modelsRepository = {
   findMany(brandId?: number) {
     return prisma.model.findMany({
       where: brandId ? { brandId } : undefined,
-      include: { brand: { select: brandSelect } },
+      include: modelInclude,
       orderBy: { nameKa: "asc" },
     });
   },
@@ -22,7 +28,7 @@ export const modelsRepository = {
   findById(id: number) {
     return prisma.model.findUnique({
       where: { id },
-      include: { brand: { select: brandSelect } },
+      include: modelInclude,
     });
   },
 
@@ -31,14 +37,14 @@ export const modelsRepository = {
   },
 
   create(data: ModelWriteData) {
-    return prisma.model.create({ data, include: { brand: { select: brandSelect } } });
+    return prisma.model.create({ data, include: modelInclude });
   },
 
   update(id: number, data: Partial<ModelWriteData>) {
     return prisma.model.update({
       where: { id },
       data,
-      include: { brand: { select: brandSelect } },
+      include: modelInclude,
     });
   },
 
