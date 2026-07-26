@@ -10,11 +10,12 @@ import {
   type VehicleListingDiscount,
 } from "@/lib/api/vehicle-listing-discounts";
 import { ApiRequestError } from "@/lib/api/client";
+import { formatPrice } from "@/lib/format";
 
 const columns: DataTableColumn<VehicleListingDiscount>[] = [
   {
     header: "ფასდაკლების ფასი",
-    render: (discount) => `${discount.discountPrice.toLocaleString("ka-GE")} ₾`,
+    render: (discount) => formatPrice(discount.discountPrice),
   },
   {
     header: "პროცენტი",
@@ -176,7 +177,7 @@ export function VehicleListingDiscountsPanel({
       </div>
       <p className="text-xs text-muted-foreground">
         პროცენტის მითითებისას ფასდაკლების ფასი ავტომატურად გამოითვლება მიმდინარე ფასიდან
-        ({basePrice.toLocaleString("ka-GE")} ₾) — შეგიძლიათ შემდეგ ხელითაც შეასწოროთ.
+        ({formatPrice(basePrice)}) — შეგიძლიათ შემდეგ ხელითაც შეასწოროთ.
       </p>
     </div>
   );

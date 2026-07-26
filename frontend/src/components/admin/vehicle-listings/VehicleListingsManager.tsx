@@ -13,6 +13,7 @@ import {
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 import type { LookupItem } from "@/lib/api/lookups";
+import { formatPrice } from "@/lib/format";
 import { VehicleListingFormModal } from "./VehicleListingFormModal";
 
 const columns: DataTableColumn<VehicleListing>[] = [
@@ -51,14 +52,14 @@ const columns: DataTableColumn<VehicleListing>[] = [
       listing.activeDiscount ? (
         <span className="flex flex-col">
           <span className="text-xs text-muted-foreground line-through">
-            {listing.price.toLocaleString("ka-GE")} ₾
+            {formatPrice(listing.price)}
           </span>
           <span className="font-semibold text-primary">
-            {listing.activeDiscount.discountPrice.toLocaleString("ka-GE")} ₾
+            {formatPrice(listing.activeDiscount.discountPrice)}
           </span>
         </span>
       ) : (
-        `${listing.price.toLocaleString("ka-GE")} ₾`
+        formatPrice(listing.price)
       ),
   },
   {
