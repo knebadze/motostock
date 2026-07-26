@@ -1,5 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
-import { publicUrlFor } from "../../middleware/upload.middleware.js";
+import { saveUploadedImage } from "../../lib/storage.js";
 import { categoriesRepository } from "./categories.repository.js";
 import type { CreateCategoryInput, UpdateCategoryInput } from "./categories.schema.js";
 
@@ -137,13 +137,13 @@ export async function deleteCategory(id: number) {
   await categoriesRepository.delete(id);
 }
 
-export async function setCategoryImage(id: number, filename: string) {
+export async function setCategoryImage(id: number, file: Express.Multer.File) {
   const existing = await categoriesRepository.findById(id);
   if (!existing) {
     throw new ApiError(404, "კატეგორია ვერ მოიძებნა");
   }
 
-  const imageUrl = publicUrlFor("categories", filename);
+  const imageUrl = await saveUploadedImage("categories", file);
   const category = await categoriesRepository.updateImage(id, imageUrl);
   return toResponse(category);
 }

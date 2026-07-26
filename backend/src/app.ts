@@ -11,6 +11,7 @@ import { generateOpenApiDocument } from "./docs/openapi.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
 import { categoriesRouter } from "./modules/categories/categories.routes.js";
+import { settingsRouter } from "./modules/settings/settings.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
 export const app = express();
@@ -34,6 +35,7 @@ app.use(
 app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/categories", categoriesRouter);
+app.use("/api/settings", settingsRouter);
 
 // registerPath() calls above already ran as a side effect of importing the
 // routers, so the registry is fully populated by the time this generates.

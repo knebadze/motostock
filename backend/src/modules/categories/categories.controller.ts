@@ -44,7 +44,7 @@ export async function uploadImage(req: Request, res: Response) {
 
   const category = await categoriesService.setCategoryImage(
     Number(req.params.id),
-    req.file.filename,
+    req.file,
   );
   res.status(200).json({ category });
 }

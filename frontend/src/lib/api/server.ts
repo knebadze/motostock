@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { apiClient } from "./client";
 import type { User } from "./auth";
 import type { Category } from "./categories";
+import type { Settings } from "./settings";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -33,5 +34,20 @@ export async function getCategoriesFromServer(): Promise<Category[]> {
     return data.categories;
   } catch {
     return [];
+  }
+}
+
+export async function getSettingsFromServer(): Promise<Settings> {
+  const headers = await authHeaders();
+  const fallback: Settings = { useCloudStorage: false };
+  if (!headers) return fallback;
+
+  try {
+    const { data } = await apiClient.get<{ settings: Settings }>("/settings", {
+      headers,
+    });
+    return data.settings;
+  } catch {
+    return fallback;
   }
 }

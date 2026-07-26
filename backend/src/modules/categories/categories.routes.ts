@@ -43,7 +43,7 @@ categoriesRouter.delete(
 categoriesRouter.post(
   "/:id/image",
   validate(categoryIdParamSchema, "params"),
-  imageUpload("categories").single("image"),
+  imageUpload().single("image"),
   categoriesController.uploadImage,
 );
 

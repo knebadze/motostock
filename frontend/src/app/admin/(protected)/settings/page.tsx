@@ -1,8 +1,8 @@
-export default function SettingsPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold tracking-tight">პარამეტრები</h1>
-      <p className="mt-2 text-muted-foreground">ეს გვერდი მალე დაემატება.</p>
-    </div>
-  );
+import { getSettingsFromServer } from "@/lib/api/server";
+import { SettingsManager } from "@/components/admin/settings/SettingsManager";
+
+export default async function SettingsPage() {
+  const settings = await getSettingsFromServer();
+
+  return <SettingsManager initialSettings={settings} />;
 }

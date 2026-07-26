@@ -8,6 +8,9 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   FRONTEND_ORIGIN: z.url(),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
