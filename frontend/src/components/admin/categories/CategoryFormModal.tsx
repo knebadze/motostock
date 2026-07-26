@@ -4,6 +4,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Select } from "@/components/shared/Select";
+import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
+import { FormActions } from "@/components/shared/FormActions";
 import {
   createCategory,
   updateCategory,
@@ -106,48 +108,18 @@ export function CategoryFormModal({
       title={isEditing ? "კატეგორიის რედაქტირება" : "ახალი კატეგორია"}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="category-name-ka" className="text-sm font-medium">
-            სახელი (ქართულად)
-          </label>
-          <input
-            id="category-name-ka"
-            required
-            value={nameKa}
-            onChange={(event) => setNameKa(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="category-name-en" className="text-sm font-medium">
-            სახელი (ინგლისურად)
-          </label>
-          <input
-            id="category-name-en"
-            required
-            value={nameEn}
-            onChange={(event) => {
-              const value = event.target.value;
-              setNameEn(value);
-              if (!slugTouched) setSlug(slugify(value));
-            }}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="category-name-ru" className="text-sm font-medium">
-            სახელი (რუსულად)
-          </label>
-          <input
-            id="category-name-ru"
-            required
-            value={nameRu}
-            onChange={(event) => setNameRu(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-        </div>
+        <LocalizedNameFields
+          idPrefix="category-name"
+          value={{ ka: nameKa, en: nameEn, ru: nameRu }}
+          onChange={(next) => {
+            setNameKa(next.ka);
+            setNameEn(next.en);
+            setNameRu(next.ru);
+          }}
+          onEnglishChange={(value) => {
+            if (!slugTouched) setSlug(slugify(value));
+          }}
+        />
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="category-slug" className="text-sm font-medium">
@@ -197,22 +169,7 @@ export function CategoryFormModal({
           />
         </div>
 
-        <div className="mt-2 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
-          >
-            გაუქმება
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
-          >
-            {loading ? "ინახება..." : "შენახვა"}
-          </button>
-        </div>
+        <FormActions onCancel={onClose} loading={loading} />
       </form>
     </Modal>
   );

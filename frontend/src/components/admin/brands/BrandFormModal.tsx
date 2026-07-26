@@ -3,6 +3,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
+import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
+import { FormActions } from "@/components/shared/FormActions";
 import { createBrand, updateBrand, uploadBrandLogo, type Brand } from "@/lib/api/brands";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { slugify } from "@/lib/categories-tree";
@@ -83,48 +85,18 @@ export function BrandFormModal({
   return (
     <Modal open={open} onClose={onClose} title={isEditing ? "მარკის რედაქტირება" : "ახალი მარკა"}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="brand-name-ka" className="text-sm font-medium">
-            სახელი (ქართულად)
-          </label>
-          <input
-            id="brand-name-ka"
-            required
-            value={nameKa}
-            onChange={(event) => setNameKa(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="brand-name-en" className="text-sm font-medium">
-            სახელი (ინგლისურად)
-          </label>
-          <input
-            id="brand-name-en"
-            required
-            value={nameEn}
-            onChange={(event) => {
-              const value = event.target.value;
-              setNameEn(value);
-              if (!slugTouched) setSlug(slugify(value));
-            }}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="brand-name-ru" className="text-sm font-medium">
-            სახელი (რუსულად)
-          </label>
-          <input
-            id="brand-name-ru"
-            required
-            value={nameRu}
-            onChange={(event) => setNameRu(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-        </div>
+        <LocalizedNameFields
+          idPrefix="brand-name"
+          value={{ ka: nameKa, en: nameEn, ru: nameRu }}
+          onChange={(next) => {
+            setNameKa(next.ka);
+            setNameEn(next.en);
+            setNameRu(next.ru);
+          }}
+          onEnglishChange={(value) => {
+            if (!slugTouched) setSlug(slugify(value));
+          }}
+        />
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="brand-slug" className="text-sm font-medium">
@@ -163,22 +135,7 @@ export function BrandFormModal({
           />
         </div>
 
-        <div className="mt-2 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
-          >
-            გაუქმება
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
-          >
-            {loading ? "ინახება..." : "შენახვა"}
-          </button>
-        </div>
+        <FormActions onCancel={onClose} loading={loading} />
       </form>
     </Modal>
   );
