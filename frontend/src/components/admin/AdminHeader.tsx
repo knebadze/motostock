@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminThemeToggle } from "./AdminThemeToggle";
 import { UserMenu } from "./UserMenu";
 
 export function AdminHeader({
@@ -41,7 +42,10 @@ export function AdminHeader({
         <span className="text-sm font-semibold md:hidden">MotoStock</span>
       </div>
 
-      <UserMenu userName={userName} />
+      <div className="flex items-center gap-2">
+        <AdminThemeToggle />
+        <UserMenu userName={userName} />
+      </div>
     </header>
   );
 }
