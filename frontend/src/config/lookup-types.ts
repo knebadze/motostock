@@ -13,10 +13,6 @@ export const LOOKUP_TYPES = [
 
 export type LookupTypeSlug = (typeof LOOKUP_TYPES)[number]["slug"];
 
-export function isLookupTypeSlug(value: string): value is LookupTypeSlug {
-  return LOOKUP_TYPES.some((item) => item.slug === value);
-}
-
 export function getLookupTypeLabel(slug: LookupTypeSlug): string {
   return LOOKUP_TYPES.find((item) => item.slug === slug)?.label ?? slug;
 }

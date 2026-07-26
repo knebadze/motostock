@@ -7,7 +7,7 @@ import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { deleteLookupItem, listLookupItems, type LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError } from "@/lib/api/client";
-import { getLookupTypeLabel, type LookupTypeSlug } from "@/config/lookup-types";
+import type { LookupTypeSlug } from "@/config/lookup-types";
 import { LookupFormModal } from "./LookupFormModal";
 
 const columns: DataTableColumn<LookupItem>[] = [
@@ -51,8 +51,7 @@ export function LookupManager({
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">{getLookupTypeLabel(type)}</h1>
+      <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={openCreateModal}

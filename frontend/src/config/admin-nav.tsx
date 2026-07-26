@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { LOOKUP_TYPES } from "./lookup-types";
 import {
   brandsIcon,
   categoriesIcon,
@@ -45,10 +44,8 @@ export const adminNav: AdminNavSection[] = [
   },
   {
     label: "კლასიფიკატორები",
-    items: LOOKUP_TYPES.map((lookupType) => ({
-      label: lookupType.label,
-      href: `/admin/classifiers/${lookupType.slug}`,
-      icon: classifierIcon,
-    })),
+    items: [
+      { label: "ტრანსპორტის კლასიფიკატორები", href: "/admin/classifiers", icon: classifierIcon },
+    ],
   },
 ];
