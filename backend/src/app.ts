@@ -1,3 +1,4 @@
+import path from "node:path";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -9,6 +10,7 @@ import { logger } from "./lib/logger.js";
 import { generateOpenApiDocument } from "./docs/openapi.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
+import { categoriesRouter } from "./modules/categories/categories.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
 export const app = express();
@@ -23,8 +25,15 @@ app.get("/api/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
+app.use(
+  "/uploads",
+  helmet.crossOriginResourcePolicy({ policy: "cross-origin" }),
+  express.static(path.resolve("uploads")),
+);
+
 app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
+app.use("/api/categories", categoriesRouter);
 
 // registerPath() calls above already ran as a side effect of importing the
 // routers, so the registry is fully populated by the time this generates.

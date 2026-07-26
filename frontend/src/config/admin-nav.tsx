@@ -28,4 +28,23 @@ export const adminNav: AdminNavItem[] = [
       </svg>
     ),
   },
+  {
+    label: "კატეგორიები",
+    href: "/admin/categories",
+    icon: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="size-5"
+      >
+        <path d="M3 7h6M3 12h6M3 17h6" />
+        <path d="M13 7h8M13 12h8M13 17h8" />
+      </svg>
+    ),
+  },
 ];
