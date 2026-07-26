@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { deleteLookupItem, listLookupItems, type LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError } from "@/lib/api/client";
 import { getLookupTypeLabel, type LookupTypeSlug } from "@/config/lookup-types";
 import { LookupFormModal } from "./LookupFormModal";
-import { DeleteLookupDialog } from "./DeleteLookupDialog";
 
 export function LookupManager({
   type,
@@ -141,12 +141,23 @@ export function LookupManager({
         item={editingItem}
       />
 
-      <DeleteLookupDialog
+      <ConfirmDialog
         open={deletingItem !== null}
         onClose={() => setDeletingItem(null)}
-        onDeleted={refresh}
-        type={type}
-        item={deletingItem}
+        title="ჩანაწერის წაშლა"
+        message={
+          <>
+            დარწმუნებული ხართ, რომ გსურთ წაშალოთ{" "}
+            <span className="font-semibold text-foreground">{deletingItem?.nameKa}</span>?
+            ამ მოქმედების გაუქმება შეუძლებელია.
+          </>
+        }
+        successMessage="ჩანაწერი წაიშალა"
+        onConfirm={async () => {
+          if (!deletingItem) return;
+          await deleteLookupItem(type, deletingItem.id);
+          await refresh();
+        }}
       />
     </div>
   );

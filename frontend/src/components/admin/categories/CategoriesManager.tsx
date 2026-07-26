@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { listCategories, type Category } from "@/lib/api/categories";
+import { deleteCategory, listCategories, type Category } from "@/lib/api/categories";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { flattenTree } from "@/lib/categories-tree";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CategoryFormModal } from "./CategoryFormModal";
-import { DeleteCategoryDialog } from "./DeleteCategoryDialog";
 
 export function CategoriesManager({
   initialCategories,
@@ -167,11 +167,23 @@ export function CategoriesManager({
         category={editingCategory}
       />
 
-      <DeleteCategoryDialog
+      <ConfirmDialog
         open={deletingCategory !== null}
         onClose={() => setDeletingCategory(null)}
-        onDeleted={refresh}
-        category={deletingCategory}
+        title="კატეგორიის წაშლა"
+        message={
+          <>
+            დარწმუნებული ხართ, რომ გსურთ წაშალოთ კატეგორია{" "}
+            <span className="font-semibold text-foreground">{deletingCategory?.name.ka}</span>?
+            ამ მოქმედების გაუქმება შეუძლებელია.
+          </>
+        }
+        successMessage="კატეგორია წაიშალა"
+        onConfirm={async () => {
+          if (!deletingCategory) return;
+          await deleteCategory(deletingCategory.id);
+          await refresh();
+        }}
       />
     </div>
   );

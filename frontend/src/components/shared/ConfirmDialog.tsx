@@ -1,36 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { Modal } from "@/components/shared/Modal";
-import { deleteModel, type Model } from "@/lib/api/models";
+import { Modal } from "./Modal";
 import { ApiRequestError } from "@/lib/api/client";
 
-export function DeleteModelDialog({
+export function ConfirmDialog({
   open,
   onClose,
-  onDeleted,
-  model,
+  title,
+  message,
+  confirmLabel = "წაშლა",
+  successMessage,
+  onConfirm,
 }: {
   open: boolean;
   onClose: () => void;
-  onDeleted: () => void;
-  model: Model | null;
+  title: string;
+  message: ReactNode;
+  confirmLabel?: string;
+  successMessage?: string;
+  onConfirm: () => Promise<void>;
 }) {
   const [loading, setLoading] = useState(false);
 
   async function handleConfirm() {
-    if (!model) return;
     setLoading(true);
-
     try {
-      await deleteModel(model.id);
-      toast.success("მოდელი წაიშალა");
-      onDeleted();
+      await onConfirm();
+      if (successMessage) toast.success(successMessage);
       onClose();
     } catch (error) {
       const message =
-        error instanceof ApiRequestError ? error.message : "წაშლა ვერ მოხერხდა";
+        error instanceof ApiRequestError ? error.message : "მოქმედება ვერ შესრულდა";
       toast.error(message);
     } finally {
       setLoading(false);
@@ -38,12 +40,8 @@ export function DeleteModelDialog({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="მოდელის წაშლა">
-      <p className="text-sm text-muted-foreground">
-        დარწმუნებული ხართ, რომ გსურთ წაშალოთ მოდელი{" "}
-        <span className="font-semibold text-foreground">{model?.name.ka}</span>?
-        ამ მოქმედების გაუქმება შეუძლებელია.
-      </p>
+    <Modal open={open} onClose={onClose} title={title}>
+      <div className="text-sm text-muted-foreground">{message}</div>
 
       <div className="mt-6 flex justify-end gap-3">
         <button
@@ -59,7 +57,7 @@ export function DeleteModelDialog({
           disabled={loading}
           className="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-500 disabled:opacity-50"
         >
-          {loading ? "იშლება..." : "წაშლა"}
+          {loading ? "მუშავდება..." : confirmLabel}
         </button>
       </div>
     </Modal>

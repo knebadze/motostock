@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Select } from "@/components/shared/Select";
-import { listModels, type Model } from "@/lib/api/models";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { deleteModel, listModels, type Model } from "@/lib/api/models";
 import type { Brand } from "@/lib/api/brands";
 import { ApiRequestError } from "@/lib/api/client";
 import { ModelFormModal } from "./ModelFormModal";
-import { DeleteModelDialog } from "./DeleteModelDialog";
 
 export function ModelsManager({
   initialModels,
@@ -178,11 +178,23 @@ export function ModelsManager({
         model={editingModel}
       />
 
-      <DeleteModelDialog
+      <ConfirmDialog
         open={deletingModel !== null}
         onClose={() => setDeletingModel(null)}
-        onDeleted={refresh}
-        model={deletingModel}
+        title="მოდელის წაშლა"
+        message={
+          <>
+            დარწმუნებული ხართ, რომ გსურთ წაშალოთ მოდელი{" "}
+            <span className="font-semibold text-foreground">{deletingModel?.name.ka}</span>?
+            ამ მოქმედების გაუქმება შეუძლებელია.
+          </>
+        }
+        successMessage="მოდელი წაიშალა"
+        onConfirm={async () => {
+          if (!deletingModel) return;
+          await deleteModel(deletingModel.id);
+          await refresh();
+        }}
       />
     </div>
   );

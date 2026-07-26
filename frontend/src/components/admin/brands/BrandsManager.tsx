@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { listBrands, type Brand } from "@/lib/api/brands";
+import { deleteBrand, listBrands, type Brand } from "@/lib/api/brands";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { BrandFormModal } from "./BrandFormModal";
-import { DeleteBrandDialog } from "./DeleteBrandDialog";
 
 export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
   const [brands, setBrands] = useState(initialBrands);
@@ -146,11 +146,23 @@ export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
         brand={editingBrand}
       />
 
-      <DeleteBrandDialog
+      <ConfirmDialog
         open={deletingBrand !== null}
         onClose={() => setDeletingBrand(null)}
-        onDeleted={refresh}
-        brand={deletingBrand}
+        title="მარკის წაშლა"
+        message={
+          <>
+            დარწმუნებული ხართ, რომ გსურთ წაშალოთ მარკა{" "}
+            <span className="font-semibold text-foreground">{deletingBrand?.name.ka}</span>?
+            ამ მოქმედების გაუქმება შეუძლებელია.
+          </>
+        }
+        successMessage="მარკა წაიშალა"
+        onConfirm={async () => {
+          if (!deletingBrand) return;
+          await deleteBrand(deletingBrand.id);
+          await refresh();
+        }}
       />
     </div>
   );
