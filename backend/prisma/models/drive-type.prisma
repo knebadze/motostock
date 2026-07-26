@@ -1,0 +1,10 @@
+model DriveType {
+  id       Int              @id @default(autoincrement())
+  key      String           @unique
+  nameKa   String
+  nameEn   String
+  nameRu   String
+  vehicles VehicleCatalog[]
+
+  @@schema("cla")
+}
