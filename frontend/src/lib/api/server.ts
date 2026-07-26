@@ -4,6 +4,10 @@ import { apiClient } from "./client";
 import type { User } from "./auth";
 import type { Category } from "./categories";
 import type { Settings } from "./settings";
+import type { Brand } from "./brands";
+import type { Model } from "./models";
+import type { LookupItem } from "./lookups";
+import type { LookupTypeSlug } from "@/config/lookup-types";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -49,5 +53,43 @@ export async function getSettingsFromServer(): Promise<Settings> {
     return data.settings;
   } catch {
     return fallback;
+  }
+}
+
+export async function getBrandsFromServer(): Promise<Brand[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ brands: Brand[] }>("/brands", { headers });
+    return data.brands;
+  } catch {
+    return [];
+  }
+}
+
+export async function getModelsFromServer(): Promise<Model[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ models: Model[] }>("/models", { headers });
+    return data.models;
+  } catch {
+    return [];
+  }
+}
+
+export async function getLookupItemsFromServer(type: LookupTypeSlug): Promise<LookupItem[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: LookupItem[] }>(`/lookups/${type}`, {
+      headers,
+    });
+    return data.items;
+  } catch {
+    return [];
   }
 }

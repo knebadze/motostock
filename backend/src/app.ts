@@ -12,6 +12,9 @@ import { authRouter } from "./modules/auth/auth.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
 import { categoriesRouter } from "./modules/categories/categories.routes.js";
 import { settingsRouter } from "./modules/settings/settings.routes.js";
+import { brandsRouter } from "./modules/brands/brands.routes.js";
+import { modelsRouter } from "./modules/models/models.routes.js";
+import { lookupsRouter } from "./modules/lookups/lookups.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
 export const app = express();
@@ -36,6 +39,9 @@ app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/categories", categoriesRouter);
 app.use("/api/settings", settingsRouter);
+app.use("/api/brands", brandsRouter);
+app.use("/api/models", modelsRouter);
+app.use("/api/lookups", lookupsRouter);
 
 // registerPath() calls above already ran as a side effect of importing the
 // routers, so the registry is fully populated by the time this generates.
