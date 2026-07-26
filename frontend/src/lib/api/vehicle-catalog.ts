@@ -26,6 +26,12 @@ export type VehicleCatalogEntry = {
   finalDriveType: LookupItem | null;
   driveType: LookupItem | null;
   startType: LookupItem | null;
+  powertrainType: LookupItem | null;
+  motorPowerWatt: number | null;
+  batteryCapacityWh: number | null;
+  rangeKm: number | null;
+  chargingTimeMinutes: number | null;
+  hasLockingDifferential: boolean | null;
   imageUrl: string | null;
   descriptionKa: string | null;
   descriptionEn: string | null;
@@ -51,6 +57,12 @@ export type VehicleCatalogInput = {
   finalDriveTypeId?: number | null;
   driveTypeId?: number | null;
   startTypeId?: number | null;
+  powertrainTypeId?: number | null;
+  motorPowerWatt?: number | null;
+  batteryCapacityWh?: number | null;
+  rangeKm?: number | null;
+  chargingTimeMinutes?: number | null;
+  hasLockingDifferential?: boolean | null;
   descriptionKa?: string | null;
   descriptionEn?: string | null;
   descriptionRu?: string | null;

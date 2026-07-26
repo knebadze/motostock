@@ -1,37 +1,44 @@
 model VehicleCatalog {
-  id                 Int               @id @default(autoincrement())
-  categoryId         Int
-  category           Category          @relation(fields: [categoryId], references: [id])
-  brandId            Int
-  brand              Brand             @relation(fields: [brandId], references: [id])
-  modelId            Int
-  model              Model             @relation(fields: [modelId], references: [id])
-  yearFrom           Int?
-  yearTo             Int?
-  engineVolumeCc     Int?
-  enginePowerHp      Int?
-  cylinderCount      Int?
-  gearCount          Int?
-  seatCount          Int?
-  fuelTypeId         Int?
-  fuelType           FuelType?         @relation(fields: [fuelTypeId], references: [id])
-  transmissionTypeId Int?
-  transmissionType   TransmissionType? @relation(fields: [transmissionTypeId], references: [id])
-  coolingTypeId      Int?
-  coolingType        CoolingType?      @relation(fields: [coolingTypeId], references: [id])
-  finalDriveTypeId   Int?
-  finalDriveType     FinalDriveType?   @relation(fields: [finalDriveTypeId], references: [id])
-  driveTypeId        Int?
-  driveType          DriveType?        @relation(fields: [driveTypeId], references: [id])
-  startTypeId        Int?
-  startType          StartType?        @relation(fields: [startTypeId], references: [id])
-  imageUrl           String?
-  descriptionKa      String?
-  descriptionEn      String?
-  descriptionRu      String?
-  listings           VehicleListing[]
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  id                     Int               @id @default(autoincrement())
+  categoryId             Int
+  category               Category          @relation(fields: [categoryId], references: [id])
+  brandId                Int
+  brand                  Brand             @relation(fields: [brandId], references: [id])
+  modelId                Int
+  model                  Model             @relation(fields: [modelId], references: [id])
+  yearFrom               Int?
+  yearTo                 Int?
+  engineVolumeCc         Int?
+  enginePowerHp          Int?
+  cylinderCount          Int?
+  gearCount              Int?
+  seatCount              Int?
+  fuelTypeId             Int?
+  fuelType               FuelType?         @relation(fields: [fuelTypeId], references: [id])
+  transmissionTypeId     Int?
+  transmissionType       TransmissionType? @relation(fields: [transmissionTypeId], references: [id])
+  coolingTypeId          Int?
+  coolingType            CoolingType?      @relation(fields: [coolingTypeId], references: [id])
+  finalDriveTypeId       Int?
+  finalDriveType         FinalDriveType?   @relation(fields: [finalDriveTypeId], references: [id])
+  driveTypeId            Int?
+  driveType              DriveType?        @relation(fields: [driveTypeId], references: [id])
+  startTypeId            Int?
+  startType              StartType?        @relation(fields: [startTypeId], references: [id])
+  powertrainTypeId       Int?
+  powertrainType         PowertrainType?   @relation(fields: [powertrainTypeId], references: [id])
+  motorPowerWatt         Int?
+  batteryCapacityWh      Int?
+  rangeKm                Int?
+  chargingTimeMinutes    Int?
+  hasLockingDifferential Boolean?
+  imageUrl               String?
+  descriptionKa          String?
+  descriptionEn          String?
+  descriptionRu          String?
+  listings               VehicleListing[]
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
 
   @@schema("dbo")
 }

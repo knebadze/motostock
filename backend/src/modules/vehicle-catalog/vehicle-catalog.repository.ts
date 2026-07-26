@@ -12,6 +12,7 @@ const include = {
   finalDriveType: true,
   driveType: true,
   startType: true,
+  powertrainType: true,
 } as const;
 
 type VehicleCatalogWriteData = {
@@ -31,6 +32,12 @@ type VehicleCatalogWriteData = {
   finalDriveTypeId?: number | null;
   driveTypeId?: number | null;
   startTypeId?: number | null;
+  powertrainTypeId?: number | null;
+  motorPowerWatt?: number | null;
+  batteryCapacityWh?: number | null;
+  rangeKm?: number | null;
+  chargingTimeMinutes?: number | null;
+  hasLockingDifferential?: boolean | null;
   descriptionKa?: string | null;
   descriptionEn?: string | null;
   descriptionRu?: string | null;

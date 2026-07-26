@@ -19,6 +19,7 @@ export default async function VehicleCatalogPage() {
     finalDriveTypes,
     driveTypes,
     startTypes,
+    powertrainTypes,
   ] = await Promise.all([
     getVehicleCatalogFromServer(),
     getCategoriesFromServer(),
@@ -30,6 +31,7 @@ export default async function VehicleCatalogPage() {
     getLookupItemsFromServer("final-drive-types"),
     getLookupItemsFromServer("drive-types"),
     getLookupItemsFromServer("start-types"),
+    getLookupItemsFromServer("powertrain-types"),
   ]);
 
   return (
@@ -44,6 +46,7 @@ export default async function VehicleCatalogPage() {
       finalDriveTypes={finalDriveTypes}
       driveTypes={driveTypes}
       startTypes={startTypes}
+      powertrainTypes={powertrainTypes}
     />
   );
 }

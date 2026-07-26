@@ -80,6 +80,11 @@ const START_TYPES: LookupEntry[] = [
   { key: "BOTH", nameKa: "ორივე", nameEn: "Both", nameRu: "Оба" },
 ];
 
+const POWERTRAIN_TYPES: LookupEntry[] = [
+  { key: "COMBUSTION", nameKa: "წვის ძრავი", nameEn: "Combustion engine", nameRu: "Двигатель внутреннего сгорания" },
+  { key: "ELECTRIC", nameKa: "ელექტრო ძრავი", nameEn: "Electric motor", nameRu: "Электродвигатель" },
+];
+
 const CONDITIONS: LookupEntry[] = [
   { key: "NEW", nameKa: "ახალი", nameEn: "New", nameRu: "Новый" },
   { key: "USED", nameKa: "მეორადი", nameEn: "Used", nameRu: "Б/у" },
@@ -148,6 +153,7 @@ async function main() {
   await seedLookup("Final drive types", prisma.finalDriveType, FINAL_DRIVE_TYPES);
   await seedLookup("Drive types", prisma.driveType, DRIVE_TYPES);
   await seedLookup("Start types", prisma.startType, START_TYPES);
+  await seedLookup("Powertrain types", prisma.powertrainType, POWERTRAIN_TYPES);
   await seedLookup("Conditions", prisma.condition, CONDITIONS);
   await seedLookup("Listing statuses", prisma.listingStatus, LISTING_STATUSES);
   await seedLookup("Colors", prisma.color, COLORS);

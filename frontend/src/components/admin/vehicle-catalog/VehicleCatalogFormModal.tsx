@@ -51,6 +51,7 @@ export function VehicleCatalogFormModal({
   finalDriveTypes,
   driveTypes,
   startTypes,
+  powertrainTypes,
   entry,
 }: {
   open: boolean;
@@ -65,6 +66,7 @@ export function VehicleCatalogFormModal({
   finalDriveTypes: LookupItem[];
   driveTypes: LookupItem[];
   startTypes: LookupItem[];
+  powertrainTypes: LookupItem[];
   entry: VehicleCatalogEntry | null;
 }) {
   const isEditing = entry !== null;
@@ -89,6 +91,20 @@ export function VehicleCatalogFormModal({
   );
   const [driveTypeId, setDriveTypeId] = useState(toInputValue(entry?.driveType?.id));
   const [startTypeId, setStartTypeId] = useState(toInputValue(entry?.startType?.id));
+  const [powertrainTypeId, setPowertrainTypeId] = useState(
+    toInputValue(entry?.powertrainType?.id),
+  );
+  const [motorPowerWatt, setMotorPowerWatt] = useState(toInputValue(entry?.motorPowerWatt));
+  const [batteryCapacityWh, setBatteryCapacityWh] = useState(
+    toInputValue(entry?.batteryCapacityWh),
+  );
+  const [rangeKm, setRangeKm] = useState(toInputValue(entry?.rangeKm));
+  const [chargingTimeMinutes, setChargingTimeMinutes] = useState(
+    toInputValue(entry?.chargingTimeMinutes),
+  );
+  const [hasLockingDifferential, setHasLockingDifferential] = useState(
+    entry?.hasLockingDifferential ?? false,
+  );
   const [descriptionKa, setDescriptionKa] = useState(entry?.descriptionKa ?? "");
   const [descriptionEn, setDescriptionEn] = useState(entry?.descriptionEn ?? "");
   const [descriptionRu, setDescriptionRu] = useState(entry?.descriptionRu ?? "");
@@ -117,6 +133,14 @@ export function VehicleCatalogFormModal({
   const brandOptions = useMemo(
     () => brands.map((brand) => ({ value: String(brand.id), label: brand.name.ka })),
     [brands],
+  );
+
+  const powertrainOptions = useMemo(() => lookupOptions(powertrainTypes), [powertrainTypes]);
+
+  const isElectric = useMemo(
+    () =>
+      powertrainTypes.find((item) => String(item.id) === powertrainTypeId)?.key === "ELECTRIC",
+    [powertrainTypes, powertrainTypeId],
   );
 
   const modelOptions = useMemo(
@@ -181,6 +205,12 @@ export function VehicleCatalogFormModal({
         finalDriveTypeId: toNullableInt(finalDriveTypeId),
         driveTypeId: toNullableInt(driveTypeId),
         startTypeId: toNullableInt(startTypeId),
+        powertrainTypeId: toNullableInt(powertrainTypeId),
+        motorPowerWatt: toNullableInt(motorPowerWatt),
+        batteryCapacityWh: toNullableInt(batteryCapacityWh),
+        rangeKm: toNullableInt(rangeKm),
+        chargingTimeMinutes: toNullableInt(chargingTimeMinutes),
+        hasLockingDifferential,
         descriptionKa: toNullableHtml(descriptionKa),
         descriptionEn: toNullableHtml(descriptionEn),
         descriptionRu: toNullableHtml(descriptionRu),
@@ -249,6 +279,18 @@ export function VehicleCatalogFormModal({
           </div>
         </div>
 
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium">ძრავის ტიპი</label>
+            <Select
+              options={powertrainOptions}
+              value={powertrainTypeId}
+              onChange={setPowertrainTypeId}
+              placeholder="— არცერთი —"
+            />
+          </div>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-5">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="vc-year-from" className="text-sm font-medium">
@@ -274,54 +316,109 @@ export function VehicleCatalogFormModal({
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="vc-engine-cc" className="text-sm font-medium">
-              მოცულობა (cc)
-            </label>
-            <input
-              id="vc-engine-cc"
-              type="number"
-              value={engineVolumeCc}
-              onChange={(event) => setEngineVolumeCc(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="vc-power-hp" className="text-sm font-medium">
-              სიმძლავრე (ც.ძ)
-            </label>
-            <input
-              id="vc-power-hp"
-              type="number"
-              value={enginePowerHp}
-              onChange={(event) => setEnginePowerHp(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="vc-cylinders" className="text-sm font-medium">
-              ცილინდრები
-            </label>
-            <input
-              id="vc-cylinders"
-              type="number"
-              value={cylinderCount}
-              onChange={(event) => setCylinderCount(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="vc-gears" className="text-sm font-medium">
-              გადაცემები
-            </label>
-            <input
-              id="vc-gears"
-              type="number"
-              value={gearCount}
-              onChange={(event) => setGearCount(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-          </div>
+          {isElectric ? (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="vc-motor-watt" className="text-sm font-medium">
+                  ძრავის სიმძლავრე (ვტ)
+                </label>
+                <input
+                  id="vc-motor-watt"
+                  type="number"
+                  value={motorPowerWatt}
+                  onChange={(event) => setMotorPowerWatt(event.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="vc-battery-wh" className="text-sm font-medium">
+                  აკუმულატორი (Wh)
+                </label>
+                <input
+                  id="vc-battery-wh"
+                  type="number"
+                  value={batteryCapacityWh}
+                  onChange={(event) => setBatteryCapacityWh(event.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="vc-range-km" className="text-sm font-medium">
+                  სავალი მანძილი (კმ)
+                </label>
+                <input
+                  id="vc-range-km"
+                  type="number"
+                  value={rangeKm}
+                  onChange={(event) => setRangeKm(event.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="vc-charging-time" className="text-sm font-medium">
+                  დამუხტვის დრო (წთ)
+                </label>
+                <input
+                  id="vc-charging-time"
+                  type="number"
+                  value={chargingTimeMinutes}
+                  onChange={(event) => setChargingTimeMinutes(event.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="vc-engine-cc" className="text-sm font-medium">
+                  მოცულობა (cc)
+                </label>
+                <input
+                  id="vc-engine-cc"
+                  type="number"
+                  value={engineVolumeCc}
+                  onChange={(event) => setEngineVolumeCc(event.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="vc-power-hp" className="text-sm font-medium">
+                  სიმძლავრე (ც.ძ)
+                </label>
+                <input
+                  id="vc-power-hp"
+                  type="number"
+                  value={enginePowerHp}
+                  onChange={(event) => setEnginePowerHp(event.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="vc-cylinders" className="text-sm font-medium">
+                  ცილინდრები
+                </label>
+                <input
+                  id="vc-cylinders"
+                  type="number"
+                  value={cylinderCount}
+                  onChange={(event) => setCylinderCount(event.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="vc-gears" className="text-sm font-medium">
+                  გადაცემები
+                </label>
+                <input
+                  id="vc-gears"
+                  type="number"
+                  value={gearCount}
+                  onChange={(event) => setGearCount(event.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </div>
+            </>
+          )}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="vc-seats" className="text-sm font-medium">
               ადგილები
@@ -337,16 +434,18 @@ export function VehicleCatalogFormModal({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">საწვავის ტიპი</label>
-            <Select
-              options={lookupOptions(fuelTypes)}
-              value={fuelTypeId}
-              onChange={setFuelTypeId}
-              searchable
-              placeholder="— არცერთი —"
-            />
-          </div>
+          {!isElectric && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium">საწვავის ტიპი</label>
+              <Select
+                options={lookupOptions(fuelTypes)}
+                value={fuelTypeId}
+                onChange={setFuelTypeId}
+                searchable
+                placeholder="— არცერთი —"
+              />
+            </div>
+          )}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">გადაცემათა კოლოფი</label>
             <Select
@@ -387,16 +486,27 @@ export function VehicleCatalogFormModal({
               placeholder="— არცერთი —"
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">გაშვების სისტემა</label>
-            <Select
-              options={lookupOptions(startTypes)}
-              value={startTypeId}
-              onChange={setStartTypeId}
-              searchable
-              placeholder="— არცერთი —"
+          {!isElectric && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium">გაშვების სისტემა</label>
+              <Select
+                options={lookupOptions(startTypes)}
+                value={startTypeId}
+                onChange={setStartTypeId}
+                searchable
+                placeholder="— არცერთი —"
+              />
+            </div>
+          )}
+          <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={hasLockingDifferential}
+              onChange={(event) => setHasLockingDifferential(event.target.checked)}
+              className="size-4 rounded border-border accent-primary"
             />
-          </div>
+            დიფერენციალის ბლოკირება
+          </label>
         </div>
     </>
   );

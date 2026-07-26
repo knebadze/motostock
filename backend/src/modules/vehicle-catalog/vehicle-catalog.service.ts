@@ -33,6 +33,12 @@ type VehicleCatalogRow = {
   finalDriveType: LookupRow;
   driveType: LookupRow;
   startType: LookupRow;
+  powertrainType: LookupRow;
+  motorPowerWatt: number | null;
+  batteryCapacityWh: number | null;
+  rangeKm: number | null;
+  chargingTimeMinutes: number | null;
+  hasLockingDifferential: boolean | null;
   imageUrl: string | null;
   descriptionKa: string | null;
   descriptionEn: string | null;
@@ -64,6 +70,12 @@ function toResponse(row: VehicleCatalogRow) {
     finalDriveType: row.finalDriveType,
     driveType: row.driveType,
     startType: row.startType,
+    powertrainType: row.powertrainType,
+    motorPowerWatt: row.motorPowerWatt,
+    batteryCapacityWh: row.batteryCapacityWh,
+    rangeKm: row.rangeKm,
+    chargingTimeMinutes: row.chargingTimeMinutes,
+    hasLockingDifferential: row.hasLockingDifferential,
     imageUrl: row.imageUrl,
     descriptionKa: row.descriptionKa,
     descriptionEn: row.descriptionEn,
@@ -95,6 +107,7 @@ async function assertRefsExist(input: {
   finalDriveTypeId?: number | null;
   driveTypeId?: number | null;
   startTypeId?: number | null;
+  powertrainTypeId?: number | null;
 }) {
   const category = await categoriesRepository.findById(input.categoryId);
   if (!category) {
@@ -128,6 +141,11 @@ async function assertRefsExist(input: {
   );
   await assertOptionalLookupExists(input.driveTypeId, "drive-types", "წამყვანი თვლების ტიპი");
   await assertOptionalLookupExists(input.startTypeId, "start-types", "გაშვების სისტემა");
+  await assertOptionalLookupExists(
+    input.powertrainTypeId,
+    "powertrain-types",
+    "ძრავის კვების ტიპი",
+  );
 }
 
 export async function listVehicleCatalog() {
@@ -173,6 +191,10 @@ export async function updateVehicleCatalogEntry(id: number, input: UpdateVehicle
         : existing.finalDriveType?.id,
     driveTypeId: input.driveTypeId !== undefined ? input.driveTypeId : existing.driveType?.id,
     startTypeId: input.startTypeId !== undefined ? input.startTypeId : existing.startType?.id,
+    powertrainTypeId:
+      input.powertrainTypeId !== undefined
+        ? input.powertrainTypeId
+        : existing.powertrainType?.id,
   });
 
   const row = await vehicleCatalogRepository.update(id, input);

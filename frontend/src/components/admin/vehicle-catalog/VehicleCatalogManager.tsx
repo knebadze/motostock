@@ -53,6 +53,11 @@ const columns: DataTableColumn<VehicleCatalogEntry>[] = [
     render: (entry) => entry.fuelType?.nameKa ?? "—",
     cellClassName: "text-muted-foreground",
   },
+  {
+    header: "ძრავის ტიპი",
+    render: (entry) => entry.powertrainType?.nameKa ?? "—",
+    cellClassName: "text-muted-foreground",
+  },
 ];
 
 export function VehicleCatalogManager({
@@ -66,6 +71,7 @@ export function VehicleCatalogManager({
   finalDriveTypes,
   driveTypes,
   startTypes,
+  powertrainTypes,
 }: {
   initialEntries: VehicleCatalogEntry[];
   categories: Category[];
@@ -77,6 +83,7 @@ export function VehicleCatalogManager({
   finalDriveTypes: LookupItem[];
   driveTypes: LookupItem[];
   startTypes: LookupItem[];
+  powertrainTypes: LookupItem[];
 }) {
   const [entries, setEntries] = useState(initialEntries);
   const [formOpen, setFormOpen] = useState(false);
@@ -154,6 +161,7 @@ export function VehicleCatalogManager({
         finalDriveTypes={finalDriveTypes}
         driveTypes={driveTypes}
         startTypes={startTypes}
+        powertrainTypes={powertrainTypes}
         entry={editingEntry}
       />
 

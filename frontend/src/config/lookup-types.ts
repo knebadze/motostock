@@ -5,6 +5,7 @@ export const LOOKUP_TYPES = [
   { slug: "final-drive-types", label: "გადაცემის ტიპები" },
   { slug: "drive-types", label: "წამყვანი თვლების ტიპები" },
   { slug: "start-types", label: "გაშვების სისტემა" },
+  { slug: "powertrain-types", label: "ძრავის კვების ტიპები" },
   { slug: "conditions", label: "მდგომარეობები" },
   { slug: "listing-statuses", label: "განცხადების სტატუსები" },
   { slug: "colors", label: "ფერები" },

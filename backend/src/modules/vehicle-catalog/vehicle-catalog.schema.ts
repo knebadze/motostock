@@ -6,6 +6,7 @@ import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
 const optionalPositiveInt = z.int().positive().nullable().optional();
 const optionalYear = z.int().min(1900).max(2100).nullable().optional();
 const optionalDescription = z.string().max(5000).nullable().optional();
+const optionalBoolean = z.boolean().nullable().optional();
 
 export const createVehicleCatalogSchema = registry.register(
   "CreateVehicleCatalogInput",
@@ -26,6 +27,12 @@ export const createVehicleCatalogSchema = registry.register(
     finalDriveTypeId: optionalPositiveInt,
     driveTypeId: optionalPositiveInt,
     startTypeId: optionalPositiveInt,
+    powertrainTypeId: optionalPositiveInt,
+    motorPowerWatt: optionalPositiveInt,
+    batteryCapacityWh: optionalPositiveInt,
+    rangeKm: optionalPositiveInt,
+    chargingTimeMinutes: optionalPositiveInt,
+    hasLockingDifferential: optionalBoolean,
     descriptionKa: optionalDescription,
     descriptionEn: optionalDescription,
     descriptionRu: optionalDescription,
@@ -65,6 +72,12 @@ export const vehicleCatalogResponseSchema = registry.register(
     finalDriveType: lookupItemResponseSchema.nullable(),
     driveType: lookupItemResponseSchema.nullable(),
     startType: lookupItemResponseSchema.nullable(),
+    powertrainType: lookupItemResponseSchema.nullable(),
+    motorPowerWatt: z.int().nullable(),
+    batteryCapacityWh: z.int().nullable(),
+    rangeKm: z.int().nullable(),
+    chargingTimeMinutes: z.int().nullable(),
+    hasLockingDifferential: z.boolean().nullable(),
     imageUrl: z.string().nullable(),
     descriptionKa: z.string().nullable(),
     descriptionEn: z.string().nullable(),
