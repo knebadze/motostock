@@ -9,6 +9,7 @@ export const LOOKUP_TYPES = [
   "start-types",
   "conditions",
   "listing-statuses",
+  "colors",
 ] as const;
 
 export type LookupType = (typeof LOOKUP_TYPES)[number];
@@ -41,7 +42,7 @@ export type LookupDelegate = {
   delete: (args: { where: { id: number } }) => Promise<LookupRecord>;
 };
 
-// All eight lookup models share the exact same scalar shape (id, key,
+// All lookup models share the exact same scalar shape (id, key,
 // nameKa/En/Ru) but Prisma generates a distinct type per model because of
 // their differing relation fields — safe to cast to the shared structural
 // type since only the common scalar columns are ever touched here.
@@ -58,6 +59,7 @@ const registry: Record<LookupType, LookupDelegate> = {
   "start-types": asLookupDelegate(prisma.startType),
   conditions: asLookupDelegate(prisma.condition),
   "listing-statuses": asLookupDelegate(prisma.listingStatus),
+  colors: asLookupDelegate(prisma.color),
 };
 
 export function getLookupDelegate(type: LookupType): LookupDelegate {

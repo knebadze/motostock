@@ -7,6 +7,7 @@ export const LOOKUP_TYPES = [
   { slug: "start-types", label: "გაშვების სისტემები" },
   { slug: "conditions", label: "მდგომარეობები" },
   { slug: "listing-statuses", label: "განცხადების სტატუსები" },
+  { slug: "colors", label: "ფერები" },
 ] as const;
 
 export type LookupTypeSlug = (typeof LOOKUP_TYPES)[number]["slug"];

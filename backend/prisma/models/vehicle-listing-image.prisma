@@ -1,0 +1,10 @@
+model VehicleListingImage {
+  id               Int            @id @default(autoincrement())
+  vehicleListingId Int
+  vehicleListing   VehicleListing @relation(fields: [vehicleListingId], references: [id], onDelete: Cascade)
+  imageUrl         String
+  position         Int
+  createdAt        DateTime       @default(now())
+
+  @@schema("dbo")
+}

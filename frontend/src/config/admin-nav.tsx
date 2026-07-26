@@ -116,6 +116,22 @@ const classifierIcon = (
   </svg>
 );
 
+const listingIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-5"
+  >
+    <path d="M12.59 2.59 21 11l-8 8-8.41-8.41A2 2 0 0 1 4 9.17V4a2 2 0 0 1 2-2h5.17a2 2 0 0 1 1.42.59Z" />
+    <circle cx="8.5" cy="7.5" r="1.5" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 export const adminNav: AdminNavSection[] = [
   {
     label: "მთავარი",
@@ -130,6 +146,12 @@ export const adminNav: AdminNavSection[] = [
       { label: "მარკები", href: "/admin/brands", icon: brandsIcon },
       { label: "მოდელები", href: "/admin/models", icon: modelsIcon },
       { label: "ტექნიკა", href: "/admin/vehicle-catalog", icon: vehicleCatalogIcon },
+    ],
+  },
+  {
+    label: "გაყიდვები",
+    items: [
+      { label: "გასაყიდი ტექნიკა", href: "/admin/vehicle-listings", icon: listingIcon },
     ],
   },
   {

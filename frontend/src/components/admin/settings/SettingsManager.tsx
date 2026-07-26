@@ -4,13 +4,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { updateSettings, type Settings } from "@/lib/api/settings";
 import { ApiRequestError } from "@/lib/api/client";
+import { Toggle } from "@/components/shared/Toggle";
 
 export function SettingsManager({ initialSettings }: { initialSettings: Settings }) {
   const [settings, setSettings] = useState(initialSettings);
   const [saving, setSaving] = useState(false);
 
-  async function toggleCloudStorage() {
-    const nextValue = !settings.useCloudStorage;
+  async function toggleCloudStorage(nextValue: boolean) {
     setSaving(true);
     try {
       const updated = await updateSettings({ useCloudStorage: nextValue });
@@ -40,22 +40,7 @@ export function SettingsManager({ initialSettings }: { initialSettings: Settings
             </p>
           </div>
 
-          <button
-            type="button"
-            role="switch"
-            aria-checked={settings.useCloudStorage}
-            disabled={saving}
-            onClick={toggleCloudStorage}
-            className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-              settings.useCloudStorage ? "bg-primary" : "bg-muted"
-            }`}
-          >
-            <span
-              className={`absolute top-1 size-5 rounded-full bg-white shadow transition-transform ${
-                settings.useCloudStorage ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
-          </button>
+          <Toggle checked={settings.useCloudStorage} onChange={toggleCloudStorage} disabled={saving} />
         </div>
       </div>
     </div>

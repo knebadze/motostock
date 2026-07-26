@@ -91,6 +91,18 @@ const LISTING_STATUSES: LookupEntry[] = [
   { key: "SOLD", nameKa: "გაყიდულია", nameEn: "Sold", nameRu: "Продано" },
 ];
 
+const COLORS: LookupEntry[] = [
+  { key: "BLACK", nameKa: "შავი", nameEn: "Black", nameRu: "Черный" },
+  { key: "WHITE", nameKa: "თეთრი", nameEn: "White", nameRu: "Белый" },
+  { key: "RED", nameKa: "წითელი", nameEn: "Red", nameRu: "Красный" },
+  { key: "BLUE", nameKa: "ლურჯი", nameEn: "Blue", nameRu: "Синий" },
+  { key: "GREEN", nameKa: "მწვანე", nameEn: "Green", nameRu: "Зеленый" },
+  { key: "YELLOW", nameKa: "ყვითელი", nameEn: "Yellow", nameRu: "Желтый" },
+  { key: "ORANGE", nameKa: "ნარინჯისფერი", nameEn: "Orange", nameRu: "Оранжевый" },
+  { key: "GRAY", nameKa: "ნაცრისფერი", nameEn: "Gray", nameRu: "Серый" },
+  { key: "SILVER", nameKa: "ვერცხლისფერი", nameEn: "Silver", nameRu: "Серебристый" },
+];
+
 async function main() {
   const userRole = await prisma.role.upsert({
     where: { name: ROLES.USER },
@@ -138,6 +150,7 @@ async function main() {
   await seedLookup("Start types", prisma.startType, START_TYPES);
   await seedLookup("Conditions", prisma.condition, CONDITIONS);
   await seedLookup("Listing statuses", prisma.listingStatus, LISTING_STATUSES);
+  await seedLookup("Colors", prisma.color, COLORS);
 }
 
 main()

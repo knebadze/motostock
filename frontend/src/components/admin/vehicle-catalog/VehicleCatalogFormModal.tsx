@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Select, type SelectOption } from "@/components/shared/Select";
 import { FormActions } from "@/components/shared/FormActions";
+import { RichTextEditor } from "@/components/shared/RichTextEditor";
 import {
   createVehicleCatalogEntry,
   updateVehicleCatalogEntry,
@@ -29,6 +30,11 @@ function toInputValue(value: number | null | undefined): string {
 
 function lookupOptions(items: LookupItem[]): SelectOption[] {
   return items.map((item) => ({ value: String(item.id), label: item.nameKa }));
+}
+
+function toNullableHtml(html: string): string | null {
+  const isBlank = html.replace(/<[^>]*>/g, "").trim() === "";
+  return isBlank ? null : html;
 }
 
 export function VehicleCatalogFormModal({
@@ -174,9 +180,9 @@ export function VehicleCatalogFormModal({
         finalDriveTypeId: toNullableInt(finalDriveTypeId),
         driveTypeId: toNullableInt(driveTypeId),
         startTypeId: toNullableInt(startTypeId),
-        descriptionKa: descriptionKa.trim() || null,
-        descriptionEn: descriptionEn.trim() || null,
-        descriptionRu: descriptionRu.trim() || null,
+        descriptionKa: toNullableHtml(descriptionKa),
+        descriptionEn: toNullableHtml(descriptionEn),
+        descriptionRu: toNullableHtml(descriptionRu),
       };
 
       const saved = isEditing
@@ -399,42 +405,18 @@ export function VehicleCatalogFormModal({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="vc-description-ka" className="text-sm font-medium">
-            აღწერა (ქართულად)
-          </label>
-          <textarea
-            id="vc-description-ka"
-            rows={2}
-            value={descriptionKa}
-            onChange={(event) => setDescriptionKa(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
+          <label className="text-sm font-medium">აღწერა (ქართულად)</label>
+          <RichTextEditor value={descriptionKa} onChange={setDescriptionKa} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="vc-description-en" className="text-sm font-medium">
-            აღწერა (ინგლისურად)
-          </label>
-          <textarea
-            id="vc-description-en"
-            rows={2}
-            value={descriptionEn}
-            onChange={(event) => setDescriptionEn(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
+          <label className="text-sm font-medium">აღწერა (ინგლისურად)</label>
+          <RichTextEditor value={descriptionEn} onChange={setDescriptionEn} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="vc-description-ru" className="text-sm font-medium">
-            აღწერა (რუსულად)
-          </label>
-          <textarea
-            id="vc-description-ru"
-            rows={2}
-            value={descriptionRu}
-            onChange={(event) => setDescriptionRu(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
+          <label className="text-sm font-medium">აღწერა (რუსულად)</label>
+          <RichTextEditor value={descriptionRu} onChange={setDescriptionRu} />
         </div>
 
         <div className="flex flex-col gap-1.5">

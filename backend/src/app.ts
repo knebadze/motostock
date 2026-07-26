@@ -16,6 +16,9 @@ import { brandsRouter } from "./modules/brands/brands.routes.js";
 import { modelsRouter } from "./modules/models/models.routes.js";
 import { lookupsRouter } from "./modules/lookups/lookups.routes.js";
 import { vehicleCatalogRouter } from "./modules/vehicle-catalog/vehicle-catalog.routes.js";
+import { vehicleListingRouter } from "./modules/vehicle-listing/vehicle-listing.routes.js";
+import { vehicleListingDiscountsRouter } from "./modules/vehicle-listing-discounts/vehicle-listing-discounts.routes.js";
+import { vehicleListingImagesRouter } from "./modules/vehicle-listing-images/vehicle-listing-images.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 
 export const app = express();
@@ -44,6 +47,9 @@ app.use("/api/brands", brandsRouter);
 app.use("/api/models", modelsRouter);
 app.use("/api/lookups", lookupsRouter);
 app.use("/api/vehicle-catalog", vehicleCatalogRouter);
+app.use("/api/vehicle-listings", vehicleListingRouter);
+app.use("/api/vehicle-listings/:listingId/discounts", vehicleListingDiscountsRouter);
+app.use("/api/vehicle-listings/:listingId/images", vehicleListingImagesRouter);
 
 // registerPath() calls above already ran as a side effect of importing the
 // routers, so the registry is fully populated by the time this generates.

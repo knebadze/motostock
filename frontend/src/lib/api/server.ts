@@ -9,6 +9,7 @@ import type { Model } from "./models";
 import type { LookupItem } from "./lookups";
 import type { LookupTypeSlug } from "@/config/lookup-types";
 import type { VehicleCatalogEntry } from "./vehicle-catalog";
+import type { VehicleListing } from "./vehicle-listings";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -101,6 +102,20 @@ export async function getVehicleCatalogFromServer(): Promise<VehicleCatalogEntry
 
   try {
     const { data } = await apiClient.get<{ items: VehicleCatalogEntry[] }>("/vehicle-catalog", {
+      headers,
+    });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getVehicleListingsFromServer(): Promise<VehicleListing[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: VehicleListing[] }>("/vehicle-listings", {
       headers,
     });
     return data.items;
