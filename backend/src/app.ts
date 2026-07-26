@@ -20,6 +20,8 @@ import { vehicleListingRouter } from "./modules/vehicle-listing/vehicle-listing.
 import { vehicleListingDiscountsRouter } from "./modules/vehicle-listing-discounts/vehicle-listing-discounts.routes.js";
 import { vehicleListingImagesRouter } from "./modules/vehicle-listing-images/vehicle-listing-images.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
+import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
+import { ROLES } from "./lib/roles.js";
 
 export const app = express();
 
@@ -57,6 +59,8 @@ const openApiDocument = generateOpenApiDocument();
 
 app.use(
   "/api/docs",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   helmet({
     contentSecurityPolicy: {
       directives: {
@@ -69,7 +73,7 @@ app.use(
   swaggerUi.serve,
   swaggerUi.setup(openApiDocument),
 );
-app.get("/api/openapi.json", (_req, res) => {
+app.get("/api/openapi.json", requireAuth, requireRole(ROLES.ADMIN), (_req, res) => {
   res.status(200).json(openApiDocument);
 });
 
