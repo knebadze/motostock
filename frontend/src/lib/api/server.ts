@@ -8,6 +8,7 @@ import type { Brand } from "./brands";
 import type { Model } from "./models";
 import type { LookupItem } from "./lookups";
 import type { LookupTypeSlug } from "@/config/lookup-types";
+import type { VehicleCatalogEntry } from "./vehicle-catalog";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -86,6 +87,20 @@ export async function getLookupItemsFromServer(type: LookupTypeSlug): Promise<Lo
 
   try {
     const { data } = await apiClient.get<{ items: LookupItem[] }>(`/lookups/${type}`, {
+      headers,
+    });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getVehicleCatalogFromServer(): Promise<VehicleCatalogEntry[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: VehicleCatalogEntry[] }>("/vehicle-catalog", {
       headers,
     });
     return data.items;

@@ -79,6 +79,23 @@ const modelsIcon = (
   </svg>
 );
 
+const vehicleCatalogIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-5"
+  >
+    <circle cx="6" cy="17" r="3" />
+    <circle cx="18" cy="17" r="3" />
+    <path d="M9 17h6M13 5l4 4-3 3-2-2H9l-2 5" />
+  </svg>
+);
+
 const classifierIcon = (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -112,6 +129,7 @@ export const adminNav: AdminNavSection[] = [
     items: [
       { label: "მარკები", href: "/admin/brands", icon: brandsIcon },
       { label: "მოდელები", href: "/admin/models", icon: modelsIcon },
+      { label: "ტექნიკა", href: "/admin/vehicle-catalog", icon: vehicleCatalogIcon },
     ],
   },
   {

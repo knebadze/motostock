@@ -3,16 +3,23 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
+const SIZE_CLASSES = {
+  md: "max-w-md",
+  xl: "max-w-2xl",
+} as const;
+
 export function Modal({
   open,
   onClose,
   title,
   children,
+  size = "md",
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  size?: keyof typeof SIZE_CLASSES;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -40,9 +47,9 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl"
+        className={`relative flex max-h-[90vh] w-full flex-col rounded-2xl border border-border bg-card p-6 shadow-xl ${SIZE_CLASSES[size]}`}
       >
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex shrink-0 items-center justify-between">
           <h2 id="modal-title" className="text-lg font-bold tracking-tight">
             {title}
           </h2>
@@ -67,7 +74,7 @@ export function Modal({
           </button>
         </div>
 
-        {children}
+        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       </div>
     </div>,
     document.body,

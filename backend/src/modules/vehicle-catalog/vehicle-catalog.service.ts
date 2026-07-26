@@ -1,0 +1,210 @@
+import { ApiError } from "../../lib/ApiError.js";
+import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { saveUploadedImage } from "../../lib/storage.js";
+import { categoriesRepository } from "../categories/categories.repository.js";
+import { brandsRepository } from "../brands/brands.repository.js";
+import { modelsRepository } from "../models/models.repository.js";
+import { getLookupDelegate, type LookupType } from "../lookups/lookups.registry.js";
+import { lookupsRepository } from "../lookups/lookups.repository.js";
+import { vehicleCatalogRepository } from "./vehicle-catalog.repository.js";
+import type {
+  CreateVehicleCatalogInput,
+  UpdateVehicleCatalogInput,
+} from "./vehicle-catalog.schema.js";
+
+type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
+type LookupRow = { id: number; key: string; nameKa: string; nameEn: string; nameRu: string } | null;
+
+type VehicleCatalogRow = {
+  id: number;
+  category: NamedRefRow;
+  brand: NamedRefRow;
+  model: NamedRefRow;
+  yearFrom: number | null;
+  yearTo: number | null;
+  engineVolumeCc: number | null;
+  enginePowerHp: number | null;
+  cylinderCount: number | null;
+  gearCount: number | null;
+  seatCount: number | null;
+  fuelType: LookupRow;
+  transmissionType: LookupRow;
+  coolingType: LookupRow;
+  finalDriveType: LookupRow;
+  driveType: LookupRow;
+  startType: LookupRow;
+  imageUrl: string | null;
+  descriptionKa: string | null;
+  descriptionEn: string | null;
+  descriptionRu: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+function toNamedRef(row: NamedRefRow) {
+  return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
+}
+
+function toResponse(row: VehicleCatalogRow) {
+  return {
+    id: row.id,
+    category: toNamedRef(row.category),
+    brand: toNamedRef(row.brand),
+    model: toNamedRef(row.model),
+    yearFrom: row.yearFrom,
+    yearTo: row.yearTo,
+    engineVolumeCc: row.engineVolumeCc,
+    enginePowerHp: row.enginePowerHp,
+    cylinderCount: row.cylinderCount,
+    gearCount: row.gearCount,
+    seatCount: row.seatCount,
+    fuelType: row.fuelType,
+    transmissionType: row.transmissionType,
+    coolingType: row.coolingType,
+    finalDriveType: row.finalDriveType,
+    driveType: row.driveType,
+    startType: row.startType,
+    imageUrl: row.imageUrl,
+    descriptionKa: row.descriptionKa,
+    descriptionEn: row.descriptionEn,
+    descriptionRu: row.descriptionRu,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+async function assertOptionalLookupExists(
+  id: number | null | undefined,
+  type: LookupType,
+  label: string,
+) {
+  if (id == null) return;
+  const record = await lookupsRepository.findById(getLookupDelegate(type), id);
+  if (!record) {
+    throw new ApiError(400, `მითითებული ${label} არ არსებობს`);
+  }
+}
+
+async function assertRefsExist(input: {
+  categoryId: number;
+  brandId: number;
+  modelId: number;
+  fuelTypeId?: number | null;
+  transmissionTypeId?: number | null;
+  coolingTypeId?: number | null;
+  finalDriveTypeId?: number | null;
+  driveTypeId?: number | null;
+  startTypeId?: number | null;
+}) {
+  const category = await categoriesRepository.findById(input.categoryId);
+  if (!category) {
+    throw new ApiError(400, "მითითებული კატეგორია არ არსებობს");
+  }
+
+  const brand = await brandsRepository.findById(input.brandId);
+  if (!brand) {
+    throw new ApiError(400, "მითითებული მარკა არ არსებობს");
+  }
+
+  const model = await modelsRepository.findById(input.modelId);
+  if (!model) {
+    throw new ApiError(400, "მითითებული მოდელი არ არსებობს");
+  }
+  if (model.brandId !== input.brandId) {
+    throw new ApiError(400, "მითითებული მოდელი არ ეკუთვნის ამორჩეულ მარკას");
+  }
+
+  await assertOptionalLookupExists(input.fuelTypeId, "fuel-types", "საწვავის ტიპი");
+  await assertOptionalLookupExists(
+    input.transmissionTypeId,
+    "transmission-types",
+    "გადაცემათა კოლოფის ტიპი",
+  );
+  await assertOptionalLookupExists(input.coolingTypeId, "cooling-types", "გაგრილების ტიპი");
+  await assertOptionalLookupExists(
+    input.finalDriveTypeId,
+    "final-drive-types",
+    "საბოლოო გადაცემის ტიპი",
+  );
+  await assertOptionalLookupExists(input.driveTypeId, "drive-types", "წამყვანი თვლების ტიპი");
+  await assertOptionalLookupExists(input.startTypeId, "start-types", "გაშვების სისტემა");
+}
+
+export async function listVehicleCatalog() {
+  const rows = await vehicleCatalogRepository.findMany();
+  return rows.map(toResponse);
+}
+
+export async function getVehicleCatalogEntry(id: number) {
+  const row = await vehicleCatalogRepository.findById(id);
+  if (!row) {
+    throw new ApiError(404, "ტექნიკის ჩანაწერი ვერ მოიძებნა");
+  }
+  return toResponse(row);
+}
+
+export async function createVehicleCatalogEntry(input: CreateVehicleCatalogInput) {
+  await assertRefsExist(input);
+
+  const row = await vehicleCatalogRepository.create(input);
+  return toResponse(row);
+}
+
+export async function updateVehicleCatalogEntry(id: number, input: UpdateVehicleCatalogInput) {
+  const existing = await vehicleCatalogRepository.findById(id);
+  if (!existing) {
+    throw new ApiError(404, "ტექნიკის ჩანაწერი ვერ მოიძებნა");
+  }
+
+  await assertRefsExist({
+    categoryId: input.categoryId ?? existing.category.id,
+    brandId: input.brandId ?? existing.brand.id,
+    modelId: input.modelId ?? existing.model.id,
+    fuelTypeId: input.fuelTypeId !== undefined ? input.fuelTypeId : existing.fuelType?.id,
+    transmissionTypeId:
+      input.transmissionTypeId !== undefined
+        ? input.transmissionTypeId
+        : existing.transmissionType?.id,
+    coolingTypeId:
+      input.coolingTypeId !== undefined ? input.coolingTypeId : existing.coolingType?.id,
+    finalDriveTypeId:
+      input.finalDriveTypeId !== undefined
+        ? input.finalDriveTypeId
+        : existing.finalDriveType?.id,
+    driveTypeId: input.driveTypeId !== undefined ? input.driveTypeId : existing.driveType?.id,
+    startTypeId: input.startTypeId !== undefined ? input.startTypeId : existing.startType?.id,
+  });
+
+  const row = await vehicleCatalogRepository.update(id, input);
+  return toResponse(row);
+}
+
+export async function setVehicleCatalogImage(id: number, file: Express.Multer.File) {
+  const existing = await vehicleCatalogRepository.findById(id);
+  if (!existing) {
+    throw new ApiError(404, "ტექნიკის ჩანაწერი ვერ მოიძებნა");
+  }
+
+  const imageUrl = await saveUploadedImage("vehicle-catalog", file);
+  const row = await vehicleCatalogRepository.updateImage(id, imageUrl);
+  return toResponse(row);
+}
+
+export async function deleteVehicleCatalogEntry(id: number) {
+  const existing = await vehicleCatalogRepository.findById(id);
+  if (!existing) {
+    throw new ApiError(404, "ტექნიკის ჩანაწერი ვერ მოიძებნა");
+  }
+
+  try {
+    await vehicleCatalogRepository.delete(id);
+  } catch (error) {
+    if (isForeignKeyViolation(error)) {
+      throw new ApiError(
+        400,
+        "ეს ჩანაწერი გამოიყენება სხვა ჩანაწერებში (მაგ. გასაყიდი ტექნიკა), ჯერ წაშალეთ დამოკიდებული ჩანაწერები",
+      );
+    }
+    throw error;
+  }
+}
