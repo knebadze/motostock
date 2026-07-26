@@ -6,6 +6,7 @@ import { Modal } from "@/components/shared/Modal";
 import { Select, type SelectOption } from "@/components/shared/Select";
 import { FormActions } from "@/components/shared/FormActions";
 import { RichTextEditor } from "@/components/shared/RichTextEditor";
+import { Tabs } from "@/components/shared/Tabs";
 import {
   createVehicleCatalogEntry,
   updateVehicleCatalogEntry,
@@ -212,15 +213,9 @@ export function VehicleCatalogFormModal({
     }
   }
 
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      size="xl"
-      title={isEditing ? "ტექნიკის რედაქტირება" : "ტექნიკის დამატება"}
-    >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="grid gap-4 sm:grid-cols-3">
+  const mainTabContent = (
+    <>
+      <div className="grid gap-4 sm:grid-cols-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">კატეგორია</label>
             <Select
@@ -403,42 +398,66 @@ export function VehicleCatalogFormModal({
             />
           </div>
         </div>
+    </>
+  );
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">აღწერა (ქართულად)</label>
-          <RichTextEditor value={descriptionKa} onChange={setDescriptionKa} />
-        </div>
+  const descriptionTabContent = (
+    <>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium">აღწერა (ქართულად)</label>
+        <RichTextEditor value={descriptionKa} onChange={setDescriptionKa} />
+      </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">აღწერა (ინგლისურად)</label>
-          <RichTextEditor value={descriptionEn} onChange={setDescriptionEn} />
-        </div>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium">აღწერა (ინგლისურად)</label>
+        <RichTextEditor value={descriptionEn} onChange={setDescriptionEn} />
+      </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">აღწერა (რუსულად)</label>
-          <RichTextEditor value={descriptionRu} onChange={setDescriptionRu} />
-        </div>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium">აღწერა (რუსულად)</label>
+        <RichTextEditor value={descriptionRu} onChange={setDescriptionRu} />
+      </div>
+    </>
+  );
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="vc-image" className="text-sm font-medium">
-            სურათი
-          </label>
-          {previewUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={previewUrl}
-              alt=""
-              className="h-24 w-24 rounded-lg border border-border object-cover"
-            />
-          )}
-          <input
-            id="vc-image"
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-border"
-          />
-        </div>
+  const imageTabContent = (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor="vc-image" className="text-sm font-medium">
+        სურათი
+      </label>
+      {previewUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={previewUrl}
+          alt=""
+          className="h-24 w-24 rounded-lg border border-border object-cover"
+        />
+      )}
+      <input
+        id="vc-image"
+        type="file"
+        accept="image/*"
+        onChange={handleImageChange}
+        className="text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-border"
+      />
+    </div>
+  );
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="2xl"
+      title={isEditing ? "ტექნიკის რედაქტირება" : "ტექნიკის დამატება"}
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <Tabs
+          tabs={[
+            { key: "main", label: "ძირითადი", content: mainTabContent },
+            { key: "description", label: "აღწერა", content: descriptionTabContent },
+            { key: "image", label: "სურათი", content: imageTabContent },
+          ]}
+        />
 
         <FormActions onCancel={onClose} loading={loading} />
       </form>
