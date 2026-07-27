@@ -9,48 +9,65 @@ const optionalDescription = z.string().max(5000).nullable().optional();
 const optionalBoolean = z.boolean().nullable().optional();
 const optionalPositiveDecimal = z.coerce.number().positive().nullable().optional();
 
+const vehicleCatalogShape = z.object({
+  brandId: z.int().positive(),
+  modelId: z.int().positive(),
+  variant: z.string().trim().max(120).optional(),
+  yearFrom: optionalYear,
+  yearTo: optionalYear,
+  engineVolumeCc: optionalPositiveInt,
+  enginePowerHp: optionalPositiveInt,
+  cylinderCount: optionalPositiveInt,
+  gearCount: optionalPositiveInt,
+  seatCount: optionalPositiveInt,
+  weightKg: optionalPositiveInt,
+  seatHeightMm: optionalPositiveInt,
+  fuelTankLiters: optionalPositiveDecimal,
+  topSpeedKmh: optionalPositiveInt,
+  hasAbs: optionalBoolean,
+  fuelTypeId: optionalPositiveInt,
+  transmissionTypeId: optionalPositiveInt,
+  coolingTypeId: optionalPositiveInt,
+  finalDriveTypeId: optionalPositiveInt,
+  driveTypeId: optionalPositiveInt,
+  startTypeId: optionalPositiveInt,
+  powertrainTypeId: optionalPositiveInt,
+  motorPowerWatt: optionalPositiveInt,
+  batteryCapacityWh: optionalPositiveInt,
+  rangeKm: optionalPositiveInt,
+  chargingTimeMinutes: optionalPositiveInt,
+  hasLockingDifferential: optionalBoolean,
+  descriptionKa: optionalDescription,
+  descriptionEn: optionalDescription,
+  descriptionRu: optionalDescription,
+});
+
+function assertYearRangeIsValid(
+  data: { yearFrom?: number | null; yearTo?: number | null },
+  ctx: z.RefinementCtx,
+) {
+  if (data.yearFrom != null && data.yearTo != null && data.yearFrom > data.yearTo) {
+    ctx.addIssue({
+      code: "custom",
+      message: "'წელი (დან)' არ უნდა აღემატებოდეს 'წელი (მდე)'-ს",
+      path: ["yearTo"],
+    });
+  }
+}
+
+const partialVehicleCatalogShape = vehicleCatalogShape.partial();
+
 export const createVehicleCatalogSchema = registry.register(
   "CreateVehicleCatalogInput",
-  z.object({
-    brandId: z.int().positive(),
-    modelId: z.int().positive(),
-    variant: z.string().trim().max(120).optional(),
-    yearFrom: optionalYear,
-    yearTo: optionalYear,
-    engineVolumeCc: optionalPositiveInt,
-    enginePowerHp: optionalPositiveInt,
-    cylinderCount: optionalPositiveInt,
-    gearCount: optionalPositiveInt,
-    seatCount: optionalPositiveInt,
-    weightKg: optionalPositiveInt,
-    seatHeightMm: optionalPositiveInt,
-    fuelTankLiters: optionalPositiveDecimal,
-    topSpeedKmh: optionalPositiveInt,
-    hasAbs: optionalBoolean,
-    fuelTypeId: optionalPositiveInt,
-    transmissionTypeId: optionalPositiveInt,
-    coolingTypeId: optionalPositiveInt,
-    finalDriveTypeId: optionalPositiveInt,
-    driveTypeId: optionalPositiveInt,
-    startTypeId: optionalPositiveInt,
-    powertrainTypeId: optionalPositiveInt,
-    motorPowerWatt: optionalPositiveInt,
-    batteryCapacityWh: optionalPositiveInt,
-    rangeKm: optionalPositiveInt,
-    chargingTimeMinutes: optionalPositiveInt,
-    hasLockingDifferential: optionalBoolean,
-    descriptionKa: optionalDescription,
-    descriptionEn: optionalDescription,
-    descriptionRu: optionalDescription,
-  }),
+  vehicleCatalogShape.superRefine(assertYearRangeIsValid),
 );
-export type CreateVehicleCatalogInput = z.infer<typeof createVehicleCatalogSchema>;
+export type CreateVehicleCatalogInput = z.infer<typeof vehicleCatalogShape>;
 
 export const updateVehicleCatalogSchema = registry.register(
   "UpdateVehicleCatalogInput",
-  createVehicleCatalogSchema.partial(),
+  partialVehicleCatalogShape.superRefine(assertYearRangeIsValid),
 );
-export type UpdateVehicleCatalogInput = z.infer<typeof updateVehicleCatalogSchema>;
+export type UpdateVehicleCatalogInput = z.infer<typeof partialVehicleCatalogShape>;
 
 export const vehicleCatalogIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
