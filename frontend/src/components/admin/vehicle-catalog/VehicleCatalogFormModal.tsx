@@ -71,7 +71,9 @@ export function VehicleCatalogFormModal({
 }) {
   const isEditing = entry !== null;
 
-  const [categoryId, setCategoryId] = useState(entry ? String(entry.category.id) : "");
+  // Category is not stored on the catalog entry itself (it always comes from
+  // the chosen model) — this is only a local filter to narrow the model list.
+  const [categoryFilter, setCategoryFilter] = useState(entry ? String(entry.category.id) : "");
   const [brandId, setBrandId] = useState(entry ? String(entry.brand.id) : "");
   const [modelId, setModelId] = useState(entry ? String(entry.model.id) : "");
   const [variant, setVariant] = useState(entry?.variant ?? "");
@@ -123,11 +125,13 @@ export function VehicleCatalogFormModal({
   }, [previewUrl]);
 
   const categoryOptions = useMemo(
-    () =>
-      flattenTree(categories).map((category) => ({
+    () => [
+      { value: "", label: "ყველა ტიპი" },
+      ...flattenTree(categories).map((category) => ({
         value: String(category.id),
         label: `${"— ".repeat(category.depth)}${category.name.ka}`,
       })),
+    ],
     [categories],
   );
 
@@ -147,26 +151,41 @@ export function VehicleCatalogFormModal({
   const modelOptions = useMemo(
     () =>
       models
-        .filter((model) => String(model.brandId) === brandId)
+        .filter(
+          (model) =>
+            String(model.brandId) === brandId &&
+            (categoryFilter === "" || String(model.category.id) === categoryFilter),
+        )
         .map((model) => ({ value: String(model.id), label: model.name.ka })),
-    [models, brandId],
+    [models, brandId, categoryFilter],
   );
+
+  function isModelStillValid(candidateModelId: string, nextBrandId: string, nextCategoryFilter: string) {
+    return models.some(
+      (model) =>
+        String(model.id) === candidateModelId &&
+        String(model.brandId) === nextBrandId &&
+        (nextCategoryFilter === "" || String(model.category.id) === nextCategoryFilter),
+    );
+  }
+
+  function handleCategoryFilterChange(nextCategoryFilter: string) {
+    setCategoryFilter(nextCategoryFilter);
+    if (!isModelStillValid(modelId, brandId, nextCategoryFilter)) setModelId("");
+  }
 
   function handleBrandChange(nextBrandId: string) {
     setBrandId(nextBrandId);
-    const stillValid = models.some(
-      (model) => String(model.id) === modelId && String(model.brandId) === nextBrandId,
-    );
-    if (!stillValid) setModelId("");
+    if (!isModelStillValid(modelId, nextBrandId, categoryFilter)) setModelId("");
   }
 
   function handleModelChange(nextModelId: string) {
     setModelId(nextModelId);
-    // Prefill the type from the model's default (e.g. Yamaha R3 → Sport), but
-    // the admin can still override it afterward.
+    // Keep the category filter in sync with the chosen model's real category
+    // (it's purely informational/derived — not sent to the backend).
     const model = models.find((item) => String(item.id) === nextModelId);
     if (model?.category) {
-      setCategoryId(String(model.category.id));
+      setCategoryFilter(String(model.category.id));
     }
   }
 
@@ -181,8 +200,8 @@ export function VehicleCatalogFormModal({
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
-    if (!categoryId || !brandId || !modelId) {
-      toast.error("აირჩიეთ კატეგორია, მარკა და მოდელი");
+    if (!brandId || !modelId) {
+      toast.error("აირჩიეთ მარკა და მოდელი");
       return;
     }
 
@@ -190,7 +209,6 @@ export function VehicleCatalogFormModal({
 
     try {
       const input: VehicleCatalogInput = {
-        categoryId: Number(categoryId),
         brandId: Number(brandId),
         modelId: Number(modelId),
         variant: variant.trim(),
@@ -249,13 +267,13 @@ export function VehicleCatalogFormModal({
     <>
       <div className="grid gap-4 sm:grid-cols-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">კატეგორია</label>
+            <label className="text-sm font-medium">ტიპი (ფილტრი)</label>
             <Select
               options={categoryOptions}
-              value={categoryId}
-              onChange={setCategoryId}
+              value={categoryFilter}
+              onChange={handleCategoryFilterChange}
               searchable
-              placeholder="აირჩიეთ კატეგორია"
+              placeholder="ყველა ტიპი"
             />
           </div>
           <div className="flex flex-col gap-1.5">

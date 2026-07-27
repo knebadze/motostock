@@ -1,7 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { saveUploadedImage } from "../../lib/storage.js";
-import { categoriesRepository } from "../categories/categories.repository.js";
 import { brandsRepository } from "../brands/brands.repository.js";
 import { modelsRepository } from "../models/models.repository.js";
 import { getLookupDelegate, type LookupType } from "../lookups/lookups.registry.js";
@@ -17,9 +16,8 @@ type LookupRow = { id: number; key: string; nameKa: string; nameEn: string; name
 
 type VehicleCatalogRow = {
   id: number;
-  category: NamedRefRow;
   brand: NamedRefRow;
-  model: NamedRefRow;
+  model: NamedRefRow & { category: NamedRefRow };
   variant: string;
   yearFrom: number | null;
   yearTo: number | null;
@@ -55,7 +53,7 @@ function toNamedRef(row: NamedRefRow) {
 function toResponse(row: VehicleCatalogRow) {
   return {
     id: row.id,
-    category: toNamedRef(row.category),
+    category: toNamedRef(row.model.category),
     brand: toNamedRef(row.brand),
     model: toNamedRef(row.model),
     variant: row.variant,
@@ -100,7 +98,6 @@ async function assertOptionalLookupExists(
 }
 
 async function assertRefsExist(input: {
-  categoryId: number;
   brandId: number;
   modelId: number;
   fuelTypeId?: number | null;
@@ -111,11 +108,6 @@ async function assertRefsExist(input: {
   startTypeId?: number | null;
   powertrainTypeId?: number | null;
 }) {
-  const category = await categoriesRepository.findById(input.categoryId);
-  if (!category) {
-    throw new ApiError(400, "მითითებული კატეგორია არ არსებობს");
-  }
-
   const brand = await brandsRepository.findById(input.brandId);
   if (!brand) {
     throw new ApiError(400, "მითითებული მარკა არ არსებობს");
@@ -201,7 +193,6 @@ export async function updateVehicleCatalogEntry(id: number, input: UpdateVehicle
   }
 
   await assertRefsExist({
-    categoryId: input.categoryId ?? existing.category.id,
     brandId: input.brandId ?? existing.brand.id,
     modelId: input.modelId ?? existing.model.id,
     fuelTypeId: input.fuelTypeId !== undefined ? input.fuelTypeId : existing.fuelType?.id,

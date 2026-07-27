@@ -42,7 +42,6 @@ export type VehicleCatalogEntry = {
 };
 
 export type VehicleCatalogInput = {
-  categoryId: number;
   brandId: number;
   modelId: number;
   variant?: string;

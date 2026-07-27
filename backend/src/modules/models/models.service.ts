@@ -10,7 +10,7 @@ type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string;
 type ModelRow = {
   id: number;
   brandId: number;
-  categoryId: number | null;
+  categoryId: number;
   nameKa: string;
   nameEn: string;
   nameRu: string;
@@ -18,7 +18,7 @@ type ModelRow = {
   createdAt: Date;
   updatedAt: Date;
   brand: NamedRefRow;
-  category: NamedRefRow | null;
+  category: NamedRefRow;
 };
 
 function toNamedRef(row: NamedRefRow) {
@@ -31,7 +31,7 @@ function toResponse(model: ModelRow) {
     brandId: model.brandId,
     brand: toNamedRef(model.brand),
     categoryId: model.categoryId,
-    category: model.category ? toNamedRef(model.category) : null,
+    category: toNamedRef(model.category),
     name: { ka: model.nameKa, en: model.nameEn, ru: model.nameRu },
     slug: model.slug,
     createdAt: model.createdAt,
@@ -46,8 +46,7 @@ async function assertBrandExists(brandId: number) {
   }
 }
 
-async function assertCategoryExists(categoryId: number | null | undefined) {
-  if (categoryId == null) return;
+async function assertCategoryExists(categoryId: number) {
   const category = await categoriesRepository.findById(categoryId);
   if (!category) {
     throw new ApiError(400, "მითითებული ტიპი (კატეგორია) არ არსებობს");
@@ -78,7 +77,7 @@ export async function createModel(input: CreateModelInput) {
 
   const model = await modelsRepository.create({
     brandId: input.brandId,
-    categoryId: input.categoryId ?? null,
+    categoryId: input.categoryId,
     nameKa: input.name.ka,
     nameEn: input.name.en,
     nameRu: input.name.ru,

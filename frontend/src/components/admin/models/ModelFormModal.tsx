@@ -28,11 +28,12 @@ export function ModelFormModal({
   model: Model | null;
 }) {
   const isEditing = model !== null;
+  const flatCategories = flattenTree(categories);
   const [brandId, setBrandId] = useState<string>(
     model ? String(model.brandId) : brands[0] ? String(brands[0].id) : "",
   );
   const [categoryId, setCategoryId] = useState<string>(
-    model?.categoryId != null ? String(model.categoryId) : "",
+    model ? String(model.categoryId) : flatCategories[0] ? String(flatCategories[0].id) : "",
   );
   const [nameKa, setNameKa] = useState(model?.name.ka ?? "");
   const [nameEn, setNameEn] = useState(model?.name.en ?? "");
@@ -42,15 +43,15 @@ export function ModelFormModal({
   const [loading, setLoading] = useState(false);
 
   const brandOptions = brands.map((brand) => ({ value: String(brand.id), label: brand.name.ka }));
-  const categoryOptions = flattenTree(categories).map((category) => ({
+  const categoryOptions = flatCategories.map((category) => ({
     value: String(category.id),
     label: `${"— ".repeat(category.depth)}${category.name.ka}`,
   }));
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!brandId) {
-      toast.error("აირჩიეთ მარკა");
+    if (!brandId || !categoryId) {
+      toast.error("აირჩიეთ მარკა და ტიპი (კატეგორია)");
       return;
     }
     setLoading(true);
@@ -58,7 +59,7 @@ export function ModelFormModal({
     try {
       const input = {
         brandId: Number(brandId),
-        categoryId: categoryId ? Number(categoryId) : null,
+        categoryId: Number(categoryId),
         name: { ka: nameKa.trim(), en: nameEn.trim(), ru: nameRu.trim() },
         slug: slug.trim(),
       };
@@ -96,7 +97,7 @@ export function ModelFormModal({
             value={categoryId}
             onChange={setCategoryId}
             searchable
-            placeholder="— არცერთი —"
+            placeholder="აირჩიეთ ტიპი"
           />
         </div>
 

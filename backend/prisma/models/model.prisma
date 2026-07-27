@@ -2,8 +2,8 @@ model Model {
   id         Int              @id @default(autoincrement())
   brandId    Int
   brand      Brand            @relation(fields: [brandId], references: [id])
-  categoryId Int?
-  category   Category?        @relation(fields: [categoryId], references: [id])
+  categoryId Int
+  category   Category         @relation(fields: [categoryId], references: [id])
   nameKa     String
   nameEn     String
   nameRu     String

@@ -5,8 +5,8 @@ export type Model = {
   id: number;
   brandId: number;
   brand: { id: number; name: LocalizedString; slug: string };
-  categoryId: number | null;
-  category: { id: number; name: LocalizedString; slug: string } | null;
+  categoryId: number;
+  category: { id: number; name: LocalizedString; slug: string };
   name: LocalizedString;
   slug: string;
   createdAt: string;
@@ -15,7 +15,7 @@ export type Model = {
 
 export type ModelInput = {
   brandId: number;
-  categoryId?: number | null;
+  categoryId: number;
   name: LocalizedString;
   slug: string;
 };

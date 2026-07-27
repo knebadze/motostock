@@ -1,7 +1,5 @@
 model VehicleCatalog {
   id                     Int               @id @default(autoincrement())
-  categoryId             Int
-  category               Category          @relation(fields: [categoryId], references: [id])
   brandId                Int
   brand                  Brand             @relation(fields: [brandId], references: [id])
   modelId                Int
@@ -42,7 +40,6 @@ model VehicleCatalog {
   updatedAt              DateTime          @updatedAt
 
   @@unique([modelId, variant, yearFrom, yearTo])
-  @@index([categoryId])
   @@index([brandId])
   @@index([modelId])
   @@index([fuelTypeId])

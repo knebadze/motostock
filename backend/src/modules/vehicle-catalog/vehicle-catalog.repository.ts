@@ -3,9 +3,8 @@ import { prisma } from "../../config/prisma.js";
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
 
 const include = {
-  category: { select: namedRefSelect },
   brand: { select: namedRefSelect },
-  model: { select: namedRefSelect },
+  model: { select: { ...namedRefSelect, category: { select: namedRefSelect } } },
   fuelType: true,
   transmissionType: true,
   coolingType: true,
@@ -16,7 +15,6 @@ const include = {
 } as const;
 
 type VehicleCatalogWriteData = {
-  categoryId: number;
   brandId: number;
   modelId: number;
   variant?: string;

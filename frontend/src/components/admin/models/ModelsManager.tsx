@@ -19,7 +19,7 @@ const columns: DataTableColumn<Model>[] = [
   { header: "სახელი (RU)", render: (model) => model.name.ru, cellClassName: "text-muted-foreground" },
   {
     header: "ტიპი",
-    render: (model) => model.category?.name.ka ?? "—",
+    render: (model) => model.category.name.ka,
     cellClassName: "text-muted-foreground",
   },
   { header: "Slug", render: (model) => model.slug, cellClassName: "font-mono text-muted-foreground" },
@@ -83,16 +83,16 @@ export function ModelsManager({
         <button
           type="button"
           onClick={openCreateModal}
-          disabled={brands.length === 0}
+          disabled={brands.length === 0 || categories.length === 0}
           className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           + მოდელის დამატება
         </button>
       </div>
 
-      {brands.length === 0 && (
+      {(brands.length === 0 || categories.length === 0) && (
         <p className="mt-2 text-sm text-muted-foreground">
-          მოდელის დასამატებლად ჯერ საჭიროა მინიმუმ ერთი მარკის შექმნა.
+          მოდელის დასამატებლად ჯერ საჭიროა მინიმუმ ერთი მარკისა და ტიპის (კატეგორიის) შექმნა.
         </p>
       )}
 

@@ -9,7 +9,7 @@ const modelInclude = {
 
 type ModelWriteData = {
   brandId: number;
-  categoryId?: number | null;
+  categoryId: number;
   nameKa: string;
   nameEn: string;
   nameRu: string;

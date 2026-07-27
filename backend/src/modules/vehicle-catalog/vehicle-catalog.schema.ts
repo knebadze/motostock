@@ -11,7 +11,6 @@ const optionalBoolean = z.boolean().nullable().optional();
 export const createVehicleCatalogSchema = registry.register(
   "CreateVehicleCatalogInput",
   z.object({
-    categoryId: z.int().positive(),
     brandId: z.int().positive(),
     modelId: z.int().positive(),
     variant: z.string().trim().max(120).optional(),
