@@ -88,15 +88,32 @@ function toResponse(row: VehicleListingRow) {
   };
 }
 
+function formatYearRange(yearFrom: number | null, yearTo: number | null) {
+  if (yearFrom != null && yearTo != null) return `${yearFrom}–${yearTo}`;
+  if (yearFrom != null) return `${yearFrom}+`;
+  return `≤${yearTo}`;
+}
+
 async function assertRefsExist(input: {
   vehicleCatalogId: number;
   conditionId: number;
   statusId: number;
   colorId: number;
+  year: number;
 }) {
   const catalogEntry = await vehicleCatalogRepository.findById(input.vehicleCatalogId);
   if (!catalogEntry) {
     throw new ApiError(400, "მითითებული ტექნიკის კატალოგის ჩანაწერი არ არსებობს");
+  }
+
+  const outOfRange =
+    (catalogEntry.yearFrom != null && input.year < catalogEntry.yearFrom) ||
+    (catalogEntry.yearTo != null && input.year > catalogEntry.yearTo);
+  if (outOfRange) {
+    throw new ApiError(
+      400,
+      `წელი (${input.year}) არ ჯდება კატალოგის ჩანაწერის დასაშვებ დიაპაზონში (${formatYearRange(catalogEntry.yearFrom, catalogEntry.yearTo)})`,
+    );
   }
 
   const condition = await lookupsRepository.findById(
@@ -152,6 +169,7 @@ export async function updateVehicleListing(id: number, input: UpdateVehicleListi
     conditionId: input.conditionId ?? existing.condition.id,
     statusId: input.statusId ?? existing.status.id,
     colorId: input.colorId ?? existing.color.id,
+    year: input.year ?? existing.year,
   });
 
   const row = await vehicleListingRepository.update(id, input);
