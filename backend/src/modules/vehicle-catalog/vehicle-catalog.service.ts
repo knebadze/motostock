@@ -26,6 +26,11 @@ type VehicleCatalogRow = {
   cylinderCount: number | null;
   gearCount: number | null;
   seatCount: number | null;
+  weightKg: number | null;
+  seatHeightMm: number | null;
+  fuelTankLiters: { toString(): string } | null;
+  topSpeedKmh: number | null;
+  hasAbs: boolean | null;
   fuelType: LookupRow;
   transmissionType: LookupRow;
   coolingType: LookupRow;
@@ -64,6 +69,11 @@ function toResponse(row: VehicleCatalogRow) {
     cylinderCount: row.cylinderCount,
     gearCount: row.gearCount,
     seatCount: row.seatCount,
+    weightKg: row.weightKg,
+    seatHeightMm: row.seatHeightMm,
+    fuelTankLiters: row.fuelTankLiters != null ? Number(row.fuelTankLiters) : null,
+    topSpeedKmh: row.topSpeedKmh,
+    hasAbs: row.hasAbs,
     fuelType: row.fuelType,
     transmissionType: row.transmissionType,
     coolingType: row.coolingType,

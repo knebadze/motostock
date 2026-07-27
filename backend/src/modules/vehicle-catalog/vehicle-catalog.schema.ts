@@ -7,6 +7,7 @@ const optionalPositiveInt = z.int().positive().nullable().optional();
 const optionalYear = z.int().min(1900).max(2100).nullable().optional();
 const optionalDescription = z.string().max(5000).nullable().optional();
 const optionalBoolean = z.boolean().nullable().optional();
+const optionalPositiveDecimal = z.coerce.number().positive().nullable().optional();
 
 export const createVehicleCatalogSchema = registry.register(
   "CreateVehicleCatalogInput",
@@ -21,6 +22,11 @@ export const createVehicleCatalogSchema = registry.register(
     cylinderCount: optionalPositiveInt,
     gearCount: optionalPositiveInt,
     seatCount: optionalPositiveInt,
+    weightKg: optionalPositiveInt,
+    seatHeightMm: optionalPositiveInt,
+    fuelTankLiters: optionalPositiveDecimal,
+    topSpeedKmh: optionalPositiveInt,
+    hasAbs: optionalBoolean,
     fuelTypeId: optionalPositiveInt,
     transmissionTypeId: optionalPositiveInt,
     coolingTypeId: optionalPositiveInt,
@@ -67,6 +73,11 @@ export const vehicleCatalogResponseSchema = registry.register(
     cylinderCount: z.int().nullable(),
     gearCount: z.int().nullable(),
     seatCount: z.int().nullable(),
+    weightKg: z.int().nullable(),
+    seatHeightMm: z.int().nullable(),
+    fuelTankLiters: z.number().nullable(),
+    topSpeedKmh: z.int().nullable(),
+    hasAbs: z.boolean().nullable(),
     fuelType: lookupItemResponseSchema.nullable(),
     transmissionType: lookupItemResponseSchema.nullable(),
     coolingType: lookupItemResponseSchema.nullable(),

@@ -12,6 +12,11 @@ model VehicleCatalog {
   cylinderCount          Int?
   gearCount              Int?
   seatCount              Int?
+  weightKg               Int?
+  seatHeightMm           Int?
+  fuelTankLiters         Decimal?          @db.Decimal(4, 1)
+  topSpeedKmh            Int?
+  hasAbs                 Boolean?
   fuelTypeId             Int?
   fuelType               FuelType?         @relation(fields: [fuelTypeId], references: [id])
   transmissionTypeId     Int?

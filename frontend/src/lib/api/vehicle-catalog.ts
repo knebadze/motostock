@@ -21,6 +21,11 @@ export type VehicleCatalogEntry = {
   cylinderCount: number | null;
   gearCount: number | null;
   seatCount: number | null;
+  weightKg: number | null;
+  seatHeightMm: number | null;
+  fuelTankLiters: number | null;
+  topSpeedKmh: number | null;
+  hasAbs: boolean | null;
   fuelType: LookupItem | null;
   transmissionType: LookupItem | null;
   coolingType: LookupItem | null;
@@ -52,6 +57,11 @@ export type VehicleCatalogInput = {
   cylinderCount?: number | null;
   gearCount?: number | null;
   seatCount?: number | null;
+  weightKg?: number | null;
+  seatHeightMm?: number | null;
+  fuelTankLiters?: number | null;
+  topSpeedKmh?: number | null;
+  hasAbs?: boolean | null;
   fuelTypeId?: number | null;
   transmissionTypeId?: number | null;
   coolingTypeId?: number | null;

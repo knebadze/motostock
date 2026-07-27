@@ -53,6 +53,11 @@ const columns: DataTableColumn<VehicleCatalogEntry>[] = [
     cellClassName: "text-muted-foreground",
   },
   {
+    header: "წონა",
+    render: (entry) => (entry.weightKg ? `${entry.weightKg} კგ` : "—"),
+    cellClassName: "text-muted-foreground",
+  },
+  {
     header: "საწვავი",
     render: (entry) => entry.fuelType?.nameKa ?? "—",
     cellClassName: "text-muted-foreground",

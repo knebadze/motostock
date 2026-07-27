@@ -25,6 +25,11 @@ type VehicleCatalogWriteData = {
   cylinderCount?: number | null;
   gearCount?: number | null;
   seatCount?: number | null;
+  weightKg?: number | null;
+  seatHeightMm?: number | null;
+  fuelTankLiters?: number | null;
+  topSpeedKmh?: number | null;
+  hasAbs?: boolean | null;
   fuelTypeId?: number | null;
   transmissionTypeId?: number | null;
   coolingTypeId?: number | null;

@@ -25,6 +25,10 @@ function toNullableInt(value: string): number | null {
   return value.trim() === "" ? null : Number(value);
 }
 
+function toNullableFloat(value: string): number | null {
+  return value.trim() === "" ? null : Number(value);
+}
+
 function toInputValue(value: number | null | undefined): string {
   return value == null ? "" : String(value);
 }
@@ -84,6 +88,13 @@ export function VehicleCatalogFormModal({
   const [cylinderCount, setCylinderCount] = useState(toInputValue(entry?.cylinderCount));
   const [gearCount, setGearCount] = useState(toInputValue(entry?.gearCount));
   const [seatCount, setSeatCount] = useState(toInputValue(entry?.seatCount));
+  const [weightKg, setWeightKg] = useState(toInputValue(entry?.weightKg));
+  const [seatHeightMm, setSeatHeightMm] = useState(toInputValue(entry?.seatHeightMm));
+  const [fuelTankLiters, setFuelTankLiters] = useState(
+    entry?.fuelTankLiters != null ? String(entry.fuelTankLiters) : "",
+  );
+  const [topSpeedKmh, setTopSpeedKmh] = useState(toInputValue(entry?.topSpeedKmh));
+  const [hasAbs, setHasAbs] = useState(entry?.hasAbs ?? false);
   const [fuelTypeId, setFuelTypeId] = useState(toInputValue(entry?.fuelType?.id));
   const [transmissionTypeId, setTransmissionTypeId] = useState(
     toInputValue(entry?.transmissionType?.id),
@@ -219,6 +230,11 @@ export function VehicleCatalogFormModal({
         cylinderCount: toNullableInt(cylinderCount),
         gearCount: toNullableInt(gearCount),
         seatCount: toNullableInt(seatCount),
+        weightKg: toNullableInt(weightKg),
+        seatHeightMm: toNullableInt(seatHeightMm),
+        fuelTankLiters: toNullableFloat(fuelTankLiters),
+        topSpeedKmh: toNullableInt(topSpeedKmh),
+        hasAbs,
         fuelTypeId: toNullableInt(fuelTypeId),
         transmissionTypeId: toNullableInt(transmissionTypeId),
         coolingTypeId: toNullableInt(coolingTypeId),
@@ -469,6 +485,69 @@ export function VehicleCatalogFormModal({
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
           </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-5">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="vc-weight-kg" className="text-sm font-medium">
+              წონა (კგ)
+            </label>
+            <input
+              id="vc-weight-kg"
+              type="number"
+              value={weightKg}
+              onChange={(event) => setWeightKg(event.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="vc-seat-height" className="text-sm font-medium">
+              სავარძლის სიმაღლე (მმ)
+            </label>
+            <input
+              id="vc-seat-height"
+              type="number"
+              value={seatHeightMm}
+              onChange={(event) => setSeatHeightMm(event.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="vc-top-speed" className="text-sm font-medium">
+              მაქს. სიჩქარე (კმ/სთ)
+            </label>
+            <input
+              id="vc-top-speed"
+              type="number"
+              value={topSpeedKmh}
+              onChange={(event) => setTopSpeedKmh(event.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          {!isElectric && (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="vc-fuel-tank" className="text-sm font-medium">
+                საწვავის ავზი (ლ)
+              </label>
+              <input
+                id="vc-fuel-tank"
+                type="number"
+                step="0.1"
+                value={fuelTankLiters}
+                onChange={(event) => setFuelTankLiters(event.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+            </div>
+          )}
+          <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={hasAbs}
+              onChange={(event) => setHasAbs(event.target.checked)}
+              className="size-4 rounded border-border accent-primary"
+            />
+            ABS
+          </label>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
