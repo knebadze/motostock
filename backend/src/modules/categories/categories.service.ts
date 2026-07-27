@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { saveUploadedImage } from "../../lib/storage.js";
 import { categoriesRepository } from "./categories.repository.js";
 import type { CreateCategoryInput, UpdateCategoryInput } from "./categories.schema.js";
@@ -134,7 +135,17 @@ export async function deleteCategory(id: number) {
     throw new ApiError(400, "ჯერ წაშალეთ ან გადაანაცვლეთ შვილობილი კატეგორიები");
   }
 
-  await categoriesRepository.delete(id);
+  try {
+    await categoriesRepository.delete(id);
+  } catch (error) {
+    if (isForeignKeyViolation(error)) {
+      throw new ApiError(
+        400,
+        "კატეგორია გამოიყენება მოდელებში ან ტექნიკის კატალოგში, ჯერ წაშალეთ დამოკიდებული ჩანაწერები",
+      );
+    }
+    throw error;
+  }
 }
 
 export async function setCategoryImage(id: number, file: Express.Multer.File) {

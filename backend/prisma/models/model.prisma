@@ -3,7 +3,7 @@ model Model {
   brandId    Int
   brand      Brand            @relation(fields: [brandId], references: [id])
   categoryId Int
-  category   Category         @relation(fields: [categoryId], references: [id])
+  category   Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   nameKa     String
   nameEn     String
   nameRu     String
