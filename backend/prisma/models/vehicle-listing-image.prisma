@@ -6,5 +6,6 @@ model VehicleListingImage {
   position         Int
   createdAt        DateTime       @default(now())
 
+  @@index([vehicleListingId, position])
   @@schema("dbo")
 }

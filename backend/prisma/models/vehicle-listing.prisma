@@ -20,5 +20,9 @@ model VehicleListing {
   createdAt        DateTime                 @default(now())
   updatedAt        DateTime                 @updatedAt
 
+  @@index([vehicleCatalogId])
+  @@index([conditionId])
+  @@index([statusId])
+  @@index([colorId])
   @@schema("dbo")
 }

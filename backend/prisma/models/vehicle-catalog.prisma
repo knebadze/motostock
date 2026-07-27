@@ -40,5 +40,15 @@ model VehicleCatalog {
   createdAt              DateTime          @default(now())
   updatedAt              DateTime          @updatedAt
 
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([modelId])
+  @@index([fuelTypeId])
+  @@index([transmissionTypeId])
+  @@index([coolingTypeId])
+  @@index([finalDriveTypeId])
+  @@index([driveTypeId])
+  @@index([startTypeId])
+  @@index([powertrainTypeId])
   @@schema("dbo")
 }

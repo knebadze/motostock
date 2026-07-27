@@ -9,5 +9,6 @@ model VehicleListingDiscount {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
+  @@index([vehicleListingId, startDate, endDate])
   @@schema("dbo")
 }
