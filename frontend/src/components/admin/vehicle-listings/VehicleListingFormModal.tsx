@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Select } from "@/components/shared/Select";
+import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { RichTextEditor } from "@/components/shared/RichTextEditor";
 import { Toggle } from "@/components/shared/Toggle";
@@ -20,6 +21,8 @@ import type { LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError } from "@/lib/api/client";
 import { VehicleListingDiscountsPanel } from "./VehicleListingDiscountsPanel";
 import { VehicleListingImagesPanel } from "./VehicleListingImagesPanel";
+import { vehicleListingFormSchema } from "@/lib/validation/vehicle-listing";
+import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
 function vehicleCatalogLabel(entry: VehicleCatalogEntry): string {
   const year =
@@ -83,6 +86,7 @@ export function VehicleListingFormModal({
   const [descriptionEn, setDescriptionEn] = useState(listing?.descriptionEn ?? "");
   const [descriptionRu, setDescriptionRu] = useState(listing?.descriptionRu ?? "");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
   const pendingImageFilesRef = useRef<File[]>([]);
 
   const vehicleCatalogOptions = useMemo(
@@ -96,10 +100,21 @@ export function VehicleListingFormModal({
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
-    if (!vehicleCatalogId || !conditionId || !statusId || !colorId || !price || !year) {
-      toast.error("აირჩიეთ ტექნიკა, მდგომარეობა, სტატუსი, ფერი და მიუთითეთ წელი და ფასი");
+    const result = vehicleListingFormSchema.safeParse({
+      vehicleCatalogId,
+      conditionId,
+      statusId,
+      colorId,
+      year,
+      price,
+      stockQuantity,
+    });
+    if (!result.success) {
+      setErrors(getFieldErrors(result.error));
+      toast.error("გთხოვთ შეასწოროთ ველები");
       return;
     }
+    setErrors({});
 
     setLoading(true);
 
@@ -148,7 +163,7 @@ export function VehicleListingFormModal({
   const mainTabContent = (
     <>
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium">ტექნიკა</label>
+        <label className="text-sm font-medium">ტექნიკა *</label>
         <Select
           options={vehicleCatalogOptions}
           value={vehicleCatalogId}
@@ -156,50 +171,54 @@ export function VehicleListingFormModal({
           searchable
           placeholder="აირჩიეთ ტექნიკა კატალოგიდან"
         />
+        <FieldError message={errors.vehicleCatalogId} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">მდგომარეობა</label>
+          <label className="text-sm font-medium">მდგომარეობა *</label>
           <Select options={conditionOptions} value={conditionId} onChange={setConditionId} />
+          <FieldError message={errors.conditionId} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">სტატუსი</label>
+          <label className="text-sm font-medium">სტატუსი *</label>
           <Select options={statusOptions} value={statusId} onChange={setStatusId} />
+          <FieldError message={errors.statusId} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">ფერი</label>
+          <label className="text-sm font-medium">ფერი *</label>
           <Select options={colorOptions} value={colorId} onChange={setColorId} searchable />
+          <FieldError message={errors.colorId} />
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="vl-year" className="text-sm font-medium">
-            გამოშვების წელი
+            გამოშვების წელი *
           </label>
           <input
             id="vl-year"
             type="number"
-            required
             value={year}
             onChange={(event) => setYear(event.target.value)}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
+          <FieldError message={errors.year} />
         </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="vl-price" className="text-sm font-medium">
-            ფასი (₾)
+            ფასი (₾) *
           </label>
           <input
             id="vl-price"
             type="number"
             step="0.01"
-            required
             value={price}
             onChange={(event) => setPrice(event.target.value)}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
+          <FieldError message={errors.price} />
         </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="vl-stock" className="text-sm font-medium">
@@ -213,6 +232,7 @@ export function VehicleListingFormModal({
             onChange={(event) => setStockQuantity(event.target.value)}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
+          <FieldError message={errors.stockQuantity} />
         </div>
       </div>
 

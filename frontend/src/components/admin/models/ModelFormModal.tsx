@@ -5,12 +5,15 @@ import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Select } from "@/components/shared/Select";
 import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
+import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { createModel, updateModel, type Model } from "@/lib/api/models";
 import type { Brand } from "@/lib/api/brands";
 import type { Category } from "@/lib/api/categories";
 import { ApiRequestError } from "@/lib/api/client";
 import { flattenTree, slugify } from "@/lib/categories-tree";
+import { modelFormSchema } from "@/lib/validation/models";
+import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
 export function ModelFormModal({
   open,
@@ -41,6 +44,7 @@ export function ModelFormModal({
   const [slug, setSlug] = useState(model?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   const brandOptions = brands.map((brand) => ({ value: String(brand.id), label: brand.name.ka }));
   const categoryOptions = flatCategories.map((category) => ({
@@ -50,10 +54,20 @@ export function ModelFormModal({
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!brandId || !categoryId) {
-      toast.error("აირჩიეთ მარკა და ტიპი (კატეგორია)");
+
+    const result = modelFormSchema.safeParse({
+      brandId,
+      categoryId,
+      name: { ka: nameKa, en: nameEn, ru: nameRu },
+      slug,
+    });
+    if (!result.success) {
+      setErrors(getFieldErrors(result.error));
+      toast.error("გთხოვთ შეასწოროთ ველები");
       return;
     }
+    setErrors({});
+
     setLoading(true);
 
     try {
@@ -86,12 +100,13 @@ export function ModelFormModal({
     <Modal open={open} onClose={onClose} title={isEditing ? "მოდელის რედაქტირება" : "ახალი მოდელი"}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">მარკა</label>
+          <label className="text-sm font-medium">მარკა *</label>
           <Select options={brandOptions} value={brandId} onChange={setBrandId} searchable />
+          <FieldError message={errors.brandId} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">ტიპი (კატეგორია)</label>
+          <label className="text-sm font-medium">ტიპი (კატეგორია) *</label>
           <Select
             options={categoryOptions}
             value={categoryId}
@@ -99,6 +114,7 @@ export function ModelFormModal({
             searchable
             placeholder="აირჩიეთ ტიპი"
           />
+          <FieldError message={errors.categoryId} />
         </div>
 
         <LocalizedNameFields
@@ -112,15 +128,15 @@ export function ModelFormModal({
           onEnglishChange={(value) => {
             if (!slugTouched) setSlug(slugify(value));
           }}
+          errors={{ ka: errors["name.ka"], en: errors["name.en"], ru: errors["name.ru"] }}
         />
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="model-slug" className="text-sm font-medium">
-            Slug
+            Slug *
           </label>
           <input
             id="model-slug"
-            required
             value={slug}
             onChange={(event) => {
               setSlugTouched(true);
@@ -128,6 +144,7 @@ export function ModelFormModal({
             }}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
           />
+          <FieldError message={errors.slug} />
         </div>
 
         <FormActions onCancel={onClose} loading={loading} />

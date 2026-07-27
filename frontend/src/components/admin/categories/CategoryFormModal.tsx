@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Select } from "@/components/shared/Select";
 import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
+import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import {
   createCategory,
@@ -14,6 +15,8 @@ import {
 } from "@/lib/api/categories";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { getDescendantIds, slugify } from "@/lib/categories-tree";
+import { categoryFormSchema } from "@/lib/validation/categories";
+import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
 export function CategoryFormModal({
   open,
@@ -42,6 +45,7 @@ export function CategoryFormModal({
     resolveMediaUrl(category?.imageUrl ?? null),
   );
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   useEffect(() => {
     return () => {
@@ -65,6 +69,18 @@ export function CategoryFormModal({
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+
+    const result = categoryFormSchema.safeParse({
+      name: { ka: nameKa, en: nameEn, ru: nameRu },
+      slug,
+    });
+    if (!result.success) {
+      setErrors(getFieldErrors(result.error));
+      toast.error("გთხოვთ შეასწოროთ ველები");
+      return;
+    }
+    setErrors({});
+
     setLoading(true);
 
     try {
@@ -119,15 +135,15 @@ export function CategoryFormModal({
           onEnglishChange={(value) => {
             if (!slugTouched) setSlug(slugify(value));
           }}
+          errors={{ ka: errors["name.ka"], en: errors["name.en"], ru: errors["name.ru"] }}
         />
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="category-slug" className="text-sm font-medium">
-            Slug
+            Slug *
           </label>
           <input
             id="category-slug"
-            required
             value={slug}
             onChange={(event) => {
               setSlugTouched(true);
@@ -135,6 +151,7 @@ export function CategoryFormModal({
             }}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
           />
+          <FieldError message={errors.slug} />
         </div>
 
         <div className="flex flex-col gap-1.5">

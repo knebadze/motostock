@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
+import { FieldError } from "@/components/shared/FieldError";
 import {
   createVehicleListingDiscount,
   deleteVehicleListingDiscount,
@@ -11,6 +12,8 @@ import {
 } from "@/lib/api/vehicle-listing-discounts";
 import { ApiRequestError } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
+import { vehicleListingDiscountFormSchema } from "@/lib/validation/vehicle-listing-discounts";
+import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
 const columns: DataTableColumn<VehicleListingDiscount>[] = [
   {
@@ -40,6 +43,7 @@ export function VehicleListingDiscountsPanel({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [adding, setAdding] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -74,10 +78,18 @@ export function VehicleListingDiscountsPanel({
   }
 
   async function handleAdd() {
-    if (!discountPrice || !startDate || !endDate) {
-      toast.error("შეავსეთ ფასდაკლების ფასი და თარიღები");
+    const result = vehicleListingDiscountFormSchema.safeParse({
+      discountPrice,
+      discountPercent,
+      startDate,
+      endDate,
+    });
+    if (!result.success) {
+      setErrors(getFieldErrors(result.error));
+      toast.error("გთხოვთ შეასწოროთ ველები");
       return;
     }
+    setErrors({});
 
     setAdding(true);
     try {
@@ -91,6 +103,7 @@ export function VehicleListingDiscountsPanel({
       setDiscountPrice("");
       setStartDate("");
       setEndDate("");
+      setErrors({});
       await refresh();
       toast.success("ფასდაკლება დაემატა");
     } catch (error) {
@@ -136,41 +149,53 @@ export function VehicleListingDiscountsPanel({
       )}
 
       <div className="grid gap-3 sm:grid-cols-5">
-        <input
-          type="number"
-          min={0}
-          max={100}
-          step="0.01"
-          placeholder="ფასდაკლება (%)"
-          value={discountPercent}
-          onChange={(event) => handlePercentChange(event.target.value)}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-        />
-        <input
-          type="number"
-          step="0.01"
-          placeholder="ფასდაკლების ფასი"
-          value={discountPrice}
-          onChange={(event) => setDiscountPrice(event.target.value)}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-        />
-        <input
-          type="date"
-          value={startDate}
-          onChange={(event) => setStartDate(event.target.value)}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-        />
-        <input
-          type="date"
-          value={endDate}
-          onChange={(event) => setEndDate(event.target.value)}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-        />
+        <div className="flex flex-col gap-1.5">
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step="0.01"
+            placeholder="ფასდაკლება (%)"
+            value={discountPercent}
+            onChange={(event) => handlePercentChange(event.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.discountPercent} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <input
+            type="number"
+            step="0.01"
+            placeholder="ფასდაკლების ფასი *"
+            value={discountPrice}
+            onChange={(event) => setDiscountPrice(event.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.discountPrice} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(event) => setStartDate(event.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.startDate} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <input
+            type="date"
+            value={endDate}
+            onChange={(event) => setEndDate(event.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.endDate} />
+        </div>
         <button
           type="button"
           onClick={handleAdd}
           disabled={adding}
-          className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+          className="h-fit rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
         >
           + დამატება
         </button>

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Select, type SelectOption } from "@/components/shared/Select";
+import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { RichTextEditor } from "@/components/shared/RichTextEditor";
 import { Tabs } from "@/components/shared/Tabs";
@@ -20,6 +21,8 @@ import type { Model } from "@/lib/api/models";
 import type { LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { flattenTree } from "@/lib/categories-tree";
+import { vehicleCatalogFormSchema } from "@/lib/validation/vehicle-catalog";
+import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
 function toNullableInt(value: string): number | null {
   return value.trim() === "" ? null : Number(value);
@@ -127,6 +130,7 @@ export function VehicleCatalogFormModal({
     resolveMediaUrl(entry?.imageUrl ?? null),
   );
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   useEffect(() => {
     return () => {
@@ -211,10 +215,32 @@ export function VehicleCatalogFormModal({
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
-    if (!brandId || !modelId) {
-      toast.error("აირჩიეთ მარკა და მოდელი");
+    const result = vehicleCatalogFormSchema.safeParse({
+      brandId,
+      modelId,
+      variant,
+      yearFrom,
+      yearTo,
+      engineVolumeCc,
+      enginePowerHp,
+      cylinderCount,
+      gearCount,
+      seatCount,
+      weightKg,
+      seatHeightMm,
+      fuelTankLiters,
+      topSpeedKmh,
+      motorPowerWatt,
+      batteryCapacityWh,
+      rangeKm,
+      chargingTimeMinutes,
+    });
+    if (!result.success) {
+      setErrors(getFieldErrors(result.error));
+      toast.error("გთხოვთ შეასწოროთ ველები");
       return;
     }
+    setErrors({});
 
     setLoading(true);
 
@@ -293,7 +319,7 @@ export function VehicleCatalogFormModal({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">მარკა</label>
+            <label className="text-sm font-medium">მარკა *</label>
             <Select
               options={brandOptions}
               value={brandId}
@@ -301,9 +327,10 @@ export function VehicleCatalogFormModal({
               searchable
               placeholder="აირჩიეთ მარკა"
             />
+            <FieldError message={errors.brandId} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">მოდელი</label>
+            <label className="text-sm font-medium">მოდელი *</label>
             <Select
               options={modelOptions}
               value={modelId}
@@ -312,6 +339,7 @@ export function VehicleCatalogFormModal({
               disabled={!brandId}
               placeholder={brandId ? "აირჩიეთ მოდელი" : "ჯერ აირჩიეთ მარკა"}
             />
+            <FieldError message={errors.modelId} />
           </div>
         </div>
 
@@ -327,6 +355,7 @@ export function VehicleCatalogFormModal({
             placeholder="მაგ. ABS, Special Edition (არასავალდებულო)"
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
+          <FieldError message={errors.variant} />
           <p className="text-xs text-muted-foreground">
             გამოიყენეთ, თუ ერთი და იმავე მოდელის რამდენიმე კონფიგურაცია გაქვთ კატალოგში
             (განსხვავებული სპეც-მონაცემებით).
@@ -357,6 +386,7 @@ export function VehicleCatalogFormModal({
               onChange={(event) => setYearFrom(event.target.value)}
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
+            <FieldError message={errors.yearFrom} />
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="vc-year-to" className="text-sm font-medium">
@@ -369,6 +399,7 @@ export function VehicleCatalogFormModal({
               onChange={(event) => setYearTo(event.target.value)}
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
+            <FieldError message={errors.yearTo} />
           </div>
           {isElectric ? (
             <>
@@ -383,6 +414,7 @@ export function VehicleCatalogFormModal({
                   onChange={(event) => setMotorPowerWatt(event.target.value)}
                   className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
+                <FieldError message={errors.motorPowerWatt} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="vc-battery-wh" className="text-sm font-medium">
@@ -395,6 +427,7 @@ export function VehicleCatalogFormModal({
                   onChange={(event) => setBatteryCapacityWh(event.target.value)}
                   className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
+                <FieldError message={errors.batteryCapacityWh} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="vc-range-km" className="text-sm font-medium">
@@ -407,6 +440,7 @@ export function VehicleCatalogFormModal({
                   onChange={(event) => setRangeKm(event.target.value)}
                   className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
+                <FieldError message={errors.rangeKm} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="vc-charging-time" className="text-sm font-medium">
@@ -419,6 +453,7 @@ export function VehicleCatalogFormModal({
                   onChange={(event) => setChargingTimeMinutes(event.target.value)}
                   className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
+                <FieldError message={errors.chargingTimeMinutes} />
               </div>
             </>
           ) : (
@@ -434,6 +469,7 @@ export function VehicleCatalogFormModal({
                   onChange={(event) => setEngineVolumeCc(event.target.value)}
                   className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
+                <FieldError message={errors.engineVolumeCc} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="vc-power-hp" className="text-sm font-medium">
@@ -446,6 +482,7 @@ export function VehicleCatalogFormModal({
                   onChange={(event) => setEnginePowerHp(event.target.value)}
                   className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
+                <FieldError message={errors.enginePowerHp} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="vc-cylinders" className="text-sm font-medium">
@@ -458,6 +495,7 @@ export function VehicleCatalogFormModal({
                   onChange={(event) => setCylinderCount(event.target.value)}
                   className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
+                <FieldError message={errors.cylinderCount} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="vc-gears" className="text-sm font-medium">
@@ -470,6 +508,7 @@ export function VehicleCatalogFormModal({
                   onChange={(event) => setGearCount(event.target.value)}
                   className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
+                <FieldError message={errors.gearCount} />
               </div>
             </>
           )}
@@ -484,6 +523,7 @@ export function VehicleCatalogFormModal({
               onChange={(event) => setSeatCount(event.target.value)}
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
+            <FieldError message={errors.seatCount} />
           </div>
         </div>
 
@@ -499,6 +539,7 @@ export function VehicleCatalogFormModal({
               onChange={(event) => setWeightKg(event.target.value)}
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
+            <FieldError message={errors.weightKg} />
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="vc-seat-height" className="text-sm font-medium">
@@ -511,6 +552,7 @@ export function VehicleCatalogFormModal({
               onChange={(event) => setSeatHeightMm(event.target.value)}
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
+            <FieldError message={errors.seatHeightMm} />
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="vc-top-speed" className="text-sm font-medium">
@@ -523,6 +565,7 @@ export function VehicleCatalogFormModal({
               onChange={(event) => setTopSpeedKmh(event.target.value)}
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
+            <FieldError message={errors.topSpeedKmh} />
           </div>
           {!isElectric && (
             <div className="flex flex-col gap-1.5">
@@ -537,6 +580,7 @@ export function VehicleCatalogFormModal({
                 onChange={(event) => setFuelTankLiters(event.target.value)}
                 className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
               />
+              <FieldError message={errors.fuelTankLiters} />
             </div>
           )}
           <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium">

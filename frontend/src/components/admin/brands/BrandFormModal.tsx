@@ -4,10 +4,13 @@ import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
+import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { createBrand, updateBrand, uploadBrandLogo, type Brand } from "@/lib/api/brands";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { slugify } from "@/lib/categories-tree";
+import { brandFormSchema } from "@/lib/validation/brands";
+import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
 export function BrandFormModal({
   open,
@@ -31,6 +34,7 @@ export function BrandFormModal({
     resolveMediaUrl(brand?.logoUrl ?? null),
   );
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   useEffect(() => {
     return () => {
@@ -49,6 +53,18 @@ export function BrandFormModal({
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+
+    const result = brandFormSchema.safeParse({
+      name: { ka: nameKa, en: nameEn, ru: nameRu },
+      slug,
+    });
+    if (!result.success) {
+      setErrors(getFieldErrors(result.error));
+      toast.error("გთხოვთ შეასწოროთ ველები");
+      return;
+    }
+    setErrors({});
+
     setLoading(true);
 
     try {
@@ -96,15 +112,15 @@ export function BrandFormModal({
           onEnglishChange={(value) => {
             if (!slugTouched) setSlug(slugify(value));
           }}
+          errors={{ ka: errors["name.ka"], en: errors["name.en"], ru: errors["name.ru"] }}
         />
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="brand-slug" className="text-sm font-medium">
-            Slug
+            Slug *
           </label>
           <input
             id="brand-slug"
-            required
             value={slug}
             onChange={(event) => {
               setSlugTouched(true);
@@ -112,6 +128,7 @@ export function BrandFormModal({
             }}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
           />
+          <FieldError message={errors.slug} />
         </div>
 
         <div className="flex flex-col gap-1.5">
