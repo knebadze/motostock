@@ -20,6 +20,7 @@ type VehicleCatalogRow = {
   category: NamedRefRow;
   brand: NamedRefRow;
   model: NamedRefRow;
+  variant: string;
   yearFrom: number | null;
   yearTo: number | null;
   engineVolumeCc: number | null;
@@ -57,6 +58,7 @@ function toResponse(row: VehicleCatalogRow) {
     category: toNamedRef(row.category),
     brand: toNamedRef(row.brand),
     model: toNamedRef(row.model),
+    variant: row.variant,
     yearFrom: row.yearFrom,
     yearTo: row.yearTo,
     engineVolumeCc: row.engineVolumeCc,
@@ -161,10 +163,34 @@ export async function getVehicleCatalogEntry(id: number) {
   return toResponse(row);
 }
 
+async function assertNoDuplicate(params: {
+  modelId: number;
+  variant: string;
+  yearFrom: number | null;
+  yearTo: number | null;
+  excludeId?: number;
+}) {
+  const duplicate = await vehicleCatalogRepository.findDuplicate(params);
+  if (duplicate) {
+    throw new ApiError(
+      409,
+      "ამ მოდელის, ვარიანტისა და წლების კომბინაციით ჩანაწერი უკვე არსებობს",
+    );
+  }
+}
+
 export async function createVehicleCatalogEntry(input: CreateVehicleCatalogInput) {
   await assertRefsExist(input);
 
-  const row = await vehicleCatalogRepository.create(input);
+  const variant = input.variant ?? "";
+  await assertNoDuplicate({
+    modelId: input.modelId,
+    variant,
+    yearFrom: input.yearFrom ?? null,
+    yearTo: input.yearTo ?? null,
+  });
+
+  const row = await vehicleCatalogRepository.create({ ...input, variant });
   return toResponse(row);
 }
 
@@ -195,6 +221,14 @@ export async function updateVehicleCatalogEntry(id: number, input: UpdateVehicle
       input.powertrainTypeId !== undefined
         ? input.powertrainTypeId
         : existing.powertrainType?.id,
+  });
+
+  await assertNoDuplicate({
+    modelId: input.modelId ?? existing.model.id,
+    variant: input.variant ?? existing.variant,
+    yearFrom: input.yearFrom !== undefined ? input.yearFrom : existing.yearFrom,
+    yearTo: input.yearTo !== undefined ? input.yearTo : existing.yearTo,
+    excludeId: id,
   });
 
   const row = await vehicleCatalogRepository.update(id, input);

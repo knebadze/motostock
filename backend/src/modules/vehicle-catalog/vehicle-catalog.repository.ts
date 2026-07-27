@@ -19,6 +19,7 @@ type VehicleCatalogWriteData = {
   categoryId: number;
   brandId: number;
   modelId: number;
+  variant?: string;
   yearFrom?: number | null;
   yearTo?: number | null;
   engineVolumeCc?: number | null;
@@ -53,6 +54,24 @@ export const vehicleCatalogRepository = {
 
   findById(id: number) {
     return prisma.vehicleCatalog.findUnique({ where: { id }, include });
+  },
+
+  findDuplicate(params: {
+    modelId: number;
+    variant: string;
+    yearFrom: number | null;
+    yearTo: number | null;
+    excludeId?: number;
+  }) {
+    return prisma.vehicleCatalog.findFirst({
+      where: {
+        modelId: params.modelId,
+        variant: params.variant,
+        yearFrom: params.yearFrom,
+        yearTo: params.yearTo,
+        ...(params.excludeId != null ? { id: { not: params.excludeId } } : {}),
+      },
+    });
   },
 
   create(data: VehicleCatalogWriteData) {

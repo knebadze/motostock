@@ -34,7 +34,11 @@ const columns: DataTableColumn<VehicleCatalogEntry>[] = [
   },
   { header: "კატეგორია", render: (entry) => entry.category.name.ka },
   { header: "მარკა", render: (entry) => entry.brand.name.ka },
-  { header: "მოდელი", render: (entry) => entry.model.name.ka },
+  {
+    header: "მოდელი",
+    render: (entry) =>
+      entry.variant ? `${entry.model.name.ka} (${entry.variant})` : entry.model.name.ka,
+  },
   {
     header: "წელი",
     render: (entry) =>

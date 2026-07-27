@@ -74,6 +74,7 @@ export function VehicleCatalogFormModal({
   const [categoryId, setCategoryId] = useState(entry ? String(entry.category.id) : "");
   const [brandId, setBrandId] = useState(entry ? String(entry.brand.id) : "");
   const [modelId, setModelId] = useState(entry ? String(entry.model.id) : "");
+  const [variant, setVariant] = useState(entry?.variant ?? "");
   const [yearFrom, setYearFrom] = useState(toInputValue(entry?.yearFrom));
   const [yearTo, setYearTo] = useState(toInputValue(entry?.yearTo));
   const [engineVolumeCc, setEngineVolumeCc] = useState(toInputValue(entry?.engineVolumeCc));
@@ -192,6 +193,7 @@ export function VehicleCatalogFormModal({
         categoryId: Number(categoryId),
         brandId: Number(brandId),
         modelId: Number(modelId),
+        variant: variant.trim(),
         yearFrom: toNullableInt(yearFrom),
         yearTo: toNullableInt(yearTo),
         engineVolumeCc: toNullableInt(engineVolumeCc),
@@ -277,6 +279,24 @@ export function VehicleCatalogFormModal({
               placeholder={brandId ? "აირჩიეთ მოდელი" : "ჯერ აირჩიეთ მარკა"}
             />
           </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="vc-variant" className="text-sm font-medium">
+            ვარიანტი / კომპლექტაცია
+          </label>
+          <input
+            id="vc-variant"
+            type="text"
+            value={variant}
+            onChange={(event) => setVariant(event.target.value)}
+            placeholder="მაგ. ABS, Special Edition (არასავალდებულო)"
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <p className="text-xs text-muted-foreground">
+            გამოიყენეთ, თუ ერთი და იმავე მოდელის რამდენიმე კონფიგურაცია გაქვთ კატალოგში
+            (განსხვავებული სპეც-მონაცემებით).
+          </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">

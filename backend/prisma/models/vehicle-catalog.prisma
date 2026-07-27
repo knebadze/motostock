@@ -6,6 +6,7 @@ model VehicleCatalog {
   brand                  Brand             @relation(fields: [brandId], references: [id])
   modelId                Int
   model                  Model             @relation(fields: [modelId], references: [id])
+  variant                String            @default("")
   yearFrom               Int?
   yearTo                 Int?
   engineVolumeCc         Int?
@@ -40,6 +41,7 @@ model VehicleCatalog {
   createdAt              DateTime          @default(now())
   updatedAt              DateTime          @updatedAt
 
+  @@unique([modelId, variant, yearFrom, yearTo])
   @@index([categoryId])
   @@index([brandId])
   @@index([modelId])

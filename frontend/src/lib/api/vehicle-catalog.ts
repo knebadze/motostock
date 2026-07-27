@@ -13,6 +13,7 @@ export type VehicleCatalogEntry = {
   category: NamedRef;
   brand: NamedRef;
   model: NamedRef;
+  variant: string;
   yearFrom: number | null;
   yearTo: number | null;
   engineVolumeCc: number | null;
@@ -44,6 +45,7 @@ export type VehicleCatalogInput = {
   categoryId: number;
   brandId: number;
   modelId: number;
+  variant?: string;
   yearFrom?: number | null;
   yearTo?: number | null;
   engineVolumeCc?: number | null;
