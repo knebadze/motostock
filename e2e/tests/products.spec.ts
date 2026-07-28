@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "./helpers/auth";
 import { uniqueTestName } from "./helpers/fixtures";
+import { BASE_URL } from "../env.js";
 
 test("create product with variant matrix + SEO autofill, then cascade-delete it", async ({ page }) => {
   await loginAsAdmin(page);
@@ -57,7 +58,7 @@ test("create product with variant matrix + SEO autofill, then cascade-delete it"
   });
 
   await page.click('form button:has-text("შენახვა")');
-  await page.waitForURL("http://localhost:3000/admin/products", { timeout: 15_000 });
+  await page.waitForURL(`${BASE_URL}/admin/products`, { timeout: 15_000 });
 
   const row = page.locator(`table tbody tr:has-text("${nameKa}")`);
   await expect(row).toHaveCount(1);

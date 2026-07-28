@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { BASE_URL, BACKEND_URL, IS_LOCAL } from "./env.js";
 
 export default defineConfig({
   testDir: "./tests",
@@ -6,27 +7,30 @@ export default defineConfig({
   retries: 0,
   reporter: [["list"]],
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: BASE_URL,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  // Reuses the servers if they're already running (the usual dev workflow),
-  // otherwise starts them so `npm test` also works standalone/in CI.
-  webServer: [
-    {
-      command: "npm run dev",
-      cwd: "../backend",
-      port: 4000,
-      reuseExistingServer: true,
-      timeout: 30_000,
-    },
-    {
-      command: "npm run dev",
-      cwd: "../frontend",
-      port: 3000,
-      reuseExistingServer: true,
-      timeout: 30_000,
-    },
-  ],
+  // Only auto-starts local dev servers when targeting localhost (the usual
+  // dev workflow, reusing them if already running). Point E2E_BASE_URL at a
+  // deployed test server instead and this is skipped entirely.
+  webServer: IS_LOCAL
+    ? [
+        {
+          command: "npm run dev",
+          cwd: "../backend",
+          port: Number(new URL(BACKEND_URL).port),
+          reuseExistingServer: true,
+          timeout: 30_000,
+        },
+        {
+          command: "npm run dev",
+          cwd: "../frontend",
+          port: Number(new URL(BASE_URL).port),
+          reuseExistingServer: true,
+          timeout: 30_000,
+        },
+      ]
+    : undefined,
 });
