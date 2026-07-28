@@ -22,9 +22,8 @@ type VehicleListingRow = {
   id: number;
   vehicleCatalog: {
     id: number;
-    category: NamedRefRow;
     brand: NamedRefRow;
-    model: NamedRefRow;
+    model: NamedRefRow & { category: NamedRefRow };
     yearFrom: number | null;
     yearTo: number | null;
     imageUrl: string | null;
@@ -63,7 +62,7 @@ function toResponse(row: VehicleListingRow) {
     id: row.id,
     vehicleCatalog: {
       id: row.vehicleCatalog.id,
-      category: toNamedRef(row.vehicleCatalog.category),
+      category: toNamedRef(row.vehicleCatalog.model.category),
       brand: toNamedRef(row.vehicleCatalog.brand),
       model: toNamedRef(row.vehicleCatalog.model),
       yearFrom: row.vehicleCatalog.yearFrom,

@@ -5,9 +5,8 @@ const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slu
 const include = {
   vehicleCatalog: {
     include: {
-      category: { select: namedRefSelect },
       brand: { select: namedRefSelect },
-      model: { select: namedRefSelect },
+      model: { select: { ...namedRefSelect, category: { select: namedRefSelect } } },
     },
   },
   condition: true,
