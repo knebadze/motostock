@@ -27,6 +27,7 @@ import { productFitmentRouter } from "./modules/product-fitment/product-fitment.
 import { productVariantsRouter } from "./modules/product-variants/product-variants.routes.js";
 import { productVariantImagesRouter } from "./modules/product-variant-images/product-variant-images.routes.js";
 import { productVariantDiscountsRouter } from "./modules/product-variant-discounts/product-variant-discounts.routes.js";
+import { finaSyncRouter } from "./modules/fina-sync/fina-sync.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
 import { ROLES } from "./lib/roles.js";
@@ -68,6 +69,7 @@ app.use("/api/products/:productId/fitments", productFitmentRouter);
 app.use("/api/product-variants", productVariantsRouter);
 app.use("/api/product-variants/:variantId/discounts", productVariantDiscountsRouter);
 app.use("/api/product-variants/:variantId/images", productVariantImagesRouter);
+app.use("/api/fina-sync", finaSyncRouter);
 
 // registerPath() calls above already ran as a side effect of importing the
 // routers, so the registry is fully populated by the time this generates.

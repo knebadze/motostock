@@ -15,6 +15,7 @@ const include = {
 type ProductVariantWriteData = {
   productId: number;
   sku?: string | null;
+  finaId?: number | null;
   sizeId?: number | null;
   colorId?: number | null;
   price: number;
@@ -35,6 +36,10 @@ export const productVariantsRepository = {
 
   findById(id: number) {
     return prisma.productVariant.findUnique({ where: { id }, include });
+  },
+
+  findByFinaId(finaId: number) {
+    return prisma.productVariant.findUnique({ where: { finaId }, select: { id: true } });
   },
 
   create(data: ProductVariantWriteData) {

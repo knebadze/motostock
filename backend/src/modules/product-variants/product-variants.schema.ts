@@ -10,6 +10,7 @@ export const createProductVariantSchema = registry.register(
   z.object({
     productId: z.int().positive(),
     sku: z.string().trim().max(100).nullable().optional(),
+    finaId: z.int().positive().nullable().optional(),
     sizeId: z.int().positive().nullable().optional(),
     colorId: z.int().positive().nullable().optional(),
     price: z.coerce.number().positive().openapi({ example: 89.99 }),
@@ -44,6 +45,7 @@ export const productVariantResponseSchema = registry.register(
     id: z.int().openapi({ example: 1 }),
     product: productRefSchema,
     sku: z.string().nullable(),
+    finaId: z.int().nullable(),
     size: lookupItemResponseSchema.nullable(),
     color: lookupItemResponseSchema.nullable(),
     price: z.number().openapi({ example: 89.99 }),

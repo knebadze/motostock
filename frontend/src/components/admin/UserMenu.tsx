@@ -80,6 +80,16 @@ export function UserMenu({ userName }: { userName: string }) {
           </li>
           <li>
             <Link
+              href="/admin/fina-sync"
+              onClick={() => setOpen(false)}
+              role="menuitem"
+              className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+            >
+              FINA სინქრონიზაცია
+            </Link>
+          </li>
+          <li>
+            <Link
               href="/admin/change-password"
               onClick={() => setOpen(false)}
               role="menuitem"

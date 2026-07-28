@@ -13,6 +13,7 @@ import type { VehicleListing } from "./vehicle-listings";
 import type { Attribute } from "./attributes";
 import type { ProductBrand } from "./product-brands";
 import type { Product } from "./products";
+import type { FinaSyncRun } from "./fina-sync";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -58,6 +59,20 @@ export async function getSettingsFromServer(): Promise<Settings> {
     return data.settings;
   } catch {
     return fallback;
+  }
+}
+
+export async function getFinaSyncRunsFromServer(): Promise<FinaSyncRun[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ runs: FinaSyncRun[] }>("/fina-sync/runs", {
+      headers,
+    });
+    return data.runs;
+  } catch {
+    return [];
   }
 }
 

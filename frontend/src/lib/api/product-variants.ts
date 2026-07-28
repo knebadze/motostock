@@ -8,6 +8,7 @@ export type ProductVariant = {
   id: number;
   product: { id: number; name: LocalizedString };
   sku: string | null;
+  finaId: number | null;
   size: LookupItem | null;
   color: LookupItem | null;
   price: number;
@@ -25,6 +26,7 @@ export type ProductVariant = {
 export type ProductVariantInput = {
   productId: number;
   sku?: string | null;
+  finaId?: number | null;
   sizeId?: number | null;
   colorId?: number | null;
   price: number;

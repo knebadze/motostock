@@ -11,6 +11,12 @@ const envSchema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
+  FINA_BASE_URL: z.string().optional(),
+  FINA_LOGIN: z.string().optional(),
+  FINA_PASSWORD: z.string().optional(),
+  FINA_TENANT_KEY: z.string().optional(),
+  FINA_STORE: z.string().optional(),
+  FINA_SYNC_INTERVAL_MINUTES: z.coerce.number().int().positive().default(15),
 });
 
 const parsed = envSchema.safeParse(process.env);

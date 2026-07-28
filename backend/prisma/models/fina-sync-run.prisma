@@ -1,0 +1,31 @@
+enum FinaSyncTrigger {
+  SCHEDULED
+  MANUAL
+
+  @@schema("dbo")
+}
+
+enum FinaSyncStatus {
+  SUCCESS
+  FAILED
+  PARTIAL
+
+  @@schema("dbo")
+}
+
+model FinaSyncRun {
+  id              Int             @id @default(autoincrement())
+  trigger         FinaSyncTrigger
+  status          FinaSyncStatus
+  startedAt       DateTime        @default(now())
+  finishedAt      DateTime?
+  variantsChecked Int             @default(0)
+  variantsUpdated Int             @default(0)
+  errorMessage    String?
+  triggeredById   Int?
+  triggeredBy     User?           @relation(fields: [triggeredById], references: [id], onDelete: SetNull)
+
+  @@index([startedAt])
+  @@index([triggeredById])
+  @@schema("dbo")
+}

@@ -46,6 +46,7 @@ const EMPTY_EDIT_FORM = {
   price: "",
   stockQuantity: "1",
   sku: "",
+  finaId: "",
   isActive: true,
 };
 
@@ -159,6 +160,7 @@ export function ProductVariantsPanel({
       price: String(variant.price),
       stockQuantity: String(variant.stockQuantity),
       sku: variant.sku ?? "",
+      finaId: variant.finaId != null ? String(variant.finaId) : "",
       isActive: variant.isActive,
     });
     setErrors({});
@@ -194,6 +196,7 @@ export function ProductVariantsPanel({
         price: Number(editForm.price),
         stockQuantity: editForm.stockQuantity ? Number(editForm.stockQuantity) : undefined,
         sku: editForm.sku.trim() ? editForm.sku.trim() : null,
+        finaId: editForm.finaId.trim() ? Number(editForm.finaId) : null,
         isActive: editForm.isActive,
       });
       handleCancelEdit();
@@ -227,6 +230,11 @@ export function ProductVariantsPanel({
         ),
     },
     { header: "მარაგი", render: (variant) => variant.stockQuantity },
+    {
+      header: "FINA ID",
+      render: (variant) => variant.finaId ?? "—",
+      cellClassName: "font-mono text-muted-foreground",
+    },
     { header: "სტატუსი", render: (variant) => variant.status?.nameKa ?? "—", cellClassName: "text-muted-foreground" },
     {
       header: "აქტიური",
@@ -328,6 +336,16 @@ export function ProductVariantsPanel({
                 type="text"
                 value={editForm.sku}
                 onChange={(event) => setEditForm((prev) => ({ ...prev, sku: event.target.value }))}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground">FINA ID</label>
+              <input
+                type="number"
+                value={editForm.finaId}
+                onChange={(event) => setEditForm((prev) => ({ ...prev, finaId: event.target.value }))}
+                placeholder="მარაგის სინქრონიზაციისთვის"
                 className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
               />
             </div>

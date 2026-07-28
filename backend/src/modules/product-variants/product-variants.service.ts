@@ -22,6 +22,7 @@ type ProductVariantRow = {
   id: number;
   product: { id: number; nameKa: string; nameEn: string; nameRu: string };
   sku: string | null;
+  finaId: number | null;
   size: LookupRow;
   color: LookupRow;
   price: { toString(): string };
@@ -53,6 +54,7 @@ function toResponse(row: ProductVariantRow) {
     id: row.id,
     product: toProductRef(row.product),
     sku: row.sku,
+    finaId: row.finaId,
     size: row.size,
     color: row.color,
     price: Number(row.price),
@@ -111,8 +113,17 @@ export async function getProductVariant(id: number) {
   return toResponse(row);
 }
 
+async function assertFinaIdAvailable(finaId: number | null | undefined, excludeId?: number) {
+  if (finaId == null) return;
+  const existing = await productVariantsRepository.findByFinaId(finaId);
+  if (existing && existing.id !== excludeId) {
+    throw new ApiError(409, "ეს FINA ID უკვე გამოყენებულია სხვა ვარიანტზე");
+  }
+}
+
 export async function createProductVariant(input: CreateProductVariantInput) {
   await assertRefsExist(input);
+  await assertFinaIdAvailable(input.finaId);
 
   const row = await productVariantsRepository.create(input);
   return toResponse(row);
@@ -122,6 +133,10 @@ export async function updateProductVariant(id: number, input: UpdateProductVaria
   const existing = await productVariantsRepository.findById(id);
   if (!existing) {
     throw new ApiError(404, "ვარიანტი ვერ მოიძებნა");
+  }
+
+  if (input.finaId !== undefined) {
+    await assertFinaIdAvailable(input.finaId, id);
   }
 
   await assertRefsExist({
