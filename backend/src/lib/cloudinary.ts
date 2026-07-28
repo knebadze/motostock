@@ -9,13 +9,23 @@ cloudinary.config({
   secure: true,
 });
 
+const MAX_DIMENSION = 1600;
+
 export function uploadBufferToCloudinary(
   buffer: Buffer,
   folder: string,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder: `motostock/${folder}` },
+      {
+        folder: `motostock/${folder}`,
+        // Resize only if larger than MAX_DIMENSION (never upscale), then let
+        // Cloudinary pick the best compression/format per requesting browser.
+        transformation: [
+          { width: MAX_DIMENSION, height: MAX_DIMENSION, crop: "limit" },
+          { quality: "auto:good", fetch_format: "auto" },
+        ],
+      },
       (error, result) => {
         if (error || !result) {
           reject(new ApiError(502, "სურათის ატვირთვა ღრუბლოვან სერვისზე ვერ მოხერხდა"));
