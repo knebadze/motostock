@@ -27,16 +27,18 @@ function lookupOptions(items: LookupItem[]) {
   return items.map((item) => ({ value: String(item.id), label: item.nameKa }));
 }
 
-const EMPTY_ADD_FORM = {
-  sizeIds: [] as string[],
-  colorIds: [] as string[],
-  conditionId: "",
-  statusId: "",
-  price: "",
-  stockQuantity: "1",
-  sku: "",
-  isActive: true,
-};
+function getDefaultAddForm(conditions: LookupItem[], statuses: LookupItem[]) {
+  return {
+    sizeIds: [] as string[],
+    colorIds: [] as string[],
+    conditionId: String(conditions.find((c) => c.key === "NEW")?.id ?? ""),
+    statusId: String(statuses.find((s) => s.key === "AVAILABLE")?.id ?? ""),
+    price: "",
+    stockQuantity: "1",
+    sku: "",
+    isActive: true,
+  };
+}
 
 const EMPTY_EDIT_FORM = {
   sizeId: "",
@@ -68,7 +70,7 @@ export function ProductVariantsPanel({
   const [managingVariant, setManagingVariant] = useState<ProductVariant | null>(null);
   const [deletingVariant, setDeletingVariant] = useState<ProductVariant | null>(null);
 
-  const [addForm, setAddForm] = useState(EMPTY_ADD_FORM);
+  const [addForm, setAddForm] = useState(() => getDefaultAddForm(conditions, statuses));
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
 
@@ -136,7 +138,7 @@ export function ProductVariantsPanel({
           isActive: addForm.isActive,
         });
       }
-      setAddForm(EMPTY_ADD_FORM);
+      setAddForm(getDefaultAddForm(conditions, statuses));
       await refresh();
       toast.success(
         combinations.length > 1 ? `${combinations.length} ვარიანტი დაემატა` : "ვარიანტი დაემატა",

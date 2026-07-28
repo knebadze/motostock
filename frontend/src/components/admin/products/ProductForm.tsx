@@ -259,8 +259,12 @@ export function ProductForm({
   // ProductVariantsPanel (edit mode) instead.
   const [initialSizeIds, setInitialSizeIds] = useState<string[]>([]);
   const [initialColorIds, setInitialColorIds] = useState<string[]>([]);
-  const [initialConditionId, setInitialConditionId] = useState("");
-  const [initialStatusId, setInitialStatusId] = useState("");
+  const [initialConditionId, setInitialConditionId] = useState(() =>
+    product ? "" : String(conditions.find((c) => c.key === "NEW")?.id ?? ""),
+  );
+  const [initialStatusId, setInitialStatusId] = useState(() =>
+    product ? "" : String(statuses.find((s) => s.key === "AVAILABLE")?.id ?? ""),
+  );
   const [initialBasePrice, setInitialBasePrice] = useState("");
   const [initialBaseStockQuantity, setInitialBaseStockQuantity] = useState("1");
   const [initialBaseSku, setInitialBaseSku] = useState("");
