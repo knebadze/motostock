@@ -16,7 +16,9 @@ test("create product with variant matrix + SEO autofill, then cascade-delete it"
   await page.click('button:has-text("აირჩიეთ კატეგორია")');
   await page.fill('input[placeholder="ძებნა..."]', "ჩაფხუტები").catch(() => {});
   await page.waitForTimeout(300);
-  await page.getByRole("option", { name: "— ჩაფხუტები" }).first().click();
+  // "ჩაფხუტები" is a top-level category (no "— " depth prefix) since the
+  // category tree was restructured to pull it out from under "ეკიპირება".
+  await page.getByRole("option", { name: "ჩაფხუტები", exact: true }).first().click();
   await page.waitForTimeout(300);
 
   await page.fill("#product-name-ka", nameKa);

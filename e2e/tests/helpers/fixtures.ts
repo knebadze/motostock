@@ -4,3 +4,7 @@
 export function uniqueTestName(label: string): string {
   return `E2E ${label} ${Date.now()}`;
 }
+
+export function uniqueTestEmail(): string {
+  return `e2e-${Date.now()}@example.com`;
+}

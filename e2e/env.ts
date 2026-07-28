@@ -12,6 +12,11 @@ config({ quiet: true });
 export const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 export const BACKEND_URL = process.env.E2E_BACKEND_URL ?? "http://localhost:4000";
 
+// Only used by test-teardown helpers (e.g. deleting a test-created customer
+// account) that need to reach the DB directly — the tests themselves always
+// drive the real HTTP API/UI, never the DB, for anything else.
+export const DATABASE_URL = process.env.DATABASE_URL;
+
 // Local dev servers only get auto-started when no override was given. Once
 // E2E_BASE_URL points at a real (test/staging) server, that server is
 // managed on its own — the suite should never try to spawn `npm run dev`
