@@ -137,12 +137,36 @@ const PRODUCT_CATEGORY_TREE: CategorySeed[] = [
     nameEn: "Gear",
     nameRu: "Экипировка",
     children: [
-      { slug: "helmets", nameKa: "ჩაფხუტები", nameEn: "Helmets", nameRu: "Шлемы" },
       { slug: "jackets", nameKa: "ქურთუკები", nameEn: "Jackets", nameRu: "Куртки" },
       { slug: "gloves", nameKa: "ხელთათმანები", nameEn: "Gloves", nameRu: "Перчатки" },
       { slug: "boots", nameKa: "ჩექმები", nameEn: "Boots", nameRu: "Ботинки" },
       { slug: "protection", nameKa: "დამცავები", nameEn: "Protection", nameRu: "Защита" },
       { slug: "rain-gear", nameKa: "წვიმის ეკიპირება", nameEn: "Rain Gear", nameRu: "Дождевая экипировка" },
+    ],
+  },
+  {
+    slug: "helmets",
+    nameKa: "ჩაფხუტები",
+    nameEn: "Helmets",
+    nameRu: "Шлемы",
+    children: [
+      { slug: "helmet-enduro", nameKa: "ენდურო", nameEn: "Enduro", nameRu: "Эндуро" },
+      { slug: "helmet-full-face", nameKa: "დახურული", nameEn: "Full-Face", nameRu: "Закрытый" },
+      { slug: "helmet-open-face", nameKa: "ღია", nameEn: "Open-Face", nameRu: "Открытый" },
+      { slug: "helmet-modular", nameKa: "მოდულარული ჩაფხუტი", nameEn: "Modular Helmet", nameRu: "Модульный шлем" },
+      { slug: "helmet-visor", nameKa: "ვიზორი", nameEn: "Visor", nameRu: "Визор" },
+    ],
+  },
+  {
+    slug: "transport",
+    nameKa: "ტრანსპორტი",
+    nameEn: "Transport",
+    nameRu: "Транспорт",
+    children: [
+      { slug: "motorcycles", nameKa: "მოტოციკლი", nameEn: "Motorcycle", nameRu: "Мотоцикл" },
+      { slug: "atvs", nameKa: "კვადროციკლი", nameEn: "ATV", nameRu: "Квадроцикл" },
+      { slug: "scooters", nameKa: "სკუტერი", nameEn: "Scooter", nameRu: "Скутер" },
+      { slug: "kick-scooters", nameKa: "სქროლი", nameEn: "Kick Scooter", nameRu: "Самокат" },
     ],
   },
   {
