@@ -41,7 +41,11 @@
     "loginError": "Не удалось войти",
     "registerError": "Регистрация не удалась",
     "invalidCredentials": "Неверный email или пароль",
-    "emailInUse": "Аккаунт с такой почтой уже существует"
+    "emailInUse": "Аккаунт с такой почтой уже существует",
+    "orContinueWith": "или",
+    "continueWithGoogle": "Продолжить через Google",
+    "continueWithFacebook": "Продолжить через Facebook",
+    "oauthError": "Не удалось войти, попробуйте ещё раз"
   },
   "Home": {
     "heroTitle": "Экипировка, которой можно доверять на <hl>дороге</hl>",

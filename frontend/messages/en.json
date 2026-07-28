@@ -41,7 +41,11 @@
     "loginError": "Log in failed",
     "registerError": "Registration failed",
     "invalidCredentials": "Incorrect email or password",
-    "emailInUse": "An account with this email already exists"
+    "emailInUse": "An account with this email already exists",
+    "orContinueWith": "or",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithFacebook": "Continue with Facebook",
+    "oauthError": "Sign-in failed, please try again"
   },
   "Home": {
     "heroTitle": "Gear you can trust on the <hl>road</hl>",

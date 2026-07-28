@@ -6,7 +6,7 @@ export const apiClient = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/api\/?$/, "");
+export const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/api\/?$/, "");
 
 export function resolveMediaUrl(path: string | null): string | null {
   if (!path) return null;

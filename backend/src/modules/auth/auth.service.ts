@@ -6,7 +6,7 @@ import { usersRepository } from "../users/users.repository.js";
 import { rolesRepository } from "../roles/roles.repository.js";
 import type { LoginInput, RegisterInput } from "./auth.schema.js";
 
-function toSafeUser(user: {
+export function toSafeUser(user: {
   id: number;
   email: string;
   name: string;
@@ -47,7 +47,9 @@ export async function registerUser(input: RegisterInput) {
 
 export async function loginUser(input: LoginInput) {
   const user = await usersRepository.findByEmail(input.email);
-  if (!user) {
+  if (!user || !user.passwordHash) {
+    // No such user, or an OAuth-only account with no password of its own —
+    // same generic error either way, so we don't leak which case it is.
     throw new ApiError(401, "Invalid email or password");
   }
 

@@ -41,7 +41,11 @@
     "loginError": "შესვლა ვერ მოხერხდა",
     "registerError": "რეგისტრაცია ვერ მოხერხდა",
     "invalidCredentials": "ელფოსტა ან პაროლი არასწორია",
-    "emailInUse": "ამ ელფოსტით ანგარიში უკვე არსებობს"
+    "emailInUse": "ამ ელფოსტით ანგარიში უკვე არსებობს",
+    "orContinueWith": "ან",
+    "continueWithGoogle": "გაგრძელება Google-ით",
+    "continueWithFacebook": "გაგრძელება Facebook-ით",
+    "oauthError": "ავტორიზაცია ვერ მოხერხდა, სცადეთ ხელახლა"
   },
   "Home": {
     "heroTitle": "აღჭურვილობა, რომელიც <hl>გზაზე</hl> გენდობა",

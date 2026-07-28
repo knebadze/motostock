@@ -1,18 +1,32 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { loginUser } from "@/lib/api/auth";
 import { ApiRequestError } from "@/lib/api/client";
+import { OAuthButtons } from "@/components/shared/OAuthButtons";
 
 export function LoginForm() {
   const t = useTranslations("Auth");
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("error") === "oauth_failed") {
+      toast.error(t("oauthError"));
+      router.replace(pathname);
+    }
+    // Only meant to run once, reacting to the initial query param — re-running
+    // on every pathname/router identity change would re-fire the toast.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -83,6 +97,8 @@ export function LoginForm() {
         >
           {loading ? t("loginSubmitting") : t("loginSubmit")}
         </button>
+
+        <OAuthButtons />
 
         <p className="text-center text-sm text-muted-foreground">
           {t("noAccount")}{" "}

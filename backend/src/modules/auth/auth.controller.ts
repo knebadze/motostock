@@ -5,7 +5,7 @@ import { AUTH_COOKIE_NAME } from "../../lib/jwt.js";
 import { loginUser, registerUser } from "./auth.service.js";
 import type { LoginInput, RegisterInput } from "./auth.schema.js";
 
-function setAuthCookie(res: Response, token: string) {
+export function setAuthCookie(res: Response, token: string) {
   res.cookie(AUTH_COOKIE_NAME, token, {
     httpOnly: true,
     secure: env.NODE_ENV === "production",

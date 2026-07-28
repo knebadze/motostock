@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import { registerUser } from "@/lib/api/auth";
 import { ApiRequestError } from "@/lib/api/client";
+import { OAuthButtons } from "@/components/shared/OAuthButtons";
 
 export function RegisterForm() {
   const t = useTranslations("Auth");
@@ -124,6 +125,8 @@ export function RegisterForm() {
         >
           {loading ? t("registerSubmitting") : t("registerSubmit")}
         </button>
+
+        <OAuthButtons />
 
         <p className="text-center text-sm text-muted-foreground">
           {t("haveAccount")}{" "}
