@@ -5,12 +5,7 @@ import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { getFinaSyncRuns, triggerFinaSync, type FinaSyncRun } from "@/lib/api/fina-sync";
 import { ApiRequestError } from "@/lib/api/client";
-
-function formatDateTime(iso: string): string {
-  const date = new Date(iso);
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
+import { formatDateTime } from "@/lib/format";
 
 const TRIGGER_LABEL: Record<FinaSyncRun["trigger"], string> = {
   SCHEDULED: "ავტომატური",

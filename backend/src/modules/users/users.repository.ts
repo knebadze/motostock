@@ -9,6 +9,13 @@ export const usersRepository = {
     return prisma.user.findUnique({ where: { id }, include: { role: true } });
   },
 
+  findMany() {
+    return prisma.user.findMany({
+      include: { role: true },
+      orderBy: { createdAt: "desc" },
+    });
+  },
+
   findByGoogleId(googleId: string) {
     return prisma.user.findUnique({ where: { googleId }, include: { role: true } });
   },

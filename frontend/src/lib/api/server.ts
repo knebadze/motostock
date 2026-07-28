@@ -14,6 +14,7 @@ import type { Attribute } from "./attributes";
 import type { ProductBrand } from "./product-brands";
 import type { Product } from "./products";
 import type { FinaSyncRun } from "./fina-sync";
+import type { AdminUser } from "./users";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -59,6 +60,18 @@ export async function getSettingsFromServer(): Promise<Settings> {
     return data.settings;
   } catch {
     return fallback;
+  }
+}
+
+export async function getUsersFromServer(): Promise<AdminUser[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ users: AdminUser[] }>("/users", { headers });
+    return data.users;
+  } catch {
+    return [];
   }
 }
 

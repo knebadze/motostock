@@ -8,6 +8,7 @@ import {
   listingIcon,
   modelsIcon,
   productsIcon,
+  usersIcon,
   vehicleCatalogIcon,
 } from "./admin-nav-icons";
 
@@ -27,6 +28,7 @@ export const adminNav: AdminNavSection[] = [
     label: "მთავარი",
     items: [
       { label: "დეშბორდი", href: "/admin", icon: dashboardIcon },
+      { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon },
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },
     ],
   },

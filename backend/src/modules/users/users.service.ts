@@ -16,3 +16,18 @@ export async function getUserById(id: number) {
     role: user.role.name,
   };
 }
+
+export async function listUsers() {
+  const users = await usersRepository.findMany();
+
+  return users.map((user) => ({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role.name,
+    hasPassword: user.passwordHash != null,
+    hasGoogle: user.googleId != null,
+    hasFacebook: user.facebookId != null,
+    createdAt: user.createdAt,
+  }));
+}
