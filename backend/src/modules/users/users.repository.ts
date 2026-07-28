@@ -50,4 +50,8 @@ export const usersRepository = {
   linkFacebookId(id: number, facebookId: string) {
     return prisma.user.update({ where: { id }, data: { facebookId }, include: { role: true } });
   },
+
+  updatePasswordHash(id: number, passwordHash: string) {
+    return prisma.user.update({ where: { id }, data: { passwordHash }, include: { role: true } });
+  },
 };

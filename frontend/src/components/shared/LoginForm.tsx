@@ -88,6 +88,12 @@ export function LoginForm() {
             onChange={(event) => setPassword(event.target.value)}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
+          <Link
+            href="/forgot-password"
+            className="self-end text-xs font-medium text-primary hover:underline"
+          >
+            {t("forgotPasswordLink")}
+          </Link>
         </div>
 
         <button

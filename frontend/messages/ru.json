@@ -45,7 +45,22 @@
     "orContinueWith": "или",
     "continueWithGoogle": "Продолжить через Google",
     "continueWithFacebook": "Продолжить через Facebook",
-    "oauthError": "Не удалось войти, попробуйте ещё раз"
+    "oauthError": "Не удалось войти, попробуйте ещё раз",
+    "forgotPasswordLink": "Забыли пароль?",
+    "forgotPasswordTitle": "Восстановление пароля",
+    "forgotPasswordDescription": "Введите email вашего аккаунта — вышлем ссылку для сброса пароля.",
+    "forgotPasswordSubmit": "Отправить ссылку",
+    "forgotPasswordSubmitting": "Отправка...",
+    "forgotPasswordSent": "Если этот email зарегистрирован, ссылка для сброса пароля отправлена. Проверьте почту.",
+    "forgotPasswordError": "Не удалось отправить запрос, попробуйте ещё раз",
+    "backToLogin": "Вернуться ко входу",
+    "resetPasswordTitle": "Новый пароль",
+    "newPasswordLabel": "Новый пароль",
+    "resetPasswordSubmit": "Сохранить пароль",
+    "resetPasswordSubmitting": "Сохранение...",
+    "resetPasswordInvalidToken": "Ссылка недействительна или срок её действия истёк",
+    "resetPasswordMissingToken": "Неверная ссылка — используйте ссылку из письма",
+    "backToForgotPassword": "Запросить новую ссылку"
   },
   "Home": {
     "heroTitle": "Экипировка, которой можно доверять на <hl>дороге</hl>",

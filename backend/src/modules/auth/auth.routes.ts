@@ -4,8 +4,13 @@ import { validate } from "../../middleware/validate.middleware.js";
 import { authRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema, userResponseSchema } from "../../docs/schemas.js";
-import { login, logout, register } from "./auth.controller.js";
-import { loginSchema, registerSchema } from "./auth.schema.js";
+import { forgotPassword, login, logout, register, resetPasswordHandler } from "./auth.controller.js";
+import {
+  forgotPasswordSchema,
+  loginSchema,
+  registerSchema,
+  resetPasswordSchema,
+} from "./auth.schema.js";
 
 export const authRouter = Router();
 
@@ -17,6 +22,18 @@ authRouter.post(
 );
 authRouter.post("/login", authRateLimit, validate(loginSchema), login);
 authRouter.post("/logout", logout);
+authRouter.post(
+  "/forgot-password",
+  authRateLimit,
+  validate(forgotPasswordSchema),
+  forgotPassword,
+);
+authRouter.post(
+  "/reset-password",
+  authRateLimit,
+  validate(resetPasswordSchema),
+  resetPasswordHandler,
+);
 
 registry.registerPath({
   method: "post",
@@ -69,5 +86,45 @@ registry.registerPath({
   summary: "Clear the session cookie",
   responses: {
     204: { description: "Logged out" },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/auth/forgot-password",
+  tags: ["Auth"],
+  summary: "Request a password reset email",
+  request: {
+    body: { content: { "application/json": { schema: forgotPasswordSchema } } },
+  },
+  responses: {
+    200: {
+      description: "Same response whether or not the email is registered, to avoid leaking account existence",
+      content: { "application/json": { schema: z.object({ message: z.string() }) } },
+    },
+    400: {
+      description: "Email sending is not configured",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/auth/reset-password",
+  tags: ["Auth"],
+  summary: "Reset password using a token from the reset email",
+  request: {
+    body: { content: { "application/json": { schema: resetPasswordSchema } } },
+  },
+  responses: {
+    200: {
+      description: "Password reset; session cookie set",
+      content: { "application/json": { schema: z.object({ user: userResponseSchema }) } },
+    },
+    400: {
+      description: "Token invalid or expired",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
   },
 });

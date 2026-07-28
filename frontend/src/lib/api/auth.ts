@@ -33,3 +33,15 @@ export async function getCurrentUser(): Promise<User> {
   const { data } = await apiClient.get<{ user: User }>("/users/me");
   return data.user;
 }
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  await apiClient.post("/auth/forgot-password", { email });
+}
+
+export async function resetPassword(token: string, password: string): Promise<User> {
+  const { data } = await apiClient.post<{ user: User }>("/auth/reset-password", {
+    token,
+    password,
+  });
+  return data.user;
+}

@@ -45,7 +45,22 @@
     "orContinueWith": "or",
     "continueWithGoogle": "Continue with Google",
     "continueWithFacebook": "Continue with Facebook",
-    "oauthError": "Sign-in failed, please try again"
+    "oauthError": "Sign-in failed, please try again",
+    "forgotPasswordLink": "Forgot password?",
+    "forgotPasswordTitle": "Reset your password",
+    "forgotPasswordDescription": "Enter your account's email — we'll send you a reset link.",
+    "forgotPasswordSubmit": "Send reset link",
+    "forgotPasswordSubmitting": "Sending...",
+    "forgotPasswordSent": "If this email is registered, a reset link has been sent. Check your inbox.",
+    "forgotPasswordError": "Request failed, please try again",
+    "backToLogin": "Back to log in",
+    "resetPasswordTitle": "Set a new password",
+    "newPasswordLabel": "New password",
+    "resetPasswordSubmit": "Save password",
+    "resetPasswordSubmitting": "Saving...",
+    "resetPasswordInvalidToken": "This reset link is invalid or has expired",
+    "resetPasswordMissingToken": "Invalid link — use the link from your email",
+    "backToForgotPassword": "Request a new link"
   },
   "Home": {
     "heroTitle": "Gear you can trust on the <hl>road</hl>",

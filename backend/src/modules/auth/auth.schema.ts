@@ -19,3 +19,20 @@ export const loginSchema = registry.register(
   }),
 );
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const forgotPasswordSchema = registry.register(
+  "ForgotPasswordInput",
+  z.object({
+    email: z.email().openapi({ example: "rider@motostock.ge" }),
+  }),
+);
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = registry.register(
+  "ResetPasswordInput",
+  z.object({
+    token: z.string().min(1),
+    password: z.string().min(8).max(100).openapi({ example: "supersecret123" }),
+  }),
+);
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

@@ -27,6 +27,14 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   FACEBOOK_CLIENT_ID: z.string().optional(),
   FACEBOOK_CLIENT_SECRET: z.string().optional(),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
+  // Plain optional string, not z.coerce.boolean() — that coerces any
+  // non-empty string (including the literal text "false") to `true`.
+  SMTP_SECURE: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
