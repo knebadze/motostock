@@ -7,6 +7,7 @@ import { Select } from "@/components/shared/Select";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
+import { Pagination, usePagination } from "@/components/shared/Pagination";
 import { deleteProduct, listProducts, type Product } from "@/lib/api/products";
 import { resolveMediaUrl, ApiRequestError } from "@/lib/api/client";
 import type { Category } from "@/lib/api/categories";
@@ -74,6 +75,7 @@ export function ProductsManager({
   const [products, setProducts] = useState(initialProducts);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const { page, setPage, pageItems, totalPages } = usePagination(products);
 
   const canCreate = categories.length > 0;
 
@@ -98,6 +100,7 @@ export function ProductsManager({
 
   async function handleFilterChange(value: string) {
     setCategoryFilter(value);
+    setPage(1);
     await refresh(value);
   }
 
@@ -134,7 +137,7 @@ export function ProductsManager({
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={products}
+          data={pageItems}
           getRowKey={(product) => product.id}
           emptyMessage="პროდუქტი არ არსებობს"
           actions={(product) => (
@@ -144,6 +147,7 @@ export function ProductsManager({
             />
           )}
         />
+        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
       <ConfirmDialog

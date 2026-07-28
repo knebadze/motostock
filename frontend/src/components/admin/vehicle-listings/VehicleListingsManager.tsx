@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
+import { Pagination, usePagination } from "@/components/shared/Pagination";
 import {
   deleteVehicleListing,
   listVehicleListings,
@@ -105,6 +106,7 @@ export function VehicleListingsManager({
   const [formOpen, setFormOpen] = useState(false);
   const [editingListing, setEditingListing] = useState<VehicleListing | null>(null);
   const [deletingListing, setDeletingListing] = useState<VehicleListing | null>(null);
+  const { page, setPage, pageItems, totalPages } = usePagination(listings);
 
   const canCreate = vehicleCatalog.length > 0;
 
@@ -151,7 +153,7 @@ export function VehicleListingsManager({
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={listings}
+          data={pageItems}
           getRowKey={(listing) => listing.id}
           emptyMessage="განცხადება არ არსებობს"
           actions={(listing) => (
@@ -161,6 +163,7 @@ export function VehicleListingsManager({
             />
           )}
         />
+        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
       <VehicleListingFormModal
