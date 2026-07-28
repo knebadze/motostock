@@ -3,28 +3,36 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #18181b;
+  /* Light mode: cool light-gray page bg (not stark white) makes white
+     cards pop, and a deeper gold accent keeps WCAG-reasonable contrast —
+     the logo's pure yellow (#FFDC00) is too harsh as flat text/UI color
+     directly on white, even though it works fine as a button chip. */
+  --background: #f8fafc;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --border: #e4e4e7;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
 
-  --primary: #facc15;
-  --primary-hover: #eab308;
-  --primary-foreground: #18181b;
+  --primary: #d97706;
+  --primary-hover: #b45309;
+  --primary-foreground: #0f172a;
 }
 
 .dark {
-  --background: #0c0c0e;
-  --foreground: #fafafa;
-  --card: #18181b;
-  --muted: #27272a;
-  --muted-foreground: #a1a1aa;
-  --border: #27272a;
+  /* Dark mode is the primary/recommended theme for this brand: dark
+     graphite (not flat black) for the page, a slightly lighter graphite
+     for cards/surfaces, and the logo's actual yellow as the accent —
+     high contrast against dark backgrounds, no WCAG concern here. */
+  --background: #141517;
+  --foreground: #f9fafb;
+  --card: #1e2024;
+  --muted: #26292e;
+  --muted-foreground: #9ca3af;
+  --border: #2a2d33;
 
-  --primary: #facc15;
-  --primary-hover: #fde047;
+  --primary: #ffdc00;
+  --primary-hover: #ffe666;
   --primary-foreground: #18181b;
 }
 
@@ -40,8 +48,8 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
 body {

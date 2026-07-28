@@ -85,7 +85,7 @@ export function AdminSidebar({
                     title={collapsed ? item.label : undefined}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                       isActive
-                        ? "bg-primary/10 font-semibold text-primary"
+                        ? "bg-primary font-semibold text-primary-foreground shadow-sm"
                         : "text-foreground hover:bg-muted hover:text-primary"
                     } ${collapsed ? "md:justify-center md:px-2" : ""}`}
                   >

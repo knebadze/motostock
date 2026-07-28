@@ -10,7 +10,9 @@ export function Logo({
   padding?: string;
 }) {
   return (
-    <span className={`inline-flex items-center justify-center rounded-full bg-black ${padding} ${className}`}>
+    <span
+      className={`inline-flex items-center justify-center rounded-full bg-black ring-1 ring-white/15 ${padding} ${className}`}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/logo.svg" alt="Motostock" className="h-full w-auto" />
     </span>
