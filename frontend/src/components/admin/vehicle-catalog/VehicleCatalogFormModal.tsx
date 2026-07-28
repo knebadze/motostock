@@ -374,7 +374,7 @@ export function VehicleCatalogFormModal({
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="vc-year-from" className="text-sm font-medium">
               წელი (დან)
@@ -527,7 +527,7 @@ export function VehicleCatalogFormModal({
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="vc-weight-kg" className="text-sm font-medium">
               წონა (კგ)
