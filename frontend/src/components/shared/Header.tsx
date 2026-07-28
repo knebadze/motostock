@@ -1,18 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Link, usePathname } from "@/i18n/navigation";
+import { toast } from "sonner";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { siteConfig } from "@/config/site";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { Logo } from "@/components/shared/Logo";
+import { logoutUser, type User } from "@/lib/api/auth";
 
-export function Header() {
+export function Header({ user = null }: { user?: User | null }) {
   const pathname = usePathname();
+  const router = useRouter();
   const t = useTranslations("Nav");
   const tHeader = useTranslations("Header");
   const [isOpen, setIsOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -29,6 +34,29 @@ export function Header() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [accountMenuOpen]);
+
+  async function handleLogout() {
+    setAccountMenuOpen(false);
+    setIsOpen(false);
+    try {
+      await logoutUser();
+      router.push("/");
+      router.refresh();
+    } catch {
+      toast.error(tHeader("logoutError"));
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur">
@@ -57,12 +85,66 @@ export function Header() {
         <div className="flex items-center gap-2 sm:gap-3">
           <LanguageSwitcher />
           <ThemeToggle />
-          <Link
-            href="/account"
-            className="hidden rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover md:inline-flex"
-          >
-            {tHeader("login")}
-          </Link>
+
+          {user ? (
+            <div ref={accountMenuRef} className="relative hidden md:block">
+              <button
+                type="button"
+                onClick={() => setAccountMenuOpen((open) => !open)}
+                aria-haspopup="menu"
+                aria-expanded={accountMenuOpen}
+                className="flex items-center gap-2 rounded-full border border-border py-1.5 pl-1.5 pr-3 text-sm font-medium text-foreground transition-colors hover:border-primary"
+              >
+                <span className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                  {user.name.charAt(0).toUpperCase()}
+                </span>
+                <span>{user.name}</span>
+              </button>
+
+              {accountMenuOpen && (
+                <ul
+                  role="menu"
+                  className="absolute right-0 top-12 z-50 w-48 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg"
+                >
+                  <li>
+                    <Link
+                      href="/account"
+                      onClick={() => setAccountMenuOpen(false)}
+                      role="menuitem"
+                      className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+                    >
+                      {tHeader("myAccount")}
+                    </Link>
+                  </li>
+                  <li className="border-t border-border">
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      role="menuitem"
+                      className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+                    >
+                      {tHeader("logout")}
+                    </button>
+                  </li>
+                </ul>
+              )}
+            </div>
+          ) : (
+            <div className="hidden items-center gap-2 md:flex">
+              <Link
+                href="/register"
+                className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+              >
+                {tHeader("register")}
+              </Link>
+              <Link
+                href="/login"
+                className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+              >
+                {tHeader("login")}
+              </Link>
+            </div>
+          )}
 
           <button
             type="button"
@@ -115,13 +197,42 @@ export function Header() {
                 </Link>
               );
             })}
-            <Link
-              href="/account"
-              onClick={() => setIsOpen(false)}
-              className="mt-2 rounded-full bg-primary px-4 py-2.5 text-center font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
-            >
-              {tHeader("login")}
-            </Link>
+
+            {user ? (
+              <>
+                <Link
+                  href="/account"
+                  onClick={() => setIsOpen(false)}
+                  className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+                >
+                  {tHeader("myAccount")}
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="rounded-full bg-primary px-4 py-2.5 text-center font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+                >
+                  {tHeader("logout")}
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/register"
+                  onClick={() => setIsOpen(false)}
+                  className="mt-2 rounded-lg border border-border px-3 py-2.5 text-center font-semibold text-foreground transition-colors hover:bg-muted hover:text-primary"
+                >
+                  {tHeader("register")}
+                </Link>
+                <Link
+                  href="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="rounded-full bg-primary px-4 py-2.5 text-center font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+                >
+                  {tHeader("login")}
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </div>
