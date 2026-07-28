@@ -1,0 +1,119 @@
+import { ApiError } from "../../lib/ApiError.js";
+import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { categoriesRepository } from "../categories/categories.repository.js";
+import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
+import { productBrandsRepository } from "./product-brands.repository.js";
+import type { CreateProductBrandInput, UpdateProductBrandInput } from "./product-brands.schema.js";
+
+type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
+
+type ProductBrandRow = {
+  id: number;
+  category: NamedRefRow;
+  nameKa: string;
+  nameEn: string;
+  nameRu: string;
+  slug: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+function toNamedRef(row: NamedRefRow) {
+  return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
+}
+
+function toResponse(row: ProductBrandRow) {
+  return {
+    id: row.id,
+    category: toNamedRef(row.category),
+    name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu },
+    slug: row.slug,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+async function assertCategoryExists(categoryId: number) {
+  const category = await categoriesRepository.findById(categoryId);
+  if (!category) {
+    throw new ApiError(400, "მითითებული კატეგორია არ არსებობს");
+  }
+}
+
+export async function listProductBrands(categoryId?: number) {
+  const categoryIds = categoryId != null ? await resolveCategoryAndAncestorIds(categoryId) : undefined;
+  const rows = await productBrandsRepository.findMany(categoryIds);
+  return rows.map(toResponse);
+}
+
+export async function getProductBrand(id: number) {
+  const row = await productBrandsRepository.findById(id);
+  if (!row) {
+    throw new ApiError(404, "ბრენდი ვერ მოიძებნა");
+  }
+  return toResponse(row);
+}
+
+export async function createProductBrand(input: CreateProductBrandInput) {
+  await assertCategoryExists(input.categoryId);
+
+  const existing = await productBrandsRepository.findBySlug(input.slug);
+  if (existing) {
+    throw new ApiError(409, "ეს slug უკვე გამოყენებულია");
+  }
+
+  const row = await productBrandsRepository.create({
+    categoryId: input.categoryId,
+    nameKa: input.name.ka,
+    nameEn: input.name.en,
+    nameRu: input.name.ru,
+    slug: input.slug,
+  });
+  return toResponse(row);
+}
+
+export async function updateProductBrand(id: number, input: UpdateProductBrandInput) {
+  const existing = await productBrandsRepository.findById(id);
+  if (!existing) {
+    throw new ApiError(404, "ბრენდი ვერ მოიძებნა");
+  }
+
+  if (input.categoryId !== undefined) {
+    await assertCategoryExists(input.categoryId);
+  }
+
+  if (input.slug && input.slug !== existing.slug) {
+    const bySlug = await productBrandsRepository.findBySlug(input.slug);
+    if (bySlug) {
+      throw new ApiError(409, "ეს slug უკვე გამოყენებულია");
+    }
+  }
+
+  const row = await productBrandsRepository.update(id, {
+    ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
+    ...(input.name !== undefined
+      ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
+      : {}),
+    ...(input.slug !== undefined ? { slug: input.slug } : {}),
+  });
+  return toResponse(row);
+}
+
+export async function deleteProductBrand(id: number) {
+  const existing = await productBrandsRepository.findById(id);
+  if (!existing) {
+    throw new ApiError(404, "ბრენდი ვერ მოიძებნა");
+  }
+
+  try {
+    await productBrandsRepository.delete(id);
+  } catch (error) {
+    if (isForeignKeyViolation(error)) {
+      throw new ApiError(
+        400,
+        "ბრენდი გამოიყენება პროდუქტებში, ჯერ წაშალეთ დამოკიდებული ჩანაწერები",
+      );
+    }
+    throw error;
+  }
+}

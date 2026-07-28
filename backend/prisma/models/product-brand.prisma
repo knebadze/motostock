@@ -1,0 +1,15 @@
+model ProductBrand {
+  id         Int       @id @default(autoincrement())
+  categoryId Int
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  nameKa     String
+  nameEn     String
+  nameRu     String
+  slug       String    @unique
+  products   Product[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([categoryId])
+  @@schema("cla")
+}

@@ -6,13 +6,15 @@ import type { LookupItem } from "@/lib/api/lookups";
 import { LookupManager } from "./LookupManager";
 
 export function ClassifiersManager({
+  title,
   groups,
 }: {
+  title: string;
   groups: { type: LookupTypeSlug; initialItems: LookupItem[] }[];
 }) {
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight">ტრანსპორტის კლასიფიკატორები</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
 
       <div className="mt-6">
         <Tabs

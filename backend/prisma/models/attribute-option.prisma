@@ -1,0 +1,13 @@
+model AttributeOption {
+  id          Int                      @id @default(autoincrement())
+  attributeId Int
+  attribute   Attribute                @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  key         String
+  labelKa     String
+  labelEn     String
+  labelRu     String
+  values      ProductAttributeValue[]
+
+  @@unique([attributeId, key])
+  @@schema("cla")
+}

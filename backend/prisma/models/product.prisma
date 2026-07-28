@@ -1,0 +1,26 @@
+model Product {
+  id            Int                      @id @default(autoincrement())
+  categoryId    Int
+  category      Category                 @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  productBrandId Int?
+  productBrand  ProductBrand?            @relation(fields: [productBrandId], references: [id])
+  nameKa        String
+  nameEn        String
+  nameRu        String
+  descriptionKa String?
+  descriptionEn String?
+  descriptionRu String?
+  imageUrl      String?
+  slug          String                   @unique
+  metaTitle     String?
+  metaDescription String?
+  variants      ProductVariant[]
+  attributeValues ProductAttributeValue[]
+  fitments      ProductFitment[]
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+
+  @@index([categoryId])
+  @@index([productBrandId])
+  @@schema("dbo")
+}

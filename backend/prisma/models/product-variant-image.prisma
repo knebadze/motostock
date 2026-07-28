@@ -1,0 +1,11 @@
+model ProductVariantImage {
+  id               Int            @id @default(autoincrement())
+  productVariantId Int
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+  imageUrl         String
+  position         Int
+  createdAt        DateTime       @default(now())
+
+  @@index([productVariantId, position])
+  @@schema("dbo")
+}

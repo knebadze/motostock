@@ -10,6 +10,9 @@ import type { LookupItem } from "./lookups";
 import type { LookupTypeSlug } from "@/config/lookup-types";
 import type { VehicleCatalogEntry } from "./vehicle-catalog";
 import type { VehicleListing } from "./vehicle-listings";
+import type { Attribute } from "./attributes";
+import type { ProductBrand } from "./product-brands";
+import type { Product } from "./products";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -121,5 +124,53 @@ export async function getVehicleListingsFromServer(): Promise<VehicleListing[]> 
     return data.items;
   } catch {
     return [];
+  }
+}
+
+export async function getAttributesFromServer(): Promise<Attribute[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: Attribute[] }>("/attributes", { headers });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getProductBrandsFromServer(): Promise<ProductBrand[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: ProductBrand[] }>("/product-brands", { headers });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getProductsFromServer(): Promise<Product[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: Product[] }>("/products", { headers });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getProductFromServer(id: number): Promise<Product | null> {
+  const headers = await authHeaders();
+  if (!headers) return null;
+
+  try {
+    const { data } = await apiClient.get<{ item: Product }>(`/products/${id}`, { headers });
+    return data.item;
+  } catch {
+    return null;
   }
 }

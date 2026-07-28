@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
 import {
+  attributesIcon,
   brandsIcon,
   categoriesIcon,
   classifierIcon,
   dashboardIcon,
   listingIcon,
   modelsIcon,
+  productsIcon,
   vehicleCatalogIcon,
 } from "./admin-nav-icons";
 
@@ -43,8 +45,17 @@ export const adminNav: AdminNavSection[] = [
     ],
   },
   {
+    label: "პროდუქტები",
+    items: [
+      { label: "პროდუქტები", href: "/admin/products", icon: productsIcon },
+      { label: "ბრენდები", href: "/admin/product-brands", icon: brandsIcon },
+      { label: "მახასიათებლები", href: "/admin/attributes", icon: attributesIcon },
+    ],
+  },
+  {
     label: "კლასიფიკატორები",
     items: [
+      { label: "საერთო კლასიფიკატორები", href: "/admin/general-classifiers", icon: classifierIcon },
       { label: "ტრანსპორტის კლასიფიკატორები", href: "/admin/classifiers", icon: classifierIcon },
     ],
   },

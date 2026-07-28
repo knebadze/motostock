@@ -1,0 +1,89 @@
+import { z } from "zod";
+import { registry } from "../../docs/registry.js";
+import { localizedStringSchema } from "../../lib/localized.js";
+import { attributeValueTypeSchema } from "../attributes/attributes.schema.js";
+
+const optionalDescription = z.string().max(20000).nullable().optional();
+
+const slugField = z
+  .string()
+  .min(1)
+  .max(120)
+  .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "მხოლოდ პატარა ლათინური ასოები, ციფრები და დეფისი")
+  .openapi({ example: "agv-k6-helmet" });
+
+export const productAttributeValueInputSchema = z.object({
+  attributeId: z.int().positive(),
+  valueText: z.string().max(2000).nullable().optional(),
+  valueNumber: z.coerce.number().nullable().optional(),
+  valueBoolean: z.boolean().nullable().optional(),
+  optionId: z.int().positive().nullable().optional(),
+});
+export type ProductAttributeValueInput = z.infer<typeof productAttributeValueInputSchema>;
+
+export const createProductSchema = registry.register(
+  "CreateProductInput",
+  z.object({
+    categoryId: z.int().positive(),
+    productBrandId: z.int().positive().nullable().optional(),
+    name: localizedStringSchema,
+    slug: slugField,
+    metaTitle: z.string().max(70).nullable().optional(),
+    metaDescription: z.string().max(200).nullable().optional(),
+    descriptionKa: optionalDescription,
+    descriptionEn: optionalDescription,
+    descriptionRu: optionalDescription,
+    attributeValues: z.array(productAttributeValueInputSchema).optional(),
+  }),
+);
+export type CreateProductInput = z.infer<typeof createProductSchema>;
+
+export const updateProductSchema = registry.register(
+  "UpdateProductInput",
+  createProductSchema.partial(),
+);
+export type UpdateProductInput = z.infer<typeof updateProductSchema>;
+
+export const productIdParamSchema = z.object({
+  id: z.coerce.number().int().positive(),
+});
+
+export const productListQuerySchema = z.object({
+  categoryId: z.coerce.number().int().positive().optional(),
+});
+export type ProductListQuery = z.infer<typeof productListQuerySchema>;
+
+const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
+
+const productAttributeValueResponseSchema = z.object({
+  attributeId: z.int(),
+  attributeName: localizedStringSchema,
+  valueType: attributeValueTypeSchema,
+  valueText: z.string().nullable(),
+  valueNumber: z.number().nullable(),
+  valueBoolean: z.boolean().nullable(),
+  option: z.object({ id: z.int(), key: z.string(), label: localizedStringSchema }).nullable(),
+});
+
+export const productResponseSchema = registry.register(
+  "Product",
+  z.object({
+    id: z.int().openapi({ example: 1 }),
+    category: namedRefSchema,
+    productBrand: namedRefSchema.nullable(),
+    name: localizedStringSchema,
+    slug: z.string(),
+    metaTitle: z.string().nullable(),
+    metaDescription: z.string().nullable(),
+    descriptionKa: z.string().nullable(),
+    descriptionEn: z.string().nullable(),
+    descriptionRu: z.string().nullable(),
+    imageUrl: z.string().nullable(),
+    attributeValues: z.array(productAttributeValueResponseSchema),
+    variantCount: z.int().openapi({ example: 2 }),
+    minPrice: z.number().nullable().openapi({ example: 199.99 }),
+    totalStock: z.int().openapi({ example: 5 }),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+  }),
+);

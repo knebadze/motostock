@@ -1,0 +1,12 @@
+model ProductFitment {
+  id               Int            @id @default(autoincrement())
+  productId        Int
+  product          Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  vehicleCatalogId Int
+  vehicleCatalog   VehicleCatalog @relation(fields: [vehicleCatalogId], references: [id], onDelete: Restrict)
+  createdAt        DateTime       @default(now())
+
+  @@unique([productId, vehicleCatalogId])
+  @@index([vehicleCatalogId])
+  @@schema("dbo")
+}

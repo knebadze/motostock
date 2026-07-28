@@ -1,0 +1,16 @@
+model ProductAttributeValue {
+  id            Int              @id @default(autoincrement())
+  productId     Int
+  product       Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attributeId   Int
+  attribute     Attribute        @relation(fields: [attributeId], references: [id], onDelete: Restrict)
+  valueText     String?
+  valueNumber   Decimal?         @db.Decimal(14, 4)
+  valueBoolean  Boolean?
+  optionId      Int?
+  option        AttributeOption? @relation(fields: [optionId], references: [id], onDelete: Restrict)
+
+  @@unique([productId, attributeId])
+  @@index([attributeId, optionId])
+  @@schema("dbo")
+}

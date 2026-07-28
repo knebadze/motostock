@@ -9,6 +9,7 @@ export const LOOKUP_TYPES = [
   { slug: "conditions", label: "მდგომარეობები" },
   { slug: "listing-statuses", label: "განცხადების სტატუსები" },
   { slug: "colors", label: "ფერები" },
+  { slug: "sizes", label: "ზომები" },
 ] as const;
 
 export type LookupTypeSlug = (typeof LOOKUP_TYPES)[number]["slug"];
@@ -16,3 +17,23 @@ export type LookupTypeSlug = (typeof LOOKUP_TYPES)[number]["slug"];
 export function getLookupTypeLabel(slug: LookupTypeSlug): string {
   return LOOKUP_TYPES.find((item) => item.slug === slug)?.label ?? slug;
 }
+
+// მხოლოდ ტექნიკის კატალოგის (VehicleCatalog) ტექნიკურ მახასიათებლებს ეხება.
+const VEHICLE_ONLY_SLUGS = new Set<LookupTypeSlug>([
+  "fuel-types",
+  "transmission-types",
+  "cooling-types",
+  "final-drive-types",
+  "drive-types",
+  "start-types",
+  "powertrain-types",
+]);
+
+export const VEHICLE_LOOKUP_TYPES = LOOKUP_TYPES.filter((item) =>
+  VEHICLE_ONLY_SLUGS.has(item.slug),
+);
+
+// გამოიყენება როგორც გასაყიდ ტექნიკაში (VehicleListing), ისე პროდუქტის ვარიანტებში (ProductVariant).
+export const GENERAL_LOOKUP_TYPES = LOOKUP_TYPES.filter(
+  (item) => !VEHICLE_ONLY_SLUGS.has(item.slug),
+);

@@ -5,6 +5,7 @@ model Condition {
   nameEn   String
   nameRu   String
   listings VehicleListing[]
+  productVariants ProductVariant[]
 
   @@schema("cla")
 }

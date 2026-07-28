@@ -19,6 +19,14 @@ import { vehicleCatalogRouter } from "./modules/vehicle-catalog/vehicle-catalog.
 import { vehicleListingRouter } from "./modules/vehicle-listing/vehicle-listing.routes.js";
 import { vehicleListingDiscountsRouter } from "./modules/vehicle-listing-discounts/vehicle-listing-discounts.routes.js";
 import { vehicleListingImagesRouter } from "./modules/vehicle-listing-images/vehicle-listing-images.routes.js";
+import { attributesRouter } from "./modules/attributes/attributes.routes.js";
+import { attributeOptionsRouter } from "./modules/attribute-options/attribute-options.routes.js";
+import { productBrandsRouter } from "./modules/product-brands/product-brands.routes.js";
+import { productsRouter } from "./modules/products/products.routes.js";
+import { productFitmentRouter } from "./modules/product-fitment/product-fitment.routes.js";
+import { productVariantsRouter } from "./modules/product-variants/product-variants.routes.js";
+import { productVariantImagesRouter } from "./modules/product-variant-images/product-variant-images.routes.js";
+import { productVariantDiscountsRouter } from "./modules/product-variant-discounts/product-variant-discounts.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
 import { ROLES } from "./lib/roles.js";
@@ -52,6 +60,14 @@ app.use("/api/vehicle-catalog", vehicleCatalogRouter);
 app.use("/api/vehicle-listings", vehicleListingRouter);
 app.use("/api/vehicle-listings/:listingId/discounts", vehicleListingDiscountsRouter);
 app.use("/api/vehicle-listings/:listingId/images", vehicleListingImagesRouter);
+app.use("/api/attributes", attributesRouter);
+app.use("/api/attributes/:attributeId/options", attributeOptionsRouter);
+app.use("/api/product-brands", productBrandsRouter);
+app.use("/api/products", productsRouter);
+app.use("/api/products/:productId/fitments", productFitmentRouter);
+app.use("/api/product-variants", productVariantsRouter);
+app.use("/api/product-variants/:variantId/discounts", productVariantDiscountsRouter);
+app.use("/api/product-variants/:variantId/images", productVariantImagesRouter);
 
 // registerPath() calls above already ran as a side effect of importing the
 // routers, so the registry is fully populated by the time this generates.

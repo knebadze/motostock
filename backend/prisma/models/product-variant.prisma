@@ -1,0 +1,28 @@
+model ProductVariant {
+  id            Int                      @id @default(autoincrement())
+  productId     Int
+  product       Product                  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku           String?
+  sizeId        Int?
+  size          Size?                    @relation(fields: [sizeId], references: [id])
+  colorId       Int?
+  color         Color?                   @relation(fields: [colorId], references: [id])
+  price         Decimal                  @db.Decimal(10, 2)
+  stockQuantity Int                      @default(1)
+  conditionId   Int?
+  condition     Condition?               @relation(fields: [conditionId], references: [id])
+  statusId      Int?
+  status        ListingStatus?           @relation(fields: [statusId], references: [id])
+  isActive      Boolean                  @default(true)
+  images        ProductVariantImage[]
+  discounts     ProductVariantDiscount[]
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+
+  @@index([productId])
+  @@index([sizeId])
+  @@index([colorId])
+  @@index([conditionId])
+  @@index([statusId])
+  @@schema("dbo")
+}

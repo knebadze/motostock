@@ -1,0 +1,14 @@
+model ProductVariantDiscount {
+  id               Int            @id @default(autoincrement())
+  productVariantId Int
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+  discountPrice    Decimal        @db.Decimal(10, 2)
+  discountPercent  Decimal?       @db.Decimal(5, 2)
+  startDate        DateTime
+  endDate          DateTime
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([productVariantId, startDate, endDate])
+  @@schema("dbo")
+}

@@ -1,0 +1,209 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
+import { FieldError } from "@/components/shared/FieldError";
+import {
+  createProductVariantDiscount,
+  deleteProductVariantDiscount,
+  listProductVariantDiscounts,
+  type ProductVariantDiscount,
+} from "@/lib/api/product-variant-discounts";
+import { ApiRequestError } from "@/lib/api/client";
+import { formatPrice } from "@/lib/format";
+import { productVariantDiscountFormSchema } from "@/lib/validation/product-variant-discounts";
+import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+
+const columns: DataTableColumn<ProductVariantDiscount>[] = [
+  {
+    header: "ფასდაკლების ფასი",
+    render: (discount) => formatPrice(discount.discountPrice),
+  },
+  {
+    header: "პროცენტი",
+    render: (discount) => (discount.discountPercent != null ? `${discount.discountPercent}%` : "—"),
+    cellClassName: "text-muted-foreground",
+  },
+  { header: "დაწყება", render: (discount) => discount.startDate, cellClassName: "text-muted-foreground" },
+  { header: "დასრულება", render: (discount) => discount.endDate, cellClassName: "text-muted-foreground" },
+];
+
+export function ProductVariantDiscountsPanel({
+  variantId,
+  basePrice,
+}: {
+  variantId: number;
+  basePrice: number;
+}) {
+  const [discounts, setDiscounts] = useState<ProductVariantDiscount[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [discountPercent, setDiscountPercent] = useState("");
+  const [discountPrice, setDiscountPrice] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    listProductVariantDiscounts(variantId)
+      .then((items) => {
+        if (!cancelled) setDiscounts(items);
+      })
+      .catch(() => {
+        toast.error("ფასდაკლებების ჩატვირთვა ვერ მოხერხდა");
+      })
+      .finally(() => {
+        if (!cancelled) setLoaded(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [variantId]);
+
+  async function refresh() {
+    setDiscounts(await listProductVariantDiscounts(variantId));
+  }
+
+  function handlePercentChange(value: string) {
+    setDiscountPercent(value);
+
+    const percentNum = Number(value);
+    if (value.trim() !== "" && Number.isFinite(percentNum) && percentNum >= 0 && percentNum <= 100) {
+      setDiscountPrice((basePrice * (1 - percentNum / 100)).toFixed(2));
+    }
+  }
+
+  async function handleAdd() {
+    const result = productVariantDiscountFormSchema.safeParse({
+      discountPrice,
+      discountPercent,
+      startDate,
+      endDate,
+    });
+    if (!result.success) {
+      setErrors(getFieldErrors(result.error));
+      toast.error("გთხოვთ შეასწოროთ ველები");
+      return;
+    }
+    setErrors({});
+
+    setAdding(true);
+    try {
+      await createProductVariantDiscount(variantId, {
+        discountPrice: Number(discountPrice),
+        discountPercent: discountPercent ? Number(discountPercent) : null,
+        startDate,
+        endDate,
+      });
+      setDiscountPercent("");
+      setDiscountPrice("");
+      setStartDate("");
+      setEndDate("");
+      setErrors({});
+      await refresh();
+      toast.success("ფასდაკლება დაემატა");
+    } catch (error) {
+      const message =
+        error instanceof ApiRequestError ? error.message : "დამატება ვერ მოხერხდა";
+      toast.error(message);
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function handleDelete(discount: ProductVariantDiscount) {
+    try {
+      await deleteProductVariantDiscount(variantId, discount.id);
+      await refresh();
+      toast.success("ფასდაკლება წაიშალა");
+    } catch (error) {
+      const message = error instanceof ApiRequestError ? error.message : "წაშლა ვერ მოხერხდა";
+      toast.error(message);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-border p-3">
+      <h3 className="text-sm font-semibold">ფასდაკლებები</h3>
+
+      {loaded && (
+        <DataTable
+          columns={columns}
+          data={discounts}
+          getRowKey={(discount) => discount.id}
+          emptyMessage="ფასდაკლება არ არსებობს"
+          actions={(discount) => (
+            <button
+              type="button"
+              onClick={() => handleDelete(discount)}
+              className="rounded-full px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10"
+            >
+              წაშლა
+            </button>
+          )}
+        />
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-5">
+        <div className="flex flex-col gap-1.5">
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step="0.01"
+            placeholder="ფასდაკლება (%)"
+            value={discountPercent}
+            onChange={(event) => handlePercentChange(event.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.discountPercent} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <input
+            type="number"
+            step="0.01"
+            placeholder="ფასდაკლების ფასი *"
+            value={discountPrice}
+            onChange={(event) => setDiscountPrice(event.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.discountPrice} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(event) => setStartDate(event.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.startDate} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <input
+            type="date"
+            value={endDate}
+            onChange={(event) => setEndDate(event.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.endDate} />
+        </div>
+        <button
+          type="button"
+          onClick={handleAdd}
+          disabled={adding}
+          className="h-fit rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+        >
+          + დამატება
+        </button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        პროცენტის მითითებისას ფასდაკლების ფასი ავტომატურად გამოითვლება მიმდინარე ფასიდან
+        ({formatPrice(basePrice)}) — შეგიძლიათ შემდეგ ხელითაც შეასწოროთ.
+      </p>
+    </div>
+  );
+}

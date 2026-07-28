@@ -41,6 +41,7 @@ model VehicleCatalog {
   descriptionEn          String?
   descriptionRu          String?
   listings               VehicleListing[]
+  fitments               ProductFitment[]
   createdAt              DateTime          @default(now())
   updatedAt              DateTime          @updatedAt
 

@@ -9,6 +9,9 @@ model Category {
   parent    Category?        @relation("CategoryChildren", fields: [parentId], references: [id])
   children  Category[]       @relation("CategoryChildren")
   models    Model[]
+  attributes Attribute[]
+  productBrands ProductBrand[]
+  products  Product[]
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
