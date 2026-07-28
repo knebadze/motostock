@@ -2,6 +2,7 @@
 
 import { AdminThemeToggle } from "./AdminThemeToggle";
 import { UserMenu } from "./UserMenu";
+import { Logo } from "@/components/shared/Logo";
 
 export function AdminHeader({
   userName,
@@ -39,7 +40,7 @@ export function AdminHeader({
             )}
           </svg>
         </button>
-        <span className="text-sm font-semibold md:hidden">MotoStock</span>
+        <Logo className="h-8 w-auto md:hidden" />
       </div>
 
       <div className="flex items-center gap-2">

@@ -6,6 +6,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { siteConfig } from "@/config/site";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
+import { Logo } from "@/components/shared/Logo";
 
 export function Header() {
   const pathname = usePathname();
@@ -32,13 +33,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link
-          href="/"
-          onClick={() => setIsOpen(false)}
-          className="flex items-center gap-2 text-lg font-bold tracking-tight"
-        >
-          <span className="text-primary">Moto</span>
-          <span>Stock</span>
+        <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center">
+          <Logo className="h-8 w-auto sm:h-9" />
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">

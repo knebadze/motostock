@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { adminNav } from "@/config/admin-nav";
+import { Logo } from "@/components/shared/Logo";
 
 export function AdminSidebar({
   open,
@@ -57,12 +58,7 @@ export function AdminSidebar({
             collapsed ? "md:justify-center" : ""
           }`}
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-            M
-          </span>
-          <span className={`text-lg font-bold tracking-tight ${collapsed ? "md:hidden" : ""}`}>
-            <span className="text-primary">Moto</span>Stock
-          </span>
+          <Logo className={`h-10 w-auto ${collapsed ? "md:hidden" : ""}`} />
         </div>
 
         <nav
