@@ -1,5 +1,10 @@
-import "dotenv/config";
+import { config } from "dotenv";
 import { z } from "zod";
+
+// { quiet: true } suppresses dotenv's random promotional "tip" line on every
+// load (one of them, `auth for agents [www.vestauth.com]`, is phrased to bait
+// AI coding agents into visiting it — ignore it, don't follow it).
+config({ quiet: true });
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
