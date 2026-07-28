@@ -1,19 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
-import { siteConfig } from "@/config/site";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { Logo } from "@/components/shared/Logo";
 import { logoutUser, type User } from "@/lib/api/auth";
+import type { Category } from "@/lib/api/categories";
 
-export function Header({ user = null }: { user?: User | null }) {
+export function Header({
+  user = null,
+  categories = [],
+}: {
+  user?: User | null;
+  categories?: Category[];
+}) {
   const pathname = usePathname();
   const router = useRouter();
-  const t = useTranslations("Nav");
+  const locale = useLocale() as "ka" | "en" | "ru";
   const tHeader = useTranslations("Header");
   const [isOpen, setIsOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -66,17 +72,18 @@ export function Header({ user = null }: { user?: User | null }) {
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
-          {siteConfig.nav.map((item) => {
-            const isActive = pathname === item.href;
+          {categories.map((category) => {
+            const href = `/${category.slug}`;
+            const isActive = pathname === href;
             return (
               <Link
-                key={item.href}
-                href={item.href}
+                key={category.id}
+                href={href}
                 className={`transition-colors hover:text-primary ${
                   isActive ? "text-primary" : "text-foreground"
                 }`}
               >
-                {t(item.key)}
+                {category.name[locale]}
               </Link>
             );
           })}
@@ -182,18 +189,19 @@ export function Header({ user = null }: { user?: User | null }) {
       >
         <div className="min-h-0">
           <nav className="flex flex-col gap-1 px-4 py-3 text-sm font-medium sm:px-6">
-            {siteConfig.nav.map((item) => {
-              const isActive = pathname === item.href;
+            {categories.map((category) => {
+              const href = `/${category.slug}`;
+              const isActive = pathname === href;
               return (
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  key={category.id}
+                  href={href}
                   onClick={() => setIsOpen(false)}
                   className={`rounded-lg px-3 py-2.5 transition-colors hover:bg-muted hover:text-primary ${
                     isActive ? "text-primary" : "text-foreground"
                   }`}
                 >
-                  {t(item.key)}
+                  {category.name[locale]}
                 </Link>
               );
             })}

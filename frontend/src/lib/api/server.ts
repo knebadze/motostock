@@ -35,8 +35,10 @@ export async function getCurrentUserFromServer(): Promise<User | null> {
 }
 
 export async function getCategoriesFromServer(): Promise<Category[]> {
+  // Public endpoint (guest storefront navigation reads this too) — unlike
+  // the admin-only getXFromServer helpers below, this must not bail out just
+  // because there's no admin session cookie.
   const headers = await authHeaders();
-  if (!headers) return [];
 
   try {
     const { data } = await apiClient.get<{ categories: Category[] }>("/categories", {

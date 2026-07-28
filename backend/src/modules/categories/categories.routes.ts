@@ -16,9 +16,12 @@ import {
 
 export const categoriesRouter = Router();
 
+// Public: the category tree is guest-storefront navigation, not admin data —
+// anonymous visitors need to read it. Everything else below stays admin-only.
+categoriesRouter.get("/", categoriesController.list);
+
 categoriesRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
-categoriesRouter.get("/", categoriesController.list);
 categoriesRouter.get(
   "/:id",
   validate(categoryIdParamSchema, "params"),
@@ -54,8 +57,7 @@ registry.registerPath({
   method: "get",
   path: "/categories",
   tags: ["Categories"],
-  summary: "List all categories",
-  security,
+  summary: "List all categories (public — used for storefront navigation)",
   responses: {
     200: {
       description: "Categories list",
@@ -65,8 +67,6 @@ registry.registerPath({
         },
       },
     },
-    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
-    403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 
