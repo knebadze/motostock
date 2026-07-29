@@ -1,8 +1,42 @@
 import "dotenv/config";
+import fs from "node:fs";
+import path from "node:path";
 import { prisma } from "../src/config/prisma.js";
 import { hashPassword } from "../src/lib/password.js";
 import { ROLES } from "../src/lib/roles.js";
 import { USE_CLOUD_STORAGE_KEY } from "../src/modules/settings/settings.service.js";
+import { processImageForDisk } from "../src/lib/image-processing.js";
+
+// Source images for seed data live here (git-tracked), named after the
+// entity's slug (e.g. "helmets.jpg"). They get resized/re-encoded the same
+// way a real admin upload would and written into the (gitignored) uploads/
+// folder — a category only gets an imageUrl if a matching file exists here.
+const SEED_ASSETS_ROOT = path.resolve("prisma/seed-assets");
+const SEED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"] as const;
+const MIME_BY_EXTENSION: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+};
+
+async function seedImageUrl(subfolder: string, slug: string): Promise<string | undefined> {
+  const dir = path.join(SEED_ASSETS_ROOT, subfolder);
+  const sourcePath = SEED_IMAGE_EXTENSIONS.map((ext) => path.join(dir, `${slug}${ext}`)).find(
+    (candidate) => fs.existsSync(candidate),
+  );
+  if (!sourcePath) return undefined;
+
+  const mimetype = MIME_BY_EXTENSION[path.extname(sourcePath)];
+  const { buffer, extension } = await processImageForDisk(fs.readFileSync(sourcePath), mimetype);
+
+  const uploadDir = path.resolve("uploads", subfolder);
+  fs.mkdirSync(uploadDir, { recursive: true });
+  const filename = `seed-${slug}${extension}`;
+  fs.writeFileSync(path.join(uploadDir, filename), buffer);
+
+  return `/uploads/${subfolder}/${filename}`;
+}
 
 const ADMIN_EMAIL = "admin@gmail.com";
 const ADMIN_PASSWORD = "admin123";
@@ -220,15 +254,21 @@ async function seedCategoryTree(
   idBySlug: Map<string, number> = new Map(),
 ) {
   for (const node of nodes) {
+    // Backfill a seed image only when the category doesn't already have one —
+    // re-running the seed must never clobber an image an admin uploaded/changed by hand.
+    const existing = await prisma.category.findUnique({ where: { slug: node.slug } });
+    const imageUrl = existing?.imageUrl ? undefined : await seedImageUrl("categories", node.slug);
+
     const category = await prisma.category.upsert({
       where: { slug: node.slug },
-      update: {},
+      update: { ...(imageUrl ? { imageUrl } : {}) },
       create: {
         slug: node.slug,
         nameKa: node.nameKa,
         nameEn: node.nameEn,
         nameRu: node.nameRu,
         parentId,
+        ...(imageUrl ? { imageUrl } : {}),
       },
     });
     idBySlug.set(node.slug, category.id);
