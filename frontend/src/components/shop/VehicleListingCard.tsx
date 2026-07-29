@@ -2,16 +2,9 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { resolveMediaUrl } from "@/lib/api/client";
-import { formatPrice } from "@/lib/format";
-import type { LookupItem } from "@/lib/api/lookups";
+import { formatPrice, pickLookupName } from "@/lib/format";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 import type { ViewMode } from "./ViewModeToggle";
-
-function pickLookupName(item: LookupItem, locale: "ka" | "en" | "ru"): string {
-  if (locale === "en") return item.nameEn;
-  if (locale === "ru") return item.nameRu;
-  return item.nameKa;
-}
 
 export function VehicleListingCard({
   listing,

@@ -9,16 +9,24 @@ import { ROLES } from "../../lib/roles.js";
 import * as productsController from "./products.controller.js";
 import {
   createProductSchema,
+  productDetailResponseSchema,
   productIdParamSchema,
   productListQuerySchema,
   productResponseSchema,
+  productSlugParamSchema,
   updateProductSchema,
 } from "./products.schema.js";
 
 export const productsRouter = Router();
 
-// Public: the guest shop page reads these two. Everything else stays admin-only.
+// Public: the guest shop page + product detail page read these three.
+// Everything else stays admin-only.
 productsRouter.get("/", validate(productListQuerySchema, "query"), productsController.list);
+productsRouter.get(
+  "/by-slug/:slug",
+  validate(productSlugParamSchema, "params"),
+  productsController.getBySlug,
+);
 productsRouter.get("/:id", validate(productIdParamSchema, "params"), productsController.getOne);
 
 productsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
@@ -65,6 +73,21 @@ registry.registerPath({
   request: { params: productIdParamSchema },
   responses: {
     200: { description: "Product", content: { "application/json": { schema: itemResponse } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/products/by-slug/{slug}",
+  tags: ["Products"],
+  summary: "Get a product's full detail (variants, images, discounts, fitments) by slug (public — product view page)",
+  request: { params: productSlugParamSchema },
+  responses: {
+    200: {
+      description: "Product detail",
+      content: { "application/json": { schema: z.object({ item: productDetailResponseSchema }) } },
+    },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

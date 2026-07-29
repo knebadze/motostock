@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
 import type { Product } from "@/lib/api/products";
@@ -13,7 +14,8 @@ export function ProductCard({ product, layout }: { product: Product; layout: Vie
   const outOfStock = product.totalStock === 0;
 
   return (
-    <div
+    <Link
+      href={`/${product.category.slug}/${product.slug}`}
       className={`h-full rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg ${
         layout === "list" ? "flex items-center gap-4" : "flex flex-col gap-3"
       }`}
@@ -57,6 +59,6 @@ export function ProductCard({ product, layout }: { product: Product; layout: Vie
           {product.minPrice != null ? formatPrice(product.minPrice) : "—"}
         </span>
       </div>
-    </div>
+    </Link>
   );
 }

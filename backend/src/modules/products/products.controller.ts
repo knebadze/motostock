@@ -4,6 +4,7 @@ import * as productsService from "./products.service.js";
 import type {
   CreateProductInput,
   ProductListQuery,
+  ProductSlugParam,
   UpdateProductInput,
 } from "./products.schema.js";
 
@@ -14,6 +15,11 @@ export async function list(req: Request<unknown, unknown, unknown, ProductListQu
 
 export async function getOne(req: Request, res: Response) {
   const item = await productsService.getProduct(Number(req.params.id));
+  res.status(200).json({ item });
+}
+
+export async function getBySlug(req: Request<ProductSlugParam>, res: Response) {
+  const item = await productsService.getProductDetail(req.params.slug);
   res.status(200).json({ item });
 }
 

@@ -6,9 +6,14 @@ import type { Category } from "@/lib/api/categories";
 
 export function Breadcrumb({
   chain,
+  currentLabel,
   variant = "light",
 }: {
   chain: Category[];
+  // When provided, every entry in `chain` renders as a link and this becomes
+  // the final, non-linked "current" crumb instead (e.g. a product name on
+  // the product detail page, where the category itself is still browsable).
+  currentLabel?: string;
   // "light" = sits on a light/default background, use dark text.
   // "dark" = sits on a dark hero overlay (banner image), use white text.
   variant?: "light" | "dark";
@@ -32,7 +37,7 @@ export function Breadcrumb({
           </Link>
         </li>
         {chain.map((category, index) => {
-          const isCurrent = index === chain.length - 1;
+          const isCurrent = !currentLabel && index === chain.length - 1;
           return (
             <li key={category.id} className="flex items-center gap-1.5">
               <span aria-hidden="true" className={separatorClassName}>
@@ -50,6 +55,16 @@ export function Breadcrumb({
             </li>
           );
         })}
+        {currentLabel && (
+          <li className="flex items-center gap-1.5">
+            <span aria-hidden="true" className={separatorClassName}>
+              /
+            </span>
+            <span aria-current="page" className={`font-medium ${currentClassName}`}>
+              {currentLabel}
+            </span>
+          </li>
+        )}
       </ol>
     </nav>
   );

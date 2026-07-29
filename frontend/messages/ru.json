@@ -48,6 +48,16 @@
     "discountBadge": "Скидка",
     "emptyState": "Ничего не найдено"
   },
+  "ProductDetail": {
+    "descriptionHeading": "Описание",
+    "specsHeading": "Характеристики",
+    "compatibleVehiclesHeading": "Совместимая техника",
+    "selectSizeLabel": "Размер",
+    "selectColorLabel": "Цвет",
+    "outOfStock": "Нет в наличии",
+    "yes": "Да",
+    "no": "Нет"
+  },
   "Auth": {
     "loginTitle": "Вход",
     "registerTitle": "Регистрация",

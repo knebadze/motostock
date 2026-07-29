@@ -48,6 +48,16 @@
     "discountBadge": "ფასდაკლება",
     "emptyState": "შედეგი ვერ მოიძებნა"
   },
+  "ProductDetail": {
+    "descriptionHeading": "აღწერა",
+    "specsHeading": "მახასიათებლები",
+    "compatibleVehiclesHeading": "თავსებადი ტექნიკა",
+    "selectSizeLabel": "ზომა",
+    "selectColorLabel": "ფერი",
+    "outOfStock": "არ არის მარაგში",
+    "yes": "კი",
+    "no": "არა"
+  },
   "Auth": {
     "loginTitle": "შესვლა",
     "registerTitle": "რეგისტრაცია",

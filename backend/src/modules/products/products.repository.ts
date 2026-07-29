@@ -14,6 +14,42 @@ const include = {
   variants: { select: { price: true, stockQuantity: true } },
 } as const;
 
+const lookupSelect = { id: true, key: true, nameKa: true, nameEn: true, nameRu: true } as const;
+
+// Richer than `include` above — full per-variant images/discounts/size/color
+// are only needed for a single product's detail page, not for every product
+// row in a category listing, so this stays a separate query shape.
+const detailInclude = {
+  category: { select: namedRefSelect },
+  productBrand: { select: namedRefSelect },
+  attributeValues: {
+    include: {
+      attribute: { select: { id: true, nameKa: true, nameEn: true, nameRu: true, valueType: true } },
+      option: { select: { id: true, key: true, labelKa: true, labelEn: true, labelRu: true } },
+    },
+  },
+  variants: {
+    include: {
+      size: { select: lookupSelect },
+      color: { select: lookupSelect },
+      condition: { select: lookupSelect },
+      status: { select: lookupSelect },
+      images: { orderBy: { position: "asc" } },
+      discounts: { orderBy: { startDate: "desc" } },
+    },
+  },
+  fitments: {
+    include: {
+      vehicleCatalog: {
+        include: {
+          brand: { select: namedRefSelect },
+          model: { select: namedRefSelect },
+        },
+      },
+    },
+  },
+} as const;
+
 type ProductWriteData = {
   categoryId: number;
   productBrandId?: number | null;
@@ -51,6 +87,10 @@ export const productsRepository = {
 
   findBySlug(slug: string) {
     return prisma.product.findUnique({ where: { slug } });
+  },
+
+  findDetailBySlug(slug: string) {
+    return prisma.product.findUnique({ where: { slug }, include: detailInclude });
   },
 
   create(data: ProductWriteData) {

@@ -2,6 +2,9 @@ import { apiClient } from "./client";
 import type { LocalizedString } from "./categories";
 import type { NamedRef } from "./vehicle-catalog";
 import type { AttributeValueType } from "./attributes";
+import type { LookupItem } from "./lookups";
+import type { ProductVariantImage } from "./product-variant-images";
+import type { ProductVariantDiscount } from "./product-variant-discounts";
 
 export type ProductAttributeValue = {
   attributeId: number;
@@ -53,6 +56,37 @@ export type ProductInput = {
   descriptionRu?: string | null;
   attributeValues?: ProductAttributeValueInput[];
 };
+
+export type ProductVariantDetail = {
+  id: number;
+  sku: string | null;
+  price: number;
+  stockQuantity: number;
+  isActive: boolean;
+  size: LookupItem | null;
+  color: LookupItem | null;
+  condition: LookupItem | null;
+  status: LookupItem | null;
+  images: ProductVariantImage[];
+  discounts: ProductVariantDiscount[];
+  activeDiscount: ProductVariantDiscount | null;
+};
+
+export type CompatibleVehicle = {
+  id: number;
+  brand: NamedRef;
+  model: NamedRef;
+};
+
+export type ProductDetail = Product & {
+  variants: ProductVariantDetail[];
+  fitments: CompatibleVehicle[];
+};
+
+export async function getProductBySlug(slug: string): Promise<ProductDetail> {
+  const { data } = await apiClient.get<{ item: ProductDetail }>(`/products/by-slug/${slug}`);
+  return data.item;
+}
 
 export async function listProducts(categoryId?: number): Promise<Product[]> {
   const { data } = await apiClient.get<{ items: Product[] }>("/products", {

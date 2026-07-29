@@ -7,6 +7,11 @@ import { attributesRepository } from "../attributes/attributes.repository.js";
 import { attributeOptionsRepository } from "../attribute-options/attribute-options.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
+import {
+  toDiscountResponse,
+  type DiscountRow,
+} from "../product-variant-discounts/product-variant-discounts.service.js";
+import { toImageResponse } from "../product-variant-images/product-variant-images.service.js";
 import { productsRepository } from "./products.repository.js";
 import type {
   CreateProductInput,
@@ -88,6 +93,74 @@ function toResponse(row: ProductRow) {
     totalStock: row.variants.reduce((sum, v) => sum + v.stockQuantity, 0),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+  };
+}
+
+type LookupRow = { id: number; key: string; nameKa: string; nameEn: string; nameRu: string };
+type ImageRow = { id: number; imageUrl: string; position: number };
+
+type VariantDetailRow = {
+  id: number;
+  sku: string | null;
+  price: { toString(): string };
+  stockQuantity: number;
+  isActive: boolean;
+  size: LookupRow | null;
+  color: LookupRow | null;
+  condition: LookupRow | null;
+  status: LookupRow | null;
+  images: ImageRow[];
+  discounts: DiscountRow[];
+};
+
+type FitmentRow = {
+  vehicleCatalog: {
+    id: number;
+    brand: NamedRefRow;
+    model: NamedRefRow;
+  };
+};
+
+type ProductDetailRow = ProductRow & {
+  variants: VariantDetailRow[];
+  fitments: FitmentRow[];
+};
+
+function findActiveDiscount(discounts: DiscountRow[]) {
+  const now = new Date();
+  return (
+    discounts.find((discount) => discount.startDate <= now && now <= discount.endDate) ?? null
+  );
+}
+
+function toVariantDetailResponse(row: VariantDetailRow) {
+  const activeDiscount = findActiveDiscount(row.discounts);
+
+  return {
+    id: row.id,
+    sku: row.sku,
+    price: Number(row.price),
+    stockQuantity: row.stockQuantity,
+    isActive: row.isActive,
+    size: row.size,
+    color: row.color,
+    condition: row.condition,
+    status: row.status,
+    images: row.images.map(toImageResponse),
+    discounts: row.discounts.map(toDiscountResponse),
+    activeDiscount: activeDiscount ? toDiscountResponse(activeDiscount) : null,
+  };
+}
+
+function toDetailResponse(row: ProductDetailRow) {
+  return {
+    ...toResponse(row),
+    variants: row.variants.map(toVariantDetailResponse),
+    fitments: row.fitments.map((fitment) => ({
+      id: fitment.vehicleCatalog.id,
+      brand: toNamedRef(fitment.vehicleCatalog.brand),
+      model: toNamedRef(fitment.vehicleCatalog.model),
+    })),
   };
 }
 
@@ -185,6 +258,14 @@ export async function getProduct(id: number) {
     throw new ApiError(404, "პროდუქტი ვერ მოიძებნა");
   }
   return toResponse(row);
+}
+
+export async function getProductDetail(slug: string) {
+  const row = await productsRepository.findDetailBySlug(slug);
+  if (!row) {
+    throw new ApiError(404, "პროდუქტი ვერ მოიძებნა");
+  }
+  return toDetailResponse(row);
 }
 
 export async function createProduct(input: CreateProductInput) {

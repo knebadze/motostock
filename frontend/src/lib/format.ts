@@ -19,3 +19,14 @@ export function formatDateTime(iso: string): string {
   const pad = (value: number) => String(value).padStart(2, "0");
   return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
+
+// Lookup rows (Size/Color/Condition/ListingStatus/etc.) store one flat name
+// per locale instead of a nested LocalizedString — this picks the right one.
+export function pickLookupName(
+  item: { nameKa: string; nameEn: string; nameRu: string },
+  locale: "ka" | "en" | "ru",
+): string {
+  if (locale === "en") return item.nameEn;
+  if (locale === "ru") return item.nameRu;
+  return item.nameKa;
+}

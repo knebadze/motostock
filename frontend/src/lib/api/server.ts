@@ -12,7 +12,7 @@ import type { VehicleCatalogEntry } from "./vehicle-catalog";
 import type { VehicleListing } from "./vehicle-listings";
 import type { Attribute } from "./attributes";
 import type { ProductBrand } from "./product-brands";
-import type { Product } from "./products";
+import type { Product, ProductDetail } from "./products";
 import type { FinaSyncRun } from "./fina-sync";
 import type { AdminUser } from "./users";
 
@@ -196,6 +196,21 @@ export async function getProductsFromServer(categoryId?: number): Promise<Produc
     return data.items;
   } catch {
     return [];
+  }
+}
+
+export async function getProductDetailFromServer(slug: string): Promise<ProductDetail | null> {
+  // Public endpoint (guest product view page) — must not bail out just
+  // because there's no admin session cookie, same fix as getCategoriesFromServer.
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ item: ProductDetail }>(`/products/by-slug/${slug}`, {
+      headers,
+    });
+    return data.item;
+  } catch {
+    return null;
   }
 }
 

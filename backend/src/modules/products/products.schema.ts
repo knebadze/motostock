@@ -2,6 +2,9 @@ import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
 import { attributeValueTypeSchema } from "../attributes/attributes.schema.js";
+import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
+import { productVariantDiscountResponseSchema } from "../product-variant-discounts/product-variant-discounts.schema.js";
+import { productVariantImageResponseSchema } from "../product-variant-images/product-variant-images.schema.js";
 
 const optionalDescription = z.string().max(20000).nullable().optional();
 
@@ -53,6 +56,11 @@ export const productListQuerySchema = z.object({
 });
 export type ProductListQuery = z.infer<typeof productListQuerySchema>;
 
+export const productSlugParamSchema = z.object({
+  slug: z.string().min(1),
+});
+export type ProductSlugParam = z.infer<typeof productSlugParamSchema>;
+
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
 
 const productAttributeValueResponseSchema = z.object({
@@ -85,5 +93,34 @@ export const productResponseSchema = registry.register(
     totalStock: z.int().openapi({ example: 5 }),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
+  }),
+);
+
+const productVariantDetailResponseSchema = z.object({
+  id: z.int().openapi({ example: 1 }),
+  sku: z.string().nullable(),
+  price: z.number().openapi({ example: 199.99 }),
+  stockQuantity: z.int(),
+  isActive: z.boolean(),
+  size: lookupItemResponseSchema.nullable(),
+  color: lookupItemResponseSchema.nullable(),
+  condition: lookupItemResponseSchema.nullable(),
+  status: lookupItemResponseSchema.nullable(),
+  images: z.array(productVariantImageResponseSchema),
+  discounts: z.array(productVariantDiscountResponseSchema),
+  activeDiscount: productVariantDiscountResponseSchema.nullable(),
+});
+
+const compatibleVehicleSchema = z.object({
+  id: z.int(),
+  brand: namedRefSchema,
+  model: namedRefSchema,
+});
+
+export const productDetailResponseSchema = registry.register(
+  "ProductDetail",
+  productResponseSchema.extend({
+    variants: z.array(productVariantDetailResponseSchema),
+    fitments: z.array(compatibleVehicleSchema),
   }),
 );
