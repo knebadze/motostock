@@ -37,9 +37,9 @@ type AttributeValueWriteData = {
 };
 
 export const productsRepository = {
-  findMany(categoryId?: number) {
+  findMany(categoryIds?: number[]) {
     return prisma.product.findMany({
-      where: categoryId ? { categoryId } : undefined,
+      where: categoryIds && categoryIds.length > 0 ? { categoryId: { in: categoryIds } } : undefined,
       include,
       orderBy: { createdAt: "desc" },
     });

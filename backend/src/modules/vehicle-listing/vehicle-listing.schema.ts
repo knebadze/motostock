@@ -33,6 +33,11 @@ export const vehicleListingIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+export const vehicleListingListQuerySchema = z.object({
+  categoryId: z.coerce.number().int().positive().optional(),
+});
+export type VehicleListingListQuery = z.infer<typeof vehicleListingListQuerySchema>;
+
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
 
 export const vehicleListingResponseSchema = registry.register(

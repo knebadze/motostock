@@ -24,6 +24,15 @@ export function flattenTree(categories: Category[]): CategoryNode[] {
   return result;
 }
 
+export function getRootCategory(categories: Category[], categoryId: number): Category | null {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  let current = byId.get(categoryId) ?? null;
+  while (current && current.parentId !== null) {
+    current = byId.get(current.parentId) ?? null;
+  }
+  return current;
+}
+
 export function getDescendantIds(categories: Category[], id: number): Set<number> {
   const byParent = new Map<number, Category[]>();
   for (const category of categories) {

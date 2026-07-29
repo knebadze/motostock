@@ -3,10 +3,14 @@ import * as vehicleListingService from "./vehicle-listing.service.js";
 import type {
   CreateVehicleListingInput,
   UpdateVehicleListingInput,
+  VehicleListingListQuery,
 } from "./vehicle-listing.schema.js";
 
-export async function list(_req: Request, res: Response) {
-  const items = await vehicleListingService.listVehicleListings();
+export async function list(
+  req: Request<unknown, unknown, unknown, VehicleListingListQuery>,
+  res: Response,
+) {
+  const items = await vehicleListingService.listVehicleListings(req.query.categoryId);
   res.status(200).json({ items });
 }
 

@@ -10,19 +10,26 @@ import {
   createVehicleListingSchema,
   updateVehicleListingSchema,
   vehicleListingIdParamSchema,
+  vehicleListingListQuerySchema,
   vehicleListingResponseSchema,
 } from "./vehicle-listing.schema.js";
 
 export const vehicleListingRouter = Router();
 
-vehicleListingRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
-vehicleListingRouter.get("/", vehicleListingController.list);
+// Public: the guest shop page reads these two. Everything else stays admin-only.
+vehicleListingRouter.get(
+  "/",
+  validate(vehicleListingListQuerySchema, "query"),
+  vehicleListingController.list,
+);
 vehicleListingRouter.get(
   "/:id",
   validate(vehicleListingIdParamSchema, "params"),
   vehicleListingController.getOne,
 );
+
+vehicleListingRouter.use(requireAuth, requireRole(ROLES.ADMIN));
+
 vehicleListingRouter.post(
   "/",
   validate(createVehicleListingSchema),
@@ -47,8 +54,8 @@ registry.registerPath({
   method: "get",
   path: "/vehicle-listings",
   tags: ["VehicleListings"],
-  summary: "List all vehicle listings",
-  security,
+  summary: "List all vehicle listings, optionally scoped to a category (public — guest shop page)",
+  request: { query: vehicleListingListQuerySchema },
   responses: {
     200: { description: "Vehicle listings", content: { "application/json": { schema: listResponse } } },
   },
@@ -58,8 +65,7 @@ registry.registerPath({
   method: "get",
   path: "/vehicle-listings/{id}",
   tags: ["VehicleListings"],
-  summary: "Get a vehicle listing by id",
-  security,
+  summary: "Get a vehicle listing by id (public)",
   request: { params: vehicleListingIdParamSchema },
   responses: {
     200: { description: "Vehicle listing", content: { "application/json": { schema: itemResponse } } },

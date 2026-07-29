@@ -50,6 +50,10 @@ export const categoriesRepository = {
     return prisma.category.update({ where: { id }, data: { imageUrl } });
   },
 
+  updateBannerImage(id: number, bannerImageUrl: string) {
+    return prisma.category.update({ where: { id }, data: { bannerImageUrl } });
+  },
+
   delete(id: number) {
     return prisma.category.delete({ where: { id } });
   },

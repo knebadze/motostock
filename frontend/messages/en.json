@@ -22,6 +22,28 @@
     "switchToLight": "Switch to light mode",
     "language": "Language"
   },
+  "Shop": {
+    "filtersHeading": "Filters",
+    "searchPlaceholder": "Search...",
+    "brandFilterLabel": "Brand",
+    "priceFilterLabel": "Price",
+    "priceMinPlaceholder": "Min",
+    "priceMaxPlaceholder": "Max",
+    "yearFilterLabel": "Year",
+    "yearMinPlaceholder": "From",
+    "yearMaxPlaceholder": "To",
+    "sortLabel": "Sort",
+    "sortNewest": "Newest",
+    "sortPriceAsc": "Price: low to high",
+    "sortPriceDesc": "Price: high to low",
+    "sortYearDesc": "Year: newest first",
+    "viewGrid": "Grid view",
+    "viewList": "List view",
+    "resultCount": "{count} results",
+    "outOfStock": "Out of stock",
+    "discountBadge": "Sale",
+    "emptyState": "No results found"
+  },
   "Auth": {
     "loginTitle": "Log in",
     "registerTitle": "Register",

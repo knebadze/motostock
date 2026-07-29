@@ -22,6 +22,28 @@
     "switchToLight": "ჩართე ღია რეჟიმი",
     "language": "ენა"
   },
+  "Shop": {
+    "filtersHeading": "ფილტრი",
+    "searchPlaceholder": "ძიება...",
+    "brandFilterLabel": "ბრენდი",
+    "priceFilterLabel": "ფასი",
+    "priceMinPlaceholder": "დან",
+    "priceMaxPlaceholder": "მდე",
+    "yearFilterLabel": "წელი",
+    "yearMinPlaceholder": "დან",
+    "yearMaxPlaceholder": "მდე",
+    "sortLabel": "სორტირება",
+    "sortNewest": "უახლესი",
+    "sortPriceAsc": "ფასი: ზრდადობით",
+    "sortPriceDesc": "ფასი: კლებადობით",
+    "sortYearDesc": "წელი: ახლიდან ძველისკენ",
+    "viewGrid": "ბადის ხედი",
+    "viewList": "სიის ხედი",
+    "resultCount": "{count} შედეგი",
+    "outOfStock": "არ არის მარაგში",
+    "discountBadge": "ფასდაკლება",
+    "emptyState": "შედეგი ვერ მოიძებნა"
+  },
   "Auth": {
     "loginTitle": "შესვლა",
     "registerTitle": "რეგისტრაცია",

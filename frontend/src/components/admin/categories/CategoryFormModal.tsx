@@ -10,6 +10,7 @@ import { FormActions } from "@/components/shared/FormActions";
 import {
   createCategory,
   updateCategory,
+  uploadCategoryBannerImage,
   uploadCategoryImage,
   type Category,
 } from "@/lib/api/categories";
@@ -45,6 +46,10 @@ export function CategoryFormModal({
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     resolveMediaUrl(category?.imageUrl ?? null),
   );
+  const [bannerImageFile, setBannerImageFile] = useState<File | null>(null);
+  const [bannerPreviewUrl, setBannerPreviewUrl] = useState<string | null>(
+    resolveMediaUrl(category?.bannerImageUrl ?? null),
+  );
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
 
@@ -54,6 +59,13 @@ export function CategoryFormModal({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (bannerImageFile && bannerPreviewUrl) URL.revokeObjectURL(bannerPreviewUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bannerPreviewUrl]);
 
   const excludedIds = category ? getDescendantIds(categories, category.id) : new Set<number>();
   const parentOptions = categories
@@ -65,6 +77,14 @@ export function CategoryFormModal({
     setImageFile(file);
     if (file) {
       setPreviewUrl(URL.createObjectURL(file));
+    }
+  }
+
+  function handleBannerImageChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    setBannerImageFile(file);
+    if (file) {
+      setBannerPreviewUrl(URL.createObjectURL(file));
     }
   }
 
@@ -101,6 +121,17 @@ export function CategoryFormModal({
           await uploadCategoryImage(savedCategory.id, imageFile);
         } catch {
           toast.error("კატეგორია შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა");
+          onSaved();
+          onClose();
+          return;
+        }
+      }
+
+      if (bannerImageFile) {
+        try {
+          await uploadCategoryBannerImage(savedCategory.id, bannerImageFile);
+        } catch {
+          toast.error("კატეგორია შენახულია, მაგრამ hero ბანერის ატვირთვა ვერ მოხერხდა");
           onSaved();
           onClose();
           return;
@@ -202,6 +233,31 @@ export function CategoryFormModal({
             onChange={handleImageChange}
             className="text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-border"
           />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="category-banner-image" className="text-sm font-medium">
+            Hero ბანერის სურათი
+          </label>
+          {bannerPreviewUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={bannerPreviewUrl}
+              alt=""
+              className="h-24 w-full rounded-lg border border-border object-cover"
+            />
+          )}
+          <input
+            id="category-banner-image"
+            type="file"
+            accept="image/*"
+            onChange={handleBannerImageChange}
+            className="text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-border"
+          />
+          <p className="text-xs text-muted-foreground">
+            გამოიყენება შოპის გვერდის თავში, ცალკეა ზემოთა კვადრატული სურათისგან — რეკომენდებული
+            ზომა 1920×480px (ფართო ბანერი), თორემ სურათი გაჭიმული/დაბლურებული გამოჩნდება
+          </p>
         </div>
 
         <FormActions onCancel={onClose} loading={loading} />

@@ -22,6 +22,28 @@
     "switchToLight": "Включить светлую тему",
     "language": "Язык"
   },
+  "Shop": {
+    "filtersHeading": "Фильтры",
+    "searchPlaceholder": "Поиск...",
+    "brandFilterLabel": "Бренд",
+    "priceFilterLabel": "Цена",
+    "priceMinPlaceholder": "От",
+    "priceMaxPlaceholder": "До",
+    "yearFilterLabel": "Год",
+    "yearMinPlaceholder": "От",
+    "yearMaxPlaceholder": "До",
+    "sortLabel": "Сортировка",
+    "sortNewest": "Сначала новые",
+    "sortPriceAsc": "Цена: по возрастанию",
+    "sortPriceDesc": "Цена: по убыванию",
+    "sortYearDesc": "Год: сначала новые",
+    "viewGrid": "Сетка",
+    "viewList": "Список",
+    "resultCount": "{count} результатов",
+    "outOfStock": "Нет в наличии",
+    "discountBadge": "Скидка",
+    "emptyState": "Ничего не найдено"
+  },
   "Auth": {
     "loginTitle": "Вход",
     "registerTitle": "Регистрация",

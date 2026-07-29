@@ -48,3 +48,15 @@ export async function uploadImage(req: Request, res: Response) {
   );
   res.status(200).json({ category });
 }
+
+export async function uploadBannerImage(req: Request, res: Response) {
+  if (!req.file) {
+    throw new ApiError(400, "სურათი არ არის მიბმული");
+  }
+
+  const category = await categoriesService.setCategoryBannerImage(
+    Number(req.params.id),
+    req.file,
+  );
+  res.status(200).json({ category });
+}

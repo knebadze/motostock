@@ -1,5 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
@@ -137,8 +138,10 @@ async function assertRefsExist(input: {
   }
 }
 
-export async function listVehicleListings() {
-  const rows = await vehicleListingRepository.findMany();
+export async function listVehicleListings(categoryId?: number) {
+  const categoryIds =
+    categoryId != null ? await resolveCategoryAndDescendantIds(categoryId) : undefined;
+  const rows = await vehicleListingRepository.findMany(categoryIds);
   return rows.map(toResponse);
 }
 

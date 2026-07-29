@@ -11,6 +11,7 @@ type CategoryRow = {
   nameRu: string;
   slug: string;
   imageUrl: string | null;
+  bannerImageUrl: string | null;
   sortOrder: number;
   parentId: number | null;
   createdAt: Date;
@@ -24,6 +25,7 @@ function toResponse(category: CategoryRow) {
     name: { ka: category.nameKa, en: category.nameEn, ru: category.nameRu },
     slug: category.slug,
     imageUrl: category.imageUrl,
+    bannerImageUrl: category.bannerImageUrl,
     sortOrder: category.sortOrder,
     parentId: category.parentId,
     parent: category.parent
@@ -66,6 +68,32 @@ async function assertParentExists(parentId: number) {
 export async function listCategories() {
   const categories = await categoriesRepository.findMany();
   return categories.map(toResponse);
+}
+
+// Resolves categoryId + every descendant category id (opposite direction from
+// the parent-walking used by assertNoCycle above). Products and vehicle
+// listings are only ever seeded on leaf categories, so browsing a parent
+// category (e.g. "transport") must still surface items from its children.
+// One findMany() call builds a parentId -> children[] map in memory, then a
+// single BFS from categoryId — no per-level DB round trips.
+export async function resolveCategoryAndDescendantIds(categoryId: number): Promise<number[]> {
+  const allCategories = await categoriesRepository.findMany();
+  const childrenByParentId = new Map<number, number[]>();
+  for (const category of allCategories) {
+    if (category.parentId == null) continue;
+    const siblings = childrenByParentId.get(category.parentId) ?? [];
+    siblings.push(category.id);
+    childrenByParentId.set(category.parentId, siblings);
+  }
+
+  const result: number[] = [];
+  const queue = [categoryId];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    result.push(current);
+    queue.push(...(childrenByParentId.get(current) ?? []));
+  }
+  return result;
 }
 
 export async function getCategory(id: number) {
@@ -160,5 +188,16 @@ export async function setCategoryImage(id: number, file: Express.Multer.File) {
 
   const imageUrl = await saveUploadedImage("categories", file);
   const category = await categoriesRepository.updateImage(id, imageUrl);
+  return toResponse(category);
+}
+
+export async function setCategoryBannerImage(id: number, file: Express.Multer.File) {
+  const existing = await categoriesRepository.findById(id);
+  if (!existing) {
+    throw new ApiError(404, "კატეგორია ვერ მოიძებნა");
+  }
+
+  const bannerImageUrl = await saveUploadedImage("categories-banner", file);
+  const category = await categoriesRepository.updateBannerImage(id, bannerImageUrl);
   return toResponse(category);
 }

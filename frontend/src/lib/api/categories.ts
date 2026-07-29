@@ -11,6 +11,7 @@ export type Category = {
   name: LocalizedString;
   slug: string;
   imageUrl: string | null;
+  bannerImageUrl: string | null;
   sortOrder: number;
   parentId: number | null;
   parent: { id: number; name: LocalizedString } | null;
@@ -56,6 +57,18 @@ export async function uploadCategoryImage(id: number, file: File): Promise<Categ
 
   const { data } = await apiClient.post<{ category: Category }>(
     `/categories/${id}/image`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return data.category;
+}
+
+export async function uploadCategoryBannerImage(id: number, file: File): Promise<Category> {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const { data } = await apiClient.post<{ category: Category }>(
+    `/categories/${id}/banner-image`,
     formData,
     { headers: { "Content-Type": "multipart/form-data" } },
   );

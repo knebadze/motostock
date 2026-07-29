@@ -46,8 +46,10 @@ export type VehicleListingInput = {
   descriptionRu?: string | null;
 };
 
-export async function listVehicleListings(): Promise<VehicleListing[]> {
-  const { data } = await apiClient.get<{ items: VehicleListing[] }>("/vehicle-listings");
+export async function listVehicleListings(categoryId?: number): Promise<VehicleListing[]> {
+  const { data } = await apiClient.get<{ items: VehicleListing[] }>("/vehicle-listings", {
+    params: categoryId ? { categoryId } : undefined,
+  });
   return data.items;
 }
 

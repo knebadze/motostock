@@ -31,8 +31,12 @@ type VehicleListingWriteData = {
 };
 
 export const vehicleListingRepository = {
-  findMany() {
+  findMany(categoryIds?: number[]) {
     return prisma.vehicleListing.findMany({
+      where:
+        categoryIds && categoryIds.length > 0
+          ? { vehicleCatalog: { model: { categoryId: { in: categoryIds } } } }
+          : undefined,
       include,
       orderBy: { createdAt: "desc" },
     });

@@ -42,6 +42,7 @@ export const categoryResponseSchema = registry.register(
     name: localizedNameField,
     slug: z.string().openapi({ example: "helmets" }),
     imageUrl: z.string().nullable().openapi({ example: "/uploads/categories/123.jpg" }),
+    bannerImageUrl: z.string().nullable().openapi({ example: "/uploads/categories-banner/123.jpg" }),
     sortOrder: z.int().openapi({ example: 0 }),
     parentId: z.int().nullable(),
     parent: z

@@ -143,13 +143,15 @@ export async function getVehicleCatalogFromServer(): Promise<VehicleCatalogEntry
   }
 }
 
-export async function getVehicleListingsFromServer(): Promise<VehicleListing[]> {
+export async function getVehicleListingsFromServer(categoryId?: number): Promise<VehicleListing[]> {
+  // Public endpoint (guest shop page reads this too) — must not bail out just
+  // because there's no admin session cookie, same fix as getCategoriesFromServer.
   const headers = await authHeaders();
-  if (!headers) return [];
 
   try {
     const { data } = await apiClient.get<{ items: VehicleListing[] }>("/vehicle-listings", {
       headers,
+      params: categoryId ? { categoryId } : undefined,
     });
     return data.items;
   } catch {
@@ -181,12 +183,16 @@ export async function getProductBrandsFromServer(): Promise<ProductBrand[]> {
   }
 }
 
-export async function getProductsFromServer(): Promise<Product[]> {
+export async function getProductsFromServer(categoryId?: number): Promise<Product[]> {
+  // Public endpoint (guest shop page reads this too) — must not bail out just
+  // because there's no admin session cookie, same fix as getCategoriesFromServer.
   const headers = await authHeaders();
-  if (!headers) return [];
 
   try {
-    const { data } = await apiClient.get<{ items: Product[] }>("/products", { headers });
+    const { data } = await apiClient.get<{ items: Product[] }>("/products", {
+      headers,
+      params: categoryId ? { categoryId } : undefined,
+    });
     return data.items;
   } catch {
     return [];

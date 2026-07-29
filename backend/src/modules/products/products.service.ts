@@ -6,6 +6,7 @@ import { productBrandsRepository } from "../product-brands/product-brands.reposi
 import { attributesRepository } from "../attributes/attributes.repository.js";
 import { attributeOptionsRepository } from "../attribute-options/attribute-options.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
+import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
 import { productsRepository } from "./products.repository.js";
 import type {
   CreateProductInput,
@@ -172,7 +173,9 @@ async function buildAttributeValueWriteData(
 }
 
 export async function listProducts(categoryId?: number) {
-  const rows = await productsRepository.findMany(categoryId);
+  const categoryIds =
+    categoryId != null ? await resolveCategoryAndDescendantIds(categoryId) : undefined;
+  const rows = await productsRepository.findMany(categoryIds);
   return rows.map(toResponse);
 }
 

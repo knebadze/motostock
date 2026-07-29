@@ -17,10 +17,12 @@ import {
 
 export const productsRouter = Router();
 
-productsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
+// Public: the guest shop page reads these two. Everything else stays admin-only.
 productsRouter.get("/", validate(productListQuerySchema, "query"), productsController.list);
 productsRouter.get("/:id", validate(productIdParamSchema, "params"), productsController.getOne);
+
+productsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
+
 productsRouter.post("/", validate(createProductSchema), productsController.create);
 productsRouter.patch(
   "/:id",
@@ -48,8 +50,7 @@ registry.registerPath({
   method: "get",
   path: "/products",
   tags: ["Products"],
-  summary: "List products, optionally scoped to a category",
-  security,
+  summary: "List products, optionally scoped to a category (public — guest shop page)",
   request: { query: productListQuerySchema },
   responses: {
     200: { description: "Products list", content: { "application/json": { schema: listResponse } } },
@@ -60,8 +61,7 @@ registry.registerPath({
   method: "get",
   path: "/products/{id}",
   tags: ["Products"],
-  summary: "Get a product by id",
-  security,
+  summary: "Get a product by id (public)",
   request: { params: productIdParamSchema },
   responses: {
     200: { description: "Product", content: { "application/json": { schema: itemResponse } } },
