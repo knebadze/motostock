@@ -8,13 +8,17 @@ import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { Logo } from "@/components/shared/Logo";
 import { logoutUser, type User } from "@/lib/api/auth";
+import { resolveMediaUrl } from "@/lib/api/client";
 import type { Category } from "@/lib/api/categories";
+
+const MEGA_MENU_CLOSE_DELAY_MS = 150;
 
 export function Header({
   user = null,
   categories = [],
 }: {
   user?: User | null;
+  /** Full category tree (all depths) — the header derives top-level nav items and their children itself. */
   categories?: Category[];
 }) {
   const pathname = usePathname();
@@ -23,7 +27,34 @@ export function Header({
   const tHeader = useTranslations("Header");
   const [isOpen, setIsOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const topLevelCategories = categories.filter((category) => category.parentId === null);
+  const activeCategory = categories.find((category) => category.id === activeCategoryId) ?? null;
+  const activeChildren = activeCategory
+    ? categories.filter((category) => category.parentId === activeCategory.id)
+    : [];
+
+  function cancelMegaMenuClose() {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+  }
+
+  function openMegaMenu(categoryId: number) {
+    cancelMegaMenuClose();
+    setActiveCategoryId(categoryId);
+  }
+
+  function scheduleMegaMenuClose() {
+    cancelMegaMenuClose();
+    closeTimeoutRef.current = setTimeout(() => setActiveCategoryId(null), MEGA_MENU_CLOSE_DELAY_MS);
+  }
+
+  useEffect(() => cancelMegaMenuClose, []);
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -71,20 +102,24 @@ export function Header({
           <Logo className="h-8 w-auto sm:h-9" />
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
-          {categories.map((category) => {
+        <nav
+          onMouseLeave={scheduleMegaMenuClose}
+          className="hidden items-center gap-6 text-sm font-medium md:flex"
+        >
+          {topLevelCategories.map((category) => {
             const href = `/${category.slug}`;
             const isActive = pathname === href;
             return (
-              <Link
-                key={category.id}
-                href={href}
-                className={`transition-colors hover:text-primary ${
-                  isActive ? "text-primary" : "text-foreground"
-                }`}
-              >
-                {category.name[locale]}
-              </Link>
+              <div key={category.id} onMouseEnter={() => openMegaMenu(category.id)}>
+                <Link
+                  href={href}
+                  className={`transition-colors hover:text-primary ${
+                    isActive ? "text-primary" : "text-foreground"
+                  }`}
+                >
+                  {category.name[locale]}
+                </Link>
+              </div>
             );
           })}
         </nav>
@@ -181,6 +216,44 @@ export function Header({
         </div>
       </div>
 
+      {activeCategory && activeChildren.length > 0 && (
+        <div
+          onMouseEnter={cancelMegaMenuClose}
+          onMouseLeave={scheduleMegaMenuClose}
+          className="absolute inset-x-0 top-full hidden border-b border-border bg-background shadow-lg md:block"
+        >
+          <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-3 gap-6 sm:grid-cols-4 lg:grid-cols-6">
+              {activeChildren.map((child) => {
+                const imageUrl = resolveMediaUrl(child.imageUrl);
+                return (
+                  <Link
+                    key={child.id}
+                    href={`/${child.slug}`}
+                    onClick={() => setActiveCategoryId(null)}
+                    className="flex flex-col items-center gap-2 rounded-xl p-3 text-center transition-colors hover:bg-muted"
+                  >
+                    {imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={imageUrl}
+                        alt=""
+                        className="size-16 rounded-lg border border-border object-cover"
+                      />
+                    ) : (
+                      <div className="size-16 rounded-lg border border-dashed border-border" />
+                    )}
+                    <span className="text-sm font-medium text-foreground">
+                      {child.name[locale]}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         id="mobile-nav"
         className={`grid overflow-hidden border-b border-border transition-[grid-template-rows] duration-200 ease-out md:hidden ${
@@ -189,7 +262,7 @@ export function Header({
       >
         <div className="min-h-0">
           <nav className="flex flex-col gap-1 px-4 py-3 text-sm font-medium sm:px-6">
-            {categories.map((category) => {
+            {topLevelCategories.map((category) => {
               const href = `/${category.slug}`;
               const isActive = pathname === href;
               return (

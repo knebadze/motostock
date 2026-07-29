@@ -11,11 +11,10 @@ export default async function GuestLayout({
     getCurrentUserFromServer(),
     getCategoriesFromServer(),
   ]);
-  const topLevelCategories = categories.filter((category) => category.parentId === null);
 
   return (
     <>
-      <Header user={user} categories={topLevelCategories} />
+      <Header user={user} categories={categories} />
       <main className="flex-1">{children}</main>
       <Footer />
     </>
