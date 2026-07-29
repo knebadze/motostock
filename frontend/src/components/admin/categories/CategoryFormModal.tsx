@@ -40,6 +40,7 @@ export function CategoryFormModal({
   const [parentId, setParentId] = useState<string>(
     category?.parentId != null ? String(category.parentId) : "",
   );
+  const [sortOrder, setSortOrder] = useState(category?.sortOrder ?? 0);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     resolveMediaUrl(category?.imageUrl ?? null),
@@ -88,6 +89,7 @@ export function CategoryFormModal({
         name: { ka: nameKa.trim(), en: nameEn.trim(), ru: nameRu.trim() },
         slug: slug.trim(),
         parentId: parentId ? Number(parentId) : null,
+        sortOrder,
       };
 
       const savedCategory = isEditing
@@ -163,6 +165,22 @@ export function CategoryFormModal({
             searchable
             placeholder="— არცერთი —"
           />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="category-sort-order" className="text-sm font-medium">
+            თანმიმდევრობა
+          </label>
+          <input
+            id="category-sort-order"
+            type="number"
+            value={sortOrder}
+            onChange={(event) => setSortOrder(Number(event.target.value))}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <p className="text-xs text-muted-foreground">
+            პატარა რიცხვი უფრო ადრე გამოჩნდება ჰეადერის მენიუში
+          </p>
         </div>
 
         <div className="flex flex-col gap-1.5">

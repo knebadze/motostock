@@ -19,6 +19,7 @@ export const createCategorySchema = registry.register(
     name: localizedNameField,
     slug: slugField,
     parentId: z.int().positive().nullable().optional().openapi({ example: null }),
+    sortOrder: z.int().optional().openapi({ example: 0 }),
   }),
 );
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
@@ -41,6 +42,7 @@ export const categoryResponseSchema = registry.register(
     name: localizedNameField,
     slug: z.string().openapi({ example: "helmets" }),
     imageUrl: z.string().nullable().openapi({ example: "/uploads/categories/123.jpg" }),
+    sortOrder: z.int().openapi({ example: 0 }),
     parentId: z.int().nullable(),
     parent: z
       .object({ id: z.int(), name: localizedStringSchema })

@@ -8,13 +8,14 @@ type CategoryWriteData = {
   nameRu: string;
   slug: string;
   parentId: number | null;
+  sortOrder?: number;
 };
 
 export const categoriesRepository = {
   findMany() {
     return prisma.category.findMany({
       include: { parent: { select: parentSelect } },
-      orderBy: { nameKa: "asc" },
+      orderBy: [{ sortOrder: "asc" }, { nameKa: "asc" }],
     });
   },
 

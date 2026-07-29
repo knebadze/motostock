@@ -11,6 +11,7 @@ export type Category = {
   name: LocalizedString;
   slug: string;
   imageUrl: string | null;
+  sortOrder: number;
   parentId: number | null;
   parent: { id: number; name: LocalizedString } | null;
   createdAt: string;
@@ -21,6 +22,7 @@ export type CategoryInput = {
   name: LocalizedString;
   slug: string;
   parentId: number | null;
+  sortOrder: number;
 };
 
 export async function listCategories(): Promise<Category[]> {

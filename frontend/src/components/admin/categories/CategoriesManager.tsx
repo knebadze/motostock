@@ -38,6 +38,11 @@ const columns: DataTableColumn<CategoryNode>[] = [
   { header: "სახელი (RU)", render: (category) => category.name.ru, cellClassName: "text-muted-foreground" },
   { header: "Slug", render: (category) => category.slug, cellClassName: "font-mono text-muted-foreground" },
   {
+    header: "თანმიმდევრობა",
+    render: (category) => category.sortOrder,
+    cellClassName: "text-muted-foreground",
+  },
+  {
     header: "მშობელი",
     render: (category) => category.parent?.name.ka ?? "—",
     cellClassName: "text-muted-foreground",

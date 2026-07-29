@@ -11,6 +11,7 @@ type CategoryRow = {
   nameRu: string;
   slug: string;
   imageUrl: string | null;
+  sortOrder: number;
   parentId: number | null;
   createdAt: Date;
   updatedAt: Date;
@@ -23,6 +24,7 @@ function toResponse(category: CategoryRow) {
     name: { ka: category.nameKa, en: category.nameEn, ru: category.nameRu },
     slug: category.slug,
     imageUrl: category.imageUrl,
+    sortOrder: category.sortOrder,
     parentId: category.parentId,
     parent: category.parent
       ? {
@@ -90,6 +92,7 @@ export async function createCategory(input: CreateCategoryInput) {
     nameRu: input.name.ru,
     slug: input.slug,
     parentId: input.parentId ?? null,
+    sortOrder: input.sortOrder ?? 0,
   });
 
   return toResponse(category);
@@ -119,6 +122,7 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
       : {}),
     ...(input.slug !== undefined ? { slug: input.slug } : {}),
     ...(input.parentId !== undefined ? { parentId: input.parentId } : {}),
+    ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
   });
 
   return toResponse(category);
