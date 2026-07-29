@@ -14,7 +14,7 @@ export function ProductCard({ product, layout }: { product: Product; layout: Vie
 
   return (
     <div
-      className={`rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg ${
+      className={`h-full rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg ${
         layout === "list" ? "flex items-center gap-4" : "flex flex-col gap-3"
       }`}
     >
@@ -42,13 +42,17 @@ export function ProductCard({ product, layout }: { product: Product; layout: Vie
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-1">
-        {product.productBrand && (
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {product.productBrand.name[locale]}
+      <div className="flex flex-1 flex-col justify-between gap-1">
+        <div className="flex flex-col gap-1">
+          {product.productBrand && (
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {product.productBrand.name[locale]}
+            </span>
+          )}
+          <span className="line-clamp-2 min-h-12 font-semibold text-foreground">
+            {product.name[locale]}
           </span>
-        )}
-        <span className="line-clamp-2 font-semibold text-foreground">{product.name[locale]}</span>
+        </div>
         <span className="text-lg font-bold text-primary">
           {product.minPrice != null ? formatPrice(product.minPrice) : "—"}
         </span>

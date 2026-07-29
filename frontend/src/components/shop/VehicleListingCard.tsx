@@ -28,7 +28,7 @@ export function VehicleListingCard({
 
   return (
     <div
-      className={`rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg ${
+      className={`h-full rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg ${
         layout === "list" ? "flex items-center gap-4" : "flex flex-col gap-3"
       }`}
     >
@@ -61,20 +61,22 @@ export function VehicleListingCard({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-1">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {listing.vehicleCatalog.brand.name[locale]} · {listing.year}
-        </span>
-        <span className="line-clamp-2 font-semibold text-foreground">
-          {listing.vehicleCatalog.model.name[locale]}
-        </span>
-        <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
-          <span className="rounded-full border border-border px-2 py-0.5">
-            {pickLookupName(listing.condition, locale)}
+      <div className="flex flex-1 flex-col justify-between gap-1">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {listing.vehicleCatalog.brand.name[locale]} · {listing.year}
           </span>
-          <span className="rounded-full border border-border px-2 py-0.5">
-            {pickLookupName(listing.color, locale)}
+          <span className="line-clamp-2 min-h-12 font-semibold text-foreground">
+            {listing.vehicleCatalog.model.name[locale]}
           </span>
+          <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
+            <span className="rounded-full border border-border px-2 py-0.5">
+              {pickLookupName(listing.condition, locale)}
+            </span>
+            <span className="rounded-full border border-border px-2 py-0.5">
+              {pickLookupName(listing.color, locale)}
+            </span>
+          </div>
         </div>
         {activeDiscount ? (
           <div className="flex items-center gap-2">

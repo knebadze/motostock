@@ -16,7 +16,7 @@ export function SubcategoryGrid({ subcategories }: { subcategories: Category[] }
 
   return (
     <div className="border-b border-border bg-card">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           {t("subcategoriesHeading")}
         </h2>
