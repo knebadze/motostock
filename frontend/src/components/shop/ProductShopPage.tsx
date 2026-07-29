@@ -10,6 +10,7 @@ import type { Product } from "@/lib/api/products";
 import { ProductFilters, type BrandOption } from "./ProductFilters";
 import { ProductCard } from "./ProductCard";
 import { ShopHero } from "./ShopHero";
+import { SubcategoryGrid } from "./SubcategoryGrid";
 import { ShopToolbar } from "./ShopToolbar";
 import { ShopItemGrid } from "./ShopItemGrid";
 import type { ViewMode } from "./ViewModeToggle";
@@ -24,12 +25,14 @@ function parseSortBy(value: string): SortBy {
 export function ProductShopPage({
   category,
   breadcrumbChain,
+  subcategories,
   products,
   initialPage = 1,
   initialSort = "newest",
 }: {
   category: Category;
   breadcrumbChain: Category[];
+  subcategories: Category[];
   products: Product[];
   initialPage?: number;
   initialSort?: string;
@@ -114,6 +117,7 @@ export function ProductShopPage({
   return (
     <>
       <ShopHero category={category} breadcrumbChain={breadcrumbChain} />
+      <SubcategoryGrid subcategories={subcategories} />
       <div className="border-t border-border bg-muted/40">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr]">

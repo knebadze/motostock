@@ -27,6 +27,7 @@
   },
   "Shop": {
     "filtersHeading": "Filters",
+    "subcategoriesHeading": "Subcategories",
     "searchPlaceholder": "Search...",
     "brandFilterLabel": "Brand",
     "priceFilterLabel": "Price",

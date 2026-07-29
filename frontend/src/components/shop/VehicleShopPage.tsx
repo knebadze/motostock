@@ -11,6 +11,7 @@ import { VehicleFilters } from "./VehicleFilters";
 import type { BrandOption } from "./ProductFilters";
 import { VehicleListingCard } from "./VehicleListingCard";
 import { ShopHero } from "./ShopHero";
+import { SubcategoryGrid } from "./SubcategoryGrid";
 import { ShopToolbar } from "./ShopToolbar";
 import { ShopItemGrid } from "./ShopItemGrid";
 import type { ViewMode } from "./ViewModeToggle";
@@ -29,12 +30,14 @@ function effectivePrice(listing: VehicleListing): number {
 export function VehicleShopPage({
   category,
   breadcrumbChain,
+  subcategories,
   listings,
   initialPage = 1,
   initialSort = "newest",
 }: {
   category: Category;
   breadcrumbChain: Category[];
+  subcategories: Category[];
   listings: VehicleListing[];
   initialPage?: number;
   initialSort?: string;
@@ -126,6 +129,7 @@ export function VehicleShopPage({
   return (
     <>
       <ShopHero category={category} breadcrumbChain={breadcrumbChain} />
+      <SubcategoryGrid subcategories={subcategories} />
       <div className="border-t border-border bg-muted/40">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr]">

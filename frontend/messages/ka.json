@@ -27,6 +27,7 @@
   },
   "Shop": {
     "filtersHeading": "ფილტრი",
+    "subcategoriesHeading": "ქვეკატეგორიები",
     "searchPlaceholder": "ძიება...",
     "brandFilterLabel": "ბრენდი",
     "priceFilterLabel": "ფასი",

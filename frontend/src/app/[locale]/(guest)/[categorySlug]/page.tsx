@@ -107,6 +107,7 @@ export default async function CategoryShopPage({
 
   const root = getRootCategory(categories, category.id);
   const isVehicleCategory = root?.slug === VEHICLE_ROOT_CATEGORY_SLUG;
+  const subcategories = categories.filter((item) => item.parentId === category.id);
 
   const breadcrumbScript = (
     <script
@@ -123,6 +124,7 @@ export default async function CategoryShopPage({
         <VehicleShopPage
           category={category}
           breadcrumbChain={ancestorChain}
+          subcategories={subcategories}
           listings={listings}
           initialPage={initialPage}
           initialSort={initialSort}
@@ -138,6 +140,7 @@ export default async function CategoryShopPage({
       <ProductShopPage
         category={category}
         breadcrumbChain={ancestorChain}
+        subcategories={subcategories}
         products={products}
         initialPage={initialPage}
         initialSort={initialSort}

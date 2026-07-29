@@ -27,6 +27,7 @@
   },
   "Shop": {
     "filtersHeading": "Фильтры",
+    "subcategoriesHeading": "Подкатегории",
     "searchPlaceholder": "Поиск...",
     "brandFilterLabel": "Бренд",
     "priceFilterLabel": "Цена",
