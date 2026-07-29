@@ -1,7 +1,10 @@
 {
   "Metadata": {
-    "title": "MotoStock — მოტო აქსესუარები და ეკიპირება",
-    "description": "აქსესუარები, ჩასაცმელი, ჩაფხუტები და ნაწილები მოტოტექნიკისთვის."
+    "title": "{siteName} — მოტო აქსესუარები და ეკიპირება",
+    "description": "აქსესუარები, ჩასაცმელი, ჩაფხუტები და ნაწილები მოტოტექნიკისთვის.",
+    "categoryTitle": "{category} — {siteName}",
+    "categoryTitleWithPage": "{category} — გვერდი {page} — {siteName}",
+    "categoryDescription": "{category} — საუკეთესო არჩევანი და ფასები {siteName}-ში."
   },
   "Nav": {
     "home": "მთავარი",
@@ -108,7 +111,7 @@
     "backHome": "მთავარ გვერდზე დაბრუნება"
   },
   "Error": {
-    "heading": "რაღაც ავარიულად წავიდა",
+    "heading": "შეფერხება მოხდა",
     "description": "სცადეთ გვერდის განახლება, ან სცადეთ მოგვიანებით.",
     "retry": "ხელახლა ცდა",
     "backHome": "მთავარ გვერდზე დაბრუნება"

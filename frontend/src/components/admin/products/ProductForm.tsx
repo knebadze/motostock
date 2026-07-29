@@ -18,6 +18,7 @@ import {
   type ProductAttributeValueInput,
 } from "@/lib/api/products";
 import { createProductVariant } from "@/lib/api/product-variants";
+import { siteConfig } from "@/config/site";
 import { uploadProductVariantImages } from "@/lib/api/product-variant-images";
 import { createProductVariantDiscount } from "@/lib/api/product-variant-discounts";
 import { createProductFitment } from "@/lib/api/product-fitment";
@@ -308,7 +309,7 @@ export function ProductForm({
     setNameEn(next.en);
     setNameRu(next.ru);
     if (!metaTitleTouched && next.ka) {
-      setMetaTitle(`${next.ka} | MotoStock`.slice(0, 70));
+      setMetaTitle(`${next.ka} | ${siteConfig.name}`.slice(0, 70));
     }
   }
 

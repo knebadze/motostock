@@ -7,8 +7,12 @@ const DEFAULT_PAGE_SIZE = 20;
 // Shared client-side pagination: slices an already-fetched array, clamping
 // the requested page to the valid range so a shrinking list (e.g. after a
 // delete or a filter change) never strands the view on an empty page.
-export function usePagination<T>(items: T[], pageSize: number = DEFAULT_PAGE_SIZE) {
-  const [page, setPage] = useState(1);
+export function usePagination<T>(
+  items: T[],
+  pageSize: number = DEFAULT_PAGE_SIZE,
+  initialPage: number = 1,
+) {
+  const [page, setPage] = useState(initialPage);
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
   const currentPage = Math.min(Math.max(page, 1), totalPages);
   const pageItems = items.slice((currentPage - 1) * pageSize, currentPage * pageSize);

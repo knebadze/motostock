@@ -1,7 +1,10 @@
 {
   "Metadata": {
-    "title": "MotoStock — Мотоэкипировка и аксессуары",
-    "description": "Аксессуары, экипировка, шлемы и запчасти для мототехники."
+    "title": "{siteName} — Мотоэкипировка и аксессуары",
+    "description": "Аксессуары, экипировка, шлемы и запчасти для мототехники.",
+    "categoryTitle": "{category} — {siteName}",
+    "categoryTitleWithPage": "{category} — Страница {page} — {siteName}",
+    "categoryDescription": "{category} — лучший выбор и цены в {siteName}."
   },
   "Nav": {
     "home": "Главная",

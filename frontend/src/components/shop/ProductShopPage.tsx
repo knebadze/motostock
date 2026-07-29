@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import type { SelectOption } from "@/components/shared/Select";
 import { Pagination, usePagination } from "@/components/shared/Pagination";
 import type { Category } from "@/lib/api/categories";
@@ -14,22 +15,35 @@ import { ShopItemGrid } from "./ShopItemGrid";
 import type { ViewMode } from "./ViewModeToggle";
 
 type SortBy = "newest" | "price-asc" | "price-desc";
+const SORT_VALUES: SortBy[] = ["newest", "price-asc", "price-desc"];
+
+function parseSortBy(value: string): SortBy {
+  return (SORT_VALUES as string[]).includes(value) ? (value as SortBy) : "newest";
+}
 
 export function ProductShopPage({
   category,
+  breadcrumbChain,
   products,
+  initialPage = 1,
+  initialSort = "newest",
 }: {
   category: Category;
+  breadcrumbChain: Category[];
   products: Product[];
+  initialPage?: number;
+  initialSort?: string;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
+  const pathname = usePathname();
+  const router = useRouter();
 
   const [search, setSearch] = useState("");
   const [selectedBrandIds, setSelectedBrandIds] = useState<number[]>([]);
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
-  const [sortBy, setSortBy] = useState<SortBy>("newest");
+  const [sortBy, setSortBy] = useState<SortBy>(() => parseSortBy(initialSort));
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   const brandOptions: BrandOption[] = useMemo(() => {
@@ -73,11 +87,23 @@ export function ProductShopPage({
     return sorted;
   }, [products, search, selectedBrandIds, priceMin, priceMax, sortBy, locale]);
 
-  const { page, setPage, pageItems, totalPages } = usePagination(filtered, 20);
+  const { page, setPage, pageItems, totalPages } = usePagination(filtered, 20, initialPage);
 
   function resetToFirstPage() {
     setPage(1);
   }
+
+  // Keep page/sort in the URL — they change WHICH content is visible, so each
+  // combination must be its own crawlable, shareable, bookmarkable address.
+  // Search/brand/price stay client-only state (deliberately not synced here —
+  // faceted-filter combinations aren't meant to be individually indexed).
+  useEffect(() => {
+    const query: Record<string, string> = {};
+    if (page > 1) query.page = String(page);
+    if (sortBy !== "newest") query.sort = sortBy;
+    router.replace({ pathname, query }, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, sortBy]);
 
   const sortOptions: SelectOption[] = [
     { value: "newest", label: t("sortNewest") },
@@ -87,7 +113,7 @@ export function ProductShopPage({
 
   return (
     <>
-      <ShopHero category={category} />
+      <ShopHero category={category} breadcrumbChain={breadcrumbChain} />
       <div className="border-t border-border bg-muted/40">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr]">

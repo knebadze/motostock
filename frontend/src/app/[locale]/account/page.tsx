@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
+
+// Private, user-specific data — keep it out of search results.
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function AccountPage() {
   const t = useTranslations("Account");

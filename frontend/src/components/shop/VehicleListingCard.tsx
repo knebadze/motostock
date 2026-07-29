@@ -41,7 +41,11 @@ export function VehicleListingCard({
       >
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={imageUrl} alt="" className="size-full object-cover" />
+          <img
+            src={imageUrl}
+            alt={listing.vehicleCatalog.model.name[locale]}
+            className="size-full object-cover"
+          />
         ) : (
           <div className="size-full border border-dashed border-border" />
         )}

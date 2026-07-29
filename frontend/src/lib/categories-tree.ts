@@ -33,6 +33,20 @@ export function getRootCategory(categories: Category[], categoryId: number): Cat
   return current;
 }
 
+// Root-to-leaf chain including the category itself — used for BreadcrumbList
+// structured data (getRootCategory above only needs the single top-level
+// ancestor, not the full path).
+export function getAncestorChain(categories: Category[], categoryId: number): Category[] {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const chain: Category[] = [];
+  let current = byId.get(categoryId) ?? null;
+  while (current) {
+    chain.unshift(current);
+    current = current.parentId != null ? (byId.get(current.parentId) ?? null) : null;
+  }
+  return chain;
+}
+
 export function getDescendantIds(categories: Category[], id: number): Set<number> {
   const byParent = new Map<number, Category[]>();
   for (const category of categories) {

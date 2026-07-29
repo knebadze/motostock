@@ -1,7 +1,10 @@
 {
   "Metadata": {
-    "title": "MotoStock — Moto Gear & Accessories",
-    "description": "Accessories, clothing, helmets, and parts for motorcycles."
+    "title": "{siteName} — Moto Gear & Accessories",
+    "description": "Accessories, clothing, helmets, and parts for motorcycles.",
+    "categoryTitle": "{category} — {siteName}",
+    "categoryTitleWithPage": "{category} — Page {page} — {siteName}",
+    "categoryDescription": "{category} — best selection and prices at {siteName}."
   },
   "Nav": {
     "home": "Home",

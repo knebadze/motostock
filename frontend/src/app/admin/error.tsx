@@ -7,7 +7,7 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
     <main className="flex flex-1 items-center justify-center px-4 py-24 text-center">
       <div className="mx-auto max-w-md">
         <h1 className="text-3xl font-bold tracking-tight">
-          რაღაც ავარიულად წავიდა
+          შეფერხება მოხდა  
         </h1>
         <p className="mt-3 text-muted-foreground">
           სცადეთ გვერდის განახლება, ან სცადეთ მოგვიანებით.

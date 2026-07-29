@@ -237,7 +237,7 @@ export function Header({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={imageUrl}
-                        alt=""
+                        alt={child.name[locale]}
                         className="size-16 rounded-lg border border-border object-cover"
                       />
                     ) : (

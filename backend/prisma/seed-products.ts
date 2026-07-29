@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { prisma } from "../src/config/prisma.js";
+import { SITE_NAME } from "../src/config/site.js";
 
 // Demo product catalog covering every leaf product category, exercising the
 // full breadth of the product-adding feature: category-inherited attributes
@@ -558,7 +559,7 @@ async function seedProduct(seed: ProductSeed, vehicleIdBySlug: Record<string, nu
       descriptionEn: seed.descriptionEn,
       descriptionRu: seed.descriptionRu,
       slug: seed.slug,
-      metaTitle: `${seed.nameKa} | MotoStock`,
+      metaTitle: `${seed.nameKa} | ${SITE_NAME}`,
       metaDescription: seed.nameKa,
     },
   });

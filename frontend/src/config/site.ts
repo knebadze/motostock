@@ -1,5 +1,5 @@
 export const siteConfig = {
-  name: "MotoStock",
+  name: "MotoStock 22",
   nav: [
     { key: "home", href: "/" },
     { key: "helmets", href: "/helmets" },

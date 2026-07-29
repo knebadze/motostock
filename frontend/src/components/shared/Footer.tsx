@@ -62,7 +62,7 @@ export function Footer() {
       </div>
 
       <div className="border-t border-border px-4 py-6 text-center text-xs text-muted-foreground sm:px-6 lg:px-8">
-        © {year} MotoStock. {tFooter("rights")}
+        © {year} {siteConfig.name}. {tFooter("rights")}
       </div>
     </footer>
   );

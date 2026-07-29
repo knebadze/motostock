@@ -3,8 +3,15 @@
 import { useLocale } from "next-intl";
 import { resolveMediaUrl } from "@/lib/api/client";
 import type { Category } from "@/lib/api/categories";
+import { Breadcrumb } from "./Breadcrumb";
 
-export function ShopHero({ category }: { category: Category }) {
+export function ShopHero({
+  category,
+  breadcrumbChain,
+}: {
+  category: Category;
+  breadcrumbChain: Category[];
+}) {
   const locale = useLocale() as "ka" | "en" | "ru";
   // Deliberately not falling back to the small square category.imageUrl here —
   // that image is sized for admin-table/mega-menu thumbnails and looks
@@ -35,6 +42,9 @@ export function ShopHero({ category }: { category: Category }) {
         >
           {category.name[locale]}
         </h1>
+        <div className="mt-4">
+          <Breadcrumb chain={breadcrumbChain} variant={imageUrl ? "dark" : "light"} />
+        </div>
       </div>
     </section>
   );
