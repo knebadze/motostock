@@ -11,7 +11,13 @@ const include = {
       option: { select: { id: true, key: true, labelKa: true, labelEn: true, labelRu: true } },
     },
   },
-  variants: { select: { price: true, stockQuantity: true } },
+  variants: {
+    select: {
+      price: true,
+      stockQuantity: true,
+      discounts: { select: { discountPrice: true, startDate: true, endDate: true } },
+    },
+  },
 } as const;
 
 const lookupSelect = { id: true, key: true, nameKa: true, nameEn: true, nameRu: true } as const;

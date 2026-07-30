@@ -40,6 +40,7 @@ export type Product = {
   variantCount: number;
   minPrice: number | null;
   totalStock: number;
+  activeDiscount: { price: number; discountPrice: number } | null;
   createdAt: string;
   updatedAt: string;
 };

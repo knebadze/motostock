@@ -43,12 +43,12 @@ export function VehicleListingCard({
           <div className="size-full border border-dashed border-border" />
         )}
         {outOfStock && (
-          <span className="absolute left-2 top-2 rounded-full bg-foreground/80 px-2 py-0.5 text-xs font-semibold text-background">
+          <span className="absolute left-1.5 top-1.5 rounded-full bg-foreground/80 px-2 py-0.5 text-xs font-semibold text-background shadow-sm">
             {t("outOfStock")}
           </span>
         )}
         {activeDiscount && (
-          <span className="absolute right-2 top-2 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
+          <span className="absolute right-1.5 top-1.5 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground shadow-sm">
             {t("discountBadge")}
           </span>
         )}

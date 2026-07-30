@@ -30,7 +30,36 @@ type AttributeValueRow = {
   option: { id: number; key: string; labelKa: string; labelEn: string; labelRu: string } | null;
 };
 
-type VariantSummaryRow = { price: { toString(): string }; stockQuantity: number };
+type DiscountSummaryRow = { discountPrice: { toString(): string }; startDate: Date; endDate: Date };
+type VariantSummaryRow = {
+  price: { toString(): string };
+  stockQuantity: number;
+  discounts: DiscountSummaryRow[];
+};
+
+function findActiveDiscountPrice(discounts: DiscountSummaryRow[]): number | null {
+  const now = new Date();
+  const active = discounts.find((discount) => discount.startDate <= now && now <= discount.endDate);
+  return active ? Number(active.discountPrice) : null;
+}
+
+// The card shows one price pair, so among every variant currently on
+// discount, surface the one with the lowest discounted price (its own
+// regular price alongside it, so the crossed-out price always matches the
+// discount it belongs to).
+function findCardActiveDiscount(
+  variants: VariantSummaryRow[],
+): { price: number; discountPrice: number } | null {
+  let cheapest: { price: number; discountPrice: number } | null = null;
+  for (const variant of variants) {
+    const discountPrice = findActiveDiscountPrice(variant.discounts);
+    if (discountPrice == null) continue;
+    if (cheapest == null || discountPrice < cheapest.discountPrice) {
+      cheapest = { price: Number(variant.price), discountPrice };
+    }
+  }
+  return cheapest;
+}
 
 type ProductRow = {
   id: number;
@@ -91,6 +120,7 @@ function toResponse(row: ProductRow) {
     variantCount: row.variants.length,
     minPrice: row.variants.length > 0 ? Math.min(...row.variants.map((v) => Number(v.price))) : null,
     totalStock: row.variants.reduce((sum, v) => sum + v.stockQuantity, 0),
+    activeDiscount: findCardActiveDiscount(row.variants),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

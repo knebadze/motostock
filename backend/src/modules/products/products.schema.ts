@@ -73,6 +73,11 @@ const productAttributeValueResponseSchema = z.object({
   option: z.object({ id: z.int(), key: z.string(), label: localizedStringSchema }).nullable(),
 });
 
+const productCardDiscountSchema = z.object({
+  price: z.number().openapi({ example: 199.99 }),
+  discountPrice: z.number().openapi({ example: 159.99 }),
+});
+
 export const productResponseSchema = registry.register(
   "Product",
   z.object({
@@ -91,6 +96,9 @@ export const productResponseSchema = registry.register(
     variantCount: z.int().openapi({ example: 2 }),
     minPrice: z.number().nullable().openapi({ example: 199.99 }),
     totalStock: z.int().openapi({ example: 5 }),
+    // The regular/discount price pair of whichever variant currently has the
+    // lowest active discount — null if no variant is on discount right now.
+    activeDiscount: productCardDiscountSchema.nullable(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
   }),

@@ -12,6 +12,7 @@ export function ProductCard({ product, layout }: { product: Product; layout: Vie
   const t = useTranslations("Shop");
   const imageUrl = resolveMediaUrl(product.imageUrl);
   const outOfStock = product.totalStock === 0;
+  const { activeDiscount } = product;
 
   return (
     <Link
@@ -38,8 +39,13 @@ export function ProductCard({ product, layout }: { product: Product; layout: Vie
           <div className="size-full border border-dashed border-border" />
         )}
         {outOfStock && (
-          <span className="absolute left-2 top-2 rounded-full bg-foreground/80 px-2 py-0.5 text-xs font-semibold text-background">
+          <span className="absolute left-1.5 top-1.5 rounded-full bg-foreground/80 px-2 py-0.5 text-xs font-semibold text-background shadow-sm">
             {t("outOfStock")}
+          </span>
+        )}
+        {activeDiscount && (
+          <span className="absolute right-1.5 top-1.5 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground shadow-sm">
+            {t("discountBadge")}
           </span>
         )}
       </div>
@@ -55,9 +61,20 @@ export function ProductCard({ product, layout }: { product: Product; layout: Vie
             {product.name[locale]}
           </span>
         </div>
-        <span className="text-lg font-bold text-primary">
-          {product.minPrice != null ? formatPrice(product.minPrice) : "—"}
-        </span>
+        {activeDiscount ? (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground line-through">
+              {formatPrice(activeDiscount.price)}
+            </span>
+            <span className="text-lg font-bold text-primary">
+              {formatPrice(activeDiscount.discountPrice)}
+            </span>
+          </div>
+        ) : (
+          <span className="text-lg font-bold text-primary">
+            {product.minPrice != null ? formatPrice(product.minPrice) : "—"}
+          </span>
+        )}
       </div>
     </Link>
   );
