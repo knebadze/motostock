@@ -11,8 +11,34 @@ export type VehicleListing = {
     category: NamedRef;
     brand: NamedRef;
     model: NamedRef;
+    variant: string;
     yearFrom: number | null;
     yearTo: number | null;
+    engineVolumeCc: number | null;
+    enginePowerHp: number | null;
+    cylinderCount: number | null;
+    gearCount: number | null;
+    seatCount: number | null;
+    weightKg: number | null;
+    seatHeightMm: number | null;
+    fuelTankLiters: number | null;
+    topSpeedKmh: number | null;
+    hasAbs: boolean | null;
+    fuelType: LookupItem | null;
+    transmissionType: LookupItem | null;
+    coolingType: LookupItem | null;
+    finalDriveType: LookupItem | null;
+    driveType: LookupItem | null;
+    startType: LookupItem | null;
+    powertrainType: LookupItem | null;
+    motorPowerWatt: number | null;
+    batteryCapacityWh: number | null;
+    rangeKm: number | null;
+    chargingTimeMinutes: number | null;
+    hasLockingDifferential: boolean | null;
+    descriptionKa: string | null;
+    descriptionEn: string | null;
+    descriptionRu: string | null;
     imageUrl: string | null;
   };
   condition: LookupItem;
@@ -51,6 +77,11 @@ export async function listVehicleListings(categoryId?: number): Promise<VehicleL
     params: categoryId ? { categoryId } : undefined,
   });
   return data.items;
+}
+
+export async function getVehicleListing(id: number): Promise<VehicleListing> {
+  const { data } = await apiClient.get<{ item: VehicleListing }>(`/vehicle-listings/${id}`);
+  return data.item;
 }
 
 export async function createVehicleListing(

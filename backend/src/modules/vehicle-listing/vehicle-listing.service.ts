@@ -25,8 +25,34 @@ type VehicleListingRow = {
     id: number;
     brand: NamedRefRow;
     model: NamedRefRow & { category: NamedRefRow };
+    variant: string;
     yearFrom: number | null;
     yearTo: number | null;
+    engineVolumeCc: number | null;
+    enginePowerHp: number | null;
+    cylinderCount: number | null;
+    gearCount: number | null;
+    seatCount: number | null;
+    weightKg: number | null;
+    seatHeightMm: number | null;
+    fuelTankLiters: { toString(): string } | null;
+    topSpeedKmh: number | null;
+    hasAbs: boolean | null;
+    fuelType: LookupRow | null;
+    transmissionType: LookupRow | null;
+    coolingType: LookupRow | null;
+    finalDriveType: LookupRow | null;
+    driveType: LookupRow | null;
+    startType: LookupRow | null;
+    powertrainType: LookupRow | null;
+    motorPowerWatt: number | null;
+    batteryCapacityWh: number | null;
+    rangeKm: number | null;
+    chargingTimeMinutes: number | null;
+    hasLockingDifferential: boolean | null;
+    descriptionKa: string | null;
+    descriptionEn: string | null;
+    descriptionRu: string | null;
     imageUrl: string | null;
   };
   condition: LookupRow;
@@ -66,8 +92,35 @@ function toResponse(row: VehicleListingRow) {
       category: toNamedRef(row.vehicleCatalog.model.category),
       brand: toNamedRef(row.vehicleCatalog.brand),
       model: toNamedRef(row.vehicleCatalog.model),
+      variant: row.vehicleCatalog.variant,
       yearFrom: row.vehicleCatalog.yearFrom,
       yearTo: row.vehicleCatalog.yearTo,
+      engineVolumeCc: row.vehicleCatalog.engineVolumeCc,
+      enginePowerHp: row.vehicleCatalog.enginePowerHp,
+      cylinderCount: row.vehicleCatalog.cylinderCount,
+      gearCount: row.vehicleCatalog.gearCount,
+      seatCount: row.vehicleCatalog.seatCount,
+      weightKg: row.vehicleCatalog.weightKg,
+      seatHeightMm: row.vehicleCatalog.seatHeightMm,
+      fuelTankLiters:
+        row.vehicleCatalog.fuelTankLiters != null ? Number(row.vehicleCatalog.fuelTankLiters) : null,
+      topSpeedKmh: row.vehicleCatalog.topSpeedKmh,
+      hasAbs: row.vehicleCatalog.hasAbs,
+      fuelType: row.vehicleCatalog.fuelType,
+      transmissionType: row.vehicleCatalog.transmissionType,
+      coolingType: row.vehicleCatalog.coolingType,
+      finalDriveType: row.vehicleCatalog.finalDriveType,
+      driveType: row.vehicleCatalog.driveType,
+      startType: row.vehicleCatalog.startType,
+      powertrainType: row.vehicleCatalog.powertrainType,
+      motorPowerWatt: row.vehicleCatalog.motorPowerWatt,
+      batteryCapacityWh: row.vehicleCatalog.batteryCapacityWh,
+      rangeKm: row.vehicleCatalog.rangeKm,
+      chargingTimeMinutes: row.vehicleCatalog.chargingTimeMinutes,
+      hasLockingDifferential: row.vehicleCatalog.hasLockingDifferential,
+      descriptionKa: row.vehicleCatalog.descriptionKa,
+      descriptionEn: row.vehicleCatalog.descriptionEn,
+      descriptionRu: row.vehicleCatalog.descriptionRu,
       imageUrl: row.vehicleCatalog.imageUrl,
     },
     condition: row.condition,

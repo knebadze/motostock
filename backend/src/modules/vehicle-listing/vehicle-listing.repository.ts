@@ -7,6 +7,13 @@ const include = {
     include: {
       brand: { select: namedRefSelect },
       model: { select: { ...namedRefSelect, category: { select: namedRefSelect } } },
+      fuelType: true,
+      transmissionType: true,
+      coolingType: true,
+      finalDriveType: true,
+      driveType: true,
+      startType: true,
+      powertrainType: true,
     },
   },
   condition: true,

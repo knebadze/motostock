@@ -159,6 +159,21 @@ export async function getVehicleListingsFromServer(categoryId?: number): Promise
   }
 }
 
+export async function getVehicleListingFromServer(id: number): Promise<VehicleListing | null> {
+  // Public endpoint (guest vehicle detail page) — must not bail out just
+  // because there's no admin session cookie, same fix as getCategoriesFromServer.
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ item: VehicleListing }>(`/vehicle-listings/${id}`, {
+      headers,
+    });
+    return data.item;
+  } catch {
+    return null;
+  }
+}
+
 export async function getAttributesFromServer(): Promise<Attribute[]> {
   const headers = await authHeaders();
   if (!headers) return [];

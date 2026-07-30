@@ -2,6 +2,15 @@ import type { Category } from "@/lib/api/categories";
 
 export type CategoryNode = Category & { depth: number };
 
+// The root category that all vehicle (transport) categories live under —
+// distinguishes vehicle listings from regular products wherever a category
+// tree is available (shop listing page, item detail page).
+export const VEHICLE_ROOT_CATEGORY_SLUG = "transport";
+
+export function isVehicleCategory(categories: Category[], categoryId: number): boolean {
+  return getRootCategory(categories, categoryId)?.slug === VEHICLE_ROOT_CATEGORY_SLUG;
+}
+
 export function flattenTree(categories: Category[]): CategoryNode[] {
   const byParent = new Map<number | null, Category[]>();
   for (const category of categories) {

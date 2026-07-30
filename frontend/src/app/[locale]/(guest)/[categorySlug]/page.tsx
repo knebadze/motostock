@@ -6,14 +6,12 @@ import {
   getProductsFromServer,
   getVehicleListingsFromServer,
 } from "@/lib/api/server";
-import { getAncestorChain, getRootCategory } from "@/lib/categories-tree";
+import { isVehicleCategory, getAncestorChain } from "@/lib/categories-tree";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { siteConfig } from "@/config/site";
 import { ProductShopPage } from "@/components/shop/ProductShopPage";
 import { VehicleShopPage } from "@/components/shop/VehicleShopPage";
-
-const VEHICLE_ROOT_CATEGORY_SLUG = "transport";
 
 type Locale = "ka" | "en" | "ru";
 type PageParams = { locale: Locale; categorySlug: string };
@@ -105,8 +103,7 @@ export default async function CategoryShopPage({
     ],
   };
 
-  const root = getRootCategory(categories, category.id);
-  const isVehicleCategory = root?.slug === VEHICLE_ROOT_CATEGORY_SLUG;
+  const isVehicle = isVehicleCategory(categories, category.id);
   const subcategories = categories.filter((item) => item.parentId === category.id);
 
   const breadcrumbScript = (
@@ -116,7 +113,7 @@ export default async function CategoryShopPage({
     />
   );
 
-  if (isVehicleCategory) {
+  if (isVehicle) {
     const listings = await getVehicleListingsFromServer(category.id);
     return (
       <>

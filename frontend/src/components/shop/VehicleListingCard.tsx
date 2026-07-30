@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { formatPrice, pickLookupName } from "@/lib/format";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
@@ -20,7 +21,8 @@ export function VehicleListingCard({
   const { activeDiscount } = listing;
 
   return (
-    <div
+    <Link
+      href={`/${listing.vehicleCatalog.category.slug}/${listing.id}`}
       className={`h-full rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg ${
         layout === "list" ? "flex items-center gap-4" : "flex flex-col gap-3"
       }`}
@@ -84,6 +86,6 @@ export function VehicleListingCard({
           <span className="text-lg font-bold text-primary">{formatPrice(listing.price)}</span>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
