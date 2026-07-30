@@ -51,6 +51,8 @@
   "ProductDetail": {
     "descriptionHeading": "Description",
     "specsHeading": "Specifications",
+    "showAllLabel": "View all",
+    "collapseLabel": "Collapse",
     "compatibleVehiclesHeading": "Compatible vehicles",
     "similarProductsHeading": "Similar products",
     "selectSizeLabel": "Size",
@@ -62,6 +64,8 @@
   "VehicleListingDetail": {
     "descriptionHeading": "Description",
     "specsHeading": "Specifications",
+    "showAllLabel": "View all",
+    "collapseLabel": "Collapse",
     "similarHeading": "Similar vehicles",
     "outOfStock": "Sold",
     "yes": "Yes",

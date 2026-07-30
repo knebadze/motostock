@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { resolveMediaUrl } from "@/lib/api/client";
 
 export type GalleryImage = { url: string; variantId: number | null };
@@ -42,9 +43,15 @@ export function ProductGallery({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="aspect-square w-full overflow-hidden rounded-2xl border border-border bg-muted">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={activeImage.url} alt={alt} className="size-full object-cover" />
+      <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-border bg-muted">
+        <Image
+          src={activeImage.url}
+          alt={alt}
+          fill
+          sizes="(min-width: 1024px) 50vw, 100vw"
+          className="object-cover"
+          priority
+        />
       </div>
       {resolved.length > 1 && (
         <div className="flex gap-2 overflow-x-auto">
@@ -54,12 +61,11 @@ export function ProductGallery({
               type="button"
               onClick={() => selectImage(index)}
               aria-label={`${alt} ${index + 1}`}
-              className={`size-16 shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
+              className={`relative size-16 shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
                 index === activeIndex ? "border-primary" : "border-transparent hover:border-border"
               }`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={image.url} alt="" className="size-full object-cover" />
+              <Image src={image.url} alt="" fill sizes="64px" className="object-cover" />
             </button>
           ))}
         </div>

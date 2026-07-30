@@ -1,11 +1,11 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { SpecsList, type SpecRow } from "@/components/shared/SpecsList";
 import { pickLookupName } from "@/lib/format";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 
 type Locale = "ka" | "en" | "ru";
-type SpecRow = { label: string; value: string };
 
 export function VehicleSpecs({ listing }: { listing: VehicleListing }) {
   const locale = useLocale() as Locale;
@@ -101,17 +101,7 @@ export function VehicleSpecs({ listing }: { listing: VehicleListing }) {
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         {t("specsHeading")}
       </h2>
-      <dl className="flex flex-col gap-2">
-        {rows.map((row) => (
-          <div
-            key={row.label}
-            className="flex items-center justify-between gap-4 border-b border-border py-1.5 text-sm"
-          >
-            <dt className="text-muted-foreground">{row.label}</dt>
-            <dd className="font-medium text-foreground">{row.value}</dd>
-          </div>
-        ))}
-      </dl>
+      <SpecsList rows={rows} showAllLabel={t("showAllLabel")} collapseLabel={t("collapseLabel")} />
     </div>
   );
 }

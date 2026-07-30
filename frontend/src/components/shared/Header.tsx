@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
@@ -234,12 +235,15 @@ export function Header({
                     className="flex flex-col items-center gap-2 rounded-xl p-3 text-center transition-colors hover:bg-muted"
                   >
                     {imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={imageUrl}
-                        alt={child.name[locale]}
-                        className="size-16 rounded-lg border border-border object-cover"
-                      />
+                      <div className="relative size-16 overflow-hidden rounded-lg border border-border">
+                        <Image
+                          src={imageUrl}
+                          alt={child.name[locale]}
+                          fill
+                          sizes="64px"
+                          className="object-cover"
+                        />
+                      </div>
                     ) : (
                       <div className="size-16 rounded-lg border border-dashed border-border" />
                     )}

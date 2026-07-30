@@ -51,6 +51,8 @@
   "ProductDetail": {
     "descriptionHeading": "აღწერა",
     "specsHeading": "მახასიათებლები",
+    "showAllLabel": "სრულად ნახვა",
+    "collapseLabel": "აკეცვა",
     "compatibleVehiclesHeading": "თავსებადი ტექნიკა",
     "similarProductsHeading": "მსგავსი პროდუქტები",
     "selectSizeLabel": "ზომა",
@@ -62,6 +64,8 @@
   "VehicleListingDetail": {
     "descriptionHeading": "აღწერა",
     "specsHeading": "მახასიათებლები",
+    "showAllLabel": "სრულად ნახვა",
+    "collapseLabel": "აკეცვა",
     "similarHeading": "მსგავსი ტექნიკა",
     "outOfStock": "გაყიდულია",
     "yes": "კი",

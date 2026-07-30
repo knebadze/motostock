@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { SpecsList } from "@/components/shared/SpecsList";
 import type { ProductAttributeValue } from "@/lib/api/products";
 
 function formatValue(
@@ -21,24 +22,17 @@ export function ProductSpecs({ attributeValues }: { attributeValues: ProductAttr
 
   if (attributeValues.length === 0) return null;
 
+  const rows = attributeValues.map((value) => ({
+    label: value.attributeName[locale],
+    value: formatValue(value, locale, t("yes"), t("no")),
+  }));
+
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         {t("specsHeading")}
       </h2>
-      <dl className="flex flex-col gap-2">
-        {attributeValues.map((value) => (
-          <div
-            key={value.attributeId}
-            className="flex items-center justify-between gap-4 border-b border-border py-1.5 text-sm"
-          >
-            <dt className="text-muted-foreground">{value.attributeName[locale]}</dt>
-            <dd className="font-medium text-foreground">
-              {formatValue(value, locale, t("yes"), t("no"))}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <SpecsList rows={rows} showAllLabel={t("showAllLabel")} collapseLabel={t("collapseLabel")} />
     </div>
   );
 }

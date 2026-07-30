@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
@@ -16,7 +17,9 @@ export function VehicleListingCard({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
-  const imageUrl = resolveMediaUrl(listing.vehicleCatalog.imageUrl);
+  // The listing's own photo (what's actually for sale) takes priority over
+  // the catalog's generic reference image.
+  const imageUrl = resolveMediaUrl(listing.images[0]?.imageUrl ?? listing.vehicleCatalog.imageUrl);
   const outOfStock = listing.stockQuantity === 0;
   const { activeDiscount } = listing;
 
@@ -35,11 +38,12 @@ export function VehicleListingCard({
         }
       >
         {imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={imageUrl}
             alt={listing.vehicleCatalog.model.name[locale]}
-            className="size-full object-cover"
+            fill
+            sizes={layout === "list" ? "96px" : "(min-width: 1024px) 22vw, (min-width: 640px) 45vw, 90vw"}
+            className="object-cover"
           />
         ) : (
           <div className="size-full border border-dashed border-border" />

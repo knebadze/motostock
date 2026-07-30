@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
@@ -30,12 +31,15 @@ export function SubcategoryGrid({ subcategories }: { subcategories: Category[] }
                 className="flex flex-col items-center gap-2 rounded-xl p-3 text-center transition-colors hover:bg-muted"
               >
                 {imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={imageUrl}
-                    alt={child.name[locale]}
-                    className="size-16 rounded-lg border border-border object-cover"
-                  />
+                  <div className="relative size-16 overflow-hidden rounded-lg border border-border">
+                    <Image
+                      src={imageUrl}
+                      alt={child.name[locale]}
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                    />
+                  </div>
                 ) : (
                   <div className="size-16 rounded-lg border border-dashed border-border" />
                 )}
