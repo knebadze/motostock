@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { getCategoriesFromServer, getProductDetailFromServer } from "@/lib/api/server";
+import {
+  getCategoriesFromServer,
+  getProductDetailFromServer,
+  getProductsFromServer,
+} from "@/lib/api/server";
 import { getAncestorChain } from "@/lib/categories-tree";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { resolveMediaUrl } from "@/lib/api/client";
@@ -58,6 +62,11 @@ export default async function ProductDetailRoute({ params }: { params: Promise<P
   const categories = await getCategoriesFromServer();
   const category = categories.find((item) => item.slug === product.category.slug);
   const breadcrumbChain = category ? getAncestorChain(categories, category.id) : [];
+
+  const categoryProducts = await getProductsFromServer(product.category.id);
+  const similarProducts = categoryProducts
+    .filter((item) => item.id !== product.id)
+    .slice(0, 12);
 
   const tNav = await getTranslations({ locale, namespace: "Nav" });
   const pathname = `/${product.category.slug}/${productSlug}`;
@@ -132,7 +141,11 @@ export default async function ProductDetailRoute({ params }: { params: Promise<P
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <ProductDetailPage product={product} breadcrumbChain={breadcrumbChain} />
+      <ProductDetailPage
+        product={product}
+        breadcrumbChain={breadcrumbChain}
+        similarProducts={similarProducts}
+      />
     </>
   );
 }

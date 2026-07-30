@@ -26,7 +26,7 @@ export function ProductSpecs({ attributeValues }: { attributeValues: ProductAttr
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         {t("specsHeading")}
       </h2>
-      <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+      <dl className="flex flex-col gap-2">
         {attributeValues.map((value) => (
           <div
             key={value.attributeId}

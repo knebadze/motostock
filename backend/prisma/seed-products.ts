@@ -235,6 +235,26 @@ const PRODUCTS: ProductSeed[] = [
     discountDays: 14,
   },
   {
+    categorySlug: "helmet-full-face",
+    brandSlug: "agv",
+    slug: "full-face-helmet-agv",
+    nameKa: "სპორტული დახურული ჩაფხუტი",
+    nameEn: "Sport Full-Face Helmet",
+    nameRu: "Спортивный закрытый шлем",
+    descriptionKa: "<p>მსუბუქი კარბონის გარსიანი დახურული ჩაფხუტი სპორტული სვლისთვის.</p>",
+    descriptionEn: "<p>Lightweight carbon-shell full-face helmet for sport riding.</p>",
+    descriptionRu: "<p>Лёгкий закрытый шлем с карбоновой скорлупой для спортивной езды.</p>",
+    attributes: [
+      { kind: "select", definingCategorySlug: "helmets", nameKa: "გარსის მასალა", optionKey: "CARBON" },
+      { kind: "select", definingCategorySlug: "helmets", nameKa: "უსაფრთხოების სერტიფიკატი", optionKey: "SNELL" },
+      { kind: "number", definingCategorySlug: "helmets", nameKa: "წონა", value: 1380 },
+    ],
+    variants: [
+      { sizeKey: "M", colorKey: "BLACK", price: 720, stockQuantity: 2, sku: "HEL-FF-AGV-M-BLK" },
+      { sizeKey: "L", colorKey: "RED", price: 720, stockQuantity: 2, sku: "HEL-FF-AGV-L-RED" },
+    ],
+  },
+  {
     categorySlug: "helmet-open-face",
     brandSlug: "arai",
     slug: "open-face-helmet-arai",
