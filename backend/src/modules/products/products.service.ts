@@ -16,6 +16,7 @@ import { productsRepository } from "./products.repository.js";
 import type {
   CreateProductInput,
   ProductAttributeValueInput,
+  ProductListQuery,
   UpdateProductInput,
 } from "./products.schema.js";
 
@@ -275,10 +276,17 @@ async function buildAttributeValueWriteData(
     }));
 }
 
-export async function listProducts(categoryId?: number) {
+export async function listProducts(query: ProductListQuery) {
   const categoryIds =
-    categoryId != null ? await resolveCategoryAndDescendantIds(categoryId) : undefined;
-  const rows = await productsRepository.findMany(categoryIds);
+    query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
+  const rows = await productsRepository.findMany({
+    categoryIds,
+    search: query.search,
+    brandIds: query.brandIds,
+    priceMin: query.priceMin,
+    priceMax: query.priceMax,
+    attributeFilters: query.attributeFilters,
+  });
   return rows.map(toResponse);
 }
 

@@ -599,6 +599,130 @@ async function seedProductBrands(categoryIdBySlug: Map<string, number>) {
   console.log(`Product brands ready: ${PRODUCT_BRAND_SEEDS.length}`);
 }
 
+type CategoryFilterSeed =
+  | { categorySlug: string; filterType: "PRICE" | "BRAND"; sortOrder: number }
+  | {
+      categorySlug: string;
+      filterType: "ATTRIBUTE";
+      definingCategorySlug: string;
+      attributeNameKa: string;
+      sortOrder: number;
+    };
+
+// Demo filter-panel composition for a few categories — shows all three
+// filter kinds (built-in Price/Brand plus SELECT/NUMBER/BOOLEAN attributes)
+// so the shop's filter sidebar has something to render out of the box.
+const CATEGORY_FILTER_SEEDS: CategoryFilterSeed[] = [
+  { categorySlug: "helmets", filterType: "PRICE", sortOrder: 0 },
+  { categorySlug: "helmets", filterType: "BRAND", sortOrder: 1 },
+  {
+    categorySlug: "helmets",
+    filterType: "ATTRIBUTE",
+    definingCategorySlug: "helmets",
+    attributeNameKa: "გარსის მასალა",
+    sortOrder: 2,
+  },
+  {
+    categorySlug: "helmets",
+    filterType: "ATTRIBUTE",
+    definingCategorySlug: "helmets",
+    attributeNameKa: "უსაფრთხოების სერტიფიკატი",
+    sortOrder: 3,
+  },
+  { categorySlug: "gear", filterType: "PRICE", sortOrder: 0 },
+  { categorySlug: "gear", filterType: "BRAND", sortOrder: 1 },
+  {
+    categorySlug: "gear",
+    filterType: "ATTRIBUTE",
+    definingCategorySlug: "gear",
+    attributeNameKa: "მასალა",
+    sortOrder: 2,
+  },
+  {
+    categorySlug: "gear",
+    filterType: "ATTRIBUTE",
+    definingCategorySlug: "gear",
+    attributeNameKa: "სეზონი",
+    sortOrder: 3,
+  },
+  {
+    categorySlug: "gear",
+    filterType: "ATTRIBUTE",
+    definingCategorySlug: "gear",
+    attributeNameKa: "წყალგამძლეობა",
+    sortOrder: 4,
+  },
+  { categorySlug: "tires", filterType: "PRICE", sortOrder: 0 },
+  { categorySlug: "tires", filterType: "BRAND", sortOrder: 1 },
+  {
+    categorySlug: "tires",
+    filterType: "ATTRIBUTE",
+    definingCategorySlug: "tires",
+    attributeNameKa: "კონსტრუქცია",
+    sortOrder: 2,
+  },
+];
+
+async function seedCategoryFilters(categoryIdBySlug: Map<string, number>) {
+  for (const filterSeed of CATEGORY_FILTER_SEEDS) {
+    const categoryId = categoryIdBySlug.get(filterSeed.categorySlug);
+    if (!categoryId) {
+      throw new Error(`Unknown category slug in category filter seed: ${filterSeed.categorySlug}`);
+    }
+
+    if (filterSeed.filterType === "ATTRIBUTE") {
+      const definingCategoryId = categoryIdBySlug.get(filterSeed.definingCategorySlug);
+      if (!definingCategoryId) {
+        throw new Error(
+          `Unknown defining category slug in category filter seed: ${filterSeed.definingCategorySlug}`,
+        );
+      }
+
+      const attribute = await prisma.attribute.findFirst({
+        where: { categoryId: definingCategoryId, nameKa: filterSeed.attributeNameKa },
+      });
+      if (!attribute) {
+        throw new Error(`Unknown attribute in category filter seed: ${filterSeed.attributeNameKa}`);
+      }
+
+      const existing = await prisma.categoryFilterConfig.findFirst({
+        where: { categoryId, attributeId: attribute.id },
+      });
+      if (existing) {
+        await prisma.categoryFilterConfig.update({
+          where: { id: existing.id },
+          data: { sortOrder: filterSeed.sortOrder },
+        });
+      } else {
+        await prisma.categoryFilterConfig.create({
+          data: {
+            categoryId,
+            filterType: "ATTRIBUTE",
+            attributeId: attribute.id,
+            sortOrder: filterSeed.sortOrder,
+          },
+        });
+      }
+      continue;
+    }
+
+    const existing = await prisma.categoryFilterConfig.findFirst({
+      where: { categoryId, filterType: filterSeed.filterType },
+    });
+    if (existing) {
+      await prisma.categoryFilterConfig.update({
+        where: { id: existing.id },
+        data: { sortOrder: filterSeed.sortOrder },
+      });
+    } else {
+      await prisma.categoryFilterConfig.create({
+        data: { categoryId, filterType: filterSeed.filterType, sortOrder: filterSeed.sortOrder },
+      });
+    }
+  }
+  console.log(`Category filters ready: ${CATEGORY_FILTER_SEEDS.length}`);
+}
+
 async function main() {
   const userRole = await prisma.role.upsert({
     where: { name: ROLES.USER },
@@ -655,6 +779,7 @@ async function main() {
 
   await seedAttributes(categoryIdBySlug);
   await seedProductBrands(categoryIdBySlug);
+  await seedCategoryFilters(categoryIdBySlug);
 }
 
 main()

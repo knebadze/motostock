@@ -1,21 +1,22 @@
 model Category {
-  id        Int              @id @default(autoincrement())
-  nameKa    String
-  nameEn    String
-  nameRu    String
-  slug      String           @unique
-  imageUrl  String?
+  id             Int                    @id @default(autoincrement())
+  nameKa         String
+  nameEn         String
+  nameRu         String
+  slug           String                 @unique
+  imageUrl       String?
   bannerImageUrl String?
-  sortOrder Int              @default(0)
-  parentId  Int?
-  parent    Category?        @relation("CategoryChildren", fields: [parentId], references: [id])
-  children  Category[]       @relation("CategoryChildren")
-  models    Model[]
-  attributes Attribute[]
-  productBrands ProductBrand[]
-  products  Product[]
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  sortOrder      Int                    @default(0)
+  parentId       Int?
+  parent         Category?              @relation("CategoryChildren", fields: [parentId], references: [id])
+  children       Category[]             @relation("CategoryChildren")
+  models         Model[]
+  attributes     Attribute[]
+  productBrands  ProductBrand[]
+  products       Product[]
+  filterConfigs  CategoryFilterConfig[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
 
   @@index([parentId])
   @@schema("cla")

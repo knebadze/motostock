@@ -1,10 +1,10 @@
 model ListingStatus {
-  id       Int              @id @default(autoincrement())
-  key      String           @unique
-  nameKa   String
-  nameEn   String
-  nameRu   String
-  listings VehicleListing[]
+  id              Int              @id @default(autoincrement())
+  key             String           @unique
+  nameKa          String
+  nameEn          String
+  nameRu          String
+  listings        VehicleListing[]
   productVariants ProductVariant[]
 
   @@schema("cla")

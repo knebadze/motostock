@@ -51,8 +51,68 @@ export const productIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+const attributeFilterSchema = z.object({
+  // Pre-grouped by attribute on the client (one filter block per attribute):
+  // each entry ANDs against the others, while the optionIds within one
+  // entry OR together (pick any of these values for THIS attribute).
+  selectFilters: z
+    .array(z.object({ attributeId: z.int().positive(), optionIds: z.array(z.int().positive()).min(1) }))
+    .optional(),
+  booleanAttributeIds: z.array(z.int().positive()).optional(),
+  numberRanges: z
+    .array(
+      z.object({
+        attributeId: z.int().positive(),
+        min: z.number().optional(),
+        max: z.number().optional(),
+      }),
+    )
+    .optional(),
+});
+export type AttributeFilterInput = z.infer<typeof attributeFilterSchema>;
+
+// ?brandIds=1&brandIds=2 parses to a string[] via qs, but a single
+// ?brandIds=1 parses to a bare string — normalize both into an array before
+// coercing each entry to a number.
+const brandIdsQuerySchema = z
+  .preprocess(
+    (value) => (value == null ? undefined : Array.isArray(value) ? value : [value]),
+    z.array(z.coerce.number().int().positive()),
+  )
+  .optional();
+
 export const productListQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
+  search: z.string().trim().min(1).max(200).optional(),
+  brandIds: brandIdsQuerySchema,
+  priceMin: z.coerce.number().nonnegative().optional(),
+  priceMax: z.coerce.number().nonnegative().optional(),
+  // URL-encoded JSON rather than ad-hoc flat query keys — keeps the shape
+  // extensible and lets it be validated as one nested object.
+  attributeFilters: z
+    .string()
+    .optional()
+    .transform((value, ctx) => {
+      if (!value) return undefined;
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(value);
+      } catch {
+        ctx.addIssue({ code: "custom", message: "attributeFilters არასწორი JSON-ია" });
+        return z.NEVER;
+      }
+      const result = attributeFilterSchema.safeParse(parsed);
+      if (!result.success) {
+        ctx.addIssue({ code: "custom", message: "attributeFilters არასწორი ფორმატია" });
+        return z.NEVER;
+      }
+      return result.data;
+    })
+    // Trailing .optional() (in addition to the one before .transform()):
+    // without it, zod infers this key as required-but-possibly-undefined
+    // instead of an optional key, which breaks Express's route handler
+    // overload resolution against the default ParsedQs query type.
+    .optional(),
 });
 export type ProductListQuery = z.infer<typeof productListQuerySchema>;
 

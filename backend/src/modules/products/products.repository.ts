@@ -1,4 +1,6 @@
 import { prisma } from "../../config/prisma.js";
+import type { Prisma } from "../../generated/prisma/index.js";
+import type { AttributeFilterInput } from "./products.schema.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
 
@@ -78,10 +80,85 @@ type AttributeValueWriteData = {
   optionId: number | null;
 };
 
+function buildWhere(filters: {
+  categoryIds?: number[];
+  search?: string;
+  brandIds?: number[];
+  priceMin?: number;
+  priceMax?: number;
+  attributeFilters?: AttributeFilterInput;
+}): Prisma.ProductWhereInput | undefined {
+  const and: Prisma.ProductWhereInput[] = [];
+
+  if (filters.categoryIds && filters.categoryIds.length > 0) {
+    and.push({ categoryId: { in: filters.categoryIds } });
+  }
+
+  if (filters.search) {
+    and.push({
+      OR: [
+        { nameKa: { contains: filters.search, mode: "insensitive" } },
+        { nameEn: { contains: filters.search, mode: "insensitive" } },
+        { nameRu: { contains: filters.search, mode: "insensitive" } },
+      ],
+    });
+  }
+
+  if (filters.brandIds && filters.brandIds.length > 0) {
+    and.push({ productBrandId: { in: filters.brandIds } });
+  }
+
+  if (filters.priceMin != null || filters.priceMax != null) {
+    and.push({
+      variants: {
+        some: {
+          price: {
+            ...(filters.priceMin != null ? { gte: filters.priceMin } : {}),
+            ...(filters.priceMax != null ? { lte: filters.priceMax } : {}),
+          },
+        },
+      },
+    });
+  }
+
+  for (const facet of filters.attributeFilters?.selectFilters ?? []) {
+    and.push({
+      attributeValues: { some: { attributeId: facet.attributeId, optionId: { in: facet.optionIds } } },
+    });
+  }
+
+  for (const attributeId of filters.attributeFilters?.booleanAttributeIds ?? []) {
+    and.push({ attributeValues: { some: { attributeId, valueBoolean: true } } });
+  }
+
+  for (const range of filters.attributeFilters?.numberRanges ?? []) {
+    and.push({
+      attributeValues: {
+        some: {
+          attributeId: range.attributeId,
+          valueNumber: {
+            ...(range.min != null ? { gte: range.min } : {}),
+            ...(range.max != null ? { lte: range.max } : {}),
+          },
+        },
+      },
+    });
+  }
+
+  return and.length > 0 ? { AND: and } : undefined;
+}
+
 export const productsRepository = {
-  findMany(categoryIds?: number[]) {
+  findMany(filters: {
+    categoryIds?: number[];
+    search?: string;
+    brandIds?: number[];
+    priceMin?: number;
+    priceMax?: number;
+    attributeFilters?: AttributeFilterInput;
+  }) {
     return prisma.product.findMany({
-      where: categoryIds && categoryIds.length > 0 ? { categoryId: { in: categoryIds } } : undefined,
+      where: buildWhere(filters),
       include,
       orderBy: { createdAt: "desc" },
     });

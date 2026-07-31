@@ -11,6 +11,7 @@ import type { LookupTypeSlug } from "@/config/lookup-types";
 import type { VehicleCatalogEntry } from "./vehicle-catalog";
 import type { VehicleListing } from "./vehicle-listings";
 import type { Attribute } from "./attributes";
+import type { CategoryFilter } from "./category-filters";
 import type { ProductBrand } from "./product-brands";
 import type { Product, ProductDetail } from "./products";
 import type { FinaSyncRun } from "./fina-sync";
@@ -171,6 +172,23 @@ export async function getVehicleListingFromServer(id: number): Promise<VehicleLi
     return data.item;
   } catch {
     return null;
+  }
+}
+
+export async function getCategoryFiltersFromServer(categoryId: number): Promise<CategoryFilter[]> {
+  // Public endpoint (guest shop filter sidebar reads this too) — must not
+  // bail out just because there's no admin session cookie, same fix as
+  // getCategoriesFromServer.
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ items: CategoryFilter[] }>("/category-filters", {
+      headers,
+      params: { categoryId },
+    });
+    return data.items;
+  } catch {
+    return [];
   }
 }
 

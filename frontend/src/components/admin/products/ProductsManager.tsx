@@ -90,7 +90,7 @@ export function ProductsManager({
   async function refresh(nextFilter?: string) {
     const filter = nextFilter ?? categoryFilter;
     try {
-      setProducts(await listProducts(filter ? Number(filter) : undefined));
+      setProducts(await listProducts(filter ? { categoryId: Number(filter) } : undefined));
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";

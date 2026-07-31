@@ -89,9 +89,42 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail> {
   return data.item;
 }
 
-export async function listProducts(categoryId?: number): Promise<Product[]> {
+export type ProductAttributeFilters = {
+  selectFilters?: { attributeId: number; optionIds: number[] }[];
+  booleanAttributeIds?: number[];
+  numberRanges?: { attributeId: number; min?: number; max?: number }[];
+};
+
+export type ProductListFilters = {
+  categoryId?: number;
+  search?: string;
+  brandIds?: number[];
+  priceMin?: number;
+  priceMax?: number;
+  attributeFilters?: ProductAttributeFilters;
+};
+
+function isEmptyAttributeFilters(filters: ProductAttributeFilters): boolean {
+  return (
+    !filters.selectFilters?.length &&
+    !filters.booleanAttributeIds?.length &&
+    !filters.numberRanges?.length
+  );
+}
+
+export async function listProducts(filters: ProductListFilters = {}): Promise<Product[]> {
   const { data } = await apiClient.get<{ items: Product[] }>("/products", {
-    params: categoryId ? { categoryId } : undefined,
+    params: {
+      categoryId: filters.categoryId,
+      search: filters.search || undefined,
+      brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
+      priceMin: filters.priceMin,
+      priceMax: filters.priceMax,
+      attributeFilters:
+        filters.attributeFilters && !isEmptyAttributeFilters(filters.attributeFilters)
+          ? JSON.stringify(filters.attributeFilters)
+          : undefined,
+    },
   });
   return data.items;
 }

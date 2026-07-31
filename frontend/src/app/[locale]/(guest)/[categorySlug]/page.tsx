@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
   getCategoriesFromServer,
+  getCategoryFiltersFromServer,
   getProductsFromServer,
   getVehicleListingsFromServer,
 } from "@/lib/api/server";
@@ -130,7 +131,10 @@ export default async function CategoryShopPage({
     );
   }
 
-  const products = await getProductsFromServer(category.id);
+  const [products, filters] = await Promise.all([
+    getProductsFromServer(category.id),
+    getCategoryFiltersFromServer(category.id),
+  ]);
   return (
     <>
       {breadcrumbScript}
@@ -139,6 +143,7 @@ export default async function CategoryShopPage({
         breadcrumbChain={ancestorChain}
         subcategories={subcategories}
         products={products}
+        filters={filters}
         initialPage={initialPage}
         initialSort={initialSort}
       />

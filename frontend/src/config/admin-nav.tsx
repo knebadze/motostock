@@ -5,6 +5,7 @@ import {
   categoriesIcon,
   classifierIcon,
   dashboardIcon,
+  filtersIcon,
   listingIcon,
   modelsIcon,
   productsIcon,
@@ -52,6 +53,7 @@ export const adminNav: AdminNavSection[] = [
       { label: "პროდუქტები", href: "/admin/products", icon: productsIcon },
       { label: "ბრენდები", href: "/admin/product-brands", icon: brandsIcon },
       { label: "მახასიათებლები", href: "/admin/attributes", icon: attributesIcon },
+      { label: "კატეგორიის ფილტრები", href: "/admin/category-filters", icon: filtersIcon },
     ],
   },
   {

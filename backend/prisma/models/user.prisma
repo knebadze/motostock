@@ -1,16 +1,16 @@
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  passwordHash String?
-  googleId     String?  @unique
-  facebookId   String?  @unique
-  name         String
-  roleId       Int
-  role         Role     @relation(fields: [roleId], references: [id])
-  finaSyncRuns FinaSyncRun[]
+  id                  Int                  @id @default(autoincrement())
+  email               String               @unique
+  passwordHash        String?
+  googleId            String?              @unique
+  facebookId          String?              @unique
+  name                String
+  roleId              Int
+  role                Role                 @relation(fields: [roleId], references: [id])
+  finaSyncRuns        FinaSyncRun[]
   passwordResetTokens PasswordResetToken[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   @@index([roleId])
   @@schema("dbo")
