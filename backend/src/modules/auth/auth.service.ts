@@ -19,14 +19,15 @@ function hashToken(token: string): string {
 export function toSafeUser(user: {
   id: number;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   role: { name: string };
   createdAt: Date;
 }) {
   return {
     id: user.id,
     email: user.email,
-    name: user.name,
+    name: `${user.firstName} ${user.lastName}`,
     role: user.role.name,
     createdAt: user.createdAt,
   };
@@ -46,7 +47,8 @@ export async function registerUser(input: RegisterInput) {
   const passwordHash = await hashPassword(input.password);
   const user = await usersRepository.create({
     email: input.email,
-    name: input.name,
+    firstName: input.firstName,
+    lastName: input.lastName,
     passwordHash,
     roleId: userRole.id,
   });

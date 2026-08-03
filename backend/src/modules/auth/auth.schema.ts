@@ -4,7 +4,8 @@ import { registry } from "../../docs/registry.js";
 export const registerSchema = registry.register(
   "RegisterInput",
   z.object({
-    name: z.string().min(2).max(100).openapi({ example: "Nika Beridze" }),
+    firstName: z.string().min(2).max(50).openapi({ example: "Nika" }),
+    lastName: z.string().min(2).max(50).openapi({ example: "Beridze" }),
     email: z.email().openapi({ example: "rider@motostock.ge" }),
     password: z.string().min(8).max(100).openapi({ example: "supersecret123" }),
   }),

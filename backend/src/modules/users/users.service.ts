@@ -1,5 +1,7 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { comparePassword, hashPassword } from "../../lib/password.js";
 import { usersRepository } from "./users.repository.js";
+import type { ChangePasswordInput } from "./users.schema.js";
 
 export async function getUserById(id: number) {
   const user = await usersRepository.findById(id);
@@ -11,10 +13,30 @@ export async function getUserById(id: number) {
   return {
     id: user.id,
     email: user.email,
-    name: user.name,
+    name: `${user.firstName} ${user.lastName}`,
     createdAt: user.createdAt,
     role: user.role.name,
   };
+}
+
+export async function changePassword(userId: number, input: ChangePasswordInput) {
+  const user = await usersRepository.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა");
+  }
+
+  if (user.passwordHash) {
+    if (!input.currentPassword) {
+      throw new ApiError(400, "მიმდინარე პაროლი სავალდებულოა");
+    }
+    const valid = await comparePassword(input.currentPassword, user.passwordHash);
+    if (!valid) {
+      throw new ApiError(400, "მიმდინარე პაროლი არასწორია");
+    }
+  }
+
+  const passwordHash = await hashPassword(input.newPassword);
+  await usersRepository.updatePasswordHash(userId, passwordHash);
 }
 
 export async function listUsers() {
@@ -23,7 +45,7 @@ export async function listUsers() {
   return users.map((user) => ({
     id: user.id,
     email: user.email,
-    name: user.name,
+    name: `${user.firstName} ${user.lastName}`,
     role: user.role.name,
     hasPassword: user.passwordHash != null,
     hasGoogle: user.googleId != null,

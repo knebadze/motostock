@@ -99,7 +99,8 @@
   "Auth": {
     "loginTitle": "შესვლა",
     "registerTitle": "რეგისტრაცია",
-    "nameLabel": "სახელი",
+    "firstNameLabel": "სახელი",
+    "lastNameLabel": "გვარი",
     "emailLabel": "ელფოსტა",
     "passwordLabel": "პაროლი",
     "confirmPasswordLabel": "გაიმეორეთ პაროლი",
@@ -112,6 +113,12 @@
     "goToRegister": "დარეგისტრირდით",
     "goToLogin": "შედით სისტემაში",
     "passwordMismatch": "პაროლები არ ემთხვევა ერთმანეთს",
+    "firstNameError": "სახელი უნდა შეიცავდეს 2-50 სიმბოლოს",
+    "lastNameError": "გვარი უნდა შეიცავდეს 2-50 სიმბოლოს",
+    "emailRequiredError": "შეავსეთ ელფოსტა",
+    "emailInvalidError": "არასწორი ელფოსტის ფორმატი",
+    "passwordTooShortError": "პაროლი უნდა შეიცავდეს მინიმუმ 8 სიმბოლოს",
+    "confirmPasswordRequiredError": "გაიმეორეთ პაროლი",
     "loginError": "შესვლა ვერ მოხერხდა",
     "registerError": "რეგისტრაცია ვერ მოხერხდა",
     "invalidCredentials": "ელფოსტა ან პაროლი არასწორია",
@@ -152,7 +159,33 @@
   },
   "Account": {
     "title": "ჩემი ანგარიში",
-    "description": "მომხმარებლის გვერდი მალე დაემატება."
+    "description": "მომხმარებლის გვერდი მალე დაემატება.",
+    "nav": {
+      "dashboard": "დეშბორდი",
+      "garage": "გარაჟი",
+      "orders": "შეკვეთების ისტორია",
+      "changePassword": "პაროლის შეცვლა"
+    },
+    "dashboard": {
+      "greeting": "მოგესალმებით, {name}",
+      "description": "აქედან შეგიძლიათ თვალი ადევნოთ თქვენს გარაჟსა და შეკვეთებს, ან შეცვალოთ პაროლი."
+    },
+    "garage": {
+      "comingSoon": "გარაჟის ფუნქციონალი მალე დაემატება."
+    },
+    "orders": {
+      "comingSoon": "შეკვეთების ისტორია მალე დაემატება."
+    },
+    "changePassword": {
+      "currentPasswordLabel": "მიმდინარე პაროლი",
+      "newPasswordLabel": "ახალი პაროლი",
+      "confirmPasswordLabel": "გაიმეორეთ ახალი პაროლი",
+      "submit": "პაროლის შეცვლა",
+      "submitting": "ინახება...",
+      "mismatch": "პაროლები არ ემთხვევა ერთმანეთს",
+      "success": "პაროლი წარმატებით შეიცვალა",
+      "error": "პაროლის შეცვლა ვერ მოხერხდა"
+    }
   },
   "NotFound": {
     "heading": "გვერდი ვერ მოიძებნა",

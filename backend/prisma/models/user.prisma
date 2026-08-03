@@ -4,7 +4,8 @@ model User {
   passwordHash        String?
   googleId            String?              @unique
   facebookId          String?              @unique
-  name                String
+  firstName           String
+  lastName            String
   roleId              Int
   role                Role                 @relation(fields: [roleId], references: [id])
   finaSyncRuns        FinaSyncRun[]

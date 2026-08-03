@@ -99,7 +99,8 @@
   "Auth": {
     "loginTitle": "Log in",
     "registerTitle": "Register",
-    "nameLabel": "Name",
+    "firstNameLabel": "First name",
+    "lastNameLabel": "Last name",
     "emailLabel": "Email",
     "passwordLabel": "Password",
     "confirmPasswordLabel": "Confirm password",
@@ -112,6 +113,12 @@
     "goToRegister": "Sign up",
     "goToLogin": "Log in",
     "passwordMismatch": "Passwords don't match",
+    "firstNameError": "First name must be 2-50 characters",
+    "lastNameError": "Last name must be 2-50 characters",
+    "emailRequiredError": "Enter your email",
+    "emailInvalidError": "Invalid email format",
+    "passwordTooShortError": "Password must be at least 8 characters",
+    "confirmPasswordRequiredError": "Confirm your password",
     "loginError": "Log in failed",
     "registerError": "Registration failed",
     "invalidCredentials": "Incorrect email or password",
@@ -152,7 +159,33 @@
   },
   "Account": {
     "title": "My Account",
-    "description": "The account page is coming soon."
+    "description": "The account page is coming soon.",
+    "nav": {
+      "dashboard": "Dashboard",
+      "garage": "Garage",
+      "orders": "Order history",
+      "changePassword": "Change password"
+    },
+    "dashboard": {
+      "greeting": "Welcome, {name}",
+      "description": "From here you can keep track of your garage and orders, or change your password."
+    },
+    "garage": {
+      "comingSoon": "The garage feature is coming soon."
+    },
+    "orders": {
+      "comingSoon": "Order history is coming soon."
+    },
+    "changePassword": {
+      "currentPasswordLabel": "Current password",
+      "newPasswordLabel": "New password",
+      "confirmPasswordLabel": "Confirm new password",
+      "submit": "Change password",
+      "submitting": "Saving...",
+      "mismatch": "Passwords do not match",
+      "success": "Password changed successfully",
+      "error": "Failed to change password"
+    }
   },
   "NotFound": {
     "heading": "Page not found",

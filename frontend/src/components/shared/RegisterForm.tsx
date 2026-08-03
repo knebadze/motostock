@@ -7,27 +7,36 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { registerUser } from "@/lib/api/auth";
 import { ApiRequestError } from "@/lib/api/client";
 import { OAuthButtons } from "@/components/shared/OAuthButtons";
+import { PasswordInput } from "@/components/shared/PasswordInput";
+import { FieldError } from "@/components/shared/FieldError";
+import { createRegisterFormSchema } from "@/lib/validation/auth";
+import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
 export function RegisterForm() {
   const t = useTranslations("Auth");
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
-    if (password !== confirmPassword) {
-      toast.error(t("passwordMismatch"));
+    const schema = createRegisterFormSchema(t);
+    const result = schema.safeParse({ firstName, lastName, email, password, confirmPassword });
+    if (!result.success) {
+      setErrors(getFieldErrors(result.error));
       return;
     }
+    setErrors({});
 
     setLoading(true);
     try {
-      await registerUser({ name, email, password });
+      await registerUser(result.data);
       router.push("/account");
       router.refresh();
     } catch (error) {
@@ -49,26 +58,40 @@ export function RegisterForm() {
   return (
     <form
       onSubmit={handleSubmit}
+      noValidate
       className="w-full max-w-sm rounded-2xl border border-border bg-card p-8"
     >
       <h1 className="text-xl font-bold tracking-tight">{t("registerTitle")}</h1>
 
       <div className="mt-6 flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="name" className="text-sm font-medium">
-            {t("nameLabel")}
+          <label htmlFor="first-name" className="text-sm font-medium">
+            {t("firstNameLabel")}
           </label>
           <input
-            id="name"
+            id="first-name"
             type="text"
-            required
-            minLength={2}
-            maxLength={100}
-            autoComplete="name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
+            autoComplete="given-name"
+            value={firstName}
+            onChange={(event) => setFirstName(event.target.value)}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
+          <FieldError message={errors.firstName} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="last-name" className="text-sm font-medium">
+            {t("lastNameLabel")}
+          </label>
+          <input
+            id="last-name"
+            type="text"
+            autoComplete="family-name"
+            value={lastName}
+            onChange={(event) => setLastName(event.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.lastName} />
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -78,44 +101,38 @@ export function RegisterForm() {
           <input
             id="email"
             type="email"
-            required
             autoComplete="username"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
+          <FieldError message={errors.email} />
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="password" className="text-sm font-medium">
             {t("passwordLabel")}
           </label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
-            required
-            minLength={8}
             autoComplete="new-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
+          <FieldError message={errors.password} />
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="confirm-password" className="text-sm font-medium">
             {t("confirmPasswordLabel")}
           </label>
-          <input
+          <PasswordInput
             id="confirm-password"
-            type="password"
-            required
-            minLength={8}
             autoComplete="new-password"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
+          <FieldError message={errors.confirmPassword} />
         </div>
 
         <button

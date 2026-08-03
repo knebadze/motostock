@@ -99,7 +99,8 @@
   "Auth": {
     "loginTitle": "Вход",
     "registerTitle": "Регистрация",
-    "nameLabel": "Имя",
+    "firstNameLabel": "Имя",
+    "lastNameLabel": "Фамилия",
     "emailLabel": "Эл. почта",
     "passwordLabel": "Пароль",
     "confirmPasswordLabel": "Повторите пароль",
@@ -112,6 +113,12 @@
     "goToRegister": "Зарегистрироваться",
     "goToLogin": "Войти",
     "passwordMismatch": "Пароли не совпадают",
+    "firstNameError": "Имя должно содержать 2-50 символов",
+    "lastNameError": "Фамилия должна содержать 2-50 символов",
+    "emailRequiredError": "Введите эл. почту",
+    "emailInvalidError": "Неверный формат эл. почты",
+    "passwordTooShortError": "Пароль должен содержать минимум 8 символов",
+    "confirmPasswordRequiredError": "Повторите пароль",
     "loginError": "Не удалось войти",
     "registerError": "Регистрация не удалась",
     "invalidCredentials": "Неверный email или пароль",
@@ -152,7 +159,33 @@
   },
   "Account": {
     "title": "Личный кабинет",
-    "description": "Страница личного кабинета скоро появится."
+    "description": "Страница личного кабинета скоро появится.",
+    "nav": {
+      "dashboard": "Дешборд",
+      "garage": "Гараж",
+      "orders": "История заказов",
+      "changePassword": "Смена пароля"
+    },
+    "dashboard": {
+      "greeting": "Добро пожаловать, {name}",
+      "description": "Здесь вы можете следить за гаражом и заказами или изменить пароль."
+    },
+    "garage": {
+      "comingSoon": "Функция гаража скоро появится."
+    },
+    "orders": {
+      "comingSoon": "История заказов скоро появится."
+    },
+    "changePassword": {
+      "currentPasswordLabel": "Текущий пароль",
+      "newPasswordLabel": "Новый пароль",
+      "confirmPasswordLabel": "Повторите новый пароль",
+      "submit": "Изменить пароль",
+      "submitting": "Сохранение...",
+      "mismatch": "Пароли не совпадают",
+      "success": "Пароль успешно изменён",
+      "error": "Не удалось изменить пароль"
+    }
   },
   "NotFound": {
     "heading": "Страница не найдена",

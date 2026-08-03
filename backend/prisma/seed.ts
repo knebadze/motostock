@@ -40,7 +40,8 @@ async function seedImageUrl(subfolder: string, slug: string): Promise<string | u
 
 const ADMIN_EMAIL = "admin@gmail.com";
 const ADMIN_PASSWORD = "admin123";
-const ADMIN_NAME = "Admin";
+const ADMIN_FIRST_NAME = "Admin";
+const ADMIN_LAST_NAME = "User";
 
 type LookupEntry = { key: string; nameKa: string; nameEn: string; nameRu: string };
 
@@ -831,7 +832,8 @@ async function main() {
     await prisma.user.create({
       data: {
         email: ADMIN_EMAIL,
-        name: ADMIN_NAME,
+        firstName: ADMIN_FIRST_NAME,
+        lastName: ADMIN_LAST_NAME,
         passwordHash,
         roleId: adminRole.id,
       },

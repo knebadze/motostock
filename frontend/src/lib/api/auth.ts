@@ -9,7 +9,8 @@ export type User = {
 };
 
 export async function registerUser(input: {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
 }): Promise<User> {
@@ -44,4 +45,11 @@ export async function resetPassword(token: string, password: string): Promise<Us
     password,
   });
   return data.user;
+}
+
+export async function changePassword(
+  currentPassword: string | undefined,
+  newPassword: string,
+): Promise<void> {
+  await apiClient.patch("/users/me/password", { currentPassword, newPassword });
 }

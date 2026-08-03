@@ -26,7 +26,8 @@ export const usersRepository = {
 
   create(data: {
     email: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     passwordHash: string;
     roleId: number;
   }) {
@@ -35,7 +36,8 @@ export const usersRepository = {
 
   createOAuthUser(data: {
     email: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     roleId: number;
     googleId?: string;
     facebookId?: string;

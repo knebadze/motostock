@@ -12,6 +12,21 @@ import {
 
 type Provider = "google" | "facebook";
 
+// OAuth providers here only expose a single display name (no separate
+// given_name/family_name capture) — split on the first space, falling back
+// to using the whole name as both parts for single-word names.
+function splitName(fullName: string): { firstName: string; lastName: string } {
+  const trimmed = fullName.trim();
+  const spaceIndex = trimmed.indexOf(" ");
+  if (spaceIndex === -1) {
+    return { firstName: trimmed, lastName: trimmed };
+  }
+  return {
+    firstName: trimmed.slice(0, spaceIndex),
+    lastName: trimmed.slice(spaceIndex + 1).trim() || trimmed.slice(0, spaceIndex),
+  };
+}
+
 async function findOrCreateOAuthUser(profile: OAuthProfile, provider: Provider) {
   const existingByProvider =
     provider === "google"
@@ -33,7 +48,7 @@ async function findOrCreateOAuthUser(profile: OAuthProfile, provider: Provider) 
 
   return usersRepository.createOAuthUser({
     email: profile.email,
-    name: profile.name,
+    ...splitName(profile.name),
     roleId: userRole.id,
     ...(provider === "google"
       ? { googleId: profile.providerId }
