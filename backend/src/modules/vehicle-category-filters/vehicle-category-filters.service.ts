@@ -1,8 +1,7 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
-import { getLookupDelegate } from "../lookups/lookups.registry.js";
-import { lookupsRepository } from "../lookups/lookups.repository.js";
+import { listLookupItems } from "../lookups/lookups.service.js";
 import { getSpecFieldDefinition } from "./vehicle-spec-fields.registry.js";
 import { vehicleCategoryFiltersRepository } from "./vehicle-category-filters.repository.js";
 import type { VehicleSpecField } from "../../generated/prisma/index.js";
@@ -41,7 +40,7 @@ async function toResponse(row: VehicleCategoryFilterRow) {
   const definition = getSpecFieldDefinition(row.specField);
   const lookupOptions =
     definition.kind === "LOOKUP" && definition.lookupType
-      ? (await lookupsRepository.findMany(getLookupDelegate(definition.lookupType))).map((option) => ({
+      ? (await listLookupItems(definition.lookupType)).map((option) => ({
           id: option.id,
           key: option.key,
           label: { ka: option.nameKa, en: option.nameEn, ru: option.nameRu },

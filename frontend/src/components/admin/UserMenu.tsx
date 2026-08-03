@@ -5,10 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { logoutUser } from "@/lib/api/auth";
+import { clearCache } from "@/lib/api/cache";
+import { ApiRequestError } from "@/lib/api/client";
 
 export function UserMenu({ userName }: { userName: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [clearingCache, setClearingCache] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,6 +36,21 @@ export function UserMenu({ userName }: { userName: string }) {
       router.refresh();
     } catch {
       toast.error("გამოსვლა ვერ მოხერხდა, სცადეთ ხელახლა");
+    }
+  }
+
+  async function handleClearCache() {
+    setClearingCache(true);
+    try {
+      await clearCache();
+      toast.success("ქეში გასუფთავდა");
+      setOpen(false);
+    } catch (error) {
+      const message =
+        error instanceof ApiRequestError ? error.message : "ქეშის გასუფთავება ვერ მოხერხდა";
+      toast.error(message);
+    } finally {
+      setClearingCache(false);
     }
   }
 
@@ -99,6 +117,17 @@ export function UserMenu({ userName }: { userName: string }) {
             </Link>
           </li>
           <li className="border-t border-border">
+            <button
+              type="button"
+              onClick={handleClearCache}
+              disabled={clearingCache}
+              role="menuitem"
+              className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary disabled:opacity-50"
+            >
+              {clearingCache ? "იწმინდება..." : "ქეშის გასუფთავება"}
+            </button>
+          </li>
+          <li>
             <button
               type="button"
               onClick={handleLogout}
