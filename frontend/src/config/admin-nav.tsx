@@ -34,16 +34,11 @@ export const adminNav: AdminNavSection[] = [
     ],
   },
   {
-    label: "ტექნიკის კატალოგი",
+    label: "ტექნიკა",
     items: [
       { label: "მარკები", href: "/admin/brands", icon: brandsIcon },
       { label: "მოდელები", href: "/admin/models", icon: modelsIcon },
-      { label: "ტექნიკა", href: "/admin/vehicle-catalog", icon: vehicleCatalogIcon },
-    ],
-  },
-  {
-    label: "გაყიდვები",
-    items: [
+      { label: "ტექნიკის კატალოგი", href: "/admin/vehicle-catalog", icon: vehicleCatalogIcon },
       { label: "გასაყიდი ტექნიკა", href: "/admin/vehicle-listings", icon: listingIcon },
       {
         label: "ტრანსპორტის ფილტრები",
