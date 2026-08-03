@@ -1,18 +1,20 @@
 model User {
-  id                  Int                  @id @default(autoincrement())
-  email               String               @unique
-  passwordHash        String?
-  googleId            String?              @unique
-  facebookId          String?              @unique
-  firstName           String
-  lastName            String
-  roleId              Int
-  role                Role                 @relation(fields: [roleId], references: [id])
-  finaSyncRuns        FinaSyncRun[]
-  passwordResetTokens PasswordResetToken[]
-  address             Address?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
+  id                      Int                  @id @default(autoincrement())
+  email                   String               @unique
+  passwordHash            String?
+  googleId                String?              @unique
+  facebookId              String?              @unique
+  firstName               String
+  lastName                String
+  roleId                  Int
+  role                    Role                 @relation(fields: [roleId], references: [id])
+  finaSyncRuns            FinaSyncRun[]
+  passwordResetTokens     PasswordResetToken[]
+  address                 Address?
+  garageVehicles          GarageVehicle[]
+  submittedCatalogEntries VehicleCatalog[]
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
 
   @@index([roleId])
   @@schema("dbo")

@@ -42,6 +42,14 @@ model VehicleCatalog {
   descriptionRu          String?
   listings               VehicleListing[]
   fitments               ProductFitment[]
+  // Null = official, admin-curated entry. Set = self-submitted by a
+  // customer via the garage "couldn't find mine" flow — kept visible to
+  // everyone in the catalog, just tagged with who added it. SetNull (not
+  // Cascade) because other users' garage entries may reference this same
+  // row; it's shared/structural once created, not an owned child.
+  userId                 Int?
+  submittedBy            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  garageEntries          GarageVehicle[]
   createdAt              DateTime          @default(now())
   updatedAt              DateTime          @updatedAt
 
@@ -55,5 +63,6 @@ model VehicleCatalog {
   @@index([driveTypeId])
   @@index([startTypeId])
   @@index([powertrainTypeId])
+  @@index([userId])
   @@schema("dbo")
 }

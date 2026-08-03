@@ -1,0 +1,19 @@
+// A customer's own vehicle in their "garage" — always points at a
+// VehicleCatalog row (either an official one, or one the same flow just
+// self-submitted on their behalf). `year` is the specific year of the
+// physical vehicle they own, distinct from the catalog row's yearFrom/yearTo
+// range (which describes a whole model generation, not one instance).
+model GarageVehicle {
+  id               Int            @id @default(autoincrement())
+  userId           Int
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleCatalogId Int
+  vehicleCatalog   VehicleCatalog @relation(fields: [vehicleCatalogId], references: [id])
+  year             Int
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([vehicleCatalogId])
+  @@schema("dbo")
+}

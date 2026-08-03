@@ -9,15 +9,15 @@ import { ROLES } from "../../lib/roles.js";
 import * as vehicleCatalogController from "./vehicle-catalog.controller.js";
 import {
   createVehicleCatalogSchema,
+  submitVehicleCatalogSchema,
   updateVehicleCatalogSchema,
   vehicleCatalogIdParamSchema,
   vehicleCatalogListQuerySchema,
   vehicleCatalogResponseSchema,
 } from "./vehicle-catalog.schema.js";
+import { garageVehicleResponseSchema } from "../garage/garage.schema.js";
 
 export const vehicleCatalogRouter = Router();
-
-vehicleCatalogRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
 vehicleCatalogRouter.get(
   "/",
@@ -29,6 +29,15 @@ vehicleCatalogRouter.get(
   validate(vehicleCatalogIdParamSchema, "params"),
   vehicleCatalogController.getOne,
 );
+vehicleCatalogRouter.post(
+  "/submit",
+  requireAuth,
+  validate(submitVehicleCatalogSchema),
+  vehicleCatalogController.submit,
+);
+
+vehicleCatalogRouter.use(requireAuth, requireRole(ROLES.ADMIN));
+
 vehicleCatalogRouter.post(
   "/",
   validate(createVehicleCatalogSchema),
@@ -61,7 +70,6 @@ registry.registerPath({
   path: "/vehicle-catalog",
   tags: ["VehicleCatalog"],
   summary: "List all vehicle catalog entries",
-  security,
   request: { query: vehicleCatalogListQuerySchema },
   responses: {
     200: { description: "Vehicle catalog list", content: { "application/json": { schema: listResponse } } },
@@ -73,11 +81,24 @@ registry.registerPath({
   path: "/vehicle-catalog/{id}",
   tags: ["VehicleCatalog"],
   summary: "Get a vehicle catalog entry by id",
-  security,
   request: { params: vehicleCatalogIdParamSchema },
   responses: {
     200: { description: "Vehicle catalog entry", content: { "application/json": { schema: itemResponse } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/vehicle-catalog/submit",
+  tags: ["VehicleCatalog"],
+  summary: "Self-service: submit a new vehicle catalog entry (existing brand/model only) and add it to the caller's garage",
+  security,
+  request: { body: { content: { "application/json": { schema: submitVehicleCatalogSchema } } } },
+  responses: {
+    201: { description: "Created", content: { "application/json": { schema: z.object({ item: garageVehicleResponseSchema }) } } },
+    400: { description: "Invalid references", content: { "application/json": { schema: errorResponseSchema } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 

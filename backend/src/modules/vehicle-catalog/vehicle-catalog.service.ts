@@ -9,17 +9,20 @@ import { applyVehicleCatalogAdminFilters } from "../filters/vehicle-catalog/vehi
 import { vehicleCatalogRepository } from "./vehicle-catalog.repository.js";
 import type {
   CreateVehicleCatalogInput,
+  SubmitVehicleCatalogInput,
   UpdateVehicleCatalogInput,
   VehicleCatalogListQuery,
 } from "./vehicle-catalog.schema.js";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
 type LookupRow = { id: number; key: string; nameKa: string; nameEn: string; nameRu: string } | null;
+type SubmitterRow = { id: number; firstName: string; lastName: string } | null;
 
 type VehicleCatalogRow = {
   id: number;
   brand: NamedRefRow;
   model: NamedRefRow & { category: NamedRefRow };
+  submittedBy: SubmitterRow;
   variant: string;
   yearFrom: number | null;
   yearTo: number | null;
@@ -57,12 +60,15 @@ function toNamedRef(row: NamedRefRow) {
   return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
 }
 
-function toResponse(row: VehicleCatalogRow) {
+export function toVehicleCatalogResponse(row: VehicleCatalogRow) {
   return {
     id: row.id,
     category: toNamedRef(row.model.category),
     brand: toNamedRef(row.brand),
     model: toNamedRef(row.model),
+    submittedBy: row.submittedBy
+      ? { id: row.submittedBy.id, name: `${row.submittedBy.firstName} ${row.submittedBy.lastName}` }
+      : null,
     variant: row.variant,
     yearFrom: row.yearFrom,
     yearTo: row.yearTo,
@@ -157,7 +163,7 @@ async function assertRefsExist(input: {
 export async function listVehicleCatalog(query: VehicleCatalogListQuery = {}) {
   const where = applyVehicleCatalogAdminFilters(query.adminFilters);
   const rows = await vehicleCatalogRepository.findMany(where);
-  return rows.map(toResponse);
+  return rows.map(toVehicleCatalogResponse);
 }
 
 export async function getVehicleCatalogEntry(id: number) {
@@ -165,7 +171,7 @@ export async function getVehicleCatalogEntry(id: number) {
   if (!row) {
     throw new ApiError(404, "ტექნიკის ჩანაწერი ვერ მოიძებნა");
   }
-  return toResponse(row);
+  return toVehicleCatalogResponse(row);
 }
 
 async function assertNoDuplicate(params: {
@@ -196,7 +202,56 @@ export async function createVehicleCatalogEntry(input: CreateVehicleCatalogInput
   });
 
   const row = await vehicleCatalogRepository.create({ ...input, variant });
-  return toResponse(row);
+  return toVehicleCatalogResponse(row);
+}
+
+// Self-service: a logged-in customer's garage flow couldn't find their
+// vehicle in the catalog, so they submit a reduced spec sheet themselves —
+// existing brand/model only (no new-brand/new-model creation), a single
+// year (stored as yearFrom=yearTo, since this describes one specific
+// vehicle instance, not a whole model generation), and a handful of the
+// most commonly-known specs. Immediately adds it to their own garage too,
+// in the same transaction, since that's the entire reason they're here.
+export async function submitVehicleCatalogEntry(userId: number, input: SubmitVehicleCatalogInput) {
+  await assertRefsExist({
+    brandId: input.brandId,
+    modelId: input.modelId,
+    fuelTypeId: input.fuelTypeId,
+    transmissionTypeId: input.transmissionTypeId,
+  });
+
+  const variant = input.variant ?? "";
+  await assertNoDuplicate({
+    modelId: input.modelId,
+    variant,
+    yearFrom: input.year,
+    yearTo: input.year,
+  });
+
+  const { catalog, garageVehicle } = await vehicleCatalogRepository.createSubmission(
+    {
+      brandId: input.brandId,
+      modelId: input.modelId,
+      variant,
+      yearFrom: input.year,
+      yearTo: input.year,
+      engineVolumeCc: input.engineVolumeCc ?? null,
+      enginePowerHp: input.enginePowerHp ?? null,
+      fuelTypeId: input.fuelTypeId ?? null,
+      transmissionTypeId: input.transmissionTypeId ?? null,
+      userId,
+    },
+    userId,
+    input.year,
+  );
+
+  return {
+    id: garageVehicle.id,
+    year: garageVehicle.year,
+    vehicleCatalog: toVehicleCatalogResponse(catalog),
+    createdAt: garageVehicle.createdAt,
+    updatedAt: garageVehicle.updatedAt,
+  };
 }
 
 export async function updateVehicleCatalogEntry(id: number, input: UpdateVehicleCatalogInput) {
@@ -236,7 +291,7 @@ export async function updateVehicleCatalogEntry(id: number, input: UpdateVehicle
   });
 
   const row = await vehicleCatalogRepository.update(id, input);
-  return toResponse(row);
+  return toVehicleCatalogResponse(row);
 }
 
 export async function setVehicleCatalogImage(id: number, file: Express.Multer.File) {
@@ -247,7 +302,7 @@ export async function setVehicleCatalogImage(id: number, file: Express.Multer.Fi
 
   const imageUrl = await saveUploadedImage("vehicle-catalog", file);
   const row = await vehicleCatalogRepository.updateImage(id, imageUrl);
-  return toResponse(row);
+  return toVehicleCatalogResponse(row);
 }
 
 export async function deleteVehicleCatalogEntry(id: number) {

@@ -3,7 +3,9 @@ import type { Prisma } from "../../generated/prisma/index.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
 
-const include = {
+const submitterSelect = { id: true, firstName: true, lastName: true } as const;
+
+export const vehicleCatalogInclude = {
   brand: { select: namedRefSelect },
   model: { select: { ...namedRefSelect, category: { select: namedRefSelect } } },
   fuelType: true,
@@ -13,7 +15,10 @@ const include = {
   driveType: true,
   startType: true,
   powertrainType: true,
+  submittedBy: { select: submitterSelect },
 } as const;
+
+const include = vehicleCatalogInclude;
 
 type VehicleCatalogWriteData = {
   brandId: number;
@@ -46,6 +51,7 @@ type VehicleCatalogWriteData = {
   descriptionKa?: string | null;
   descriptionEn?: string | null;
   descriptionRu?: string | null;
+  userId?: number | null;
 };
 
 export const vehicleCatalogRepository = {
@@ -81,6 +87,20 @@ export const vehicleCatalogRepository = {
 
   create(data: VehicleCatalogWriteData) {
     return prisma.vehicleCatalog.create({ data, include });
+  },
+
+  // Self-service submission (garage "couldn't find mine" flow) — creates the
+  // catalog row and the submitter's garage entry for it together, so a
+  // failure partway through never leaves an orphaned catalog row with no
+  // garage link, or vice versa.
+  createSubmission(catalogData: VehicleCatalogWriteData, garageUserId: number, year: number) {
+    return prisma.$transaction(async (tx) => {
+      const catalog = await tx.vehicleCatalog.create({ data: catalogData, include });
+      const garageVehicle = await tx.garageVehicle.create({
+        data: { userId: garageUserId, vehicleCatalogId: catalog.id, year },
+      });
+      return { catalog, garageVehicle };
+    });
   },
 
   update(id: number, data: Partial<VehicleCatalogWriteData>) {

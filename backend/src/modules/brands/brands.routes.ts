@@ -16,10 +16,11 @@ import {
 
 export const brandsRouter = Router();
 
-brandsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
 brandsRouter.get("/", brandsController.list);
 brandsRouter.get("/:id", validate(brandIdParamSchema, "params"), brandsController.getOne);
+
+brandsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
+
 brandsRouter.post("/", validate(createBrandSchema), brandsController.create);
 brandsRouter.patch(
   "/:id",
@@ -44,7 +45,6 @@ registry.registerPath({
   path: "/brands",
   tags: ["Brands"],
   summary: "List all brands",
-  security,
   responses: {
     200: { description: "Brands list", content: { "application/json": { schema: brandListResponse } } },
   },
@@ -55,7 +55,6 @@ registry.registerPath({
   path: "/brands/{id}",
   tags: ["Brands"],
   summary: "Get a brand by id",
-  security,
   request: { params: brandIdParamSchema },
   responses: {
     200: { description: "Brand", content: { "application/json": { schema: brandWrapperResponse } } },

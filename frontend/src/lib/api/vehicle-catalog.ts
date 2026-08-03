@@ -14,6 +14,7 @@ export type VehicleCatalogEntry = {
   category: NamedRef;
   brand: NamedRef;
   model: NamedRef;
+  submittedBy: { id: number; name: string } | null;
   variant: string;
   yearFrom: number | null;
   yearTo: number | null;
@@ -79,6 +80,35 @@ export type VehicleCatalogInput = {
   descriptionEn?: string | null;
   descriptionRu?: string | null;
 };
+
+export type SubmitVehicleCatalogInput = {
+  brandId: number;
+  modelId: number;
+  variant?: string;
+  year: number;
+  engineVolumeCc?: number | null;
+  enginePowerHp?: number | null;
+  fuelTypeId?: number | null;
+  transmissionTypeId?: number | null;
+};
+
+export type GarageVehicle = {
+  id: number;
+  year: number;
+  vehicleCatalog: VehicleCatalogEntry;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function submitVehicleCatalogEntry(
+  input: SubmitVehicleCatalogInput,
+): Promise<GarageVehicle> {
+  const { data } = await apiClient.post<{ item: GarageVehicle }>(
+    "/vehicle-catalog/submit",
+    input,
+  );
+  return data.item;
+}
 
 export async function listVehicleCatalog(
   adminFilters?: AdminFilterEntry[],

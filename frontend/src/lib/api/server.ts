@@ -13,6 +13,7 @@ import type { VehicleListing } from "./vehicle-listings";
 import type { Attribute } from "./attributes";
 import type { CategoryFilter } from "./category-filters";
 import type { Address } from "./addresses";
+import type { GarageVehicle } from "./garage";
 import type { VehicleCategoryFilter } from "./vehicle-category-filters";
 import type { ProductBrand } from "./product-brands";
 import type { Product, ProductDetail } from "./products";
@@ -135,8 +136,10 @@ export async function getLookupItemsFromServer(type: LookupTypeSlug): Promise<Lo
 }
 
 export async function getVehicleCatalogFromServer(): Promise<VehicleCatalogEntry[]> {
+  // Public endpoint (garage "pick from catalog" flow reads this too) — must
+  // not bail out just because there's no admin session cookie, same fix as
+  // getCategoriesFromServer.
   const headers = await authHeaders();
-  if (!headers) return [];
 
   try {
     const { data } = await apiClient.get<{ items: VehicleCatalogEntry[] }>("/vehicle-catalog", {
@@ -226,6 +229,20 @@ export async function getMyAddressFromServer(): Promise<Address | null> {
     return data.address;
   } catch {
     return null;
+  }
+}
+
+export async function getMyGarageFromServer(): Promise<GarageVehicle[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: GarageVehicle[] }>("/users/me/garage", {
+      headers,
+    });
+    return data.items;
+  } catch {
+    return [];
   }
 }
 

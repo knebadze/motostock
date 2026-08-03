@@ -3,6 +3,7 @@ import { ApiError } from "../../lib/ApiError.js";
 import * as vehicleCatalogService from "./vehicle-catalog.service.js";
 import type {
   CreateVehicleCatalogInput,
+  SubmitVehicleCatalogInput,
   UpdateVehicleCatalogInput,
   VehicleCatalogListQuery,
 } from "./vehicle-catalog.schema.js";
@@ -25,6 +26,18 @@ export async function create(
   res: Response,
 ) {
   const item = await vehicleCatalogService.createVehicleCatalogEntry(req.body);
+  res.status(201).json({ item });
+}
+
+export async function submit(
+  req: Request<unknown, unknown, SubmitVehicleCatalogInput>,
+  res: Response,
+) {
+  if (!req.user) {
+    throw new ApiError(401, "Not authenticated");
+  }
+
+  const item = await vehicleCatalogService.submitVehicleCatalogEntry(req.user.sub, req.body);
   res.status(201).json({ item });
 }
 

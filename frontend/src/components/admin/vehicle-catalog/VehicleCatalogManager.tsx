@@ -71,6 +71,11 @@ const columns: DataTableColumn<VehicleCatalogEntry>[] = [
     render: (entry) => entry.powertrainType?.nameKa ?? "—",
     cellClassName: "text-muted-foreground",
   },
+  {
+    header: "დამატებულია",
+    render: (entry) => entry.submittedBy?.name ?? "ადმინის მიერ",
+    cellClassName: "text-muted-foreground",
+  },
 ];
 
 export function VehicleCatalogManager({

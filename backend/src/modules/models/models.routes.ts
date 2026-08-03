@@ -16,10 +16,11 @@ import {
 
 export const modelsRouter = Router();
 
-modelsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
 modelsRouter.get("/", modelsController.list);
 modelsRouter.get("/:id", validate(modelIdParamSchema, "params"), modelsController.getOne);
+
+modelsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
+
 modelsRouter.post("/", validate(createModelSchema), modelsController.create);
 modelsRouter.patch(
   "/:id",
@@ -38,7 +39,6 @@ registry.registerPath({
   path: "/models",
   tags: ["Models"],
   summary: "List all models, optionally filtered by brand",
-  security,
   request: { query: modelListQuerySchema },
   responses: {
     200: { description: "Models list", content: { "application/json": { schema: modelListResponse } } },
@@ -50,7 +50,6 @@ registry.registerPath({
   path: "/models/{id}",
   tags: ["Models"],
   summary: "Get a model by id",
-  security,
   request: { params: modelIdParamSchema },
   responses: {
     200: { description: "Model", content: { "application/json": { schema: modelWrapperResponse } } },

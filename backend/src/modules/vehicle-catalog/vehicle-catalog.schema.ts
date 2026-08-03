@@ -81,6 +81,28 @@ export type VehicleCatalogListQuery = z.infer<typeof vehicleCatalogListQuerySche
 
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
 
+const submitterRefSchema = z.object({ id: z.int(), name: z.string() });
+
+// Reduced, non-admin-facing schema — a logged-in customer submitting a
+// vehicle their garage flow couldn't find in the catalog. Deliberately a
+// separate schema from `createVehicleCatalogSchema` (not just a subset
+// picked client-side) so the backend itself enforces which fields a
+// non-admin submission can set, regardless of what a direct API call sends.
+export const submitVehicleCatalogSchema = registry.register(
+  "SubmitVehicleCatalogInput",
+  z.object({
+    brandId: z.int().positive(),
+    modelId: z.int().positive(),
+    variant: z.string().trim().max(120).optional(),
+    year: z.int().min(1900).max(2100).openapi({ example: 2022 }),
+    engineVolumeCc: optionalPositiveInt,
+    enginePowerHp: optionalPositiveInt,
+    fuelTypeId: optionalPositiveInt,
+    transmissionTypeId: optionalPositiveInt,
+  }),
+);
+export type SubmitVehicleCatalogInput = z.infer<typeof submitVehicleCatalogSchema>;
+
 export const vehicleCatalogResponseSchema = registry.register(
   "VehicleCatalog",
   z.object({
@@ -88,6 +110,7 @@ export const vehicleCatalogResponseSchema = registry.register(
     category: namedRefSchema,
     brand: namedRefSchema,
     model: namedRefSchema,
+    submittedBy: submitterRefSchema.nullable(),
     variant: z.string(),
     yearFrom: z.int().nullable(),
     yearTo: z.int().nullable(),
