@@ -20,7 +20,7 @@ import type { Brand } from "@/lib/api/brands";
 import type { Model } from "@/lib/api/models";
 import type { LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
-import { flattenTree } from "@/lib/categories-tree";
+import { flattenTree, isVehicleCategory } from "@/lib/categories-tree";
 import { vehicleCatalogFormSchema } from "@/lib/validation/vehicle-catalog";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
@@ -139,16 +139,21 @@ export function VehicleCatalogFormModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewUrl]);
 
-  const categoryOptions = useMemo(
-    () => [
+  const categoryOptions = useMemo(() => {
+    // This is only a filter to narrow the model list below — but a vehicle
+    // catalog entry's model is always a vehicle (transport) category, so
+    // offering product categories here would just be dead weight.
+    const vehicleCategories = categories.filter((category) =>
+      isVehicleCategory(categories, category.id),
+    );
+    return [
       { value: "", label: "ყველა ტიპი" },
-      ...flattenTree(categories).map((category) => ({
+      ...flattenTree(vehicleCategories).map((category) => ({
         value: String(category.id),
         label: `${"— ".repeat(category.depth)}${category.name.ka}`,
       })),
-    ],
-    [categories],
-  );
+    ];
+  }, [categories]);
 
   const brandOptions = useMemo(
     () => brands.map((brand) => ({ value: String(brand.id), label: brand.name.ka })),

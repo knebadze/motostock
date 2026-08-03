@@ -11,7 +11,7 @@ import { createModel, updateModel, type Model } from "@/lib/api/models";
 import type { Brand } from "@/lib/api/brands";
 import type { Category } from "@/lib/api/categories";
 import { ApiRequestError } from "@/lib/api/client";
-import { flattenTree, slugify } from "@/lib/categories-tree";
+import { flattenTree, isVehicleCategory, slugify } from "@/lib/categories-tree";
 import { modelFormSchema } from "@/lib/validation/models";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
@@ -31,7 +31,14 @@ export function ModelFormModal({
   model: Model | null;
 }) {
   const isEditing = model !== null;
-  const flatCategories = flattenTree(categories);
+  // Model.categoryId always points at a vehicle (transport) category — a
+  // Model never belongs to a product category — so the picker must only
+  // ever offer categories from that subtree, not the full product+vehicle
+  // tree.
+  const vehicleCategories = categories.filter((category) =>
+    isVehicleCategory(categories, category.id),
+  );
+  const flatCategories = flattenTree(vehicleCategories);
   const [brandId, setBrandId] = useState<string>(
     model ? String(model.brandId) : brands[0] ? String(brands[0].id) : "",
   );
