@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Modal } from "./Modal";
+import { Loader } from "./Loader";
 import { ApiRequestError } from "@/lib/api/client";
 
 export function ConfirmDialog({
@@ -55,8 +56,9 @@ export function ConfirmDialog({
           type="button"
           onClick={handleConfirm}
           disabled={loading}
-          className="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-500 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-500 disabled:opacity-50"
         >
+          {loading && <Loader size="xs" />}
           {loading ? "მუშავდება..." : confirmLabel}
         </button>
       </div>

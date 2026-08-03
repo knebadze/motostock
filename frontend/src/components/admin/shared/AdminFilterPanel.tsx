@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Select } from "@/components/shared/Select";
+import { Loader } from "@/components/shared/Loader";
 import type { AdminFilterEntry } from "@/lib/api/admin-filters";
 
 export type { AdminFilterEntry };
@@ -67,22 +68,36 @@ export function AdminFilterPanel({
   onChange,
 }: {
   fields: AdminFilterField[];
-  onChange: (entries: AdminFilterEntry[]) => void;
+  // May return a Promise (the Manager's fetch) — awaited here so the button
+  // can show a spinner and stay disabled for the request's whole duration,
+  // not just the instant the click handler runs.
+  onChange: (entries: AdminFilterEntry[]) => void | Promise<void>;
 }) {
   const [state, setState] = useState<Record<string, FieldState>>({});
   const [open, setOpen] = useState(false);
+  const [applying, setApplying] = useState(false);
 
   function updateField(key: string, patch: Partial<FieldState>) {
     setState((current) => ({ ...current, [key]: { ...(current[key] ?? EMPTY_STATE), ...patch } }));
   }
 
-  function handleApply() {
-    onChange(toEntries(fields, state));
+  async function handleApply() {
+    setApplying(true);
+    try {
+      await onChange(toEntries(fields, state));
+    } finally {
+      setApplying(false);
+    }
   }
 
-  function handleClear() {
+  async function handleClear() {
     setState({});
-    onChange([]);
+    setApplying(true);
+    try {
+      await onChange([]);
+    } finally {
+      setApplying(false);
+    }
   }
 
   const sections = Array.from(new Set(fields.map((field) => field.section)));
@@ -204,7 +219,8 @@ export function AdminFilterPanel({
             <button
               type="button"
               onClick={handleClear}
-              className="text-xs font-medium text-primary hover:underline"
+              disabled={applying}
+              className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
             >
               გაწმენდა
             </button>
@@ -212,8 +228,10 @@ export function AdminFilterPanel({
           <button
             type="button"
             onClick={handleApply}
-            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+            disabled={applying}
+            className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
+            {applying && <Loader size="xs" />}
             გაფილტვრა
           </button>
         </div>

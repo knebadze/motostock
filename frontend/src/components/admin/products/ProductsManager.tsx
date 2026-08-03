@@ -113,9 +113,9 @@ export function ProductsManager({
 
   // AdminFilterPanel only calls this once, on "გაფილტვრა" — one click, one
   // request, never on every keystroke.
-  function handleFilterApply(filters: AdminFilterEntry[]) {
+  async function handleFilterApply(filters: AdminFilterEntry[]) {
     setAdminFilters(filters);
-    refresh(filters);
+    await refresh(filters);
     setPage(1);
   }
 
