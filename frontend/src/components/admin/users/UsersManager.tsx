@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, usePagination } from "@/components/shared/Pagination";
 import type { AdminUser } from "@/lib/api/users";
 import { formatDateTime } from "@/lib/format";
+import { UserDetailModal } from "./UserDetailModal";
 
 function methodBadges(user: AdminUser) {
   const methods: string[] = [];
@@ -50,6 +52,7 @@ const columns: DataTableColumn<AdminUser>[] = [
 
 export function UsersManager({ initialUsers }: { initialUsers: AdminUser[] }) {
   const { page, setPage, pageItems, totalPages } = usePagination(initialUsers);
+  const [viewingUserId, setViewingUserId] = useState<number | null>(null);
 
   return (
     <div>
@@ -64,9 +67,38 @@ export function UsersManager({ initialUsers }: { initialUsers: AdminUser[] }) {
           data={pageItems}
           getRowKey={(user) => user.id}
           emptyMessage="მომხმარებელი არ არსებობს"
+          actions={(user) => (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setViewingUserId(user.id)}
+                aria-label="სრულად ნახვა"
+                title="სრულად ნახვა"
+                className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="size-4"
+                >
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
+          )}
         />
         <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
+
+      {viewingUserId != null && (
+        <UserDetailModal userId={viewingUserId} onClose={() => setViewingUserId(null)} />
+      )}
     </div>
   );
 }

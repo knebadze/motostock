@@ -1,4 +1,6 @@
 import { apiClient } from "./client";
+import type { Address } from "./addresses";
+import type { GarageVehicle } from "./vehicle-catalog";
 
 export type AdminUser = {
   id: number;
@@ -11,7 +13,17 @@ export type AdminUser = {
   createdAt: string;
 };
 
+export type AdminUserDetail = AdminUser & {
+  address: Address | null;
+  garage: GarageVehicle[];
+};
+
 export async function listUsers(): Promise<AdminUser[]> {
   const { data } = await apiClient.get<{ users: AdminUser[] }>("/users");
   return data.users;
+}
+
+export async function getUser(id: number): Promise<AdminUserDetail> {
+  const { data } = await apiClient.get<{ user: AdminUserDetail }>(`/users/${id}`);
+  return data.user;
 }

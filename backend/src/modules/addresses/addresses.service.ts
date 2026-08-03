@@ -18,7 +18,7 @@ type AddressRow = {
   updatedAt: Date;
 };
 
-function toResponse(row: AddressRow) {
+export function toAddressResponse(row: AddressRow) {
   return {
     id: row.id,
     phone: row.phone,
@@ -34,7 +34,7 @@ function toResponse(row: AddressRow) {
 
 export async function getMyAddress(userId: number) {
   const row = await addressesRepository.findByUserId(userId);
-  return row ? toResponse(row) : null;
+  return row ? toAddressResponse(row) : null;
 }
 
 export async function saveMyAddress(userId: number, input: UpsertAddressInput) {
@@ -51,5 +51,5 @@ export async function saveMyAddress(userId: number, input: UpsertAddressInput) {
     apartment: input.apartment ?? null,
     postalCode: input.postalCode ?? null,
   });
-  return toResponse(row);
+  return toAddressResponse(row);
 }

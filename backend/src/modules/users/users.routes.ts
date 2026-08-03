@@ -4,9 +4,11 @@ import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema, userResponseSchema } from "../../docs/schemas.js";
+import { addressResponseSchema } from "../addresses/addresses.schema.js";
+import { garageVehicleResponseSchema } from "../garage/garage.schema.js";
 import { ROLES } from "../../lib/roles.js";
-import { changePassword, list, me } from "./users.controller.js";
-import { changePasswordSchema } from "./users.schema.js";
+import { changePassword, getOne, list, me } from "./users.controller.js";
+import { changePasswordSchema, userIdParamSchema } from "./users.schema.js";
 
 export const usersRouter = Router();
 
@@ -18,6 +20,13 @@ usersRouter.patch(
   changePassword,
 );
 usersRouter.get("/", requireAuth, requireRole(ROLES.ADMIN), list);
+usersRouter.get(
+  "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  validate(userIdParamSchema, "params"),
+  getOne,
+);
 
 registry.registerPath({
   method: "get",
@@ -88,6 +97,41 @@ registry.registerPath({
     },
     403: {
       description: "Insufficient permissions",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+  },
+});
+
+const adminUserDetailResponseSchema = registry.register(
+  "AdminUserDetail",
+  adminUserResponseSchema.extend({
+    address: addressResponseSchema.nullable(),
+    garage: z.array(garageVehicleResponseSchema),
+  }),
+);
+
+registry.registerPath({
+  method: "get",
+  path: "/users/{id}",
+  tags: ["Users"],
+  summary: "Get a single user's full details, including address and garage (admin only)",
+  security: [{ cookieAuth: [] }],
+  request: { params: userIdParamSchema },
+  responses: {
+    200: {
+      description: "User detail",
+      content: { "application/json": { schema: z.object({ user: adminUserDetailResponseSchema }) } },
+    },
+    401: {
+      description: "Not authenticated",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    403: {
+      description: "Insufficient permissions",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    404: {
+      description: "Not found",
       content: { "application/json": { schema: errorResponseSchema } },
     },
   },

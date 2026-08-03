@@ -1,6 +1,11 @@
 import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
-import { changePassword as changePasswordService, getUserById, listUsers } from "./users.service.js";
+import {
+  changePassword as changePasswordService,
+  getUserById,
+  getUserDetail,
+  listUsers,
+} from "./users.service.js";
 import type { ChangePasswordInput } from "./users.schema.js";
 
 export async function me(req: Request, res: Response) {
@@ -15,6 +20,11 @@ export async function me(req: Request, res: Response) {
 export async function list(_req: Request, res: Response) {
   const users = await listUsers();
   res.status(200).json({ users });
+}
+
+export async function getOne(req: Request, res: Response) {
+  const user = await getUserDetail(Number(req.params.id));
+  res.status(200).json({ user });
 }
 
 export async function changePassword(

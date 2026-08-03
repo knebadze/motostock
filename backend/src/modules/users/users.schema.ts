@@ -12,3 +12,7 @@ export const changePasswordSchema = registry.register(
   }),
 );
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+export const userIdParamSchema = z.object({
+  id: z.coerce.number().int().positive(),
+});

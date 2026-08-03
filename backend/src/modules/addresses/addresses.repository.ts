@@ -1,7 +1,8 @@
 import { prisma } from "../../config/prisma.js";
 
 const citySelect = { id: true, key: true, nameKa: true, nameEn: true, nameRu: true } as const;
-const include = { city: { select: citySelect } } as const;
+export const addressInclude = { city: { select: citySelect } } as const;
+const include = addressInclude;
 
 type AddressWriteData = {
   phone: string;

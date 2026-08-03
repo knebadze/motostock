@@ -1,4 +1,6 @@
 import { prisma } from "../../config/prisma.js";
+import { addressInclude } from "../addresses/addresses.repository.js";
+import { vehicleCatalogInclude } from "../vehicle-catalog/vehicle-catalog.repository.js";
 
 export const usersRepository = {
   findByEmail(email: string) {
@@ -7,6 +9,23 @@ export const usersRepository = {
 
   findById(id: number) {
     return prisma.user.findUnique({ where: { id }, include: { role: true } });
+  },
+
+  // Admin "full details" view — pulls in the address and garage alongside
+  // the base account fields, so the admin panel can show everything about a
+  // user in one modal without extra round-trips.
+  findByIdWithDetails(id: number) {
+    return prisma.user.findUnique({
+      where: { id },
+      include: {
+        role: true,
+        address: { include: addressInclude },
+        garageVehicles: {
+          include: { vehicleCatalog: { include: vehicleCatalogInclude } },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
   },
 
   findMany() {
