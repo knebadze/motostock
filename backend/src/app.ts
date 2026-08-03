@@ -11,6 +11,7 @@ import { generateOpenApiDocument } from "./docs/openapi.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { oauthRouter } from "./modules/oauth/oauth.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
+import { addressesRouter } from "./modules/addresses/addresses.routes.js";
 import { categoriesRouter } from "./modules/categories/categories.routes.js";
 import { settingsRouter } from "./modules/settings/settings.routes.js";
 import { brandsRouter } from "./modules/brands/brands.routes.js";
@@ -56,6 +57,7 @@ app.use(
 app.use("/api/auth", authRouter);
 app.use("/api/auth", oauthRouter);
 app.use("/api/users", usersRouter);
+app.use("/api/users", addressesRouter);
 app.use("/api/categories", categoriesRouter);
 app.use("/api/settings", settingsRouter);
 app.use("/api/brands", brandsRouter);

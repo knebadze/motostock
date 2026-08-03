@@ -16,9 +16,14 @@ import {
 
 export const lookupsRouter = Router();
 
+// Public: classifier value lists (fuel types, colors, cities, ...) aren't
+// sensitive, and guest-facing forms need to read some of them directly (the
+// address form's city dropdown) — same public-GET/admin-write pattern as
+// categories, category-filters, vehicle-listings.
+lookupsRouter.get("/:type", validate(lookupTypeParamSchema, "params"), lookupsController.list);
+
 lookupsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
-lookupsRouter.get("/:type", validate(lookupTypeParamSchema, "params"), lookupsController.list);
 lookupsRouter.post(
   "/:type",
   validate(lookupTypeParamSchema, "params"),
@@ -45,8 +50,7 @@ registry.registerPath({
   method: "get",
   path: "/lookups/{type}",
   tags: ["Lookups"],
-  summary: "List classifier lookup items by type",
-  security,
+  summary: "List classifier lookup items by type (public)",
   request: { params: lookupTypeParamSchema },
   responses: {
     200: { description: "Items", content: { "application/json": { schema: lookupListResponse } } },

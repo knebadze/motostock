@@ -164,6 +164,7 @@
       "dashboard": "Дешборд",
       "garage": "Гараж",
       "orders": "История заказов",
+      "address": "Адрес",
       "changePassword": "Смена пароля"
     },
     "dashboard": {
@@ -175,6 +176,26 @@
     },
     "orders": {
       "comingSoon": "История заказов скоро появится."
+    },
+    "address": {
+      "description": "Укажите основной адрес доставки и контактный телефон — мы используем их при доставке заказов.",
+      "phoneLabel": "Номер телефона",
+      "cityLabel": "Город",
+      "cityPlaceholder": "Выберите город",
+      "streetLabel": "Улица",
+      "buildingLabel": "Дом/корпус",
+      "apartmentLabel": "Квартира",
+      "postalCodeLabel": "Почтовый индекс",
+      "submit": "Сохранить",
+      "submitting": "Сохранение...",
+      "success": "Адрес сохранён",
+      "error": "Не удалось сохранить адрес",
+      "phoneError": "Неверный номер телефона",
+      "cityRequiredError": "Выберите город",
+      "streetRequiredError": "Укажите название улицы",
+      "buildingTooLongError": "Макс. 50 символов",
+      "apartmentTooLongError": "Макс. 50 символов",
+      "postalCodeTooLongError": "Макс. 20 символов"
     },
     "changePassword": {
       "currentPasswordLabel": "Текущий пароль",

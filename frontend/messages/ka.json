@@ -164,6 +164,7 @@
       "dashboard": "დეშბორდი",
       "garage": "გარაჟი",
       "orders": "შეკვეთების ისტორია",
+      "address": "მისამართი",
       "changePassword": "პაროლის შეცვლა"
     },
     "dashboard": {
@@ -175,6 +176,26 @@
     },
     "orders": {
       "comingSoon": "შეკვეთების ისტორია მალე დაემატება."
+    },
+    "address": {
+      "description": "მიუთითეთ მიწოდების ძირითადი მისამართი და საკონტაქტო ტელეფონი — გამოვიყენებთ შეკვეთების მიწოდებისას.",
+      "phoneLabel": "ტელეფონის ნომერი",
+      "cityLabel": "ქალაქი",
+      "cityPlaceholder": "აირჩიეთ ქალაქი",
+      "streetLabel": "ქუჩა",
+      "buildingLabel": "სახლი/კორპუსი",
+      "apartmentLabel": "ბინა",
+      "postalCodeLabel": "საფოსტო ინდექსი",
+      "submit": "შენახვა",
+      "submitting": "ინახება...",
+      "success": "მისამართი შენახულია",
+      "error": "მისამართის შენახვა ვერ მოხერხდა",
+      "phoneError": "ტელეფონის ნომერი არასწორია",
+      "cityRequiredError": "აირჩიეთ ქალაქი",
+      "streetRequiredError": "შეავსეთ ქუჩის დასახელება",
+      "buildingTooLongError": "მაქს. 50 სიმბოლო",
+      "apartmentTooLongError": "მაქს. 50 სიმბოლო",
+      "postalCodeTooLongError": "მაქს. 20 სიმბოლო"
     },
     "changePassword": {
       "currentPasswordLabel": "მიმდინარე პაროლი",

@@ -1,0 +1,10 @@
+model City {
+  id        Int       @id @default(autoincrement())
+  key       String    @unique
+  nameKa    String
+  nameEn    String
+  nameRu    String
+  addresses Address[]
+
+  @@schema("cla")
+}

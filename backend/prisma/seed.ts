@@ -153,6 +153,29 @@ const SIZES: LookupEntry[] = [
   { key: "XXXL", nameKa: "XXXL", nameEn: "XXXL", nameRu: "XXXL" },
 ];
 
+const CITIES: LookupEntry[] = [
+  { key: "TBILISI", nameKa: "თბილისი", nameEn: "Tbilisi", nameRu: "Тбилиси" },
+  { key: "BATUMI", nameKa: "ბათუმი", nameEn: "Batumi", nameRu: "Батуми" },
+  { key: "KUTAISI", nameKa: "ქუთაისი", nameEn: "Kutaisi", nameRu: "Кутаиси" },
+  { key: "RUSTAVI", nameKa: "რუსთავი", nameEn: "Rustavi", nameRu: "Рустави" },
+  { key: "GORI", nameKa: "გორი", nameEn: "Gori", nameRu: "Гори" },
+  { key: "ZUGDIDI", nameKa: "ზუგდიდი", nameEn: "Zugdidi", nameRu: "Зугдиди" },
+  { key: "POTI", nameKa: "ფოთი", nameEn: "Poti", nameRu: "Поти" },
+  { key: "KHASHURI", nameKa: "ხაშური", nameEn: "Khashuri", nameRu: "Хашури" },
+  { key: "SAMTREDIA", nameKa: "სამტრედია", nameEn: "Samtredia", nameRu: "Самтредиа" },
+  { key: "SENAKI", nameKa: "სენაკი", nameEn: "Senaki", nameRu: "Сенаки" },
+  { key: "ZESTAPONI", nameKa: "ზესტაფონი", nameEn: "Zestaponi", nameRu: "Зестафони" },
+  { key: "MARNEULI", nameKa: "მარნეული", nameEn: "Marneuli", nameRu: "Марнеули" },
+  { key: "TELAVI", nameKa: "თელავი", nameEn: "Telavi", nameRu: "Телави" },
+  { key: "AKHALTSIKHE", nameKa: "ახალციხე", nameEn: "Akhaltsikhe", nameRu: "Ахалцихе" },
+  { key: "OZURGETI", nameKa: "ოზურგეთი", nameEn: "Ozurgeti", nameRu: "Озургети" },
+  { key: "KOBULETI", nameKa: "ქობულეთი", nameEn: "Kobuleti", nameRu: "Кобулети" },
+  { key: "AKHALKALAKI", nameKa: "ახალქალაქი", nameEn: "Akhalkalaki", nameRu: "Ахалкалаки" },
+  { key: "GARDABANI", nameKa: "გარდაბანი", nameEn: "Gardabani", nameRu: "Гардабани" },
+  { key: "BORJOMI", nameKa: "ბორჯომი", nameEn: "Borjomi", nameRu: "Боржоми" },
+  { key: "MTSKHETA", nameKa: "მცხეთა", nameEn: "Mtskheta", nameRu: "Мцхета" },
+];
+
 type CategorySeed = {
   slug: string;
   nameKa: string;
@@ -861,6 +884,7 @@ async function main() {
   await seedLookup("Listing statuses", prisma.listingStatus, LISTING_STATUSES);
   await seedLookup("Colors", prisma.color, COLORS);
   await seedLookup("Sizes", prisma.size, SIZES);
+  await seedLookup("Cities", prisma.city, CITIES);
 
   const categoryIdBySlug = await seedCategoryTree(PRODUCT_CATEGORY_TREE, null);
   console.log(`Product category tree ready: ${categoryIdBySlug.size} categories`);

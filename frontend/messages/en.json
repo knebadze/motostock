@@ -164,6 +164,7 @@
       "dashboard": "Dashboard",
       "garage": "Garage",
       "orders": "Order history",
+      "address": "Address",
       "changePassword": "Change password"
     },
     "dashboard": {
@@ -175,6 +176,26 @@
     },
     "orders": {
       "comingSoon": "Order history is coming soon."
+    },
+    "address": {
+      "description": "Set your primary delivery address and contact phone number — we'll use it to deliver your orders.",
+      "phoneLabel": "Phone number",
+      "cityLabel": "City",
+      "cityPlaceholder": "Select a city",
+      "streetLabel": "Street",
+      "buildingLabel": "Building",
+      "apartmentLabel": "Apartment",
+      "postalCodeLabel": "Postal code",
+      "submit": "Save",
+      "submitting": "Saving...",
+      "success": "Address saved",
+      "error": "Failed to save address",
+      "phoneError": "Invalid phone number",
+      "cityRequiredError": "Select a city",
+      "streetRequiredError": "Enter a street name",
+      "buildingTooLongError": "Max 50 characters",
+      "apartmentTooLongError": "Max 50 characters",
+      "postalCodeTooLongError": "Max 20 characters"
     },
     "changePassword": {
       "currentPasswordLabel": "Current password",

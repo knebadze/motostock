@@ -12,6 +12,7 @@ import type { VehicleCatalogEntry } from "./vehicle-catalog";
 import type { VehicleListing } from "./vehicle-listings";
 import type { Attribute } from "./attributes";
 import type { CategoryFilter } from "./category-filters";
+import type { Address } from "./addresses";
 import type { VehicleCategoryFilter } from "./vehicle-category-filters";
 import type { ProductBrand } from "./product-brands";
 import type { Product, ProductDetail } from "./products";
@@ -118,8 +119,10 @@ export async function getModelsFromServer(): Promise<Model[]> {
 }
 
 export async function getLookupItemsFromServer(type: LookupTypeSlug): Promise<LookupItem[]> {
+  // Public endpoint (guest-facing forms, e.g. the address form's city
+  // dropdown, read this too) — must not bail out just because there's no
+  // admin session cookie, same fix as getCategoriesFromServer.
   const headers = await authHeaders();
-  if (!headers) return [];
 
   try {
     const { data } = await apiClient.get<{ items: LookupItem[] }>(`/lookups/${type}`, {
@@ -209,6 +212,20 @@ export async function getVehicleCategoryFiltersFromServer(
     return data.items;
   } catch {
     return [];
+  }
+}
+
+export async function getMyAddressFromServer(): Promise<Address | null> {
+  const headers = await authHeaders();
+  if (!headers) return null;
+
+  try {
+    const { data } = await apiClient.get<{ address: Address | null }>("/users/me/address", {
+      headers,
+    });
+    return data.address;
+  } catch {
+    return null;
   }
 }
 
