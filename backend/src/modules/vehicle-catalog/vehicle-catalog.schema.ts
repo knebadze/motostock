@@ -88,18 +88,26 @@ const submitterRefSchema = z.object({ id: z.int(), name: z.string() });
 // separate schema from `createVehicleCatalogSchema` (not just a subset
 // picked client-side) so the backend itself enforces which fields a
 // non-admin submission can set, regardless of what a direct API call sends.
+// `yearFrom`/`yearTo` describe the model generation being cataloged (same
+// meaning as the admin form's fields) — `year` is the specific year of the
+// caller's own vehicle, which the service validates against that range and
+// stores separately on their GarageVehicle row.
 export const submitVehicleCatalogSchema = registry.register(
   "SubmitVehicleCatalogInput",
-  z.object({
-    brandId: z.int().positive(),
-    modelId: z.int().positive(),
-    variant: z.string().trim().max(120).optional(),
-    year: z.int().min(1900).max(2100).openapi({ example: 2022 }),
-    engineVolumeCc: optionalPositiveInt,
-    enginePowerHp: optionalPositiveInt,
-    fuelTypeId: optionalPositiveInt,
-    transmissionTypeId: optionalPositiveInt,
-  }),
+  z
+    .object({
+      brandId: z.int().positive(),
+      modelId: z.int().positive(),
+      variant: z.string().trim().max(120).optional(),
+      yearFrom: optionalYear,
+      yearTo: optionalYear,
+      year: z.int().min(1900).max(2100).openapi({ example: 2022 }),
+      engineVolumeCc: optionalPositiveInt,
+      enginePowerHp: optionalPositiveInt,
+      fuelTypeId: optionalPositiveInt,
+      transmissionTypeId: optionalPositiveInt,
+    })
+    .superRefine(assertYearRangeIsValid),
 );
 export type SubmitVehicleCatalogInput = z.infer<typeof submitVehicleCatalogSchema>;
 

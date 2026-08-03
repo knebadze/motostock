@@ -85,6 +85,8 @@ export type SubmitVehicleCatalogInput = {
   brandId: number;
   modelId: number;
   variant?: string;
+  yearFrom?: number | null;
+  yearTo?: number | null;
   year: number;
   engineVolumeCc?: number | null;
   enginePowerHp?: number | null;

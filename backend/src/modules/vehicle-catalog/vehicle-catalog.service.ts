@@ -205,13 +205,21 @@ export async function createVehicleCatalogEntry(input: CreateVehicleCatalogInput
   return toVehicleCatalogResponse(row);
 }
 
+function formatYearRange(yearFrom: number | null, yearTo: number | null) {
+  if (yearFrom != null && yearTo != null) return `${yearFrom}–${yearTo}`;
+  if (yearFrom != null) return `${yearFrom}+`;
+  return `≤${yearTo}`;
+}
+
 // Self-service: a logged-in customer's garage flow couldn't find their
 // vehicle in the catalog, so they submit a reduced spec sheet themselves —
-// existing brand/model only (no new-brand/new-model creation), a single
-// year (stored as yearFrom=yearTo, since this describes one specific
-// vehicle instance, not a whole model generation), and a handful of the
-// most commonly-known specs. Immediately adds it to their own garage too,
-// in the same transaction, since that's the entire reason they're here.
+// existing brand/model only (no new-brand/new-model creation), the model
+// generation's release years (yearFrom/yearTo, same meaning as the admin
+// form), and a handful of the most commonly-known specs. `year` is the
+// specific year of the caller's own vehicle — distinct from the catalog
+// row's range — validated against it and stored on their GarageVehicle row.
+// Immediately adds it to their own garage too, in the same transaction,
+// since that's the entire reason they're here.
 export async function submitVehicleCatalogEntry(userId: number, input: SubmitVehicleCatalogInput) {
   await assertRefsExist({
     brandId: input.brandId,
@@ -220,12 +228,23 @@ export async function submitVehicleCatalogEntry(userId: number, input: SubmitVeh
     transmissionTypeId: input.transmissionTypeId,
   });
 
+  const yearFrom = input.yearFrom ?? null;
+  const yearTo = input.yearTo ?? null;
+  const outOfRange =
+    (yearFrom != null && input.year < yearFrom) || (yearTo != null && input.year > yearTo);
+  if (outOfRange) {
+    throw new ApiError(
+      400,
+      `წელი (${input.year}) არ ჯდება მითითებულ გამოშვების დიაპაზონში (${formatYearRange(yearFrom, yearTo)})`,
+    );
+  }
+
   const variant = input.variant ?? "";
   await assertNoDuplicate({
     modelId: input.modelId,
     variant,
-    yearFrom: input.year,
-    yearTo: input.year,
+    yearFrom,
+    yearTo,
   });
 
   const { catalog, garageVehicle } = await vehicleCatalogRepository.createSubmission(
@@ -233,8 +252,8 @@ export async function submitVehicleCatalogEntry(userId: number, input: SubmitVeh
       brandId: input.brandId,
       modelId: input.modelId,
       variant,
-      yearFrom: input.year,
-      yearTo: input.year,
+      yearFrom,
+      yearTo,
       engineVolumeCc: input.engineVolumeCc ?? null,
       enginePowerHp: input.enginePowerHp ?? null,
       fuelTypeId: input.fuelTypeId ?? null,

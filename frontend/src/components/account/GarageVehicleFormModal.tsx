@@ -63,6 +63,8 @@ export function GarageVehicleFormModal({
   const [brandId, setBrandId] = useState("");
   const [modelId, setModelId] = useState("");
   const [variant, setVariant] = useState("");
+  const [yearFrom, setYearFrom] = useState("");
+  const [yearTo, setYearTo] = useState("");
   const [submitYear, setSubmitYear] = useState("");
   const [engineVolumeCc, setEngineVolumeCc] = useState("");
   const [enginePowerHp, setEnginePowerHp] = useState("");
@@ -188,6 +190,8 @@ export function GarageVehicleFormModal({
       brandId,
       modelId,
       variant,
+      yearFrom,
+      yearTo,
       year: submitYear,
       engineVolumeCc,
       enginePowerHp,
@@ -200,11 +204,15 @@ export function GarageVehicleFormModal({
     }
     setErrors({});
     setLoading(true);
+    const submittedYearFrom = result.data.yearFrom.trim() ? Number(result.data.yearFrom) : null;
+    const submittedYearTo = result.data.yearTo.trim() ? Number(result.data.yearTo) : null;
     try {
       const vehicle = await submitVehicleCatalogEntry({
         brandId: Number(result.data.brandId),
         modelId: Number(result.data.modelId),
         variant: result.data.variant || undefined,
+        yearFrom: submittedYearFrom,
+        yearTo: submittedYearTo,
         year: Number(result.data.year),
         engineVolumeCc: result.data.engineVolumeCc ? Number(result.data.engineVolumeCc) : null,
         enginePowerHp: result.data.enginePowerHp ? Number(result.data.enginePowerHp) : null,
@@ -217,10 +225,11 @@ export function GarageVehicleFormModal({
       onSaved(vehicle);
       onClose();
     } catch (error) {
-      // The backend rejects an exact model+variant+year duplicate outright
-      // (409) — rather than surface that as a raw error, fall back to
-      // treating it the same as if the user had picked the existing entry
-      // themselves, since that's functionally what they were trying to do.
+      // The backend rejects an exact model+variant+yearFrom+yearTo duplicate
+      // outright (409) — rather than surface that as a raw error, fall back
+      // to treating it the same as if the user had picked the existing
+      // entry themselves, since that's functionally what they were trying
+      // to do.
       const existing =
         error instanceof ApiRequestError && error.status === 409
           ? vehicleCatalog.find(
@@ -228,8 +237,8 @@ export function GarageVehicleFormModal({
                 String(entry.brand.id) === brandId &&
                 String(entry.model.id) === modelId &&
                 entry.variant === (result.data.variant ?? "") &&
-                entry.yearFrom === Number(result.data.year) &&
-                entry.yearTo === Number(result.data.year),
+                entry.yearFrom === submittedYearFrom &&
+                entry.yearTo === submittedYearTo,
             )
           : undefined;
 
@@ -368,9 +377,38 @@ export function GarageVehicleFormModal({
               <FieldError message={errors.variant} />
             </div>
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="garage-year-from" className="text-sm font-medium">
+                  {t("yearFromLabel")}
+                </label>
+                <input
+                  id="garage-year-from"
+                  type="number"
+                  value={yearFrom}
+                  onChange={(event) => setYearFrom(event.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+                <FieldError message={errors.yearFrom} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="garage-year-to" className="text-sm font-medium">
+                  {t("yearToLabel")}
+                </label>
+                <input
+                  id="garage-year-to"
+                  type="number"
+                  value={yearTo}
+                  onChange={(event) => setYearTo(event.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+                <FieldError message={errors.yearTo} />
+              </div>
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <label htmlFor="garage-submit-year" className="text-sm font-medium">
-                {t("yearLabel")}
+                {t("vehicleYearLabel")}
               </label>
               <input
                 id="garage-submit-year"
