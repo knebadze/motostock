@@ -4,6 +4,13 @@ export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
+  // Axios's default array serialization is `key[]=1&key[]=2` — Express 5
+  // (this backend) defaults to the "simple" query parser (plain
+  // node:querystring, not qs), which reads that literally as one key named
+  // "key[]" instead of an array under "key". `indexes: null` switches to
+  // bare repeated keys (`key=1&key=2`), which node:querystring does collect
+  // into an array — required for every array-valued query param (brandIds, etc).
+  paramsSerializer: { indexes: null },
 });
 
 export const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/api\/?$/, "");
