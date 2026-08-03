@@ -199,14 +199,7 @@ export function AdminFilterPanel({
           </div>
         ))}
 
-        <div className="flex items-center gap-3 border-t border-border pt-4">
-          <button
-            type="button"
-            onClick={handleApply}
-            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
-          >
-            გაფილტვრა
-          </button>
+        <div className="flex items-center justify-end gap-3 border-t border-border pt-4">
           {hasActiveValues && (
             <button
               type="button"
@@ -216,6 +209,13 @@ export function AdminFilterPanel({
               გაწმენდა
             </button>
           )}
+          <button
+            type="button"
+            onClick={handleApply}
+            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+          >
+            გაფილტვრა
+          </button>
         </div>
       </div>
     </details>
