@@ -1,11 +1,32 @@
-import { getCategoriesFromServer, getProductsFromServer } from "@/lib/api/server";
+import {
+  getCategoriesFromServer,
+  getLookupItemsFromServer,
+  getProductBrandsFromServer,
+  getProductsFromServer,
+} from "@/lib/api/server";
 import { ProductsManager } from "@/components/admin/products/ProductsManager";
 
 export default async function ProductsPage() {
-  const [products, categories] = await Promise.all([
-    getProductsFromServer(),
-    getCategoriesFromServer(),
-  ]);
+  const [products, categories, productBrands, sizes, colors, conditions, statuses] =
+    await Promise.all([
+      getProductsFromServer(),
+      getCategoriesFromServer(),
+      getProductBrandsFromServer(),
+      getLookupItemsFromServer("sizes"),
+      getLookupItemsFromServer("colors"),
+      getLookupItemsFromServer("conditions"),
+      getLookupItemsFromServer("listing-statuses"),
+    ]);
 
-  return <ProductsManager initialProducts={products} categories={categories} />;
+  return (
+    <ProductsManager
+      initialProducts={products}
+      categories={categories}
+      productBrands={productBrands}
+      sizes={sizes}
+      colors={colors}
+      conditions={conditions}
+      statuses={statuses}
+    />
+  );
 }

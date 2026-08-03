@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma.js";
+import type { Prisma } from "../../generated/prisma/index.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
 
@@ -48,8 +49,9 @@ type VehicleCatalogWriteData = {
 };
 
 export const vehicleCatalogRepository = {
-  findMany() {
+  findMany(where?: Prisma.VehicleCatalogWhereInput) {
     return prisma.vehicleCatalog.findMany({
+      where,
       include,
       orderBy: { createdAt: "desc" },
     });

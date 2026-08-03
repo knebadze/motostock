@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
+import { adminFiltersQuerySchema } from "../filters/filter-request.schema.js";
 
 const slugField = z
   .string()
@@ -34,6 +35,11 @@ export const categoryIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 export type CategoryIdParam = z.infer<typeof categoryIdParamSchema>;
+
+export const categoryListQuerySchema = z.object({
+  adminFilters: adminFiltersQuerySchema,
+});
+export type CategoryListQuery = z.infer<typeof categoryListQuerySchema>;
 
 export const categoryResponseSchema = registry.register(
   "Category",

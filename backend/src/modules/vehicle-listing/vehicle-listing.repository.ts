@@ -1,6 +1,8 @@
 import { prisma } from "../../config/prisma.js";
 import type { Prisma } from "../../generated/prisma/index.js";
 import { getSpecFieldDefinition } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
+import { applyVehicleListingAdminFilters } from "../filters/vehicle-listing/vehicle-listing-admin-filter-registry.js";
+import type { FilterEntry } from "../filters/filter-request.schema.js";
 import type { SpecFilterInput } from "./vehicle-listing.schema.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
@@ -49,6 +51,7 @@ function buildWhere(filters: {
   yearMin?: number;
   yearMax?: number;
   specFilters?: SpecFilterInput;
+  adminFilters?: FilterEntry[];
 }): Prisma.VehicleListingWhereInput | undefined {
   const and: Prisma.VehicleListingWhereInput[] = [];
 
@@ -119,6 +122,9 @@ function buildWhere(filters: {
     and.push({ vehicleCatalog: { [column]: true } as Prisma.VehicleCatalogWhereInput });
   }
 
+  const adminWhere = applyVehicleListingAdminFilters(filters.adminFilters);
+  if (adminWhere) and.push(adminWhere);
+
   return and.length > 0 ? { AND: and } : undefined;
 }
 
@@ -132,6 +138,7 @@ export const vehicleListingRepository = {
     yearMin?: number;
     yearMax?: number;
     specFilters?: SpecFilterInput;
+    adminFilters?: FilterEntry[];
   }) {
     return prisma.vehicleListing.findMany({
       where: buildWhere(filters),

@@ -11,6 +11,7 @@ import {
   createVehicleCatalogSchema,
   updateVehicleCatalogSchema,
   vehicleCatalogIdParamSchema,
+  vehicleCatalogListQuerySchema,
   vehicleCatalogResponseSchema,
 } from "./vehicle-catalog.schema.js";
 
@@ -18,7 +19,11 @@ export const vehicleCatalogRouter = Router();
 
 vehicleCatalogRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
-vehicleCatalogRouter.get("/", vehicleCatalogController.list);
+vehicleCatalogRouter.get(
+  "/",
+  validate(vehicleCatalogListQuerySchema, "query"),
+  vehicleCatalogController.list,
+);
 vehicleCatalogRouter.get(
   "/:id",
   validate(vehicleCatalogIdParamSchema, "params"),
@@ -57,6 +62,7 @@ registry.registerPath({
   tags: ["VehicleCatalog"],
   summary: "List all vehicle catalog entries",
   security,
+  request: { query: vehicleCatalogListQuerySchema },
   responses: {
     200: { description: "Vehicle catalog list", content: { "application/json": { schema: listResponse } } },
   },

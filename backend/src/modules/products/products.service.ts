@@ -286,6 +286,7 @@ export async function listProducts(query: ProductListQuery) {
     priceMin: query.priceMin,
     priceMax: query.priceMax,
     attributeFilters: query.attributeFilters,
+    adminFilters: query.adminFilters,
   });
   return rows.map(toResponse);
 }

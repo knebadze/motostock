@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import type { AdminFilterEntry } from "./admin-filters";
 
 export type LocalizedString = {
   ka: string;
@@ -26,8 +27,12 @@ export type CategoryInput = {
   sortOrder: number;
 };
 
-export async function listCategories(): Promise<Category[]> {
-  const { data } = await apiClient.get<{ categories: Category[] }>("/categories");
+export async function listCategories(adminFilters?: AdminFilterEntry[]): Promise<Category[]> {
+  const { data } = await apiClient.get<{ categories: Category[] }>("/categories", {
+    params: {
+      adminFilters: adminFilters?.length ? JSON.stringify(adminFilters) : undefined,
+    },
+  });
   return data.categories;
 }
 

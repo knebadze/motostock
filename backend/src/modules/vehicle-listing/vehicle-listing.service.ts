@@ -204,6 +204,7 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     yearMin: query.yearMin,
     yearMax: query.yearMax,
     specFilters: query.specFilters,
+    adminFilters: query.adminFilters,
   });
   return rows.map(toResponse);
 }

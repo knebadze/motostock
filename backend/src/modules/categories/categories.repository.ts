@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma.js";
+import type { Prisma } from "../../generated/prisma/index.js";
 
 const parentSelect = { id: true, nameKa: true, nameEn: true, nameRu: true } as const;
 
@@ -12,8 +13,9 @@ type CategoryWriteData = {
 };
 
 export const categoriesRepository = {
-  findMany() {
+  findMany(where?: Prisma.CategoryWhereInput) {
     return prisma.category.findMany({
+      where,
       include: { parent: { select: parentSelect } },
       orderBy: [{ sortOrder: "asc" }, { nameKa: "asc" }],
     });

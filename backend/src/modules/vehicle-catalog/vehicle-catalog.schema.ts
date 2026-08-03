@@ -2,6 +2,7 @@ import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
 import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
+import { adminFiltersQuerySchema } from "../filters/filter-request.schema.js";
 
 const optionalPositiveInt = z.int().positive().nullable().optional();
 const optionalYear = z.int().min(1900).max(2100).nullable().optional();
@@ -72,6 +73,11 @@ export type UpdateVehicleCatalogInput = z.infer<typeof partialVehicleCatalogShap
 export const vehicleCatalogIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
+
+export const vehicleCatalogListQuerySchema = z.object({
+  adminFilters: adminFiltersQuerySchema,
+});
+export type VehicleCatalogListQuery = z.infer<typeof vehicleCatalogListQuerySchema>;
 
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
 

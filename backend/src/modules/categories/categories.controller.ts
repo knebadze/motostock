@@ -1,10 +1,17 @@
 import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
 import * as categoriesService from "./categories.service.js";
-import type { CreateCategoryInput, UpdateCategoryInput } from "./categories.schema.js";
+import type {
+  CategoryListQuery,
+  CreateCategoryInput,
+  UpdateCategoryInput,
+} from "./categories.schema.js";
 
-export async function list(_req: Request, res: Response) {
-  const categories = await categoriesService.listCategories();
+export async function list(
+  req: Request<unknown, unknown, unknown, CategoryListQuery>,
+  res: Response,
+) {
+  const categories = await categoriesService.listCategories(req.query);
   res.status(200).json({ categories });
 }
 

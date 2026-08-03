@@ -5,10 +5,12 @@ import { brandsRepository } from "../brands/brands.repository.js";
 import { modelsRepository } from "../models/models.repository.js";
 import { getLookupDelegate, type LookupType } from "../lookups/lookups.registry.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
+import { applyVehicleCatalogAdminFilters } from "../filters/vehicle-catalog/vehicle-catalog-filter-registry.js";
 import { vehicleCatalogRepository } from "./vehicle-catalog.repository.js";
 import type {
   CreateVehicleCatalogInput,
   UpdateVehicleCatalogInput,
+  VehicleCatalogListQuery,
 } from "./vehicle-catalog.schema.js";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
@@ -152,8 +154,9 @@ async function assertRefsExist(input: {
   );
 }
 
-export async function listVehicleCatalog() {
-  const rows = await vehicleCatalogRepository.findMany();
+export async function listVehicleCatalog(query: VehicleCatalogListQuery = {}) {
+  const where = applyVehicleCatalogAdminFilters(query.adminFilters);
+  const rows = await vehicleCatalogRepository.findMany(where);
   return rows.map(toResponse);
 }
 

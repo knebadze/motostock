@@ -1,8 +1,13 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { saveUploadedImage } from "../../lib/storage.js";
+import { applyCategoryAdminFilters } from "../filters/category/category-filter-registry.js";
 import { categoriesRepository } from "./categories.repository.js";
-import type { CreateCategoryInput, UpdateCategoryInput } from "./categories.schema.js";
+import type {
+  CategoryListQuery,
+  CreateCategoryInput,
+  UpdateCategoryInput,
+} from "./categories.schema.js";
 
 type CategoryRow = {
   id: number;
@@ -65,8 +70,9 @@ async function assertParentExists(parentId: number) {
   }
 }
 
-export async function listCategories() {
-  const categories = await categoriesRepository.findMany();
+export async function listCategories(query: CategoryListQuery = {}) {
+  const where = applyCategoryAdminFilters(query.adminFilters);
+  const categories = await categoriesRepository.findMany(where);
   return categories.map(toResponse);
 }
 

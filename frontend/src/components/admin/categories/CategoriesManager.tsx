@@ -4,10 +4,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { deleteCategory, listCategories, type Category } from "@/lib/api/categories";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
+import type { AdminFilterEntry } from "@/lib/api/admin-filters";
 import { flattenTree, type CategoryNode } from "@/lib/categories-tree";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
+import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
+import { buildCategoryFilterFields } from "@/config/admin-filters/category-filters";
 import { CategoryFormModal } from "./CategoryFormModal";
 
 const columns: DataTableColumn<CategoryNode>[] = [
@@ -54,14 +57,38 @@ export function CategoriesManager({
 }: {
   initialCategories: Category[];
 }) {
-  const [categories, setCategories] = useState(initialCategories);
+  // Full, unfiltered tree — needed for the parent-category picker in the
+  // create/edit form and for the PARENT filter's own option list, both of
+  // which must stay complete regardless of what's currently filtered.
+  const [allCategories, setAllCategories] = useState(initialCategories);
+  // What the table actually shows — the full tree when no filter is active,
+  // or the server-filtered (flat) result set otherwise.
+  const [displayedCategories, setDisplayedCategories] = useState(initialCategories);
+  const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
 
+  const filterFields = buildCategoryFilterFields({ categories: allCategories });
+
   async function refresh() {
     try {
-      setCategories(await listCategories());
+      const fresh = await listCategories();
+      setAllCategories(fresh);
+      setDisplayedCategories(adminFilters.length > 0 ? await listCategories(adminFilters) : fresh);
+    } catch (error) {
+      const message =
+        error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
+      toast.error(message);
+    }
+  }
+
+  // AdminFilterPanel only calls this once, on "გაფილტვრა" — one click, one
+  // request, never on every keystroke.
+  async function handleFilterApply(filters: AdminFilterEntry[]) {
+    setAdminFilters(filters);
+    try {
+      setDisplayedCategories(await listCategories(filters));
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
@@ -79,7 +106,12 @@ export function CategoriesManager({
     setFormOpen(true);
   }
 
-  const rows = flattenTree(categories);
+  // A filtered result set isn't a coherent tree (a matched category's parent
+  // may not itself match) — show it flat instead of indenting by depth.
+  const rows: CategoryNode[] =
+    adminFilters.length > 0
+      ? displayedCategories.map((category) => ({ ...category, depth: 0 }))
+      : flattenTree(displayedCategories);
 
   return (
     <div>
@@ -92,6 +124,10 @@ export function CategoriesManager({
         >
           + კატეგორიის დამატება
         </button>
+      </div>
+
+      <div className="mt-4">
+        <AdminFilterPanel fields={filterFields} onChange={handleFilterApply} />
       </div>
 
       <div className="mt-6">
@@ -114,7 +150,7 @@ export function CategoriesManager({
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSaved={refresh}
-        categories={categories}
+        categories={allCategories}
         category={editingCategory}
       />
 

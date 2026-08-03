@@ -1,5 +1,7 @@
 import { prisma } from "../../config/prisma.js";
 import type { Prisma } from "../../generated/prisma/index.js";
+import { applyProductAdminFilters } from "../filters/product/product-admin-filter-registry.js";
+import type { FilterEntry } from "../filters/filter-request.schema.js";
 import type { AttributeFilterInput } from "./products.schema.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
@@ -80,14 +82,15 @@ type AttributeValueWriteData = {
   optionId: number | null;
 };
 
-function buildWhere(filters: {
+async function buildWhere(filters: {
   categoryIds?: number[];
   search?: string;
   brandIds?: number[];
   priceMin?: number;
   priceMax?: number;
   attributeFilters?: AttributeFilterInput;
-}): Prisma.ProductWhereInput | undefined {
+  adminFilters?: FilterEntry[];
+}): Promise<Prisma.ProductWhereInput | undefined> {
   const and: Prisma.ProductWhereInput[] = [];
 
   if (filters.categoryIds && filters.categoryIds.length > 0) {
@@ -145,20 +148,24 @@ function buildWhere(filters: {
     });
   }
 
+  const adminWhere = await applyProductAdminFilters(filters.adminFilters);
+  if (adminWhere) and.push(adminWhere);
+
   return and.length > 0 ? { AND: and } : undefined;
 }
 
 export const productsRepository = {
-  findMany(filters: {
+  async findMany(filters: {
     categoryIds?: number[];
     search?: string;
     brandIds?: number[];
     priceMin?: number;
     priceMax?: number;
     attributeFilters?: AttributeFilterInput;
+    adminFilters?: FilterEntry[];
   }) {
     return prisma.product.findMany({
-      where: buildWhere(filters),
+      where: await buildWhere(filters),
       include,
       orderBy: { createdAt: "desc" },
     });

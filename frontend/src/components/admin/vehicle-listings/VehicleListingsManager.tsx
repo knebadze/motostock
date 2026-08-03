@@ -6,15 +6,18 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
 import {
   deleteVehicleListing,
   listVehicleListings,
   type VehicleListing,
 } from "@/lib/api/vehicle-listings";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
+import type { AdminFilterEntry } from "@/lib/api/admin-filters";
 import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 import type { LookupItem } from "@/lib/api/lookups";
 import { formatPrice } from "@/lib/format";
+import { buildVehicleListingFilterFields } from "@/config/admin-filters/vehicle-listing-filters";
 import { VehicleListingFormModal } from "./VehicleListingFormModal";
 
 const columns: DataTableColumn<VehicleListing>[] = [
@@ -106,18 +109,29 @@ export function VehicleListingsManager({
   const [formOpen, setFormOpen] = useState(false);
   const [editingListing, setEditingListing] = useState<VehicleListing | null>(null);
   const [deletingListing, setDeletingListing] = useState<VehicleListing | null>(null);
+  const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
   const { page, setPage, pageItems, totalPages } = usePagination(listings);
 
   const canCreate = vehicleCatalog.length > 0;
 
-  async function refresh() {
+  const filterFields = buildVehicleListingFilterFields({ vehicleCatalog, conditions, statuses, colors });
+
+  async function refresh(filters: AdminFilterEntry[] = adminFilters) {
     try {
-      setListings(await listVehicleListings());
+      setListings(await listVehicleListings({ adminFilters: filters }));
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
       toast.error(message);
     }
+  }
+
+  // AdminFilterPanel only calls this once, on "გაფილტვრა" — one click, one
+  // request, never on every keystroke.
+  function handleFilterApply(filters: AdminFilterEntry[]) {
+    setAdminFilters(filters);
+    refresh(filters);
+    setPage(1);
   }
 
   function openCreateModal() {
@@ -149,6 +163,10 @@ export function VehicleListingsManager({
           განცხადების დასამატებლად ჯერ საჭიროა ტექნიკის კატალოგში ჩანაწერის არსებობა.
         </p>
       )}
+
+      <div className="mt-4">
+        <AdminFilterPanel fields={filterFields} onChange={handleFilterApply} />
+      </div>
 
       <div className="mt-6">
         <DataTable

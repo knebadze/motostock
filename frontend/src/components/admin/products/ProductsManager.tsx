@@ -3,15 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Select } from "@/components/shared/Select";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
 import { deleteProduct, listProducts, type Product } from "@/lib/api/products";
 import { resolveMediaUrl, ApiRequestError } from "@/lib/api/client";
+import type { AdminFilterEntry } from "@/lib/api/admin-filters";
 import type { Category } from "@/lib/api/categories";
-import { flattenTree } from "@/lib/categories-tree";
+import type { ProductBrand } from "@/lib/api/product-brands";
+import type { LookupItem } from "@/lib/api/lookups";
+import { buildProductFilterFields } from "@/config/admin-filters/product-filters";
 import { formatPrice } from "@/lib/format";
 
 const columns: DataTableColumn<Product>[] = [
@@ -67,30 +70,40 @@ const columns: DataTableColumn<Product>[] = [
 export function ProductsManager({
   initialProducts,
   categories,
+  productBrands,
+  sizes,
+  colors,
+  conditions,
+  statuses,
 }: {
   initialProducts: Product[];
   categories: Category[];
+  productBrands: ProductBrand[];
+  sizes: LookupItem[];
+  colors: LookupItem[];
+  conditions: LookupItem[];
+  statuses: LookupItem[];
 }) {
   const router = useRouter();
   const [products, setProducts] = useState(initialProducts);
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const { page, setPage, pageItems, totalPages } = usePagination(products);
 
   const canCreate = categories.length > 0;
 
-  const categoryFilterOptions = [
-    { value: "", label: "ყველა კატეგორია" },
-    ...flattenTree(categories).map((category) => ({
-      value: String(category.id),
-      label: `${"— ".repeat(category.depth)}${category.name.ka}`,
-    })),
-  ];
+  const filterFields = buildProductFilterFields({
+    categories,
+    productBrands,
+    sizes,
+    colors,
+    conditions,
+    statuses,
+  });
 
-  async function refresh(nextFilter?: string) {
-    const filter = nextFilter ?? categoryFilter;
+  async function refresh(filters: AdminFilterEntry[] = adminFilters) {
     try {
-      setProducts(await listProducts(filter ? { categoryId: Number(filter) } : undefined));
+      setProducts(await listProducts({ adminFilters: filters }));
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
@@ -98,10 +111,12 @@ export function ProductsManager({
     }
   }
 
-  async function handleFilterChange(value: string) {
-    setCategoryFilter(value);
+  // AdminFilterPanel only calls this once, on "გაფილტვრა" — one click, one
+  // request, never on every keystroke.
+  function handleFilterApply(filters: AdminFilterEntry[]) {
+    setAdminFilters(filters);
+    refresh(filters);
     setPage(1);
-    await refresh(value);
   }
 
   return (
@@ -124,14 +139,8 @@ export function ProductsManager({
         </p>
       )}
 
-      <div className="mt-4 w-72">
-        <Select
-          options={categoryFilterOptions}
-          value={categoryFilter}
-          onChange={handleFilterChange}
-          searchable
-          placeholder="ყველა კატეგორია"
-        />
+      <div className="mt-4">
+        <AdminFilterPanel fields={filterFields} onChange={handleFilterApply} />
       </div>
 
       <div className="mt-6">

@@ -4,10 +4,14 @@ import * as vehicleCatalogService from "./vehicle-catalog.service.js";
 import type {
   CreateVehicleCatalogInput,
   UpdateVehicleCatalogInput,
+  VehicleCatalogListQuery,
 } from "./vehicle-catalog.schema.js";
 
-export async function list(_req: Request, res: Response) {
-  const items = await vehicleCatalogService.listVehicleCatalog();
+export async function list(
+  req: Request<unknown, unknown, unknown, VehicleCatalogListQuery>,
+  res: Response,
+) {
+  const items = await vehicleCatalogService.listVehicleCatalog(req.query);
   res.status(200).json({ items });
 }
 

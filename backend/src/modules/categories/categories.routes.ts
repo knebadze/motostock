@@ -9,6 +9,7 @@ import { ROLES } from "../../lib/roles.js";
 import * as categoriesController from "./categories.controller.js";
 import {
   categoryIdParamSchema,
+  categoryListQuerySchema,
   categoryResponseSchema,
   createCategorySchema,
   updateCategorySchema,
@@ -18,7 +19,13 @@ export const categoriesRouter = Router();
 
 // Public: the category tree is guest-storefront navigation, not admin data —
 // anonymous visitors need to read it. Everything else below stays admin-only.
-categoriesRouter.get("/", categoriesController.list);
+// `adminFilters` is still accepted here (not gated behind auth) — it only
+// narrows this same public SELECT, never changes what fields are exposed.
+categoriesRouter.get(
+  "/",
+  validate(categoryListQuerySchema, "query"),
+  categoriesController.list,
+);
 
 categoriesRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
@@ -64,6 +71,7 @@ registry.registerPath({
   path: "/categories",
   tags: ["Categories"],
   summary: "List all categories (public — used for storefront navigation)",
+  request: { query: categoryListQuerySchema },
   responses: {
     200: {
       description: "Categories list",

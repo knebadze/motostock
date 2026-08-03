@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 import type { LocalizedString } from "./categories";
 import type { LookupItem } from "./lookups";
+import type { AdminFilterEntry } from "./admin-filters";
 
 export type NamedRef = {
   id: number;
@@ -79,8 +80,14 @@ export type VehicleCatalogInput = {
   descriptionRu?: string | null;
 };
 
-export async function listVehicleCatalog(): Promise<VehicleCatalogEntry[]> {
-  const { data } = await apiClient.get<{ items: VehicleCatalogEntry[] }>("/vehicle-catalog");
+export async function listVehicleCatalog(
+  adminFilters?: AdminFilterEntry[],
+): Promise<VehicleCatalogEntry[]> {
+  const { data } = await apiClient.get<{ items: VehicleCatalogEntry[] }>("/vehicle-catalog", {
+    params: {
+      adminFilters: adminFilters?.length ? JSON.stringify(adminFilters) : undefined,
+    },
+  });
   return data.items;
 }
 

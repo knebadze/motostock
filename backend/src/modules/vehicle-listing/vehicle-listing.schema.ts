@@ -5,6 +5,7 @@ import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
 import { vehicleListingDiscountResponseSchema } from "../vehicle-listing-discounts/vehicle-listing-discounts.schema.js";
 import { vehicleListingImageResponseSchema } from "../vehicle-listing-images/vehicle-listing-images.schema.js";
 import { vehicleSpecFieldSchema } from "../vehicle-category-filters/vehicle-category-filters.schema.js";
+import { adminFiltersQuerySchema } from "../filters/filter-request.schema.js";
 
 export const createVehicleListingSchema = registry.register(
   "CreateVehicleListingInput",
@@ -92,6 +93,10 @@ export const vehicleListingListQuerySchema = z.object({
       return result.data;
     })
     .optional(),
+  // Admin-only "filter everything" panel — separate from the shop-facing
+  // params above, additive, never required. See
+  // filters/vehicle-listing/vehicle-listing-admin-filter-registry.ts.
+  adminFilters: adminFiltersQuerySchema,
 });
 export type VehicleListingListQuery = z.infer<typeof vehicleListingListQuerySchema>;
 

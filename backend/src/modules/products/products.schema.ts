@@ -2,6 +2,7 @@ import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
 import { attributeValueTypeSchema } from "../attributes/attributes.schema.js";
+import { adminFiltersQuerySchema } from "../filters/filter-request.schema.js";
 import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
 import { productVariantDiscountResponseSchema } from "../product-variant-discounts/product-variant-discounts.schema.js";
 import { productVariantImageResponseSchema } from "../product-variant-images/product-variant-images.schema.js";
@@ -113,6 +114,10 @@ export const productListQuerySchema = z.object({
     // instead of an optional key, which breaks Express's route handler
     // overload resolution against the default ParsedQs query type.
     .optional(),
+  // Admin-only "filter everything" panel — separate from the shop-facing
+  // params above, additive, never required. See
+  // filters/product/product-admin-filter-registry.ts.
+  adminFilters: adminFiltersQuerySchema,
 });
 export type ProductListQuery = z.infer<typeof productListQuerySchema>;
 

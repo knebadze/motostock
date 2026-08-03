@@ -5,6 +5,7 @@ import type { AttributeValueType } from "./attributes";
 import type { LookupItem } from "./lookups";
 import type { ProductVariantImage } from "./product-variant-images";
 import type { ProductVariantDiscount } from "./product-variant-discounts";
+import type { AdminFilterEntry } from "./admin-filters";
 
 export type ProductAttributeValue = {
   attributeId: number;
@@ -102,6 +103,7 @@ export type ProductListFilters = {
   priceMin?: number;
   priceMax?: number;
   attributeFilters?: ProductAttributeFilters;
+  adminFilters?: AdminFilterEntry[];
 };
 
 function isEmptyAttributeFilters(filters: ProductAttributeFilters): boolean {
@@ -124,6 +126,7 @@ export async function listProducts(filters: ProductListFilters = {}): Promise<Pr
         filters.attributeFilters && !isEmptyAttributeFilters(filters.attributeFilters)
           ? JSON.stringify(filters.attributeFilters)
           : undefined,
+      adminFilters: filters.adminFilters?.length ? JSON.stringify(filters.adminFilters) : undefined,
     },
   });
   return data.items;

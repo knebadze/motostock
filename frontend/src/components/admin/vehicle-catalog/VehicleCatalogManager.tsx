@@ -6,16 +6,19 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
 import {
   deleteVehicleCatalogEntry,
   listVehicleCatalog,
   type VehicleCatalogEntry,
 } from "@/lib/api/vehicle-catalog";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
+import type { AdminFilterEntry } from "@/lib/api/admin-filters";
 import type { Category } from "@/lib/api/categories";
 import type { Brand } from "@/lib/api/brands";
 import type { Model } from "@/lib/api/models";
 import type { LookupItem } from "@/lib/api/lookups";
+import { buildVehicleCatalogFilterFields } from "@/config/admin-filters/vehicle-catalog-filters";
 import { VehicleCatalogFormModal } from "./VehicleCatalogFormModal";
 
 const columns: DataTableColumn<VehicleCatalogEntry>[] = [
@@ -99,18 +102,40 @@ export function VehicleCatalogManager({
   const [formOpen, setFormOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<VehicleCatalogEntry | null>(null);
   const [deletingEntry, setDeletingEntry] = useState<VehicleCatalogEntry | null>(null);
+  const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
   const { page, setPage, pageItems, totalPages } = usePagination(entries);
 
   const canCreate = categories.length > 0 && brands.length > 0 && models.length > 0;
 
-  async function refresh() {
+  const filterFields = buildVehicleCatalogFilterFields({
+    brands,
+    models,
+    categories,
+    fuelTypes,
+    transmissionTypes,
+    coolingTypes,
+    finalDriveTypes,
+    driveTypes,
+    startTypes,
+    powertrainTypes,
+  });
+
+  async function refresh(filters: AdminFilterEntry[] = adminFilters) {
     try {
-      setEntries(await listVehicleCatalog());
+      setEntries(await listVehicleCatalog(filters));
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
       toast.error(message);
     }
+  }
+
+  // AdminFilterPanel only calls this once, on "გაფილტვრა" — one click, one
+  // request, never on every keystroke.
+  function handleFilterApply(filters: AdminFilterEntry[]) {
+    setAdminFilters(filters);
+    refresh(filters);
+    setPage(1);
   }
 
   function openCreateModal() {
@@ -142,6 +167,10 @@ export function VehicleCatalogManager({
           დამატებამდე საჭიროა მინიმუმ ერთი კატეგორია, მარკა და მოდელი არსებობდეს.
         </p>
       )}
+
+      <div className="mt-4">
+        <AdminFilterPanel fields={filterFields} onChange={handleFilterApply} />
+      </div>
 
       <div className="mt-6">
         <DataTable

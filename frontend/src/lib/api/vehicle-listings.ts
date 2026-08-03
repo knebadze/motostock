@@ -4,6 +4,7 @@ import type { LookupItem } from "./lookups";
 import type { VehicleListingDiscount } from "./vehicle-listing-discounts";
 import type { VehicleListingImage } from "./vehicle-listing-images";
 import type { VehicleSpecField } from "./vehicle-category-filters";
+import type { AdminFilterEntry } from "./admin-filters";
 
 export type VehicleListing = {
   id: number;
@@ -88,6 +89,7 @@ export type VehicleListingFilters = {
   yearMin?: number;
   yearMax?: number;
   specFilters?: VehicleSpecFilters;
+  adminFilters?: AdminFilterEntry[];
 };
 
 function isEmptySpecFilters(filters: VehicleSpecFilters): boolean {
@@ -114,6 +116,7 @@ export async function listVehicleListings(
         filters.specFilters && !isEmptySpecFilters(filters.specFilters)
           ? JSON.stringify(filters.specFilters)
           : undefined,
+      adminFilters: filters.adminFilters?.length ? JSON.stringify(filters.adminFilters) : undefined,
     },
   });
   return data.items;
