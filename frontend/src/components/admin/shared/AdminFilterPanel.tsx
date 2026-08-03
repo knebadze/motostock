@@ -85,6 +85,7 @@ export function AdminFilterPanel({
     setApplying(true);
     try {
       await onChange(toEntries(fields, state));
+      setOpen(false);
     } finally {
       setApplying(false);
     }
