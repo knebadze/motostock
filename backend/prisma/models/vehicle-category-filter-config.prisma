@@ -1,0 +1,58 @@
+enum VehicleCategoryFilterType {
+  PRICE
+  YEAR
+  BRAND
+  SPEC
+
+  @@schema("cla")
+}
+
+// Fixed VehicleCatalog columns that can be exposed as a shop filter — there
+// is no generic Attribute system on the vehicle side, so unlike
+// CategoryFilterConfig.attributeId this points at one of a hardcoded set of
+// columns (see vehicle-spec-fields.registry.ts for the LOOKUP/NUMBER/BOOLEAN
+// kind + Prisma column each value maps to).
+enum VehicleSpecField {
+  FUEL_TYPE
+  TRANSMISSION_TYPE
+  COOLING_TYPE
+  FINAL_DRIVE_TYPE
+  DRIVE_TYPE
+  START_TYPE
+  POWERTRAIN_TYPE
+  ENGINE_VOLUME_CC
+  ENGINE_POWER_HP
+  CYLINDER_COUNT
+  GEAR_COUNT
+  SEAT_COUNT
+  WEIGHT_KG
+  SEAT_HEIGHT_MM
+  FUEL_TANK_LITERS
+  TOP_SPEED_KMH
+  MOTOR_POWER_WATT
+  BATTERY_CAPACITY_WH
+  RANGE_KM
+  CHARGING_TIME_MINUTES
+  HAS_ABS
+  HAS_LOCKING_DIFFERENTIAL
+
+  @@schema("cla")
+}
+
+// One ordered filter slot in a transport category's shop filter sidebar —
+// the vehicle-side equivalent of CategoryFilterConfig. PRICE/YEAR/BRAND rows
+// are built-in filter types with no extra config beyond "show it, at this
+// position"; SPEC rows point at a fixed VehicleCatalog column via specField.
+model VehicleCategoryFilterConfig {
+  id         Int                       @id @default(autoincrement())
+  categoryId Int
+  category   Category                  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  filterType VehicleCategoryFilterType
+  specField  VehicleSpecField?
+  sortOrder  Int                       @default(0)
+  createdAt  DateTime                  @default(now())
+  updatedAt  DateTime                  @updatedAt
+
+  @@index([categoryId])
+  @@schema("cla")
+}

@@ -723,6 +723,92 @@ async function seedCategoryFilters(categoryIdBySlug: Map<string, number>) {
   console.log(`Category filters ready: ${CATEGORY_FILTER_SEEDS.length}`);
 }
 
+type VehicleCategoryFilterSeed =
+  | { categorySlug: string; filterType: "PRICE" | "YEAR" | "BRAND"; sortOrder: number }
+  | {
+      categorySlug: string;
+      filterType: "SPEC";
+      specField:
+        | "FUEL_TYPE"
+        | "TRANSMISSION_TYPE"
+        | "DRIVE_TYPE"
+        | "ENGINE_POWER_HP"
+        | "TOP_SPEED_KMH";
+      sortOrder: number;
+    };
+
+// Demo filter-panel composition for a few transport categories — shows all
+// filter kinds (built-in Price/Year/Brand plus LOOKUP/NUMBER spec fields) so
+// the vehicle shop's filter sidebar has something to render out of the box.
+// "motorcycles" is a parent category, so its filters are inherited by every
+// moto-* leaf category too (same inheritance convention as CATEGORY_FILTER_SEEDS).
+const VEHICLE_CATEGORY_FILTER_SEEDS: VehicleCategoryFilterSeed[] = [
+  { categorySlug: "motorcycles", filterType: "PRICE", sortOrder: 0 },
+  { categorySlug: "motorcycles", filterType: "YEAR", sortOrder: 1 },
+  { categorySlug: "motorcycles", filterType: "BRAND", sortOrder: 2 },
+  { categorySlug: "motorcycles", filterType: "SPEC", specField: "FUEL_TYPE", sortOrder: 3 },
+  { categorySlug: "motorcycles", filterType: "SPEC", specField: "TRANSMISSION_TYPE", sortOrder: 4 },
+  { categorySlug: "motorcycles", filterType: "SPEC", specField: "ENGINE_POWER_HP", sortOrder: 5 },
+  { categorySlug: "atvs", filterType: "PRICE", sortOrder: 0 },
+  { categorySlug: "atvs", filterType: "YEAR", sortOrder: 1 },
+  { categorySlug: "atvs", filterType: "BRAND", sortOrder: 2 },
+  { categorySlug: "atvs", filterType: "SPEC", specField: "DRIVE_TYPE", sortOrder: 3 },
+  { categorySlug: "atvs", filterType: "SPEC", specField: "ENGINE_POWER_HP", sortOrder: 4 },
+  { categorySlug: "scooters", filterType: "PRICE", sortOrder: 0 },
+  { categorySlug: "scooters", filterType: "YEAR", sortOrder: 1 },
+  { categorySlug: "scooters", filterType: "BRAND", sortOrder: 2 },
+  { categorySlug: "scooters", filterType: "SPEC", specField: "FUEL_TYPE", sortOrder: 3 },
+  { categorySlug: "scooters", filterType: "SPEC", specField: "TOP_SPEED_KMH", sortOrder: 4 },
+];
+
+async function seedVehicleCategoryFilters(categoryIdBySlug: Map<string, number>) {
+  for (const filterSeed of VEHICLE_CATEGORY_FILTER_SEEDS) {
+    const categoryId = categoryIdBySlug.get(filterSeed.categorySlug);
+    if (!categoryId) {
+      throw new Error(
+        `Unknown category slug in vehicle category filter seed: ${filterSeed.categorySlug}`,
+      );
+    }
+
+    if (filterSeed.filterType === "SPEC") {
+      const existing = await prisma.vehicleCategoryFilterConfig.findFirst({
+        where: { categoryId, specField: filterSeed.specField },
+      });
+      if (existing) {
+        await prisma.vehicleCategoryFilterConfig.update({
+          where: { id: existing.id },
+          data: { sortOrder: filterSeed.sortOrder },
+        });
+      } else {
+        await prisma.vehicleCategoryFilterConfig.create({
+          data: {
+            categoryId,
+            filterType: "SPEC",
+            specField: filterSeed.specField,
+            sortOrder: filterSeed.sortOrder,
+          },
+        });
+      }
+      continue;
+    }
+
+    const existing = await prisma.vehicleCategoryFilterConfig.findFirst({
+      where: { categoryId, filterType: filterSeed.filterType },
+    });
+    if (existing) {
+      await prisma.vehicleCategoryFilterConfig.update({
+        where: { id: existing.id },
+        data: { sortOrder: filterSeed.sortOrder },
+      });
+    } else {
+      await prisma.vehicleCategoryFilterConfig.create({
+        data: { categoryId, filterType: filterSeed.filterType, sortOrder: filterSeed.sortOrder },
+      });
+    }
+  }
+  console.log(`Vehicle category filters ready: ${VEHICLE_CATEGORY_FILTER_SEEDS.length}`);
+}
+
 async function main() {
   const userRole = await prisma.role.upsert({
     where: { name: ROLES.USER },
@@ -780,6 +866,7 @@ async function main() {
   await seedAttributes(categoryIdBySlug);
   await seedProductBrands(categoryIdBySlug);
   await seedCategoryFilters(categoryIdBySlug);
+  await seedVehicleCategoryFilters(categoryIdBySlug);
 }
 
 main()

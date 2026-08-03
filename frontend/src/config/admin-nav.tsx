@@ -45,6 +45,11 @@ export const adminNav: AdminNavSection[] = [
     label: "გაყიდვები",
     items: [
       { label: "გასაყიდი ტექნიკა", href: "/admin/vehicle-listings", icon: listingIcon },
+      {
+        label: "ტრანსპორტის ფილტრები",
+        href: "/admin/vehicle-category-filters",
+        icon: filtersIcon,
+      },
     ],
   },
   {

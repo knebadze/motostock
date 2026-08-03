@@ -5,6 +5,7 @@ import {
   getCategoriesFromServer,
   getCategoryFiltersFromServer,
   getProductsFromServer,
+  getVehicleCategoryFiltersFromServer,
   getVehicleListingsFromServer,
 } from "@/lib/api/server";
 import { isVehicleCategory, getAncestorChain } from "@/lib/categories-tree";
@@ -115,7 +116,10 @@ export default async function CategoryShopPage({
   );
 
   if (isVehicle) {
-    const listings = await getVehicleListingsFromServer(category.id);
+    const [listings, vehicleFilters] = await Promise.all([
+      getVehicleListingsFromServer(category.id),
+      getVehicleCategoryFiltersFromServer(category.id),
+    ]);
     return (
       <>
         {breadcrumbScript}
@@ -124,6 +128,7 @@ export default async function CategoryShopPage({
           breadcrumbChain={ancestorChain}
           subcategories={subcategories}
           listings={listings}
+          filters={vehicleFilters}
           initialPage={initialPage}
           initialSort={initialSort}
         />

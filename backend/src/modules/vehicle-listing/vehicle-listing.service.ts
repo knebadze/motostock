@@ -13,6 +13,7 @@ import { vehicleListingRepository } from "./vehicle-listing.repository.js";
 import type {
   CreateVehicleListingInput,
   UpdateVehicleListingInput,
+  VehicleListingListQuery,
 } from "./vehicle-listing.schema.js";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
@@ -191,10 +192,19 @@ async function assertRefsExist(input: {
   }
 }
 
-export async function listVehicleListings(categoryId?: number) {
+export async function listVehicleListings(query: VehicleListingListQuery) {
   const categoryIds =
-    categoryId != null ? await resolveCategoryAndDescendantIds(categoryId) : undefined;
-  const rows = await vehicleListingRepository.findMany(categoryIds);
+    query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
+  const rows = await vehicleListingRepository.findMany({
+    categoryIds,
+    search: query.search,
+    brandIds: query.brandIds,
+    priceMin: query.priceMin,
+    priceMax: query.priceMax,
+    yearMin: query.yearMin,
+    yearMax: query.yearMax,
+    specFilters: query.specFilters,
+  });
   return rows.map(toResponse);
 }
 

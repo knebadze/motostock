@@ -1,4 +1,7 @@
 import { prisma } from "../../config/prisma.js";
+import type { Prisma } from "../../generated/prisma/index.js";
+import { getSpecFieldDefinition } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
+import type { SpecFilterInput } from "./vehicle-listing.schema.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
 
@@ -37,13 +40,101 @@ type VehicleListingWriteData = {
   descriptionRu?: string | null;
 };
 
+function buildWhere(filters: {
+  categoryIds?: number[];
+  search?: string;
+  brandIds?: number[];
+  priceMin?: number;
+  priceMax?: number;
+  yearMin?: number;
+  yearMax?: number;
+  specFilters?: SpecFilterInput;
+}): Prisma.VehicleListingWhereInput | undefined {
+  const and: Prisma.VehicleListingWhereInput[] = [];
+
+  if (filters.categoryIds && filters.categoryIds.length > 0) {
+    and.push({ vehicleCatalog: { model: { categoryId: { in: filters.categoryIds } } } });
+  }
+
+  if (filters.search) {
+    and.push({
+      OR: [
+        { vehicleCatalog: { brand: { nameKa: { contains: filters.search, mode: "insensitive" } } } },
+        { vehicleCatalog: { brand: { nameEn: { contains: filters.search, mode: "insensitive" } } } },
+        { vehicleCatalog: { brand: { nameRu: { contains: filters.search, mode: "insensitive" } } } },
+        { vehicleCatalog: { model: { nameKa: { contains: filters.search, mode: "insensitive" } } } },
+        { vehicleCatalog: { model: { nameEn: { contains: filters.search, mode: "insensitive" } } } },
+        { vehicleCatalog: { model: { nameRu: { contains: filters.search, mode: "insensitive" } } } },
+      ],
+    });
+  }
+
+  if (filters.brandIds && filters.brandIds.length > 0) {
+    and.push({ vehicleCatalog: { brandId: { in: filters.brandIds } } });
+  }
+
+  if (filters.priceMin != null || filters.priceMax != null) {
+    and.push({
+      price: {
+        ...(filters.priceMin != null ? { gte: filters.priceMin } : {}),
+        ...(filters.priceMax != null ? { lte: filters.priceMax } : {}),
+      },
+    });
+  }
+
+  if (filters.yearMin != null || filters.yearMax != null) {
+    and.push({
+      year: {
+        ...(filters.yearMin != null ? { gte: filters.yearMin } : {}),
+        ...(filters.yearMax != null ? { lte: filters.yearMax } : {}),
+      },
+    });
+  }
+
+  // Spec fields resolve to a dynamic VehicleCatalog column name at runtime
+  // (see vehicle-spec-fields.registry.ts) — Prisma's generated WhereInput
+  // type can't express "one of these known keys, chosen at runtime", so the
+  // constructed clause is cast back to it.
+  for (const lookupFilter of filters.specFilters?.lookupFilters ?? []) {
+    const { column } = getSpecFieldDefinition(lookupFilter.field);
+    and.push({
+      vehicleCatalog: { [column]: { in: lookupFilter.ids } } as Prisma.VehicleCatalogWhereInput,
+    });
+  }
+
+  for (const range of filters.specFilters?.numberRanges ?? []) {
+    const { column } = getSpecFieldDefinition(range.field);
+    and.push({
+      vehicleCatalog: {
+        [column]: {
+          ...(range.min != null ? { gte: range.min } : {}),
+          ...(range.max != null ? { lte: range.max } : {}),
+        },
+      } as Prisma.VehicleCatalogWhereInput,
+    });
+  }
+
+  for (const field of filters.specFilters?.booleanFields ?? []) {
+    const { column } = getSpecFieldDefinition(field);
+    and.push({ vehicleCatalog: { [column]: true } as Prisma.VehicleCatalogWhereInput });
+  }
+
+  return and.length > 0 ? { AND: and } : undefined;
+}
+
 export const vehicleListingRepository = {
-  findMany(categoryIds?: number[]) {
+  findMany(filters: {
+    categoryIds?: number[];
+    search?: string;
+    brandIds?: number[];
+    priceMin?: number;
+    priceMax?: number;
+    yearMin?: number;
+    yearMax?: number;
+    specFilters?: SpecFilterInput;
+  }) {
     return prisma.vehicleListing.findMany({
-      where:
-        categoryIds && categoryIds.length > 0
-          ? { vehicleCatalog: { model: { categoryId: { in: categoryIds } } } }
-          : undefined,
+      where: buildWhere(filters),
       include,
       orderBy: { createdAt: "desc" },
     });

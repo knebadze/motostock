@@ -3,6 +3,7 @@ import type { NamedRef } from "./vehicle-catalog";
 import type { LookupItem } from "./lookups";
 import type { VehicleListingDiscount } from "./vehicle-listing-discounts";
 import type { VehicleListingImage } from "./vehicle-listing-images";
+import type { VehicleSpecField } from "./vehicle-category-filters";
 
 export type VehicleListing = {
   id: number;
@@ -72,9 +73,48 @@ export type VehicleListingInput = {
   descriptionRu?: string | null;
 };
 
-export async function listVehicleListings(categoryId?: number): Promise<VehicleListing[]> {
+export type VehicleSpecFilters = {
+  lookupFilters?: { field: VehicleSpecField; ids: number[] }[];
+  numberRanges?: { field: VehicleSpecField; min?: number; max?: number }[];
+  booleanFields?: VehicleSpecField[];
+};
+
+export type VehicleListingFilters = {
+  categoryId?: number;
+  search?: string;
+  brandIds?: number[];
+  priceMin?: number;
+  priceMax?: number;
+  yearMin?: number;
+  yearMax?: number;
+  specFilters?: VehicleSpecFilters;
+};
+
+function isEmptySpecFilters(filters: VehicleSpecFilters): boolean {
+  return (
+    !filters.lookupFilters?.length &&
+    !filters.numberRanges?.length &&
+    !filters.booleanFields?.length
+  );
+}
+
+export async function listVehicleListings(
+  filters: VehicleListingFilters = {},
+): Promise<VehicleListing[]> {
   const { data } = await apiClient.get<{ items: VehicleListing[] }>("/vehicle-listings", {
-    params: categoryId ? { categoryId } : undefined,
+    params: {
+      categoryId: filters.categoryId,
+      search: filters.search || undefined,
+      brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
+      priceMin: filters.priceMin,
+      priceMax: filters.priceMax,
+      yearMin: filters.yearMin,
+      yearMax: filters.yearMax,
+      specFilters:
+        filters.specFilters && !isEmptySpecFilters(filters.specFilters)
+          ? JSON.stringify(filters.specFilters)
+          : undefined,
+    },
   });
   return data.items;
 }

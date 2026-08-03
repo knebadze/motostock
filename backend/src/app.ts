@@ -23,6 +23,7 @@ import { vehicleListingImagesRouter } from "./modules/vehicle-listing-images/veh
 import { attributesRouter } from "./modules/attributes/attributes.routes.js";
 import { attributeOptionsRouter } from "./modules/attribute-options/attribute-options.routes.js";
 import { categoryFiltersRouter } from "./modules/category-filters/category-filters.routes.js";
+import { vehicleCategoryFiltersRouter } from "./modules/vehicle-category-filters/vehicle-category-filters.routes.js";
 import { productBrandsRouter } from "./modules/product-brands/product-brands.routes.js";
 import { productsRouter } from "./modules/products/products.routes.js";
 import { productFitmentRouter } from "./modules/product-fitment/product-fitment.routes.js";
@@ -67,6 +68,7 @@ app.use("/api/vehicle-listings/:listingId/images", vehicleListingImagesRouter);
 app.use("/api/attributes", attributesRouter);
 app.use("/api/attributes/:attributeId/options", attributeOptionsRouter);
 app.use("/api/category-filters", categoryFiltersRouter);
+app.use("/api/vehicle-category-filters", vehicleCategoryFiltersRouter);
 app.use("/api/product-brands", productBrandsRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/products/:productId/fitments", productFitmentRouter);
