@@ -15,15 +15,22 @@ type AddressWriteData = {
 
 export const addressesRepository = {
   findByUserId(userId: number) {
-    return prisma.address.findUnique({ where: { userId }, include });
+    return prisma.address.findMany({ where: { userId }, include, orderBy: { createdAt: "desc" } });
   },
 
-  upsert(userId: number, data: AddressWriteData) {
-    return prisma.address.upsert({
-      where: { userId },
-      create: { userId, ...data },
-      update: data,
-      include,
-    });
+  findById(id: number) {
+    return prisma.address.findUnique({ where: { id }, include });
+  },
+
+  create(userId: number, data: AddressWriteData) {
+    return prisma.address.create({ data: { userId, ...data }, include });
+  },
+
+  update(id: number, data: AddressWriteData) {
+    return prisma.address.update({ where: { id }, data, include });
+  },
+
+  delete(id: number) {
+    return prisma.address.delete({ where: { id } });
   },
 };

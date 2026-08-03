@@ -22,12 +22,24 @@ export type AddressInput = {
   postalCode?: string | null;
 };
 
-export async function getMyAddress(): Promise<Address | null> {
-  const { data } = await apiClient.get<{ address: Address | null }>("/users/me/address");
+export async function listMyAddresses(): Promise<Address[]> {
+  const { data } = await apiClient.get<{ addresses: Address[] }>("/users/me/addresses");
+  return data.addresses;
+}
+
+export async function createMyAddress(input: AddressInput): Promise<Address> {
+  const { data } = await apiClient.post<{ address: Address }>("/users/me/addresses", input);
   return data.address;
 }
 
-export async function saveMyAddress(input: AddressInput): Promise<Address> {
-  const { data } = await apiClient.put<{ address: Address }>("/users/me/address", input);
+export async function updateMyAddress(id: number, input: AddressInput): Promise<Address> {
+  const { data } = await apiClient.patch<{ address: Address }>(
+    `/users/me/addresses/${id}`,
+    input,
+  );
   return data.address;
+}
+
+export async function deleteMyAddress(id: number): Promise<void> {
+  await apiClient.delete(`/users/me/addresses/${id}`);
 }

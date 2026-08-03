@@ -1,11 +1,9 @@
-// A user's delivery address — one-to-one for now (@@unique([userId])), since
-// the site only needs a single "primary address" today. Modeled as its own
-// table (rather than columns on User) so a future move to multiple saved
-// addresses per user only requires dropping that unique constraint, not a
-// data migration.
+// A user's delivery address — a user may save more than one (e.g. home +
+// office), so this is a plain owned-child table under User (onDelete:
+// Cascade), same shape as GarageVehicle.
 model Address {
   id         Int      @id @default(autoincrement())
-  userId     Int      @unique
+  userId     Int
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   phone      String
   cityId     Int
@@ -17,6 +15,7 @@ model Address {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  @@index([userId])
   @@index([cityId])
   @@schema("dbo")
 }

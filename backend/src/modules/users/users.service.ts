@@ -56,7 +56,7 @@ export async function getUserDetail(id: number) {
     hasGoogle: user.googleId != null,
     hasFacebook: user.facebookId != null,
     createdAt: user.createdAt,
-    address: user.address ? toAddressResponse(user.address) : null,
+    addresses: user.addresses.map(toAddressResponse),
     garage: user.garageVehicles.map((vehicle) => ({
       id: vehicle.id,
       year: vehicle.year,

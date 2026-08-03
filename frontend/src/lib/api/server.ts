@@ -218,17 +218,17 @@ export async function getVehicleCategoryFiltersFromServer(
   }
 }
 
-export async function getMyAddressFromServer(): Promise<Address | null> {
+export async function getMyAddressesFromServer(): Promise<Address[]> {
   const headers = await authHeaders();
-  if (!headers) return null;
+  if (!headers) return [];
 
   try {
-    const { data } = await apiClient.get<{ address: Address | null }>("/users/me/address", {
+    const { data } = await apiClient.get<{ addresses: Address[] }>("/users/me/addresses", {
       headers,
     });
-    return data.address;
+    return data.addresses;
   } catch {
-    return null;
+    return [];
   }
 }
 

@@ -10,7 +10,7 @@ model User {
   role                    Role                 @relation(fields: [roleId], references: [id])
   finaSyncRuns            FinaSyncRun[]
   passwordResetTokens     PasswordResetToken[]
-  address                 Address?
+  addresses               Address[]
   garageVehicles          GarageVehicle[]
   submittedCatalogEntries VehicleCatalog[]
   createdAt               DateTime             @default(now())

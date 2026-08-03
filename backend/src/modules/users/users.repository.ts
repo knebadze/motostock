@@ -19,7 +19,7 @@ export const usersRepository = {
       where: { id },
       include: {
         role: true,
-        address: { include: addressInclude },
+        addresses: { include: addressInclude, orderBy: { createdAt: "desc" } },
         garageVehicles: {
           include: { vehicleCatalog: { include: vehicleCatalogInclude } },
           orderBy: { createdAt: "desc" },

@@ -222,7 +222,16 @@
       "comingSoon": "Order history is coming soon."
     },
     "address": {
-      "description": "Set your primary delivery address and contact phone number — we'll use it to deliver your orders.",
+      "description": "Add your delivery addresses and contact phone number — we'll use them to deliver your orders. You can save more than one.",
+      "empty": "You haven't added an address yet.",
+      "addButton": "+ Add address",
+      "editButton": "Edit",
+      "deleteButton": "Delete",
+      "deleteConfirmTitle": "Delete address",
+      "deleteConfirmMessage": "Are you sure you want to delete this address?",
+      "deleteSuccess": "Address deleted",
+      "modalAddTitle": "Add address",
+      "modalEditTitle": "Edit address",
       "phoneLabel": "Phone number",
       "cityLabel": "City",
       "cityPlaceholder": "Select a city",

@@ -104,23 +104,27 @@ export function UserDetailModal({ userId, onClose }: { userId: number; onClose: 
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold">მისამართი</h4>
-            {detail.address ? (
-              <div className="mt-2 rounded-xl border border-border bg-card p-4 text-sm">
-                <p>{detail.address.phone}</p>
-                <p className="mt-1 text-muted-foreground">
-                  {detail.address.city.nameKa}, {detail.address.street}
-                  {detail.address.building ? `, ${detail.address.building}` : ""}
-                  {detail.address.apartment ? `, ბინა ${detail.address.apartment}` : ""}
-                </p>
-                {detail.address.postalCode && (
-                  <p className="mt-1 text-muted-foreground">
-                    საფოსტო ინდექსი: {detail.address.postalCode}
-                  </p>
-                )}
-              </div>
-            ) : (
+            <h4 className="text-sm font-semibold">მისამართები</h4>
+            {detail.addresses.length === 0 ? (
               <p className="mt-2 text-sm text-muted-foreground">მისამართი არ არის მითითებული</p>
+            ) : (
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                {detail.addresses.map((address) => (
+                  <div key={address.id} className="rounded-xl border border-border bg-card p-4 text-sm">
+                    <p>{address.phone}</p>
+                    <p className="mt-1 text-muted-foreground">
+                      {address.city.nameKa}, {address.street}
+                      {address.building ? `, ${address.building}` : ""}
+                      {address.apartment ? `, ბინა ${address.apartment}` : ""}
+                    </p>
+                    {address.postalCode && (
+                      <p className="mt-1 text-muted-foreground">
+                        საფოსტო ინდექსი: {address.postalCode}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 

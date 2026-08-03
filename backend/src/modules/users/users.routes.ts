@@ -105,7 +105,7 @@ registry.registerPath({
 const adminUserDetailResponseSchema = registry.register(
   "AdminUserDetail",
   adminUserResponseSchema.extend({
-    address: addressResponseSchema.nullable(),
+    addresses: z.array(addressResponseSchema),
     garage: z.array(garageVehicleResponseSchema),
   }),
 );

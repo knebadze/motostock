@@ -14,7 +14,7 @@ export type AdminUser = {
 };
 
 export type AdminUserDetail = AdminUser & {
-  address: Address | null;
+  addresses: Address[];
   garage: GarageVehicle[];
 };
 

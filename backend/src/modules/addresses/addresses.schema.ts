@@ -9,8 +9,8 @@ const phoneField = z
   .max(20, "ტელეფონის ნომერი არასწორია")
   .openapi({ example: "+995555123456" });
 
-export const upsertAddressSchema = registry.register(
-  "UpsertAddressInput",
+export const createAddressSchema = registry.register(
+  "CreateAddressInput",
   z.object({
     phone: phoneField,
     cityId: z.int().positive(),
@@ -20,7 +20,13 @@ export const upsertAddressSchema = registry.register(
     postalCode: z.string().trim().max(20).nullable().optional(),
   }),
 );
-export type UpsertAddressInput = z.infer<typeof upsertAddressSchema>;
+export type AddressInput = z.infer<typeof createAddressSchema>;
+
+export const updateAddressSchema = createAddressSchema;
+
+export const addressIdParamSchema = z.object({
+  id: z.coerce.number().int().positive(),
+});
 
 export const addressResponseSchema = registry.register(
   "Address",

@@ -5,44 +5,93 @@ import { validate } from "../../middleware/validate.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
 import * as addressesController from "./addresses.controller.js";
-import { addressResponseSchema, upsertAddressSchema } from "./addresses.schema.js";
+import {
+  addressIdParamSchema,
+  addressResponseSchema,
+  createAddressSchema,
+  updateAddressSchema,
+} from "./addresses.schema.js";
 
 export const addressesRouter = Router();
 
 addressesRouter.use(requireAuth);
 
-addressesRouter.get("/me/address", addressesController.getMine);
-addressesRouter.put(
-  "/me/address",
-  validate(upsertAddressSchema),
-  addressesController.saveMine,
+addressesRouter.get("/me/addresses", addressesController.list);
+addressesRouter.post(
+  "/me/addresses",
+  validate(createAddressSchema),
+  addressesController.create,
+);
+addressesRouter.patch(
+  "/me/addresses/:id",
+  validate(addressIdParamSchema, "params"),
+  validate(updateAddressSchema),
+  addressesController.update,
+);
+addressesRouter.delete(
+  "/me/addresses/:id",
+  validate(addressIdParamSchema, "params"),
+  addressesController.remove,
 );
 
 const security = [{ cookieAuth: [] }];
-const addressResponse = z.object({ address: addressResponseSchema.nullable() });
+const listResponse = z.object({ addresses: z.array(addressResponseSchema) });
+const itemResponse = z.object({ address: addressResponseSchema });
 
 registry.registerPath({
   method: "get",
-  path: "/users/me/address",
+  path: "/users/me/addresses",
   tags: ["Addresses"],
-  summary: "Get the currently authenticated user's primary address (null if not set)",
+  summary: "List the currently authenticated user's addresses",
   security,
   responses: {
-    200: { description: "Address", content: { "application/json": { schema: addressResponse } } },
+    200: { description: "Addresses", content: { "application/json": { schema: listResponse } } },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 
 registry.registerPath({
-  method: "put",
-  path: "/users/me/address",
+  method: "post",
+  path: "/users/me/addresses",
   tags: ["Addresses"],
-  summary: "Create or replace the currently authenticated user's primary address",
+  summary: "Add a new address for the currently authenticated user",
   security,
-  request: { body: { content: { "application/json": { schema: upsertAddressSchema } } } },
+  request: { body: { content: { "application/json": { schema: createAddressSchema } } } },
   responses: {
-    200: { description: "Saved", content: { "application/json": { schema: addressResponse } } },
+    201: { description: "Created", content: { "application/json": { schema: itemResponse } } },
     400: { description: "Invalid city", content: { "application/json": { schema: errorResponseSchema } } },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/users/me/addresses/{id}",
+  tags: ["Addresses"],
+  summary: "Update one of the caller's addresses",
+  security,
+  request: {
+    params: addressIdParamSchema,
+    body: { content: { "application/json": { schema: updateAddressSchema } } },
+  },
+  responses: {
+    200: { description: "Updated", content: { "application/json": { schema: itemResponse } } },
+    400: { description: "Invalid city", content: { "application/json": { schema: errorResponseSchema } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/users/me/addresses/{id}",
+  tags: ["Addresses"],
+  summary: "Delete one of the caller's addresses",
+  security,
+  request: { params: addressIdParamSchema },
+  responses: {
+    204: { description: "Deleted" },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
