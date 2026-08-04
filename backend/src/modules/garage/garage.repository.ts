@@ -7,6 +7,7 @@ type GarageVehicleWriteData = {
   userId: number;
   vehicleCatalogId: number;
   year: number;
+  vin?: string | null;
 };
 
 export const garageRepository = {
@@ -26,7 +27,7 @@ export const garageRepository = {
     return prisma.garageVehicle.create({ data, include });
   },
 
-  update(id: number, data: { vehicleCatalogId: number; year: number }) {
+  update(id: number, data: { vehicleCatalogId: number; year: number; vin?: string | null }) {
     return prisma.garageVehicle.update({ where: { id }, data, include });
   },
 

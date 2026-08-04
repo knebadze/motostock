@@ -22,12 +22,14 @@ export function GarageManager({
   models,
   fuelTypes,
   transmissionTypes,
+  vinDecodeEnabled,
 }: {
   initialGarage: GarageVehicle[];
   vehicleCatalog: VehicleCatalogEntry[];
   models: Model[];
   fuelTypes: LookupItem[];
   transmissionTypes: LookupItem[];
+  vinDecodeEnabled: boolean;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Account.garage");
@@ -65,6 +67,11 @@ export function GarageManager({
               <p className="mt-1 text-sm text-muted-foreground">
                 {t("yearLabel")}: {vehicle.year}
               </p>
+              {vehicle.vin && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t("vinLabel")}: {vehicle.vin}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => setDeleteTarget(vehicle)}
@@ -85,6 +92,7 @@ export function GarageManager({
         models={models}
         fuelTypes={fuelTypes}
         transmissionTypes={transmissionTypes}
+        vinDecodeEnabled={vinDecodeEnabled}
         onSaved={(vehicle) => {
           setGarage((current) => [vehicle, ...current]);
           setCatalog((current) =>

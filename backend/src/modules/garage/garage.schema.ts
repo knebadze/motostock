@@ -7,6 +7,7 @@ export const createGarageVehicleSchema = registry.register(
   z.object({
     vehicleCatalogId: z.int().positive(),
     year: z.int().min(1900).max(2100).openapi({ example: 2022 }),
+    vin: z.string().trim().max(32).nullable().optional().openapi({ example: "JTHBP5C2XA5034185" }),
   }),
 );
 export type CreateGarageVehicleInput = z.infer<typeof createGarageVehicleSchema>;
@@ -23,6 +24,7 @@ export const garageVehicleResponseSchema = registry.register(
   z.object({
     id: z.int().openapi({ example: 1 }),
     year: z.int(),
+    vin: z.string().nullable(),
     vehicleCatalog: vehicleCatalogResponseSchema,
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),

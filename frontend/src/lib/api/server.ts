@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { apiClient } from "./client";
 import type { User } from "./auth";
 import type { Category } from "./categories";
-import type { Settings } from "./settings";
+import type { Settings, VinDecodeProvider } from "./settings";
 import type { Brand } from "./brands";
 import type { Model } from "./models";
 import type { LookupItem } from "./lookups";
@@ -56,7 +56,11 @@ export async function getCategoriesFromServer(): Promise<Category[]> {
 
 export async function getSettingsFromServer(): Promise<Settings> {
   const headers = await authHeaders();
-  const fallback: Settings = { useCloudStorage: false };
+  const fallback: Settings = {
+    useCloudStorage: false,
+    vinDecodeEnabled: false,
+    vinDecodeProvider: "nhtsa",
+  };
   if (!headers) return fallback;
 
   try {
@@ -64,6 +68,22 @@ export async function getSettingsFromServer(): Promise<Settings> {
       headers,
     });
     return data.settings;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function getVinDecodeStatusFromServer(): Promise<{
+  enabled: boolean;
+  provider: VinDecodeProvider;
+}> {
+  const fallback = { enabled: false, provider: "nhtsa" as VinDecodeProvider };
+
+  try {
+    const { data } = await apiClient.get<{ enabled: boolean; provider: VinDecodeProvider }>(
+      "/settings/vin-decode-status",
+    );
+    return data;
   } catch {
     return fallback;
   }

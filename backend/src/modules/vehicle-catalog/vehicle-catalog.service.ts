@@ -262,11 +262,13 @@ export async function submitVehicleCatalogEntry(userId: number, input: SubmitVeh
     },
     userId,
     input.year,
+    input.vin,
   );
 
   return {
     id: garageVehicle.id,
     year: garageVehicle.year,
+    vin: garageVehicle.vin,
     vehicleCatalog: toVehicleCatalogResponse(catalog),
     createdAt: garageVehicle.createdAt,
     updatedAt: garageVehicle.updatedAt,

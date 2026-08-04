@@ -93,11 +93,16 @@ export const vehicleCatalogRepository = {
   // catalog row and the submitter's garage entry for it together, so a
   // failure partway through never leaves an orphaned catalog row with no
   // garage link, or vice versa.
-  createSubmission(catalogData: VehicleCatalogWriteData, garageUserId: number, year: number) {
+  createSubmission(
+    catalogData: VehicleCatalogWriteData,
+    garageUserId: number,
+    year: number,
+    vin?: string | null,
+  ) {
     return prisma.$transaction(async (tx) => {
       const catalog = await tx.vehicleCatalog.create({ data: catalogData, include });
       const garageVehicle = await tx.garageVehicle.create({
-        data: { userId: garageUserId, vehicleCatalogId: catalog.id, year },
+        data: { userId: garageUserId, vehicleCatalogId: catalog.id, year, vin: vin ?? null },
       });
       return { catalog, garageVehicle };
     });

@@ -5,19 +5,22 @@ import {
   getModelsFromServer,
   getMyGarageFromServer,
   getVehicleCatalogFromServer,
+  getVinDecodeStatusFromServer,
 } from "@/lib/api/server";
 import { GarageManager } from "@/components/account/GarageManager";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default async function GaragePage() {
-  const [garage, vehicleCatalog, models, fuelTypes, transmissionTypes] = await Promise.all([
-    getMyGarageFromServer(),
-    getVehicleCatalogFromServer(),
-    getModelsFromServer(),
-    getLookupItemsFromServer("fuel-types"),
-    getLookupItemsFromServer("transmission-types"),
-  ]);
+  const [garage, vehicleCatalog, models, fuelTypes, transmissionTypes, vinDecodeStatus] =
+    await Promise.all([
+      getMyGarageFromServer(),
+      getVehicleCatalogFromServer(),
+      getModelsFromServer(),
+      getLookupItemsFromServer("fuel-types"),
+      getLookupItemsFromServer("transmission-types"),
+      getVinDecodeStatusFromServer(),
+    ]);
 
   return (
     <GaragePageView
@@ -26,6 +29,7 @@ export default async function GaragePage() {
       models={models}
       fuelTypes={fuelTypes}
       transmissionTypes={transmissionTypes}
+      vinDecodeEnabled={vinDecodeStatus.enabled}
     />
   );
 }
@@ -36,12 +40,14 @@ function GaragePageView({
   models,
   fuelTypes,
   transmissionTypes,
+  vinDecodeEnabled,
 }: {
   garage: Awaited<ReturnType<typeof getMyGarageFromServer>>;
   vehicleCatalog: Awaited<ReturnType<typeof getVehicleCatalogFromServer>>;
   models: Awaited<ReturnType<typeof getModelsFromServer>>;
   fuelTypes: Awaited<ReturnType<typeof getLookupItemsFromServer>>;
   transmissionTypes: Awaited<ReturnType<typeof getLookupItemsFromServer>>;
+  vinDecodeEnabled: boolean;
 }) {
   const t = useTranslations("Account");
 
@@ -55,6 +61,7 @@ function GaragePageView({
           models={models}
           fuelTypes={fuelTypes}
           transmissionTypes={transmissionTypes}
+          vinDecodeEnabled={vinDecodeEnabled}
         />
       </div>
     </div>

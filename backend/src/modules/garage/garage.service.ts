@@ -30,6 +30,7 @@ async function assertCatalogEntryFitsYear(vehicleCatalogId: number, year: number
 function toResponse(row: {
   id: number;
   year: number;
+  vin: string | null;
   vehicleCatalog: Parameters<typeof toVehicleCatalogResponse>[0];
   createdAt: Date;
   updatedAt: Date;
@@ -37,6 +38,7 @@ function toResponse(row: {
   return {
     id: row.id,
     year: row.year,
+    vin: row.vin,
     vehicleCatalog: toVehicleCatalogResponse(row.vehicleCatalog),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -55,6 +57,7 @@ export async function createGarageVehicle(userId: number, input: CreateGarageVeh
     userId,
     vehicleCatalogId: input.vehicleCatalogId,
     year: input.year,
+    vin: input.vin ?? null,
   });
   return toResponse(row);
 }
@@ -74,6 +77,7 @@ export async function updateGarageVehicle(
   const row = await garageRepository.update(id, {
     vehicleCatalogId: input.vehicleCatalogId,
     year: input.year,
+    vin: input.vin ?? null,
   });
   return toResponse(row);
 }

@@ -1,9 +1,12 @@
 import { env } from "../../config/env.js";
 import { ApiError } from "../../lib/ApiError.js";
+import { isVincarioConfigured } from "../vin-decode/vin-decode.providers.js";
 import { settingsRepository } from "./settings.repository.js";
-import type { UpdateSettingsInput } from "./settings.schema.js";
+import type { UpdateSettingsInput, VinDecodeProvider } from "./settings.schema.js";
 
 export const USE_CLOUD_STORAGE_KEY = "use_cloud_storage";
+export const VIN_DECODE_ENABLED_KEY = "vin_decode_enabled";
+export const VIN_DECODE_PROVIDER_KEY = "vin_decode_provider";
 
 function isCloudinaryConfigured() {
   return Boolean(
@@ -16,8 +19,32 @@ export async function isCloudStorageEnabled(): Promise<boolean> {
   return setting?.value === "true";
 }
 
+export async function isVinDecodeEnabled(): Promise<boolean> {
+  const setting = await settingsRepository.findByKey(VIN_DECODE_ENABLED_KEY);
+  return setting?.value === "true";
+}
+
+export async function getVinDecodeProvider(): Promise<VinDecodeProvider> {
+  const setting = await settingsRepository.findByKey(VIN_DECODE_PROVIDER_KEY);
+  return setting?.value === "vincario" ? "vincario" : "nhtsa";
+}
+
 export async function getSettings() {
-  return { useCloudStorage: await isCloudStorageEnabled() };
+  return {
+    useCloudStorage: await isCloudStorageEnabled(),
+    vinDecodeEnabled: await isVinDecodeEnabled(),
+    vinDecodeProvider: await getVinDecodeProvider(),
+  };
+}
+
+// The only settings data exposed publicly — just enough for a guest-facing
+// form to know whether to show the "fill via VIN" button. Everything else
+// about Settings (including whether Cloudinary is on) stays admin-only.
+export async function getVinDecodeStatus() {
+  return {
+    enabled: await isVinDecodeEnabled(),
+    provider: await getVinDecodeProvider(),
+  };
 }
 
 export async function updateSettings(input: UpdateSettingsInput) {
@@ -28,6 +55,15 @@ export async function updateSettings(input: UpdateSettingsInput) {
     );
   }
 
+  if (input.vinDecodeEnabled && input.vinDecodeProvider === "vincario" && !isVincarioConfigured()) {
+    throw new ApiError(
+      400,
+      "Vincario-ს ჩართვამდე დააკონფიგურირეთ VINCARIO_API_KEY და VINCARIO_SECRET_KEY სერვერის გარემოს ცვლადებში",
+    );
+  }
+
   await settingsRepository.upsert(USE_CLOUD_STORAGE_KEY, String(input.useCloudStorage));
+  await settingsRepository.upsert(VIN_DECODE_ENABLED_KEY, String(input.vinDecodeEnabled));
+  await settingsRepository.upsert(VIN_DECODE_PROVIDER_KEY, input.vinDecodeProvider);
   return getSettings();
 }

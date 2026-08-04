@@ -6,6 +6,7 @@ export type { GarageVehicle } from "./vehicle-catalog";
 export type GarageVehicleInput = {
   vehicleCatalogId: number;
   year: number;
+  vin?: string | null;
 };
 
 export async function listMyGarage(): Promise<GarageVehicle[]> {

@@ -7,6 +7,11 @@ export async function getOne(_req: Request, res: Response) {
   res.status(200).json({ settings });
 }
 
+export async function getVinDecodeStatus(_req: Request, res: Response) {
+  const status = await settingsService.getVinDecodeStatus();
+  res.status(200).json(status);
+}
+
 export async function update(
   req: Request<unknown, unknown, UpdateSettingsInput>,
   res: Response,

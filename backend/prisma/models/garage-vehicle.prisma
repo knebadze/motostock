@@ -10,6 +10,11 @@ model GarageVehicle {
   vehicleCatalogId Int
   vehicleCatalog   VehicleCatalog @relation(fields: [vehicleCatalogId], references: [id])
   year             Int
+  // Optional — identifies this one physical vehicle (not stored on
+  // VehicleCatalog, which describes a shared model/generation, not an
+  // individual unit). Not enforced unique: typos, resales, or a user
+  // re-adding the same vehicle shouldn't hard-fail.
+  vin              String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 

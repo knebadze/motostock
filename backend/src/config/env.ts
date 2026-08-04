@@ -35,6 +35,9 @@ const envSchema = z.object({
   // Plain optional string, not z.coerce.boolean() — that coerces any
   // non-empty string (including the literal text "false") to `true`.
   SMTP_SECURE: z.string().optional(),
+  VINCARIO_API_KEY: z.string().optional(),
+  VINCARIO_SECRET_KEY: z.string().optional(),
+  VINCARIO_BASE_URL: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

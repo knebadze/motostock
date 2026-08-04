@@ -102,6 +102,7 @@ export const submitVehicleCatalogSchema = registry.register(
       yearFrom: optionalYear,
       yearTo: optionalYear,
       year: z.int().min(1900).max(2100).openapi({ example: 2022 }),
+      vin: z.string().trim().max(32).nullable().optional().openapi({ example: "JTHBP5C2XA5034185" }),
       engineVolumeCc: optionalPositiveInt,
       enginePowerHp: optionalPositiveInt,
       fuelTypeId: optionalPositiveInt,

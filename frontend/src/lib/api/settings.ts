@@ -1,7 +1,11 @@
 import { apiClient } from "./client";
 
+export type VinDecodeProvider = "nhtsa" | "vincario";
+
 export type Settings = {
   useCloudStorage: boolean;
+  vinDecodeEnabled: boolean;
+  vinDecodeProvider: VinDecodeProvider;
 };
 
 export async function getSettings(): Promise<Settings> {

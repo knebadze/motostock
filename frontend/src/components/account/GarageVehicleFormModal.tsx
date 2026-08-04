@@ -7,12 +7,14 @@ import { Modal } from "@/components/shared/Modal";
 import { Select } from "@/components/shared/Select";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
+import { Loader } from "@/components/shared/Loader";
 import { createGarageVehicle } from "@/lib/api/garage";
 import {
   submitVehicleCatalogEntry,
   type GarageVehicle,
   type VehicleCatalogEntry,
 } from "@/lib/api/vehicle-catalog";
+import { decodeVin } from "@/lib/api/vin-decode";
 import type { Model } from "@/lib/api/models";
 import type { LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError } from "@/lib/api/client";
@@ -39,6 +41,7 @@ export function GarageVehicleFormModal({
   models,
   fuelTypes,
   transmissionTypes,
+  vinDecodeEnabled,
 }: {
   open: boolean;
   onClose: () => void;
@@ -47,6 +50,7 @@ export function GarageVehicleFormModal({
   models: Model[];
   fuelTypes: LookupItem[];
   transmissionTypes: LookupItem[];
+  vinDecodeEnabled: boolean;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Account.garage");
@@ -56,6 +60,11 @@ export function GarageVehicleFormModal({
   // regardless of whether the user then picks an existing catalog entry or
   // self-submits a new one, so switching modes keeps this selection.
   const [categoryId, setCategoryId] = useState("");
+
+  // Also shared — VIN identifies one physical vehicle regardless of whether
+  // its catalog entry is picked or self-submitted.
+  const [vin, setVin] = useState("");
+  const [decodingVin, setDecodingVin] = useState(false);
 
   const [vehicleCatalogId, setVehicleCatalogId] = useState("");
   const [pickYear, setPickYear] = useState("");
@@ -90,6 +99,26 @@ export function GarageVehicleFormModal({
     setMode("pick");
     setVehicleCatalogId(String(entry.id));
     if (!pickYear && submitYear) setPickYear(submitYear);
+  }
+
+  async function handleFillFromVin() {
+    setDecodingVin(true);
+    try {
+      const result = await decodeVin(vin.trim());
+      if (mode === "pick") {
+        if (result.year != null) setPickYear(String(result.year));
+      } else {
+        if (result.year != null) setSubmitYear(String(result.year));
+        if (result.engineVolumeCc != null) setEngineVolumeCc(String(result.engineVolumeCc));
+        if (result.enginePowerHp != null) setEnginePowerHp(String(result.enginePowerHp));
+      }
+      toast.success(t("vinDecodeSuccess"));
+    } catch (error) {
+      const message = error instanceof ApiRequestError ? error.message : t("vinDecodeError");
+      toast.error(message);
+    } finally {
+      setDecodingVin(false);
+    }
   }
 
   const nameKey = locale === "ka" ? "nameKa" : locale === "ru" ? "nameRu" : "nameEn";
@@ -172,6 +201,7 @@ export function GarageVehicleFormModal({
         const vehicle = await createGarageVehicle({
           vehicleCatalogId: Number(result.data.vehicleCatalogId),
           year: Number(result.data.year),
+          vin: vin.trim() || null,
         });
         toast.success(t("addSuccess"));
         onSaved(vehicle);
@@ -214,6 +244,7 @@ export function GarageVehicleFormModal({
         yearFrom: submittedYearFrom,
         yearTo: submittedYearTo,
         year: Number(result.data.year),
+        vin: vin.trim() || null,
         engineVolumeCc: result.data.engineVolumeCc ? Number(result.data.engineVolumeCc) : null,
         enginePowerHp: result.data.enginePowerHp ? Number(result.data.enginePowerHp) : null,
         fuelTypeId: result.data.fuelTypeId ? Number(result.data.fuelTypeId) : null,
@@ -247,6 +278,7 @@ export function GarageVehicleFormModal({
           const vehicle = await createGarageVehicle({
             vehicleCatalogId: existing.id,
             year: Number(result.data.year),
+            vin: vin.trim() || null,
           });
           toast.success(t("existingUsedInfo"));
           onSaved(vehicle);
@@ -278,6 +310,34 @@ export function GarageVehicleFormModal({
             placeholder={t("categoryPlaceholder")}
           />
         </div>
+
+        {vinDecodeEnabled && (
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="garage-vin" className="text-sm font-medium">
+              {t("vinLabel")}
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="garage-vin"
+                type="text"
+                value={vin}
+                onChange={(event) => setVin(event.target.value.toUpperCase())}
+                placeholder={t("vinPlaceholder")}
+                maxLength={17}
+                className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono uppercase outline-none focus:border-primary"
+              />
+              <button
+                type="button"
+                onClick={handleFillFromVin}
+                disabled={decodingVin || vin.trim().length !== 17}
+                className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+              >
+                {decodingVin && <Loader size="xs" />}
+                {decodingVin ? t("vinDecoding") : t("fillWithVin")}
+              </button>
+            </div>
+          </div>
+        )}
 
         {mode === "pick" ? (
           <>

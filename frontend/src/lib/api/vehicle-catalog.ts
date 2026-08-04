@@ -88,6 +88,7 @@ export type SubmitVehicleCatalogInput = {
   yearFrom?: number | null;
   yearTo?: number | null;
   year: number;
+  vin?: string | null;
   engineVolumeCc?: number | null;
   enginePowerHp?: number | null;
   fuelTypeId?: number | null;
@@ -97,6 +98,7 @@ export type SubmitVehicleCatalogInput = {
 export type GarageVehicle = {
   id: number;
   year: number;
+  vin: string | null;
   vehicleCatalog: VehicleCatalogEntry;
   createdAt: string;
   updatedAt: string;
