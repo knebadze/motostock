@@ -10,7 +10,7 @@ async function saveToDisk(subfolder: string, file: Express.Multer.File): Promise
   const dir = path.join(UPLOAD_ROOT, subfolder);
   fs.mkdirSync(dir, { recursive: true });
 
-  const { buffer, extension } = await processImageForDisk(file.buffer, file.mimetype);
+  const { buffer, extension } = await processImageForDisk(file.buffer);
   const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`;
   fs.writeFileSync(path.join(dir, filename), buffer);
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatPrice, pickLookupName } from "@/lib/format";
+import { sanitizeRichText } from "@/lib/sanitize-html";
 import type {
   Product,
   ProductDetail,
@@ -189,8 +190,9 @@ export function ProductDetailPage({
           <div
             className="mt-5 text-base leading-7 text-foreground [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:mt-4 [&_h3]:text-base [&_h3]:font-semibold [&_li]:ml-5 [&_ol]:list-decimal [&_p:last-child]:mb-0 [&_p]:mb-4 [&_ul]:list-disc"
             // Admin-authored rich text (same trust boundary as the JSON-LD
-            // scripts already used on this page) — not user input.
-            dangerouslySetInnerHTML={{ __html: description }}
+            // scripts already used on this page) — sanitized regardless as
+            // defense-in-depth (see sanitizeRichText).
+            dangerouslySetInnerHTML={{ __html: sanitizeRichText(description) }}
           />
         </section>
       )}

@@ -13,12 +13,6 @@ import { processImageForDisk } from "../src/lib/image-processing.js";
 // folder — a category only gets an imageUrl if a matching file exists here.
 const SEED_ASSETS_ROOT = path.resolve("prisma/seed-assets");
 const SEED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"] as const;
-const MIME_BY_EXTENSION: Record<string, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".webp": "image/webp",
-};
 
 async function seedImageUrl(subfolder: string, slug: string): Promise<string | undefined> {
   const dir = path.join(SEED_ASSETS_ROOT, subfolder);
@@ -27,8 +21,7 @@ async function seedImageUrl(subfolder: string, slug: string): Promise<string | u
   );
   if (!sourcePath) return undefined;
 
-  const mimetype = MIME_BY_EXTENSION[path.extname(sourcePath)];
-  const { buffer, extension } = await processImageForDisk(fs.readFileSync(sourcePath), mimetype);
+  const { buffer, extension } = await processImageForDisk(fs.readFileSync(sourcePath));
 
   const uploadDir = path.resolve("uploads", subfolder);
   fs.mkdirSync(uploadDir, { recursive: true });

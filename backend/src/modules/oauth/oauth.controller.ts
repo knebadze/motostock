@@ -10,6 +10,7 @@ import {
   isGoogleConfigured,
 } from "./oauth-providers.js";
 import { loginWithFacebook, loginWithGoogle } from "./oauth.service.js";
+import { oauthCallbackQuerySchema } from "./oauth.schema.js";
 
 const STATE_COOKIE_NAME = "oauth_state";
 const STATE_COOKIE_MAX_AGE_MS = 10 * 60 * 1000;
@@ -46,17 +47,17 @@ export function redirectToFacebook(req: Request, res: Response) {
 }
 
 export async function handleGoogleCallback(req: Request, res: Response) {
-  const { code, state } = req.query;
+  const parsed = oauthCallbackQuerySchema.safeParse(req.query);
   const cookieState = req.cookies?.[STATE_COOKIE_NAME];
   res.clearCookie(STATE_COOKIE_NAME);
 
-  if (typeof code !== "string" || !state || state !== cookieState) {
+  if (!parsed.success || !parsed.data.code || !parsed.data.state || parsed.data.state !== cookieState) {
     failureRedirect(res);
     return;
   }
 
   try {
-    const { token } = await loginWithGoogle(code);
+    const { token } = await loginWithGoogle(parsed.data.code);
     setAuthCookie(res, token);
     res.redirect(`${env.FRONTEND_ORIGIN}/account`);
   } catch {
@@ -65,17 +66,17 @@ export async function handleGoogleCallback(req: Request, res: Response) {
 }
 
 export async function handleFacebookCallback(req: Request, res: Response) {
-  const { code, state } = req.query;
+  const parsed = oauthCallbackQuerySchema.safeParse(req.query);
   const cookieState = req.cookies?.[STATE_COOKIE_NAME];
   res.clearCookie(STATE_COOKIE_NAME);
 
-  if (typeof code !== "string" || !state || state !== cookieState) {
+  if (!parsed.success || !parsed.data.code || !parsed.data.state || parsed.data.state !== cookieState) {
     failureRedirect(res);
     return;
   }
 
   try {
-    const { token } = await loginWithFacebook(code);
+    const { token } = await loginWithFacebook(parsed.data.code);
     setAuthCookie(res, token);
     res.redirect(`${env.FRONTEND_ORIGIN}/account`);
   } catch {
