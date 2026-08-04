@@ -46,8 +46,7 @@ export function UnitsManager({ initialUnits }: { initialUnits: Unit[] }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">ერთეულები</h1>
+      <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={openCreateModal}
