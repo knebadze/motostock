@@ -8,6 +8,7 @@ import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { deleteAttribute, listAttributes, type Attribute } from "@/lib/api/attributes";
 import type { Category } from "@/lib/api/categories";
+import type { Unit } from "@/lib/api/units";
 import { ApiRequestError } from "@/lib/api/client";
 import { flattenTree } from "@/lib/categories-tree";
 import { AttributeFormModal } from "./AttributeFormModal";
@@ -36,14 +37,21 @@ const columns: DataTableColumn<Attribute>[] = [
     render: (attribute) => (attribute.required ? "დიახ" : "არა"),
     cellClassName: "text-muted-foreground",
   },
+  {
+    header: "ერთეული",
+    render: (attribute) => attribute.unit?.abbreviation.ka ?? "—",
+    cellClassName: "text-muted-foreground",
+  },
 ];
 
 export function AttributesManager({
   initialAttributes,
   categories,
+  units,
 }: {
   initialAttributes: Attribute[];
   categories: Category[];
+  units: Unit[];
 }) {
   const [attributes, setAttributes] = useState(initialAttributes);
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -136,6 +144,7 @@ export function AttributesManager({
         onClose={() => setFormOpen(false)}
         onSaved={() => refresh()}
         categories={categories}
+        units={units}
         attribute={editingAttribute}
       />
 

@@ -9,6 +9,7 @@ export type Attribute = {
   name: LocalizedString;
   valueType: AttributeValueType;
   required: boolean;
+  unit: { id: number; name: LocalizedString; abbreviation: LocalizedString } | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -18,6 +19,7 @@ export type AttributeInput = {
   name: LocalizedString;
   valueType: AttributeValueType;
   required?: boolean;
+  unitId?: number | null;
 };
 
 export async function listAttributes(categoryId?: number): Promise<Attribute[]> {

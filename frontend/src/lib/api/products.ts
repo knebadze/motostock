@@ -13,6 +13,7 @@ export type ProductAttributeValue = {
   attributeId: number;
   attributeName: LocalizedString;
   valueType: AttributeValueType;
+  unit: { id: number; name: LocalizedString; abbreviation: LocalizedString } | null;
   valueText: string | null;
   valueNumber: number | null;
   valueBoolean: boolean | null;

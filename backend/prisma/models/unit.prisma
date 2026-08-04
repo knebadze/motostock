@@ -1,0 +1,22 @@
+// A unit of measurement an Attribute's value is expressed in (e.g. "სმ"/cm
+// for a size attribute, "ლ"/L for an oil's volume attribute) — purely
+// descriptive metadata attached to the attribute definition itself, shown
+// wherever that attribute's values are displayed. Not part of the generic
+// Lookup system (City/Color/Size/...) since those all share one flat
+// {id, key, nameKa/En/Ru} shape and abbreviation would be meaningless on
+// most of them — this gets its own small dedicated model instead, same
+// pattern as ProductBrand.
+model Unit {
+  id             Int         @id @default(autoincrement())
+  nameKa         String
+  nameEn         String
+  nameRu         String
+  abbreviationKa String
+  abbreviationEn String
+  abbreviationRu String
+  attributes     Attribute[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@schema("cla")
+}

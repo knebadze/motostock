@@ -103,6 +103,7 @@ export function ProductAttributeFields({
           <div key={attribute.id} className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">
               {attribute.name.ka}
+              {attribute.unit ? ` (${attribute.unit.abbreviation.ka})` : ""}
               {attribute.required ? " *" : ""}
             </label>
 

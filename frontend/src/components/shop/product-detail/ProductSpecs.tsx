@@ -12,8 +12,9 @@ function formatValue(
 ): string {
   if (value.option) return value.option.label[locale];
   if (value.valueBoolean != null) return value.valueBoolean ? yes : no;
-  if (value.valueNumber != null) return String(value.valueNumber);
-  return value.valueText ?? "—";
+  const unitSuffix = value.unit ? ` ${value.unit.abbreviation[locale]}` : "";
+  if (value.valueNumber != null) return `${value.valueNumber}${unitSuffix}`;
+  return value.valueText != null ? `${value.valueText}${unitSuffix}` : "—";
 }
 
 export function ProductSpecs({ attributeValues }: { attributeValues: ProductAttributeValue[] }) {

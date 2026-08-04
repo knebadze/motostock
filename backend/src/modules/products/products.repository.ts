@@ -5,13 +5,30 @@ import type { FilterEntry } from "../filters/filter-request.schema.js";
 import type { AttributeFilterInput } from "./products.schema.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
+const unitRefSelect = {
+  id: true,
+  nameKa: true,
+  nameEn: true,
+  nameRu: true,
+  abbreviationKa: true,
+  abbreviationEn: true,
+  abbreviationRu: true,
+} as const;
+const attributeWithUnitSelect = {
+  id: true,
+  nameKa: true,
+  nameEn: true,
+  nameRu: true,
+  valueType: true,
+  unit: { select: unitRefSelect },
+} as const;
 
 const include = {
   category: { select: namedRefSelect },
   productBrand: { select: namedRefSelect },
   attributeValues: {
     include: {
-      attribute: { select: { id: true, nameKa: true, nameEn: true, nameRu: true, valueType: true } },
+      attribute: { select: attributeWithUnitSelect },
       option: { select: { id: true, key: true, labelKa: true, labelEn: true, labelRu: true } },
     },
   },
@@ -34,7 +51,7 @@ const detailInclude = {
   productBrand: { select: namedRefSelect },
   attributeValues: {
     include: {
-      attribute: { select: { id: true, nameKa: true, nameEn: true, nameRu: true, valueType: true } },
+      attribute: { select: attributeWithUnitSelect },
       option: { select: { id: true, key: true, labelKa: true, labelEn: true, labelRu: true } },
     },
   },

@@ -27,6 +27,7 @@ import { attributeOptionsRouter } from "./modules/attribute-options/attribute-op
 import { categoryFiltersRouter } from "./modules/category-filters/category-filters.routes.js";
 import { vehicleCategoryFiltersRouter } from "./modules/vehicle-category-filters/vehicle-category-filters.routes.js";
 import { productBrandsRouter } from "./modules/product-brands/product-brands.routes.js";
+import { unitsRouter } from "./modules/units/units.routes.js";
 import { productsRouter } from "./modules/products/products.routes.js";
 import { productFitmentRouter } from "./modules/product-fitment/product-fitment.routes.js";
 import { productFitmentRulesRouter } from "./modules/product-fitment-rules/product-fitment-rules.routes.js";
@@ -77,6 +78,7 @@ app.use("/api/attributes/:attributeId/options", attributeOptionsRouter);
 app.use("/api/category-filters", categoryFiltersRouter);
 app.use("/api/vehicle-category-filters", vehicleCategoryFiltersRouter);
 app.use("/api/product-brands", productBrandsRouter);
+app.use("/api/units", unitsRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/products/:productId/fitments", productFitmentRouter);
 app.use("/api/products/:productId/fitment-rules", productFitmentRulesRouter);

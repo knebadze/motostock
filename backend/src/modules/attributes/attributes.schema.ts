@@ -14,6 +14,7 @@ export const createAttributeSchema = registry.register(
     }),
     valueType: attributeValueTypeSchema,
     required: z.boolean().optional(),
+    unitId: z.int().positive().nullable().optional(),
   }),
 );
 export type CreateAttributeInput = z.infer<typeof createAttributeSchema>;
@@ -39,6 +40,12 @@ const categoryRefSchema = z.object({
   slug: z.string(),
 });
 
+const unitRefSchema = z.object({
+  id: z.int(),
+  name: localizedStringSchema,
+  abbreviation: localizedStringSchema,
+});
+
 export const attributeResponseSchema = registry.register(
   "Attribute",
   z.object({
@@ -47,6 +54,7 @@ export const attributeResponseSchema = registry.register(
     name: localizedStringSchema,
     valueType: attributeValueTypeSchema,
     required: z.boolean(),
+    unit: unitRefSchema.nullable(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
   }),

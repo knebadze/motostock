@@ -1,6 +1,7 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
+import { unitsRepository } from "../units/units.repository.js";
 import { attributesRepository } from "./attributes.repository.js";
 import type {
   AttributeValueTypeInput,
@@ -9,6 +10,15 @@ import type {
 } from "./attributes.schema.js";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
+type UnitRefRow = {
+  id: number;
+  nameKa: string;
+  nameEn: string;
+  nameRu: string;
+  abbreviationKa: string;
+  abbreviationEn: string;
+  abbreviationRu: string;
+};
 
 type AttributeRow = {
   id: number;
@@ -18,12 +28,21 @@ type AttributeRow = {
   nameRu: string;
   valueType: AttributeValueTypeInput;
   required: boolean;
+  unit: UnitRefRow | null;
   createdAt: Date;
   updatedAt: Date;
 };
 
 function toNamedRef(row: NamedRefRow) {
   return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
+}
+
+function toUnitRef(row: UnitRefRow) {
+  return {
+    id: row.id,
+    name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu },
+    abbreviation: { ka: row.abbreviationKa, en: row.abbreviationEn, ru: row.abbreviationRu },
+  };
 }
 
 function toResponse(row: AttributeRow) {
@@ -33,6 +52,7 @@ function toResponse(row: AttributeRow) {
     name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu },
     valueType: row.valueType,
     required: row.required,
+    unit: row.unit ? toUnitRef(row.unit) : null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -79,6 +99,13 @@ async function assertCategoryExists(categoryId: number) {
   }
 }
 
+async function assertUnitExists(unitId: number) {
+  const unit = await unitsRepository.findById(unitId);
+  if (!unit) {
+    throw new ApiError(400, "მითითებული ერთეული არ არსებობს");
+  }
+}
+
 export async function listAttributes(categoryId?: number) {
   const categoryIds = categoryId != null ? await resolveCategoryAndAncestorIds(categoryId) : undefined;
   const rows = await attributesRepository.findMany(categoryIds);
@@ -95,6 +122,9 @@ export async function getAttribute(id: number) {
 
 export async function createAttribute(input: CreateAttributeInput) {
   await assertCategoryExists(input.categoryId);
+  if (input.unitId != null) {
+    await assertUnitExists(input.unitId);
+  }
 
   const row = await attributesRepository.create({
     categoryId: input.categoryId,
@@ -103,6 +133,7 @@ export async function createAttribute(input: CreateAttributeInput) {
     nameRu: input.name.ru,
     valueType: input.valueType,
     required: input.required ?? false,
+    unitId: input.unitId ?? null,
   });
   return toResponse(row);
 }
@@ -116,6 +147,9 @@ export async function updateAttribute(id: number, input: UpdateAttributeInput) {
   if (input.categoryId !== undefined) {
     await assertCategoryExists(input.categoryId);
   }
+  if (input.unitId != null) {
+    await assertUnitExists(input.unitId);
+  }
 
   const row = await attributesRepository.update(id, {
     ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
@@ -124,6 +158,7 @@ export async function updateAttribute(id: number, input: UpdateAttributeInput) {
       : {}),
     ...(input.valueType !== undefined ? { valueType: input.valueType } : {}),
     ...(input.required !== undefined ? { required: input.required } : {}),
+    ...(input.unitId !== undefined ? { unitId: input.unitId } : {}),
   });
   return toResponse(row);
 }

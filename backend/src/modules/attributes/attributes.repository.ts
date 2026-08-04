@@ -2,7 +2,16 @@ import { prisma } from "../../config/prisma.js";
 import type { AttributeValueType } from "../../generated/prisma/index.js";
 
 const categorySelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
-const include = { category: { select: categorySelect } } as const;
+const unitSelect = {
+  id: true,
+  nameKa: true,
+  nameEn: true,
+  nameRu: true,
+  abbreviationKa: true,
+  abbreviationEn: true,
+  abbreviationRu: true,
+} as const;
+const include = { category: { select: categorySelect }, unit: { select: unitSelect } } as const;
 
 type AttributeWriteData = {
   categoryId: number;
@@ -11,6 +20,7 @@ type AttributeWriteData = {
   nameRu: string;
   valueType: AttributeValueType;
   required?: boolean;
+  unitId?: number | null;
 };
 
 export const attributesRepository = {

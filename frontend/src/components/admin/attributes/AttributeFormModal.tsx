@@ -17,6 +17,7 @@ import {
 } from "@/lib/api/attributes";
 import { createAttributeOption, type AttributeOptionInput } from "@/lib/api/attribute-options";
 import type { Category } from "@/lib/api/categories";
+import type { Unit } from "@/lib/api/units";
 import { ApiRequestError } from "@/lib/api/client";
 import { flattenTree } from "@/lib/categories-tree";
 import { attributeFormSchema } from "@/lib/validation/attributes";
@@ -206,12 +207,14 @@ export function AttributeFormModal({
   onClose,
   onSaved,
   categories,
+  units,
   attribute,
 }: {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
   categories: Category[];
+  units: Unit[];
   attribute: Attribute | null;
 }) {
   const isEditing = attribute !== null;
@@ -223,6 +226,7 @@ export function AttributeFormModal({
   const [nameRu, setNameRu] = useState(attribute?.name.ru ?? "");
   const [valueType, setValueType] = useState<string>(attribute?.valueType ?? "TEXT");
   const [required, setRequired] = useState(attribute?.required ?? false);
+  const [unitId, setUnitId] = useState(attribute?.unit ? String(attribute.unit.id) : "");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [draftOptions, setDraftOptions] = useState<DraftOption[]>([]);
@@ -232,6 +236,14 @@ export function AttributeFormModal({
     value: String(category.id),
     label: `${"— ".repeat(category.depth)}${category.name.ka}`,
   }));
+
+  const unitOptions = [
+    { value: "", label: "არცერთი" },
+    ...units.map((unit) => ({
+      value: String(unit.id),
+      label: `${unit.name.ka} (${unit.abbreviation.ka})`,
+    })),
+  ];
 
   function addDraftOption(option: AttributeOptionInput) {
     draftIdCounter.current += 1;
@@ -271,6 +283,7 @@ export function AttributeFormModal({
         name: { ka: nameKa.trim(), en: nameEn.trim(), ru: nameRu.trim() },
         valueType: valueType as AttributeValueType,
         required,
+        unitId: unitId ? Number(unitId) : null,
       };
 
       if (isEditing) {
@@ -347,6 +360,15 @@ export function AttributeFormModal({
           />
           სავალდებულო ველია
         </label>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium">ერთეული</label>
+        <Select options={unitOptions} value={unitId} onChange={setUnitId} searchable placeholder="არცერთი" />
+        <FieldError message={errors.unitId} />
+        <p className="text-xs text-muted-foreground">
+          არასავალდებულოა — მითითების შემთხვევაში გამოჩნდება პროდუქტების გვერდზეც.
+        </p>
       </div>
     </>
   );

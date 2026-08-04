@@ -16,6 +16,8 @@ model Attribute {
   nameRu        String
   valueType     AttributeValueType
   required      Boolean                 @default(false)
+  unitId        Int?
+  unit          Unit?                   @relation(fields: [unitId], references: [id], onDelete: Restrict)
   options       AttributeOption[]
   values        ProductAttributeValue[]
   filterConfigs CategoryFilterConfig[]

@@ -132,10 +132,17 @@ export type ProductSlugParam = z.infer<typeof productSlugParamSchema>;
 
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
 
+const unitRefSchema = z.object({
+  id: z.int(),
+  name: localizedStringSchema,
+  abbreviation: localizedStringSchema,
+});
+
 const productAttributeValueResponseSchema = z.object({
   attributeId: z.int(),
   attributeName: localizedStringSchema,
   valueType: attributeValueTypeSchema,
+  unit: unitRefSchema.nullable(),
   valueText: z.string().nullable(),
   valueNumber: z.number().nullable(),
   valueBoolean: z.boolean().nullable(),

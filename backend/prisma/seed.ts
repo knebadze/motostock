@@ -303,6 +303,53 @@ async function seedCategoryTree(
   return idBySlug;
 }
 
+type UnitSeed = {
+  nameKa: string;
+  nameEn: string;
+  nameRu: string;
+  abbreviationKa: string;
+  abbreviationEn: string;
+  abbreviationRu: string;
+};
+
+// Core units of measurement an attribute's value can be expressed in —
+// covers length/weight/volume/battery capacity/percent, the units most
+// product attributes across the seeded categories actually need. More can
+// be added later through the Units admin UI without any code change.
+const UNIT_SEEDS: UnitSeed[] = [
+  { nameKa: "მილიმეტრი", nameEn: "Millimeter", nameRu: "Миллиметр", abbreviationKa: "მმ", abbreviationEn: "mm", abbreviationRu: "мм" },
+  { nameKa: "სანტიმეტრი", nameEn: "Centimeter", nameRu: "Сантиметр", abbreviationKa: "სმ", abbreviationEn: "cm", abbreviationRu: "см" },
+  { nameKa: "მეტრი", nameEn: "Meter", nameRu: "Метр", abbreviationKa: "მ", abbreviationEn: "m", abbreviationRu: "м" },
+  { nameKa: "გრამი", nameEn: "Gram", nameRu: "Грамм", abbreviationKa: "გ", abbreviationEn: "g", abbreviationRu: "г" },
+  { nameKa: "კილოგრამი", nameEn: "Kilogram", nameRu: "Килограмм", abbreviationKa: "კგ", abbreviationEn: "kg", abbreviationRu: "кг" },
+  { nameKa: "მილილიტრი", nameEn: "Milliliter", nameRu: "Миллилитр", abbreviationKa: "მლ", abbreviationEn: "ml", abbreviationRu: "мл" },
+  { nameKa: "ლიტრი", nameEn: "Liter", nameRu: "Литр", abbreviationKa: "ლ", abbreviationEn: "L", abbreviationRu: "л" },
+  { nameKa: "ამპერ-საათი", nameEn: "Ampere-hour", nameRu: "Ампер-час", abbreviationKa: "Ah", abbreviationEn: "Ah", abbreviationRu: "Ач" },
+  { nameKa: "პროცენტი", nameEn: "Percent", nameRu: "Процент", abbreviationKa: "%", abbreviationEn: "%", abbreviationRu: "%" },
+];
+
+async function seedUnits(): Promise<Map<string, number>> {
+  const idByNameKa = new Map<string, number>();
+  for (const unitSeed of UNIT_SEEDS) {
+    let unit = await prisma.unit.findFirst({ where: { nameKa: unitSeed.nameKa } });
+    if (!unit) {
+      unit = await prisma.unit.create({
+        data: {
+          nameKa: unitSeed.nameKa,
+          nameEn: unitSeed.nameEn,
+          nameRu: unitSeed.nameRu,
+          abbreviationKa: unitSeed.abbreviationKa,
+          abbreviationEn: unitSeed.abbreviationEn,
+          abbreviationRu: unitSeed.abbreviationRu,
+        },
+      });
+    }
+    idByNameKa.set(unitSeed.nameKa, unit.id);
+  }
+  console.log(`Units ready: ${UNIT_SEEDS.length}`);
+  return idByNameKa;
+}
+
 type AttributeOptionSeed = { key: string; labelKa: string; labelEn: string; labelRu: string };
 type AttributeSeed = {
   categorySlug: string;
@@ -311,6 +358,7 @@ type AttributeSeed = {
   nameRu: string;
   valueType: "TEXT" | "NUMBER" | "BOOLEAN" | "SELECT";
   required?: boolean;
+  unitNameKa?: string;
   options?: AttributeOptionSeed[];
 };
 
@@ -382,6 +430,7 @@ const ATTRIBUTE_SEEDS: AttributeSeed[] = [
     nameEn: "Weight",
     nameRu: "Вес",
     valueType: "NUMBER",
+    unitNameKa: "გრამი",
   },
   {
     categorySlug: "jackets",
@@ -432,6 +481,7 @@ const ATTRIBUTE_SEEDS: AttributeSeed[] = [
     nameEn: "Capacity (L)",
     nameRu: "Объем (л)",
     valueType: "NUMBER",
+    unitNameKa: "ლიტრი",
   },
   {
     categorySlug: "luggage",
@@ -482,6 +532,7 @@ const ATTRIBUTE_SEEDS: AttributeSeed[] = [
     nameEn: "Capacity (Ah)",
     nameRu: "Емкость (Ач)",
     valueType: "NUMBER",
+    unitNameKa: "ამპერ-საათი",
   },
   {
     categorySlug: "tires",
@@ -529,11 +580,16 @@ const ATTRIBUTE_SEEDS: AttributeSeed[] = [
   },
 ];
 
-async function seedAttributes(categoryIdBySlug: Map<string, number>) {
+async function seedAttributes(categoryIdBySlug: Map<string, number>, unitIdByNameKa: Map<string, number>) {
   for (const attributeSeed of ATTRIBUTE_SEEDS) {
     const categoryId = categoryIdBySlug.get(attributeSeed.categorySlug);
     if (!categoryId) {
       throw new Error(`Unknown category slug in attribute seed: ${attributeSeed.categorySlug}`);
+    }
+
+    const unitId = attributeSeed.unitNameKa ? unitIdByNameKa.get(attributeSeed.unitNameKa) : undefined;
+    if (attributeSeed.unitNameKa && unitId === undefined) {
+      throw new Error(`Unknown unit in attribute seed: ${attributeSeed.unitNameKa}`);
     }
 
     let attribute = await prisma.attribute.findFirst({
@@ -548,8 +604,13 @@ async function seedAttributes(categoryIdBySlug: Map<string, number>) {
           nameRu: attributeSeed.nameRu,
           valueType: attributeSeed.valueType,
           required: attributeSeed.required ?? false,
+          unitId: unitId ?? null,
         },
       });
+    } else if (unitId != null && attribute.unitId == null) {
+      // Backfill on re-seed — never overwrite a unit an admin may have
+      // deliberately changed/cleared by hand.
+      attribute = await prisma.attribute.update({ where: { id: attribute.id }, data: { unitId } });
     }
 
     for (const option of attributeSeed.options ?? []) {
@@ -886,10 +947,12 @@ async function main() {
   await seedLookup("Sizes", prisma.size, SIZES);
   await seedLookup("Cities", prisma.city, CITIES);
 
+  const unitIdByNameKa = await seedUnits();
+
   const categoryIdBySlug = await seedCategoryTree(PRODUCT_CATEGORY_TREE, null);
   console.log(`Product category tree ready: ${categoryIdBySlug.size} categories`);
 
-  await seedAttributes(categoryIdBySlug);
+  await seedAttributes(categoryIdBySlug, unitIdByNameKa);
   await seedProductBrands(categoryIdBySlug);
   await seedCategoryFilters(categoryIdBySlug);
   await seedVehicleCategoryFilters(categoryIdBySlug);

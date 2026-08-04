@@ -16,6 +16,7 @@ import type { Address } from "./addresses";
 import type { GarageVehicle } from "./garage";
 import type { VehicleCategoryFilter } from "./vehicle-category-filters";
 import type { ProductBrand } from "./product-brands";
+import type { Unit } from "./units";
 import type { Product, ProductDetail } from "./products";
 import type { FinaSyncRun } from "./fina-sync";
 import type { AdminUser } from "./users";
@@ -302,6 +303,18 @@ export async function getProductBrandsFromServer(): Promise<ProductBrand[]> {
 
   try {
     const { data } = await apiClient.get<{ items: ProductBrand[] }>("/product-brands", { headers });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getUnitsFromServer(): Promise<Unit[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: Unit[] }>("/units", { headers });
     return data.items;
   } catch {
     return [];

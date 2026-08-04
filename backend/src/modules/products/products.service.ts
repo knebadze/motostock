@@ -27,9 +27,26 @@ import type { Prisma, VehicleSpecField } from "../../generated/prisma/index.js";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
 
+type UnitRefRow = {
+  id: number;
+  nameKa: string;
+  nameEn: string;
+  nameRu: string;
+  abbreviationKa: string;
+  abbreviationEn: string;
+  abbreviationRu: string;
+};
+
 type AttributeValueRow = {
   attributeId: number;
-  attribute: { id: number; nameKa: string; nameEn: string; nameRu: string; valueType: string };
+  attribute: {
+    id: number;
+    nameKa: string;
+    nameEn: string;
+    nameRu: string;
+    valueType: string;
+    unit: UnitRefRow | null;
+  };
   valueText: string | null;
   valueNumber: { toString(): string } | null;
   valueBoolean: boolean | null;
@@ -112,6 +129,21 @@ function toResponse(row: ProductRow) {
         ru: value.attribute.nameRu,
       },
       valueType: value.attribute.valueType,
+      unit: value.attribute.unit
+        ? {
+            id: value.attribute.unit.id,
+            name: {
+              ka: value.attribute.unit.nameKa,
+              en: value.attribute.unit.nameEn,
+              ru: value.attribute.unit.nameRu,
+            },
+            abbreviation: {
+              ka: value.attribute.unit.abbreviationKa,
+              en: value.attribute.unit.abbreviationEn,
+              ru: value.attribute.unit.abbreviationRu,
+            },
+          }
+        : null,
       valueText: value.valueText,
       valueNumber: value.valueNumber != null ? Number(value.valueNumber) : null,
       valueBoolean: value.valueBoolean,
