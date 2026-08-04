@@ -3,7 +3,7 @@ import type { LocalizedString } from "./categories";
 import type { NamedRef } from "./vehicle-catalog";
 import type { AttributeValueType } from "./attributes";
 
-export type CategoryFilterType = "PRICE" | "BRAND" | "ATTRIBUTE";
+export type CategoryFilterType = "PRICE" | "BRAND" | "ATTRIBUTE" | "MY_VEHICLE";
 
 export type CategoryFilterAttributeOption = { id: number; key: string; label: LocalizedString };
 

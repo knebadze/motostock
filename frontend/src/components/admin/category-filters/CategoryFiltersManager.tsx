@@ -21,12 +21,14 @@ import { flattenTree } from "@/lib/categories-tree";
 const FILTER_TYPE_OPTIONS: { value: CategoryFilterType; label: string }[] = [
   { value: "PRICE", label: "ფასი" },
   { value: "BRAND", label: "ბრენდი" },
+  { value: "MY_VEHICLE", label: "ჩემი ტრანსპორტის მიხედვით" },
   { value: "ATTRIBUTE", label: "მახასიათებელი" },
 ];
 
 function filterLabel(filter: CategoryFilter): string {
   if (filter.filterType === "PRICE") return "ფასი";
   if (filter.filterType === "BRAND") return "ბრენდი";
+  if (filter.filterType === "MY_VEHICLE") return "ჩემი ტრანსპორტის მიხედვით";
   return filter.attribute?.name.ka ?? "მახასიათებელი";
 }
 
@@ -78,6 +80,7 @@ export function CategoryFiltersManager({ categories }: { categories: Category[] 
   const usedAttributeIds = new Set(filters.filter((f) => f.attribute).map((f) => f.attribute!.id));
   const hasPriceFilter = filters.some((f) => f.filterType === "PRICE");
   const hasBrandFilter = filters.some((f) => f.filterType === "BRAND");
+  const hasMyVehicleFilter = filters.some((f) => f.filterType === "MY_VEHICLE");
   const availableAttributes = attributes.filter(
     (attribute) => attribute.valueType !== "TEXT" && !usedAttributeIds.has(attribute.id),
   );
@@ -85,6 +88,7 @@ export function CategoryFiltersManager({ categories }: { categories: Category[] 
   const filterTypeOptions = FILTER_TYPE_OPTIONS.filter((option) => {
     if (option.value === "PRICE") return !hasPriceFilter;
     if (option.value === "BRAND") return !hasBrandFilter;
+    if (option.value === "MY_VEHICLE") return !hasMyVehicleFilter;
     return availableAttributes.length > 0;
   });
 

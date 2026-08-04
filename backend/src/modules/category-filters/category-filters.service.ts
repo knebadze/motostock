@@ -1,7 +1,7 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { attributesRepository } from "../attributes/attributes.repository.js";
-import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
+import { resolveCategoryAndAncestorIds, sortByAncestorPriority } from "../attributes/attributes.service.js";
 import { categoryFiltersRepository } from "./category-filters.repository.js";
 import type { CreateCategoryFilterInput } from "./category-filters.schema.js";
 
@@ -21,7 +21,7 @@ type CategoryFilterRow = {
   id: number;
   categoryId: number;
   category: NamedRefRow;
-  filterType: "PRICE" | "BRAND" | "ATTRIBUTE";
+  filterType: "PRICE" | "BRAND" | "ATTRIBUTE" | "MY_VEHICLE";
   sortOrder: number;
   attribute: AttributeRefRow;
 };
@@ -57,7 +57,7 @@ function toResponse(row: CategoryFilterRow) {
 export async function listCategoryFilters(categoryId: number) {
   const categoryIds = await resolveCategoryAndAncestorIds(categoryId);
   const rows = await categoryFiltersRepository.findMany(categoryIds);
-  return rows.map(toResponse);
+  return sortByAncestorPriority(rows, categoryIds).map(toResponse);
 }
 
 export async function createCategoryFilter(input: CreateCategoryFilterInput) {

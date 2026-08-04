@@ -281,6 +281,7 @@ export async function listProducts(query: ProductListQuery) {
     query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
   const rows = await productsRepository.findMany({
     categoryIds,
+    vehicleCatalogId: query.vehicleCatalogId,
     search: query.search,
     brandIds: query.brandIds,
     priceMin: query.priceMin,

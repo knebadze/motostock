@@ -1,7 +1,10 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { Select } from "@/components/shared/Select";
 import type { CategoryFilter } from "@/lib/api/category-filters";
+import type { GarageVehicle } from "@/lib/api/vehicle-catalog";
+import { formatVehicleCatalogLabel } from "@/lib/format";
 
 export type BrandOption = { id: number; label: string };
 
@@ -27,6 +30,9 @@ export function ProductFilters({
   onToggleOption,
   onToggleBoolean,
   onNumberRangeChange,
+  garageVehicles,
+  selectedVehicleCatalogId,
+  onVehicleChange,
 }: {
   search: string;
   onSearchChange: (value: string) => void;
@@ -42,6 +48,9 @@ export function ProductFilters({
   onToggleOption: (attributeId: number, optionId: number) => void;
   onToggleBoolean: (attributeId: number) => void;
   onNumberRangeChange: (attributeId: number, field: "min" | "max", value: string) => void;
+  garageVehicles: GarageVehicle[];
+  selectedVehicleCatalogId: string;
+  onVehicleChange: (value: string) => void;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
@@ -101,6 +110,32 @@ export function ProductFilters({
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
               </div>
+            </div>
+          );
+        }
+
+        if (filter.filterType === "MY_VEHICLE") {
+          // Only ever populated for a logged-in customer with saved vehicles
+          // — nothing meaningful to filter by otherwise, so the block simply
+          // doesn't render (covers both "not logged in" and "empty garage").
+          if (garageVehicles.length === 0) return null;
+          const vehicleOptions = [
+            { value: "", label: t("myVehicleAllOption") },
+            ...garageVehicles.map((vehicle) => ({
+              value: String(vehicle.vehicleCatalog.id),
+              label: formatVehicleCatalogLabel(vehicle.vehicleCatalog, locale),
+            })),
+          ];
+          return (
+            <div key={filter.id} className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{t("myVehicleFilterLabel")}</span>
+              <Select
+                options={vehicleOptions}
+                value={selectedVehicleCatalogId}
+                onChange={onVehicleChange}
+                searchable
+                placeholder={t("myVehiclePlaceholder")}
+              />
             </div>
           );
         }

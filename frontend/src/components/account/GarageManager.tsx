@@ -2,19 +2,14 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { GarageVehicleFormModal } from "./GarageVehicleFormModal";
 import { deleteGarageVehicle } from "@/lib/api/garage";
 import type { GarageVehicle, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 import type { Model } from "@/lib/api/models";
 import type { LookupItem } from "@/lib/api/lookups";
-
-function vehicleLabel(entry: VehicleCatalogEntry, locale: "ka" | "en" | "ru"): string {
-  const year =
-    entry.yearFrom || entry.yearTo ? ` (${entry.yearFrom ?? "?"}–${entry.yearTo ?? "?"})` : "";
-  const variant = entry.variant ? ` ${entry.variant}` : "";
-  return `${entry.brand.name[locale]} ${entry.model.name[locale]}${variant}${year}`;
-}
+import { formatVehicleCatalogLabel } from "@/lib/format";
 
 export function GarageManager({
   initialGarage,
@@ -63,7 +58,7 @@ export function GarageManager({
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {garage.map((vehicle) => (
             <div key={vehicle.id} className="rounded-2xl border border-border bg-card p-4">
-              <p className="font-semibold">{vehicleLabel(vehicle.vehicleCatalog, locale)}</p>
+              <p className="font-semibold">{formatVehicleCatalogLabel(vehicle.vehicleCatalog, locale)}</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t("yearLabel")}: {vehicle.year}
               </p>
@@ -72,13 +67,21 @@ export function GarageManager({
                   {t("vinLabel")}: {vehicle.vin}
                 </p>
               )}
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(vehicle)}
-                className="mt-3 text-sm font-medium text-red-600 hover:underline"
-              >
-                {t("delete")}
-              </button>
+              <div className="mt-3 flex gap-3">
+                <Link
+                  href={`/compatible-products/${vehicle.vehicleCatalog.id}`}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  {t("searchButton")}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(vehicle)}
+                  className="text-sm font-medium text-red-600 hover:underline"
+                >
+                  {t("delete")}
+                </button>
+              </div>
             </div>
           ))}
         </div>

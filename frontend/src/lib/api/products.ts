@@ -98,6 +98,10 @@ export type ProductAttributeFilters = {
 
 export type ProductListFilters = {
   categoryId?: number;
+  // "My vehicle" filter — narrows to products with a fitment for this
+  // catalog entry, used both by the shop's MY_VEHICLE category filter and
+  // the garage's cross-category "compatible products" page.
+  vehicleCatalogId?: number;
   search?: string;
   brandIds?: number[];
   priceMin?: number;
@@ -118,6 +122,7 @@ export async function listProducts(filters: ProductListFilters = {}): Promise<Pr
   const { data } = await apiClient.get<{ items: Product[] }>("/products", {
     params: {
       categoryId: filters.categoryId,
+      vehicleCatalogId: filters.vehicleCatalogId,
       search: filters.search || undefined,
       brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
       priceMin: filters.priceMin,

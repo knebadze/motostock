@@ -1,6 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
-import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
+import { resolveCategoryAndAncestorIds, sortByAncestorPriority } from "../attributes/attributes.service.js";
 import { listLookupItems } from "../lookups/lookups.service.js";
 import { getSpecFieldDefinition } from "./vehicle-spec-fields.registry.js";
 import { vehicleCategoryFiltersRepository } from "./vehicle-category-filters.repository.js";
@@ -63,7 +63,7 @@ async function toResponse(row: VehicleCategoryFilterRow) {
 export async function listVehicleCategoryFilters(categoryId: number) {
   const categoryIds = await resolveCategoryAndAncestorIds(categoryId);
   const rows = await vehicleCategoryFiltersRepository.findMany(categoryIds);
-  return Promise.all(rows.map(toResponse));
+  return Promise.all(sortByAncestorPriority(rows, categoryIds).map(toResponse));
 }
 
 export async function createVehicleCategoryFilter(input: CreateVehicleCategoryFilterInput) {

@@ -84,6 +84,7 @@ type AttributeValueWriteData = {
 
 async function buildWhere(filters: {
   categoryIds?: number[];
+  vehicleCatalogId?: number;
   search?: string;
   brandIds?: number[];
   priceMin?: number;
@@ -95,6 +96,10 @@ async function buildWhere(filters: {
 
   if (filters.categoryIds && filters.categoryIds.length > 0) {
     and.push({ categoryId: { in: filters.categoryIds } });
+  }
+
+  if (filters.vehicleCatalogId != null) {
+    and.push({ fitments: { some: { vehicleCatalogId: filters.vehicleCatalogId } } });
   }
 
   if (filters.search) {
@@ -157,6 +162,7 @@ async function buildWhere(filters: {
 export const productsRepository = {
   async findMany(filters: {
     categoryIds?: number[];
+    vehicleCatalogId?: number;
     search?: string;
     brandIds?: number[];
     priceMin?: number;

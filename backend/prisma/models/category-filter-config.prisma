@@ -2,14 +2,18 @@ enum CategoryFilterType {
   PRICE
   BRAND
   ATTRIBUTE
+  MY_VEHICLE
 
   @@schema("cla")
 }
 
-// One ordered filter slot in a category's shop filter sidebar. PRICE/BRAND
-// rows are built-in filter types with no extra config beyond "show it, at
-// this position"; ATTRIBUTE rows point at a category-scoped Attribute
-// (its options/valueType drive the actual filter widget).
+// One ordered filter slot in a category's shop filter sidebar. PRICE/BRAND/
+// MY_VEHICLE rows are built-in filter types with no extra config beyond
+// "show it, at this position" (MY_VEHICLE renders the logged-in customer's
+// own garage as options, filtering products down to ones fitted for the
+// chosen vehicle via ProductFitment); ATTRIBUTE rows point at a
+// category-scoped Attribute (its options/valueType drive the actual filter
+// widget).
 model CategoryFilterConfig {
   id          Int                @id @default(autoincrement())
   categoryId  Int

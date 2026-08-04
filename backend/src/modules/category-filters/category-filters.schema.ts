@@ -3,7 +3,7 @@ import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
 import { attributeValueTypeSchema } from "../attributes/attributes.schema.js";
 
-export const categoryFilterTypeSchema = z.enum(["PRICE", "BRAND", "ATTRIBUTE"]);
+export const categoryFilterTypeSchema = z.enum(["PRICE", "BRAND", "ATTRIBUTE", "MY_VEHICLE"]);
 export type CategoryFilterTypeInput = z.infer<typeof categoryFilterTypeSchema>;
 
 export const createCategoryFilterSchema = registry.register(

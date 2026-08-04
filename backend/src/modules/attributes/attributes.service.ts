@@ -53,6 +53,25 @@ export async function resolveCategoryAndAncestorIds(categoryId: number): Promise
   return ids;
 }
 
+// Shared by category-filters and vehicle-category-filters — both list
+// filters across [categoryId, ...ancestorIds] (as returned by
+// resolveCategoryAndAncestorIds, ordered leaf-first/root-last) and want
+// ancestor-defined (parent) filters to take priority over the browsed
+// category's own, so broader/shared filters (set once high in the tree)
+// consistently appear before more specific ones. Ties within the same
+// category still resolve by the admin-configured sortOrder.
+export function sortByAncestorPriority<T extends { categoryId: number; sortOrder: number }>(
+  rows: T[],
+  categoryIds: number[],
+): T[] {
+  const depthByCategoryId = new Map(categoryIds.map((id, index) => [id, index]));
+  return [...rows].sort((a, b) => {
+    const depthDiff =
+      (depthByCategoryId.get(b.categoryId) ?? 0) - (depthByCategoryId.get(a.categoryId) ?? 0);
+    return depthDiff !== 0 ? depthDiff : a.sortOrder - b.sortOrder;
+  });
+}
+
 async function assertCategoryExists(categoryId: number) {
   const category = await categoriesRepository.findById(categoryId);
   if (!category) {

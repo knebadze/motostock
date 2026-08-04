@@ -10,6 +10,7 @@ import { ApiRequestError } from "@/lib/api/client";
 import { listProducts, type Product, type ProductAttributeFilters } from "@/lib/api/products";
 import type { Category } from "@/lib/api/categories";
 import type { CategoryFilter } from "@/lib/api/category-filters";
+import type { GarageVehicle } from "@/lib/api/vehicle-catalog";
 import { ProductFilters, type AttributeFilterState, type BrandOption } from "./ProductFilters";
 import { ProductCard } from "./ProductCard";
 import { ShopHero } from "./ShopHero";
@@ -39,6 +40,7 @@ export function ProductShopPage({
   subcategories,
   products,
   filters,
+  garageVehicles,
   initialPage = 1,
   initialSort = "newest",
 }: {
@@ -47,6 +49,7 @@ export function ProductShopPage({
   subcategories: Category[];
   products: Product[];
   filters: CategoryFilter[];
+  garageVehicles: GarageVehicle[];
   initialPage?: number;
   initialSort?: string;
 }) {
@@ -59,6 +62,7 @@ export function ProductShopPage({
   const [selectedBrandIds, setSelectedBrandIds] = useState<number[]>([]);
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
+  const [selectedVehicleCatalogId, setSelectedVehicleCatalogId] = useState("");
   const [attributeFilterState, setAttributeFilterState] = useState<Record<number, AttributeFilterState>>(
     {},
   );
@@ -139,6 +143,7 @@ export function ProductShopPage({
       setLoading(true);
       listProducts({
         categoryId: category.id,
+        vehicleCatalogId: selectedVehicleCatalogId ? Number(selectedVehicleCatalogId) : undefined,
         search: search.trim() || undefined,
         brandIds: selectedBrandIds.length > 0 ? selectedBrandIds : undefined,
         priceMin: priceMin.trim() ? Number(priceMin) : undefined,
@@ -155,7 +160,15 @@ export function ProductShopPage({
     }, FILTER_DEBOUNCE_MS);
 
     return () => clearTimeout(timeoutId);
-  }, [category.id, search, selectedBrandIds, priceMin, priceMax, attributeFilters]);
+  }, [
+    category.id,
+    search,
+    selectedBrandIds,
+    priceMin,
+    priceMax,
+    attributeFilters,
+    selectedVehicleCatalogId,
+  ]);
 
   const sorted = useMemo(() => {
     const result = [...displayedProducts];
@@ -232,6 +245,12 @@ export function ProductShopPage({
                 onToggleOption={toggleOption}
                 onToggleBoolean={toggleBoolean}
                 onNumberRangeChange={handleNumberRangeChange}
+                garageVehicles={garageVehicles}
+                selectedVehicleCatalogId={selectedVehicleCatalogId}
+                onVehicleChange={(value) => {
+                  setSelectedVehicleCatalogId(value);
+                  resetToFirstPage();
+                }}
               />
             </aside>
 

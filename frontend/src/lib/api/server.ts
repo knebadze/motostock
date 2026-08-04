@@ -171,6 +171,24 @@ export async function getVehicleCatalogFromServer(): Promise<VehicleCatalogEntry
   }
 }
 
+export async function getVehicleCatalogEntryFromServer(
+  id: number,
+): Promise<VehicleCatalogEntry | null> {
+  // Public endpoint (the garage's "compatible products" page reads this by
+  // id) — must not bail out just because there's no admin session cookie,
+  // same fix as getCategoriesFromServer.
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ item: VehicleCatalogEntry }>(`/vehicle-catalog/${id}`, {
+      headers,
+    });
+    return data.item;
+  } catch {
+    return null;
+  }
+}
+
 export async function getVehicleListingsFromServer(categoryId?: number): Promise<VehicleListing[]> {
   // Public endpoint (guest shop page reads this too) — must not bail out just
   // because there's no admin session cookie, same fix as getCategoriesFromServer.
@@ -290,7 +308,10 @@ export async function getProductBrandsFromServer(): Promise<ProductBrand[]> {
   }
 }
 
-export async function getProductsFromServer(categoryId?: number): Promise<Product[]> {
+export async function getProductsFromServer(
+  categoryId?: number,
+  vehicleCatalogId?: number,
+): Promise<Product[]> {
   // Public endpoint (guest shop page reads this too) — must not bail out just
   // because there's no admin session cookie, same fix as getCategoriesFromServer.
   const headers = await authHeaders();
@@ -298,7 +319,7 @@ export async function getProductsFromServer(categoryId?: number): Promise<Produc
   try {
     const { data } = await apiClient.get<{ items: Product[] }>("/products", {
       headers,
-      params: categoryId ? { categoryId } : undefined,
+      params: { categoryId: categoryId || undefined, vehicleCatalogId: vehicleCatalogId || undefined },
     });
     return data.items;
   } catch {

@@ -84,6 +84,10 @@ const brandIdsQuerySchema = z
 
 export const productListQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
+  // "My vehicle" filter (shop-facing MY_VEHICLE category filter, and the
+  // garage's cross-category "compatible products" page) — narrows to
+  // products with a ProductFitment row for this catalog entry.
+  vehicleCatalogId: z.coerce.number().int().positive().optional(),
   search: z.string().trim().min(1).max(200).optional(),
   brandIds: brandIdsQuerySchema,
   priceMin: z.coerce.number().nonnegative().optional(),

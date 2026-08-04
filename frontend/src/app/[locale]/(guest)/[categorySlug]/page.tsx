@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import {
   getCategoriesFromServer,
   getCategoryFiltersFromServer,
+  getMyGarageFromServer,
   getProductsFromServer,
   getVehicleCategoryFiltersFromServer,
   getVehicleListingsFromServer,
@@ -136,9 +137,10 @@ export default async function CategoryShopPage({
     );
   }
 
-  const [products, filters] = await Promise.all([
+  const [products, filters, garageVehicles] = await Promise.all([
     getProductsFromServer(category.id),
     getCategoryFiltersFromServer(category.id),
+    getMyGarageFromServer(),
   ]);
   return (
     <>
@@ -149,6 +151,7 @@ export default async function CategoryShopPage({
         subcategories={subcategories}
         products={products}
         filters={filters}
+        garageVehicles={garageVehicles}
         initialPage={initialPage}
         initialSort={initialSort}
       />
