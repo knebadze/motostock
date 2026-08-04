@@ -1,0 +1,17 @@
+// Admin-curated "frequently bought together" companions shown below a
+// product's detail page (e.g. a chain product suggesting chain cleaner fluid
+// + a brush) — directional and configured per anchor product (edited from
+// that product's own admin page), doesn't imply the reverse suggestion
+// automatically. Ordered by createdAt, same convention as ProductFitment.
+model ProductBuyTogether {
+  id               Int      @id @default(autoincrement())
+  productId        Int
+  product          Product  @relation("BuyTogetherAnchor", fields: [productId], references: [id], onDelete: Cascade)
+  relatedProductId Int
+  relatedProduct   Product  @relation("BuyTogetherRelated", fields: [relatedProductId], references: [id])
+  createdAt        DateTime @default(now())
+
+  @@unique([productId, relatedProductId])
+  @@index([relatedProductId])
+  @@schema("dbo")
+}

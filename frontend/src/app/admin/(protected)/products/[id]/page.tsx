@@ -3,6 +3,7 @@ import {
   getCategoriesFromServer,
   getLookupItemsFromServer,
   getProductFromServer,
+  getProductsFromServer,
   getVehicleCatalogFromServer,
 } from "@/lib/api/server";
 import { ProductForm } from "@/components/admin/products/ProductForm";
@@ -29,6 +30,7 @@ export default async function EditProductPage({
     driveTypes,
     startTypes,
     powertrainTypes,
+    allProducts,
   ] = await Promise.all([
     getProductFromServer(Number(id)),
     getCategoriesFromServer(),
@@ -44,6 +46,7 @@ export default async function EditProductPage({
     getLookupItemsFromServer("drive-types"),
     getLookupItemsFromServer("start-types"),
     getLookupItemsFromServer("powertrain-types"),
+    getProductsFromServer(),
   ]);
 
   if (!product) {
@@ -69,6 +72,7 @@ export default async function EditProductPage({
       statuses={statuses}
       vehicleCatalog={vehicleCatalog}
       vehicleSpecLookups={vehicleSpecLookups}
+      allProducts={allProducts}
       product={product}
     />
   );

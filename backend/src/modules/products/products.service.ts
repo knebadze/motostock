@@ -108,7 +108,10 @@ function toNamedRef(row: NamedRefRow) {
   return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
 }
 
-function toResponse(row: ProductRow) {
+// Exported for reuse by product-buy-together.service.ts, which maps related
+// Product rows (fetched via productsRepository) through this same "product
+// card" response shape.
+export function toResponse(row: ProductRow) {
   return {
     id: row.id,
     category: toNamedRef(row.category),
@@ -201,6 +204,7 @@ type ProductDetailRow = ProductRow & {
   variants: VariantDetailRow[];
   fitments: FitmentRow[];
   fitmentRules: FitmentRuleRow[];
+  buyTogether: { relatedProduct: ProductRow }[];
 };
 
 function findActiveDiscount(discounts: DiscountRow[]) {
@@ -268,6 +272,7 @@ async function toDetailResponse(row: ProductDetailRow) {
       model: toNamedRef(fitment.vehicleCatalog.model),
     })),
     fitmentRules: await Promise.all(row.fitmentRules.map(toFitmentRuleResponse)),
+    buyTogether: row.buyTogether.map((link) => toResponse(link.relatedProduct)),
   };
 }
 

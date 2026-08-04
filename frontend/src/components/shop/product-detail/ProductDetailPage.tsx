@@ -16,6 +16,7 @@ import { ProductGallery } from "./ProductGallery";
 import { VariantPicker } from "./VariantPicker";
 import { ProductSpecs } from "./ProductSpecs";
 import { SimilarProducts } from "./SimilarProducts";
+import { BuyTogether } from "./BuyTogether";
 
 // The thumbnail strip always shows every photo across every variant (plus
 // the product's own image as a fallback) so it stays populated and browsable
@@ -181,6 +182,8 @@ export function ProductDetailPage({
           )}
         </div>
       </div>
+
+      <BuyTogether product={product} />
 
       {description && (
         <section className="mt-14 border-t border-border pt-8">

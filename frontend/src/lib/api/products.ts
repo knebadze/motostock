@@ -98,6 +98,7 @@ export type ProductDetail = Product & {
   variants: ProductVariantDetail[];
   fitments: CompatibleVehicle[];
   fitmentRules: ProductFitmentRuleSummary[];
+  buyTogether: Product[];
 };
 
 export async function getProductBySlug(slug: string): Promise<ProductDetail> {

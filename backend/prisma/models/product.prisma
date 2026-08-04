@@ -18,6 +18,8 @@ model Product {
   attributeValues ProductAttributeValue[]
   fitments        ProductFitment[]
   fitmentRules    ProductFitmentRule[]
+  buyTogether     ProductBuyTogether[]    @relation("BuyTogetherAnchor")
+  buyTogetherOf   ProductBuyTogether[]    @relation("BuyTogetherRelated")
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
 

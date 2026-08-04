@@ -56,6 +56,7 @@ export default async function NewProductPage() {
       statuses={statuses}
       vehicleCatalog={vehicleCatalog}
       vehicleSpecLookups={vehicleSpecLookups}
+      allProducts={[]}
       product={null}
     />
   );

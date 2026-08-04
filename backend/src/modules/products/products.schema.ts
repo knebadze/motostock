@@ -229,5 +229,6 @@ export const productDetailResponseSchema = registry.register(
     variants: z.array(productVariantDetailResponseSchema),
     fitments: z.array(compatibleVehicleSchema),
     fitmentRules: z.array(fitmentRuleSchema),
+    buyTogether: z.array(productResponseSchema),
   }),
 );

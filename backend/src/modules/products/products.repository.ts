@@ -23,7 +23,9 @@ const attributeWithUnitSelect = {
   unit: { select: unitRefSelect },
 } as const;
 
-const include = {
+// Exported for reuse by product-buy-together.repository.ts, which needs the
+// exact same "product card" shape for the related products it embeds.
+export const productSummaryInclude = {
   category: { select: namedRefSelect },
   productBrand: { select: namedRefSelect },
   attributeValues: {
@@ -43,9 +45,10 @@ const include = {
 
 const lookupSelect = { id: true, key: true, nameKa: true, nameEn: true, nameRu: true } as const;
 
-// Richer than `include` above — full per-variant images/discounts/size/color
-// are only needed for a single product's detail page, not for every product
-// row in a category listing, so this stays a separate query shape.
+// Richer than `productSummaryInclude` above — full per-variant
+// images/discounts/size/color are only needed for a single product's detail
+// page, not for every product row in a category listing, so this stays a
+// separate query shape.
 const detailInclude = {
   category: { select: namedRefSelect },
   productBrand: { select: namedRefSelect },
@@ -79,6 +82,13 @@ const detailInclude = {
     include: {
       category: { select: namedRefSelect },
     },
+  },
+  // Admin-curated "frequently bought together" companions — embedded here so
+  // the public detail endpoint can surface them in one query, same as
+  // fitments/fitmentRules above.
+  buyTogether: {
+    include: { relatedProduct: { include: productSummaryInclude } },
+    orderBy: { createdAt: "asc" },
   },
 } as const;
 
@@ -197,13 +207,13 @@ export const productsRepository = {
   }) {
     return prisma.product.findMany({
       where: await buildWhere(filters),
-      include,
+      include: productSummaryInclude,
       orderBy: { createdAt: "desc" },
     });
   },
 
   findById(id: number) {
-    return prisma.product.findUnique({ where: { id }, include });
+    return prisma.product.findUnique({ where: { id }, include: productSummaryInclude });
   },
 
   findBySlug(slug: string) {
@@ -215,15 +225,15 @@ export const productsRepository = {
   },
 
   create(data: ProductWriteData) {
-    return prisma.product.create({ data, include });
+    return prisma.product.create({ data, include: productSummaryInclude });
   },
 
   update(id: number, data: Partial<ProductWriteData>) {
-    return prisma.product.update({ where: { id }, data, include });
+    return prisma.product.update({ where: { id }, data, include: productSummaryInclude });
   },
 
   updateImage(id: number, imageUrl: string) {
-    return prisma.product.update({ where: { id }, data: { imageUrl }, include });
+    return prisma.product.update({ where: { id }, data: { imageUrl }, include: productSummaryInclude });
   },
 
   delete(id: number) {

@@ -43,6 +43,7 @@ import {
   type DraftFitment,
   type VehicleSpecLookupMap,
 } from "./ProductFitmentPanel";
+import { ProductBuyTogetherPanel } from "./ProductBuyTogetherPanel";
 
 function lookupOptions(items: LookupItem[]) {
   return items.map((item) => ({ value: String(item.id), label: item.nameKa }));
@@ -214,6 +215,7 @@ export function ProductForm({
   statuses,
   vehicleCatalog,
   vehicleSpecLookups,
+  allProducts,
   product,
 }: {
   categories: Category[];
@@ -223,6 +225,7 @@ export function ProductForm({
   statuses: LookupItem[];
   vehicleCatalog: VehicleCatalogEntry[];
   vehicleSpecLookups: VehicleSpecLookupMap;
+  allProducts: Product[];
   product: Product | null;
 }) {
   const router = useRouter();
@@ -911,6 +914,15 @@ export function ProductForm({
         />
       ),
     },
+    ...(isEditing
+      ? [
+          {
+            key: "buy-together",
+            label: "ერთად შეძენა",
+            content: <ProductBuyTogetherPanel productId={product.id} allProducts={allProducts} />,
+          },
+        ]
+      : []),
   ];
 
   return (
