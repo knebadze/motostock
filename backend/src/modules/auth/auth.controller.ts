@@ -1,7 +1,5 @@
 import type { Request, Response } from "express";
-import ms from "ms";
-import { env } from "../../config/env.js";
-import { AUTH_COOKIE_NAME } from "../../lib/jwt.js";
+import { AUTH_COOKIE_NAME, setAuthCookie } from "../../lib/jwt.js";
 import { loginUser, registerUser, requestPasswordReset, resetPassword } from "./auth.service.js";
 import type {
   ForgotPasswordInput,
@@ -9,15 +7,6 @@ import type {
   RegisterInput,
   ResetPasswordInput,
 } from "./auth.schema.js";
-
-export function setAuthCookie(res: Response, token: string) {
-  res.cookie(AUTH_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: ms(env.JWT_EXPIRES_IN as ms.StringValue),
-  });
-}
 
 export async function register(
   req: Request<unknown, unknown, RegisterInput>,

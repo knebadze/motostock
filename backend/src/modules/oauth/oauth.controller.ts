@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import type { Request, Response } from "express";
 import { env } from "../../config/env.js";
 import { ApiError } from "../../lib/ApiError.js";
-import { setAuthCookie } from "../auth/auth.controller.js";
+import { setAuthCookie } from "../../lib/jwt.js";
 import {
   getFacebookAuthUrl,
   getGoogleAuthUrl,

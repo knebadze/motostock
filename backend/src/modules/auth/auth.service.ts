@@ -53,7 +53,7 @@ export async function registerUser(input: RegisterInput) {
     roleId: userRole.id,
   });
 
-  const token = signJwt({ sub: user.id, role: ROLES.USER });
+  const token = signJwt({ sub: user.id, role: ROLES.USER, loginAt: Date.now() });
   return { user: toSafeUser(user), token };
 }
 
@@ -70,7 +70,7 @@ export async function loginUser(input: LoginInput) {
     throw new ApiError(401, "Invalid email or password");
   }
 
-  const token = signJwt({ sub: user.id, role: user.role.name as RoleName });
+  const token = signJwt({ sub: user.id, role: user.role.name as RoleName, loginAt: Date.now() });
   return { user: toSafeUser(user), token };
 }
 
@@ -109,6 +109,6 @@ export async function resetPassword(input: ResetPasswordInput) {
   const user = await usersRepository.updatePasswordHash(resetToken.userId, passwordHash);
   await passwordResetTokenRepository.markUsed(resetToken.id);
 
-  const token = signJwt({ sub: user.id, role: user.role.name as RoleName });
+  const token = signJwt({ sub: user.id, role: user.role.name as RoleName, loginAt: Date.now() });
   return { user: toSafeUser(user), token };
 }

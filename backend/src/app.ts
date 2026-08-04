@@ -39,6 +39,7 @@ import { cacheRouter } from "./modules/cache/cache.routes.js";
 import { vinDecodeRouter } from "./modules/vin-decode/vin-decode.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
+import { globalRateLimit } from "./middleware/rateLimit.middleware.js";
 import { ROLES } from "./lib/roles.js";
 
 export const app = express();
@@ -52,6 +53,11 @@ app.use(pinoHttp({ logger }));
 app.get("/api/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
+
+// Applied to every /api route (uploads/static assets are exempt — browsers
+// legitimately fetch many images per page). Auth routes stack an additional,
+// much tighter authRateLimit on top of this (see auth.routes.ts).
+app.use("/api", globalRateLimit);
 
 app.use(
   "/uploads",
