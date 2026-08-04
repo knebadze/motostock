@@ -17,6 +17,7 @@ model Product {
   variants        ProductVariant[]
   attributeValues ProductAttributeValue[]
   fitments        ProductFitment[]
+  fitmentRules    ProductFitmentRule[]
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
 

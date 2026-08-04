@@ -2,8 +2,13 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { formatPrice } from "@/lib/format";
-import type { Product, ProductDetail, ProductVariantDetail } from "@/lib/api/products";
+import { formatPrice, pickLookupName } from "@/lib/format";
+import type {
+  Product,
+  ProductDetail,
+  ProductFitmentRuleSummary,
+  ProductVariantDetail,
+} from "@/lib/api/products";
 import type { Category } from "@/lib/api/categories";
 import { Breadcrumb } from "../Breadcrumb";
 import { ProductGallery } from "./ProductGallery";
@@ -28,6 +33,21 @@ function collectGalleryImages(product: ProductDetail): { url: string; variantId:
     return Array.from(byUrl, ([url, variantId]) => ({ url, variantId }));
   }
   return product.imageUrl ? [{ url: product.imageUrl, variantId: null }] : [];
+}
+
+// Rule-based compatibility (category/spec/all) is summarized as one badge
+// each, not enumerated into individual vehicles — an "all vehicles" rule
+// would otherwise mean listing hundreds of catalog rows.
+function fitmentRuleLabel(
+  rule: ProductFitmentRuleSummary,
+  locale: "ka" | "en" | "ru",
+  allVehiclesLabel: string,
+): string {
+  if (rule.type === "ALL") return allVehiclesLabel;
+  if (rule.type === "CATEGORY") return rule.category?.name[locale] ?? "";
+  const fieldLabel = rule.specFieldLabel?.[locale] ?? "";
+  const value = rule.specValue ? pickLookupName(rule.specValue, locale) : "";
+  return `${fieldLabel}: ${value}`;
 }
 
 // The hero image, on the other hand, should track the current selection: the
@@ -136,12 +156,20 @@ export function ProductDetailPage({
 
           <ProductSpecs attributeValues={product.attributeValues} />
 
-          {product.fitments.length > 0 && (
+          {(product.fitments.length > 0 || product.fitmentRules.length > 0) && (
             <div className="flex flex-col gap-2">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("compatibleVehiclesHeading")}
               </h2>
               <ul className="flex flex-wrap gap-2 text-sm">
+                {product.fitmentRules.map((rule) => (
+                  <li
+                    key={`rule-${rule.id}`}
+                    className="rounded-full border border-primary/40 bg-primary/5 px-3 py-1 text-primary"
+                  >
+                    {fitmentRuleLabel(rule, locale, t("compatibleAllVehicles"))}
+                  </li>
+                ))}
                 {product.fitments.map((fitment) => (
                   <li key={fitment.id} className="rounded-full border border-border px-3 py-1">
                     {fitment.brand.name[locale]} {fitment.model.name[locale]}

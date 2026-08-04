@@ -1,17 +1,46 @@
 import type { SpecFieldKind, VehicleSpecField } from "@/lib/api/vehicle-category-filters";
+import type { LookupTypeSlug } from "./lookup-types";
 
 // Mirrors backend/src/modules/vehicle-category-filters/vehicle-spec-fields.registry.ts —
 // vehicle "attributes" are a fixed set of VehicleCatalog columns (no generic
 // Attribute model like products have), so the admin picker needs its own
 // static catalog of every field + label instead of fetching one per category.
-export const VEHICLE_SPEC_FIELDS: { field: VehicleSpecField; label: string; kind: SpecFieldKind }[] = [
-  { field: "FUEL_TYPE", label: "საწვავის ტიპი", kind: "LOOKUP" },
-  { field: "TRANSMISSION_TYPE", label: "გადაცემათა კოლოფის ტიპი", kind: "LOOKUP" },
-  { field: "COOLING_TYPE", label: "გაგრილების ტიპი", kind: "LOOKUP" },
-  { field: "FINAL_DRIVE_TYPE", label: "გადაცემის ტიპი", kind: "LOOKUP" },
-  { field: "DRIVE_TYPE", label: "წამყვანი თვლების ტიპი", kind: "LOOKUP" },
-  { field: "START_TYPE", label: "გაშვების სისტემა", kind: "LOOKUP" },
-  { field: "POWERTRAIN_TYPE", label: "ძრავის კვების ტიპი", kind: "LOOKUP" },
+// `lookupType` (LOOKUP-kind fields only) is which classifier list backs that
+// field's values — used by the product fitment rules picker to fetch the
+// right options for "this spec equals that value".
+export const VEHICLE_SPEC_FIELDS: {
+  field: VehicleSpecField;
+  label: string;
+  kind: SpecFieldKind;
+  lookupType?: LookupTypeSlug;
+}[] = [
+  { field: "FUEL_TYPE", label: "საწვავის ტიპი", kind: "LOOKUP", lookupType: "fuel-types" },
+  {
+    field: "TRANSMISSION_TYPE",
+    label: "გადაცემათა კოლოფის ტიპი",
+    kind: "LOOKUP",
+    lookupType: "transmission-types",
+  },
+  { field: "COOLING_TYPE", label: "გაგრილების ტიპი", kind: "LOOKUP", lookupType: "cooling-types" },
+  {
+    field: "FINAL_DRIVE_TYPE",
+    label: "გადაცემის ტიპი",
+    kind: "LOOKUP",
+    lookupType: "final-drive-types",
+  },
+  {
+    field: "DRIVE_TYPE",
+    label: "წამყვანი თვლების ტიპი",
+    kind: "LOOKUP",
+    lookupType: "drive-types",
+  },
+  { field: "START_TYPE", label: "გაშვების სისტემა", kind: "LOOKUP", lookupType: "start-types" },
+  {
+    field: "POWERTRAIN_TYPE",
+    label: "ძრავის კვების ტიპი",
+    kind: "LOOKUP",
+    lookupType: "powertrain-types",
+  },
   { field: "ENGINE_VOLUME_CC", label: "ძრავის მოცულობა (სმ³)", kind: "NUMBER" },
   { field: "ENGINE_POWER_HP", label: "ძრავის სიმძლავრე (ცხ.ძ.)", kind: "NUMBER" },
   { field: "CYLINDER_COUNT", label: "ცილინდრების რაოდენობა", kind: "NUMBER" },

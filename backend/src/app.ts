@@ -29,6 +29,7 @@ import { vehicleCategoryFiltersRouter } from "./modules/vehicle-category-filters
 import { productBrandsRouter } from "./modules/product-brands/product-brands.routes.js";
 import { productsRouter } from "./modules/products/products.routes.js";
 import { productFitmentRouter } from "./modules/product-fitment/product-fitment.routes.js";
+import { productFitmentRulesRouter } from "./modules/product-fitment-rules/product-fitment-rules.routes.js";
 import { productVariantsRouter } from "./modules/product-variants/product-variants.routes.js";
 import { productVariantImagesRouter } from "./modules/product-variant-images/product-variant-images.routes.js";
 import { productVariantDiscountsRouter } from "./modules/product-variant-discounts/product-variant-discounts.routes.js";
@@ -78,6 +79,7 @@ app.use("/api/vehicle-category-filters", vehicleCategoryFiltersRouter);
 app.use("/api/product-brands", productBrandsRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/products/:productId/fitments", productFitmentRouter);
+app.use("/api/products/:productId/fitment-rules", productFitmentRulesRouter);
 app.use("/api/product-variants", productVariantsRouter);
 app.use("/api/product-variants/:variantId/discounts", productVariantDiscountsRouter);
 app.use("/api/product-variants/:variantId/images", productVariantImagesRouter);

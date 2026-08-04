@@ -7,6 +7,10 @@ import { attributesRepository } from "../attributes/attributes.repository.js";
 import { attributeOptionsRepository } from "../attribute-options/attribute-options.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
+import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
+import { getLookupDelegate } from "../lookups/lookups.registry.js";
+import { lookupsRepository } from "../lookups/lookups.repository.js";
+import { getSpecFieldDefinition } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
 import {
   toDiscountResponse,
   type DiscountRow,
@@ -19,6 +23,7 @@ import type {
   ProductListQuery,
   UpdateProductInput,
 } from "./products.schema.js";
+import type { Prisma, VehicleSpecField } from "../../generated/prisma/index.js";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
 
@@ -152,9 +157,18 @@ type FitmentRow = {
   };
 };
 
+type FitmentRuleRow = {
+  id: number;
+  type: "CATEGORY" | "SPEC" | "ALL";
+  category: NamedRefRow | null;
+  specField: VehicleSpecField | null;
+  specLookupItemId: number | null;
+};
+
 type ProductDetailRow = ProductRow & {
   variants: VariantDetailRow[];
   fitments: FitmentRow[];
+  fitmentRules: FitmentRuleRow[];
 };
 
 function findActiveDiscount(discounts: DiscountRow[]) {
@@ -183,7 +197,36 @@ function toVariantDetailResponse(row: VariantDetailRow) {
   };
 }
 
-function toDetailResponse(row: ProductDetailRow) {
+// Fitment rules aren't enumerated as individual vehicles on the detail page
+// (an "all vehicles" rule would mean listing hundreds of catalog rows) —
+// instead each rule is summarized as one badge ("Motorcycles", "Final drive:
+// chain", "All vehicles"), alongside the explicit fitments list.
+async function toFitmentRuleResponse(rule: FitmentRuleRow) {
+  let specFieldLabel = null;
+  let specValue = null;
+
+  if (rule.specField && rule.specLookupItemId != null) {
+    const definition = getSpecFieldDefinition(rule.specField);
+    specFieldLabel = { ka: definition.nameKa, en: definition.nameEn, ru: definition.nameRu };
+    if (definition.lookupType) {
+      specValue = await lookupsRepository.findById(
+        getLookupDelegate(definition.lookupType),
+        rule.specLookupItemId,
+      );
+    }
+  }
+
+  return {
+    id: rule.id,
+    type: rule.type,
+    category: rule.category ? toNamedRef(rule.category) : null,
+    specField: rule.specField,
+    specFieldLabel,
+    specValue,
+  };
+}
+
+async function toDetailResponse(row: ProductDetailRow) {
   return {
     ...toResponse(row),
     variants: row.variants.map(toVariantDetailResponse),
@@ -192,6 +235,7 @@ function toDetailResponse(row: ProductDetailRow) {
       brand: toNamedRef(fitment.vehicleCatalog.brand),
       model: toNamedRef(fitment.vehicleCatalog.model),
     })),
+    fitmentRules: await Promise.all(row.fitmentRules.map(toFitmentRuleResponse)),
   };
 }
 
@@ -276,12 +320,62 @@ async function buildAttributeValueWriteData(
     }));
 }
 
+// A product is compatible with a vehicle if either: it has an explicit
+// ProductFitment row for it, or one of its ProductFitmentRule rows matches —
+// an "ALL" rule (always), a "CATEGORY" rule whose category is the vehicle's
+// own category or one of its ancestors, or a "SPEC" rule whose field/value
+// matches the vehicle's actual spec. Resolved once here (where the vehicle's
+// own category/specs are looked up) into a plain Prisma.ProductWhereInput,
+// so products.repository.ts can just AND it in without knowing any of this.
+async function buildVehicleCompatibilityWhere(
+  vehicleCatalogId: number,
+): Promise<Prisma.ProductWhereInput> {
+  const vehicle = await vehicleCatalogRepository.findById(vehicleCatalogId);
+  if (!vehicle) {
+    // Unknown id — fall back to the exact-match clause alone, which simply
+    // (and correctly) returns nothing.
+    return { fitments: { some: { vehicleCatalogId } } };
+  }
+
+  const ancestorCategoryIds = await resolveCategoryAndAncestorIds(vehicle.model.category.id);
+
+  const specFieldValues: { field: VehicleSpecField; value: number | null }[] = [
+    { field: "FUEL_TYPE", value: vehicle.fuelType?.id ?? null },
+    { field: "TRANSMISSION_TYPE", value: vehicle.transmissionType?.id ?? null },
+    { field: "COOLING_TYPE", value: vehicle.coolingType?.id ?? null },
+    { field: "FINAL_DRIVE_TYPE", value: vehicle.finalDriveType?.id ?? null },
+    { field: "DRIVE_TYPE", value: vehicle.driveType?.id ?? null },
+    { field: "START_TYPE", value: vehicle.startType?.id ?? null },
+    { field: "POWERTRAIN_TYPE", value: vehicle.powertrainType?.id ?? null },
+  ];
+  const specOr = specFieldValues
+    .filter((entry): entry is { field: VehicleSpecField; value: number } => entry.value != null)
+    .map((entry) => ({
+      type: "SPEC" as const,
+      specField: entry.field,
+      specLookupItemId: entry.value,
+    }));
+
+  return {
+    OR: [
+      { fitments: { some: { vehicleCatalogId } } },
+      { fitmentRules: { some: { type: "ALL" } } },
+      { fitmentRules: { some: { type: "CATEGORY", categoryId: { in: ancestorCategoryIds } } } },
+      ...(specOr.length > 0 ? [{ fitmentRules: { some: { OR: specOr } } }] : []),
+    ],
+  };
+}
+
 export async function listProducts(query: ProductListQuery) {
   const categoryIds =
     query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
+  const vehicleCompatibilityWhere =
+    query.vehicleCatalogId != null
+      ? await buildVehicleCompatibilityWhere(query.vehicleCatalogId)
+      : undefined;
   const rows = await productsRepository.findMany({
     categoryIds,
-    vehicleCatalogId: query.vehicleCatalogId,
+    vehicleCompatibilityWhere,
     search: query.search,
     brandIds: query.brandIds,
     priceMin: query.priceMin,

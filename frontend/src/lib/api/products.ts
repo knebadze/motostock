@@ -6,6 +6,8 @@ import type { LookupItem } from "./lookups";
 import type { ProductVariantImage } from "./product-variant-images";
 import type { ProductVariantDiscount } from "./product-variant-discounts";
 import type { AdminFilterEntry } from "./admin-filters";
+import type { ProductFitmentRuleType } from "./product-fitment-rules";
+import type { VehicleSpecField } from "./vehicle-category-filters";
 
 export type ProductAttributeValue = {
   attributeId: number;
@@ -80,9 +82,21 @@ export type CompatibleVehicle = {
   model: NamedRef;
 };
 
+// Summarized, not enumerated — an "all vehicles" rule would otherwise mean
+// listing hundreds of catalog rows on the product page.
+export type ProductFitmentRuleSummary = {
+  id: number;
+  type: ProductFitmentRuleType;
+  category: NamedRef | null;
+  specField: VehicleSpecField | null;
+  specFieldLabel: LocalizedString | null;
+  specValue: LookupItem | null;
+};
+
 export type ProductDetail = Product & {
   variants: ProductVariantDetail[];
   fitments: CompatibleVehicle[];
+  fitmentRules: ProductFitmentRuleSummary[];
 };
 
 export async function getProductBySlug(slug: string): Promise<ProductDetail> {

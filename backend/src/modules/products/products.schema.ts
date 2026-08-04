@@ -194,10 +194,33 @@ const compatibleVehicleSchema = z.object({
   model: namedRefSchema,
 });
 
+const vehicleSpecFieldSchema = z.enum([
+  "FUEL_TYPE",
+  "TRANSMISSION_TYPE",
+  "COOLING_TYPE",
+  "FINAL_DRIVE_TYPE",
+  "DRIVE_TYPE",
+  "START_TYPE",
+  "POWERTRAIN_TYPE",
+]);
+
+// Summarized, not enumerated — an "all vehicles" rule would otherwise mean
+// listing hundreds of catalog rows on the product page. See
+// products.service.ts's toFitmentRuleResponse.
+const fitmentRuleSchema = z.object({
+  id: z.int(),
+  type: z.enum(["CATEGORY", "SPEC", "ALL"]),
+  category: namedRefSchema.nullable(),
+  specField: vehicleSpecFieldSchema.nullable(),
+  specFieldLabel: localizedStringSchema.nullable(),
+  specValue: lookupItemResponseSchema.nullable(),
+});
+
 export const productDetailResponseSchema = registry.register(
   "ProductDetail",
   productResponseSchema.extend({
     variants: z.array(productVariantDetailResponseSchema),
     fitments: z.array(compatibleVehicleSchema),
+    fitmentRules: z.array(fitmentRuleSchema),
   }),
 );

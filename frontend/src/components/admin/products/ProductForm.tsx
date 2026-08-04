@@ -37,7 +37,12 @@ import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 import { ProductAttributeFields } from "./ProductAttributeFields";
 import { ProductVariantsPanel } from "./ProductVariantsPanel";
 import { ProductVariantImagesPanel } from "./ProductVariantImagesPanel";
-import { ProductFitmentPanel, DraftFitmentEditor, type DraftFitment } from "./ProductFitmentPanel";
+import {
+  ProductFitmentPanel,
+  DraftFitmentEditor,
+  type DraftFitment,
+  type VehicleSpecLookupMap,
+} from "./ProductFitmentPanel";
 
 function lookupOptions(items: LookupItem[]) {
   return items.map((item) => ({ value: String(item.id), label: item.nameKa }));
@@ -208,6 +213,7 @@ export function ProductForm({
   conditions,
   statuses,
   vehicleCatalog,
+  vehicleSpecLookups,
   product,
 }: {
   categories: Category[];
@@ -216,6 +222,7 @@ export function ProductForm({
   conditions: LookupItem[];
   statuses: LookupItem[];
   vehicleCatalog: VehicleCatalogEntry[];
+  vehicleSpecLookups: VehicleSpecLookupMap;
   product: Product | null;
 }) {
   const router = useRouter();
@@ -889,7 +896,12 @@ export function ProductForm({
       key: "fitment",
       label: "თავსებადობა",
       content: isEditing ? (
-        <ProductFitmentPanel productId={product.id} vehicleCatalog={vehicleCatalog} />
+        <ProductFitmentPanel
+          productId={product.id}
+          vehicleCatalog={vehicleCatalog}
+          categories={categories}
+          vehicleSpecLookups={vehicleSpecLookups}
+        />
       ) : (
         <DraftFitmentEditor
           vehicleCatalog={vehicleCatalog}

@@ -58,6 +58,11 @@ const detailInclude = {
       },
     },
   },
+  fitmentRules: {
+    include: {
+      category: { select: namedRefSelect },
+    },
+  },
 } as const;
 
 type ProductWriteData = {
@@ -84,7 +89,10 @@ type AttributeValueWriteData = {
 
 async function buildWhere(filters: {
   categoryIds?: number[];
-  vehicleCatalogId?: number;
+  // Pre-resolved by products.service.ts (which knows how to translate a
+  // vehicleCatalogId into "explicit fitment OR a matching fitment rule") —
+  // the repository just ANDs it in, same as adminWhere below.
+  vehicleCompatibilityWhere?: Prisma.ProductWhereInput;
   search?: string;
   brandIds?: number[];
   priceMin?: number;
@@ -98,8 +106,8 @@ async function buildWhere(filters: {
     and.push({ categoryId: { in: filters.categoryIds } });
   }
 
-  if (filters.vehicleCatalogId != null) {
-    and.push({ fitments: { some: { vehicleCatalogId: filters.vehicleCatalogId } } });
+  if (filters.vehicleCompatibilityWhere) {
+    and.push(filters.vehicleCompatibilityWhere);
   }
 
   if (filters.search) {
@@ -162,7 +170,7 @@ async function buildWhere(filters: {
 export const productsRepository = {
   async findMany(filters: {
     categoryIds?: number[];
-    vehicleCatalogId?: number;
+    vehicleCompatibilityWhere?: Prisma.ProductWhereInput;
     search?: string;
     brandIds?: number[];
     priceMin?: number;

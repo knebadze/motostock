@@ -16,6 +16,7 @@ model Category {
   products             Product[]
   filterConfigs        CategoryFilterConfig[]
   vehicleFilterConfigs VehicleCategoryFilterConfig[]
+  fitmentRules         ProductFitmentRule[]
   createdAt            DateTime                      @default(now())
   updatedAt            DateTime                      @updatedAt
 

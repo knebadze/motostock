@@ -10,3 +10,44 @@ model ProductFitment {
   @@index([vehicleCatalogId])
   @@schema("dbo")
 }
+
+enum ProductFitmentRuleType {
+  CATEGORY
+  SPEC
+  ALL
+
+  @@schema("dbo")
+}
+
+// A declarative alternative to picking individual VehicleCatalog rows in
+// ProductFitment — lets one rule cover an entire vehicle category (including
+// its subcategories) or every VehicleCatalog entry sharing one spec value
+// (e.g. "final drive type = chain"), without re-selecting vehicles by hand
+// whenever a new catalog entry is added later. A product's actual compatible
+// set is the union of its ProductFitment rows and everything matched by its
+// ProductFitmentRule rows — individual picks still work exactly as before.
+model ProductFitmentRule {
+  id        Int                    @id @default(autoincrement())
+  productId Int
+  product   Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type      ProductFitmentRuleType
+
+  // CATEGORY only — matches every VehicleCatalog whose model belongs to this
+  // category or one of its descendants.
+  categoryId Int?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  // SPEC only — matches every VehicleCatalog whose specField column equals
+  // specLookupItemId. No Prisma relation on specLookupItemId: which lookup
+  // table it points into depends on specField (see
+  // vehicle-spec-fields.registry.ts), so existence is validated in the
+  // service layer instead of via a fixed FK.
+  specField        VehicleSpecField?
+  specLookupItemId Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([categoryId])
+  @@schema("dbo")
+}
