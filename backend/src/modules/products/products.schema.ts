@@ -92,6 +92,9 @@ export const productListQuerySchema = z.object({
   brandIds: brandIdsQuerySchema,
   priceMin: z.coerce.number().nonnegative().optional(),
   priceMax: z.coerce.number().nonnegative().optional(),
+  // "Sale" page (homepage CTA slide + /sale) — narrows to products with at
+  // least one variant currently on an active discount, across every category.
+  onSale: z.coerce.boolean().optional(),
   // URL-encoded JSON rather than ad-hoc flat query keys — keeps the shape
   // extensible and lets it be validated as one nested object.
   attributeFilters: z

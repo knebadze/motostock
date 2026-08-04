@@ -417,6 +417,7 @@ export async function listProducts(query: ProductListQuery) {
     brandIds: query.brandIds,
     priceMin: query.priceMin,
     priceMax: query.priceMax,
+    onSale: query.onSale,
     attributeFilters: query.attributeFilters,
     adminFilters: query.adminFilters,
   });

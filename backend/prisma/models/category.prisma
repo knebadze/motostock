@@ -17,6 +17,7 @@ model Category {
   filterConfigs        CategoryFilterConfig[]
   vehicleFilterConfigs VehicleCategoryFilterConfig[]
   fitmentRules         ProductFitmentRule[]
+  discountHeroSlides   HeroSlide[]
   createdAt            DateTime                      @default(now())
   updatedAt            DateTime                      @updatedAt
 

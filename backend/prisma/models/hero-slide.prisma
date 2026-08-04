@@ -1,0 +1,71 @@
+enum HeroSlideType {
+  CTA
+  VEHICLE_SEARCH
+  // Image + title/subtitle only — no button, no form.
+  INFO
+  // A category-picker search form, mirrors VEHICLE_SEARCH but resolves to
+  // an existing category page (/{category.slug}) instead of a vehicle.
+  CATEGORY_FILTER
+  // A button whose link is computed automatically (never hand-typed) from
+  // discountCategoryId/discountProductBrandId — always /shop?onSale=true,
+  // narrowed by category and/or brand when set, general when both are null.
+  DISCOUNT
+
+  @@schema("dbo")
+}
+
+enum HeroSlideTextPosition {
+  LEFT
+  CENTER
+  RIGHT
+
+  @@schema("dbo")
+}
+
+enum HeroSlideVerticalPosition {
+  TOP
+  MIDDLE
+  BOTTOM
+
+  @@schema("dbo")
+}
+
+// Admin-configurable homepage hero carousel — a marketing/presentational
+// entity. CTA slides use buttonLabel/buttonLink; VEHICLE_SEARCH and
+// CATEGORY_FILTER slides render a generic search form instead and leave the
+// button fields null; INFO slides render neither; DISCOUNT slides use
+// buttonLabel (admin-typed) with an auto-computed link (never buttonLink)
+// via the optional discountCategory/discountProductBrand targeting below.
+model HeroSlide {
+  id                     Int                       @id @default(autoincrement())
+  type                   HeroSlideType
+  titleKa                String
+  titleEn                String
+  titleRu                String
+  subtitleKa             String?
+  subtitleEn             String?
+  subtitleRu             String?
+  imageUrl               String?
+  buttonLabelKa          String?
+  buttonLabelEn          String?
+  buttonLabelRu          String?
+  buttonLink             String?
+  // DISCOUNT-only — optional targeting for the auto-computed /shop link.
+  // SetNull (not Restrict/Cascade): if the referenced category/brand is
+  // later deleted, the slide should just fall back to a general discount
+  // link rather than blocking the deletion or vanishing itself.
+  discountCategoryId     Int?
+  discountCategory       Category?                 @relation(fields: [discountCategoryId], references: [id], onDelete: SetNull)
+  discountProductBrandId Int?
+  discountProductBrand   ProductBrand?             @relation(fields: [discountProductBrandId], references: [id], onDelete: SetNull)
+  textPosition           HeroSlideTextPosition     @default(LEFT)
+  verticalPosition       HeroSlideVerticalPosition @default(BOTTOM)
+  isActive               Boolean                   @default(true)
+  sortOrder              Int                       @default(0)
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+
+  @@index([discountCategoryId])
+  @@index([discountProductBrandId])
+  @@schema("dbo")
+}

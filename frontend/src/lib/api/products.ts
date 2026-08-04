@@ -122,6 +122,9 @@ export type ProductListFilters = {
   brandIds?: number[];
   priceMin?: number;
   priceMax?: number;
+  // "Sale" page (homepage CTA slide + /sale) — narrows to products with an
+  // active discount right now, across every category.
+  onSale?: boolean;
   attributeFilters?: ProductAttributeFilters;
   adminFilters?: AdminFilterEntry[];
 };
@@ -143,6 +146,7 @@ export async function listProducts(filters: ProductListFilters = {}): Promise<Pr
       brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
       priceMin: filters.priceMin,
       priceMax: filters.priceMax,
+      onSale: filters.onSale || undefined,
       attributeFilters:
         filters.attributeFilters && !isEmptyAttributeFilters(filters.attributeFilters)
           ? JSON.stringify(filters.attributeFilters)

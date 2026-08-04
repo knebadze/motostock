@@ -124,6 +124,7 @@ async function buildWhere(filters: {
   brandIds?: number[];
   priceMin?: number;
   priceMax?: number;
+  onSale?: boolean;
   attributeFilters?: AttributeFilterInput;
   adminFilters?: FilterEntry[];
 }): Promise<Prisma.ProductWhereInput | undefined> {
@@ -161,6 +162,13 @@ async function buildWhere(filters: {
           },
         },
       },
+    });
+  }
+
+  if (filters.onSale) {
+    const now = new Date();
+    and.push({
+      variants: { some: { discounts: { some: { startDate: { lte: now }, endDate: { gte: now } } } } },
     });
   }
 
@@ -202,6 +210,7 @@ export const productsRepository = {
     brandIds?: number[];
     priceMin?: number;
     priceMax?: number;
+    onSale?: boolean;
     attributeFilters?: AttributeFilterInput;
     adminFilters?: FilterEntry[];
   }) {

@@ -6,6 +6,7 @@ import {
   classifierIcon,
   dashboardIcon,
   filtersIcon,
+  heroSlidesIcon,
   listingIcon,
   modelsIcon,
   productsIcon,
@@ -31,6 +32,7 @@ export const adminNav: AdminNavSection[] = [
       { label: "დეშბორდი", href: "/admin", icon: dashboardIcon },
       { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon },
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },
+      { label: "მთავარი გვერდის სლაიდერი", href: "/admin/hero-slides", icon: heroSlidesIcon },
     ],
   },
   {

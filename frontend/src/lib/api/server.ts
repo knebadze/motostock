@@ -20,6 +20,7 @@ import type { Unit } from "./units";
 import type { Product, ProductDetail } from "./products";
 import type { FinaSyncRun } from "./fina-sync";
 import type { AdminUser } from "./users";
+import type { HeroSlide } from "./hero-slides";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -364,5 +365,56 @@ export async function getProductFromServer(id: number): Promise<Product | null> 
     return data.item;
   } catch {
     return null;
+  }
+}
+
+export async function getShopProductsFromServer(filters: {
+  categoryId?: number;
+  brandIds?: number[];
+  onSale?: boolean;
+}): Promise<Product[]> {
+  // Public endpoint (the /shop page) — must not bail out just because there
+  // is no admin session cookie, same fix as getCategoriesFromServer.
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ items: Product[] }>("/products", {
+      headers,
+      params: {
+        categoryId: filters.categoryId,
+        brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
+        onSale: filters.onSale || undefined,
+      },
+    });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getHeroSlidesFromServer(): Promise<HeroSlide[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: HeroSlide[] }>("/hero-slides", { headers });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getPublicHeroSlidesFromServer(): Promise<HeroSlide[]> {
+  // Public endpoint (the homepage hero) — must not bail out just because
+  // there's no admin session cookie, same fix as getCategoriesFromServer.
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ items: HeroSlide[] }>("/hero-slides/public", {
+      headers,
+    });
+    return data.items;
+  } catch {
+    return [];
   }
 }
