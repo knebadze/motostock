@@ -21,6 +21,7 @@ import type { Product, ProductDetail } from "./products";
 import type { FinaSyncRun } from "./fina-sync";
 import type { AdminUser } from "./users";
 import type { HeroSlide } from "./hero-slides";
+import type { PromoCode, PromoCodeDomain } from "./promo-codes";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -398,6 +399,21 @@ export async function getHeroSlidesFromServer(): Promise<HeroSlide[]> {
 
   try {
     const { data } = await apiClient.get<{ items: HeroSlide[] }>("/hero-slides", { headers });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getPromoCodesFromServer(domain: PromoCodeDomain): Promise<PromoCode[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: PromoCode[] }>("/promo-codes", {
+      headers,
+      params: { domain },
+    });
     return data.items;
   } catch {
     return [];

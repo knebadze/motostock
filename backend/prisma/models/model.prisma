@@ -9,6 +9,7 @@ model Model {
   nameRu     String
   slug       String
   vehicles   VehicleCatalog[]
+  promoCodes PromoCode[]
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
 

@@ -41,6 +41,7 @@ import { vinDecodeRouter } from "./modules/vin-decode/vin-decode.routes.js";
 import { heroSlidesRouter } from "./modules/hero-slides/hero-slides.routes.js";
 import { bulkProductDiscountsRouter } from "./modules/bulk-product-discounts/bulk-product-discounts.routes.js";
 import { bulkVehicleListingDiscountsRouter } from "./modules/bulk-vehicle-listing-discounts/bulk-vehicle-listing-discounts.routes.js";
+import { promoCodesRouter } from "./modules/promo-codes/promo-codes.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
 import { globalRateLimit } from "./middleware/rateLimit.middleware.js";
@@ -102,6 +103,7 @@ app.use("/api/vin-decode", vinDecodeRouter);
 app.use("/api/hero-slides", heroSlidesRouter);
 app.use("/api/bulk-product-discounts", bulkProductDiscountsRouter);
 app.use("/api/bulk-vehicle-listing-discounts", bulkVehicleListingDiscountsRouter);
+app.use("/api/promo-codes", promoCodesRouter);
 
 // registerPath() calls above already ran as a side effect of importing the
 // routers, so the registry is fully populated by the time this generates.

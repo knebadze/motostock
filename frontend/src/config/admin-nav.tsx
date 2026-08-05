@@ -11,6 +11,7 @@ import {
   listingIcon,
   modelsIcon,
   productsIcon,
+  promoCodesIcon,
   usersIcon,
   vehicleCatalogIcon,
 } from "./admin-nav-icons";
@@ -35,6 +36,7 @@ export const adminNav: AdminNavSection[] = [
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },
       { label: "მთავარი გვერდის სლაიდერი", href: "/admin/hero-slides", icon: heroSlidesIcon },
       { label: "მასობრივი ფასდაკლებები", href: "/admin/bulk-discounts", icon: discountRulesIcon },
+      { label: "პრომოკოდები", href: "/admin/promo-codes", icon: promoCodesIcon },
     ],
   },
   {

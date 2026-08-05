@@ -1,0 +1,65 @@
+enum PromoCodeDomain {
+  PRODUCT
+  VEHICLE
+
+  @@schema("dbo")
+}
+
+// A customer-entered code (not an automatically-applied price cut, unlike
+// ProductVariantDiscount/VehicleListingDiscount) that grants a percentage
+// off everything matching its scope. Scope is resolved dynamically, not
+// materialized — categoryId null means "every product" / "every vehicle"
+// (within `domain`); when set, it's narrowed further by the optional
+// domain-specific fields below. This is the same declarative-rule shape
+// this session tried earlier for outright discounts and abandoned there
+// (too rigid for irregular per-brand combinations) — it fits promo codes
+// well precisely because a promo code is inherently a single flat rule the
+// customer opts into, not a blanket price change across a mixed set.
+model PromoCode {
+  id     Int             @id @default(autoincrement())
+  code   String          @unique
+  domain PromoCodeDomain
+
+  // Shared narrowing anchor — Category is the same table for both domains.
+  // SetNull (not Restrict): unlike the removed ProductDiscountRule, null
+  // here is a normal, common state ("applies to everything"), so losing the
+  // category should just widen the scope back to "everything in the
+  // domain" rather than block deletion or silently drop the whole code.
+  categoryId Int?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // PRODUCT domain only.
+  productBrandId    Int?
+  productBrand      ProductBrand?    @relation(fields: [productBrandId], references: [id], onDelete: SetNull)
+  attributeId       Int?
+  attribute         Attribute?       @relation(fields: [attributeId], references: [id], onDelete: SetNull)
+  attributeOptionId Int?
+  attributeOption   AttributeOption? @relation(fields: [attributeOptionId], references: [id], onDelete: SetNull)
+
+  // VEHICLE domain only.
+  brandId          Int?
+  brand            Brand?            @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  modelId          Int?
+  model            Model?            @relation(fields: [modelId], references: [id], onDelete: SetNull)
+  // No fixed FK on specLookupItemId: which lookup table it points into
+  // depends on specField (see vehicle-spec-fields.registry.ts) — validated
+  // in the service layer, same as ProductFitmentRule's SPEC type.
+  specField        VehicleSpecField?
+  specLookupItemId Int?
+
+  discountPercent Decimal  @db.Decimal(5, 2)
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([domain])
+  @@index([categoryId])
+  @@index([productBrandId])
+  @@index([attributeId])
+  @@index([brandId])
+  @@index([modelId])
+  @@index([isActive, startDate, endDate])
+  @@schema("dbo")
+}

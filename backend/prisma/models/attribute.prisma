@@ -21,6 +21,7 @@ model Attribute {
   options       AttributeOption[]
   values        ProductAttributeValue[]
   filterConfigs CategoryFilterConfig[]
+  promoCodes    PromoCode[]
   createdAt     DateTime                @default(now())
   updatedAt     DateTime                @updatedAt
 
