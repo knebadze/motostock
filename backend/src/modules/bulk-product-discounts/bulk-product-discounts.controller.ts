@@ -3,6 +3,7 @@ import * as bulkProductDiscountsService from "./bulk-product-discounts.service.j
 import type {
   BulkApplyProductDiscountsInput,
   BulkDiscountCandidatesQuery,
+  ListProductDiscountHistoryQuery,
 } from "./bulk-product-discounts.schema.js";
 
 export async function listCandidates(
@@ -16,6 +17,14 @@ export async function listCandidates(
   const items = await bulkProductDiscountsService.listBulkDiscountCandidates(
     req.query as BulkDiscountCandidatesQuery,
   );
+  res.status(200).json({ items });
+}
+
+export async function listDiscounts(
+  req: Request<unknown, unknown, unknown, ListProductDiscountHistoryQuery>,
+  res: Response,
+) {
+  const items = await bulkProductDiscountsService.listProductDiscountHistory(req.query);
   res.status(200).json({ items });
 }
 

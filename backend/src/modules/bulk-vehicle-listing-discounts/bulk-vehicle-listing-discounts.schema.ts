@@ -42,6 +42,37 @@ const candidateSpecValueSchema = z.object({
   value: lookupItemResponseSchema,
 });
 
+// ?status=active — only rows currently within [startDate, endDate];
+// ?status=history — everything else (scheduled or expired).
+const statusFilterSchema = z.enum(["active", "history"]);
+
+export const listVehicleDiscountHistoryQuerySchema = z.object({
+  status: statusFilterSchema.optional(),
+  search: z.string().trim().min(1).max(200).optional(),
+});
+export type ListVehicleDiscountHistoryQuery = z.infer<typeof listVehicleDiscountHistoryQuerySchema>;
+
+export const vehicleDiscountHistoryRowSchema = registry.register(
+  "VehicleDiscountHistoryRow",
+  z.object({
+    id: z.int(),
+    vehicleListingId: z.int(),
+    brand: namedRefSchema,
+    model: namedRefSchema,
+    variant: z.string(),
+    year: z.int(),
+    condition: lookupItemResponseSchema,
+    color: lookupItemResponseSchema,
+    price: z.number(),
+    discountPrice: z.number(),
+    discountPercent: z.number().nullable(),
+    startDate: z.iso.date(),
+    endDate: z.iso.date(),
+    computedStatus: z.enum(["ACTIVE", "SCHEDULED", "EXPIRED"]),
+    createdAt: z.iso.datetime(),
+  }),
+);
+
 export const bulkVehicleDiscountCandidateResponseSchema = registry.register(
   "BulkVehicleDiscountCandidate",
   z.object({

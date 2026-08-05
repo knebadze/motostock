@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma.js";
+import type { Prisma } from "../../generated/prisma/index.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
 const lookupSelect = { id: true, key: true, nameKa: true, nameEn: true, nameRu: true } as const;
@@ -26,6 +27,31 @@ const candidateSelect = {
   discounts: { select: { discountPercent: true, startDate: true, endDate: true } },
 } as const;
 
+const discountHistorySelect = {
+  id: true,
+  discountPrice: true,
+  discountPercent: true,
+  startDate: true,
+  endDate: true,
+  createdAt: true,
+  vehicleListing: {
+    select: {
+      id: true,
+      year: true,
+      price: true,
+      condition: { select: lookupSelect },
+      color: { select: lookupSelect },
+      vehicleCatalog: {
+        select: {
+          variant: true,
+          brand: { select: namedRefSelect },
+          model: { select: namedRefSelect },
+        },
+      },
+    },
+  },
+} as const;
+
 export const bulkVehicleListingDiscountsRepository = {
   findCandidateListings(categoryIds: number[]) {
     return prisma.vehicleListing.findMany({
@@ -46,5 +72,28 @@ export const bulkVehicleListingDiscountsRepository = {
     rows: { vehicleListingId: number; discountPrice: number; discountPercent: number; startDate: Date; endDate: Date }[],
   ) {
     return prisma.$transaction(rows.map((row) => prisma.vehicleListingDiscount.create({ data: row })));
+  },
+
+  // Every VehicleListingDiscount that exists, regardless of category —
+  // powers the discounts-page "history" tab.
+  findAllDiscounts(search?: string) {
+    const searchWhere: Prisma.VehicleListingWhereInput | undefined = search
+      ? {
+          OR: [
+            { vehicleCatalog: { brand: { nameKa: { contains: search, mode: "insensitive" } } } },
+            { vehicleCatalog: { brand: { nameEn: { contains: search, mode: "insensitive" } } } },
+            { vehicleCatalog: { brand: { nameRu: { contains: search, mode: "insensitive" } } } },
+            { vehicleCatalog: { model: { nameKa: { contains: search, mode: "insensitive" } } } },
+            { vehicleCatalog: { model: { nameEn: { contains: search, mode: "insensitive" } } } },
+            { vehicleCatalog: { model: { nameRu: { contains: search, mode: "insensitive" } } } },
+          ],
+        }
+      : undefined;
+
+    return prisma.vehicleListingDiscount.findMany({
+      where: searchWhere ? { vehicleListing: searchWhere } : undefined,
+      select: discountHistorySelect,
+      orderBy: { startDate: "desc" },
+    });
   },
 };

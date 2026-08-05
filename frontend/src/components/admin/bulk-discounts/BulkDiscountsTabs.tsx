@@ -4,6 +4,7 @@ import { Tabs } from "@/components/shared/Tabs";
 import type { Category } from "@/lib/api/categories";
 import { BulkProductDiscountsPanel } from "../bulk-product-discounts/BulkProductDiscountsPanel";
 import { BulkVehicleListingDiscountsPanel } from "../bulk-vehicle-listing-discounts/BulkVehicleListingDiscountsPanel";
+import { DiscountHistoryPanel } from "./DiscountHistoryPanel";
 
 export function BulkDiscountsTabs({ categories }: { categories: Category[] }) {
   return (
@@ -26,6 +27,11 @@ export function BulkDiscountsTabs({ categories }: { categories: Category[] }) {
               key: "vehicles",
               label: "ტრანსპორტი",
               content: <BulkVehicleListingDiscountsPanel categories={categories} />,
+            },
+            {
+              key: "history",
+              label: "აქტიური ფასდაკლებები",
+              content: <DiscountHistoryPanel />,
             },
           ]}
         />

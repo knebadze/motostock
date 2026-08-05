@@ -11,6 +11,7 @@ import { bulkVehicleListingDiscountsRepository } from "./bulk-vehicle-listing-di
 import type {
   BulkApplyVehicleListingDiscountsInput,
   BulkVehicleDiscountCandidatesQuery,
+  ListVehicleDiscountHistoryQuery,
 } from "./bulk-vehicle-listing-discounts.schema.js";
 import type { VehicleSpecField } from "../../generated/prisma/index.js";
 
@@ -158,4 +159,57 @@ export async function applyBulkVehicleListingDiscounts(input: BulkApplyVehicleLi
 
   const created = await bulkVehicleListingDiscountsRepository.bulkCreateDiscounts(rows);
   return created.map((row) => toDiscountResponse(row as DiscountRow));
+}
+
+type DiscountHistoryRow = {
+  id: number;
+  discountPrice: { toString(): string };
+  discountPercent: { toString(): string } | null;
+  startDate: Date;
+  endDate: Date;
+  createdAt: Date;
+  vehicleListing: {
+    id: number;
+    year: number;
+    price: { toString(): string };
+    condition: LookupRow;
+    color: LookupRow;
+    vehicleCatalog: { variant: string; brand: NamedRefRow; model: NamedRefRow };
+  };
+};
+
+function computeDiscountStatus(row: { startDate: Date; endDate: Date }) {
+  const now = new Date();
+  if (now < row.startDate) return "SCHEDULED" as const;
+  if (now > row.endDate) return "EXPIRED" as const;
+  return "ACTIVE" as const;
+}
+
+function toDiscountHistoryRow(row: DiscountHistoryRow) {
+  return {
+    id: row.id,
+    vehicleListingId: row.vehicleListing.id,
+    brand: toNamedRef(row.vehicleListing.vehicleCatalog.brand),
+    model: toNamedRef(row.vehicleListing.vehicleCatalog.model),
+    variant: row.vehicleListing.vehicleCatalog.variant,
+    year: row.vehicleListing.year,
+    condition: row.vehicleListing.condition,
+    color: row.vehicleListing.color,
+    price: Number(row.vehicleListing.price),
+    discountPrice: Number(row.discountPrice),
+    discountPercent: row.discountPercent != null ? Number(row.discountPercent) : null,
+    startDate: row.startDate,
+    endDate: row.endDate,
+    computedStatus: computeDiscountStatus(row),
+    createdAt: row.createdAt,
+  };
+}
+
+export async function listVehicleDiscountHistory(query: ListVehicleDiscountHistoryQuery) {
+  const rows = await bulkVehicleListingDiscountsRepository.findAllDiscounts(query.search);
+  const items = rows.map(toDiscountHistoryRow);
+  if (!query.status) return items;
+  return items.filter((item) =>
+    query.status === "active" ? item.computedStatus === "ACTIVE" : item.computedStatus !== "ACTIVE",
+  );
 }

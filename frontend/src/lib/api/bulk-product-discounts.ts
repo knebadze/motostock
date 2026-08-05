@@ -36,10 +36,46 @@ export type BulkApplyProductDiscountsInput = {
   endDate: string;
 };
 
+export type ProductDiscountStatus = "ACTIVE" | "SCHEDULED" | "EXPIRED";
+
+export type ProductDiscountHistoryRow = {
+  id: number;
+  variantId: number;
+  productId: number;
+  productName: LocalizedString;
+  productSlug: string;
+  brand: NamedRef | null;
+  sku: string | null;
+  size: LookupItem | null;
+  color: LookupItem | null;
+  price: number;
+  discountPrice: number;
+  discountPercent: number | null;
+  startDate: string;
+  endDate: string;
+  computedStatus: ProductDiscountStatus;
+  createdAt: string;
+};
+
+export type ProductDiscountHistoryFilters = {
+  status?: "active" | "history";
+  search?: string;
+};
+
 export async function listBulkDiscountCandidates(categoryId: number): Promise<BulkDiscountCandidate[]> {
   const { data } = await apiClient.get<{ items: BulkDiscountCandidate[] }>(
     "/bulk-product-discounts/candidates",
     { params: { categoryId } },
+  );
+  return data.items;
+}
+
+export async function listProductDiscountHistory(
+  filters: ProductDiscountHistoryFilters = {},
+): Promise<ProductDiscountHistoryRow[]> {
+  const { data } = await apiClient.get<{ items: ProductDiscountHistoryRow[] }>(
+    "/bulk-product-discounts/discounts",
+    { params: { status: filters.status, search: filters.search || undefined } },
   );
   return data.items;
 }

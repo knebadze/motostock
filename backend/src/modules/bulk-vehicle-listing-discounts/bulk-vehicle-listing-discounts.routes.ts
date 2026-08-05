@@ -11,6 +11,8 @@ import {
   bulkApplyVehicleListingDiscountsSchema,
   bulkVehicleDiscountCandidateResponseSchema,
   bulkVehicleDiscountCandidatesQuerySchema,
+  listVehicleDiscountHistoryQuerySchema,
+  vehicleDiscountHistoryRowSchema,
 } from "./bulk-vehicle-listing-discounts.schema.js";
 
 export const bulkVehicleListingDiscountsRouter = Router();
@@ -26,6 +28,11 @@ bulkVehicleListingDiscountsRouter.post(
   "/apply",
   validate(bulkApplyVehicleListingDiscountsSchema),
   bulkVehicleListingDiscountsController.apply,
+);
+bulkVehicleListingDiscountsRouter.get(
+  "/discounts",
+  validate(listVehicleDiscountHistoryQuerySchema, "query"),
+  bulkVehicleListingDiscountsController.listDiscounts,
 );
 
 const security = [{ cookieAuth: [] }];
@@ -45,6 +52,21 @@ registry.registerPath({
       },
     },
     400: { description: "Invalid category", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/bulk-vehicle-listing-discounts/discounts",
+  tags: ["BulkVehicleListingDiscounts"],
+  summary: "List all vehicle listing discounts (active + history, filterable)",
+  security,
+  request: { query: listVehicleDiscountHistoryQuerySchema },
+  responses: {
+    200: {
+      description: "Discounts",
+      content: { "application/json": { schema: z.object({ items: z.array(vehicleDiscountHistoryRowSchema) }) } },
+    },
   },
 });
 

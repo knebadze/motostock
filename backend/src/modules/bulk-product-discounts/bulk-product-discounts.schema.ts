@@ -37,6 +37,40 @@ const candidateAttributeValueSchema = z.object({
   option: z.object({ id: z.int(), key: z.string(), label: localizedStringSchema }).nullable(),
 });
 
+// ?status=active — only rows currently within [startDate, endDate];
+// ?status=history — everything else (scheduled or expired). Omitted = no
+// status filtering (everything). A ProductVariantDiscount has no isActive
+// flag of its own — "disabling" one just means deleting it.
+const statusFilterSchema = z.enum(["active", "history"]);
+
+export const listProductDiscountHistoryQuerySchema = z.object({
+  status: statusFilterSchema.optional(),
+  search: z.string().trim().min(1).max(200).optional(),
+});
+export type ListProductDiscountHistoryQuery = z.infer<typeof listProductDiscountHistoryQuerySchema>;
+
+export const productDiscountHistoryRowSchema = registry.register(
+  "ProductDiscountHistoryRow",
+  z.object({
+    id: z.int(),
+    variantId: z.int(),
+    productId: z.int(),
+    productName: localizedStringSchema,
+    productSlug: z.string(),
+    brand: namedRefSchema.nullable(),
+    sku: z.string().nullable(),
+    size: lookupItemResponseSchema.nullable(),
+    color: lookupItemResponseSchema.nullable(),
+    price: z.number(),
+    discountPrice: z.number(),
+    discountPercent: z.number().nullable(),
+    startDate: z.iso.date(),
+    endDate: z.iso.date(),
+    computedStatus: z.enum(["ACTIVE", "SCHEDULED", "EXPIRED"]),
+    createdAt: z.iso.datetime(),
+  }),
+);
+
 export const bulkDiscountCandidateResponseSchema = registry.register(
   "BulkDiscountCandidate",
   z.object({

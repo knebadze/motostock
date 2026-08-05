@@ -3,6 +3,7 @@ import * as bulkVehicleListingDiscountsService from "./bulk-vehicle-listing-disc
 import type {
   BulkApplyVehicleListingDiscountsInput,
   BulkVehicleDiscountCandidatesQuery,
+  ListVehicleDiscountHistoryQuery,
 } from "./bulk-vehicle-listing-discounts.schema.js";
 
 export async function listCandidates(
@@ -16,6 +17,14 @@ export async function listCandidates(
   const items = await bulkVehicleListingDiscountsService.listBulkVehicleDiscountCandidates(
     req.query as BulkVehicleDiscountCandidatesQuery,
   );
+  res.status(200).json({ items });
+}
+
+export async function listDiscounts(
+  req: Request<unknown, unknown, unknown, ListVehicleDiscountHistoryQuery>,
+  res: Response,
+) {
+  const items = await bulkVehicleListingDiscountsService.listVehicleDiscountHistory(req.query);
   res.status(200).json({ items });
 }
 

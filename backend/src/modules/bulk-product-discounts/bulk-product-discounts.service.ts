@@ -9,6 +9,7 @@ import { bulkProductDiscountsRepository } from "./bulk-product-discounts.reposit
 import type {
   BulkApplyProductDiscountsInput,
   BulkDiscountCandidatesQuery,
+  ListProductDiscountHistoryQuery,
 } from "./bulk-product-discounts.schema.js";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
@@ -131,4 +132,69 @@ export async function applyBulkProductDiscounts(input: BulkApplyProductDiscounts
 
   const created = await bulkProductDiscountsRepository.bulkCreateDiscounts(rows);
   return created.map((row) => toDiscountResponse(row as DiscountRow));
+}
+
+type DiscountHistoryRow = {
+  id: number;
+  discountPrice: { toString(): string };
+  discountPercent: { toString(): string } | null;
+  startDate: Date;
+  endDate: Date;
+  createdAt: Date;
+  productVariant: {
+    id: number;
+    sku: string | null;
+    price: { toString(): string };
+    size: LookupRow | null;
+    color: LookupRow | null;
+    product: {
+      id: number;
+      nameKa: string;
+      nameEn: string;
+      nameRu: string;
+      slug: string;
+      productBrand: NamedRefRow | null;
+    };
+  };
+};
+
+function computeDiscountStatus(row: { startDate: Date; endDate: Date }) {
+  const now = new Date();
+  if (now < row.startDate) return "SCHEDULED" as const;
+  if (now > row.endDate) return "EXPIRED" as const;
+  return "ACTIVE" as const;
+}
+
+function toDiscountHistoryRow(row: DiscountHistoryRow) {
+  return {
+    id: row.id,
+    variantId: row.productVariant.id,
+    productId: row.productVariant.product.id,
+    productName: {
+      ka: row.productVariant.product.nameKa,
+      en: row.productVariant.product.nameEn,
+      ru: row.productVariant.product.nameRu,
+    },
+    productSlug: row.productVariant.product.slug,
+    brand: row.productVariant.product.productBrand ? toNamedRef(row.productVariant.product.productBrand) : null,
+    sku: row.productVariant.sku,
+    size: row.productVariant.size,
+    color: row.productVariant.color,
+    price: Number(row.productVariant.price),
+    discountPrice: Number(row.discountPrice),
+    discountPercent: row.discountPercent != null ? Number(row.discountPercent) : null,
+    startDate: row.startDate,
+    endDate: row.endDate,
+    computedStatus: computeDiscountStatus(row),
+    createdAt: row.createdAt,
+  };
+}
+
+export async function listProductDiscountHistory(query: ListProductDiscountHistoryQuery) {
+  const rows = await bulkProductDiscountsRepository.findAllDiscounts(query.search);
+  const items = rows.map(toDiscountHistoryRow);
+  if (!query.status) return items;
+  return items.filter((item) =>
+    query.status === "active" ? item.computedStatus === "ACTIVE" : item.computedStatus !== "ACTIVE",
+  );
 }

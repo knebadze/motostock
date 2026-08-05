@@ -11,6 +11,8 @@ import {
   bulkApplyProductDiscountsSchema,
   bulkDiscountCandidateResponseSchema,
   bulkDiscountCandidatesQuerySchema,
+  listProductDiscountHistoryQuerySchema,
+  productDiscountHistoryRowSchema,
 } from "./bulk-product-discounts.schema.js";
 
 export const bulkProductDiscountsRouter = Router();
@@ -26,6 +28,11 @@ bulkProductDiscountsRouter.post(
   "/apply",
   validate(bulkApplyProductDiscountsSchema),
   bulkProductDiscountsController.apply,
+);
+bulkProductDiscountsRouter.get(
+  "/discounts",
+  validate(listProductDiscountHistoryQuerySchema, "query"),
+  bulkProductDiscountsController.listDiscounts,
 );
 
 const security = [{ cookieAuth: [] }];
@@ -43,6 +50,21 @@ registry.registerPath({
       content: { "application/json": { schema: z.object({ items: z.array(bulkDiscountCandidateResponseSchema) }) } },
     },
     400: { description: "Invalid category", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/bulk-product-discounts/discounts",
+  tags: ["BulkProductDiscounts"],
+  summary: "List all product variant discounts (active + history, filterable)",
+  security,
+  request: { query: listProductDiscountHistoryQuerySchema },
+  responses: {
+    200: {
+      description: "Discounts",
+      content: { "application/json": { schema: z.object({ items: z.array(productDiscountHistoryRowSchema) }) } },
+    },
   },
 });
 
