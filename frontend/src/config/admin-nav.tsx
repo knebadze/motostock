@@ -5,6 +5,7 @@ import {
   categoriesIcon,
   classifierIcon,
   dashboardIcon,
+  discountRulesIcon,
   filtersIcon,
   heroSlidesIcon,
   listingIcon,
@@ -33,6 +34,7 @@ export const adminNav: AdminNavSection[] = [
       { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon },
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },
       { label: "მთავარი გვერდის სლაიდერი", href: "/admin/hero-slides", icon: heroSlidesIcon },
+      { label: "მასობრივი ფასდაკლებები", href: "/admin/bulk-discounts", icon: discountRulesIcon },
     ],
   },
   {

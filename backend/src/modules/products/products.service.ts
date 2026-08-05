@@ -200,7 +200,7 @@ type FitmentRuleRow = {
   specLookupItemId: number | null;
 };
 
-type ProductDetailRow = ProductRow & {
+type ProductDetailRow = Omit<ProductRow, "variants"> & {
   variants: VariantDetailRow[];
   fitments: FitmentRow[];
   fitmentRules: FitmentRuleRow[];
@@ -229,7 +229,7 @@ function toVariantDetailResponse(row: VariantDetailRow) {
     status: row.status,
     images: row.images.map(toImageResponse),
     discounts: row.discounts.map(toDiscountResponse),
-    activeDiscount: activeDiscount ? toDiscountResponse(activeDiscount) : null,
+    activeDiscount: activeDiscount ? { discountPrice: Number(activeDiscount.discountPrice) } : null,
   };
 }
 

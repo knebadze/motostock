@@ -55,7 +55,11 @@ export type VehicleListing = {
   descriptionRu: string | null;
   images: VehicleListingImage[];
   discounts: VehicleListingDiscount[];
-  activeDiscount: VehicleListingDiscount | null;
+  // Narrower than a full VehicleListingDiscount — may be derived from a
+  // rule-based bulk discount (no real DB row of its own). Only
+  // discountPrice is ever read; the crossed-out original price always comes
+  // from the listing's own `price`.
+  activeDiscount: { discountPrice: number } | null;
   createdAt: string;
   updatedAt: string;
 };

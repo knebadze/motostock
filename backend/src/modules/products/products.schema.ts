@@ -195,7 +195,11 @@ const productVariantDetailResponseSchema = z.object({
   status: lookupItemResponseSchema.nullable(),
   images: z.array(productVariantImageResponseSchema),
   discounts: z.array(productVariantDiscountResponseSchema),
-  activeDiscount: productVariantDiscountResponseSchema.nullable(),
+  // Narrower than a full ProductVariantDiscount row on purpose — this may
+  // be derived from a ProductDiscountRule (no real DB row/id/dates of its
+  // own), and no consumer reads anything but discountPrice here (the
+  // crossed-out original price is always the variant's own `price` field).
+  activeDiscount: z.object({ discountPrice: z.number().openapi({ example: 159.99 }) }).nullable(),
 });
 
 const compatibleVehicleSchema = z.object({

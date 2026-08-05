@@ -136,7 +136,7 @@ function toResponse(row: VehicleListingRow) {
     descriptionRu: row.descriptionRu,
     images: row.images.map(toImageResponse),
     discounts: row.discounts.map(toDiscountResponse),
-    activeDiscount: activeDiscount ? toDiscountResponse(activeDiscount) : null,
+    activeDiscount: activeDiscount ? { discountPrice: Number(activeDiscount.discountPrice) } : null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

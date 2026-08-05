@@ -74,7 +74,11 @@ export type ProductVariantDetail = {
   status: LookupItem | null;
   images: ProductVariantImage[];
   discounts: ProductVariantDiscount[];
-  activeDiscount: ProductVariantDiscount | null;
+  // Narrower than a full ProductVariantDiscount — may be derived from a
+  // rule-based bulk discount (no real DB row of its own). Only
+  // discountPrice is ever read; the crossed-out original price always comes
+  // from the variant's own `price`.
+  activeDiscount: { discountPrice: number } | null;
 };
 
 export type CompatibleVehicle = {

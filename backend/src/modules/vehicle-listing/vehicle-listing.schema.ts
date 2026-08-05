@@ -153,7 +153,12 @@ export const vehicleListingResponseSchema = registry.register(
     descriptionRu: z.string().nullable(),
     images: z.array(vehicleListingImageResponseSchema),
     discounts: z.array(vehicleListingDiscountResponseSchema),
-    activeDiscount: vehicleListingDiscountResponseSchema.nullable(),
+    // Narrower than a full VehicleListingDiscount row on purpose — this may
+    // be derived from a VehicleListingDiscountRule (no real DB row/id/dates
+    // of its own), and no consumer reads anything but discountPrice here
+    // (the crossed-out original price always comes from the listing's own
+    // `price`).
+    activeDiscount: z.object({ discountPrice: z.number().openapi({ example: 3999 }) }).nullable(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
   }),
