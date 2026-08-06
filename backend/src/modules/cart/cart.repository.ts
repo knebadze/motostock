@@ -1,0 +1,95 @@
+import { prisma } from "../../config/prisma.js";
+import { vehicleListingInclude } from "../vehicle-listing/vehicle-listing.repository.js";
+import type { CartItemType } from "../../generated/prisma/index.js";
+
+export type CartOwner = { userId: number } | { guestId: string };
+
+function ownerWhere(owner: CartOwner) {
+  return "userId" in owner ? { userId: owner.userId } : { guestId: owner.guestId };
+}
+
+const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
+
+const productVariantInclude = {
+  size: true,
+  color: true,
+  images: { orderBy: { position: "asc" } },
+  discounts: { orderBy: { startDate: "desc" } },
+  product: {
+    select: {
+      id: true,
+      nameKa: true,
+      nameEn: true,
+      nameRu: true,
+      slug: true,
+      imageUrl: true,
+      category: { select: namedRefSelect },
+    },
+  },
+} as const;
+
+const include = {
+  productVariant: { include: productVariantInclude },
+  vehicleListing: { include: vehicleListingInclude },
+} as const;
+
+export const cartRepository = {
+  findByOwner(owner: CartOwner) {
+    return prisma.cartItem.findMany({
+      where: ownerWhere(owner),
+      include,
+      orderBy: { createdAt: "desc" },
+    });
+  },
+
+  countByOwner(owner: CartOwner) {
+    return prisma.cartItem.aggregate({
+      where: ownerWhere(owner),
+      _sum: { quantity: true },
+    });
+  },
+
+  findById(id: number) {
+    return prisma.cartItem.findUnique({ where: { id }, include });
+  },
+
+  findByOwnerAndProductVariant(owner: CartOwner, productVariantId: number) {
+    return prisma.cartItem.findFirst({ where: { ...ownerWhere(owner), productVariantId } });
+  },
+
+  findByOwnerAndVehicleListing(owner: CartOwner, vehicleListingId: number) {
+    return prisma.cartItem.findFirst({ where: { ...ownerWhere(owner), vehicleListingId } });
+  },
+
+  create(data: {
+    itemType: CartItemType;
+    userId?: number | null;
+    guestId?: string | null;
+    productVariantId?: number | null;
+    vehicleListingId?: number | null;
+    quantity: number;
+  }) {
+    return prisma.cartItem.create({ data, include });
+  },
+
+  updateQuantity(id: number, quantity: number) {
+    return prisma.cartItem.update({ where: { id }, data: { quantity }, include });
+  },
+
+  incrementQuantity(id: number, by: number) {
+    return prisma.cartItem.update({ where: { id }, data: { quantity: { increment: by } } });
+  },
+
+  delete(id: number) {
+    return prisma.cartItem.delete({ where: { id } });
+  },
+
+  // Merge-on-login support (see cart.service.ts mergeGuestCartIntoUser).
+  findByGuestId(guestId: string) {
+    return prisma.cartItem.findMany({ where: { guestId } });
+  },
+
+  reassignToUser(id: number, userId: number) {
+    return prisma.cartItem.update({ where: { id }, data: { userId, guestId: null } });
+  },
+};

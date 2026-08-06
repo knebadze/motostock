@@ -18,6 +18,7 @@
     "register": "რეგისტრაცია",
     "myAccount": "ჩემი ანგარიში",
     "wishlist": "სასურველები",
+    "cart": "კალათა",
     "logout": "გასვლა",
     "logoutError": "გამოსვლა ვერ მოხერხდა, სცადეთ ხელახლა",
     "openMenu": "მენიუს გახსნა",
@@ -73,6 +74,22 @@
     "outOfStock": "არ არის მარაგში",
     "yes": "კი",
     "no": "არა"
+  },
+  "Cart": {
+    "empty": "კალათა ცარიელია.",
+    "itemCount": "{count} ერთეული",
+    "subtotal": "ჯამი",
+    "viewCart": "სრულად ნახვა",
+    "remove": "წაშლა",
+    "removeSuccess": "წაიშალა კალათიდან",
+    "removeError": "წაშლა ვერ მოხერხდა",
+    "updateError": "რაოდენობის განახლება ვერ მოხერხდა",
+    "decreaseQuantity": "რაოდენობის შემცირება",
+    "increaseQuantity": "რაოდენობის გაზრდა",
+    "addToCart": "კალათაში დამატება",
+    "addedToCart": "დამატებულია",
+    "outOfStock": "არ არის მარაგში",
+    "addError": "კალათაში დამატება ვერ მოხერხდა"
   },
   "VehicleListingDetail": {
     "descriptionHeading": "აღწერა",
@@ -190,6 +207,7 @@
       "dashboard": "დეშბორდი",
       "garage": "გარაჟი",
       "wishlist": "სასურველები",
+      "cart": "კალათა",
       "orders": "შეკვეთების ისტორია",
       "address": "მისამართი",
       "changePassword": "პაროლის შეცვლა"

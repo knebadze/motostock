@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatPrice, pickLookupName } from "@/lib/format";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 import { WishlistButton } from "@/components/shared/WishlistButton";
+import { AddToCartButton } from "@/components/shared/AddToCartButton";
 import type {
   Product,
   ProductDetail,
@@ -87,6 +88,7 @@ export function ProductDetailPage({
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("ProductDetail");
   const tShop = useTranslations("Shop");
+  const tCart = useTranslations("Cart");
 
   const defaultVariant =
     product.variants.find((variant) => variant.stockQuantity > 0) ?? product.variants[0] ?? null;
@@ -158,14 +160,26 @@ export function ProductDetailPage({
             />
           )}
 
-          <WishlistButton
-            itemType="PRODUCT"
-            id={product.id}
-            variant="button"
-            labelSave={tShop("wishlistSaveLabel")}
-            labelSaved={tShop("wishlistSavedLabel")}
-            className="self-start"
-          />
+          <div className="flex flex-wrap items-center gap-3">
+            {selectedVariant && (
+              <AddToCartButton
+                itemType="PRODUCT_VARIANT"
+                id={selectedVariant.id}
+                disabled={outOfStock}
+                labelAdd={tCart("addToCart")}
+                labelAdded={tCart("addedToCart")}
+                labelOutOfStock={tCart("outOfStock")}
+                errorMessage={tCart("addError")}
+              />
+            )}
+            <WishlistButton
+              itemType="PRODUCT"
+              id={product.id}
+              variant="button"
+              labelSave={tShop("wishlistSaveLabel")}
+              labelSaved={tShop("wishlistSavedLabel")}
+            />
+          </div>
 
           <ProductSpecs attributeValues={product.attributeValues} />
 

@@ -2,14 +2,14 @@ import type { NextFunction, Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
 import { resolveAuthenticatedUser } from "../../middleware/auth.middleware.js";
 import { resolveGuestId } from "../../middleware/guest-identity.middleware.js";
-import { isGuestWishlistEnabled } from "../settings/settings.service.js";
+import { isGuestCartEnabled } from "../settings/settings.service.js";
 
 // Resolves the caller as either a logged-in user (req.user, same as
-// requireAuth) or — only when guest wishlist access is enabled in Settings
-// — an anonymous visitor identified by the shared guest-id cookie
-// (req.guestId, see guest-identity.middleware.ts). Rejects with 401 only
-// when neither applies.
-export async function resolveWishlistOwner(req: Request, res: Response, next: NextFunction) {
+// requireAuth) or — only when guest cart access is enabled in Settings —
+// an anonymous visitor identified by the shared guest-id cookie (req.guestId,
+// see guest-identity.middleware.ts). Rejects with 401 only when neither
+// applies. Mirrors resolveWishlistOwner exactly (see wishlist.middleware.ts).
+export async function resolveCartOwner(req: Request, res: Response, next: NextFunction) {
   const user = await resolveAuthenticatedUser(req, res);
   if (user) {
     req.user = user;
@@ -17,7 +17,7 @@ export async function resolveWishlistOwner(req: Request, res: Response, next: Ne
     return;
   }
 
-  if (!(await isGuestWishlistEnabled())) {
+  if (!(await isGuestCartEnabled())) {
     next(new ApiError(401, "Not authenticated"));
     return;
   }

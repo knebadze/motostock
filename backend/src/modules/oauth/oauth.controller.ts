@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import { env } from "../../config/env.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { setAuthCookie } from "../../lib/jwt.js";
-import { mergeGuestWishlistCookie } from "../wishlist/wishlist.middleware.js";
+import { mergeGuestDataIntoUser } from "../../middleware/guest-identity.middleware.js";
 import {
   getFacebookAuthUrl,
   getGoogleAuthUrl,
@@ -60,7 +60,7 @@ export async function handleGoogleCallback(req: Request, res: Response) {
   try {
     const { user, token } = await loginWithGoogle(parsed.data.code);
     setAuthCookie(res, token);
-    await mergeGuestWishlistCookie(req, res, user.id);
+    await mergeGuestDataIntoUser(req, res, user.id);
     res.redirect(`${env.FRONTEND_ORIGIN}/account`);
   } catch {
     failureRedirect(res);
@@ -80,7 +80,7 @@ export async function handleFacebookCallback(req: Request, res: Response) {
   try {
     const { user, token } = await loginWithFacebook(parsed.data.code);
     setAuthCookie(res, token);
-    await mergeGuestWishlistCookie(req, res, user.id);
+    await mergeGuestDataIntoUser(req, res, user.id);
     res.redirect(`${env.FRONTEND_ORIGIN}/account`);
   } catch {
     failureRedirect(res);

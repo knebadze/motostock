@@ -18,6 +18,7 @@
     "register": "Sign up",
     "myAccount": "My account",
     "wishlist": "Wishlist",
+    "cart": "Cart",
     "logout": "Log out",
     "logoutError": "Log out failed, please try again",
     "openMenu": "Open menu",
@@ -73,6 +74,22 @@
     "outOfStock": "Out of stock",
     "yes": "Yes",
     "no": "No"
+  },
+  "Cart": {
+    "empty": "Your cart is empty.",
+    "itemCount": "{count} item(s)",
+    "subtotal": "Subtotal",
+    "viewCart": "View cart",
+    "remove": "Remove",
+    "removeSuccess": "Removed from cart",
+    "removeError": "Couldn't remove item",
+    "updateError": "Couldn't update quantity",
+    "decreaseQuantity": "Decrease quantity",
+    "increaseQuantity": "Increase quantity",
+    "addToCart": "Add to cart",
+    "addedToCart": "Added",
+    "outOfStock": "Out of stock",
+    "addError": "Couldn't add to cart"
   },
   "VehicleListingDetail": {
     "descriptionHeading": "Description",
@@ -190,6 +207,7 @@
       "dashboard": "Dashboard",
       "garage": "Garage",
       "wishlist": "Wishlist",
+      "cart": "Cart",
       "orders": "Order history",
       "address": "Address",
       "changePassword": "Change password"

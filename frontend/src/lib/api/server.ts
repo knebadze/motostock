@@ -23,6 +23,7 @@ import type { AdminUser } from "./users";
 import type { HeroSlide } from "./hero-slides";
 import type { PromoCode, PromoCodeDomain } from "./promo-codes";
 import type { WishlistItem } from "./wishlist";
+import type { Cart } from "./cart";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -65,6 +66,7 @@ export async function getSettingsFromServer(): Promise<Settings> {
     vinDecodeEnabled: false,
     vinDecodeProvider: "nhtsa",
     guestWishlistEnabled: false,
+    guestCartEnabled: false,
   };
   if (!headers) return fallback;
 
@@ -300,6 +302,35 @@ export async function getMyWishlistFromServer(): Promise<WishlistItem[]> {
     return data.items;
   } catch {
     return [];
+  }
+}
+
+const EMPTY_CART: Cart = { items: [], subtotal: 0, itemCount: 0 };
+
+export async function getMyCartFromServer(): Promise<Cart> {
+  const headers = await authHeaders();
+  if (!headers) return EMPTY_CART;
+
+  try {
+    const { data } = await apiClient.get<Cart>("/users/me/cart", { headers });
+    return data;
+  } catch {
+    return EMPTY_CART;
+  }
+}
+
+// Lightweight — just the header badge count, not the full cart with every
+// nested product/vehicle detail. Safe to call on every page load (see
+// (guest)/layout.tsx), unlike getMyCartFromServer.
+export async function getMyCartCountFromServer(): Promise<number> {
+  const headers = await authHeaders();
+  if (!headers) return 0;
+
+  try {
+    const { data } = await apiClient.get<{ count: number }>("/users/me/cart/count", { headers });
+    return data.count;
+  } catch {
+    return 0;
   }
 }
 

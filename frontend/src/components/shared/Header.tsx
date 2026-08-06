@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
+import { CartDropdown } from "@/components/shared/CartDropdown";
 import { Logo } from "@/components/shared/Logo";
 import { logoutUser, type User } from "@/lib/api/auth";
 import { resolveMediaUrl } from "@/lib/api/client";
@@ -17,10 +18,12 @@ const MEGA_MENU_CLOSE_DELAY_MS = 150;
 export function Header({
   user = null,
   categories = [],
+  cartCount = 0,
 }: {
   user?: User | null;
   /** Full category tree (all depths) — the header derives top-level nav items and their children itself. */
   categories?: Category[];
+  cartCount?: number;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -147,6 +150,8 @@ export function Header({
               <path d="M12 21s-6.7-4.35-9.33-8.2C1.02 10.6 1.6 7.2 4.3 5.6c2.2-1.3 4.9-.8 6.3 1.1l1.4 1.9 1.4-1.9c1.4-1.9 4.1-2.4 6.3-1.1 2.7 1.6 3.28 5 1.63 7.2C18.7 16.65 12 21 12 21Z" />
             </svg>
           </Link>
+
+          <CartDropdown initialCount={cartCount} />
 
           {user ? (
             <div ref={accountMenuRef} className="relative hidden md:block">
@@ -308,6 +313,15 @@ export function Header({
               className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
             >
               {tHeader("wishlist")}
+            </Link>
+
+            <Link
+              href="/cart"
+              onClick={() => setIsOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+            >
+              {tHeader("cart")}
+              {cartCount > 0 && <span className="text-muted-foreground"> ({cartCount})</span>}
             </Link>
 
             {user ? (

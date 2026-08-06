@@ -1,20 +1,25 @@
 import { Header } from "@/components/shared/Header";
 import { Footer } from "@/components/shared/Footer";
-import { getCategoriesFromServer, getCurrentUserFromServer } from "@/lib/api/server";
+import {
+  getCategoriesFromServer,
+  getCurrentUserFromServer,
+  getMyCartCountFromServer,
+} from "@/lib/api/server";
 
 export default async function GuestLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [user, categories] = await Promise.all([
+  const [user, categories, cartCount] = await Promise.all([
     getCurrentUserFromServer(),
     getCategoriesFromServer(),
+    getMyCartCountFromServer(),
   ]);
 
   return (
     <>
-      <Header user={user} categories={categories} />
+      <Header user={user} categories={categories} cartCount={cartCount} />
       <main className="flex-1">{children}</main>
       <Footer />
     </>

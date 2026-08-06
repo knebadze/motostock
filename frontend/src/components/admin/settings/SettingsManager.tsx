@@ -103,6 +103,26 @@ export function SettingsManager({ initialSettings }: { initialSettings: Settings
           />
         </div>
       </div>
+
+      <div className="mt-4 rounded-2xl border border-border p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="font-medium text-foreground">კალათა სტუმრებისთვის</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              ჩართვის შემთხვევაში დაულოგინებელ სტუმარსაც შეეძლება პროდუქტების და
+              ტრანსპორტის კალათაში დამატება (იგივე სტუმრის cookie-ით, რაც
+              სასურველების სიას იყენებს) — login-ისას ავტომატურად შეერწყმება მის
+              ანგარიშს (რაოდენობები შეიკრიბება, დამთხვევის შემთხვევაში).
+            </p>
+          </div>
+
+          <Toggle
+            checked={settings.guestCartEnabled}
+            onChange={(next) => save({ ...settings, guestCartEnabled: next })}
+            disabled={saving}
+          />
+        </div>
+      </div>
     </div>
   );
 }

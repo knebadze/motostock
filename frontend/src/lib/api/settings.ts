@@ -7,6 +7,7 @@ export type Settings = {
   vinDecodeEnabled: boolean;
   vinDecodeProvider: VinDecodeProvider;
   guestWishlistEnabled: boolean;
+  guestCartEnabled: boolean;
 };
 
 export async function getSettings(): Promise<Settings> {

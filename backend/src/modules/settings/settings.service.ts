@@ -8,6 +8,7 @@ export const USE_CLOUD_STORAGE_KEY = "use_cloud_storage";
 export const VIN_DECODE_ENABLED_KEY = "vin_decode_enabled";
 export const VIN_DECODE_PROVIDER_KEY = "vin_decode_provider";
 export const GUEST_WISHLIST_ENABLED_KEY = "guest_wishlist_enabled";
+export const GUEST_CART_ENABLED_KEY = "guest_cart_enabled";
 
 function isCloudinaryConfigured() {
   return Boolean(
@@ -35,12 +36,18 @@ export async function isGuestWishlistEnabled(): Promise<boolean> {
   return setting?.value === "true";
 }
 
+export async function isGuestCartEnabled(): Promise<boolean> {
+  const setting = await settingsRepository.findByKey(GUEST_CART_ENABLED_KEY);
+  return setting?.value === "true";
+}
+
 export async function getSettings() {
   return {
     useCloudStorage: await isCloudStorageEnabled(),
     vinDecodeEnabled: await isVinDecodeEnabled(),
     vinDecodeProvider: await getVinDecodeProvider(),
     guestWishlistEnabled: await isGuestWishlistEnabled(),
+    guestCartEnabled: await isGuestCartEnabled(),
   };
 }
 
@@ -73,5 +80,6 @@ export async function updateSettings(input: UpdateSettingsInput) {
   await settingsRepository.upsert(VIN_DECODE_ENABLED_KEY, String(input.vinDecodeEnabled));
   await settingsRepository.upsert(VIN_DECODE_PROVIDER_KEY, input.vinDecodeProvider);
   await settingsRepository.upsert(GUEST_WISHLIST_ENABLED_KEY, String(input.guestWishlistEnabled));
+  await settingsRepository.upsert(GUEST_CART_ENABLED_KEY, String(input.guestCartEnabled));
   return getSettings();
 }

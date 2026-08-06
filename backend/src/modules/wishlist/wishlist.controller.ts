@@ -8,9 +8,9 @@ import type { CreateWishlistItemInput, WishlistStatusQuery } from "./wishlist.sc
 // of these is set before a handler runs — it 401s otherwise. Narrow
 // structural type (not the full generic Request<...>) so this accepts any
 // of the differently-typed Request<> instances below.
-function getOwner(req: Pick<Request, "user" | "wishlistGuestId">): WishlistOwner {
+function getOwner(req: Pick<Request, "user" | "guestId">): WishlistOwner {
   if (req.user) return { userId: req.user.sub };
-  if (req.wishlistGuestId) return { guestId: req.wishlistGuestId };
+  if (req.guestId) return { guestId: req.guestId };
   throw new ApiError(401, "Not authenticated");
 }
 

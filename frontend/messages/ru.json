@@ -18,6 +18,7 @@
     "register": "Регистрация",
     "myAccount": "Личный кабинет",
     "wishlist": "Избранное",
+    "cart": "Корзина",
     "logout": "Выйти",
     "logoutError": "Не удалось выйти, попробуйте ещё раз",
     "openMenu": "Открыть меню",
@@ -73,6 +74,22 @@
     "outOfStock": "Нет в наличии",
     "yes": "Да",
     "no": "Нет"
+  },
+  "Cart": {
+    "empty": "Корзина пуста.",
+    "itemCount": "{count} товар(ов)",
+    "subtotal": "Итого",
+    "viewCart": "Смотреть корзину",
+    "remove": "Удалить",
+    "removeSuccess": "Удалено из корзины",
+    "removeError": "Не удалось удалить",
+    "updateError": "Не удалось обновить количество",
+    "decreaseQuantity": "Уменьшить количество",
+    "increaseQuantity": "Увеличить количество",
+    "addToCart": "В корзину",
+    "addedToCart": "Добавлено",
+    "outOfStock": "Нет в наличии",
+    "addError": "Не удалось добавить в корзину"
   },
   "VehicleListingDetail": {
     "descriptionHeading": "Описание",
@@ -190,6 +207,7 @@
       "dashboard": "Дешборд",
       "garage": "Гараж",
       "wishlist": "Избранное",
+      "cart": "Корзина",
       "orders": "История заказов",
       "address": "Адрес",
       "changePassword": "Смена пароля"

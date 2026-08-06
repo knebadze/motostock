@@ -18,6 +18,7 @@ model VehicleListing {
   images           VehicleListingImage[]
   discounts        VehicleListingDiscount[]
   wishlistItems    WishlistItem[]
+  cartItems        CartItem[]
   createdAt        DateTime                 @default(now())
   updatedAt        DateTime                 @updatedAt
 

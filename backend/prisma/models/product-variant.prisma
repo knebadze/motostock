@@ -17,6 +17,7 @@ model ProductVariant {
   isActive      Boolean                  @default(true)
   images        ProductVariantImage[]
   discounts     ProductVariantDiscount[]
+  cartItems     CartItem[]
   createdAt     DateTime                 @default(now())
   updatedAt     DateTime                 @updatedAt
 

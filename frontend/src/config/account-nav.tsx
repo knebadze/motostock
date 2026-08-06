@@ -34,6 +34,24 @@ const wishlistIcon: ReactNode = (
   </svg>
 );
 
+const cartIcon: ReactNode = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-5"
+  >
+    <path d="M6 6h15l-1.5 9h-12z" />
+    <path d="M6 6 5 3H2" />
+    <circle cx="9" cy="20" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="18" cy="20" r="1.5" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 const ordersIcon: ReactNode = (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -83,7 +101,7 @@ const passwordIcon: ReactNode = (
 );
 
 export type AccountNavItem = {
-  labelKey: "dashboard" | "garage" | "wishlist" | "orders" | "address" | "changePassword";
+  labelKey: "dashboard" | "garage" | "wishlist" | "cart" | "orders" | "address" | "changePassword";
   href: string;
   icon: ReactNode;
 };
@@ -94,6 +112,7 @@ export const accountNav: AccountNavItem[] = [
   { labelKey: "dashboard", href: "/account", icon: dashboardIcon },
   { labelKey: "garage", href: "/account/garage", icon: garageIcon },
   { labelKey: "wishlist", href: "/wishlist", icon: wishlistIcon },
+  { labelKey: "cart", href: "/cart", icon: cartIcon },
   { labelKey: "orders", href: "/account/orders", icon: ordersIcon },
   { labelKey: "address", href: "/account/address", icon: addressIcon },
   { labelKey: "changePassword", href: "/account/change-password", icon: passwordIcon },

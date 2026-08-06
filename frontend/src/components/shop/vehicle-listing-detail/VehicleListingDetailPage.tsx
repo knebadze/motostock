@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/format";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 import { WishlistButton } from "@/components/shared/WishlistButton";
+import { AddToCartButton } from "@/components/shared/AddToCartButton";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 import type { Category } from "@/lib/api/categories";
 import { Breadcrumb } from "../Breadcrumb";
@@ -23,6 +24,7 @@ export function VehicleListingDetailPage({
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("VehicleListingDetail");
   const tShop = useTranslations("Shop");
+  const tCart = useTranslations("Cart");
 
   const outOfStock = listing.stockQuantity === 0;
   const title = [listing.vehicleCatalog.model.name[locale], listing.vehicleCatalog.variant]
@@ -72,14 +74,24 @@ export function VehicleListingDetailPage({
             )}
           </div>
 
-          <WishlistButton
-            itemType="VEHICLE_LISTING"
-            id={listing.id}
-            variant="button"
-            labelSave={tShop("wishlistSaveLabel")}
-            labelSaved={tShop("wishlistSavedLabel")}
-            className="self-start"
-          />
+          <div className="flex flex-wrap items-center gap-3">
+            <AddToCartButton
+              itemType="VEHICLE_LISTING"
+              id={listing.id}
+              disabled={outOfStock}
+              labelAdd={tCart("addToCart")}
+              labelAdded={tCart("addedToCart")}
+              labelOutOfStock={tCart("outOfStock")}
+              errorMessage={tCart("addError")}
+            />
+            <WishlistButton
+              itemType="VEHICLE_LISTING"
+              id={listing.id}
+              variant="button"
+              labelSave={tShop("wishlistSaveLabel")}
+              labelSaved={tShop("wishlistSavedLabel")}
+            />
+          </div>
 
           <VehicleSpecs listing={listing} />
         </div>
