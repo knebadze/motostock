@@ -7,7 +7,7 @@ import type { SpecFilterInput } from "./vehicle-listing.schema.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
 
-const include = {
+export const vehicleListingInclude = {
   vehicleCatalog: {
     include: {
       brand: { select: namedRefSelect },
@@ -27,6 +27,8 @@ const include = {
   discounts: { orderBy: { startDate: "desc" } },
   images: { orderBy: { position: "asc" } },
 } as const;
+
+const include = vehicleListingInclude;
 
 type VehicleListingWriteData = {
   vehicleCatalogId: number;

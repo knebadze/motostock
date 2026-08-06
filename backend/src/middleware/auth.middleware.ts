@@ -11,13 +11,18 @@ import type { JwtPayload } from "../lib/jwt.js";
 import type { RoleName } from "../lib/roles.js";
 import { usersRepository } from "../modules/users/users.repository.js";
 
-export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+// Non-throwing core of requireAuth — returns the resolved user (also
+// refreshing the sliding-expiry cookie as a side effect) or null on any
+// failure, instead of rejecting the request. requireAuth below is a thin
+// wrapper that turns null into a 401; resolveWishlistOwner (see the
+// wishlist module) uses this same resolution but falls back to a guest
+// identity instead of rejecting, when guest access is enabled.
+export async function resolveAuthenticatedUser(
+  req: Request,
+  res: Response,
+): Promise<JwtPayload | null> {
   const token = req.cookies?.[AUTH_COOKIE_NAME];
-
-  if (!token) {
-    next(new ApiError(401, "Not authenticated"));
-    return;
-  }
+  if (!token) return null;
 
   try {
     const payload = verifyJwt(token);
@@ -27,8 +32,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     // 2h token below and would otherwise never expire on its own.
     if (isSessionExpiredByAbsoluteCap(payload.loginAt)) {
       res.clearCookie(AUTH_COOKIE_NAME);
-      next(new ApiError(401, "Session expired, please log in again"));
-      return;
+      return null;
     }
 
     // Re-check the account in the database on every request instead of
@@ -36,13 +40,9 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     // demoted or deleted admin's still-unexpired token would keep granting
     // access until it naturally expires.
     const user = await usersRepository.findById(payload.sub);
-    if (!user) {
-      next(new ApiError(401, "Invalid or expired session"));
-      return;
-    }
+    if (!user) return null;
 
     const role = user.role.name as RoleName;
-    req.user = { sub: user.id, role, loginAt: payload.loginAt };
 
     // Sliding idle timeout — every authenticated request resets the 2h idle
     // clock by reissuing the cookie, while loginAt (and therefore the
@@ -50,10 +50,21 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     const refreshed = signJwt({ sub: user.id, role, loginAt: payload.loginAt });
     setAuthCookie(res, refreshed);
 
-    next();
+    return { sub: user.id, role, loginAt: payload.loginAt };
   } catch {
-    next(new ApiError(401, "Invalid or expired session"));
+    return null;
   }
+}
+
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const user = await resolveAuthenticatedUser(req, res);
+  if (!user) {
+    next(new ApiError(401, "Not authenticated"));
+    return;
+  }
+
+  req.user = user;
+  next();
 }
 
 export function requireRole(...roles: JwtPayload["role"][]) {

@@ -1,0 +1,41 @@
+enum WishlistItemType {
+  PRODUCT
+  VEHICLE_LISTING
+
+  @@schema("dbo")
+}
+
+// A saved product or vehicle listing, one row per (owner, item). itemType
+// picks which of productId/vehicleListingId is populated — same
+// dual-nullable-FK shape already used by CategoryFilterConfig/PromoCode.
+// Product-level (not ProductVariant) since wishlisting is browsing intent,
+// not a purchase-ready size/color pick; VehicleListing is already the
+// finest grain on that side.
+//
+// Owner is ALSO dual-nullable: userId for a logged-in account, guestId (an
+// opaque cookie-backed id, see resolveWishlistOwner) for an anonymous
+// visitor when guest wishlist access is enabled in Settings. Exactly one of
+// the two is set per row — enforced in the service layer, not a DB
+// constraint, same tradeoff CategoryFilterConfig already accepts. On login,
+// any guestId rows for that browser are reassigned to the now-known userId
+// (see wishlist.service.ts mergeGuestWishlistIntoUser).
+model WishlistItem {
+  id               Int              @id @default(autoincrement())
+  userId           Int?
+  user             User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestId          String?
+  itemType         WishlistItemType
+  productId        Int?
+  product          Product?         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  vehicleListingId Int?
+  vehicleListing   VehicleListing?  @relation(fields: [vehicleListingId], references: [id], onDelete: Cascade)
+  createdAt        DateTime         @default(now())
+
+  @@unique([userId, productId])
+  @@unique([userId, vehicleListingId])
+  @@unique([guestId, productId])
+  @@unique([guestId, vehicleListingId])
+  @@index([userId])
+  @@index([guestId])
+  @@schema("dbo")
+}

@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { AUTH_COOKIE_NAME, setAuthCookie } from "../../lib/jwt.js";
+import { mergeGuestWishlistCookie } from "../wishlist/wishlist.middleware.js";
 import { loginUser, registerUser, requestPasswordReset, resetPassword } from "./auth.service.js";
 import type {
   ForgotPasswordInput,
@@ -14,6 +15,7 @@ export async function register(
 ) {
   const { user, token } = await registerUser(req.body);
   setAuthCookie(res, token);
+  await mergeGuestWishlistCookie(req, res, user.id);
   res.status(201).json({ user });
 }
 
@@ -23,6 +25,7 @@ export async function login(
 ) {
   const { user, token } = await loginUser(req.body);
   setAuthCookie(res, token);
+  await mergeGuestWishlistCookie(req, res, user.id);
   res.status(200).json({ user });
 }
 
@@ -47,5 +50,6 @@ export async function resetPasswordHandler(
 ) {
   const { user, token } = await resetPassword(req.body);
   setAuthCookie(res, token);
+  await mergeGuestWishlistCookie(req, res, user.id);
   res.status(200).json({ user });
 }

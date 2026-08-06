@@ -17,6 +17,7 @@
     "login": "შესვლა",
     "register": "რეგისტრაცია",
     "myAccount": "ჩემი ანგარიში",
+    "wishlist": "სასურველები",
     "logout": "გასვლა",
     "logoutError": "გამოსვლა ვერ მოხერხდა, სცადეთ ხელახლა",
     "openMenu": "მენიუს გახსნა",
@@ -53,7 +54,9 @@
     "resultCount": "{count} შედეგი",
     "outOfStock": "არ არის მარაგში",
     "discountBadge": "ფასდაკლება",
-    "emptyState": "შედეგი ვერ მოიძებნა"
+    "emptyState": "შედეგი ვერ მოიძებნა",
+    "wishlistSaveLabel": "სასურველებში დამატება",
+    "wishlistSavedLabel": "სასურველებშია"
   },
   "ProductDetail": {
     "descriptionHeading": "აღწერა",
@@ -186,6 +189,7 @@
     "nav": {
       "dashboard": "დეშბორდი",
       "garage": "გარაჟი",
+      "wishlist": "სასურველები",
       "orders": "შეკვეთების ისტორია",
       "address": "მისამართი",
       "changePassword": "პაროლის შეცვლა"
@@ -247,6 +251,13 @@
       "submitting": "ინახება...",
       "addSuccess": "ტექნიკა დაემატა გარაჟში",
       "addError": "ტექნიკის დამატება ვერ მოხერხდა"
+    },
+    "wishlist": {
+      "description": "თქვენ მიერ შენახული პროდუქტები და ტრანსპორტი.",
+      "productsHeading": "პროდუქტები",
+      "vehiclesHeading": "ტრანსპორტი",
+      "empty": "სასურველების სია ჯერ ცარიელია.",
+      "removeSuccess": "წაიშალა სასურველებიდან"
     },
     "orders": {
       "comingSoon": "შეკვეთების ისტორია მალე დაემატება."

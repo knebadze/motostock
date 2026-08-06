@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatPrice, pickLookupName } from "@/lib/format";
 import { sanitizeRichText } from "@/lib/sanitize-html";
+import { WishlistButton } from "@/components/shared/WishlistButton";
 import type {
   Product,
   ProductDetail,
@@ -85,6 +86,7 @@ export function ProductDetailPage({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("ProductDetail");
+  const tShop = useTranslations("Shop");
 
   const defaultVariant =
     product.variants.find((variant) => variant.stockQuantity > 0) ?? product.variants[0] ?? null;
@@ -155,6 +157,15 @@ export function ProductDetailPage({
               onSelect={setSelectedVariantId}
             />
           )}
+
+          <WishlistButton
+            itemType="PRODUCT"
+            id={product.id}
+            variant="button"
+            labelSave={tShop("wishlistSaveLabel")}
+            labelSaved={tShop("wishlistSavedLabel")}
+            className="self-start"
+          />
 
           <ProductSpecs attributeValues={product.attributeValues} />
 

@@ -14,7 +14,13 @@ import {
 
 export const garageRouter = Router();
 
-garageRouter.use(requireAuth);
+// Path-scoped — see addresses.routes.ts for why an unscoped .use() here
+// would break other routers sharing the /api/users mount prefix (this is
+// exactly the bug that made guest wishlist access 401 despite being
+// enabled: this router, mounted before wishlistRouter, was rejecting the
+// request before it ever reached wishlistRouter's own, more permissive
+// check).
+garageRouter.use("/me/garage", requireAuth);
 
 garageRouter.get("/me/garage", garageController.list);
 garageRouter.post("/me/garage", validate(createGarageVehicleSchema), garageController.create);

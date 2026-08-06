@@ -17,6 +17,7 @@ model VehicleListing {
   descriptionRu    String?
   images           VehicleListingImage[]
   discounts        VehicleListingDiscount[]
+  wishlistItems    WishlistItem[]
   createdAt        DateTime                 @default(now())
   updatedAt        DateTime                 @updatedAt
 

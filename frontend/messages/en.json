@@ -17,6 +17,7 @@
     "login": "Log in",
     "register": "Sign up",
     "myAccount": "My account",
+    "wishlist": "Wishlist",
     "logout": "Log out",
     "logoutError": "Log out failed, please try again",
     "openMenu": "Open menu",
@@ -53,7 +54,9 @@
     "resultCount": "{count} results",
     "outOfStock": "Out of stock",
     "discountBadge": "Sale",
-    "emptyState": "No results found"
+    "emptyState": "No results found",
+    "wishlistSaveLabel": "Add to wishlist",
+    "wishlistSavedLabel": "Saved"
   },
   "ProductDetail": {
     "descriptionHeading": "Description",
@@ -186,6 +189,7 @@
     "nav": {
       "dashboard": "Dashboard",
       "garage": "Garage",
+      "wishlist": "Wishlist",
       "orders": "Order history",
       "address": "Address",
       "changePassword": "Change password"
@@ -247,6 +251,13 @@
       "submitting": "Saving...",
       "addSuccess": "Vehicle added to your garage",
       "addError": "Failed to add vehicle"
+    },
+    "wishlist": {
+      "description": "Products and vehicles you've saved.",
+      "productsHeading": "Products",
+      "vehiclesHeading": "Vehicles",
+      "empty": "Your wishlist is empty for now.",
+      "removeSuccess": "Removed from wishlist"
     },
     "orders": {
       "comingSoon": "Order history is coming soon."

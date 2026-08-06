@@ -6,6 +6,7 @@ export type Settings = {
   useCloudStorage: boolean;
   vinDecodeEnabled: boolean;
   vinDecodeProvider: VinDecodeProvider;
+  guestWishlistEnabled: boolean;
 };
 
 export async function getSettings(): Promise<Settings> {

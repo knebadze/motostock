@@ -17,6 +17,7 @@
     "login": "Войти",
     "register": "Регистрация",
     "myAccount": "Личный кабинет",
+    "wishlist": "Избранное",
     "logout": "Выйти",
     "logoutError": "Не удалось выйти, попробуйте ещё раз",
     "openMenu": "Открыть меню",
@@ -53,7 +54,9 @@
     "resultCount": "{count} результатов",
     "outOfStock": "Нет в наличии",
     "discountBadge": "Скидка",
-    "emptyState": "Ничего не найдено"
+    "emptyState": "Ничего не найдено",
+    "wishlistSaveLabel": "В избранное",
+    "wishlistSavedLabel": "В избранном"
   },
   "ProductDetail": {
     "descriptionHeading": "Описание",
@@ -186,6 +189,7 @@
     "nav": {
       "dashboard": "Дешборд",
       "garage": "Гараж",
+      "wishlist": "Избранное",
       "orders": "История заказов",
       "address": "Адрес",
       "changePassword": "Смена пароля"
@@ -247,6 +251,13 @@
       "submitting": "Сохранение...",
       "addSuccess": "Техника добавлена в гараж",
       "addError": "Не удалось добавить технику"
+    },
+    "wishlist": {
+      "description": "Сохранённые вами товары и техника.",
+      "productsHeading": "Товары",
+      "vehiclesHeading": "Техника",
+      "empty": "Список избранного пока пуст.",
+      "removeSuccess": "Удалено из избранного"
     },
     "orders": {
       "comingSoon": "История заказов скоро появится."

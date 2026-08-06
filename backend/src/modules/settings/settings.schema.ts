@@ -10,6 +10,7 @@ export const updateSettingsSchema = registry.register(
     useCloudStorage: z.boolean().openapi({ example: true }),
     vinDecodeEnabled: z.boolean().openapi({ example: false }),
     vinDecodeProvider: vinDecodeProviderSchema.openapi({ example: "nhtsa" }),
+    guestWishlistEnabled: z.boolean().openapi({ example: false }),
   }),
 );
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
@@ -20,6 +21,7 @@ export const settingsResponseSchema = registry.register(
     useCloudStorage: z.boolean().openapi({ example: false }),
     vinDecodeEnabled: z.boolean().openapi({ example: false }),
     vinDecodeProvider: vinDecodeProviderSchema.openapi({ example: "nhtsa" }),
+    guestWishlistEnabled: z.boolean().openapi({ example: false }),
   }),
 );
 

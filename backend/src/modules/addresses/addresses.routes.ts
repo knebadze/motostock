@@ -14,7 +14,14 @@ import {
 
 export const addressesRouter = Router();
 
-addressesRouter.use(requireAuth);
+// Path-scoped (not a bare .use(requireAuth)) — addressesRouter shares the
+// /api/users mount prefix with several other routers (garage, wishlist,
+// ...); an unscoped .use() here would intercept and reject EVERY request
+// under /api/users/*, including ones meant for those other routers, since
+// Express dispatches same-prefix routers in mount order and a rejected
+// request never reaches the next one. Scoping to this router's own path
+// keeps it from swallowing traffic it doesn't own.
+addressesRouter.use("/me/addresses", requireAuth);
 
 addressesRouter.get("/me/addresses", addressesController.list);
 addressesRouter.post(

@@ -22,6 +22,7 @@ import type { FinaSyncRun } from "./fina-sync";
 import type { AdminUser } from "./users";
 import type { HeroSlide } from "./hero-slides";
 import type { PromoCode, PromoCodeDomain } from "./promo-codes";
+import type { WishlistItem } from "./wishlist";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -63,6 +64,7 @@ export async function getSettingsFromServer(): Promise<Settings> {
     useCloudStorage: false,
     vinDecodeEnabled: false,
     vinDecodeProvider: "nhtsa",
+    guestWishlistEnabled: false,
   };
   if (!headers) return fallback;
 
@@ -279,6 +281,20 @@ export async function getMyGarageFromServer(): Promise<GarageVehicle[]> {
 
   try {
     const { data } = await apiClient.get<{ items: GarageVehicle[] }>("/users/me/garage", {
+      headers,
+    });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getMyWishlistFromServer(): Promise<WishlistItem[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: WishlistItem[] }>("/users/me/wishlist", {
       headers,
     });
     return data.items;

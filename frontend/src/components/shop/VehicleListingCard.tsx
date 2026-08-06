@@ -5,15 +5,23 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { formatPrice, pickLookupName } from "@/lib/format";
+import { WishlistButton } from "@/components/shared/WishlistButton";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 import type { ViewMode } from "./ViewModeToggle";
 
 export function VehicleListingCard({
   listing,
   layout,
+  wishlistItemId,
+  onWishlistChange,
 }: {
   listing: VehicleListing;
   layout: ViewMode;
+  // Passed by WishlistManager, which already knows every card here is
+  // wishlisted — skips the status lookup and lets the card announce
+  // removal so it can drop itself from that list.
+  wishlistItemId?: number;
+  onWishlistChange?: (wishlisted: boolean) => void;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
@@ -58,6 +66,15 @@ export function VehicleListingCard({
             {t("discountBadge")}
           </span>
         )}
+        <WishlistButton
+          itemType="VEHICLE_LISTING"
+          id={listing.id}
+          initialWishlistItemId={wishlistItemId}
+          onChange={onWishlistChange}
+          labelSave={t("wishlistSaveLabel")}
+          labelSaved={t("wishlistSavedLabel")}
+          className="absolute bottom-1.5 right-1.5"
+        />
       </div>
 
       <div className="flex flex-1 flex-col justify-between gap-1">

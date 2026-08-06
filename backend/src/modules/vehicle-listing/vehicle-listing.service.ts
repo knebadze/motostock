@@ -83,7 +83,7 @@ function findActiveDiscount(discounts: DiscountRow[]) {
   );
 }
 
-function toResponse(row: VehicleListingRow) {
+export function toVehicleListingResponse(row: VehicleListingRow) {
   const activeDiscount = findActiveDiscount(row.discounts);
 
   return {
@@ -206,7 +206,7 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     specFilters: query.specFilters,
     adminFilters: query.adminFilters,
   });
-  return rows.map(toResponse);
+  return rows.map(toVehicleListingResponse);
 }
 
 export async function getVehicleListing(id: number) {
@@ -214,14 +214,14 @@ export async function getVehicleListing(id: number) {
   if (!row) {
     throw new ApiError(404, "განცხადება ვერ მოიძებნა");
   }
-  return toResponse(row);
+  return toVehicleListingResponse(row);
 }
 
 export async function createVehicleListing(input: CreateVehicleListingInput) {
   await assertRefsExist(input);
 
   const row = await vehicleListingRepository.create(input);
-  return toResponse(row);
+  return toVehicleListingResponse(row);
 }
 
 export async function updateVehicleListing(id: number, input: UpdateVehicleListingInput) {
@@ -239,7 +239,7 @@ export async function updateVehicleListing(id: number, input: UpdateVehicleListi
   });
 
   const row = await vehicleListingRepository.update(id, input);
-  return toResponse(row);
+  return toVehicleListingResponse(row);
 }
 
 export async function deleteVehicleListing(id: number) {
