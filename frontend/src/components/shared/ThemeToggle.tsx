@@ -14,7 +14,7 @@ export function ThemeToggle() {
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
-    return <div className="size-9 rounded-full" aria-hidden />;
+    return <div className="size-8 shrink-0 rounded-full sm:size-9" aria-hidden />;
   }
 
   const isDark = resolvedTheme === "dark";
@@ -24,7 +24,7 @@ export function ThemeToggle() {
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={isDark ? t("switchToLight") : t("switchToDark")}
-      className="flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary"
+      className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9"
     >
       {isDark ? (
         <svg

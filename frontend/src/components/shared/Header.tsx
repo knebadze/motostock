@@ -101,14 +101,14 @@ export function Header({
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
         <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center">
-          <Logo className="h-8 w-auto sm:h-9" />
+          <Logo className="h-8 w-auto sm:h-9" padding="px-3 py-1 sm:px-4" />
         </Link>
 
         <nav
           onMouseLeave={scheduleMegaMenuClose}
-          className="hidden items-center gap-6 text-sm font-medium md:flex"
+          className="hidden items-center gap-6 text-sm font-medium lg:flex"
         >
           {topLevelCategories.map((category) => {
             const href = `/${category.slug}`;
@@ -128,14 +128,14 @@ export function Header({
           })}
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           <LanguageSwitcher />
           <ThemeToggle />
 
           <Link
             href="/wishlist"
             aria-label={tHeader("wishlist")}
-            className="flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary"
+            className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -154,7 +154,7 @@ export function Header({
           <CartDropdown initialCount={cartCount} />
 
           {user ? (
-            <div ref={accountMenuRef} className="relative hidden md:block">
+            <div ref={accountMenuRef} className="relative hidden lg:block">
               <button
                 type="button"
                 onClick={() => setAccountMenuOpen((open) => !open)}
@@ -197,7 +197,7 @@ export function Header({
               )}
             </div>
           ) : (
-            <div className="hidden items-center gap-2 md:flex">
+            <div className="hidden items-center gap-2 lg:flex">
               <Link
                 href="/register"
                 className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
@@ -219,7 +219,7 @@ export function Header({
             aria-expanded={isOpen}
             aria-controls="mobile-nav"
             aria-label={isOpen ? tHeader("closeMenu") : tHeader("openMenu")}
-            className="flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary md:hidden"
+            className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9 lg:hidden"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -245,9 +245,9 @@ export function Header({
         <div
           onMouseEnter={cancelMegaMenuClose}
           onMouseLeave={scheduleMegaMenuClose}
-          className="absolute inset-x-0 top-full hidden border-b border-border bg-background shadow-lg md:block"
+          className="absolute inset-x-0 top-full hidden border-b border-border bg-background shadow-lg lg:block"
         >
-          <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
             <div className="grid grid-cols-3 gap-6 sm:grid-cols-4 lg:grid-cols-6">
               {activeChildren.map((child) => {
                 const imageUrl = resolveMediaUrl(child.imageUrl);
@@ -284,7 +284,7 @@ export function Header({
 
       <div
         id="mobile-nav"
-        className={`grid overflow-hidden border-b border-border transition-[grid-template-rows] duration-200 ease-out md:hidden ${
+        className={`grid overflow-hidden border-b border-border transition-[grid-template-rows] duration-200 ease-out lg:hidden ${
           isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         }`}
       >

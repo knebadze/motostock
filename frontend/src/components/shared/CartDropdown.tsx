@@ -56,7 +56,7 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
         aria-label={tHeader("cart")}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="relative flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary"
+        className="relative flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

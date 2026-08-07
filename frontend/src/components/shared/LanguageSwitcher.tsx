@@ -46,7 +46,7 @@ export function LanguageSwitcher() {
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={t("language")}
-        className="flex h-9 items-center justify-center gap-1 rounded-full border border-border px-3 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+        className="flex h-8 shrink-0 items-center justify-center gap-1 rounded-full border border-border px-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary sm:h-9 sm:px-3"
       >
         {CODES[locale]}
       </button>
