@@ -81,7 +81,7 @@ export const orderResponseSchema = registry.register(
   "Order",
   z.object({
     id: z.int().openapi({ example: 1 }),
-    orderCode: z.string().openapi({ example: "MS-20260806-4K7QRX" }),
+    orderCode: z.string().openapi({ example: "4K7QRX9P" }),
     status: lookupItemResponseSchema,
     fulfillmentMethod: orderFulfillmentMethodSchema,
     shippingSnapshot: shippingSnapshotSchema.nullable(),

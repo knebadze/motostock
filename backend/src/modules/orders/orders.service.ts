@@ -10,20 +10,18 @@ import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { ordersRepository, type PlaceOrderItemInput } from "./orders.repository.js";
 import type { CheckoutInput, ListOrdersQuery } from "./orders.schema.js";
 
+// Excludes visually ambiguous characters (0/O, 1/I/L) so a customer reading
+// the code aloud or typing it back in doesn't stumble.
 const ORDER_CODE_CHARSET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-const ORDER_CODE_SUFFIX_LENGTH = 6;
+const ORDER_CODE_LENGTH = 8;
 const MAX_ORDER_CODE_ATTEMPTS = 5;
 
 function generateOrderCode(): string {
-  const now = new Date();
-  const datePart = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, "0")}${String(
-    now.getUTCDate(),
-  ).padStart(2, "0")}`;
-  let suffix = "";
-  for (let i = 0; i < ORDER_CODE_SUFFIX_LENGTH; i++) {
-    suffix += ORDER_CODE_CHARSET[randomInt(ORDER_CODE_CHARSET.length)];
+  let code = "";
+  for (let i = 0; i < ORDER_CODE_LENGTH; i++) {
+    code += ORDER_CODE_CHARSET[randomInt(ORDER_CODE_CHARSET.length)];
   }
-  return `MS-${datePart}-${suffix}`;
+  return code;
 }
 
 // The "order-statuses" lookup (see order-status.prisma / lookups.registry.ts)
