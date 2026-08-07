@@ -77,3 +77,35 @@ export async function getMyOrder(id: number): Promise<Order> {
   const { data } = await apiClient.get<{ order: Order }>(`/orders/me/${id}`);
   return data.order;
 }
+
+// Admin-only from here down — hits the requireRole(ADMIN)-gated /orders and
+// /orders/:id endpoints (not the /orders/me* ones above), so every order is
+// visible regardless of buyer, and each row/detail carries a `buyer`.
+export type OrderBuyer = { id: number; firstName: string; lastName: string; email: string };
+
+export type AdminOrderSummary = OrderSummary & {
+  fulfillmentMethod: OrderFulfillmentMethod;
+  buyer: OrderBuyer;
+};
+
+export type AdminOrder = Order & { buyer: OrderBuyer };
+
+export type ListOrdersFilters = {
+  search?: string;
+  statusIds?: number[];
+  fulfillmentMethods?: OrderFulfillmentMethod[];
+  createdFrom?: string;
+  createdTo?: string;
+};
+
+export async function listAllOrders(filters: ListOrdersFilters = {}): Promise<AdminOrderSummary[]> {
+  const { data } = await apiClient.get<{ orders: AdminOrderSummary[] }>("/orders", {
+    params: filters,
+  });
+  return data.orders;
+}
+
+export async function getAnyOrder(id: number): Promise<AdminOrder> {
+  const { data } = await apiClient.get<{ order: AdminOrder }>(`/orders/${id}`);
+  return data.order;
+}

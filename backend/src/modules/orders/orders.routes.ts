@@ -1,13 +1,17 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireAuth } from "../../middleware/auth.middleware.js";
+import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
+import { ROLES } from "../../lib/roles.js";
 import * as ordersController from "./orders.controller.js";
 import {
+  adminOrderResponseSchema,
+  adminOrderSummaryResponseSchema,
   checkoutInputSchema,
   checkoutPreviewResponseSchema,
+  listOrdersQuerySchema,
   orderIdParamSchema,
   orderResponseSchema,
   orderSummaryResponseSchema,
@@ -28,9 +32,29 @@ ordersRouter.post("/checkout", validate(checkoutInputSchema), ordersController.c
 ordersRouter.get("/me", ordersController.list);
 ordersRouter.get("/me/:id", validate(orderIdParamSchema, "params"), ordersController.getOne);
 
+// Admin-only, declared after /checkout*, /me, /me/:id above — "/me" is a
+// literal path matched before Express ever tries "/:id" against it, so
+// these can't swallow the customer routes regardless of declaration order,
+// but keeping admin routes last mirrors the public-then-admin convention
+// used elsewhere (e.g. vehicle-listing.routes.ts).
+ordersRouter.get(
+  "/",
+  requireRole(ROLES.ADMIN),
+  validate(listOrdersQuerySchema, "query"),
+  ordersController.listAll,
+);
+ordersRouter.get(
+  "/:id",
+  requireRole(ROLES.ADMIN),
+  validate(orderIdParamSchema, "params"),
+  ordersController.getAny,
+);
+
 const security = [{ cookieAuth: [] }];
 const listResponse = z.object({ orders: z.array(orderSummaryResponseSchema) });
 const orderResponse = z.object({ order: orderResponseSchema });
+const adminListResponse = z.object({ orders: z.array(adminOrderSummaryResponseSchema) });
+const adminOrderResponse = z.object({ order: adminOrderResponseSchema });
 
 registry.registerPath({
   method: "post",
@@ -84,6 +108,35 @@ registry.registerPath({
   responses: {
     200: { description: "Order", content: { "application/json": { schema: orderResponse } } },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/orders",
+  tags: ["Orders"],
+  summary: "List every order across every buyer, with search/status/fulfillment/date filters (admin only)",
+  security,
+  request: { query: listOrdersQuerySchema },
+  responses: {
+    200: { description: "Orders", content: { "application/json": { schema: adminListResponse } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/orders/{id}",
+  tags: ["Orders"],
+  summary: "Get any order in full detail, including the buyer (admin only)",
+  security,
+  request: { params: orderIdParamSchema },
+  responses: {
+    200: { description: "Order", content: { "application/json": { schema: adminOrderResponse } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

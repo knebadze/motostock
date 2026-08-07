@@ -8,7 +8,7 @@ import { isPromoStackingEnabled } from "../settings/settings.service.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { ordersRepository, type PlaceOrderItemInput } from "./orders.repository.js";
-import type { CheckoutInput } from "./orders.schema.js";
+import type { CheckoutInput, ListOrdersQuery } from "./orders.schema.js";
 
 const ORDER_CODE_CHARSET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const ORDER_CODE_SUFFIX_LENGTH = 6;
@@ -335,4 +335,30 @@ export async function getMyOrder(userId: number, id: number) {
     throw new ApiError(404, "შეკვეთა ვერ მოიძებნა");
   }
   return toOrderResponse(row);
+}
+
+// Admin-only from here down — every caller of these is already gated by
+// requireRole(ROLES.ADMIN) in orders.routes.ts, so unlike listMyOrders/
+// getMyOrder above these never scope by owner.
+
+export async function listAllOrders(filters: ListOrdersQuery) {
+  const rows = await ordersRepository.findManyAdmin(filters);
+  return rows.map((row) => ({
+    id: row.id,
+    orderCode: row.orderCode,
+    status: row.status,
+    fulfillmentMethod: row.fulfillmentMethod,
+    total: Number(row.total),
+    itemCount: row.items.reduce((sum, item) => sum + item.quantity, 0),
+    createdAt: row.createdAt,
+    buyer: row.user,
+  }));
+}
+
+export async function getAnyOrder(id: number) {
+  const row = await ordersRepository.findById(id);
+  if (!row) {
+    throw new ApiError(404, "შეკვეთა ვერ მოიძებნა");
+  }
+  return { ...toOrderResponse(row), buyer: row.user };
 }

@@ -2,7 +2,56 @@ import { ApiError } from "../../lib/ApiError.js";
 import { prisma } from "../../config/prisma.js";
 import type { CartItemType, OrderFulfillmentMethod, Prisma } from "../../generated/prisma/index.js";
 
-const orderItemsInclude = { items: { orderBy: { id: "asc" } }, status: true } as const;
+const buyerSelect = { id: true, firstName: true, lastName: true, email: true } as const;
+
+// Also used by the admin single-order detail lookup (see orders.service.ts's
+// getAnyOrder) — the customer-facing toOrderResponse simply never reads
+// `order.user`, so including it here is harmless for that path.
+const orderItemsInclude = {
+  items: { orderBy: { id: "asc" } },
+  status: true,
+  user: { select: buyerSelect },
+} as const;
+
+function buildAdminWhere(filters: {
+  search?: string;
+  statusIds?: number[];
+  fulfillmentMethods?: OrderFulfillmentMethod[];
+  createdFrom?: string;
+  createdTo?: string;
+}): Prisma.OrderWhereInput | undefined {
+  const and: Prisma.OrderWhereInput[] = [];
+
+  if (filters.search) {
+    and.push({
+      OR: [
+        { orderCode: { contains: filters.search, mode: "insensitive" } },
+        { user: { firstName: { contains: filters.search, mode: "insensitive" } } },
+        { user: { lastName: { contains: filters.search, mode: "insensitive" } } },
+        { user: { email: { contains: filters.search, mode: "insensitive" } } },
+      ],
+    });
+  }
+
+  if (filters.statusIds && filters.statusIds.length > 0) {
+    and.push({ statusId: { in: filters.statusIds } });
+  }
+
+  if (filters.fulfillmentMethods && filters.fulfillmentMethods.length > 0) {
+    and.push({ fulfillmentMethod: { in: filters.fulfillmentMethods } });
+  }
+
+  if (filters.createdFrom || filters.createdTo) {
+    and.push({
+      createdAt: {
+        ...(filters.createdFrom ? { gte: new Date(filters.createdFrom) } : {}),
+        ...(filters.createdTo ? { lte: new Date(filters.createdTo) } : {}),
+      },
+    });
+  }
+
+  return and.length > 0 ? { AND: and } : undefined;
+}
 
 export type PlaceOrderItemInput = {
   itemType: CartItemType;
@@ -44,6 +93,24 @@ export const ordersRepository = {
 
   findById(id: number) {
     return prisma.order.findUnique({ where: { id }, include: orderItemsInclude });
+  },
+
+  // Admin-only: every user's orders, not scoped to a single owner. No
+  // skip/take anywhere in this codebase's admin list endpoints — every one
+  // returns its full filtered result set and pagination happens client-side
+  // (see usePagination on the frontend), so this follows the same shape.
+  findManyAdmin(filters: {
+    search?: string;
+    statusIds?: number[];
+    fulfillmentMethods?: OrderFulfillmentMethod[];
+    createdFrom?: string;
+    createdTo?: string;
+  }) {
+    return prisma.order.findMany({
+      where: buildAdminWhere(filters),
+      include: { items: { select: { quantity: true } }, status: true, user: { select: buyerSelect } },
+      orderBy: { createdAt: "desc" },
+    });
   },
 
   // Atomically re-checks + decrements stock for every line, creates the

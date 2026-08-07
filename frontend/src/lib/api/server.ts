@@ -24,7 +24,7 @@ import type { HeroSlide } from "./hero-slides";
 import type { PromoCode, PromoCodeDomain } from "./promo-codes";
 import type { WishlistItem } from "./wishlist";
 import type { Cart } from "./cart";
-import type { Order, OrderSummary } from "./orders";
+import type { AdminOrderSummary, Order, OrderSummary } from "./orders";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -357,6 +357,18 @@ export async function getMyOrderFromServer(id: number): Promise<Order | null> {
     return data.order;
   } catch {
     return null;
+  }
+}
+
+export async function getOrdersFromServer(): Promise<AdminOrderSummary[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ orders: AdminOrderSummary[] }>("/orders", { headers });
+    return data.orders;
+  } catch {
+    return [];
   }
 }
 

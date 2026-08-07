@@ -105,3 +105,52 @@ export const orderSummaryResponseSchema = registry.register(
     createdAt: z.iso.datetime(),
   }),
 );
+
+// Admin-only surface below — every route using these is gated by
+// requireRole(ROLES.ADMIN) in orders.routes.ts, not just requireAuth.
+
+const buyerSummarySchema = z.object({
+  id: z.int(),
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.email(),
+});
+
+// ?statusIds=1&statusIds=2 parses to a string[] via qs, but a single
+// ?statusIds=1 parses to a bare string — normalize both into an array
+// before coercing, same pattern as wishlist.schema.ts's idListQuerySchema.
+const idListQuerySchema = z
+  .preprocess(
+    (value) => (value == null ? undefined : Array.isArray(value) ? value : [value]),
+    z.array(z.coerce.number().int().positive()),
+  )
+  .optional();
+
+const fulfillmentMethodListQuerySchema = z
+  .preprocess(
+    (value) => (value == null ? undefined : Array.isArray(value) ? value : [value]),
+    z.array(orderFulfillmentMethodSchema),
+  )
+  .optional();
+
+export const listOrdersQuerySchema = z.object({
+  search: z.string().trim().min(1).max(100).optional(),
+  statusIds: idListQuerySchema,
+  fulfillmentMethods: fulfillmentMethodListQuerySchema,
+  createdFrom: z.iso.date().optional(),
+  createdTo: z.iso.date().optional(),
+});
+export type ListOrdersQuery = z.infer<typeof listOrdersQuerySchema>;
+
+export const adminOrderSummaryResponseSchema = registry.register(
+  "AdminOrderSummary",
+  orderSummaryResponseSchema.extend({
+    fulfillmentMethod: orderFulfillmentMethodSchema,
+    buyer: buyerSummarySchema,
+  }),
+);
+
+export const adminOrderResponseSchema = registry.register(
+  "AdminOrder",
+  orderResponseSchema.extend({ buyer: buyerSummarySchema }),
+);

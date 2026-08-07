@@ -10,6 +10,7 @@ import {
   heroSlidesIcon,
   listingIcon,
   modelsIcon,
+  ordersIcon,
   productsIcon,
   promoCodesIcon,
   usersIcon,
@@ -33,6 +34,7 @@ export const adminNav: AdminNavSection[] = [
     items: [
       { label: "დეშბორდი", href: "/admin", icon: dashboardIcon },
       { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon },
+      { label: "შეკვეთები", href: "/admin/orders", icon: ordersIcon },
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },
       { label: "მთავარი გვერდის სლაიდერი", href: "/admin/hero-slides", icon: heroSlidesIcon },
       { label: "მასობრივი ფასდაკლებები", href: "/admin/bulk-discounts", icon: discountRulesIcon },

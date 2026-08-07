@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
 import * as ordersService from "./orders.service.js";
-import type { CheckoutInput } from "./orders.schema.js";
+import type { CheckoutInput, ListOrdersQuery } from "./orders.schema.js";
 
 // requireAuth (see orders.routes.ts) guarantees req.user is set before any
 // handler here runs — this is just the narrow structural read of it.
@@ -29,5 +29,19 @@ export async function list(req: Request, res: Response) {
 
 export async function getOne(req: Request, res: Response) {
   const order = await ordersService.getMyOrder(requireUserId(req), Number(req.params.id));
+  res.status(200).json({ order });
+}
+
+// Admin-only — requireRole(ROLES.ADMIN) gates both routes (see orders.routes.ts).
+export async function listAll(
+  req: Request<unknown, unknown, unknown, ListOrdersQuery>,
+  res: Response,
+) {
+  const orders = await ordersService.listAllOrders(req.query);
+  res.status(200).json({ orders });
+}
+
+export async function getAny(req: Request, res: Response) {
+  const order = await ordersService.getAnyOrder(Number(req.params.id));
   res.status(200).json({ order });
 }
