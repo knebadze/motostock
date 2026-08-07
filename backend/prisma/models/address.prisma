@@ -12,6 +12,7 @@ model Address {
   building   String?
   apartment  String?
   postalCode String?
+  orders     Order[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

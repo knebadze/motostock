@@ -123,6 +123,26 @@ export function SettingsManager({ initialSettings }: { initialSettings: Settings
           />
         </div>
       </div>
+
+      <div className="mt-4 rounded-2xl border border-border p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="font-medium text-foreground">პრომო კოდის დაჯამება ფასდაკლებასთან</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              ჩართვის შემთხვევაში checkout-ზე შეყვანილი პრომო კოდის ფასდაკლება
+              დაემატება ნივთს, რომელსაც უკვე აქვს აქტიური ფასდაკლება (დაჯამდება).
+              გამორთვისას ასეთ ნივთზე პრომო კოდი უბრალოდ არ გამოიყენება — ფასდაკლებას
+              არ გაუთანაბრდება.
+            </p>
+          </div>
+
+          <Toggle
+            checked={settings.promoStackingEnabled}
+            onChange={(next) => save({ ...settings, promoStackingEnabled: next })}
+            disabled={saving}
+          />
+        </div>
+      </div>
     </div>
   );
 }

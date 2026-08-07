@@ -1,0 +1,55 @@
+enum OrderFulfillmentMethod {
+  CARD
+  COURIER
+  PICKUP
+
+  @@schema("dbo")
+}
+
+// A placed order — the historical record of a checkout. Unlike CartItem,
+// everything that could later change (address, promo code, product name)
+// is snapshotted at creation time (see shippingSnapshot/promoCodeSnapshot/
+// OrderItem.itemName below), because an already-placed order must never
+// visually change just because a user edited their address or an admin
+// renamed a product. No payment provider is integrated (none is installed
+// in this codebase yet) — fulfillmentMethod just records how the customer
+// said they'd pay/receive; status starts PENDING (see orders.service.ts's
+// resolvePendingStatusId) and is confirmed/updated manually.
+model Order {
+  id                Int                    @id @default(autoincrement())
+  orderCode         String                 @unique
+  userId            Int
+  user              User                   @relation(fields: [userId], references: [id])
+  fulfillmentMethod OrderFulfillmentMethod
+  statusId          Int
+  status            OrderStatus            @relation(fields: [statusId], references: [id])
+
+  // SetNull (not Restrict/Cascade): losing the live Address row shouldn't
+  // block its deletion or cascade-delete order history — the snapshot below
+  // is what the order actually displays.
+  addressId        Int?
+  address          Address? @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  shippingSnapshot Json?
+
+  // Same SetNull reasoning as addressId — the code/percent are also
+  // snapshotted so the order stays readable even if the PromoCode is later
+  // edited or deleted.
+  promoCodeId          Int?
+  promoCode            PromoCode? @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
+  promoCodeSnapshot     String?
+  promoDiscountPercent Decimal?   @db.Decimal(5, 2)
+
+  subtotal      Decimal @db.Decimal(10, 2)
+  discountTotal Decimal @db.Decimal(10, 2) @default(0)
+  total         Decimal @db.Decimal(10, 2)
+
+  items     OrderItem[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([addressId])
+  @@index([promoCodeId])
+  @@index([statusId])
+  @@schema("dbo")
+}

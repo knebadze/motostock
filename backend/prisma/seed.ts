@@ -124,6 +124,16 @@ const LISTING_STATUSES: LookupEntry[] = [
   { key: "SOLD", nameKa: "გაყიდულია", nameEn: "Sold", nameRu: "Продано" },
 ];
 
+// Intended lifecycle: PENDING -> CONFIRMED -> SHIPPED -> DELIVERED, with
+// CANCELLED as an alternate terminal state (see order-status.prisma).
+const ORDER_STATUSES: LookupEntry[] = [
+  { key: "PENDING", nameKa: "მუშავდება", nameEn: "Processing", nameRu: "В обработке" },
+  { key: "CONFIRMED", nameKa: "დადასტურებულია", nameEn: "Confirmed", nameRu: "Подтверждён" },
+  { key: "SHIPPED", nameKa: "კურიერთანაა", nameEn: "Out for delivery", nameRu: "У курьера" },
+  { key: "DELIVERED", nameKa: "ჩაბარებულია", nameEn: "Delivered", nameRu: "Доставлен" },
+  { key: "CANCELLED", nameKa: "გაუქმებულია", nameEn: "Cancelled", nameRu: "Отменён" },
+];
+
 const COLORS: LookupEntry[] = [
   { key: "BLACK", nameKa: "შავი", nameEn: "Black", nameRu: "Черный" },
   { key: "WHITE", nameKa: "თეთრი", nameEn: "White", nameRu: "Белый" },
@@ -936,6 +946,7 @@ async function main() {
   await seedLookup("Powertrain types", prisma.powertrainType, POWERTRAIN_TYPES);
   await seedLookup("Conditions", prisma.condition, CONDITIONS);
   await seedLookup("Listing statuses", prisma.listingStatus, LISTING_STATUSES);
+  await seedLookup("Order statuses", prisma.orderStatus, ORDER_STATUSES);
   await seedLookup("Colors", prisma.color, COLORS);
   await seedLookup("Sizes", prisma.size, SIZES);
   await seedLookup("Cities", prisma.city, CITIES);

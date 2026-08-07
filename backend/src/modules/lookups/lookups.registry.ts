@@ -13,6 +13,7 @@ export const LOOKUP_TYPES = [
   "colors",
   "sizes",
   "cities",
+  "order-statuses",
 ] as const;
 
 export type LookupType = (typeof LOOKUP_TYPES)[number];
@@ -66,6 +67,7 @@ const registry: Record<LookupType, LookupDelegate> = {
   colors: asLookupDelegate(prisma.color),
   sizes: asLookupDelegate(prisma.size),
   cities: asLookupDelegate(prisma.city),
+  "order-statuses": asLookupDelegate(prisma.orderStatus),
 };
 
 export function getLookupDelegate(type: LookupType): LookupDelegate {

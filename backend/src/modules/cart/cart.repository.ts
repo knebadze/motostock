@@ -84,6 +84,11 @@ export const cartRepository = {
     return prisma.cartItem.delete({ where: { id } });
   },
 
+  // Bulk-empties the cart after a successful checkout (see orders.service.ts).
+  deleteMany(owner: CartOwner) {
+    return prisma.cartItem.deleteMany({ where: ownerWhere(owner) });
+  },
+
   // Merge-on-login support (see cart.service.ts mergeGuestCartIntoUser).
   findByGuestId(guestId: string) {
     return prisma.cartItem.findMany({ where: { guestId } });

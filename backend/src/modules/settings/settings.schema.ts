@@ -12,6 +12,7 @@ export const updateSettingsSchema = registry.register(
     vinDecodeProvider: vinDecodeProviderSchema.openapi({ example: "nhtsa" }),
     guestWishlistEnabled: z.boolean().openapi({ example: false }),
     guestCartEnabled: z.boolean().openapi({ example: false }),
+    promoStackingEnabled: z.boolean().openapi({ example: false }),
   }),
 );
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
@@ -24,6 +25,7 @@ export const settingsResponseSchema = registry.register(
     vinDecodeProvider: vinDecodeProviderSchema.openapi({ example: "nhtsa" }),
     guestWishlistEnabled: z.boolean().openapi({ example: false }),
     guestCartEnabled: z.boolean().openapi({ example: false }),
+    promoStackingEnabled: z.boolean().openapi({ example: false }),
   }),
 );
 

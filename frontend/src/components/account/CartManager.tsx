@@ -148,6 +148,12 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
           <span>{t("subtotal")}</span>
           <span className="text-primary">{formatPrice(cart.subtotal)}</span>
         </div>
+        <Link
+          href="/checkout"
+          className="mt-4 block rounded-full bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+        >
+          {t("goToCheckout")}
+        </Link>
       </div>
     </div>
   );

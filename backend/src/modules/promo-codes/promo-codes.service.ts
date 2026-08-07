@@ -9,6 +9,9 @@ import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getSpecFieldDefinition } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
+import { productVariantsRepository } from "../product-variants/product-variants.repository.js";
+import { productsRepository } from "../products/products.repository.js";
+import { vehicleListingRepository } from "../vehicle-listing/vehicle-listing.repository.js";
 import { promoCodesRepository } from "./promo-codes.repository.js";
 import type {
   CreatePromoCodeInput,
@@ -16,7 +19,7 @@ import type {
   UpdatePromoCodeInput,
   VehicleSpecFieldInput,
 } from "./promo-codes.schema.js";
-import type { PromoCodeDomain, VehicleSpecField } from "../../generated/prisma/index.js";
+import type { CartItemType, PromoCodeDomain, VehicleSpecField } from "../../generated/prisma/index.js";
 
 // Every vehicle (transport) category lives under this one root — same
 // convention ProductFitmentRule's assertIsVehicleCategory relies on.
@@ -336,4 +339,99 @@ export async function deletePromoCode(id: number) {
   }
 
   await promoCodesRepository.delete(id);
+}
+
+export type PromoCodeMatchItem = {
+  itemType: CartItemType;
+  productVariantId?: number | null;
+  vehicleListingId?: number | null;
+};
+
+export type PromoCodeMatch = {
+  id: number;
+  code: string;
+  discountPercent: number;
+  matchedKeys: Set<string>;
+};
+
+export function promoCodeItemKey(item: PromoCodeMatchItem): string {
+  return item.itemType === "PRODUCT_VARIANT"
+    ? `PRODUCT_VARIANT:${item.productVariantId}`
+    : `VEHICLE_LISTING:${item.vehicleListingId}`;
+}
+
+// Checkout's counterpart to the admin CRUD above — resolves a
+// customer-entered code against the caller's cart contents. Unlike
+// ProductVariantDiscount/VehicleListingDiscount, a PromoCode's scope is
+// declarative (see promo-code.prisma), so this walks each candidate item's
+// category/brand/attribute (or model/spec) chain to decide whether the
+// code's rule matches it — nothing materialized to just look up.
+export async function resolvePromoCodeForItems(
+  code: string,
+  items: PromoCodeMatchItem[],
+): Promise<PromoCodeMatch> {
+  const promo = await promoCodesRepository.findByCode(code.trim().toUpperCase());
+  if (!promo || !promo.isActive) {
+    throw new ApiError(400, "პრომო კოდი არასწორია ან არააქტიურია");
+  }
+
+  const now = new Date();
+  if (now < promo.startDate || now > promo.endDate) {
+    throw new ApiError(400, "პრომო კოდის მოქმედების ვადა ამოწურულია");
+  }
+
+  const categoryIds = promo.categoryId != null ? await resolveCategoryAndAncestorIds(promo.categoryId) : null;
+  const matchedKeys = new Set<string>();
+
+  if (promo.domain === "PRODUCT") {
+    for (const item of items) {
+      if (item.itemType !== "PRODUCT_VARIANT" || !item.productVariantId) continue;
+
+      const variant = await productVariantsRepository.findById(item.productVariantId);
+      if (!variant) continue;
+      const product = await productsRepository.findById(variant.product.id);
+      if (!product) continue;
+
+      if (categoryIds && !categoryIds.includes(product.categoryId)) continue;
+      if (promo.productBrandId != null && product.productBrandId !== promo.productBrandId) continue;
+      if (promo.attributeId != null && promo.attributeOptionId != null) {
+        const hasOption = product.attributeValues.some(
+          (value) => value.attributeId === promo.attributeId && value.optionId === promo.attributeOptionId,
+        );
+        if (!hasOption) continue;
+      }
+
+      matchedKeys.add(promoCodeItemKey(item));
+    }
+  } else {
+    for (const item of items) {
+      if (item.itemType !== "VEHICLE_LISTING" || !item.vehicleListingId) continue;
+
+      const listing = await vehicleListingRepository.findById(item.vehicleListingId);
+      if (!listing) continue;
+      const catalog = listing.vehicleCatalog;
+
+      if (categoryIds && !categoryIds.includes(catalog.model.category.id)) continue;
+      if (promo.brandId != null && catalog.brandId !== promo.brandId) continue;
+      if (promo.modelId != null && catalog.modelId !== promo.modelId) continue;
+      if (promo.specField != null && promo.specLookupItemId != null) {
+        const { column } = getSpecFieldDefinition(promo.specField);
+        const actualValue = (catalog as unknown as Record<string, number | null>)[column];
+        if (actualValue !== promo.specLookupItemId) continue;
+      }
+
+      matchedKeys.add(promoCodeItemKey(item));
+    }
+  }
+
+  if (matchedKeys.size === 0) {
+    throw new ApiError(400, "პრომო კოდი ამ კალათის არცერთ ნივთს არ ეხება");
+  }
+
+  return {
+    id: promo.id,
+    code: promo.code,
+    discountPercent: Number(promo.discountPercent),
+    matchedKeys,
+  };
 }

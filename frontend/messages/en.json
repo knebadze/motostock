@@ -89,7 +89,34 @@
     "addToCart": "Add to cart",
     "addedToCart": "Added",
     "outOfStock": "Out of stock",
-    "addError": "Couldn't add to cart"
+    "addError": "Couldn't add to cart",
+    "goToCheckout": "Go to checkout"
+  },
+  "Checkout": {
+    "title": "Checkout",
+    "fulfillmentHeading": "Payment & delivery method",
+    "cardPayment": "Card payment",
+    "courierPayment": "Pay the courier",
+    "pickup": "Self pickup",
+    "addressHeading": "Delivery address",
+    "noAddresses": "You haven't added an address yet.",
+    "addAddressButton": "+ Add address",
+    "addressRequired": "Please select a delivery address",
+    "itemsHeading": "Order items",
+    "promoHeading": "Promo code",
+    "promoPlaceholder": "Enter code",
+    "applyPromo": "Apply",
+    "removePromo": "Remove",
+    "promoApplied": "Promo code applied",
+    "promoError": "Invalid promo code",
+    "previewError": "Couldn't calculate the total",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "total": "Total",
+    "placeOrder": "Place order",
+    "placing": "Placing order...",
+    "placeSuccess": "Order placed successfully",
+    "placeError": "Couldn't place the order"
   },
   "VehicleListingDetail": {
     "descriptionHeading": "Description",
@@ -278,7 +305,7 @@
       "removeSuccess": "Removed from wishlist"
     },
     "orders": {
-      "comingSoon": "Order history is coming soon."
+      "empty": "You haven't placed any orders yet."
     },
     "address": {
       "description": "Add your delivery addresses and contact phone number — we'll use them to deliver your orders. You can save more than one.",

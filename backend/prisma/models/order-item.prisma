@@ -1,0 +1,33 @@
+// A line in a placed order — snapshotted at checkout time, unlike CartItem
+// which always reflects live product/vehicle state. itemType reuses
+// CartItemType (see cart-item.prisma) rather than redeclaring an identical
+// enum. productVariant/vehicleListing are SetNull so a later product
+// deletion doesn't remove order history; itemName/imageUrl/unitPrice carry
+// the actual purchased snapshot regardless of what happens to the source row.
+model OrderItem {
+  id      Int   @id @default(autoincrement())
+  orderId Int
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  itemType         CartItemType
+  productVariantId Int?
+  productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: SetNull)
+  vehicleListingId Int?
+  vehicleListing   VehicleListing? @relation(fields: [vehicleListingId], references: [id], onDelete: SetNull)
+
+  itemNameKa String
+  itemNameEn String
+  itemNameRu String
+  imageUrl   String?
+
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  lineTotal Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productVariantId])
+  @@index([vehicleListingId])
+  @@schema("dbo")
+}

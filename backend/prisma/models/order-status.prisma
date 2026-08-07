@@ -1,0 +1,16 @@
+// Trilingual lookup (same shape/schema as Condition/ListingStatus/etc.) —
+// managed generically via lookups.registry.ts ("order-statuses") and the
+// admin General Classifiers page, not a hardcoded enum. Intended lifecycle
+// (no admin status-transition UI exists yet, this just seeds the table):
+// PENDING -> CONFIRMED -> SHIPPED -> DELIVERED, with CANCELLED as an
+// alternate terminal state.
+model OrderStatus {
+  id     Int    @id @default(autoincrement())
+  key    String @unique
+  nameKa String
+  nameEn String
+  nameRu String
+  orders Order[]
+
+  @@schema("cla")
+}

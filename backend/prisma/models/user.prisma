@@ -15,6 +15,7 @@ model User {
   submittedCatalogEntries VehicleCatalog[]
   wishlistItems           WishlistItem[]
   cartItems               CartItem[]
+  orders                  Order[]
   createdAt               DateTime             @default(now())
   updatedAt               DateTime             @updatedAt
 

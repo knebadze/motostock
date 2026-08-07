@@ -9,6 +9,7 @@ export const VIN_DECODE_ENABLED_KEY = "vin_decode_enabled";
 export const VIN_DECODE_PROVIDER_KEY = "vin_decode_provider";
 export const GUEST_WISHLIST_ENABLED_KEY = "guest_wishlist_enabled";
 export const GUEST_CART_ENABLED_KEY = "guest_cart_enabled";
+export const PROMO_STACKING_ENABLED_KEY = "promo_stacking_enabled";
 
 function isCloudinaryConfigured() {
   return Boolean(
@@ -41,6 +42,15 @@ export async function isGuestCartEnabled(): Promise<boolean> {
   return setting?.value === "true";
 }
 
+// Controls whether a checkout promo code stacks on top of an item that
+// already has an active ProductVariantDiscount/VehicleListingDiscount, or
+// is skipped for that item so the two discounts never combine — see
+// orders.service.ts computeCheckoutTotals.
+export async function isPromoStackingEnabled(): Promise<boolean> {
+  const setting = await settingsRepository.findByKey(PROMO_STACKING_ENABLED_KEY);
+  return setting?.value === "true";
+}
+
 export async function getSettings() {
   return {
     useCloudStorage: await isCloudStorageEnabled(),
@@ -48,6 +58,7 @@ export async function getSettings() {
     vinDecodeProvider: await getVinDecodeProvider(),
     guestWishlistEnabled: await isGuestWishlistEnabled(),
     guestCartEnabled: await isGuestCartEnabled(),
+    promoStackingEnabled: await isPromoStackingEnabled(),
   };
 }
 
@@ -81,5 +92,6 @@ export async function updateSettings(input: UpdateSettingsInput) {
   await settingsRepository.upsert(VIN_DECODE_PROVIDER_KEY, input.vinDecodeProvider);
   await settingsRepository.upsert(GUEST_WISHLIST_ENABLED_KEY, String(input.guestWishlistEnabled));
   await settingsRepository.upsert(GUEST_CART_ENABLED_KEY, String(input.guestCartEnabled));
+  await settingsRepository.upsert(PROMO_STACKING_ENABLED_KEY, String(input.promoStackingEnabled));
   return getSettings();
 }

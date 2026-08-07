@@ -24,6 +24,7 @@ import type { HeroSlide } from "./hero-slides";
 import type { PromoCode, PromoCodeDomain } from "./promo-codes";
 import type { WishlistItem } from "./wishlist";
 import type { Cart } from "./cart";
+import type { Order, OrderSummary } from "./orders";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -67,6 +68,7 @@ export async function getSettingsFromServer(): Promise<Settings> {
     vinDecodeProvider: "nhtsa",
     guestWishlistEnabled: false,
     guestCartEnabled: false,
+    promoStackingEnabled: false,
   };
   if (!headers) return fallback;
 
@@ -331,6 +333,30 @@ export async function getMyCartCountFromServer(): Promise<number> {
     return data.count;
   } catch {
     return 0;
+  }
+}
+
+export async function getMyOrdersFromServer(): Promise<OrderSummary[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ orders: OrderSummary[] }>("/orders/me", { headers });
+    return data.orders;
+  } catch {
+    return [];
+  }
+}
+
+export async function getMyOrderFromServer(id: number): Promise<Order | null> {
+  const headers = await authHeaders();
+  if (!headers) return null;
+
+  try {
+    const { data } = await apiClient.get<{ order: Order }>(`/orders/me/${id}`, { headers });
+    return data.order;
+  } catch {
+    return null;
   }
 }
 

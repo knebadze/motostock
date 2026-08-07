@@ -18,6 +18,7 @@ model ProductVariant {
   images        ProductVariantImage[]
   discounts     ProductVariantDiscount[]
   cartItems     CartItem[]
+  orderItems    OrderItem[]
   createdAt     DateTime                 @default(now())
   updatedAt     DateTime                 @updatedAt
 

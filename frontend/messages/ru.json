@@ -89,7 +89,34 @@
     "addToCart": "В корзину",
     "addedToCart": "Добавлено",
     "outOfStock": "Нет в наличии",
-    "addError": "Не удалось добавить в корзину"
+    "addError": "Не удалось добавить в корзину",
+    "goToCheckout": "Перейти к оформлению"
+  },
+  "Checkout": {
+    "title": "Оформление заказа",
+    "fulfillmentHeading": "Способ оплаты и доставки",
+    "cardPayment": "Оплата картой",
+    "courierPayment": "Оплата курьеру",
+    "pickup": "Самовывоз",
+    "addressHeading": "Адрес доставки",
+    "noAddresses": "Вы ещё не добавили адрес.",
+    "addAddressButton": "+ Добавить адрес",
+    "addressRequired": "Выберите адрес доставки",
+    "itemsHeading": "Состав заказа",
+    "promoHeading": "Промокод",
+    "promoPlaceholder": "Введите код",
+    "applyPromo": "Применить",
+    "removePromo": "Удалить",
+    "promoApplied": "Промокод применён",
+    "promoError": "Неверный промокод",
+    "previewError": "Не удалось рассчитать сумму",
+    "subtotal": "Сумма без скидки",
+    "discount": "Скидка",
+    "total": "Итого к оплате",
+    "placeOrder": "Оформить заказ",
+    "placing": "Оформляется...",
+    "placeSuccess": "Заказ успешно оформлен",
+    "placeError": "Не удалось оформить заказ"
   },
   "VehicleListingDetail": {
     "descriptionHeading": "Описание",
@@ -278,7 +305,7 @@
       "removeSuccess": "Удалено из избранного"
     },
     "orders": {
-      "comingSoon": "История заказов скоро появится."
+      "empty": "Вы ещё не оформили ни одного заказа."
     },
     "address": {
       "description": "Укажите адреса доставки и контактный телефон — мы используем их при доставке заказов. Можно сохранить несколько адресов.",
