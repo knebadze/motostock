@@ -4,6 +4,7 @@ model City {
   nameKa    String
   nameEn    String
   nameRu    String
+  isTbilisi Boolean   @default(false)
   addresses Address[]
 
   @@schema("cla")

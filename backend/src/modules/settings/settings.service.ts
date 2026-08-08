@@ -10,6 +10,12 @@ export const VIN_DECODE_PROVIDER_KEY = "vin_decode_provider";
 export const GUEST_WISHLIST_ENABLED_KEY = "guest_wishlist_enabled";
 export const GUEST_CART_ENABLED_KEY = "guest_cart_enabled";
 export const PROMO_STACKING_ENABLED_KEY = "promo_stacking_enabled";
+export const DELIVERY_TBILISI_PRICE_KEY = "delivery_tbilisi_price";
+export const DELIVERY_TBILISI_TIME_KEY = "delivery_tbilisi_time";
+export const DELIVERY_REGIONS_PRICE_KEY = "delivery_regions_price";
+export const DELIVERY_REGIONS_TIME_KEY = "delivery_regions_time";
+export const DELIVERY_EXPRESS_PRICE_KEY = "delivery_express_price";
+export const DELIVERY_EXPRESS_TIME_KEY = "delivery_express_time";
 
 function isCloudinaryConfigured() {
   return Boolean(
@@ -51,6 +57,36 @@ export async function isPromoStackingEnabled(): Promise<boolean> {
   return setting?.value === "true";
 }
 
+export async function getDeliveryTbilisiPrice(): Promise<number> {
+  const setting = await settingsRepository.findByKey(DELIVERY_TBILISI_PRICE_KEY);
+  return Number(setting?.value ?? 0);
+}
+
+export async function getDeliveryTbilisiTime(): Promise<string> {
+  const setting = await settingsRepository.findByKey(DELIVERY_TBILISI_TIME_KEY);
+  return setting?.value ?? "";
+}
+
+export async function getDeliveryRegionsPrice(): Promise<number> {
+  const setting = await settingsRepository.findByKey(DELIVERY_REGIONS_PRICE_KEY);
+  return Number(setting?.value ?? 0);
+}
+
+export async function getDeliveryRegionsTime(): Promise<string> {
+  const setting = await settingsRepository.findByKey(DELIVERY_REGIONS_TIME_KEY);
+  return setting?.value ?? "";
+}
+
+export async function getDeliveryExpressPrice(): Promise<number> {
+  const setting = await settingsRepository.findByKey(DELIVERY_EXPRESS_PRICE_KEY);
+  return Number(setting?.value ?? 0);
+}
+
+export async function getDeliveryExpressTime(): Promise<string> {
+  const setting = await settingsRepository.findByKey(DELIVERY_EXPRESS_TIME_KEY);
+  return setting?.value ?? "";
+}
+
 export async function getSettings() {
   return {
     useCloudStorage: await isCloudStorageEnabled(),
@@ -59,6 +95,12 @@ export async function getSettings() {
     guestWishlistEnabled: await isGuestWishlistEnabled(),
     guestCartEnabled: await isGuestCartEnabled(),
     promoStackingEnabled: await isPromoStackingEnabled(),
+    deliveryTbilisiPrice: await getDeliveryTbilisiPrice(),
+    deliveryTbilisiTime: await getDeliveryTbilisiTime(),
+    deliveryRegionsPrice: await getDeliveryRegionsPrice(),
+    deliveryRegionsTime: await getDeliveryRegionsTime(),
+    deliveryExpressPrice: await getDeliveryExpressPrice(),
+    deliveryExpressTime: await getDeliveryExpressTime(),
   };
 }
 
@@ -93,5 +135,11 @@ export async function updateSettings(input: UpdateSettingsInput) {
   await settingsRepository.upsert(GUEST_WISHLIST_ENABLED_KEY, String(input.guestWishlistEnabled));
   await settingsRepository.upsert(GUEST_CART_ENABLED_KEY, String(input.guestCartEnabled));
   await settingsRepository.upsert(PROMO_STACKING_ENABLED_KEY, String(input.promoStackingEnabled));
+  await settingsRepository.upsert(DELIVERY_TBILISI_PRICE_KEY, String(input.deliveryTbilisiPrice));
+  await settingsRepository.upsert(DELIVERY_TBILISI_TIME_KEY, input.deliveryTbilisiTime);
+  await settingsRepository.upsert(DELIVERY_REGIONS_PRICE_KEY, String(input.deliveryRegionsPrice));
+  await settingsRepository.upsert(DELIVERY_REGIONS_TIME_KEY, input.deliveryRegionsTime);
+  await settingsRepository.upsert(DELIVERY_EXPRESS_PRICE_KEY, String(input.deliveryExpressPrice));
+  await settingsRepository.upsert(DELIVERY_EXPRESS_TIME_KEY, input.deliveryExpressTime);
   return getSettings();
 }

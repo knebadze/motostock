@@ -13,6 +13,12 @@ export const updateSettingsSchema = registry.register(
     guestWishlistEnabled: z.boolean().openapi({ example: false }),
     guestCartEnabled: z.boolean().openapi({ example: false }),
     promoStackingEnabled: z.boolean().openapi({ example: false }),
+    deliveryTbilisiPrice: z.number().nonnegative().openapi({ example: 15 }),
+    deliveryTbilisiTime: z.string().openapi({ example: "1-2 სამუშაო დღე" }),
+    deliveryRegionsPrice: z.number().nonnegative().openapi({ example: 25 }),
+    deliveryRegionsTime: z.string().openapi({ example: "3-5 სამუშაო დღე" }),
+    deliveryExpressPrice: z.number().nonnegative().openapi({ example: 40 }),
+    deliveryExpressTime: z.string().openapi({ example: "2-4 საათი" }),
   }),
 );
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
@@ -26,6 +32,12 @@ export const settingsResponseSchema = registry.register(
     guestWishlistEnabled: z.boolean().openapi({ example: false }),
     guestCartEnabled: z.boolean().openapi({ example: false }),
     promoStackingEnabled: z.boolean().openapi({ example: false }),
+    deliveryTbilisiPrice: z.number().nonnegative().openapi({ example: 15 }),
+    deliveryTbilisiTime: z.string().openapi({ example: "1-2 სამუშაო დღე" }),
+    deliveryRegionsPrice: z.number().nonnegative().openapi({ example: 25 }),
+    deliveryRegionsTime: z.string().openapi({ example: "3-5 სამუშაო დღე" }),
+    deliveryExpressPrice: z.number().nonnegative().openapi({ example: 40 }),
+    deliveryExpressTime: z.string().openapi({ example: "2-4 საათი" }),
   }),
 );
 

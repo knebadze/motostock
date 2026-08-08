@@ -950,6 +950,7 @@ async function main() {
   await seedLookup("Colors", prisma.color, COLORS);
   await seedLookup("Sizes", prisma.size, SIZES);
   await seedLookup("Cities", prisma.city, CITIES);
+  await prisma.city.update({ where: { key: "TBILISI" }, data: { isTbilisi: true } });
 
   const unitIdByNameKa = await seedUnits();
 

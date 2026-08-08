@@ -9,6 +9,12 @@ export type Settings = {
   guestWishlistEnabled: boolean;
   guestCartEnabled: boolean;
   promoStackingEnabled: boolean;
+  deliveryTbilisiPrice: number;
+  deliveryTbilisiTime: string;
+  deliveryRegionsPrice: number;
+  deliveryRegionsTime: string;
+  deliveryExpressPrice: number;
+  deliveryExpressTime: string;
 };
 
 export async function getSettings(): Promise<Settings> {

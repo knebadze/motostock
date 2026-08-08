@@ -71,6 +71,12 @@ export async function getSettingsFromServer(): Promise<Settings> {
     guestWishlistEnabled: false,
     guestCartEnabled: false,
     promoStackingEnabled: false,
+    deliveryTbilisiPrice: 0,
+    deliveryTbilisiTime: "",
+    deliveryRegionsPrice: 0,
+    deliveryRegionsTime: "",
+    deliveryExpressPrice: 0,
+    deliveryExpressTime: "",
   };
   if (!headers) return fallback;
 
