@@ -364,7 +364,10 @@ async function buildAttributeValueWriteData(
 // matches the vehicle's actual spec. Resolved once here (where the vehicle's
 // own category/specs are looked up) into a plain Prisma.ProductWhereInput,
 // so products.repository.ts can just AND it in without knowing any of this.
-async function buildVehicleCompatibilityWhere(
+// Exported for reuse by getProductDetail below — filters a product's
+// buyTogether companions down to ones compatible with the customer's
+// selected vehicle, instead of always showing every configured companion.
+export async function buildVehicleCompatibilityWhere(
   vehicleCatalogId: number,
 ): Promise<Prisma.ProductWhereInput> {
   const vehicle = await vehicleCatalogRepository.findById(vehicleCatalogId);
@@ -432,12 +435,32 @@ export async function getProduct(id: number) {
   return toResponse(row);
 }
 
-export async function getProductDetail(slug: string) {
+export async function getProductDetail(slug: string, vehicleCatalogId?: number) {
   const row = await productsRepository.findDetailBySlug(slug);
   if (!row) {
     throw new ApiError(404, "პროდუქტი ვერ მოიძებნა");
   }
-  return toDetailResponse(row);
+
+  const response = await toDetailResponse(row);
+  if (vehicleCatalogId == null || response.buyTogether.length === 0) {
+    return response;
+  }
+
+  // Narrow buyTogether companions down to ones actually compatible with the
+  // shopper's selected vehicle — a companion attached to the anchor can
+  // still legitimately not fit every vehicle the anchor itself fits (e.g. an
+  // oil that fits every sport bike, paired with a filter that only fits
+  // some of them).
+  const compatWhere = await buildVehicleCompatibilityWhere(vehicleCatalogId);
+  const compatibleIds = await productsRepository.findIdsMatchingWhere(
+    response.buyTogether.map((product) => product.id),
+    compatWhere,
+  );
+  const compatibleIdSet = new Set(compatibleIds.map((row) => row.id));
+  return {
+    ...response,
+    buyTogether: response.buyTogether.filter((product) => compatibleIdSet.has(product.id)),
+  };
 }
 
 export async function createProduct(input: CreateProductInput) {

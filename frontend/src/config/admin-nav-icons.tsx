@@ -242,6 +242,24 @@ export const ordersIcon = (
   </svg>
 );
 
+export const buyTogetherIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-5"
+  >
+    <rect x="2" y="7" width="8" height="8" rx="1.5" />
+    <rect x="14" y="7" width="8" height="8" rx="1.5" />
+    <path d="M10 11h4" />
+    <path d="M12 4v3M12 17v3" />
+  </svg>
+);
+
 export const compatibilityIcon = (
   <svg
     xmlns="http://www.w3.org/2000/svg"

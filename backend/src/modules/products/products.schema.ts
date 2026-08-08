@@ -133,6 +133,14 @@ export const productSlugParamSchema = z.object({
 });
 export type ProductSlugParam = z.infer<typeof productSlugParamSchema>;
 
+// Optional — when the shopper has a vehicle selected (shop's "my vehicle"
+// filter), the detail response's buyTogether companions are narrowed to
+// ones compatible with it instead of always showing every configured one.
+export const productDetailQuerySchema = z.object({
+  vehicleCatalogId: z.coerce.number().int().positive().optional(),
+});
+export type ProductDetailQuery = z.infer<typeof productDetailQuerySchema>;
+
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
 
 const unitRefSchema = z.object({

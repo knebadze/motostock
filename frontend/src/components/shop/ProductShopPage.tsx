@@ -11,6 +11,7 @@ import { listProducts, type Product, type ProductAttributeFilters } from "@/lib/
 import type { Category } from "@/lib/api/categories";
 import type { CategoryFilter } from "@/lib/api/category-filters";
 import type { GarageVehicle } from "@/lib/api/vehicle-catalog";
+import { persistSelectedVehicleCookie } from "@/lib/vehicle-selection";
 import { ProductFilters, type AttributeFilterState, type BrandOption } from "./ProductFilters";
 import { ProductCard } from "./ProductCard";
 import { ShopHero } from "./ShopHero";
@@ -43,6 +44,7 @@ export function ProductShopPage({
   garageVehicles,
   initialPage = 1,
   initialSort = "newest",
+  initialVehicleCatalogId = "",
 }: {
   category: Category;
   breadcrumbChain: Category[];
@@ -52,6 +54,7 @@ export function ProductShopPage({
   garageVehicles: GarageVehicle[];
   initialPage?: number;
   initialSort?: string;
+  initialVehicleCatalogId?: string;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
@@ -62,7 +65,7 @@ export function ProductShopPage({
   const [selectedBrandIds, setSelectedBrandIds] = useState<number[]>([]);
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
-  const [selectedVehicleCatalogId, setSelectedVehicleCatalogId] = useState("");
+  const [selectedVehicleCatalogId, setSelectedVehicleCatalogId] = useState(initialVehicleCatalogId);
   const [attributeFilterState, setAttributeFilterState] = useState<Record<number, AttributeFilterState>>(
     {},
   );
@@ -249,6 +252,7 @@ export function ProductShopPage({
                 selectedVehicleCatalogId={selectedVehicleCatalogId}
                 onVehicleChange={(value) => {
                   setSelectedVehicleCatalogId(value);
+                  persistSelectedVehicleCookie(value);
                   resetToFirstPage();
                 }}
               />

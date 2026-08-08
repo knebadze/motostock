@@ -3,6 +3,7 @@ import { ApiError } from "../../lib/ApiError.js";
 import * as productsService from "./products.service.js";
 import type {
   CreateProductInput,
+  ProductDetailQuery,
   ProductListQuery,
   ProductSlugParam,
   UpdateProductInput,
@@ -18,8 +19,11 @@ export async function getOne(req: Request, res: Response) {
   res.status(200).json({ item });
 }
 
-export async function getBySlug(req: Request<ProductSlugParam>, res: Response) {
-  const item = await productsService.getProductDetail(req.params.slug);
+export async function getBySlug(
+  req: Request<ProductSlugParam, unknown, unknown, ProductDetailQuery>,
+  res: Response,
+) {
+  const item = await productsService.getProductDetail(req.params.slug, req.query.vehicleCatalogId);
   res.status(200).json({ item });
 }
 

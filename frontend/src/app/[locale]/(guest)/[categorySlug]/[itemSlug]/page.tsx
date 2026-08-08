@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
@@ -12,6 +13,7 @@ import { getAncestorChain, isVehicleCategory } from "@/lib/categories-tree";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { siteConfig } from "@/config/site";
+import { SELECTED_VEHICLE_COOKIE } from "@/lib/vehicle-selection";
 import { ProductDetailPage } from "@/components/shop/product-detail/ProductDetailPage";
 import { VehicleListingDetailPage } from "@/components/shop/vehicle-listing-detail/VehicleListingDetailPage";
 
@@ -187,7 +189,8 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
     );
   }
 
-  const product = await getProductDetailFromServer(itemSlug);
+  const selectedVehicleCatalogId = (await cookies()).get(SELECTED_VEHICLE_COOKIE)?.value;
+  const product = await getProductDetailFromServer(itemSlug, selectedVehicleCatalogId);
   if (!product) {
     notFound();
   }

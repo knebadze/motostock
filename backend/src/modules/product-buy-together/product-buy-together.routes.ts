@@ -7,7 +7,9 @@ import { errorResponseSchema } from "../../docs/schemas.js";
 import { ROLES } from "../../lib/roles.js";
 import * as productBuyTogetherController from "./product-buy-together.controller.js";
 import {
+  adminProductBuyTogetherResponseSchema,
   createProductBuyTogetherSchema,
+  listProductBuyTogetherAdminQuerySchema,
   productBuyTogetherIdParamSchema,
   productBuyTogetherProductIdParamSchema,
   productBuyTogetherResponseSchema,
@@ -34,9 +36,23 @@ productBuyTogetherRouter.delete(
   productBuyTogetherController.remove,
 );
 
+// Separate top-level router (not nested under :productId) — the router
+// above is always mounted at /api/products/:productId/buy-together in
+// app.ts, so every route inside it automatically inherits that prefix and
+// can't expose a cross-product "list everything" endpoint. Mirrors
+// compatibility.routes.ts's reasoning exactly.
+export const productBuyTogetherAdminRouter = Router();
+productBuyTogetherAdminRouter.use(requireAuth, requireRole(ROLES.ADMIN));
+productBuyTogetherAdminRouter.get(
+  "/",
+  validate(listProductBuyTogetherAdminQuerySchema, "query"),
+  productBuyTogetherController.listAll,
+);
+
 const security = [{ cookieAuth: [] }];
 const listResponse = z.object({ items: z.array(productBuyTogetherResponseSchema) });
 const itemResponse = z.object({ item: productBuyTogetherResponseSchema });
+const adminListResponse = z.object({ items: z.array(adminProductBuyTogetherResponseSchema) });
 
 registry.registerPath({
   method: "get",
@@ -79,5 +95,19 @@ registry.registerPath({
   responses: {
     204: { description: "Deleted" },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/product-buy-together",
+  tags: ["ProductBuyTogether"],
+  summary: "List every 'buy together' pair across every product, with search/category filters (admin only)",
+  security,
+  request: { query: listProductBuyTogetherAdminQuerySchema },
+  responses: {
+    200: { description: "Pairs", content: { "application/json": { schema: adminListResponse } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

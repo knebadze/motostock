@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Pagination, usePagination } from "@/components/shared/Pagination";
 import type { SelectOption } from "@/components/shared/Select";
@@ -11,6 +11,7 @@ import type { ViewMode } from "./ViewModeToggle";
 import type { Product } from "@/lib/api/products";
 import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 import { formatVehicleCatalogLabel } from "@/lib/format";
+import { persistSelectedVehicleCookie } from "@/lib/vehicle-selection";
 
 type SortBy = "newest" | "price-asc" | "price-desc";
 const SORT_VALUES: SortBy[] = ["newest", "price-asc", "price-desc"];
@@ -32,6 +33,16 @@ export function CompatibleProductsPage({
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [sortBy, setSortBy] = useState<SortBy>(() => parseSortBy("newest"));
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+
+  // Visiting this page is an explicit "show me stuff for this vehicle"
+  // signal — persist it the same way the shop's "my vehicle" filter does,
+  // so clicking into a product from here also carries the vehicle context
+  // (e.g. for buyTogether filtering on the product detail page). A plain
+  // cookie write, not React state, so this doesn't trip the
+  // setState-in-effect rule.
+  useEffect(() => {
+    persistSelectedVehicleCookie(String(vehicle.id));
+  }, [vehicle.id]);
 
   // The compatible set for one vehicle is inherently bounded (a handful of
   // fitted products, not the whole catalog), so — unlike the per-category

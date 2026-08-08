@@ -26,6 +26,7 @@ import type { WishlistItem } from "./wishlist";
 import type { Cart } from "./cart";
 import type { AdminOrderSummary, Order, OrderSummary } from "./orders";
 import type { CompatibilityItem } from "./compatibility";
+import type { AdminProductBuyTogether } from "./product-buy-together";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -385,6 +386,20 @@ export async function getCompatibilityFromServer(): Promise<CompatibilityItem[]>
   }
 }
 
+export async function getProductBuyTogetherFromServer(): Promise<AdminProductBuyTogether[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: AdminProductBuyTogether[] }>("/product-buy-together", {
+      headers,
+    });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
 export async function getAttributesFromServer(): Promise<Attribute[]> {
   const headers = await authHeaders();
   if (!headers) return [];
@@ -440,7 +455,10 @@ export async function getProductsFromServer(
   }
 }
 
-export async function getProductDetailFromServer(slug: string): Promise<ProductDetail | null> {
+export async function getProductDetailFromServer(
+  slug: string,
+  vehicleCatalogId?: string,
+): Promise<ProductDetail | null> {
   // Public endpoint (guest product view page) — must not bail out just
   // because there's no admin session cookie, same fix as getCategoriesFromServer.
   const headers = await authHeaders();
@@ -448,6 +466,7 @@ export async function getProductDetailFromServer(slug: string): Promise<ProductD
   try {
     const { data } = await apiClient.get<{ item: ProductDetail }>(`/products/by-slug/${slug}`, {
       headers,
+      params: { vehicleCatalogId: vehicleCatalogId || undefined },
     });
     return data.item;
   } catch {

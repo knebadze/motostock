@@ -9,6 +9,7 @@ import { ROLES } from "../../lib/roles.js";
 import * as productsController from "./products.controller.js";
 import {
   createProductSchema,
+  productDetailQuerySchema,
   productDetailResponseSchema,
   productIdParamSchema,
   productListQuerySchema,
@@ -25,6 +26,7 @@ productsRouter.get("/", validate(productListQuerySchema, "query"), productsContr
 productsRouter.get(
   "/by-slug/:slug",
   validate(productSlugParamSchema, "params"),
+  validate(productDetailQuerySchema, "query"),
   productsController.getBySlug,
 );
 productsRouter.get("/:id", validate(productIdParamSchema, "params"), productsController.getOne);

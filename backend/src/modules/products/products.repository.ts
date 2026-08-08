@@ -249,6 +249,16 @@ export const productsRepository = {
     return prisma.product.delete({ where: { id } });
   },
 
+  // Narrows a candidate id list down to the ones matching an arbitrary
+  // Product where-clause — used by getProductDetail to filter buyTogether
+  // companions against buildVehicleCompatibilityWhere's result.
+  findIdsMatchingWhere(ids: number[], where: Prisma.ProductWhereInput) {
+    return prisma.product.findMany({
+      where: { AND: [{ id: { in: ids } }, where] },
+      select: { id: true },
+    });
+  },
+
   // Attribute values are always submitted as the full current set for the
   // product, so a create/update is a delete-then-recreate inside one
   // transaction rather than a per-row upsert.

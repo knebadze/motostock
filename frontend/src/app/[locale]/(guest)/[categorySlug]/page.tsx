@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { SELECTED_VEHICLE_COOKIE } from "@/lib/vehicle-selection";
 import {
   getCategoriesFromServer,
   getCategoryFiltersFromServer,
@@ -137,11 +139,13 @@ export default async function CategoryShopPage({
     );
   }
 
-  const [products, filters, garageVehicles] = await Promise.all([
+  const [products, filters, garageVehicles, cookieStore] = await Promise.all([
     getProductsFromServer(category.id),
     getCategoryFiltersFromServer(category.id),
     getMyGarageFromServer(),
+    cookies(),
   ]);
+  const initialVehicleCatalogId = cookieStore.get(SELECTED_VEHICLE_COOKIE)?.value ?? "";
   return (
     <>
       {breadcrumbScript}
@@ -154,6 +158,7 @@ export default async function CategoryShopPage({
         garageVehicles={garageVehicles}
         initialPage={initialPage}
         initialSort={initialSort}
+        initialVehicleCatalogId={initialVehicleCatalogId}
       />
     </>
   );

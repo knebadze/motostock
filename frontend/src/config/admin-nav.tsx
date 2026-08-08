@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import {
   attributesIcon,
   brandsIcon,
+  buyTogetherIcon,
   categoriesIcon,
   classifierIcon,
   compatibilityIcon,
@@ -64,6 +65,7 @@ export const adminNav: AdminNavSection[] = [
       { label: "მახასიათებლები", href: "/admin/attributes", icon: attributesIcon },
       { label: "კატეგორიის ფილტრები", href: "/admin/category-filters", icon: filtersIcon },
       { label: "თავსებადობა", href: "/admin/compatibility", icon: compatibilityIcon },
+      { label: "ერთად შეძენა", href: "/admin/buy-together", icon: buyTogetherIcon },
     ],
   },
   {
