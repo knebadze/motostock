@@ -13,6 +13,7 @@ type CompanyInfoWriteData = {
   cityId?: number | null;
   street?: string | null;
   phone?: string | null;
+  email?: string | null;
   facebookUrl?: string | null;
   instagramUrl?: string | null;
   youtubeUrl?: string | null;

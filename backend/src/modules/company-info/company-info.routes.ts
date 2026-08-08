@@ -11,11 +11,13 @@ import { companyInfoResponseSchema, updateCompanyInfoSchema } from "./company-in
 
 export const companyInfoRouter = Router();
 
-// Fully admin-only — no public read yet (Footer/Contact-page consumption is
-// a separate future task, see the plan's "out of scope" note).
+// Public: the Footer and Contact page read this on every guest page load —
+// none of it is sensitive, it's meant for public display. Same
+// public-GET/admin-write pattern as lookups.routes.ts.
+companyInfoRouter.get("/", companyInfoController.getOne);
+
 companyInfoRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
-companyInfoRouter.get("/", companyInfoController.getOne);
 companyInfoRouter.patch("/", validate(updateCompanyInfoSchema), companyInfoController.update);
 companyInfoRouter.post("/logo", imageUpload().single("logo"), companyInfoController.uploadLogo);
 
@@ -26,15 +28,12 @@ registry.registerPath({
   method: "get",
   path: "/company-info",
   tags: ["CompanyInfo"],
-  summary: "Get the company info record (admin only)",
-  security,
+  summary: "Get the company info record (public)",
   responses: {
     200: {
       description: "Company info",
       content: { "application/json": { schema: companyInfoWrapperResponse } },
     },
-    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
-    403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 

@@ -231,6 +231,22 @@
     "contactTitle": "კონტაქტი",
     "rights": "ყველა უფლება დაცულია."
   },
+  "Contact": {
+    "title": "კონტაქტი",
+    "addressLabel": "მისამართი",
+    "phoneLabel": "ტელეფონი",
+    "emailLabel": "ელფოსტა",
+    "hoursLabel": "სამუშაო საათები",
+    "followUsLabel": "გამოგვყევით",
+    "closed": "დახურულია",
+    "monday": "ორშაბათი",
+    "tuesday": "სამშაბათი",
+    "wednesday": "ოთხშაბათი",
+    "thursday": "ხუთშაბათი",
+    "friday": "პარასკევი",
+    "saturday": "შაბათი",
+    "sunday": "კვირა"
+  },
   "Account": {
     "title": "ჩემი ანგარიში",
     "description": "მომხმარებლის გვერდი მალე დაემატება.",

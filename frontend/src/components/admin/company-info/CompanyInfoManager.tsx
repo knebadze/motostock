@@ -40,6 +40,7 @@ export function CompanyInfoManager({
   );
   const [street, setStreet] = useState(initialCompanyInfo.street ?? "");
   const [phone, setPhone] = useState(initialCompanyInfo.phone ?? "");
+  const [email, setEmail] = useState(initialCompanyInfo.email ?? "");
   const [facebookUrl, setFacebookUrl] = useState(initialCompanyInfo.facebookUrl ?? "");
   const [instagramUrl, setInstagramUrl] = useState(initialCompanyInfo.instagramUrl ?? "");
   const [youtubeUrl, setYoutubeUrl] = useState(initialCompanyInfo.youtubeUrl ?? "");
@@ -91,6 +92,7 @@ export function CompanyInfoManager({
         cityId: cityId ? Number(cityId) : null,
         street: street.trim() || null,
         phone: phone.trim() || null,
+        email: email.trim() || null,
         facebookUrl: facebookUrl.trim() || null,
         instagramUrl: instagramUrl.trim() || null,
         youtubeUrl: youtubeUrl.trim() || null,
@@ -197,6 +199,20 @@ export function CompanyInfoManager({
                 className={inputClassName}
               />
             </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="company-email" className="text-sm font-medium">
+                ელფოსტა
+              </label>
+              <input
+                id="company-email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="info@motostock.ge"
+                className={inputClassName}
+              />
+            </div>
           </div>
         </div>
 
@@ -261,7 +277,7 @@ export function CompanyInfoManager({
         <div className="rounded-2xl border border-border p-5">
           <p className="font-medium text-foreground">კოორდინატები</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            გამოიყენება მომავალში საკონტაქტო გვერდზე რუკის საჩვენებლად.
+            გამოიყენება საკონტაქტო გვერდზე რუკის საჩვენებლად.
           </p>
           <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">

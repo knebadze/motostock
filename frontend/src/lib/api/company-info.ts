@@ -24,6 +24,7 @@ export type CompanyInfo = {
   city: LookupItem | null;
   street: string | null;
   phone: string | null;
+  email: string | null;
   facebookUrl: string | null;
   instagramUrl: string | null;
   youtubeUrl: string | null;
@@ -39,6 +40,7 @@ export type UpdateCompanyInfoInput = {
   cityId?: number | null;
   street?: string | null;
   phone?: string | null;
+  email?: string | null;
   facebookUrl?: string | null;
   instagramUrl?: string | null;
   youtubeUrl?: string | null;

@@ -22,6 +22,7 @@ model CompanyInfo {
   city         City?    @relation(fields: [cityId], references: [id])
   street       String?
   phone        String?
+  email        String?
   facebookUrl  String?
   instagramUrl String?
   youtubeUrl   String?

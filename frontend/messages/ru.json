@@ -231,6 +231,22 @@
     "contactTitle": "Контакты",
     "rights": "Все права защищены."
   },
+  "Contact": {
+    "title": "Контакты",
+    "addressLabel": "Адрес",
+    "phoneLabel": "Телефон",
+    "emailLabel": "Эл. почта",
+    "hoursLabel": "Часы работы",
+    "followUsLabel": "Мы в соцсетях",
+    "closed": "Закрыто",
+    "monday": "Понедельник",
+    "tuesday": "Вторник",
+    "wednesday": "Среда",
+    "thursday": "Четверг",
+    "friday": "Пятница",
+    "saturday": "Суббота",
+    "sunday": "Воскресенье"
+  },
   "Account": {
     "title": "Личный кабинет",
     "description": "Страница личного кабинета скоро появится.",

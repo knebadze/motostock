@@ -231,6 +231,22 @@
     "contactTitle": "Contact",
     "rights": "All rights reserved."
   },
+  "Contact": {
+    "title": "Contact",
+    "addressLabel": "Address",
+    "phoneLabel": "Phone",
+    "emailLabel": "Email",
+    "hoursLabel": "Working hours",
+    "followUsLabel": "Follow us",
+    "closed": "Closed",
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday"
+  },
   "Account": {
     "title": "My Account",
     "description": "The account page is coming soon.",

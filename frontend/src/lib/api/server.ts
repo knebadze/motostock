@@ -129,6 +129,10 @@ const WEEK_DAYS: WeekDay[] = [
   "SUNDAY",
 ];
 
+// Public endpoint (the Footer and Contact page read this on every guest page
+// load too) — unlike the admin-only getXFromServer helpers, this must not
+// bail out just because there's no admin session cookie (see
+// getCategoriesFromServer's identical reasoning above).
 export async function getCompanyInfoFromServer(): Promise<CompanyInfo> {
   const headers = await authHeaders();
   const fallback: CompanyInfo = {
@@ -138,6 +142,7 @@ export async function getCompanyInfoFromServer(): Promise<CompanyInfo> {
     city: null,
     street: null,
     phone: null,
+    email: null,
     facebookUrl: null,
     instagramUrl: null,
     youtubeUrl: null,
@@ -152,7 +157,6 @@ export async function getCompanyInfoFromServer(): Promise<CompanyInfo> {
     })),
     updatedAt: new Date(0).toISOString(),
   };
-  if (!headers) return fallback;
 
   try {
     const { data } = await apiClient.get<{ companyInfo: CompanyInfo }>("/company-info", { headers });
