@@ -9,10 +9,24 @@ export const cacheRouter = Router();
 
 cacheRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
+cacheRouter.get("/", cacheController.list);
 cacheRouter.post("/clear", cacheController.clear);
 
 const security = [{ cookieAuth: [] }];
 const clearResponse = z.object({ message: z.string() });
+const cacheEntrySchema = z.object({ key: z.string(), valuePreview: z.string() });
+const listResponse = z.object({ entries: z.array(cacheEntrySchema), count: z.int() });
+
+registry.registerPath({
+  method: "get",
+  path: "/cache",
+  tags: ["Cache"],
+  summary: "List current server-side cache entries (key + a truncated value preview)",
+  security,
+  responses: {
+    200: { description: "Cache entries", content: { "application/json": { schema: listResponse } } },
+  },
+});
 
 registry.registerPath({
   method: "post",
