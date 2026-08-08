@@ -1,5 +1,6 @@
 import { env } from "../../config/env.js";
 import { ApiError } from "../../lib/ApiError.js";
+import { cache } from "../../lib/cache.js";
 import { isVincarioConfigured } from "../vin-decode/vin-decode.providers.js";
 import { settingsRepository } from "./settings.repository.js";
 import type { UpdateSettingsInput, VinDecodeProvider } from "./settings.schema.js";
@@ -17,6 +18,38 @@ export const DELIVERY_REGIONS_TIME_KEY = "delivery_regions_time";
 export const DELIVERY_EXPRESS_PRICE_KEY = "delivery_express_price";
 export const DELIVERY_EXPRESS_TIME_KEY = "delivery_express_time";
 
+const ALL_SETTING_KEYS = [
+  USE_CLOUD_STORAGE_KEY,
+  VIN_DECODE_ENABLED_KEY,
+  VIN_DECODE_PROVIDER_KEY,
+  GUEST_WISHLIST_ENABLED_KEY,
+  GUEST_CART_ENABLED_KEY,
+  PROMO_STACKING_ENABLED_KEY,
+  DELIVERY_TBILISI_PRICE_KEY,
+  DELIVERY_TBILISI_TIME_KEY,
+  DELIVERY_REGIONS_PRICE_KEY,
+  DELIVERY_REGIONS_TIME_KEY,
+  DELIVERY_EXPRESS_PRICE_KEY,
+  DELIVERY_EXPRESS_TIME_KEY,
+];
+
+// Same read-through pattern as lookups.service.ts's listLookupItems, just
+// generalized over the return type since settings getters parse to
+// boolean/number/string rather than lookups' single array shape.
+function cacheKey(settingKey: string) {
+  return `settings:${settingKey}`;
+}
+
+async function cached<T>(settingKey: string, resolve: () => Promise<T>): Promise<T> {
+  const key = cacheKey(settingKey);
+  const hit = cache.get<T>(key);
+  if (hit !== undefined) return hit;
+
+  const value = await resolve();
+  cache.set(key, value);
+  return value;
+}
+
 function isCloudinaryConfigured() {
   return Boolean(
     env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET,
@@ -24,28 +57,38 @@ function isCloudinaryConfigured() {
 }
 
 export async function isCloudStorageEnabled(): Promise<boolean> {
-  const setting = await settingsRepository.findByKey(USE_CLOUD_STORAGE_KEY);
-  return setting?.value === "true";
+  return cached(USE_CLOUD_STORAGE_KEY, async () => {
+    const setting = await settingsRepository.findByKey(USE_CLOUD_STORAGE_KEY);
+    return setting?.value === "true";
+  });
 }
 
 export async function isVinDecodeEnabled(): Promise<boolean> {
-  const setting = await settingsRepository.findByKey(VIN_DECODE_ENABLED_KEY);
-  return setting?.value === "true";
+  return cached(VIN_DECODE_ENABLED_KEY, async () => {
+    const setting = await settingsRepository.findByKey(VIN_DECODE_ENABLED_KEY);
+    return setting?.value === "true";
+  });
 }
 
 export async function getVinDecodeProvider(): Promise<VinDecodeProvider> {
-  const setting = await settingsRepository.findByKey(VIN_DECODE_PROVIDER_KEY);
-  return setting?.value === "vincario" ? "vincario" : "nhtsa";
+  return cached(VIN_DECODE_PROVIDER_KEY, async () => {
+    const setting = await settingsRepository.findByKey(VIN_DECODE_PROVIDER_KEY);
+    return setting?.value === "vincario" ? "vincario" : "nhtsa";
+  });
 }
 
 export async function isGuestWishlistEnabled(): Promise<boolean> {
-  const setting = await settingsRepository.findByKey(GUEST_WISHLIST_ENABLED_KEY);
-  return setting?.value === "true";
+  return cached(GUEST_WISHLIST_ENABLED_KEY, async () => {
+    const setting = await settingsRepository.findByKey(GUEST_WISHLIST_ENABLED_KEY);
+    return setting?.value === "true";
+  });
 }
 
 export async function isGuestCartEnabled(): Promise<boolean> {
-  const setting = await settingsRepository.findByKey(GUEST_CART_ENABLED_KEY);
-  return setting?.value === "true";
+  return cached(GUEST_CART_ENABLED_KEY, async () => {
+    const setting = await settingsRepository.findByKey(GUEST_CART_ENABLED_KEY);
+    return setting?.value === "true";
+  });
 }
 
 // Controls whether a checkout promo code stacks on top of an item that
@@ -53,38 +96,52 @@ export async function isGuestCartEnabled(): Promise<boolean> {
 // is skipped for that item so the two discounts never combine — see
 // orders.service.ts computeCheckoutTotals.
 export async function isPromoStackingEnabled(): Promise<boolean> {
-  const setting = await settingsRepository.findByKey(PROMO_STACKING_ENABLED_KEY);
-  return setting?.value === "true";
+  return cached(PROMO_STACKING_ENABLED_KEY, async () => {
+    const setting = await settingsRepository.findByKey(PROMO_STACKING_ENABLED_KEY);
+    return setting?.value === "true";
+  });
 }
 
 export async function getDeliveryTbilisiPrice(): Promise<number> {
-  const setting = await settingsRepository.findByKey(DELIVERY_TBILISI_PRICE_KEY);
-  return Number(setting?.value ?? 0);
+  return cached(DELIVERY_TBILISI_PRICE_KEY, async () => {
+    const setting = await settingsRepository.findByKey(DELIVERY_TBILISI_PRICE_KEY);
+    return Number(setting?.value ?? 0);
+  });
 }
 
 export async function getDeliveryTbilisiTime(): Promise<string> {
-  const setting = await settingsRepository.findByKey(DELIVERY_TBILISI_TIME_KEY);
-  return setting?.value ?? "";
+  return cached(DELIVERY_TBILISI_TIME_KEY, async () => {
+    const setting = await settingsRepository.findByKey(DELIVERY_TBILISI_TIME_KEY);
+    return setting?.value ?? "";
+  });
 }
 
 export async function getDeliveryRegionsPrice(): Promise<number> {
-  const setting = await settingsRepository.findByKey(DELIVERY_REGIONS_PRICE_KEY);
-  return Number(setting?.value ?? 0);
+  return cached(DELIVERY_REGIONS_PRICE_KEY, async () => {
+    const setting = await settingsRepository.findByKey(DELIVERY_REGIONS_PRICE_KEY);
+    return Number(setting?.value ?? 0);
+  });
 }
 
 export async function getDeliveryRegionsTime(): Promise<string> {
-  const setting = await settingsRepository.findByKey(DELIVERY_REGIONS_TIME_KEY);
-  return setting?.value ?? "";
+  return cached(DELIVERY_REGIONS_TIME_KEY, async () => {
+    const setting = await settingsRepository.findByKey(DELIVERY_REGIONS_TIME_KEY);
+    return setting?.value ?? "";
+  });
 }
 
 export async function getDeliveryExpressPrice(): Promise<number> {
-  const setting = await settingsRepository.findByKey(DELIVERY_EXPRESS_PRICE_KEY);
-  return Number(setting?.value ?? 0);
+  return cached(DELIVERY_EXPRESS_PRICE_KEY, async () => {
+    const setting = await settingsRepository.findByKey(DELIVERY_EXPRESS_PRICE_KEY);
+    return Number(setting?.value ?? 0);
+  });
 }
 
 export async function getDeliveryExpressTime(): Promise<string> {
-  const setting = await settingsRepository.findByKey(DELIVERY_EXPRESS_TIME_KEY);
-  return setting?.value ?? "";
+  return cached(DELIVERY_EXPRESS_TIME_KEY, async () => {
+    const setting = await settingsRepository.findByKey(DELIVERY_EXPRESS_TIME_KEY);
+    return setting?.value ?? "";
+  });
 }
 
 export async function getSettings() {
@@ -141,5 +198,7 @@ export async function updateSettings(input: UpdateSettingsInput) {
   await settingsRepository.upsert(DELIVERY_REGIONS_TIME_KEY, input.deliveryRegionsTime);
   await settingsRepository.upsert(DELIVERY_EXPRESS_PRICE_KEY, String(input.deliveryExpressPrice));
   await settingsRepository.upsert(DELIVERY_EXPRESS_TIME_KEY, input.deliveryExpressTime);
+
+  for (const key of ALL_SETTING_KEYS) cache.del(cacheKey(key));
   return getSettings();
 }
