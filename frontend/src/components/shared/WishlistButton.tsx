@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "@/i18n/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api/client";
 import {
@@ -39,6 +39,7 @@ export function WishlistButton({
   onChange?: (wishlisted: boolean) => void;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   // The wishlist row's own id (needed for DELETE) — not just a boolean —
   // since it's fetched lazily per button rather than batched across a
   // whole grid. Fine at current catalog size; worth batching later if a
@@ -95,7 +96,7 @@ export function WishlistButton({
       }
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 401) {
-        router.push("/login");
+        router.push({ pathname: "/login", query: { redirect: pathname } });
         return;
       }
       toast.error("ვერ განხორციელდა, სცადეთ თავიდან");

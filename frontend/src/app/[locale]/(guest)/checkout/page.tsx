@@ -20,7 +20,7 @@ export default async function CheckoutPage() {
   const locale = await getLocale();
   const user = await getCurrentUserFromServer();
   if (!user) {
-    redirect({ href: "/login", locale });
+    redirect({ href: { pathname: "/login", query: { redirect: "/checkout" } }, locale });
     return null;
   }
 

@@ -9,6 +9,14 @@ import { loginUser } from "@/lib/api/auth";
 import { ApiRequestError } from "@/lib/api/client";
 import { OAuthButtons } from "@/components/shared/OAuthButtons";
 
+// The ?redirect= param is attacker-controlled (a crafted /login?redirect=...
+// link) — only accept a same-site relative path (single leading slash, not
+// "//" or "https://" which browsers treat as protocol-relative/absolute) to
+// avoid an open-redirect after a successful login.
+function resolveRedirectTarget(value: string | null): string {
+  return value && /^\/(?!\/)/.test(value) ? value : "/account";
+}
+
 export function LoginForm() {
   const t = useTranslations("Auth");
   const router = useRouter();
@@ -34,7 +42,7 @@ export function LoginForm() {
 
     try {
       await loginUser({ email, password });
-      router.push("/account");
+      router.push(resolveRedirectTarget(searchParams.get("redirect")));
       router.refresh();
     } catch (error) {
       // The backend's auth error strings are English-only (no server-side

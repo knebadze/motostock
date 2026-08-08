@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api/client";
 import {
@@ -37,6 +37,7 @@ export function AddToCartButton({
   className?: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const tCart = useTranslations("Cart");
   const [status, setStatus] = useState<"idle" | "loading" | "added">("idle");
   // The cart row's own id + current quantity (not just a boolean) — once
@@ -95,7 +96,7 @@ export function AddToCartButton({
     } catch (error) {
       setStatus("idle");
       if (error instanceof ApiRequestError && error.status === 401) {
-        router.push("/login");
+        router.push({ pathname: "/login", query: { redirect: pathname } });
         return;
       }
       toast.error(error instanceof ApiRequestError ? error.message : errorMessage);
