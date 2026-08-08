@@ -6,6 +6,13 @@ enum OrderFulfillmentMethod {
   @@schema("dbo")
 }
 
+enum OrderDeliverySpeed {
+  STANDARD
+  EXPRESS
+
+  @@schema("dbo")
+}
+
 // A placed order — the historical record of a checkout. Unlike CartItem,
 // everything that could later change (address, promo code, product name)
 // is snapshotted at creation time (see shippingSnapshot/promoCodeSnapshot/
@@ -30,6 +37,15 @@ model Order {
   addressId        Int?
   address          Address? @relation(fields: [addressId], references: [id], onDelete: SetNull)
   shippingSnapshot Json?
+
+  // null when fulfillmentMethod is PICKUP (no delivery needed). Cost/time
+  // are snapshotted from Settings at checkout time (see settings.service.ts's
+  // getDeliveryTbilisiPrice/getDeliveryRegionsPrice/getDeliveryExpressPrice)
+  // so an already-placed order never changes if the admin later edits
+  // delivery pricing — same principle as shippingSnapshot/promoCodeSnapshot.
+  deliverySpeed        OrderDeliverySpeed?
+  deliveryCost         Decimal             @db.Decimal(10, 2) @default(0)
+  deliveryTimeSnapshot String?
 
   // Same SetNull reasoning as addressId — the code/percent are also
   // snapshotted so the order stays readable even if the PromoCode is later

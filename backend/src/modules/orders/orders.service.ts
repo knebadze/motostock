@@ -1,10 +1,18 @@
 import { randomInt } from "node:crypto";
 import { ApiError } from "../../lib/ApiError.js";
-import { Prisma } from "../../generated/prisma/index.js";
+import { Prisma, type OrderDeliverySpeed, type OrderFulfillmentMethod } from "../../generated/prisma/index.js";
 import { cartRepository } from "../cart/cart.repository.js";
 import { addressesRepository } from "../addresses/addresses.repository.js";
 import { resolvePromoCodeForItems, promoCodeItemKey } from "../promo-codes/promo-codes.service.js";
-import { isPromoStackingEnabled } from "../settings/settings.service.js";
+import {
+  isPromoStackingEnabled,
+  getDeliveryTbilisiPrice,
+  getDeliveryTbilisiTime,
+  getDeliveryRegionsPrice,
+  getDeliveryRegionsTime,
+  getDeliveryExpressPrice,
+  getDeliveryExpressTime,
+} from "../settings/settings.service.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { ordersRepository, type PlaceOrderItemInput } from "./orders.repository.js";
@@ -181,6 +189,73 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
   };
 }
 
+type DeliveryResolution = {
+  addressId: number | null;
+  shippingSnapshot: Prisma.InputJsonValue | undefined;
+  deliverySpeed: OrderDeliverySpeed | null;
+  deliveryCost: number;
+  deliveryTimeSnapshot: string | null;
+};
+
+// Shared by previewCheckout and placeOrder so the live checkout summary can
+// never drift from what actually gets persisted. PICKUP needs no address or
+// delivery pricing at all (same condition placeOrder already used for
+// shippingSnapshot). EXPRESS is a flat rate regardless of city (confirmed
+// independent of Tbilisi/regions); STANDARD resolves off the address's
+// City.isTbilisi flag — see settings.service.ts's getDeliveryTbilisiPrice/
+// getDeliveryRegionsPrice/getDeliveryExpressPrice.
+async function resolveDelivery(
+  userId: number,
+  fulfillmentMethod: OrderFulfillmentMethod,
+  addressId: number | undefined,
+  deliverySpeed: OrderDeliverySpeed | undefined,
+): Promise<DeliveryResolution> {
+  if (fulfillmentMethod === "PICKUP") {
+    return {
+      addressId: null,
+      shippingSnapshot: undefined,
+      deliverySpeed: null,
+      deliveryCost: 0,
+      deliveryTimeSnapshot: null,
+    };
+  }
+
+  const address = addressId ? await addressesRepository.findById(addressId) : null;
+  if (!address || address.userId !== userId) {
+    throw new ApiError(404, "მისამართი ვერ მოიძებნა");
+  }
+
+  const speed: OrderDeliverySpeed = deliverySpeed === "EXPRESS" ? "EXPRESS" : "STANDARD";
+  const [deliveryCost, deliveryTimeSnapshot] =
+    speed === "EXPRESS"
+      ? await Promise.all([getDeliveryExpressPrice(), getDeliveryExpressTime()])
+      : address.city.isTbilisi
+        ? await Promise.all([getDeliveryTbilisiPrice(), getDeliveryTbilisiTime()])
+        : await Promise.all([getDeliveryRegionsPrice(), getDeliveryRegionsTime()]);
+
+  return {
+    addressId: address.id,
+    shippingSnapshot: {
+      phone: address.phone,
+      city: {
+        id: address.city.id,
+        key: address.city.key,
+        nameKa: address.city.nameKa,
+        nameEn: address.city.nameEn,
+        nameRu: address.city.nameRu,
+        isTbilisi: address.city.isTbilisi,
+      },
+      street: address.street,
+      building: address.building,
+      apartment: address.apartment,
+      postalCode: address.postalCode,
+    },
+    deliverySpeed: speed,
+    deliveryCost,
+    deliveryTimeSnapshot,
+  };
+}
+
 function toItemResponse(item: { id: number | null } & Omit<PlaceOrderItemInput, "productVariantId" | "vehicleListingId">) {
   return {
     id: item.id,
@@ -193,12 +268,15 @@ function toItemResponse(item: { id: number | null } & Omit<PlaceOrderItemInput, 
   };
 }
 
-function toBreakdownResponse(breakdown: CheckoutBreakdown) {
+function toBreakdownResponse(breakdown: CheckoutBreakdown, delivery: DeliveryResolution) {
   return {
     items: breakdown.items.map((item) => toItemResponse({ ...item, id: null })),
     subtotal: breakdown.subtotal,
     discountTotal: breakdown.discountTotal,
-    total: breakdown.total,
+    deliverySpeed: delivery.deliverySpeed,
+    deliveryCost: delivery.deliveryCost,
+    deliveryTimeSnapshot: delivery.deliveryTimeSnapshot,
+    total: Math.round((breakdown.total + delivery.deliveryCost) * 100) / 100,
     promoCode: breakdown.promoCode
       ? { code: breakdown.promoCode.code, discountPercent: breakdown.promoCode.discountPercent }
       : null,
@@ -207,7 +285,8 @@ function toBreakdownResponse(breakdown: CheckoutBreakdown) {
 
 export async function previewCheckout(userId: number, input: CheckoutInput) {
   const breakdown = await computeCheckoutTotals(userId, input.promoCode);
-  return toBreakdownResponse(breakdown);
+  const delivery = await resolveDelivery(userId, input.fulfillmentMethod, input.addressId, input.deliverySpeed);
+  return toBreakdownResponse(breakdown, delivery);
 }
 
 type OrderRow = NonNullable<Awaited<ReturnType<typeof ordersRepository.findById>>>;
@@ -220,7 +299,7 @@ function toOrderResponse(order: OrderRow) {
     fulfillmentMethod: order.fulfillmentMethod,
     shippingSnapshot: order.shippingSnapshot as {
       phone: string;
-      city: { id: number; key: string; nameKa: string; nameEn: string; nameRu: string };
+      city: { id: number; key: string; nameKa: string; nameEn: string; nameRu: string; isTbilisi: boolean };
       street: string;
       building: string | null;
       apartment: string | null;
@@ -245,6 +324,9 @@ function toOrderResponse(order: OrderRow) {
     ),
     subtotal: Number(order.subtotal),
     discountTotal: Number(order.discountTotal),
+    deliverySpeed: order.deliverySpeed,
+    deliveryCost: Number(order.deliveryCost),
+    deliveryTimeSnapshot: order.deliveryTimeSnapshot,
     total: Number(order.total),
     createdAt: order.createdAt,
   };
@@ -259,29 +341,7 @@ export async function placeOrder(userId: number, input: CheckoutInput) {
     }
   }
 
-  let addressId: number | null = null;
-  let shippingSnapshot: Prisma.InputJsonValue | undefined;
-  if (input.fulfillmentMethod !== "PICKUP") {
-    const address = input.addressId ? await addressesRepository.findById(input.addressId) : null;
-    if (!address || address.userId !== userId) {
-      throw new ApiError(404, "მისამართი ვერ მოიძებნა");
-    }
-    addressId = address.id;
-    shippingSnapshot = {
-      phone: address.phone,
-      city: {
-        id: address.city.id,
-        key: address.city.key,
-        nameKa: address.city.nameKa,
-        nameEn: address.city.nameEn,
-        nameRu: address.city.nameRu,
-      },
-      street: address.street,
-      building: address.building,
-      apartment: address.apartment,
-      postalCode: address.postalCode,
-    };
-  }
+  const delivery = await resolveDelivery(userId, input.fulfillmentMethod, input.addressId, input.deliverySpeed);
 
   const items: PlaceOrderItemInput[] = breakdown.items.map(({ stockQuantity: _stockQuantity, ...item }) => item);
   const statusId = await resolvePendingStatusId();
@@ -293,14 +353,17 @@ export async function placeOrder(userId: number, input: CheckoutInput) {
         userId,
         fulfillmentMethod: input.fulfillmentMethod,
         statusId,
-        addressId,
-        shippingSnapshot,
+        addressId: delivery.addressId,
+        shippingSnapshot: delivery.shippingSnapshot,
         promoCodeId: breakdown.promoCode?.id ?? null,
         promoCodeSnapshot: breakdown.promoCode?.code ?? null,
         promoDiscountPercent: breakdown.promoCode?.discountPercent ?? null,
         subtotal: breakdown.subtotal,
         discountTotal: breakdown.discountTotal,
-        total: breakdown.total,
+        deliverySpeed: delivery.deliverySpeed,
+        deliveryCost: delivery.deliveryCost,
+        deliveryTimeSnapshot: delivery.deliveryTimeSnapshot,
+        total: Math.round((breakdown.total + delivery.deliveryCost) * 100) / 100,
         items,
       });
       return toOrderResponse(order);

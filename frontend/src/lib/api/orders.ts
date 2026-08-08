@@ -4,10 +4,12 @@ import type { CartItemType } from "./cart";
 import type { LookupItem } from "./lookups";
 
 export type OrderFulfillmentMethod = "CARD" | "COURIER" | "PICKUP";
+export type OrderDeliverySpeed = "STANDARD" | "EXPRESS";
 
 export type CheckoutInput = {
   fulfillmentMethod: OrderFulfillmentMethod;
   addressId?: number;
+  deliverySpeed?: OrderDeliverySpeed;
   promoCode?: string;
 };
 
@@ -23,7 +25,7 @@ export type OrderItem = {
 
 export type OrderShippingSnapshot = {
   phone: string;
-  city: { id: number; key: string; nameKa: string; nameEn: string; nameRu: string };
+  city: { id: number; key: string; nameKa: string; nameEn: string; nameRu: string; isTbilisi: boolean };
   street: string;
   building: string | null;
   apartment: string | null;
@@ -36,6 +38,9 @@ export type CheckoutPreview = {
   items: OrderItem[];
   subtotal: number;
   discountTotal: number;
+  deliverySpeed: OrderDeliverySpeed | null;
+  deliveryCost: number;
+  deliveryTimeSnapshot: string | null;
   total: number;
   promoCode: OrderPromoCode | null;
 };

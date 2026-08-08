@@ -4,7 +4,7 @@ import type { LookupItem } from "./lookups";
 export type Address = {
   id: number;
   phone: string;
-  city: LookupItem;
+  city: LookupItem & { isTbilisi: boolean };
   street: string;
   building: string | null;
   apartment: string | null;

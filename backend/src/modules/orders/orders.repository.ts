@@ -1,6 +1,11 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { prisma } from "../../config/prisma.js";
-import type { CartItemType, OrderFulfillmentMethod, Prisma } from "../../generated/prisma/index.js";
+import type {
+  CartItemType,
+  OrderDeliverySpeed,
+  OrderFulfillmentMethod,
+  Prisma,
+} from "../../generated/prisma/index.js";
 
 const buyerSelect = { id: true, firstName: true, lastName: true, email: true } as const;
 
@@ -78,6 +83,9 @@ export type PlaceOrderInput = {
   promoDiscountPercent?: number | null;
   subtotal: number;
   discountTotal: number;
+  deliverySpeed?: OrderDeliverySpeed | null;
+  deliveryCost: number;
+  deliveryTimeSnapshot?: string | null;
   total: number;
   items: PlaceOrderItemInput[];
 };

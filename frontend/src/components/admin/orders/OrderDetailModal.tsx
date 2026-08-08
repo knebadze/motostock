@@ -7,12 +7,22 @@ import { Modal } from "@/components/shared/Modal";
 import { Loader } from "@/components/shared/Loader";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { formatDateTime, formatPrice } from "@/lib/format";
-import { getAnyOrder, type AdminOrder, type OrderFulfillmentMethod } from "@/lib/api/orders";
+import {
+  getAnyOrder,
+  type AdminOrder,
+  type OrderDeliverySpeed,
+  type OrderFulfillmentMethod,
+} from "@/lib/api/orders";
 
 const FULFILLMENT_LABELS: Record<OrderFulfillmentMethod, string> = {
   CARD: "ბარათით გადახდა",
   COURIER: "კურიერთან გადახდა",
   PICKUP: "ადგილიდან გატანა",
+};
+
+const DELIVERY_SPEED_LABELS: Record<OrderDeliverySpeed, string> = {
+  STANDARD: "სტანდარტული მიტანა",
+  EXPRESS: "სწრაფი მიტანა (ექსპრესი)",
 };
 
 export function OrderDetailModal({ orderId, onClose }: { orderId: number; onClose: () => void }) {
@@ -75,6 +85,9 @@ export function OrderDetailModal({ orderId, onClose }: { orderId: number; onClos
                 მიწოდება
               </p>
               <p className="mt-1 text-sm">{FULFILLMENT_LABELS[order.fulfillmentMethod]}</p>
+              {order.deliverySpeed && (
+                <p className="text-sm text-muted-foreground">{DELIVERY_SPEED_LABELS[order.deliverySpeed]}</p>
+              )}
               {order.shippingSnapshot && (
                 <p className="text-sm text-muted-foreground">
                   {order.shippingSnapshot.phone} · {order.shippingSnapshot.city.nameKa},{" "}
@@ -137,6 +150,15 @@ export function OrderDetailModal({ orderId, onClose }: { orderId: number; onClos
               <div className="flex items-center justify-between text-muted-foreground">
                 <span>ფასდაკლება</span>
                 <span>−{formatPrice(order.discountTotal)}</span>
+              </div>
+            )}
+            {order.deliveryCost > 0 && (
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>
+                  მიტანის ღირებულება
+                  {order.deliveryTimeSnapshot ? ` (${order.deliveryTimeSnapshot})` : ""}
+                </span>
+                <span>{formatPrice(order.deliveryCost)}</span>
               </div>
             )}
             <div className="mt-1 flex items-center justify-between text-lg font-bold text-foreground">

@@ -117,6 +117,15 @@ function OrderDetailPageView({ order }: { order: NonNullable<Awaited<ReturnType<
                 <span>−{formatPrice(order.discountTotal)}</span>
               </div>
             )}
+            {order.deliveryCost > 0 && (
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>
+                  {t("delivery")}
+                  {order.deliveryTimeSnapshot ? ` (${order.deliveryTimeSnapshot})` : ""}
+                </span>
+                <span>{formatPrice(order.deliveryCost)}</span>
+              </div>
+            )}
             <div className="mt-1 flex items-center justify-between text-lg font-bold text-foreground">
               <span>{t("total")}</span>
               <span className="text-primary">{formatPrice(order.total)}</span>

@@ -28,12 +28,20 @@ export const addressIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+// Extends the generic lookup shape with isTbilisi — only City needs this
+// flag (used to resolve Tbilisi vs. regional delivery pricing at checkout),
+// so it's kept off the shared lookupItemResponseSchema used by every other
+// lookup type.
+const addressCityResponseSchema = lookupItemResponseSchema.extend({
+  isTbilisi: z.boolean(),
+});
+
 export const addressResponseSchema = registry.register(
   "Address",
   z.object({
     id: z.int().openapi({ example: 1 }),
     phone: z.string(),
-    city: lookupItemResponseSchema,
+    city: addressCityResponseSchema,
     street: z.string(),
     building: z.string().nullable(),
     apartment: z.string().nullable(),

@@ -5,6 +5,7 @@ import { cartItemTypeSchema } from "../cart/cart.schema.js";
 import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
 
 export const orderFulfillmentMethodSchema = z.enum(["CARD", "COURIER", "PICKUP"]);
+export const orderDeliverySpeedSchema = z.enum(["STANDARD", "EXPRESS"]);
 
 export const checkoutInputSchema = registry.register(
   "CheckoutInput",
@@ -12,6 +13,7 @@ export const checkoutInputSchema = registry.register(
     .object({
       fulfillmentMethod: orderFulfillmentMethodSchema,
       addressId: z.int().positive().optional(),
+      deliverySpeed: orderDeliverySpeedSchema.optional(),
       promoCode: z.string().trim().min(1).max(30).optional(),
     })
     .superRefine((data, ctx) => {
@@ -38,6 +40,7 @@ const shippingSnapshotSchema = z.object({
     nameKa: z.string(),
     nameEn: z.string(),
     nameRu: z.string(),
+    isTbilisi: z.boolean(),
   }),
   street: z.string(),
   building: z.string().nullable(),
@@ -72,6 +75,9 @@ export const checkoutPreviewResponseSchema = registry.register(
     items: z.array(orderItemResponseSchema),
     subtotal: z.number(),
     discountTotal: z.number(),
+    deliverySpeed: orderDeliverySpeedSchema.nullable(),
+    deliveryCost: z.number(),
+    deliveryTimeSnapshot: z.string().nullable(),
     total: z.number(),
     promoCode: promoCodeSummarySchema.nullable(),
   }),
@@ -89,6 +95,9 @@ export const orderResponseSchema = registry.register(
     items: z.array(orderItemResponseSchema),
     subtotal: z.number(),
     discountTotal: z.number(),
+    deliverySpeed: orderDeliverySpeedSchema.nullable(),
+    deliveryCost: z.number(),
+    deliveryTimeSnapshot: z.string().nullable(),
     total: z.number(),
     createdAt: z.iso.datetime(),
   }),

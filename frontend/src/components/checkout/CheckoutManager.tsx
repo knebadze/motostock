@@ -11,6 +11,7 @@ import {
   placeOrder,
   previewCheckout,
   type CheckoutPreview,
+  type OrderDeliverySpeed,
   type OrderFulfillmentMethod,
 } from "@/lib/api/orders";
 import type { Address } from "@/lib/api/addresses";
@@ -35,6 +36,7 @@ export function CheckoutManager({
     addresses.length > 0 ? "CARD" : "PICKUP",
   );
   const [addressId, setAddressId] = useState<number | null>(addresses[0]?.id ?? null);
+  const [deliverySpeed, setDeliverySpeed] = useState<OrderDeliverySpeed>("STANDARD");
   const [promoCodeInput, setPromoCodeInput] = useState("");
   const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
   const [preview, setPreview] = useState<CheckoutPreview | null>(null);
@@ -61,6 +63,7 @@ export function CheckoutManager({
       previewCheckout({
         fulfillmentMethod,
         addressId: requiresAddress ? (addressId ?? undefined) : undefined,
+        deliverySpeed: requiresAddress ? deliverySpeed : undefined,
         promoCode: appliedPromoCode ?? undefined,
       })
         .then((result) => {
@@ -82,7 +85,7 @@ export function CheckoutManager({
       clearTimeout(timeoutId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fulfillmentMethod, addressId, appliedPromoCode, canFetchPreview, requiresAddress]);
+  }, [fulfillmentMethod, addressId, deliverySpeed, appliedPromoCode, canFetchPreview, requiresAddress]);
 
   async function handleApplyPromoCode() {
     const code = promoCodeInput.trim();
@@ -93,6 +96,7 @@ export function CheckoutManager({
       const result = await previewCheckout({
         fulfillmentMethod,
         addressId: requiresAddress ? (addressId ?? undefined) : undefined,
+        deliverySpeed: requiresAddress ? deliverySpeed : undefined,
         promoCode: code,
       });
       setPreview(result);
@@ -126,6 +130,7 @@ export function CheckoutManager({
       const order = await placeOrder({
         fulfillmentMethod,
         addressId: requiresAddress ? (addressId ?? undefined) : undefined,
+        deliverySpeed: requiresAddress ? deliverySpeed : undefined,
         promoCode: appliedPromoCode ?? undefined,
       });
       toast.success(t("placeSuccess"));
@@ -253,6 +258,32 @@ export function CheckoutManager({
           </div>
         </section>
 
+        {requiresAddress && (
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <h2 className="font-semibold text-foreground">{t("deliverySpeedHeading")}</h2>
+            <div className="mt-3 flex flex-col gap-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="deliverySpeed"
+                  checked={deliverySpeed === "STANDARD"}
+                  onChange={() => setDeliverySpeed("STANDARD")}
+                />
+                {t("deliveryStandard")}
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="deliverySpeed"
+                  checked={deliverySpeed === "EXPRESS"}
+                  onChange={() => setDeliverySpeed("EXPRESS")}
+                />
+                {t("deliveryExpress")}
+              </label>
+            </div>
+          </section>
+        )}
+
         <section className="rounded-2xl border border-border bg-card p-5">
           <h2 className="font-semibold text-foreground">{t("promoHeading")}</h2>
           {appliedPromoCode ? (
@@ -295,6 +326,15 @@ export function CheckoutManager({
               <div className="flex items-center justify-between text-muted-foreground">
                 <span>{t("discount")}</span>
                 <span>−{formatPrice(displayPreview.discountTotal)}</span>
+              </div>
+            )}
+            {displayPreview && displayPreview.deliveryCost > 0 && (
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>
+                  {t("delivery")}
+                  {displayPreview.deliveryTimeSnapshot ? ` (${displayPreview.deliveryTimeSnapshot})` : ""}
+                </span>
+                <span>{formatPrice(displayPreview.deliveryCost)}</span>
               </div>
             )}
             <div className="mt-1 flex items-center justify-between text-lg font-bold text-foreground">
