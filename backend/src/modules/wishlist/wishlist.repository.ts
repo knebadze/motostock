@@ -9,7 +9,9 @@ function ownerWhere(owner: WishlistOwner) {
   return "userId" in owner ? { userId: owner.userId } : { guestId: owner.guestId };
 }
 
-const include = {
+// Exported so users.repository.ts's admin "full detail" view can nest the
+// same shape under User.wishlistItems without duplicating it.
+export const wishlistItemInclude = {
   product: { include: productSummaryInclude },
   vehicleListing: { include: vehicleListingInclude },
 } as const;
@@ -18,13 +20,13 @@ export const wishlistRepository = {
   findByOwner(owner: WishlistOwner) {
     return prisma.wishlistItem.findMany({
       where: ownerWhere(owner),
-      include,
+      include: wishlistItemInclude,
       orderBy: { createdAt: "desc" },
     });
   },
 
   findById(id: number) {
-    return prisma.wishlistItem.findUnique({ where: { id }, include });
+    return prisma.wishlistItem.findUnique({ where: { id }, include: wishlistItemInclude });
   },
 
   findByOwnerAndProduct(owner: WishlistOwner, productId: number) {
@@ -52,7 +54,7 @@ export const wishlistRepository = {
     productId?: number | null;
     vehicleListingId?: number | null;
   }) {
-    return prisma.wishlistItem.create({ data, include });
+    return prisma.wishlistItem.create({ data, include: wishlistItemInclude });
   },
 
   delete(id: number) {

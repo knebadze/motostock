@@ -1,6 +1,8 @@
 import { prisma } from "../../config/prisma.js";
 import { addressInclude } from "../addresses/addresses.repository.js";
 import { vehicleCatalogInclude } from "../vehicle-catalog/vehicle-catalog.repository.js";
+import { wishlistItemInclude } from "../wishlist/wishlist.repository.js";
+import { cartItemInclude } from "../cart/cart.repository.js";
 
 export const usersRepository = {
   findByEmail(email: string) {
@@ -24,6 +26,8 @@ export const usersRepository = {
           include: { vehicleCatalog: { include: vehicleCatalogInclude } },
           orderBy: { createdAt: "desc" },
         },
+        wishlistItems: { include: wishlistItemInclude, orderBy: { createdAt: "desc" } },
+        cartItems: { include: cartItemInclude, orderBy: { createdAt: "desc" } },
       },
     });
   },

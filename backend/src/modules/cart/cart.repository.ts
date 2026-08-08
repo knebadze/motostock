@@ -28,7 +28,9 @@ const productVariantInclude = {
   },
 } as const;
 
-const include = {
+// Exported so users.repository.ts's admin "full detail" view can nest the
+// same shape under User.cartItems without duplicating it.
+export const cartItemInclude = {
   productVariant: { include: productVariantInclude },
   vehicleListing: { include: vehicleListingInclude },
 } as const;
@@ -37,7 +39,7 @@ export const cartRepository = {
   findByOwner(owner: CartOwner) {
     return prisma.cartItem.findMany({
       where: ownerWhere(owner),
-      include,
+      include: cartItemInclude,
       orderBy: { createdAt: "desc" },
     });
   },
@@ -50,7 +52,7 @@ export const cartRepository = {
   },
 
   findById(id: number) {
-    return prisma.cartItem.findUnique({ where: { id }, include });
+    return prisma.cartItem.findUnique({ where: { id }, include: cartItemInclude });
   },
 
   findByOwnerAndProductVariant(owner: CartOwner, productVariantId: number) {
@@ -86,11 +88,11 @@ export const cartRepository = {
     vehicleListingId?: number | null;
     quantity: number;
   }) {
-    return prisma.cartItem.create({ data, include });
+    return prisma.cartItem.create({ data, include: cartItemInclude });
   },
 
   updateQuantity(id: number, quantity: number) {
-    return prisma.cartItem.update({ where: { id }, data: { quantity }, include });
+    return prisma.cartItem.update({ where: { id }, data: { quantity }, include: cartItemInclude });
   },
 
   incrementQuantity(id: number, by: number) {

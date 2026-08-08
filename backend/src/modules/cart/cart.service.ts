@@ -81,7 +81,9 @@ function ownerMatches(row: { userId: number | null; guestId: string | null }, ow
   return "userId" in owner ? row.userId === owner.userId : row.guestId === owner.guestId;
 }
 
-function toResponse(row: CartItemRow) {
+// Exported for users.service.ts's admin "full detail" view to reuse
+// (imported there as `toResponse as toCartItemResponse`).
+export function toResponse(row: CartItemRow) {
   const productVariant = row.productVariant ? toProductVariantCartResponse(row.productVariant) : null;
   const vehicleListing = row.vehicleListing ? toVehicleListingResponse(row.vehicleListing) : null;
   const unitPrice =

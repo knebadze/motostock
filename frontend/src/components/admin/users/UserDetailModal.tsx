@@ -6,14 +6,25 @@ import { Modal } from "@/components/shared/Modal";
 import { Loader } from "@/components/shared/Loader";
 import { getUser, type AdminUserDetail } from "@/lib/api/users";
 import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { WishlistItem } from "@/lib/api/wishlist";
 import { ApiRequestError } from "@/lib/api/client";
 import { formatDateTime } from "@/lib/format";
+import { getCartItemDisplay } from "@/lib/cart-item-display";
 
 function vehicleCatalogLabel(entry: VehicleCatalogEntry): string {
   const year =
     entry.yearFrom || entry.yearTo ? ` (${entry.yearFrom ?? "?"}–${entry.yearTo ?? "?"})` : "";
   const variant = entry.variant ? ` ${entry.variant}` : "";
   return `${entry.brand.name.ka} ${entry.model.name.ka}${variant}${year}`;
+}
+
+function wishlistItemLabel(item: WishlistItem): string {
+  if (item.product) return item.product.name.ka;
+  if (item.vehicleListing) {
+    const catalog = item.vehicleListing.vehicleCatalog;
+    return `${catalog.brand.name.ka} ${catalog.model.name.ka}`;
+  }
+  return "";
 }
 
 function authMethodBadges(user: AdminUserDetail) {
@@ -147,6 +158,53 @@ export function UserDetailModal({ userId, onClose }: { userId: number; onClose: 
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold">სასურველები</h4>
+            {detail.wishlist.length === 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">სასურველების სია ცარიელია</p>
+            ) : (
+              <div className="mt-2 flex flex-col gap-2">
+                {detail.wishlist.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-2.5 text-sm"
+                  >
+                    <span>{wishlistItemLabel(item)}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDateTime(item.createdAt)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold">კალათა</h4>
+            {detail.cart.length === 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">კალათა ცარიელია</p>
+            ) : (
+              <div className="mt-2 flex flex-col gap-2">
+                {detail.cart.map((item) => {
+                  const { title } = getCartItemDisplay(item, "ka");
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-2.5 text-sm"
+                    >
+                      <span>
+                        {title} × {item.quantity}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDateTime(item.createdAt)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

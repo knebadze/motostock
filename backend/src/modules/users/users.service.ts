@@ -2,6 +2,8 @@ import { ApiError } from "../../lib/ApiError.js";
 import { comparePassword, hashPassword } from "../../lib/password.js";
 import { toAddressResponse } from "../addresses/addresses.service.js";
 import { toVehicleCatalogResponse } from "../vehicle-catalog/vehicle-catalog.service.js";
+import { toResponse as toWishlistItemResponse } from "../wishlist/wishlist.service.js";
+import { toResponse as toCartItemResponse } from "../cart/cart.service.js";
 import { usersRepository } from "./users.repository.js";
 import type { ChangePasswordInput } from "./users.schema.js";
 
@@ -64,6 +66,8 @@ export async function getUserDetail(id: number) {
       createdAt: vehicle.createdAt,
       updatedAt: vehicle.updatedAt,
     })),
+    wishlist: user.wishlistItems.map(toWishlistItemResponse),
+    cart: user.cartItems.map(toCartItemResponse),
   };
 }
 

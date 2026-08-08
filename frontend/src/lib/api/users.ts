@@ -1,6 +1,8 @@
 import { apiClient } from "./client";
 import type { Address } from "./addresses";
 import type { GarageVehicle } from "./vehicle-catalog";
+import type { WishlistItem } from "./wishlist";
+import type { CartItem } from "./cart";
 
 export type AdminUser = {
   id: number;
@@ -16,6 +18,8 @@ export type AdminUser = {
 export type AdminUserDetail = AdminUser & {
   addresses: Address[];
   garage: GarageVehicle[];
+  wishlist: WishlistItem[];
+  cart: CartItem[];
 };
 
 export async function listUsers(): Promise<AdminUser[]> {

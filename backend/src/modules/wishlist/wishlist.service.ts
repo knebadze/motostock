@@ -15,7 +15,9 @@ type WishlistItemRow = {
   createdAt: Date;
 };
 
-function toResponse(row: WishlistItemRow) {
+// Exported for users.service.ts's admin "full detail" view to reuse
+// (imported there as `toResponse as toWishlistItemResponse`).
+export function toResponse(row: WishlistItemRow) {
   return {
     id: row.id,
     itemType: row.itemType,

@@ -6,6 +6,8 @@ import { registry } from "../../docs/registry.js";
 import { errorResponseSchema, userResponseSchema } from "../../docs/schemas.js";
 import { addressResponseSchema } from "../addresses/addresses.schema.js";
 import { garageVehicleResponseSchema } from "../garage/garage.schema.js";
+import { wishlistItemResponseSchema } from "../wishlist/wishlist.schema.js";
+import { cartItemResponseSchema } from "../cart/cart.schema.js";
 import { ROLES } from "../../lib/roles.js";
 import { changePassword, getOne, list, me } from "./users.controller.js";
 import { changePasswordSchema, userIdParamSchema } from "./users.schema.js";
@@ -107,6 +109,8 @@ const adminUserDetailResponseSchema = registry.register(
   adminUserResponseSchema.extend({
     addresses: z.array(addressResponseSchema),
     garage: z.array(garageVehicleResponseSchema),
+    wishlist: z.array(wishlistItemResponseSchema),
+    cart: z.array(cartItemResponseSchema),
   }),
 );
 
