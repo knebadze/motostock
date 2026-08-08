@@ -165,6 +165,7 @@ export function ProductDetailPage({
               <AddToCartButton
                 itemType="PRODUCT_VARIANT"
                 id={selectedVariant.id}
+                stockQuantity={selectedVariant.stockQuantity}
                 disabled={outOfStock}
                 labelAdd={tCart("addToCart")}
                 labelAdded={tCart("addedToCart")}

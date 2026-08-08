@@ -61,6 +61,23 @@ export const cartRepository = {
     return prisma.cartItem.findFirst({ where: { ...ownerWhere(owner), vehicleListingId } });
   },
 
+  // Lightweight existence+quantity check (AddToCartButton/CartDropdown's
+  // initial "is this already in the cart" lookup) — mirrors
+  // wishlist.repository.ts's findStatus, plus quantity since a stepper
+  // needs a starting count, not just a boolean.
+  findStatus(owner: CartOwner, productVariantIds: number[], vehicleListingIds: number[]) {
+    return prisma.cartItem.findMany({
+      where: {
+        ...ownerWhere(owner),
+        OR: [
+          { productVariantId: { in: productVariantIds } },
+          { vehicleListingId: { in: vehicleListingIds } },
+        ],
+      },
+      select: { id: true, productVariantId: true, vehicleListingId: true, quantity: true },
+    });
+  },
+
   create(data: {
     itemType: CartItemType;
     userId?: number | null;

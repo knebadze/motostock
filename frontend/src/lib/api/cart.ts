@@ -69,3 +69,24 @@ export async function updateCartItemQuantity(id: number, quantity: number): Prom
 export async function removeFromCart(id: number): Promise<void> {
   await apiClient.delete(`/users/me/cart/${id}`);
 }
+
+export type CartStatusItem = {
+  id: number;
+  productVariantId: number | null;
+  vehicleListingId: number | null;
+  quantity: number;
+};
+
+export async function getCartStatus(
+  productVariantIds: number[],
+  vehicleListingIds: number[],
+): Promise<CartStatusItem[]> {
+  if (productVariantIds.length === 0 && vehicleListingIds.length === 0) {
+    return [];
+  }
+
+  const { data } = await apiClient.get<{ items: CartStatusItem[] }>("/users/me/cart/status", {
+    params: { productVariantIds, vehicleListingIds },
+  });
+  return data.items;
+}

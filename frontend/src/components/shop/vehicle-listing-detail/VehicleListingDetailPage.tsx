@@ -78,6 +78,7 @@ export function VehicleListingDetailPage({
             <AddToCartButton
               itemType="VEHICLE_LISTING"
               id={listing.id}
+              stockQuantity={listing.stockQuantity}
               disabled={outOfStock}
               labelAdd={tCart("addToCart")}
               labelAdded={tCart("addedToCart")}

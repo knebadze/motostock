@@ -1,6 +1,15 @@
 import { resolveMediaUrl } from "./api/client";
 import { pickLookupName } from "./format";
-import type { CartItem } from "./api/cart";
+import type { Cart, CartItem } from "./api/cart";
+
+// Shared by CartManager and the header's CartDropdown — both recompute
+// subtotal/itemCount locally after a quantity change or removal instead of
+// refetching the whole cart.
+export function recomputeCart(items: CartItem[]): Cart {
+  const subtotal = Math.round(items.reduce((sum, item) => sum + item.lineTotal, 0) * 100) / 100;
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  return { items, subtotal, itemCount };
+}
 
 // Shared by CartManager's line rows and the header's CartDropdown preview —
 // both need the same "what do we link to / show / call this" derivation

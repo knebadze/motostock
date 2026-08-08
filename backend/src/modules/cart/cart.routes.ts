@@ -10,6 +10,8 @@ import {
   cartItemIdParamSchema,
   cartItemResponseSchema,
   cartResponseSchema,
+  cartStatusQuerySchema,
+  cartStatusResponseSchema,
   createCartItemSchema,
   updateCartItemSchema,
 } from "./cart.schema.js";
@@ -26,6 +28,11 @@ cartRouter.use("/me/cart", resolveCartOwner);
 
 cartRouter.get("/me/cart", cartController.list);
 cartRouter.get("/me/cart/count", cartController.count);
+cartRouter.get(
+  "/me/cart/status",
+  validate(cartStatusQuerySchema, "query"),
+  cartController.status,
+);
 cartRouter.post("/me/cart", validate(createCartItemSchema), cartController.create);
 cartRouter.patch(
   "/me/cart/:id",
@@ -62,6 +69,22 @@ registry.registerPath({
   security,
   responses: {
     200: { description: "Cart count", content: { "application/json": { schema: cartCountResponseSchema } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/users/me/cart/status",
+  tags: ["Cart"],
+  summary: "Check which of the given product-variant/vehicle-listing ids are already in the caller's cart",
+  security,
+  request: { query: cartStatusQuerySchema },
+  responses: {
+    200: {
+      description: "Matching cart ids and quantities",
+      content: { "application/json": { schema: cartStatusResponseSchema } },
+    },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

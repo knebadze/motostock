@@ -7,14 +7,8 @@ import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import { ApiRequestError } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
-import { getCartItemDisplay } from "@/lib/cart-item-display";
+import { getCartItemDisplay, recomputeCart } from "@/lib/cart-item-display";
 import { removeFromCart, updateCartItemQuantity, type Cart, type CartItem } from "@/lib/api/cart";
-
-function recompute(items: CartItem[]): Cart {
-  const subtotal = Math.round(items.reduce((sum, item) => sum + item.lineTotal, 0) * 100) / 100;
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  return { items, subtotal, itemCount };
-}
 
 function CartLineRow({
   item,
@@ -101,7 +95,7 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
     try {
       const updated = await updateCartItemQuantity(item.id, nextQuantity);
       setCart((current) =>
-        recompute(current.items.map((existing) => (existing.id === item.id ? updated : existing))),
+        recomputeCart(current.items.map((existing) => (existing.id === item.id ? updated : existing))),
       );
     } catch (error) {
       toast.error(error instanceof ApiRequestError ? error.message : t("updateError"));
@@ -114,7 +108,7 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
     setPendingId(item.id);
     try {
       await removeFromCart(item.id);
-      setCart((current) => recompute(current.items.filter((existing) => existing.id !== item.id)));
+      setCart((current) => recomputeCart(current.items.filter((existing) => existing.id !== item.id)));
       toast.success(t("removeSuccess"));
     } catch {
       toast.error(t("removeError"));

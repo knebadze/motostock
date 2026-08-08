@@ -80,3 +80,34 @@ export const cartCountResponseSchema = registry.register(
   "CartCount",
   z.object({ count: z.int().openapi({ example: 2 }) }),
 );
+
+// ?productVariantIds=1&productVariantIds=2 parses to a string[] via qs, but
+// a single ?productVariantIds=1 parses to a bare string — normalize both
+// into an array before coercing, same pattern as wishlist.schema.ts's
+// idListQuerySchema.
+const idListQuerySchema = z
+  .preprocess(
+    (value) => (value == null ? undefined : Array.isArray(value) ? value : [value]),
+    z.array(z.coerce.number().int().positive()),
+  )
+  .optional();
+
+export const cartStatusQuerySchema = z.object({
+  productVariantIds: idListQuerySchema,
+  vehicleListingIds: idListQuerySchema,
+});
+export type CartStatusQuery = z.infer<typeof cartStatusQuerySchema>;
+
+export const cartStatusResponseSchema = registry.register(
+  "CartStatus",
+  z.object({
+    items: z.array(
+      z.object({
+        id: z.int(),
+        productVariantId: z.int().nullable(),
+        vehicleListingId: z.int().nullable(),
+        quantity: z.int(),
+      }),
+    ),
+  }),
+);

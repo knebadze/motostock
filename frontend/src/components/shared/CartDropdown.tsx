@@ -3,10 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
+import { ApiRequestError } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
-import { getCartItemDisplay } from "@/lib/cart-item-display";
-import { getMyCart, type Cart } from "@/lib/api/cart";
+import { getCartItemDisplay, recomputeCart } from "@/lib/cart-item-display";
+import { getMyCart, removeFromCart, updateCartItemQuantity, type Cart, type CartItem } from "@/lib/api/cart";
 
 const PREVIEW_LIMIT = 4;
 
@@ -14,9 +17,11 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const tHeader = useTranslations("Header");
   const tCart = useTranslations("Cart");
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pendingId, setPendingId] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,6 +45,30 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
       setCart(await getMyCart());
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleQuantityChange(item: CartItem, nextQuantity: number) {
+    setPendingId(item.id);
+    try {
+      if (nextQuantity < 1) {
+        await removeFromCart(item.id);
+        setCart((current) =>
+          current ? recomputeCart(current.items.filter((existing) => existing.id !== item.id)) : current,
+        );
+      } else {
+        const updated = await updateCartItemQuantity(item.id, nextQuantity);
+        setCart((current) =>
+          current
+            ? recomputeCart(current.items.map((existing) => (existing.id === item.id ? updated : existing)))
+            : current,
+        );
+      }
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof ApiRequestError ? error.message : tCart("updateError"));
+    } finally {
+      setPendingId(null);
     }
   }
 
@@ -94,12 +123,14 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
               <ul className="flex max-h-80 flex-col divide-y divide-border overflow-y-auto">
                 {cart.items.slice(0, PREVIEW_LIMIT).map((item) => {
                   const { href, title, subtitle, imageUrl } = getCartItemDisplay(item, locale);
+                  const stockQuantity = item.productVariant?.stockQuantity ?? item.vehicleListing?.stockQuantity ?? 1;
+                  const pending = pendingId === item.id;
                   return (
-                    <li key={item.id}>
+                    <li key={item.id} className="flex flex-col gap-2 p-3">
                       <Link
                         href={href}
                         onClick={() => setOpen(false)}
-                        className="flex items-center gap-3 p-3 transition-colors hover:bg-muted"
+                        className="flex items-center gap-3 transition-colors hover:text-primary"
                       >
                         <div className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-muted">
                           {imageUrl ? (
@@ -110,12 +141,34 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
                         </div>
                         <div className="flex min-w-0 flex-1 flex-col">
                           <span className="truncate text-sm font-medium text-foreground">{title}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {subtitle ? `${subtitle} · ` : ""}
-                            {item.quantity} × {formatPrice(item.unitPrice)}
-                          </span>
+                          {subtitle && <span className="truncate text-xs text-muted-foreground">{subtitle}</span>}
                         </div>
                       </Link>
+
+                      <div className="flex items-center justify-between gap-3 pl-15">
+                        <div className="flex items-center gap-1 rounded-full border border-border">
+                          <button
+                            type="button"
+                            onClick={() => handleQuantityChange(item, item.quantity - 1)}
+                            disabled={pending}
+                            aria-label={tCart("decreaseQuantity")}
+                            className="flex size-7 items-center justify-center text-foreground transition-colors hover:text-primary disabled:opacity-40"
+                          >
+                            −
+                          </button>
+                          <span className="w-5 text-center text-xs font-medium">{item.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleQuantityChange(item, item.quantity + 1)}
+                            disabled={pending || item.quantity >= stockQuantity}
+                            aria-label={tCart("increaseQuantity")}
+                            className="flex size-7 items-center justify-center text-foreground transition-colors hover:text-primary disabled:opacity-40"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <span className="text-sm font-semibold text-primary">{formatPrice(item.lineTotal)}</span>
+                      </div>
                     </li>
                   );
                 })}

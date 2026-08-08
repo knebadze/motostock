@@ -116,6 +116,22 @@ export async function getMyCartCount(owner: CartOwner) {
   return { count: result._sum.quantity ?? 0 };
 }
 
+export async function getCartStatus(
+  owner: CartOwner,
+  productVariantIds: number[],
+  vehicleListingIds: number[],
+) {
+  const rows = await cartRepository.findStatus(owner, productVariantIds, vehicleListingIds);
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      productVariantId: row.productVariantId,
+      vehicleListingId: row.vehicleListingId,
+      quantity: row.quantity,
+    })),
+  };
+}
+
 async function addProductVariantToCart(owner: CartOwner, productVariantId: number, quantity: number) {
   const variant = await productVariantsRepository.findById(productVariantId);
   if (!variant) {

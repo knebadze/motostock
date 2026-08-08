@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
 import * as cartService from "./cart.service.js";
 import type { CartOwner } from "./cart.repository.js";
-import type { CreateCartItemInput, UpdateCartItemInput } from "./cart.schema.js";
+import type { CartStatusQuery, CreateCartItemInput, UpdateCartItemInput } from "./cart.schema.js";
 
 // resolveCartOwner (see cart.middleware.ts) guarantees exactly one of these
 // is set before a handler runs — it 401s otherwise. Narrow structural type
@@ -47,4 +47,16 @@ export async function update(
 export async function remove(req: Request, res: Response) {
   await cartService.removeCartItem(getOwner(req), Number(req.params.id));
   res.status(204).send();
+}
+
+export async function status(
+  req: Request<unknown, unknown, unknown, CartStatusQuery>,
+  res: Response,
+) {
+  const result = await cartService.getCartStatus(
+    getOwner(req),
+    req.query.productVariantIds ?? [],
+    req.query.vehicleListingIds ?? [],
+  );
+  res.status(200).json(result);
 }
