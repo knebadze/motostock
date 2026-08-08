@@ -4,6 +4,7 @@ import {
   brandsIcon,
   categoriesIcon,
   classifierIcon,
+  compatibilityIcon,
   dashboardIcon,
   discountRulesIcon,
   filtersIcon,
@@ -62,6 +63,7 @@ export const adminNav: AdminNavSection[] = [
       { label: "ბრენდები", href: "/admin/product-brands", icon: brandsIcon },
       { label: "მახასიათებლები", href: "/admin/attributes", icon: attributesIcon },
       { label: "კატეგორიის ფილტრები", href: "/admin/category-filters", icon: filtersIcon },
+      { label: "თავსებადობა", href: "/admin/compatibility", icon: compatibilityIcon },
     ],
   },
   {

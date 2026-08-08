@@ -25,6 +25,7 @@ import type { PromoCode, PromoCodeDomain } from "./promo-codes";
 import type { WishlistItem } from "./wishlist";
 import type { Cart } from "./cart";
 import type { AdminOrderSummary, Order, OrderSummary } from "./orders";
+import type { CompatibilityItem } from "./compatibility";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -367,6 +368,18 @@ export async function getOrdersFromServer(): Promise<AdminOrderSummary[]> {
   try {
     const { data } = await apiClient.get<{ orders: AdminOrderSummary[] }>("/orders", { headers });
     return data.orders;
+  } catch {
+    return [];
+  }
+}
+
+export async function getCompatibilityFromServer(): Promise<CompatibilityItem[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: CompatibilityItem[] }>("/compatibility", { headers });
+    return data.items;
   } catch {
     return [];
   }
