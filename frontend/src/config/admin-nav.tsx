@@ -5,6 +5,7 @@ import {
   buyTogetherIcon,
   categoriesIcon,
   classifierIcon,
+  companyInfoIcon,
   compatibilityIcon,
   dashboardIcon,
   discountRulesIcon,
@@ -35,6 +36,7 @@ export const adminNav: AdminNavSection[] = [
     label: "მთავარი",
     items: [
       { label: "დეშბორდი", href: "/admin", icon: dashboardIcon },
+      { label: "კომპანიის ინფორმაცია", href: "/admin/company-info", icon: companyInfoIcon },
       { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon },
       { label: "შეკვეთები", href: "/admin/orders", icon: ordersIcon },
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },

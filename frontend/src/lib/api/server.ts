@@ -27,6 +27,7 @@ import type { Cart } from "./cart";
 import type { AdminOrderSummary, Order, OrderSummary } from "./orders";
 import type { CompatibilityItem } from "./compatibility";
 import type { AdminProductBuyTogether } from "./product-buy-together";
+import type { CompanyInfo, WeekDay } from "./company-info";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -115,6 +116,49 @@ export async function getUsersFromServer(): Promise<AdminUser[]> {
     return data.users;
   } catch {
     return [];
+  }
+}
+
+const WEEK_DAYS: WeekDay[] = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
+];
+
+export async function getCompanyInfoFromServer(): Promise<CompanyInfo> {
+  const headers = await authHeaders();
+  const fallback: CompanyInfo = {
+    id: 0,
+    name: "",
+    logoUrl: null,
+    city: null,
+    street: null,
+    phone: null,
+    facebookUrl: null,
+    instagramUrl: null,
+    youtubeUrl: null,
+    tiktokUrl: null,
+    latitude: null,
+    longitude: null,
+    workingHours: WEEK_DAYS.map((dayOfWeek) => ({
+      dayOfWeek,
+      isClosed: true,
+      openTime: null,
+      closeTime: null,
+    })),
+    updatedAt: new Date(0).toISOString(),
+  };
+  if (!headers) return fallback;
+
+  try {
+    const { data } = await apiClient.get<{ companyInfo: CompanyInfo }>("/company-info", { headers });
+    return data.companyInfo;
+  } catch {
+    return fallback;
   }
 }
 

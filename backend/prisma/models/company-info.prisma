@@ -1,0 +1,54 @@
+enum WeekDay {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+
+  @@schema("dbo")
+}
+
+// Singleton — exactly one row ever exists (see company-info.service.ts's
+// getOrCreateCompanyInfo), but modeled as a real table with typed columns
+// rather than a Setting key-value row, matching this codebase's convention
+// of no JSON blobs and no other "singleton config" beyond Setting itself.
+model CompanyInfo {
+  id           Int      @id @default(autoincrement())
+  name         String
+  logoUrl      String?
+  cityId       Int?
+  city         City?    @relation(fields: [cityId], references: [id])
+  street       String?
+  phone        String?
+  facebookUrl  String?
+  instagramUrl String?
+  youtubeUrl   String?
+  tiktokUrl    String?
+  latitude     Decimal? @db.Decimal(10, 7)
+  longitude    Decimal? @db.Decimal(10, 7)
+
+  workingHours CompanyWorkingHour[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cityId])
+  @@schema("dbo")
+}
+
+model CompanyWorkingHour {
+  id            Int         @id @default(autoincrement())
+  companyInfoId Int
+  companyInfo   CompanyInfo @relation(fields: [companyInfoId], references: [id], onDelete: Cascade)
+  dayOfWeek     WeekDay
+  isClosed      Boolean     @default(false)
+  // "10:00" style strings — matches <input type="time">'s native format,
+  // avoids DateTime/timezone complexity for a plain recurring time-of-day.
+  openTime  String?
+  closeTime String?
+
+  @@unique([companyInfoId, dayOfWeek])
+  @@schema("dbo")
+}
