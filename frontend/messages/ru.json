@@ -180,6 +180,8 @@
     "emailInvalidError": "Неверный формат эл. почты",
     "passwordTooShortError": "Пароль должен содержать минимум 8 символов",
     "confirmPasswordRequiredError": "Повторите пароль",
+    "termsAgreement": "Я согласен с <terms>условиями использования</terms>",
+    "termsRequiredError": "Для продолжения необходимо согласиться с условиями использования",
     "loginError": "Не удалось войти",
     "registerError": "Регистрация не удалась",
     "invalidCredentials": "Неверный email или пароль",
@@ -234,7 +236,8 @@
   },
   "Terms": {
     "title": "Условия использования",
-    "empty": "Текст будет добавлен позже."
+    "empty": "Текст будет добавлен позже.",
+    "loading": "Загрузка..."
   },
   "Contact": {
     "title": "Контакты",

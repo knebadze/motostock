@@ -15,6 +15,7 @@ export function createRegisterFormSchema(t: (key: string) => string) {
         .email(t("emailInvalidError")),
       password: z.string().min(8, t("passwordTooShortError")).max(100, t("passwordTooShortError")),
       confirmPassword: z.string().min(1, t("confirmPasswordRequiredError")),
+      agreedToTerms: z.literal(true, { error: t("termsRequiredError") }),
     })
     .refine((data) => data.password === data.confirmPassword, {
       message: t("passwordMismatch"),

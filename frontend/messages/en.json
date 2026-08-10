@@ -180,6 +180,8 @@
     "emailInvalidError": "Invalid email format",
     "passwordTooShortError": "Password must be at least 8 characters",
     "confirmPasswordRequiredError": "Confirm your password",
+    "termsAgreement": "I agree to the <terms>Terms and Conditions</terms>",
+    "termsRequiredError": "You must agree to the Terms and Conditions to continue",
     "loginError": "Log in failed",
     "registerError": "Registration failed",
     "invalidCredentials": "Incorrect email or password",
@@ -234,7 +236,8 @@
   },
   "Terms": {
     "title": "Terms & Conditions",
-    "empty": "Content coming soon."
+    "empty": "Content coming soon.",
+    "loading": "Loading..."
   },
   "Contact": {
     "title": "Contact",

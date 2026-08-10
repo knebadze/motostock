@@ -180,6 +180,8 @@
     "emailInvalidError": "არასწორი ელფოსტის ფორმატი",
     "passwordTooShortError": "პაროლი უნდა შეიცავდეს მინიმუმ 8 სიმბოლოს",
     "confirmPasswordRequiredError": "გაიმეორეთ პაროლი",
+    "termsAgreement": "ვეთანხმები <terms>წესებსა და პირობებს</terms>",
+    "termsRequiredError": "გასაგრძელებლად საჭიროა წესებსა და პირობებზე დათანხმება",
     "loginError": "შესვლა ვერ მოხერხდა",
     "registerError": "რეგისტრაცია ვერ მოხერხდა",
     "invalidCredentials": "ელფოსტა ან პაროლი არასწორია",
@@ -234,7 +236,8 @@
   },
   "Terms": {
     "title": "წესები და პირობები",
-    "empty": "ტექსტი მალე დაემატება."
+    "empty": "ტექსტი მალე დაემატება.",
+    "loading": "იტვირთება..."
   },
   "Contact": {
     "title": "კონტაქტი",

@@ -9,6 +9,7 @@ import { ApiRequestError } from "@/lib/api/client";
 import { OAuthButtons } from "@/components/shared/OAuthButtons";
 import { PasswordInput } from "@/components/shared/PasswordInput";
 import { FieldError } from "@/components/shared/FieldError";
+import { TermsModal } from "@/components/shared/TermsModal";
 import { createRegisterFormSchema } from "@/lib/validation/auth";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
@@ -20,6 +21,8 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +30,14 @@ export function RegisterForm() {
     event.preventDefault();
 
     const schema = createRegisterFormSchema(t);
-    const result = schema.safeParse({ firstName, lastName, email, password, confirmPassword });
+    const result = schema.safeParse({
+      firstName,
+      lastName,
+      email,
+      password,
+      confirmPassword,
+      agreedToTerms,
+    });
     if (!result.success) {
       setErrors(getFieldErrors(result.error));
       return;
@@ -135,6 +145,38 @@ export function RegisterForm() {
           <FieldError message={errors.confirmPassword} />
         </div>
 
+        <div className="flex flex-col gap-1.5">
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(event) => setAgreedToTerms(event.target.checked)}
+              className="mt-0.5 size-4 shrink-0 rounded border-border text-primary focus:ring-primary"
+            />
+            <span>
+              {t.rich("termsAgreement", {
+                terms: (chunks) => (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      // Without this, clicking the link (a label descendant)
+                      // also forwards a synthetic click to the checkbox via
+                      // the label's native behavior — this should only open
+                      // the modal, not toggle agreement.
+                      event.stopPropagation();
+                      setTermsModalOpen(true);
+                    }}
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    {chunks}
+                  </button>
+                ),
+              })}
+            </span>
+          </label>
+          <FieldError message={errors.agreedToTerms} />
+        </div>
+
         <button
           type="submit"
           disabled={loading}
@@ -152,6 +194,8 @@ export function RegisterForm() {
           </Link>
         </p>
       </div>
+
+      <TermsModal open={termsModalOpen} onClose={() => setTermsModalOpen(false)} />
     </form>
   );
 }
