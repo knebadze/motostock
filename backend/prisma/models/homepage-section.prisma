@@ -3,6 +3,8 @@ enum HomepageSectionType {
   POPULAR_PRODUCTS
   DISCOUNTED_VEHICLES
   POPULAR_VEHICLES
+  DISCOUNTED_MIXED
+  POPULAR_MIXED
   CATEGORIES
 
   @@schema("dbo")
@@ -13,21 +15,28 @@ enum HomepageSectionType {
 // homepage-sections.service.ts, same singleton-per-key pattern as
 // CompanyInfo) rather than seeded, since every field has a sensible default.
 // Admin controls title, active/inactive, display order (sortOrder), and how
-// many items populate the section (itemCount) — the actual item selection
-// is computed at read time (DISCOUNTED_* = active discount, POPULAR_* =
-// ranked by total Order quantity, CATEGORIES = top-level Category rows
-// ordered by Category.sortOrder), not stored here.
+// many items populate the section — the actual item selection is computed
+// at read time (DISCOUNTED_* = active discount, POPULAR_* = ranked by total
+// Order quantity, CATEGORIES = top-level Category rows ordered by
+// Category.sortOrder), not stored here.
+//
+// itemCount is used by every type except the two *_MIXED ones, which
+// combine products and vehicle listings in a single carousel and so need
+// two independent counts instead (productItemCount/vehicleItemCount) —
+// both nullable since they're meaningless for the other types.
 model HomepageSection {
-  id        Int                 @id @default(autoincrement())
-  type      HomepageSectionType @unique
-  titleKa   String
-  titleEn   String
-  titleRu   String
-  isActive  Boolean             @default(true)
-  sortOrder Int                 @default(0)
-  itemCount Int                 @default(10)
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
+  id               Int                 @id @default(autoincrement())
+  type             HomepageSectionType @unique
+  titleKa          String
+  titleEn          String
+  titleRu          String
+  isActive         Boolean             @default(true)
+  sortOrder        Int                 @default(0)
+  itemCount        Int                 @default(10)
+  productItemCount Int?
+  vehicleItemCount Int?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
   @@schema("dbo")
 }

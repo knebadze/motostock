@@ -12,12 +12,17 @@ type HomepageSectionRow = {
   isActive: boolean;
   sortOrder: number;
   itemCount: number;
+  productItemCount: number | null;
+  vehicleItemCount: number | null;
   createdAt: Date;
   updatedAt: Date;
 };
 
 // Defaults used only the first time each row is bootstrapped — after that,
-// whatever the admin has saved always wins.
+// whatever the admin has saved always wins. itemCount vs.
+// productItemCount/vehicleItemCount is set per type right before create
+// (see ensureBootstrapped) rather than here, since only the two MIXED types
+// use the latter pair.
 const DEFAULTS: Record<
   HomepageSectionType,
   { titleKa: string; titleEn: string; titleRu: string; sortOrder: number }
@@ -46,19 +51,35 @@ const DEFAULTS: Record<
     titleRu: "Популярный транспорт",
     sortOrder: 3,
   },
+  DISCOUNTED_MIXED: {
+    titleKa: "ფასდაკლებული პროდუქტები და ტრანსპორტი",
+    titleEn: "Discounted Products & Vehicles",
+    titleRu: "Товары и транспорт со скидкой",
+    sortOrder: 4,
+  },
+  POPULAR_MIXED: {
+    titleKa: "პოპულარული პროდუქტები და ტრანსპორტი",
+    titleEn: "Popular Products & Vehicles",
+    titleRu: "Популярные товары и транспорт",
+    sortOrder: 5,
+  },
   CATEGORIES: {
     titleKa: "კატეგორიები",
     titleEn: "Categories",
     titleRu: "Категории",
-    sortOrder: 4,
+    sortOrder: 6,
   },
 };
+
+const MIXED_TYPES: HomepageSectionType[] = ["DISCOUNTED_MIXED", "POPULAR_MIXED"];
 
 const ALL_TYPES: HomepageSectionType[] = [
   "DISCOUNTED_PRODUCTS",
   "POPULAR_PRODUCTS",
   "DISCOUNTED_VEHICLES",
   "POPULAR_VEHICLES",
+  "DISCOUNTED_MIXED",
+  "POPULAR_MIXED",
   "CATEGORIES",
 ];
 
@@ -70,6 +91,8 @@ function toResponse(row: HomepageSectionRow) {
     isActive: row.isActive,
     sortOrder: row.sortOrder,
     itemCount: row.itemCount,
+    productItemCount: row.productItemCount,
+    vehicleItemCount: row.vehicleItemCount,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -85,6 +108,7 @@ async function ensureBootstrapped(): Promise<void> {
     if (existing) continue;
 
     const defaults = DEFAULTS[type];
+    const isMixed = MIXED_TYPES.includes(type);
     await homepageSectionsRepository.create({
       type,
       titleKa: defaults.titleKa,
@@ -93,6 +117,8 @@ async function ensureBootstrapped(): Promise<void> {
       isActive: true,
       sortOrder: defaults.sortOrder,
       itemCount: 10,
+      productItemCount: isMixed ? 5 : null,
+      vehicleItemCount: isMixed ? 5 : null,
     });
   }
 }
@@ -122,6 +148,8 @@ export async function updateHomepageSection(id: number, input: UpdateHomepageSec
     ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
     ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
     ...(input.itemCount !== undefined ? { itemCount: input.itemCount } : {}),
+    ...(input.productItemCount !== undefined ? { productItemCount: input.productItemCount } : {}),
+    ...(input.vehicleItemCount !== undefined ? { vehicleItemCount: input.vehicleItemCount } : {}),
   });
   return toResponse(row);
 }

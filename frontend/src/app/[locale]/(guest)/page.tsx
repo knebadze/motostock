@@ -14,6 +14,7 @@ import {
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { ProductsCarouselSection } from "@/components/home/ProductsCarouselSection";
 import { VehicleListingsCarouselSection } from "@/components/home/VehicleListingsCarouselSection";
+import { MixedCarouselSection } from "@/components/home/MixedCarouselSection";
 import { CategoriesSection } from "@/components/home/CategoriesSection";
 
 type Locale = "ka" | "en" | "ru";
@@ -93,6 +94,26 @@ export default async function HomePage({
               />
             ),
           };
+        case "DISCOUNTED_MIXED": {
+          const [products, listings] = await Promise.all([
+            getOnSaleProductsFromServer(section.productItemCount ?? 5),
+            getOnSaleVehicleListingsFromServer(section.vehicleItemCount ?? 5),
+          ]);
+          return {
+            key: section.id,
+            node: <MixedCarouselSection title={title} products={products} listings={listings} />,
+          };
+        }
+        case "POPULAR_MIXED": {
+          const [products, listings] = await Promise.all([
+            getPopularProductsFromServer(section.productItemCount ?? 5),
+            getPopularVehicleListingsFromServer(section.vehicleItemCount ?? 5),
+          ]);
+          return {
+            key: section.id,
+            node: <MixedCarouselSection title={title} products={products} listings={listings} />,
+          };
+        }
         case "CATEGORIES":
           return {
             key: section.id,

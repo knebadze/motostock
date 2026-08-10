@@ -11,8 +11,12 @@ const TYPE_LABELS: Record<HomepageSection["type"], string> = {
   POPULAR_PRODUCTS: "პოპულარული პროდუქტები",
   DISCOUNTED_VEHICLES: "ფასდაკლებული ტრანსპორტი",
   POPULAR_VEHICLES: "პოპულარული ტრანსპორტი",
+  DISCOUNTED_MIXED: "ფასდაკლებული პროდუქტები და ტრანსპორტი (შერეული)",
+  POPULAR_MIXED: "პოპულარული პროდუქტები და ტრანსპორტი (შერეული)",
   CATEGORIES: "კატეგორიები",
 };
+
+const MIXED_TYPES: HomepageSection["type"][] = ["DISCOUNTED_MIXED", "POPULAR_MIXED"];
 
 function SectionRow({
   section,
@@ -29,35 +33,65 @@ function SectionRow({
   onToggleActive: (isActive: boolean) => void;
   onSaved: (section: HomepageSection) => void;
 }) {
+  const isMixed = MIXED_TYPES.includes(section.type);
+
   const [titleKa, setTitleKa] = useState(section.title.ka);
   const [titleEn, setTitleEn] = useState(section.title.en);
   const [titleRu, setTitleRu] = useState(section.title.ru);
   const [itemCount, setItemCount] = useState(String(section.itemCount));
+  const [productItemCount, setProductItemCount] = useState(
+    String(section.productItemCount ?? 5),
+  );
+  const [vehicleItemCount, setVehicleItemCount] = useState(
+    String(section.vehicleItemCount ?? 5),
+  );
   const [saving, setSaving] = useState(false);
 
   const dirty =
     titleKa !== section.title.ka ||
     titleEn !== section.title.en ||
     titleRu !== section.title.ru ||
-    itemCount !== String(section.itemCount);
+    (isMixed
+      ? productItemCount !== String(section.productItemCount ?? 5) ||
+        vehicleItemCount !== String(section.vehicleItemCount ?? 5)
+      : itemCount !== String(section.itemCount));
+
+  function parseCount(value: string): number | null {
+    const count = Number(value);
+    return Number.isInteger(count) && count >= 1 && count <= 50 ? count : null;
+  }
 
   async function handleSave() {
-    const count = Number(itemCount);
-    if (!Number.isInteger(count) || count < 1 || count > 50) {
-      toast.error("ერთეულების რაოდენობა 1-დან 50-მდე უნდა იყოს");
-      return;
-    }
     if (!titleKa.trim() || !titleEn.trim() || !titleRu.trim()) {
       toast.error("სათაური სამივე ენაზეა საჭირო");
       return;
     }
 
+    const title = { ka: titleKa.trim(), en: titleEn.trim(), ru: titleRu.trim() };
+
     setSaving(true);
     try {
-      const updated = await updateHomepageSection(section.id, {
-        title: { ka: titleKa.trim(), en: titleEn.trim(), ru: titleRu.trim() },
-        itemCount: count,
-      });
+      let updated: HomepageSection;
+      if (isMixed) {
+        const productCount = parseCount(productItemCount);
+        const vehicleCount = parseCount(vehicleItemCount);
+        if (productCount == null || vehicleCount == null) {
+          toast.error("ერთეულების რაოდენობა 1-დან 50-მდე უნდა იყოს");
+          return;
+        }
+        updated = await updateHomepageSection(section.id, {
+          title,
+          productItemCount: productCount,
+          vehicleItemCount: vehicleCount,
+        });
+      } else {
+        const count = parseCount(itemCount);
+        if (count == null) {
+          toast.error("ერთეულების რაოდენობა 1-დან 50-მდე უნდა იყოს");
+          return;
+        }
+        updated = await updateHomepageSection(section.id, { title, itemCount: count });
+      }
       onSaved(updated);
       toast.success("შენახულია");
     } catch (error) {
@@ -146,17 +180,44 @@ function SectionRow({
       </div>
 
       <div className="flex items-end gap-3">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">ერთეულების რაოდენობა</label>
-          <input
-            type="number"
-            min={1}
-            max={50}
-            value={itemCount}
-            onChange={(event) => setItemCount(event.target.value)}
-            className="w-28 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-        </div>
+        {isMixed ? (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground">პროდუქტების რაოდენობა</label>
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={productItemCount}
+                onChange={(event) => setProductItemCount(event.target.value)}
+                className="w-28 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground">ტრანსპორტის რაოდენობა</label>
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={vehicleItemCount}
+                onChange={(event) => setVehicleItemCount(event.target.value)}
+                className="w-28 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-muted-foreground">ერთეულების რაოდენობა</label>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={itemCount}
+              onChange={(event) => setItemCount(event.target.value)}
+              className="w-28 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </div>
+        )}
         <button
           type="button"
           onClick={handleSave}
@@ -229,10 +290,12 @@ export function HomepageSectionsManager({
     <div>
       <h2 className="text-xl font-bold tracking-tight">გვერდის სექციები</h2>
       <p className="mt-2 text-sm text-muted-foreground">
-        განსაზღვრეთ მთავარ გვერდზე გამოსაჩენი სექციების (პროდუქტის და ტრანსპორტის სლაიდერები,
-        კატეგორიები) თანმიმდევრობა, სათაური და რამდენი ერთეული ჩაერთოს თითოეულში. „ფასდაკლებული”
-        ტიპები ავტომატურად აქტიური ფასდაკლების მქონე ერთეულებს იღებს, „პოპულარული” — ყველაზე
-        ხშირად შეკვეთილს, „კატეგორიები” — ბაზაში არსებულ მშობელ კატეგორიებს, თანმიმდევრობის მიხედვით.
+        განსაზღვრეთ მთავარ გვერდზე გამოსაჩენი სექციების (პროდუქტის, ტრანსპორტის და შერეული
+        სლაიდერები, კატეგორიები) თანმიმდევრობა, სათაური და რამდენი ერთეული ჩაერთოს თითოეულში.
+        „ფასდაკლებული” ტიპები ავტომატურად აქტიური ფასდაკლების მქონე ერთეულებს იღებს, „პოპულარული” —
+        ყველაზე ხშირად შეკვეთილს, „კატეგორიები” — ბაზაში არსებულ მშობელ კატეგორიებს, თანმიმდევრობის
+        მიხედვით. „შერეული” სლაიდერები ერთ სლაიდერში აერთიანებს პროდუქტებსაც და ტრანსპორტსაც —
+        თითოეულის რაოდენობა ცალ-ცალკე რეგულირდება.
       </p>
 
       <div className="mt-6 flex flex-col gap-4">

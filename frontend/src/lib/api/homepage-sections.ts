@@ -6,6 +6,8 @@ export type HomepageSectionType =
   | "POPULAR_PRODUCTS"
   | "DISCOUNTED_VEHICLES"
   | "POPULAR_VEHICLES"
+  | "DISCOUNTED_MIXED"
+  | "POPULAR_MIXED"
   | "CATEGORIES";
 
 export type HomepageSection = {
@@ -15,6 +17,11 @@ export type HomepageSection = {
   isActive: boolean;
   sortOrder: number;
   itemCount: number;
+  // Only set for DISCOUNTED_MIXED/POPULAR_MIXED — those combine products
+  // and vehicle listings in one carousel and need separate counts instead
+  // of the shared itemCount above.
+  productItemCount: number | null;
+  vehicleItemCount: number | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -24,6 +31,8 @@ export type HomepageSectionInput = {
   isActive?: boolean;
   sortOrder?: number;
   itemCount?: number;
+  productItemCount?: number;
+  vehicleItemCount?: number;
 };
 
 export async function listHomepageSections(): Promise<HomepageSection[]> {

@@ -8,6 +8,10 @@ type HomepageSectionWriteData = {
   isActive?: boolean;
   sortOrder?: number;
   itemCount?: number;
+  // Only meaningful for DISCOUNTED_MIXED/POPULAR_MIXED — null for every
+  // other type.
+  productItemCount?: number | null;
+  vehicleItemCount?: number | null;
 };
 
 export const homepageSectionsRepository = {
@@ -26,7 +30,12 @@ export const homepageSectionsRepository = {
     return prisma.homepageSection.findUnique({ where: { id } });
   },
 
-  create(data: { type: HomepageSectionType } & Required<HomepageSectionWriteData>) {
+  create(
+    data: { type: HomepageSectionType } & Required<
+      Omit<HomepageSectionWriteData, "productItemCount" | "vehicleItemCount">
+    > &
+      Pick<HomepageSectionWriteData, "productItemCount" | "vehicleItemCount">,
+  ) {
     return prisma.homepageSection.create({ data });
   },
 

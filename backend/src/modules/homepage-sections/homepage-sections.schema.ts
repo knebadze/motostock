@@ -7,6 +7,8 @@ export const homepageSectionTypeSchema = z.enum([
   "POPULAR_PRODUCTS",
   "DISCOUNTED_VEHICLES",
   "POPULAR_VEHICLES",
+  "DISCOUNTED_MIXED",
+  "POPULAR_MIXED",
   "CATEGORIES",
 ]);
 export type HomepageSectionTypeInput = z.infer<typeof homepageSectionTypeSchema>;
@@ -25,6 +27,11 @@ export const updateHomepageSectionSchema = registry.register(
     isActive: z.boolean().optional(),
     sortOrder: z.int().optional(),
     itemCount: z.int().positive().max(50).optional(),
+    // Only meaningful for DISCOUNTED_MIXED/POPULAR_MIXED — those combine
+    // products and vehicle listings in one carousel and need separate
+    // counts instead of the shared itemCount above.
+    productItemCount: z.int().positive().max(50).optional(),
+    vehicleItemCount: z.int().positive().max(50).optional(),
   }),
 );
 export type UpdateHomepageSectionInput = z.infer<typeof updateHomepageSectionSchema>;
@@ -38,6 +45,8 @@ export const homepageSectionResponseSchema = registry.register(
     isActive: z.boolean(),
     sortOrder: z.int(),
     itemCount: z.int().openapi({ example: 10 }),
+    productItemCount: z.int().nullable().openapi({ example: 5 }),
+    vehicleItemCount: z.int().nullable().openapi({ example: 5 }),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
   }),
