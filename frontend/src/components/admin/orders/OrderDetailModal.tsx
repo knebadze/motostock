@@ -5,14 +5,17 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Loader } from "@/components/shared/Loader";
+import { Select } from "@/components/shared/Select";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { formatDateTime, formatPrice } from "@/lib/format";
 import {
   getAnyOrder,
+  updateOrderStatus,
   type AdminOrder,
   type OrderDeliverySpeed,
   type OrderFulfillmentMethod,
 } from "@/lib/api/orders";
+import type { LookupItem } from "@/lib/api/lookups";
 
 const FULFILLMENT_LABELS: Record<OrderFulfillmentMethod, string> = {
   CARD: "ბარათით გადახდა",
@@ -25,16 +28,31 @@ const DELIVERY_SPEED_LABELS: Record<OrderDeliverySpeed, string> = {
   EXPRESS: "სწრაფი მიტანა (ექსპრესი)",
 };
 
-export function OrderDetailModal({ orderId, onClose }: { orderId: number; onClose: () => void }) {
+export function OrderDetailModal({
+  orderId,
+  statuses,
+  onClose,
+  onStatusChanged,
+}: {
+  orderId: number;
+  statuses: LookupItem[];
+  onClose: () => void;
+  onStatusChanged: () => void;
+}) {
   const [order, setOrder] = useState<AdminOrder | null>(null);
   const [loading, setLoading] = useState(true);
+  const [statusId, setStatusId] = useState("");
+  const [savingStatus, setSavingStatus] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     getAnyOrder(orderId)
       .then((data) => {
-        if (!cancelled) setOrder(data);
+        if (!cancelled) {
+          setOrder(data);
+          setStatusId(String(data.status.id));
+        }
       })
       .catch((error) => {
         if (cancelled) return;
@@ -52,6 +70,25 @@ export function OrderDetailModal({ orderId, onClose }: { orderId: number; onClos
     };
   }, [orderId, onClose]);
 
+  async function handleStatusSave() {
+    if (!order || statusId === String(order.status.id)) return;
+
+    setSavingStatus(true);
+    try {
+      const updated = await updateOrderStatus(order.id, Number(statusId));
+      setOrder(updated);
+      onStatusChanged();
+      toast.success("სტატუსი განახლდა და მომხმარებელს ეცნობა იმეილით");
+    } catch (error) {
+      const message = error instanceof ApiRequestError ? error.message : "სტატუსის განახლება ვერ მოხერხდა";
+      toast.error(message);
+    } finally {
+      setSavingStatus(false);
+    }
+  }
+
+  const statusOptions = statuses.map((status) => ({ value: String(status.id), label: status.nameKa }));
+
   return (
     <Modal open onClose={onClose} title="შეკვეთის დეტალები" size="2xl">
       {loading || !order ? (
@@ -65,9 +102,19 @@ export function OrderDetailModal({ orderId, onClose }: { orderId: number; onClos
               <h3 className="text-lg font-semibold">{order.orderCode}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{formatDateTime(order.createdAt)}</p>
             </div>
-            <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-foreground">
-              {order.status.nameKa}
-            </span>
+            <div className="flex items-center gap-2">
+              <div className="w-44">
+                <Select options={statusOptions} value={statusId} onChange={setStatusId} />
+              </div>
+              <button
+                type="button"
+                onClick={handleStatusSave}
+                disabled={savingStatus || statusId === String(order.status.id)}
+                className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {savingStatus ? "..." : "შენახვა"}
+              </button>
+            </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">

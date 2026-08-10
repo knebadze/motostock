@@ -32,6 +32,14 @@ export const orderIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+export const updateOrderStatusSchema = registry.register(
+  "UpdateOrderStatusInput",
+  z.object({
+    statusId: z.int().positive(),
+  }),
+);
+export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
+
 const shippingSnapshotSchema = z.object({
   phone: z.string(),
   city: z.object({

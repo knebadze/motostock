@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
 import * as ordersService from "./orders.service.js";
-import type { CheckoutInput, ListOrdersQuery } from "./orders.schema.js";
+import type { CheckoutInput, ListOrdersQuery, UpdateOrderStatusInput } from "./orders.schema.js";
 
 // requireAuth (see orders.routes.ts) guarantees req.user is set before any
 // handler here runs — this is just the narrow structural read of it.
@@ -43,5 +43,13 @@ export async function listAll(
 
 export async function getAny(req: Request, res: Response) {
   const order = await ordersService.getAnyOrder(Number(req.params.id));
+  res.status(200).json({ order });
+}
+
+export async function updateStatus(
+  req: Request<{ id: string }, unknown, UpdateOrderStatusInput>,
+  res: Response,
+) {
+  const order = await ordersService.updateOrderStatus(Number(req.params.id), req.body.statusId);
   res.status(200).json({ order });
 }

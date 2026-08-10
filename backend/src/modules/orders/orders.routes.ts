@@ -15,6 +15,7 @@ import {
   orderIdParamSchema,
   orderResponseSchema,
   orderSummaryResponseSchema,
+  updateOrderStatusSchema,
 } from "./orders.schema.js";
 
 export const ordersRouter = Router();
@@ -48,6 +49,13 @@ ordersRouter.get(
   requireRole(ROLES.ADMIN),
   validate(orderIdParamSchema, "params"),
   ordersController.getAny,
+);
+ordersRouter.patch(
+  "/:id/status",
+  requireRole(ROLES.ADMIN),
+  validate(orderIdParamSchema, "params"),
+  validate(updateOrderStatusSchema),
+  ordersController.updateStatus,
 );
 
 const security = [{ cookieAuth: [] }];
@@ -135,6 +143,25 @@ registry.registerPath({
   request: { params: orderIdParamSchema },
   responses: {
     200: { description: "Order", content: { "application/json": { schema: adminOrderResponse } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/orders/{id}/status",
+  tags: ["Orders"],
+  summary: "Change an order's status, emailing the buyer a status-specific notification when one is configured (admin only)",
+  security,
+  request: {
+    params: orderIdParamSchema,
+    body: { content: { "application/json": { schema: updateOrderStatusSchema } } },
+  },
+  responses: {
+    200: { description: "Updated", content: { "application/json": { schema: adminOrderResponse } } },
+    400: { description: "Invalid status", content: { "application/json": { schema: errorResponseSchema } } },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
     403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },

@@ -30,6 +30,7 @@ import type { CompatibilityItem } from "./compatibility";
 import type { AdminProductBuyTogether } from "./product-buy-together";
 import type { CompanyInfo, WeekDay } from "./company-info";
 import type { Terms } from "./terms";
+import type { EmailTemplate } from "./email-templates";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -180,6 +181,20 @@ export async function getTermsFromServer(): Promise<Terms> {
     return data.terms;
   } catch {
     return fallback;
+  }
+}
+
+export async function getEmailTemplatesFromServer(): Promise<EmailTemplate[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: EmailTemplate[] }>("/email-templates", {
+      headers,
+    });
+    return data.items;
+  } catch {
+    return [];
   }
 }
 

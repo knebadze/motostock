@@ -133,3 +133,12 @@ export async function getAnyOrder(id: number): Promise<AdminOrder> {
   const { data } = await apiClient.get<{ order: AdminOrder }>(`/orders/${id}`);
   return data.order;
 }
+
+// Emails the buyer a status-specific notification when one is configured
+// for the target status (see backend's STATUS_KEY_TO_EMAIL_TEMPLATE).
+export async function updateOrderStatus(id: number, statusId: number): Promise<AdminOrder> {
+  const { data } = await apiClient.patch<{ order: AdminOrder }>(`/orders/${id}/status`, {
+    statusId,
+  });
+  return data.order;
+}

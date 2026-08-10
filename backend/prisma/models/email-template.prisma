@@ -1,0 +1,31 @@
+// Fixed set of system-triggered transactional emails — one row per
+// EmailTemplateKey, bootstrapped lazily on first admin read (see
+// email-templates.service.ts, same singleton-per-key pattern as
+// HomepageSection) rather than seeded, since every key has a sensible
+// default subject/body. Admin can only edit subject/body per language, not
+// create/delete — an arbitrary custom key would never actually get
+// triggered by anything.
+enum EmailTemplateKey {
+  ORDER_PLACED
+  ORDER_CONFIRMED
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+
+  @@schema("dbo")
+}
+
+model EmailTemplate {
+  id        Int              @id @default(autoincrement())
+  key       EmailTemplateKey @unique
+  subjectKa String
+  subjectEn String
+  subjectRu String
+  bodyKa    String
+  bodyEn    String
+  bodyRu    String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@schema("dbo")
+}

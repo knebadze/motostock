@@ -1,9 +1,15 @@
 import { randomInt } from "node:crypto";
 import { ApiError } from "../../lib/ApiError.js";
-import { Prisma, type OrderDeliverySpeed, type OrderFulfillmentMethod } from "../../generated/prisma/index.js";
+import {
+  Prisma,
+  type EmailTemplateKey,
+  type OrderDeliverySpeed,
+  type OrderFulfillmentMethod,
+} from "../../generated/prisma/index.js";
 import { cartRepository } from "../cart/cart.repository.js";
 import { addressesRepository } from "../addresses/addresses.repository.js";
 import { syncVariantStockByIds } from "../fina-sync/fina-sync.service.js";
+import { sendEmailTemplate } from "../email-templates/email-templates.service.js";
 import { resolvePromoCodeForItems, promoCodeItemKey } from "../promo-codes/promo-codes.service.js";
 import {
   isPromoStackingEnabled,
@@ -404,6 +410,13 @@ export async function placeOrder(userId: number, input: CheckoutInput) {
         items,
         soldStatusId,
       });
+
+      await sendEmailTemplate("ORDER_PLACED", order.user.email, {
+        customerName: `${order.user.firstName} ${order.user.lastName}`.trim(),
+        orderCode: order.orderCode,
+        total: Number(order.total).toFixed(2),
+      });
+
       return toOrderResponse(order);
     } catch (error) {
       if (isOrderCodeCollision(error) && attempt < MAX_ORDER_CODE_ATTEMPTS - 1) {
@@ -460,4 +473,40 @@ export async function getAnyOrder(id: number) {
     throw new ApiError(404, "შეკვეთა ვერ მოიძებნა");
   }
   return { ...toOrderResponse(row), buyer: row.user };
+}
+
+// Only the statuses a customer would actually want a notification about —
+// PENDING (the starting status, already covered by the ORDER_PLACED email)
+// and any custom status an admin later adds via General Classifiers simply
+// don't send anything.
+const STATUS_KEY_TO_EMAIL_TEMPLATE: Partial<Record<string, EmailTemplateKey>> = {
+  CONFIRMED: "ORDER_CONFIRMED",
+  SHIPPED: "ORDER_SHIPPED",
+  DELIVERED: "ORDER_DELIVERED",
+  CANCELLED: "ORDER_CANCELLED",
+};
+
+export async function updateOrderStatus(id: number, statusId: number) {
+  const status = await lookupsRepository.findById(getLookupDelegate("order-statuses"), statusId);
+  if (!status) {
+    throw new ApiError(400, "მითითებული სტატუსი არ არსებობს");
+  }
+
+  const existing = await ordersRepository.findById(id);
+  if (!existing) {
+    throw new ApiError(404, "შეკვეთა ვერ მოიძებნა");
+  }
+
+  const order = await ordersRepository.updateStatus(id, statusId);
+
+  const templateKey = STATUS_KEY_TO_EMAIL_TEMPLATE[status.key];
+  if (templateKey) {
+    await sendEmailTemplate(templateKey, order.user.email, {
+      customerName: `${order.user.firstName} ${order.user.lastName}`.trim(),
+      orderCode: order.orderCode,
+      total: Number(order.total).toFixed(2),
+    });
+  }
+
+  return { ...toOrderResponse(order), buyer: order.user };
 }

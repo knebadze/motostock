@@ -108,6 +108,11 @@ export const ordersRepository = {
     return prisma.order.findUnique({ where: { id }, include: orderItemsInclude });
   },
 
+  async updateStatus(id: number, statusId: number) {
+    await prisma.order.update({ where: { id }, data: { statusId } });
+    return prisma.order.findUniqueOrThrow({ where: { id }, include: orderItemsInclude });
+  },
+
   // Admin-only: every user's orders, not scoped to a single owner. No
   // skip/take anywhere in this codebase's admin list endpoints — every one
   // returns its full filtered result set and pagination happens client-side

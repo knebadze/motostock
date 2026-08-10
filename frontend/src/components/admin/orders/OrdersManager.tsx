@@ -101,6 +101,17 @@ export function OrdersManager({
     createdFrom !== "" ||
     createdTo !== "";
 
+  function currentFilters(): ListOrdersFilters {
+    return {
+      search: search.trim() || undefined,
+      statusIds: statusIds.length > 0 ? statusIds.map(Number) : undefined,
+      fulfillmentMethods:
+        fulfillmentMethods.length > 0 ? (fulfillmentMethods as OrderFulfillmentMethod[]) : undefined,
+      createdFrom: createdFrom || undefined,
+      createdTo: createdTo || undefined,
+    };
+  }
+
   async function fetchOrders(filters: ListOrdersFilters) {
     setLoading(true);
     try {
@@ -114,14 +125,7 @@ export function OrdersManager({
   }
 
   function handleApplyFilters() {
-    fetchOrders({
-      search: search.trim() || undefined,
-      statusIds: statusIds.length > 0 ? statusIds.map(Number) : undefined,
-      fulfillmentMethods:
-        fulfillmentMethods.length > 0 ? (fulfillmentMethods as OrderFulfillmentMethod[]) : undefined,
-      createdFrom: createdFrom || undefined,
-      createdTo: createdTo || undefined,
-    });
+    fetchOrders(currentFilters());
   }
 
   function handleClearFilters() {
@@ -131,6 +135,18 @@ export function OrdersManager({
     setCreatedFrom("");
     setCreatedTo("");
     fetchOrders({});
+  }
+
+  // Re-reads the list under the same filters after a status edit inside the
+  // modal, without resetting pagination the way fetchOrders does — the
+  // admin is still looking at the same page, just with one row's badge
+  // possibly now stale.
+  async function handleOrderStatusChanged() {
+    try {
+      setOrders(await listAllOrders(currentFilters()));
+    } catch (error) {
+      toast.error(error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა");
+    }
   }
 
   return (
@@ -236,7 +252,12 @@ export function OrdersManager({
       </div>
 
       {viewingOrderId != null && (
-        <OrderDetailModal orderId={viewingOrderId} onClose={() => setViewingOrderId(null)} />
+        <OrderDetailModal
+          orderId={viewingOrderId}
+          statuses={statuses}
+          onClose={() => setViewingOrderId(null)}
+          onStatusChanged={handleOrderStatusChanged}
+        />
       )}
     </div>
   );
