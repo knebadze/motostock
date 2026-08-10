@@ -1,0 +1,13 @@
+// Singleton row (one per install, like CompanyInfo) — the admin-editable
+// "Terms and Conditions" page content, localized. Raw HTML from the admin's
+// rich-text editor, rendered as-is on the public page.
+model TermsAndConditions {
+  id        Int      @id @default(autoincrement())
+  contentKa String   @default("")
+  contentEn String   @default("")
+  contentRu String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("dbo")
+}

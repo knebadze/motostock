@@ -43,6 +43,7 @@ import { productVariantDiscountsRouter } from "./modules/product-variant-discoun
 import { finaSyncRouter } from "./modules/fina-sync/fina-sync.routes.js";
 import { cacheRouter } from "./modules/cache/cache.routes.js";
 import { companyInfoRouter } from "./modules/company-info/company-info.routes.js";
+import { termsRouter } from "./modules/terms/terms.routes.js";
 import { vinDecodeRouter } from "./modules/vin-decode/vin-decode.routes.js";
 import { heroSlidesRouter } from "./modules/hero-slides/hero-slides.routes.js";
 import { homepageSectionsRouter } from "./modules/homepage-sections/homepage-sections.routes.js";
@@ -112,6 +113,7 @@ app.use("/api/product-variants/:variantId/images", productVariantImagesRouter);
 app.use("/api/fina-sync", finaSyncRouter);
 app.use("/api/cache", cacheRouter);
 app.use("/api/company-info", companyInfoRouter);
+app.use("/api/terms", termsRouter);
 app.use("/api/vin-decode", vinDecodeRouter);
 app.use("/api/hero-slides", heroSlidesRouter);
 app.use("/api/homepage-sections", homepageSectionsRouter);

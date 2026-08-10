@@ -229,7 +229,12 @@
     "companyTitle": "Company",
     "aboutUs": "About us",
     "contactTitle": "Contact",
+    "termsTitle": "Terms & Conditions",
     "rights": "All rights reserved."
+  },
+  "Terms": {
+    "title": "Terms & Conditions",
+    "empty": "Content coming soon."
   },
   "Contact": {
     "title": "Contact",

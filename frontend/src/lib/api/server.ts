@@ -29,6 +29,7 @@ import type { AdminOrderSummary, Order, OrderSummary } from "./orders";
 import type { CompatibilityItem } from "./compatibility";
 import type { AdminProductBuyTogether } from "./product-buy-together";
 import type { CompanyInfo, WeekDay } from "./company-info";
+import type { Terms } from "./terms";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -162,6 +163,21 @@ export async function getCompanyInfoFromServer(): Promise<CompanyInfo> {
   try {
     const { data } = await apiClient.get<{ companyInfo: CompanyInfo }>("/company-info", { headers });
     return data.companyInfo;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function getTermsFromServer(): Promise<Terms> {
+  // Public endpoint (the guest /terms page reads this) — must not bail out
+  // just because there's no admin session cookie, same fix as
+  // getCategoriesFromServer.
+  const headers = await authHeaders();
+  const fallback: Terms = { id: 0, content: { ka: "", en: "", ru: "" }, updatedAt: new Date(0).toISOString() };
+
+  try {
+    const { data } = await apiClient.get<{ terms: Terms }>("/terms", { headers });
+    return data.terms;
   } catch {
     return fallback;
   }

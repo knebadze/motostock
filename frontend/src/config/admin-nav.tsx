@@ -16,6 +16,7 @@ import {
   ordersIcon,
   productsIcon,
   promoCodesIcon,
+  termsIcon,
   usersIcon,
   vehicleCatalogIcon,
 } from "./admin-nav-icons";
@@ -37,6 +38,7 @@ export const adminNav: AdminNavSection[] = [
     items: [
       { label: "დეშბორდი", href: "/admin", icon: dashboardIcon },
       { label: "კომპანიის ინფორმაცია", href: "/admin/company-info", icon: companyInfoIcon },
+      { label: "წესები და პირობები", href: "/admin/terms", icon: termsIcon },
       { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon },
       { label: "შეკვეთები", href: "/admin/orders", icon: ordersIcon },
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },

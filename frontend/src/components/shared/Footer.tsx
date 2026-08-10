@@ -72,6 +72,11 @@ function FooterView({ companyInfo }: { companyInfo: CompanyInfo }) {
                 {tFooter("contactTitle")}
               </Link>
             </li>
+            <li>
+              <Link href="/terms" className="transition-colors hover:text-primary">
+                {tFooter("termsTitle")}
+              </Link>
+            </li>
           </ul>
         </div>
 

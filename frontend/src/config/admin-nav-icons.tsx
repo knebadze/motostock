@@ -313,3 +313,20 @@ export const companyInfoIcon = (
     <line x1="17" y1="16" x2="17" y2="16.01" />
   </svg>
 );
+
+export const termsIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-5"
+  >
+    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+    <path d="M6 21a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8l5 5v11a2 2 0 0 1-2 2z" />
+    <path d="M9 13h6M9 17h6M9 9h1" />
+  </svg>
+);
