@@ -92,6 +92,8 @@ export type VehicleListingFilters = {
   priceMax?: number;
   yearMin?: number;
   yearMax?: number;
+  onSale?: boolean;
+  limit?: number;
   specFilters?: VehicleSpecFilters;
   adminFilters?: AdminFilterEntry[];
 };
@@ -116,12 +118,21 @@ export async function listVehicleListings(
       priceMax: filters.priceMax,
       yearMin: filters.yearMin,
       yearMax: filters.yearMax,
+      onSale: filters.onSale || undefined,
+      limit: filters.limit,
       specFilters:
         filters.specFilters && !isEmptySpecFilters(filters.specFilters)
           ? JSON.stringify(filters.specFilters)
           : undefined,
       adminFilters: filters.adminFilters?.length ? JSON.stringify(filters.adminFilters) : undefined,
     },
+  });
+  return data.items;
+}
+
+export async function listPopularVehicleListings(limit?: number): Promise<VehicleListing[]> {
+  const { data } = await apiClient.get<{ items: VehicleListing[] }>("/vehicle-listings/popular", {
+    params: { limit },
   });
   return data.items;
 }

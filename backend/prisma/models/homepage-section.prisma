@@ -1,0 +1,33 @@
+enum HomepageSectionType {
+  DISCOUNTED_PRODUCTS
+  POPULAR_PRODUCTS
+  DISCOUNTED_VEHICLES
+  POPULAR_VEHICLES
+  CATEGORIES
+
+  @@schema("dbo")
+}
+
+// Admin-configurable homepage sections — a fixed set of exactly one row per
+// HomepageSectionType, bootstrapped lazily on first admin read (see
+// homepage-sections.service.ts, same singleton-per-key pattern as
+// CompanyInfo) rather than seeded, since every field has a sensible default.
+// Admin controls title, active/inactive, display order (sortOrder), and how
+// many items populate the section (itemCount) — the actual item selection
+// is computed at read time (DISCOUNTED_* = active discount, POPULAR_* =
+// ranked by total Order quantity, CATEGORIES = top-level Category rows
+// ordered by Category.sortOrder), not stored here.
+model HomepageSection {
+  id        Int                 @id @default(autoincrement())
+  type      HomepageSectionType @unique
+  titleKa   String
+  titleEn   String
+  titleRu   String
+  isActive  Boolean             @default(true)
+  sortOrder Int                 @default(0)
+  itemCount Int                 @default(10)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@schema("dbo")
+}

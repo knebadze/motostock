@@ -70,6 +70,12 @@ export const vehicleListingListQuerySchema = z.object({
   priceMax: z.coerce.number().nonnegative().optional(),
   yearMin: z.coerce.number().int().optional(),
   yearMax: z.coerce.number().int().optional(),
+  // Homepage "discounted vehicles" slider — narrows to listings with at
+  // least one currently active discount.
+  onSale: z.coerce.boolean().optional(),
+  // Homepage sliders cap how many listings they pull — optional everywhere
+  // else.
+  limit: z.coerce.number().int().positive().max(50).optional(),
   // URL-encoded JSON rather than ad-hoc flat query keys — keeps the shape
   // extensible and lets it be validated as one nested object, same pattern
   // as products' attributeFilters.
@@ -99,6 +105,13 @@ export const vehicleListingListQuerySchema = z.object({
   adminFilters: adminFiltersQuerySchema,
 });
 export type VehicleListingListQuery = z.infer<typeof vehicleListingListQuerySchema>;
+
+// Homepage "popular vehicles" slider — ranked by total sold quantity
+// (Order/OrderItem), see vehicle-listing.service.ts's listPopularVehicleListings.
+export const popularVehicleListingsQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().max(50).optional(),
+});
+export type PopularVehicleListingsQuery = z.infer<typeof popularVehicleListingsQuerySchema>;
 
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
 

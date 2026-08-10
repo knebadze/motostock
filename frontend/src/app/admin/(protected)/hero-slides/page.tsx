@@ -1,17 +1,17 @@
 import {
   getCategoriesFromServer,
   getHeroSlidesFromServer,
-  getHomepageProductSlidersFromServer,
+  getHomepageSectionsFromServer,
   getProductBrandsFromServer,
 } from "@/lib/api/server";
 import { HeroSlidesTabs } from "@/components/admin/hero-slides/HeroSlidesTabs";
 
 export default async function HeroSlidesPage() {
-  const [slides, categories, productBrands, productSliders] = await Promise.all([
+  const [slides, categories, productBrands, sections] = await Promise.all([
     getHeroSlidesFromServer(),
     getCategoriesFromServer(),
     getProductBrandsFromServer(),
-    getHomepageProductSlidersFromServer(),
+    getHomepageSectionsFromServer(),
   ]);
 
   return (
@@ -19,7 +19,7 @@ export default async function HeroSlidesPage() {
       slides={slides}
       categories={categories}
       productBrands={productBrands}
-      productSliders={productSliders}
+      sections={sections}
     />
   );
 }

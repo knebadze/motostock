@@ -52,6 +52,7 @@ function buildWhere(filters: {
   priceMax?: number;
   yearMin?: number;
   yearMax?: number;
+  onSale?: boolean;
   specFilters?: SpecFilterInput;
   adminFilters?: FilterEntry[];
 }): Prisma.VehicleListingWhereInput | undefined {
@@ -94,6 +95,11 @@ function buildWhere(filters: {
         ...(filters.yearMax != null ? { lte: filters.yearMax } : {}),
       },
     });
+  }
+
+  if (filters.onSale) {
+    const now = new Date();
+    and.push({ discounts: { some: { startDate: { lte: now }, endDate: { gte: now } } } });
   }
 
   // Spec fields resolve to a dynamic VehicleCatalog column name at runtime
@@ -139,14 +145,41 @@ export const vehicleListingRepository = {
     priceMax?: number;
     yearMin?: number;
     yearMax?: number;
+    onSale?: boolean;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
+    limit?: number;
   }) {
     return prisma.vehicleListing.findMany({
       where: buildWhere(filters),
       include,
       orderBy: { createdAt: "desc" },
+      take: filters.limit,
     });
+  },
+
+  findByIds(ids: number[]) {
+    return prisma.vehicleListing.findMany({ where: { id: { in: ids } }, include });
+  },
+
+  // Ranks listings by total sold quantity (OrderItem.quantity, grouped by
+  // vehicleListingId directly — unlike products there's no variant
+  // indirection) — powers the homepage "popular vehicles" slider. Returns
+  // just the ordered id list; callers fetch full rows via findByIds and
+  // must re-apply this order themselves (findByIds/`in` queries don't).
+  async findPopularListingIds(limit: number): Promise<number[]> {
+    const grouped = await prisma.orderItem.groupBy({
+      by: ["vehicleListingId"],
+      where: { vehicleListingId: { not: null } },
+      _sum: { quantity: true },
+    });
+    if (grouped.length === 0) return [];
+
+    return grouped
+      .map((group) => ({ id: group.vehicleListingId as number, total: group._sum.quantity ?? 0 }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, limit)
+      .map((entry) => entry.id);
   },
 
   findById(id: number) {

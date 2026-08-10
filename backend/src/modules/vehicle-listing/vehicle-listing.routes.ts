@@ -8,6 +8,7 @@ import { ROLES } from "../../lib/roles.js";
 import * as vehicleListingController from "./vehicle-listing.controller.js";
 import {
   createVehicleListingSchema,
+  popularVehicleListingsQuerySchema,
   updateVehicleListingSchema,
   vehicleListingIdParamSchema,
   vehicleListingListQuerySchema,
@@ -16,11 +17,18 @@ import {
 
 export const vehicleListingRouter = Router();
 
-// Public: the guest shop page reads these two. Everything else stays admin-only.
+// Public: the guest shop page reads these. Everything else stays admin-only.
+// /popular is registered before /:id so the literal "popular" segment isn't
+// swallowed by the :id param route.
 vehicleListingRouter.get(
   "/",
   validate(vehicleListingListQuerySchema, "query"),
   vehicleListingController.list,
+);
+vehicleListingRouter.get(
+  "/popular",
+  validate(popularVehicleListingsQuerySchema, "query"),
+  vehicleListingController.getPopular,
 );
 vehicleListingRouter.get(
   "/:id",
@@ -58,6 +66,17 @@ registry.registerPath({
   request: { query: vehicleListingListQuerySchema },
   responses: {
     200: { description: "Vehicle listings", content: { "application/json": { schema: listResponse } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-listings/popular",
+  tags: ["VehicleListings"],
+  summary: "List vehicle listings ranked by total sold quantity (public — homepage popular-vehicles slider)",
+  request: { query: popularVehicleListingsQuerySchema },
+  responses: {
+    200: { description: "Popular vehicle listings", content: { "application/json": { schema: listResponse } } },
   },
 });
 

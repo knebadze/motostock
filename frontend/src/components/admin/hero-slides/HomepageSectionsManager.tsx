@@ -3,43 +3,43 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Toggle } from "@/components/shared/Toggle";
-import {
-  updateHomepageProductSlider,
-  type HomepageProductSlider,
-} from "@/lib/api/homepage-product-sliders";
+import { updateHomepageSection, type HomepageSection } from "@/lib/api/homepage-sections";
 import { ApiRequestError } from "@/lib/api/client";
 
-const TYPE_LABELS: Record<HomepageProductSlider["type"], string> = {
-  DISCOUNTED: "ფასდაკლებული პროდუქტები",
-  POPULAR: "პოპულარული პროდუქტები",
+const TYPE_LABELS: Record<HomepageSection["type"], string> = {
+  DISCOUNTED_PRODUCTS: "ფასდაკლებული პროდუქტები",
+  POPULAR_PRODUCTS: "პოპულარული პროდუქტები",
+  DISCOUNTED_VEHICLES: "ფასდაკლებული ტრანსპორტი",
+  POPULAR_VEHICLES: "პოპულარული ტრანსპორტი",
+  CATEGORIES: "კატეგორიები",
 };
 
-function SliderRow({
-  slider,
+function SectionRow({
+  section,
   isFirst,
   isLast,
   onMove,
   onToggleActive,
   onSaved,
 }: {
-  slider: HomepageProductSlider;
+  section: HomepageSection;
   isFirst: boolean;
   isLast: boolean;
   onMove: (direction: "up" | "down") => void;
   onToggleActive: (isActive: boolean) => void;
-  onSaved: (slider: HomepageProductSlider) => void;
+  onSaved: (section: HomepageSection) => void;
 }) {
-  const [titleKa, setTitleKa] = useState(slider.title.ka);
-  const [titleEn, setTitleEn] = useState(slider.title.en);
-  const [titleRu, setTitleRu] = useState(slider.title.ru);
-  const [itemCount, setItemCount] = useState(String(slider.itemCount));
+  const [titleKa, setTitleKa] = useState(section.title.ka);
+  const [titleEn, setTitleEn] = useState(section.title.en);
+  const [titleRu, setTitleRu] = useState(section.title.ru);
+  const [itemCount, setItemCount] = useState(String(section.itemCount));
   const [saving, setSaving] = useState(false);
 
   const dirty =
-    titleKa !== slider.title.ka ||
-    titleEn !== slider.title.en ||
-    titleRu !== slider.title.ru ||
-    itemCount !== String(slider.itemCount);
+    titleKa !== section.title.ka ||
+    titleEn !== section.title.en ||
+    titleRu !== section.title.ru ||
+    itemCount !== String(section.itemCount);
 
   async function handleSave() {
     const count = Number(itemCount);
@@ -54,7 +54,7 @@ function SliderRow({
 
     setSaving(true);
     try {
-      const updated = await updateHomepageProductSlider(slider.id, {
+      const updated = await updateHomepageSection(section.id, {
         title: { ka: titleKa.trim(), en: titleEn.trim(), ru: titleRu.trim() },
         itemCount: count,
       });
@@ -115,10 +115,10 @@ function SliderRow({
             </button>
           </div>
           <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            {TYPE_LABELS[slider.type]}
+            {TYPE_LABELS[section.type]}
           </span>
         </div>
-        <Toggle checked={slider.isActive} onChange={onToggleActive} />
+        <Toggle checked={section.isActive} onChange={onToggleActive} />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -170,53 +170,55 @@ function SliderRow({
   );
 }
 
-export function HomepageProductSlidersManager({
-  initialProductSliders,
+export function HomepageSectionsManager({
+  initialSections,
 }: {
-  initialProductSliders: HomepageProductSlider[];
+  initialSections: HomepageSection[];
 }) {
-  const [sliders, setSliders] = useState(
-    [...initialProductSliders].sort((a, b) => a.sortOrder - b.sortOrder),
+  const [sections, setSections] = useState(
+    [...initialSections].sort((a, b) => a.sortOrder - b.sortOrder),
   );
 
-  function updateOne(updated: HomepageProductSlider) {
-    setSliders((current) =>
-      current.map((slider) => (slider.id === updated.id ? updated : slider)).sort((a, b) => a.sortOrder - b.sortOrder),
+  function updateOne(updated: HomepageSection) {
+    setSections((current) =>
+      current
+        .map((section) => (section.id === updated.id ? updated : section))
+        .sort((a, b) => a.sortOrder - b.sortOrder),
     );
   }
 
-  async function handleToggleActive(slider: HomepageProductSlider, isActive: boolean) {
-    const previous = sliders;
-    setSliders((current) => current.map((s) => (s.id === slider.id ? { ...s, isActive } : s)));
+  async function handleToggleActive(section: HomepageSection, isActive: boolean) {
+    const previous = sections;
+    setSections((current) => current.map((s) => (s.id === section.id ? { ...s, isActive } : s)));
     try {
-      const updated = await updateHomepageProductSlider(slider.id, { isActive });
+      const updated = await updateHomepageSection(section.id, { isActive });
       updateOne(updated);
     } catch (error) {
-      setSliders(previous);
+      setSections(previous);
       const message = error instanceof ApiRequestError ? error.message : "განახლება ვერ მოხერხდა";
       toast.error(message);
     }
   }
 
-  async function handleMove(slider: HomepageProductSlider, direction: "up" | "down") {
-    const index = sliders.findIndex((s) => s.id === slider.id);
+  async function handleMove(section: HomepageSection, direction: "up" | "down") {
+    const index = sections.findIndex((s) => s.id === section.id);
     const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= sliders.length) return;
-    const target = sliders[targetIndex];
+    if (targetIndex < 0 || targetIndex >= sections.length) return;
+    const target = sections[targetIndex];
 
-    const previous = sliders;
-    const reordered = [...sliders];
-    reordered[index] = { ...target, sortOrder: slider.sortOrder };
-    reordered[targetIndex] = { ...slider, sortOrder: target.sortOrder };
-    setSliders(reordered.sort((a, b) => a.sortOrder - b.sortOrder));
+    const previous = sections;
+    const reordered = [...sections];
+    reordered[index] = { ...target, sortOrder: section.sortOrder };
+    reordered[targetIndex] = { ...section, sortOrder: target.sortOrder };
+    setSections(reordered.sort((a, b) => a.sortOrder - b.sortOrder));
 
     try {
       await Promise.all([
-        updateHomepageProductSlider(slider.id, { sortOrder: target.sortOrder }),
-        updateHomepageProductSlider(target.id, { sortOrder: slider.sortOrder }),
+        updateHomepageSection(section.id, { sortOrder: target.sortOrder }),
+        updateHomepageSection(target.id, { sortOrder: section.sortOrder }),
       ]);
     } catch (error) {
-      setSliders(previous);
+      setSections(previous);
       const message =
         error instanceof ApiRequestError ? error.message : "დალაგების შენახვა ვერ მოხერხდა";
       toast.error(message);
@@ -225,22 +227,23 @@ export function HomepageProductSlidersManager({
 
   return (
     <div>
-      <h2 className="text-xl font-bold tracking-tight">პროდუქტის სლაიდერები</h2>
+      <h2 className="text-xl font-bold tracking-tight">გვერდის სექციები</h2>
       <p className="mt-2 text-sm text-muted-foreground">
-        განსაზღვრეთ მთავარ გვერდზე გამოსაჩენი პროდუქტის სლაიდერების თანმიმდევრობა, სათაური და
-        რამდენი პროდუქტი ჩაერთოს თითოეულში. „ფასდაკლებული” ავტომატურად აქტიური ფასდაკლების მქონე
-        პროდუქტებს იღებს, „პოპულარული” — ყველაზე ხშირად შეკვეთილს.
+        განსაზღვრეთ მთავარ გვერდზე გამოსაჩენი სექციების (პროდუქტის და ტრანსპორტის სლაიდერები,
+        კატეგორიები) თანმიმდევრობა, სათაური და რამდენი ერთეული ჩაერთოს თითოეულში. „ფასდაკლებული”
+        ტიპები ავტომატურად აქტიური ფასდაკლების მქონე ერთეულებს იღებს, „პოპულარული” — ყველაზე
+        ხშირად შეკვეთილს, „კატეგორიები” — ბაზაში არსებულ მშობელ კატეგორიებს, თანმიმდევრობის მიხედვით.
       </p>
 
       <div className="mt-6 flex flex-col gap-4">
-        {sliders.map((slider, index) => (
-          <SliderRow
-            key={slider.id}
-            slider={slider}
+        {sections.map((section, index) => (
+          <SectionRow
+            key={section.id}
+            section={section}
             isFirst={index === 0}
-            isLast={index === sliders.length - 1}
-            onMove={(direction) => handleMove(slider, direction)}
-            onToggleActive={(isActive) => handleToggleActive(slider, isActive)}
+            isLast={index === sections.length - 1}
+            onMove={(direction) => handleMove(section, direction)}
+            onToggleActive={(isActive) => handleToggleActive(section, isActive)}
             onSaved={updateOne}
           />
         ))}

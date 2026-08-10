@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import * as vehicleListingService from "./vehicle-listing.service.js";
 import type {
   CreateVehicleListingInput,
+  PopularVehicleListingsQuery,
   UpdateVehicleListingInput,
   VehicleListingListQuery,
 } from "./vehicle-listing.schema.js";
@@ -11,6 +12,14 @@ export async function list(
   res: Response,
 ) {
   const items = await vehicleListingService.listVehicleListings(req.query);
+  res.status(200).json({ items });
+}
+
+export async function getPopular(
+  req: Request<unknown, unknown, unknown, PopularVehicleListingsQuery>,
+  res: Response,
+) {
+  const items = await vehicleListingService.listPopularVehicleListings(req.query.limit ?? 10);
   res.status(200).json({ items });
 }
 

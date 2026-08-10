@@ -1,19 +1,22 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { siteConfig } from "@/config/site";
 import {
   getCategoriesFromServer,
   getMyGarageFromServer,
   getOnSaleProductsFromServer,
+  getOnSaleVehicleListingsFromServer,
   getPopularProductsFromServer,
+  getPopularVehicleListingsFromServer,
   getPublicHeroSlidesFromServer,
-  getPublicHomepageProductSlidersFromServer,
+  getPublicHomepageSectionsFromServer,
   getVehicleCatalogFromServer,
 } from "@/lib/api/server";
 import { HeroSlider } from "@/components/home/HeroSlider";
-import { ProductSlider } from "@/components/home/ProductSlider";
+import { ProductsCarouselSection } from "@/components/home/ProductsCarouselSection";
+import { VehicleListingsCarouselSection } from "@/components/home/VehicleListingsCarouselSection";
+import { CategoriesSection } from "@/components/home/CategoriesSection";
 
-const navCategories = siteConfig.nav.filter((item) => item.href !== "/");
+type Locale = "ka" | "en" | "ru";
 
 export default async function HomePage({
   params,
@@ -21,32 +24,88 @@ export default async function HomePage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  const localeKey = locale as Locale;
   const t = await getTranslations({ locale, namespace: "Home" });
-  const tNav = await getTranslations({ locale, namespace: "Nav" });
 
   const slides = await getPublicHeroSlidesFromServer();
-  // Only fetched when actually needed — most homepage loads won't have a
-  // VEHICLE_SEARCH/CATEGORY_FILTER slide configured, so these stay no-op by
-  // default.
   const hasVehicleSearchSlide = slides.some((slide) => slide.type === "VEHICLE_SEARCH");
   const [vehicleCatalog, garageVehicles] = hasVehicleSearchSlide
     ? await Promise.all([getVehicleCatalogFromServer(), getMyGarageFromServer()])
     : [[], []];
-  const allCategories = slides.some((slide) => slide.type === "CATEGORY_FILTER")
-    ? await getCategoriesFromServer()
-    : [];
 
-  const productSliders = await getPublicHomepageProductSlidersFromServer();
-  const productSliderData = await Promise.all(
-    productSliders
-      .filter((slider) => slider.isActive)
-      .map(async (slider) => ({
-        slider,
-        products:
-          slider.type === "DISCOUNTED"
-            ? await getOnSaleProductsFromServer(slider.itemCount)
-            : await getPopularProductsFromServer(slider.itemCount),
-      })),
+  const sections = await getPublicHomepageSectionsFromServer();
+  const activeSections = [...sections]
+    .filter((section) => section.isActive)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  // Only fetched when actually needed — most homepage loads won't have a
+  // CATEGORY_FILTER hero slide or an active CATEGORIES section configured,
+  // so this stays a no-op by default.
+  const needsCategories =
+    slides.some((slide) => slide.type === "CATEGORY_FILTER") ||
+    activeSections.some((section) => section.type === "CATEGORIES");
+  const allCategories = needsCategories ? await getCategoriesFromServer() : [];
+  const topLevelCategories = allCategories
+    .filter((category) => category.parentId === null)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const sectionContent = await Promise.all(
+    activeSections.map(async (section) => {
+      const title = section.title[localeKey];
+      switch (section.type) {
+        case "DISCOUNTED_PRODUCTS":
+          return {
+            key: section.id,
+            node: (
+              <ProductsCarouselSection
+                title={title}
+                products={await getOnSaleProductsFromServer(section.itemCount)}
+              />
+            ),
+          };
+        case "POPULAR_PRODUCTS":
+          return {
+            key: section.id,
+            node: (
+              <ProductsCarouselSection
+                title={title}
+                products={await getPopularProductsFromServer(section.itemCount)}
+              />
+            ),
+          };
+        case "DISCOUNTED_VEHICLES":
+          return {
+            key: section.id,
+            node: (
+              <VehicleListingsCarouselSection
+                title={title}
+                listings={await getOnSaleVehicleListingsFromServer(section.itemCount)}
+              />
+            ),
+          };
+        case "POPULAR_VEHICLES":
+          return {
+            key: section.id,
+            node: (
+              <VehicleListingsCarouselSection
+                title={title}
+                listings={await getPopularVehicleListingsFromServer(section.itemCount)}
+              />
+            ),
+          };
+        case "CATEGORIES":
+          return {
+            key: section.id,
+            node: (
+              <CategoriesSection
+                title={title}
+                categories={topLevelCategories.slice(0, section.itemCount)}
+                locale={localeKey}
+              />
+            ),
+          };
+      }
+    }),
   );
 
   return (
@@ -81,28 +140,9 @@ export default async function HomePage({
         </section>
       )}
 
-      {productSliderData.map(({ slider, products }) => (
-        <ProductSlider key={slider.id} title={slider.title} products={products} />
+      {sectionContent.map(({ key, node }) => (
+        <div key={key}>{node}</div>
       ))}
-
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-        <h2 className="mb-8 text-2xl font-bold tracking-tight">
-          {t("categoriesTitle")}
-        </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {navCategories.map((category) => (
-            <Link
-              key={category.href}
-              href={category.href}
-              className="group rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary"
-            >
-              <span className="text-lg font-semibold transition-colors group-hover:text-primary">
-                {tNav(category.key)}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
     </>
   );
 }

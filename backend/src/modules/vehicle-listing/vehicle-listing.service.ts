@@ -203,10 +203,28 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     priceMax: query.priceMax,
     yearMin: query.yearMin,
     yearMax: query.yearMax,
+    onSale: query.onSale,
     specFilters: query.specFilters,
     adminFilters: query.adminFilters,
+    limit: query.limit,
   });
   return rows.map(toVehicleListingResponse);
+}
+
+// Homepage "popular vehicles" slider — see
+// vehicleListingRepository.findPopularListingIds for the ranking logic;
+// this just re-fetches full rows for the ranked ids and preserves their
+// order (findByIds/`in` queries don't).
+export async function listPopularVehicleListings(limit: number) {
+  const rankedIds = await vehicleListingRepository.findPopularListingIds(limit);
+  if (rankedIds.length === 0) return [];
+
+  const rows = await vehicleListingRepository.findByIds(rankedIds);
+  const rowById = new Map(rows.map((row) => [row.id, row]));
+  return rankedIds
+    .map((id) => rowById.get(id))
+    .filter((row): row is NonNullable<typeof row> => row != null)
+    .map((row) => toVehicleListingResponse(row));
 }
 
 export async function getVehicleListing(id: number) {
