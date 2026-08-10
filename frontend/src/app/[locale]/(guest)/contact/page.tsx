@@ -112,30 +112,6 @@ function ContactPageView({ companyInfo }: { companyInfo: CompanyInfo }) {
             </InfoCard>
           )}
 
-          <div className="rounded-2xl border border-border bg-card p-5">
-            <div className="flex items-center gap-4">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                {clockIcon}
-              </span>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {t("hoursLabel")}
-              </p>
-            </div>
-            <ul className="mt-4 flex flex-col gap-2 text-sm">
-              {companyInfo.workingHours.map((hour) => (
-                <li
-                  key={hour.dayOfWeek}
-                  className="flex items-center justify-between gap-4 border-b border-border/60 pb-2 last:border-0 last:pb-0"
-                >
-                  <span className="text-foreground">{t(WEEK_DAY_KEYS[hour.dayOfWeek])}</span>
-                  <span className={hour.isClosed ? "text-muted-foreground" : "font-medium text-foreground"}>
-                    {hour.isClosed ? t("closed") : `${hour.openTime} – ${hour.closeTime}`}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
           {socialLinks.length > 0 && (
             <div className="rounded-2xl border border-border bg-card p-5">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -159,18 +135,42 @@ function ContactPageView({ companyInfo }: { companyInfo: CompanyInfo }) {
           )}
         </div>
 
-        {hasMap && (
-          <div className="min-h-80 overflow-hidden rounded-2xl border border-border">
-            <iframe
-              title={t("addressLabel")}
-              src={`https://www.google.com/maps?q=${companyInfo.latitude},${companyInfo.longitude}&output=embed`}
-              className="h-full min-h-80 w-full"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-center gap-4">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              {clockIcon}
+            </span>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {t("hoursLabel")}
+            </p>
           </div>
-        )}
+          <ul className="mt-4 flex flex-col gap-2 text-sm">
+            {companyInfo.workingHours.map((hour) => (
+              <li
+                key={hour.dayOfWeek}
+                className="flex items-center justify-between gap-4 border-b border-border/60 pb-2 last:border-0 last:pb-0"
+              >
+                <span className="text-foreground">{t(WEEK_DAY_KEYS[hour.dayOfWeek])}</span>
+                <span className={hour.isClosed ? "text-muted-foreground" : "font-medium text-foreground"}>
+                  {hour.isClosed ? t("closed") : `${hour.openTime} – ${hour.closeTime}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
+
+      {hasMap && (
+        <div className="mt-8 h-96 overflow-hidden rounded-2xl border border-border">
+          <iframe
+            title={t("addressLabel")}
+            src={`https://www.google.com/maps?q=${companyInfo.latitude},${companyInfo.longitude}&output=embed`}
+            className="h-full w-full"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
+      )}
     </div>
   );
 }
