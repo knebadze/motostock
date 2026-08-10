@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optionalIntString } from "./common";
 
 const codeSchema = z
   .string()
@@ -16,6 +17,8 @@ const commonFields = {
         value.trim() !== "" && !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 100,
       { message: "0-100 შუალედში" },
     ),
+  // Empty means unlimited — see PromoCode.usageLimit.
+  usageLimit: optionalIntString({ min: 1, message: "მინიმუმ 1" }),
   startDate: z.string().trim().min(1, "აირჩიეთ დაწყების თარიღი"),
   endDate: z.string().trim().min(1, "აირჩიეთ დასრულების თარიღი"),
 };

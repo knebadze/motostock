@@ -43,6 +43,7 @@ type PromoCodeRow = {
   specField: VehicleSpecField | null;
   specLookupItemId: number | null;
   discountPercent: { toString(): string };
+  usageLimit: number | null;
   startDate: Date;
   endDate: Date;
   isActive: boolean;
@@ -103,6 +104,8 @@ async function toResponse(row: PromoCodeRow) {
     specFieldLabel,
     specValue,
     discountPercent: Number(row.discountPercent),
+    usageLimit: row.usageLimit,
+    usageCount: await promoCodesRepository.countUsage(row.id),
     startDate: row.startDate,
     endDate: row.endDate,
     isActive: row.isActive,
@@ -251,6 +254,7 @@ export async function createPromoCode(input: CreatePromoCodeInput) {
     specField: input.domain === "VEHICLE" ? (input.specField ?? null) : null,
     specLookupItemId: input.domain === "VEHICLE" ? (input.specLookupItemId ?? null) : null,
     discountPercent: input.discountPercent,
+    usageLimit: input.usageLimit ?? null,
     startDate: new Date(input.startDate),
     endDate: new Date(input.endDate),
     isActive: input.isActive ?? true,
@@ -325,6 +329,7 @@ export async function updatePromoCode(id: number, input: UpdatePromoCodeInput) {
     ...(input.specField !== undefined ? { specField: input.specField } : {}),
     ...(input.specLookupItemId !== undefined ? { specLookupItemId: input.specLookupItemId } : {}),
     ...(input.discountPercent !== undefined ? { discountPercent: input.discountPercent } : {}),
+    ...(input.usageLimit !== undefined ? { usageLimit: input.usageLimit } : {}),
     ...(input.startDate !== undefined ? { startDate: new Date(input.startDate) } : {}),
     ...(input.endDate !== undefined ? { endDate: new Date(input.endDate) } : {}),
     ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
@@ -369,6 +374,7 @@ export function promoCodeItemKey(item: PromoCodeMatchItem): string {
 export async function resolvePromoCodeForItems(
   code: string,
   items: PromoCodeMatchItem[],
+  userId: number,
 ): Promise<PromoCodeMatch> {
   const promo = await promoCodesRepository.findByCode(code.trim().toUpperCase());
   if (!promo || !promo.isActive) {
@@ -378,6 +384,17 @@ export async function resolvePromoCodeForItems(
   const now = new Date();
   if (now < promo.startDate || now > promo.endDate) {
     throw new ApiError(400, "პრომო კოდის მოქმედების ვადა ამოწურულია");
+  }
+
+  if (await promoCodesRepository.hasUserUsed(promo.id, userId)) {
+    throw new ApiError(400, "თქვენ უკვე გამოიყენეთ ეს პრომო კოდი");
+  }
+
+  if (promo.usageLimit != null) {
+    const usageCount = await promoCodesRepository.countUsage(promo.id);
+    if (usageCount >= promo.usageLimit) {
+      throw new ApiError(400, "პრომო კოდის გამოყენების ლიმიტი ამოწურულია");
+    }
   }
 
   const categoryIds = promo.categoryId != null ? await resolveCategoryAndAncestorIds(promo.categoryId) : null;

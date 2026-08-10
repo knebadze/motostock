@@ -100,6 +100,11 @@ export function PromoCodesManager({
     { header: "მოქმედების არეალი", render: scopeSummary, cellClassName: "text-muted-foreground" },
     { header: "ფასდაკლება", render: (item) => `${item.discountPercent}%`, cellClassName: "font-semibold" },
     {
+      header: "გამოყენება",
+      render: (item) => (item.usageLimit != null ? `${item.usageCount} / ${item.usageLimit}` : `${item.usageCount} (ულიმიტო)`),
+      cellClassName: "text-muted-foreground",
+    },
+    {
       header: "პერიოდი",
       render: (item) => `${item.startDate.slice(0, 10)} – ${item.endDate.slice(0, 10)}`,
       cellClassName: "text-muted-foreground",

@@ -165,7 +165,7 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
       productVariantId: row.productVariant?.id ?? null,
       vehicleListingId: row.vehicleListing?.id ?? null,
     }));
-    promoMatch = await resolvePromoCodeForItems(promoCodeInput, matchItems);
+    promoMatch = await resolvePromoCodeForItems(promoCodeInput, matchItems, userId);
   }
 
   let subtotal = 0;

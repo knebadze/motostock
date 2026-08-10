@@ -76,6 +76,9 @@ export function PromoCodeFormModal({
   );
 
   const [discountPercent, setDiscountPercent] = useState(promoCode ? String(promoCode.discountPercent) : "");
+  const [usageLimit, setUsageLimit] = useState(
+    promoCode?.usageLimit != null ? String(promoCode.usageLimit) : "",
+  );
   const [startDate, setStartDate] = useState(promoCode?.startDate.slice(0, 10) ?? "");
   const [endDate, setEndDate] = useState(promoCode?.endDate.slice(0, 10) ?? "");
   const [isActive, setIsActive] = useState(promoCode?.isActive ?? true);
@@ -190,6 +193,7 @@ export function PromoCodeFormModal({
             attributeId,
             attributeOptionId,
             discountPercent,
+            usageLimit,
             startDate,
             endDate,
           })
@@ -201,6 +205,7 @@ export function PromoCodeFormModal({
             specField,
             specLookupItemId,
             discountPercent,
+            usageLimit,
             startDate,
             endDate,
           });
@@ -226,6 +231,7 @@ export function PromoCodeFormModal({
         specField: domain === "VEHICLE" && specField ? (specField as VehicleSpecField) : null,
         specLookupItemId: domain === "VEHICLE" && specLookupItemId ? Number(specLookupItemId) : null,
         discountPercent: Number(discountPercent),
+        usageLimit: usageLimit.trim() ? Number(usageLimit) : null,
         startDate,
         endDate,
         isActive,
@@ -428,6 +434,24 @@ export function PromoCodeFormModal({
             />
             <FieldError message={errors.endDate} />
           </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5 sm:w-1/3">
+          <label className="text-sm font-medium">გამოყენების ლიმიტი</label>
+          <input
+            type="number"
+            min={1}
+            step="1"
+            value={usageLimit}
+            onChange={(event) => setUsageLimit(event.target.value)}
+            placeholder="ულიმიტო"
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <p className="text-xs text-muted-foreground">
+            სულ რამდენმა მომხმარებელმა შეიძლება გამოიყენოს ეს კოდი. ცარიელი — ულიმიტო.
+            {isEditing && ` აქამდე გამოყენებულია: ${promoCode?.usageCount ?? 0}.`}
+          </p>
+          <FieldError message={errors.usageLimit} />
         </div>
 
         <label className="flex items-center gap-2 text-sm font-medium">

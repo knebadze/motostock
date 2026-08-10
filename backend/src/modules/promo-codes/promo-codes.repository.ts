@@ -24,6 +24,7 @@ type PromoCodeWriteData = {
   specField?: VehicleSpecField | null;
   specLookupItemId?: number | null;
   discountPercent?: number;
+  usageLimit?: number | null;
   startDate?: Date;
   endDate?: Date;
   isActive?: boolean;
@@ -60,5 +61,16 @@ export const promoCodesRepository = {
 
   delete(id: number) {
     return prisma.promoCode.delete({ where: { id } });
+  },
+
+  // Derived from Order.promoCodeId rather than a separate counter column —
+  // see promo-code.prisma's usageLimit comment.
+  countUsage(promoCodeId: number) {
+    return prisma.order.count({ where: { promoCodeId } });
+  },
+
+  async hasUserUsed(promoCodeId: number, userId: number) {
+    const count = await prisma.order.count({ where: { promoCodeId, userId } });
+    return count > 0;
   },
 };

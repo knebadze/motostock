@@ -48,6 +48,14 @@ model PromoCode {
   specLookupItemId Int?
 
   discountPercent Decimal  @db.Decimal(5, 2)
+  // Total redemptions allowed across every customer — null means unlimited.
+  // Usage isn't tracked in a separate counter/join row: it's derived at
+  // resolve time from Order.promoCodeId (see promo-codes.service.ts's
+  // resolvePromoCodeForItems), since every placed order already carries
+  // that reference. Per-user reuse is a flat, unconditional rule (not a
+  // separate toggle) — one customer can never redeem the same code twice,
+  // checked the same way (Order.userId + promoCodeId).
+  usageLimit      Int?
   startDate       DateTime
   endDate         DateTime
   isActive        Boolean  @default(true)

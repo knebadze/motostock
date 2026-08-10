@@ -21,6 +21,9 @@ export type PromoCode = {
   specFieldLabel: LocalizedString | null;
   specValue: LookupItem | null;
   discountPercent: number;
+  // Total redemptions allowed across every customer — null means unlimited.
+  usageLimit: number | null;
+  usageCount: number;
   startDate: string;
   endDate: string;
   isActive: boolean;
@@ -41,6 +44,7 @@ export type PromoCodeInput = {
   specField?: VehicleSpecField | null;
   specLookupItemId?: number | null;
   discountPercent: number;
+  usageLimit?: number | null;
   startDate: string;
   endDate: string;
   isActive?: boolean;
