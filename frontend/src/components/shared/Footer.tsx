@@ -1,14 +1,18 @@
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { siteConfig } from "@/config/site";
 import { Logo } from "@/components/shared/Logo";
-import { getCompanyInfoFromServer } from "@/lib/api/server";
+import { getCategoriesFromServer, getCompanyInfoFromServer } from "@/lib/api/server";
 import { facebookIcon, instagramIcon, tiktokIcon, youtubeIcon } from "@/components/shared/social-icons";
 import type { CompanyInfo } from "@/lib/api/company-info";
+import type { Category } from "@/lib/api/categories";
 
 export async function Footer() {
-  const companyInfo = await getCompanyInfoFromServer();
-  return <FooterView companyInfo={companyInfo} />;
+  const [companyInfo, categories] = await Promise.all([
+    getCompanyInfoFromServer(),
+    getCategoriesFromServer(),
+  ]);
+  return <FooterView companyInfo={companyInfo} categories={categories} />;
 }
 
 // Split out so useTranslations (a hook) isn't called inside the async
@@ -16,10 +20,21 @@ export async function Footer() {
 // functions even though next-intl's useTranslations works fine in Server
 // Components at runtime. Same async-page-then-sync-view split already used
 // by account/page.tsx's AccountDashboardPage → AccountDashboardView.
-function FooterView({ companyInfo }: { companyInfo: CompanyInfo }) {
-  const t = useTranslations("Nav");
+function FooterView({
+  companyInfo,
+  categories,
+}: {
+  companyInfo: CompanyInfo;
+  categories: Category[];
+}) {
+  const locale = useLocale() as "ka" | "en" | "ru";
   const tFooter = useTranslations("Footer");
   const year = new Date().getFullYear();
+
+  // Same DB-driven parent-category derivation as Header.tsx's mega menu —
+  // already sorted by Category.sortOrder (see categories.repository.ts's
+  // orderBy), so no re-sort needed here.
+  const topLevelCategories = categories.filter((category) => category.parentId === null);
 
   const address = [companyInfo.city?.nameKa, companyInfo.street].filter(Boolean).join(", ");
   const socialLinks = [
@@ -44,18 +59,16 @@ function FooterView({ companyInfo }: { companyInfo: CompanyInfo }) {
         <div>
           <h3 className="text-sm font-semibold">{tFooter("catalogTitle")}</h3>
           <ul className="mt-4 flex flex-col gap-2.5 text-sm text-muted-foreground">
-            {siteConfig.nav
-              .filter((item) => item.href !== "/")
-              .map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="transition-colors hover:text-primary"
-                  >
-                    {t(item.key)}
-                  </Link>
-                </li>
-              ))}
+            {topLevelCategories.map((category) => (
+              <li key={category.id}>
+                <Link
+                  href={`/${category.slug}`}
+                  className="transition-colors hover:text-primary"
+                >
+                  {category.name[locale]}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
 
