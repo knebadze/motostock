@@ -69,10 +69,18 @@ export const orderItemResponseSchema = registry.register(
   }),
 );
 
+// Extends the shared item shape with a live stock status — only meaningful
+// in a preview (freshly FINA-synced, see orders.service.ts's
+// computeCheckoutTotals), not on a placed order's persisted items.
+const checkoutPreviewItemResponseSchema = orderItemResponseSchema.extend({
+  inStock: z.boolean(),
+  availableQuantity: z.int(),
+});
+
 export const checkoutPreviewResponseSchema = registry.register(
   "CheckoutPreview",
   z.object({
-    items: z.array(orderItemResponseSchema),
+    items: z.array(checkoutPreviewItemResponseSchema),
     subtotal: z.number(),
     discountTotal: z.number(),
     deliverySpeed: orderDeliverySpeedSchema.nullable(),
@@ -80,6 +88,9 @@ export const checkoutPreviewResponseSchema = registry.register(
     deliveryTimeSnapshot: z.string().nullable(),
     total: z.number(),
     promoCode: promoCodeSummarySchema.nullable(),
+    // True if any item's requested quantity exceeds live stock — the
+    // frontend should block order placement while this is true.
+    hasStockIssues: z.boolean(),
   }),
 );
 

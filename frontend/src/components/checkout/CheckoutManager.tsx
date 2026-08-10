@@ -215,6 +215,13 @@ export function CheckoutManager({
                     <span className="text-xs text-muted-foreground">
                       {item.quantity} × {formatPrice(item.unitPrice)}
                     </span>
+                    {!item.inStock && (
+                      <span className="mt-1 text-xs font-medium text-red-600">
+                        {item.availableQuantity > 0
+                          ? t("limitedStockItem", { count: item.availableQuantity })
+                          : t("outOfStockItem")}
+                      </span>
+                    )}
                   </div>
                   <span className="font-semibold text-foreground">{formatPrice(item.lineTotal)}</span>
                 </li>
@@ -343,10 +350,16 @@ export function CheckoutManager({
             </div>
           </div>
 
+          {displayPreview?.hasStockIssues && (
+            <p className="mt-3 text-sm font-medium text-red-600">{t("stockIssueMessage")}</p>
+          )}
+
           <button
             type="button"
             onClick={handlePlaceOrder}
-            disabled={placing || previewLoading || !displayPreview}
+            disabled={
+              placing || previewLoading || !displayPreview || displayPreview.hasStockIssues
+            }
             className="mt-5 w-full rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {placing ? t("placing") : t("placeOrder")}

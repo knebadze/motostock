@@ -76,3 +76,44 @@ export async function runSync(trigger: FinaSyncTrigger, triggeredById: number | 
 export function listSyncRuns(limit = 50) {
   return finaSyncRepository.listRuns(limit);
 }
+
+// Live per-item stock refresh for checkout (cart→checkout entry and right
+// before order placement — see orders.service.ts's computeCheckoutTotals),
+// distinct from runSync's full-catalog admin job above: scoped to just the
+// cart's variant ids, and NOT logged as a FinaSyncRun (that history table
+// is for the scheduled/manual admin job, not every shopper's checkout
+// visit). Silently no-ops on missing config or a failed FINA call — the
+// caller falls back to whatever stockQuantity is already in the DB rather
+// than failing checkout outright over an external API hiccup.
+const RECENT_SYNC_TTL_MS = 20_000;
+const recentSyncAt = new Map<string, number>();
+
+function syncThrottleKey(variantIds: number[]): string {
+  return [...variantIds].sort((a, b) => a - b).join(",");
+}
+
+export async function syncVariantStockByIds(variantIds: number[]): Promise<void> {
+  if (variantIds.length === 0 || !isFinaConfigured()) return;
+
+  const key = syncThrottleKey(variantIds);
+  const now = Date.now();
+  const last = recentSyncAt.get(key);
+  if (last != null && now - last < RECENT_SYNC_TTL_MS) return;
+  recentSyncAt.set(key, now);
+
+  try {
+    const variants = await finaSyncRepository.findLinkedVariantsByIds(variantIds);
+    if (variants.length === 0) return;
+
+    const rests = await getProductsRestByStore(env.FINA_STORE!);
+    const restByFinaId = new Map(rests.map((r) => [r.id, r.rest]));
+
+    for (const variant of variants) {
+      const rest = restByFinaId.get(variant.finaId!);
+      if (rest === undefined) continue;
+      await finaSyncRepository.updateStock(variant.id, Math.max(0, Math.floor(rest)));
+    }
+  } catch (err) {
+    logger.error({ err }, "FINA checkout stock refresh failed");
+  }
+}

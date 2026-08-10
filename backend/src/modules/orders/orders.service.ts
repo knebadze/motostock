@@ -3,6 +3,7 @@ import { ApiError } from "../../lib/ApiError.js";
 import { Prisma, type OrderDeliverySpeed, type OrderFulfillmentMethod } from "../../generated/prisma/index.js";
 import { cartRepository } from "../cart/cart.repository.js";
 import { addressesRepository } from "../addresses/addresses.repository.js";
+import { syncVariantStockByIds } from "../fina-sync/fina-sync.service.js";
 import { resolvePromoCodeForItems, promoCodeItemKey } from "../promo-codes/promo-codes.service.js";
 import {
   isPromoStackingEnabled,
@@ -120,10 +121,23 @@ function buildBreakdownItem(row: CartRow, unitPrice: number): BreakdownItem {
 // then layers a promo-code discount on top per the admin-configured
 // stacking setting.
 export async function computeCheckoutTotals(userId: number, promoCodeInput?: string): Promise<CheckoutBreakdown> {
-  const cartRows = await cartRepository.findByOwner({ userId });
-  if (cartRows.length === 0) {
+  const initialRows = await cartRepository.findByOwner({ userId });
+  if (initialRows.length === 0) {
     throw new ApiError(400, "კალათა ცარიელია");
   }
+
+  // Live stock refresh, scoped to exactly what's in this cart — pulls fresh
+  // rest quantities from FINA and writes them straight to stockQuantity
+  // before the breakdown below is built, so both the checkout preview and
+  // placeOrder's own stock check (below) are working off current data, not
+  // whatever the last scheduled/admin sync happened to leave behind.
+  // VehicleListing items have no finaId and are skipped entirely — FINA
+  // only tracks ProductVariant stock (see fina-sync.repository.ts).
+  const productVariantIds = initialRows
+    .map((row) => row.productVariant?.id)
+    .filter((id): id is number => id != null);
+  await syncVariantStockByIds(productVariantIds);
+  const cartRows = productVariantIds.length > 0 ? await cartRepository.findByOwner({ userId }) : initialRows;
 
   const stackingEnabled = await isPromoStackingEnabled();
 
@@ -268,9 +282,17 @@ function toItemResponse(item: { id: number | null } & Omit<PlaceOrderItemInput, 
   };
 }
 
+// Stock status per item (and the overall hasStockIssues flag) is only
+// meaningful here — the freshly-synced preview — not on toOrderResponse's
+// persisted items below, since a placed order never re-checks live stock
+// after the fact.
 function toBreakdownResponse(breakdown: CheckoutBreakdown, delivery: DeliveryResolution) {
   return {
-    items: breakdown.items.map((item) => toItemResponse({ ...item, id: null })),
+    items: breakdown.items.map((item) => ({
+      ...toItemResponse({ ...item, id: null }),
+      inStock: item.quantity <= item.stockQuantity,
+      availableQuantity: item.stockQuantity,
+    })),
     subtotal: breakdown.subtotal,
     discountTotal: breakdown.discountTotal,
     deliverySpeed: delivery.deliverySpeed,
@@ -280,6 +302,7 @@ function toBreakdownResponse(breakdown: CheckoutBreakdown, delivery: DeliveryRes
     promoCode: breakdown.promoCode
       ? { code: breakdown.promoCode.code, discountPercent: breakdown.promoCode.discountPercent }
       : null,
+    hasStockIssues: breakdown.items.some((item) => item.quantity > item.stockQuantity),
   };
 }
 

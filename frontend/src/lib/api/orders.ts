@@ -34,7 +34,35 @@ export type OrderShippingSnapshot = {
 
 export type OrderPromoCode = { code: string; discountPercent: number };
 
+// Only meaningful in a fresh (FINA-synced) preview — a placed order's items
+// (OrderItem below) don't carry live stock status, since nothing re-checks
+// it after the fact.
+export type CheckoutPreviewItem = OrderItem & {
+  inStock: boolean;
+  availableQuantity: number;
+};
+
 export type CheckoutPreview = {
+  items: CheckoutPreviewItem[];
+  subtotal: number;
+  discountTotal: number;
+  deliverySpeed: OrderDeliverySpeed | null;
+  deliveryCost: number;
+  deliveryTimeSnapshot: string | null;
+  total: number;
+  promoCode: OrderPromoCode | null;
+  // True if any item's requested quantity exceeds live stock — block order
+  // placement while this is true (see CheckoutManager.tsx).
+  hasStockIssues: boolean;
+};
+
+export type Order = {
+  id: number;
+  orderCode: string;
+  status: LookupItem;
+  fulfillmentMethod: OrderFulfillmentMethod;
+  shippingSnapshot: OrderShippingSnapshot | null;
+  createdAt: string;
   items: OrderItem[];
   subtotal: number;
   discountTotal: number;
@@ -43,15 +71,6 @@ export type CheckoutPreview = {
   deliveryTimeSnapshot: string | null;
   total: number;
   promoCode: OrderPromoCode | null;
-};
-
-export type Order = CheckoutPreview & {
-  id: number;
-  orderCode: string;
-  status: LookupItem;
-  fulfillmentMethod: OrderFulfillmentMethod;
-  shippingSnapshot: OrderShippingSnapshot | null;
-  createdAt: string;
 };
 
 export type OrderSummary = {
