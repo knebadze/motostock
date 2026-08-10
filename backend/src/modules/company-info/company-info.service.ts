@@ -1,7 +1,14 @@
 import { saveUploadedImage } from "../../lib/storage.js";
+import { cache } from "../../lib/cache.js";
 import { companyInfoRepository } from "./company-info.repository.js";
 import type { UpdateCompanyInfoInput } from "./company-info.schema.js";
 import type { WeekDay } from "../../generated/prisma/index.js";
+
+// Read constantly (every guest page load pulls this for the Header/Footer/
+// Contact page) but written only from the admin company-info form — a
+// perfect read-through cache candidate, same pattern as lookups.service.ts's
+// listLookupItems / settings.service.ts's per-key `cached()` helper.
+const COMPANY_INFO_CACHE_KEY = "company-info";
 
 const WEEK_DAYS: WeekDay[] = [
   "MONDAY",
@@ -58,7 +65,12 @@ async function getOrCreateCompanyInfo(): Promise<CompanyInfoRow> {
 }
 
 export async function getCompanyInfo() {
-  return toResponse(await getOrCreateCompanyInfo());
+  const cached = cache.get<ReturnType<typeof toResponse>>(COMPANY_INFO_CACHE_KEY);
+  if (cached) return cached;
+
+  const response = toResponse(await getOrCreateCompanyInfo());
+  cache.set(COMPANY_INFO_CACHE_KEY, response);
+  return response;
 }
 
 export async function updateCompanyInfo(input: UpdateCompanyInfoInput) {
@@ -82,6 +94,7 @@ export async function updateCompanyInfo(input: UpdateCompanyInfoInput) {
     await companyInfoRepository.replaceWorkingHours(existing.id, input.workingHours);
   }
 
+  cache.del(COMPANY_INFO_CACHE_KEY);
   return getCompanyInfo();
 }
 
@@ -89,5 +102,6 @@ export async function setCompanyLogo(file: Express.Multer.File) {
   const existing = await getOrCreateCompanyInfo();
   const logoUrl = await saveUploadedImage("company-info", file);
   await companyInfoRepository.updateLogo(existing.id, logoUrl);
+  cache.del(COMPANY_INFO_CACHE_KEY);
   return getCompanyInfo();
 }
