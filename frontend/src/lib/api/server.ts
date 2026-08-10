@@ -31,6 +31,7 @@ import type { AdminProductBuyTogether } from "./product-buy-together";
 import type { CompanyInfo, WeekDay } from "./company-info";
 import type { Terms } from "./terms";
 import type { EmailTemplate } from "./email-templates";
+import type { OrderStatusItem } from "./order-statuses";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -190,6 +191,21 @@ export async function getEmailTemplatesFromServer(): Promise<EmailTemplate[]> {
 
   try {
     const { data } = await apiClient.get<{ items: EmailTemplate[] }>("/email-templates", {
+      headers,
+    });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getOrderStatusesFromServer(): Promise<OrderStatusItem[]> {
+  // Public endpoint (same reasoning as getCategoriesFromServer) — ordered
+  // by sortOrder server-side, so callers don't need to re-sort.
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ items: OrderStatusItem[] }>("/order-statuses", {
       headers,
     });
     return data.items;

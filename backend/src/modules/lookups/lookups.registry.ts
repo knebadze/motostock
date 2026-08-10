@@ -1,5 +1,8 @@
 import { prisma } from "../../config/prisma.js";
 
+// order-statuses used to live here too, but it needed an admin-controlled
+// sortOrder that the other types don't — it now has its own dedicated
+// module (order-statuses.*) instead of the uniform LookupDelegate shape.
 export const LOOKUP_TYPES = [
   "fuel-types",
   "transmission-types",
@@ -13,7 +16,6 @@ export const LOOKUP_TYPES = [
   "colors",
   "sizes",
   "cities",
-  "order-statuses",
 ] as const;
 
 export type LookupType = (typeof LOOKUP_TYPES)[number];
@@ -67,7 +69,6 @@ const registry: Record<LookupType, LookupDelegate> = {
   colors: asLookupDelegate(prisma.color),
   sizes: asLookupDelegate(prisma.size),
   cities: asLookupDelegate(prisma.city),
-  "order-statuses": asLookupDelegate(prisma.orderStatus),
 };
 
 export function getLookupDelegate(type: LookupType): LookupDelegate {

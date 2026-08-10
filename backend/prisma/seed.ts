@@ -947,7 +947,20 @@ async function main() {
   await seedLookup("Powertrain types", prisma.powertrainType, POWERTRAIN_TYPES);
   await seedLookup("Conditions", prisma.condition, CONDITIONS);
   await seedLookup("Listing statuses", prisma.listingStatus, LISTING_STATUSES);
-  await seedLookup("Order statuses", prisma.orderStatus, ORDER_STATUSES);
+
+  // Not seedLookup — OrderStatus has its own dedicated module now (see
+  // order-statuses.*) with an admin-controlled sortOrder, so this seeds
+  // (and re-syncs, on every run, unlike seedLookup's update:{} no-op) the
+  // lifecycle order below rather than leaving it at the column default.
+  for (const [index, entry] of ORDER_STATUSES.entries()) {
+    await prisma.orderStatus.upsert({
+      where: { key: entry.key },
+      update: { sortOrder: index },
+      create: { ...entry, sortOrder: index },
+    });
+  }
+  console.log(`Order statuses ready: ${ORDER_STATUSES.map((entry) => entry.key).join(", ")}`);
+
   await seedLookup("Colors", prisma.color, COLORS);
   await seedLookup("Sizes", prisma.size, SIZES);
   await seedLookup("Cities", prisma.city, CITIES);

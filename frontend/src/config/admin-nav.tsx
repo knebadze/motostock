@@ -17,6 +17,7 @@ import {
   ordersIcon,
   productsIcon,
   promoCodesIcon,
+  statusesIcon,
   termsIcon,
   usersIcon,
   vehicleCatalogIcon,
@@ -79,6 +80,7 @@ export const adminNav: AdminNavSection[] = [
     items: [
       { label: "საერთო კლასიფიკატორები", href: "/admin/general-classifiers", icon: classifierIcon },
       { label: "ტრანსპორტის კლასიფიკატორები", href: "/admin/classifiers", icon: classifierIcon },
+      { label: "სტატუსები", href: "/admin/statuses", icon: statusesIcon },
     ],
   },
 ];

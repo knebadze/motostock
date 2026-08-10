@@ -22,6 +22,7 @@ import {
 } from "../settings/settings.service.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
+import { orderStatusesRepository } from "../order-statuses/order-statuses.repository.js";
 import { ordersRepository, type PlaceOrderItemInput } from "./orders.repository.js";
 import type { CheckoutInput, ListOrdersQuery } from "./orders.schema.js";
 
@@ -39,13 +40,13 @@ function generateOrderCode(): string {
   return code;
 }
 
-// The "order-statuses" lookup (see order-status.prisma / lookups.registry.ts)
-// replaced the old hardcoded OrderStatus enum — every new order needs a
-// starting status resolved by its stable `key` rather than relying on a
-// fragile "row id 1" assumption. Throws loudly if the lookup wasn't seeded
-// (see prisma/seed.ts's ORDER_STATUSES) instead of silently failing later.
+// order-statuses (see order-statuses.repository.ts) replaced the old
+// hardcoded OrderStatus enum — every new order needs a starting status
+// resolved by its stable `key` rather than relying on a fragile "row id 1"
+// assumption. Throws loudly if the lookup wasn't seeded (see
+// prisma/seed.ts's ORDER_STATUSES) instead of silently failing later.
 async function resolvePendingStatusId(): Promise<number> {
-  const status = await lookupsRepository.findByKey(getLookupDelegate("order-statuses"), "PENDING");
+  const status = await orderStatusesRepository.findByKey("PENDING");
   if (!status) {
     throw new ApiError(500, "შეკვეთის საწყისი სტატუსი ვერ მოიძებნა — გაუშვით prisma/seed.ts");
   }
@@ -487,7 +488,7 @@ const STATUS_KEY_TO_EMAIL_TEMPLATE: Partial<Record<string, EmailTemplateKey>> = 
 };
 
 export async function updateOrderStatus(id: number, statusId: number) {
-  const status = await lookupsRepository.findById(getLookupDelegate("order-statuses"), statusId);
+  const status = await orderStatusesRepository.findById(statusId);
   if (!status) {
     throw new ApiError(400, "მითითებული სტატუსი არ არსებობს");
   }
