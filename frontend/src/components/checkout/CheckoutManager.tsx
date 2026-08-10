@@ -134,6 +134,12 @@ export function CheckoutManager({
         promoCode: appliedPromoCode ?? undefined,
       });
       toast.success(t("placeSuccess"));
+      // Clears the router cache for the shared (guest) layout so the
+      // Header's cart badge (fetched there, server-side) reflects the
+      // now-emptied cart instead of staying stale after navigating to a
+      // sibling route — same fix AddToCartButton already applies for
+      // quantity changes.
+      router.refresh();
       router.push(`/account/orders/${order.id}`);
     } catch (error) {
       toast.error(error instanceof ApiRequestError ? error.message : t("placeError"));
