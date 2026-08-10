@@ -88,6 +88,11 @@ export type PlaceOrderInput = {
   deliveryTimeSnapshot?: string | null;
   total: number;
   items: PlaceOrderItemInput[];
+  // Resolved once by orders.service.ts (same "look up the lookup row by
+  // its stable key" pattern as statusId/PENDING above) — applied below to
+  // whichever variant/listing rows this order's decrements actually drove
+  // to zero stock.
+  soldStatusId: number;
 };
 
 export const ordersRepository = {
@@ -128,7 +133,11 @@ export const ordersRepository = {
   // reservation/lock system exists anywhere in this codebase (see
   // cart.service.ts's own soft stock checks); this conditional
   // updateMany-then-check-count is the same atomicity guarantee without
-  // needing one.
+  // needing one. Whichever rows this decrement actually drives to zero (or
+  // below, in the unlikely case two decrements race past the gte check on
+  // different lines of the same order) get flipped to the SOLD status —
+  // a second conditional updateMany, scoped by the post-decrement value, so
+  // no extra read-back of the row is needed.
   async placeOrder(input: PlaceOrderInput) {
     return prisma.$transaction(async (tx) => {
       for (const item of input.items) {
@@ -140,6 +149,10 @@ export const ordersRepository = {
           if (result.count === 0) {
             throw new ApiError(409, `"${item.itemNameKa}" — მარაგში საკმარისი რაოდენობა აღარ არის`);
           }
+          await tx.productVariant.updateMany({
+            where: { id: item.productVariantId, stockQuantity: { lte: 0 } },
+            data: { statusId: input.soldStatusId },
+          });
         } else if (item.vehicleListingId != null) {
           const result = await tx.vehicleListing.updateMany({
             where: { id: item.vehicleListingId, stockQuantity: { gte: item.quantity } },
@@ -148,10 +161,14 @@ export const ordersRepository = {
           if (result.count === 0) {
             throw new ApiError(409, `"${item.itemNameKa}" — აღარ არის ხელმისაწვდომი`);
           }
+          await tx.vehicleListing.updateMany({
+            where: { id: item.vehicleListingId, stockQuantity: { lte: 0 } },
+            data: { statusId: input.soldStatusId },
+          });
         }
       }
 
-      const { items, ...orderData } = input;
+      const { items, soldStatusId: _soldStatusId, ...orderData } = input;
       const order = await tx.order.create({ data: orderData });
       await tx.orderItem.createMany({
         data: items.map((item) => ({ ...item, orderId: order.id })),

@@ -46,6 +46,17 @@ async function resolvePendingStatusId(): Promise<number> {
   return status.id;
 }
 
+// Same "resolve by stable key" pattern as resolvePendingStatusId above —
+// applied to whichever ProductVariant/VehicleListing rows placeOrder's
+// stock decrement drives to zero (see ordersRepository.placeOrder).
+async function resolveSoldStatusId(): Promise<number> {
+  const status = await lookupsRepository.findByKey(getLookupDelegate("listing-statuses"), "SOLD");
+  if (!status) {
+    throw new ApiError(500, "„გაყიდულია“ სტატუსი ვერ მოიძებნა — გაუშვით prisma/seed.ts");
+  }
+  return status.id;
+}
+
 function isOrderCodeCollision(error: unknown): boolean {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
     return false;
@@ -367,7 +378,10 @@ export async function placeOrder(userId: number, input: CheckoutInput) {
   const delivery = await resolveDelivery(userId, input.fulfillmentMethod, input.addressId, input.deliverySpeed);
 
   const items: PlaceOrderItemInput[] = breakdown.items.map(({ stockQuantity: _stockQuantity, ...item }) => item);
-  const statusId = await resolvePendingStatusId();
+  const [statusId, soldStatusId] = await Promise.all([
+    resolvePendingStatusId(),
+    resolveSoldStatusId(),
+  ]);
 
   for (let attempt = 0; attempt < MAX_ORDER_CODE_ATTEMPTS; attempt++) {
     try {
@@ -388,6 +402,7 @@ export async function placeOrder(userId: number, input: CheckoutInput) {
         deliveryTimeSnapshot: delivery.deliveryTimeSnapshot,
         total: Math.round((breakdown.total + delivery.deliveryCost) * 100) / 100,
         items,
+        soldStatusId,
       });
       return toOrderResponse(order);
     } catch (error) {
