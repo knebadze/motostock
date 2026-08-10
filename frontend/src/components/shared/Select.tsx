@@ -60,10 +60,11 @@ export function Select(props: SelectProps) {
   // already floats above it) — flipping upward left a gap whenever the list
   // was shorter than the reserved space, landing far above the trigger.
   useLayoutEffect(() => {
-    if (!open) {
-      setPosition(null);
-      return;
-    }
+    // No need to clear position here — the portal render below already
+    // gates on `open && position`, so a stale leftover value from the
+    // previous time the panel was open is harmless and gets recomputed by
+    // updatePosition() below before anything repaints.
+    if (!open) return;
 
     function updatePosition() {
       const trigger = containerRef.current;
