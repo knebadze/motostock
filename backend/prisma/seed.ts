@@ -6,6 +6,7 @@ import { hashPassword } from "../src/lib/password.js";
 import { ROLES } from "../src/lib/roles.js";
 import { USE_CLOUD_STORAGE_KEY } from "../src/modules/settings/settings.service.js";
 import { processImageForDisk } from "../src/lib/image-processing.js";
+import { listHomepageSections } from "../src/modules/homepage-sections/homepage-sections.service.js";
 
 // Source images for seed data live here (git-tracked), named after the
 // entity's slug (e.g. "helmets.jpg"). They get resized/re-encoded the same
@@ -961,6 +962,14 @@ async function main() {
   await seedProductBrands(categoryIdBySlug);
   await seedCategoryFilters(categoryIdBySlug);
   await seedVehicleCategoryFilters(categoryIdBySlug);
+
+  // Otherwise these rows only appear via lazy bootstrap on first admin/
+  // public read (see homepage-sections.service.ts) — seeding them
+  // explicitly means a fresh DB (e.g. after transferring migrations to
+  // another machine) has the homepage sliders/categories section ready
+  // immediately, not just after someone happens to load the page first.
+  const homepageSections = await listHomepageSections();
+  console.log(`Homepage sections ready: ${homepageSections.map((section) => section.type).join(", ")}`);
 }
 
 main()
