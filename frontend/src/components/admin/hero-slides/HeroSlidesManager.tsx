@@ -99,7 +99,7 @@ export function HeroSlidesManager({
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">მთავარი გვერდის სლაიდერი</h1>
+        <h2 className="text-xl font-bold tracking-tight">მთავარი სლაიდერი</h2>
         <button
           type="button"
           onClick={openCreateModal}

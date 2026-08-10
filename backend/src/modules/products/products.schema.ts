@@ -95,6 +95,9 @@ export const productListQuerySchema = z.object({
   // "Sale" page (homepage CTA slide + /sale) — narrows to products with at
   // least one variant currently on an active discount, across every category.
   onSale: z.coerce.boolean().optional(),
+  // Homepage product sliders (see homepage-product-sliders module) cap how
+  // many products they pull — optional everywhere else.
+  limit: z.coerce.number().int().positive().max(50).optional(),
   // URL-encoded JSON rather than ad-hoc flat query keys — keeps the shape
   // extensible and lets it be validated as one nested object.
   attributeFilters: z
@@ -141,6 +144,13 @@ export const productDetailQuerySchema = z.object({
 });
 export type ProductDetailQuery = z.infer<typeof productDetailQuerySchema>;
 
+// Homepage "popular products" slider — ranked by total sold quantity
+// (Order/OrderItem), see products.service.ts's listPopularProducts.
+export const popularProductsQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().max(50).optional(),
+});
+export type PopularProductsQuery = z.infer<typeof popularProductsQuerySchema>;
+
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
 
 const unitRefSchema = z.object({
@@ -186,6 +196,10 @@ export const productResponseSchema = registry.register(
     // The regular/discount price pair of whichever variant currently has the
     // lowest active discount — null if no variant is on discount right now.
     activeDiscount: productCardDiscountSchema.nullable(),
+    // Detail-page view counter (see products.service.ts's getProductDetail)
+    // — an admin-facing interest signal, separate from the Order-based
+    // "most sold" ranking used by the popular-products slider.
+    viewCount: z.int().openapi({ example: 0 }),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
   }),

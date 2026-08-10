@@ -98,6 +98,7 @@ type ProductRow = {
   slug: string;
   metaTitle: string | null;
   metaDescription: string | null;
+  viewCount: number;
   attributeValues: AttributeValueRow[];
   variants: VariantSummaryRow[];
   createdAt: Date;
@@ -162,6 +163,7 @@ export function toResponse(row: ProductRow) {
     minPrice: row.variants.length > 0 ? Math.min(...row.variants.map((v) => Number(v.price))) : null,
     totalStock: row.variants.reduce((sum, v) => sum + v.stockQuantity, 0),
     activeDiscount: findCardActiveDiscount(row.variants),
+    viewCount: row.viewCount,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -423,8 +425,25 @@ export async function listProducts(query: ProductListQuery) {
     onSale: query.onSale,
     attributeFilters: query.attributeFilters,
     adminFilters: query.adminFilters,
+    limit: query.limit,
   });
   return rows.map(toResponse);
+}
+
+// Homepage "popular products" slider — see
+// productsRepository.findPopularProductIds for the ranking logic; this just
+// re-fetches full card rows for the ranked ids and preserves their order
+// (findByIds/`in` queries don't).
+export async function listPopularProducts(limit: number) {
+  const rankedIds = await productsRepository.findPopularProductIds(limit);
+  if (rankedIds.length === 0) return [];
+
+  const rows = await productsRepository.findByIds(rankedIds);
+  const rowById = new Map(rows.map((row) => [row.id, row]));
+  return rankedIds
+    .map((id) => rowById.get(id))
+    .filter((row): row is NonNullable<typeof row> => row != null)
+    .map((row) => toResponse(row));
 }
 
 export async function getProduct(id: number) {
@@ -440,6 +459,8 @@ export async function getProductDetail(slug: string, vehicleCatalogId?: number) 
   if (!row) {
     throw new ApiError(404, "პროდუქტი ვერ მოიძებნა");
   }
+
+  await productsRepository.incrementViewCount(row.id);
 
   const response = await toDetailResponse(row);
   if (vehicleCatalogId == null || response.buyTogether.length === 0) {

@@ -3,6 +3,7 @@ import { ApiError } from "../../lib/ApiError.js";
 import * as productsService from "./products.service.js";
 import type {
   CreateProductInput,
+  PopularProductsQuery,
   ProductDetailQuery,
   ProductListQuery,
   ProductSlugParam,
@@ -11,6 +12,14 @@ import type {
 
 export async function list(req: Request<unknown, unknown, unknown, ProductListQuery>, res: Response) {
   const items = await productsService.listProducts(req.query);
+  res.status(200).json({ items });
+}
+
+export async function getPopular(
+  req: Request<unknown, unknown, unknown, PopularProductsQuery>,
+  res: Response,
+) {
+  const items = await productsService.listPopularProducts(req.query.limit ?? 10);
   res.status(200).json({ items });
 }
 

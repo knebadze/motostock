@@ -1,0 +1,30 @@
+enum HomepageProductSliderType {
+  DISCOUNTED
+  POPULAR
+
+  @@schema("dbo")
+}
+
+// Admin-configurable homepage product carousels — a fixed set of exactly
+// two rows (one per HomepageProductSliderType), bootstrapped lazily on
+// first admin read (see homepage-product-sliders.service.ts, same
+// singleton-per-key pattern as CompanyInfo) rather than seeded, since every
+// field has a sensible default. Admin controls title, active/inactive,
+// display order (sortOrder), and how many products populate the carousel
+// (itemCount) — the actual product selection itself is computed at read
+// time (DISCOUNTED = active ProductVariantDiscount/VehicleListingDiscount,
+// POPULAR = ranked by total Order quantity), not stored here.
+model HomepageProductSlider {
+  id        Int                       @id @default(autoincrement())
+  type      HomepageProductSliderType @unique
+  titleKa   String
+  titleEn   String
+  titleRu   String
+  isActive  Boolean                   @default(true)
+  sortOrder Int                       @default(0)
+  itemCount Int                       @default(10)
+  createdAt DateTime                  @default(now())
+  updatedAt DateTime                  @updatedAt
+
+  @@schema("dbo")
+}

@@ -45,6 +45,10 @@ export type Product = {
   minPrice: number | null;
   totalStock: number;
   activeDiscount: { price: number; discountPrice: number } | null;
+  // Detail-page view counter — an admin-facing interest signal, separate
+  // from the Order-based "most sold" ranking used by the popular-products
+  // homepage slider (see listPopularProducts).
+  viewCount: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -131,6 +135,8 @@ export type ProductListFilters = {
   onSale?: boolean;
   attributeFilters?: ProductAttributeFilters;
   adminFilters?: AdminFilterEntry[];
+  // Homepage product sliders cap how many products they pull.
+  limit?: number;
 };
 
 function isEmptyAttributeFilters(filters: ProductAttributeFilters): boolean {
@@ -156,7 +162,17 @@ export async function listProducts(filters: ProductListFilters = {}): Promise<Pr
           ? JSON.stringify(filters.attributeFilters)
           : undefined,
       adminFilters: filters.adminFilters?.length ? JSON.stringify(filters.adminFilters) : undefined,
+      limit: filters.limit,
     },
+  });
+  return data.items;
+}
+
+// Homepage "popular products" slider — ranked by total sold quantity
+// (Order/OrderItem), not a filter on the regular /products list.
+export async function listPopularProducts(limit?: number): Promise<Product[]> {
+  const { data } = await apiClient.get<{ items: Product[] }>("/products/popular", {
+    params: { limit },
   });
   return data.items;
 }

@@ -47,8 +47,8 @@ model CompanyWorkingHour {
   isClosed      Boolean     @default(false)
   // "10:00" style strings — matches <input type="time">'s native format,
   // avoids DateTime/timezone complexity for a plain recurring time-of-day.
-  openTime  String?
-  closeTime String?
+  openTime      String?
+  closeTime     String?
 
   @@unique([companyInfoId, dayOfWeek])
   @@schema("dbo")

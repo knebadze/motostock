@@ -4,10 +4,14 @@ import { siteConfig } from "@/config/site";
 import {
   getCategoriesFromServer,
   getMyGarageFromServer,
+  getOnSaleProductsFromServer,
+  getPopularProductsFromServer,
   getPublicHeroSlidesFromServer,
+  getPublicHomepageProductSlidersFromServer,
   getVehicleCatalogFromServer,
 } from "@/lib/api/server";
 import { HeroSlider } from "@/components/home/HeroSlider";
+import { ProductSlider } from "@/components/home/ProductSlider";
 
 const navCategories = siteConfig.nav.filter((item) => item.href !== "/");
 
@@ -31,6 +35,19 @@ export default async function HomePage({
   const allCategories = slides.some((slide) => slide.type === "CATEGORY_FILTER")
     ? await getCategoriesFromServer()
     : [];
+
+  const productSliders = await getPublicHomepageProductSlidersFromServer();
+  const productSliderData = await Promise.all(
+    productSliders
+      .filter((slider) => slider.isActive)
+      .map(async (slider) => ({
+        slider,
+        products:
+          slider.type === "DISCOUNTED"
+            ? await getOnSaleProductsFromServer(slider.itemCount)
+            : await getPopularProductsFromServer(slider.itemCount),
+      })),
+  );
 
   return (
     <>
@@ -63,6 +80,10 @@ export default async function HomePage({
           </div>
         </section>
       )}
+
+      {productSliderData.map(({ slider, products }) => (
+        <ProductSlider key={slider.id} title={slider.title} products={products} />
+      ))}
 
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <h2 className="mb-8 text-2xl font-bold tracking-tight">

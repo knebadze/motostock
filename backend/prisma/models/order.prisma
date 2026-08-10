@@ -44,7 +44,7 @@ model Order {
   // so an already-placed order never changes if the admin later edits
   // delivery pricing — same principle as shippingSnapshot/promoCodeSnapshot.
   deliverySpeed        OrderDeliverySpeed?
-  deliveryCost         Decimal             @db.Decimal(10, 2) @default(0)
+  deliveryCost         Decimal             @default(0) @db.Decimal(10, 2)
   deliveryTimeSnapshot String?
 
   // Same SetNull reasoning as addressId — the code/percent are also
@@ -52,11 +52,11 @@ model Order {
   // edited or deleted.
   promoCodeId          Int?
   promoCode            PromoCode? @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
-  promoCodeSnapshot     String?
+  promoCodeSnapshot    String?
   promoDiscountPercent Decimal?   @db.Decimal(5, 2)
 
   subtotal      Decimal @db.Decimal(10, 2)
-  discountTotal Decimal @db.Decimal(10, 2) @default(0)
+  discountTotal Decimal @default(0) @db.Decimal(10, 2)
   total         Decimal @db.Decimal(10, 2)
 
   items     OrderItem[]

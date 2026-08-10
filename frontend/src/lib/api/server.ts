@@ -21,6 +21,7 @@ import type { Product, ProductDetail } from "./products";
 import type { FinaSyncRun } from "./fina-sync";
 import type { AdminUser } from "./users";
 import type { HeroSlide } from "./hero-slides";
+import type { HomepageProductSlider } from "./homepage-product-sliders";
 import type { PromoCode, PromoCodeDomain } from "./promo-codes";
 import type { WishlistItem } from "./wishlist";
 import type { Cart } from "./cart";
@@ -509,6 +510,36 @@ export async function getProductsFromServer(
   }
 }
 
+// Homepage "discounted products" slider.
+export async function getOnSaleProductsFromServer(limit: number): Promise<Product[]> {
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ items: Product[] }>("/products", {
+      headers,
+      params: { onSale: true, limit },
+    });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+// Homepage "popular products" slider.
+export async function getPopularProductsFromServer(limit: number): Promise<Product[]> {
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ items: Product[] }>("/products/popular", {
+      headers,
+      params: { limit },
+    });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
 export async function getProductDetailFromServer(
   slug: string,
   vehicleCatalogId?: string,
@@ -600,6 +631,38 @@ export async function getPublicHeroSlidesFromServer(): Promise<HeroSlide[]> {
     const { data } = await apiClient.get<{ items: HeroSlide[] }>("/hero-slides/public", {
       headers,
     });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getHomepageProductSlidersFromServer(): Promise<HomepageProductSlider[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: HomepageProductSlider[] }>(
+      "/homepage-product-sliders",
+      { headers },
+    );
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getPublicHomepageProductSlidersFromServer(): Promise<HomepageProductSlider[]> {
+  // Public endpoint (the homepage reads this) — must not bail out just
+  // because there's no admin session cookie, same fix as
+  // getCategoriesFromServer.
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ items: HomepageProductSlider[] }>(
+      "/homepage-product-sliders/public",
+      { headers },
+    );
     return data.items;
   } catch {
     return [];

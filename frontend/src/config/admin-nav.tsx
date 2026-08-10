@@ -40,7 +40,7 @@ export const adminNav: AdminNavSection[] = [
       { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon },
       { label: "შეკვეთები", href: "/admin/orders", icon: ordersIcon },
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },
-      { label: "მთავარი გვერდის სლაიდერი", href: "/admin/hero-slides", icon: heroSlidesIcon },
+      { label: "მთავარი გვერდის სერვისი", href: "/admin/hero-slides", icon: heroSlidesIcon },
       { label: "მასობრივი ფასდაკლებები", href: "/admin/bulk-discounts", icon: discountRulesIcon },
       { label: "პრომოკოდები", href: "/admin/promo-codes", icon: promoCodesIcon },
     ],

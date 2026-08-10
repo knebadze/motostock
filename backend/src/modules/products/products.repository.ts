@@ -213,12 +213,60 @@ export const productsRepository = {
     onSale?: boolean;
     attributeFilters?: AttributeFilterInput;
     adminFilters?: FilterEntry[];
+    limit?: number;
   }) {
     return prisma.product.findMany({
       where: await buildWhere(filters),
       include: productSummaryInclude,
       orderBy: { createdAt: "desc" },
+      take: filters.limit,
     });
+  },
+
+  findByIds(ids: number[]) {
+    return prisma.product.findMany({ where: { id: { in: ids } }, include: productSummaryInclude });
+  },
+
+  incrementViewCount(id: number) {
+    return prisma.product.update({
+      where: { id },
+      data: { viewCount: { increment: 1 } },
+      select: { id: true },
+    });
+  },
+
+  // Ranks products by total sold quantity (OrderItem.quantity, grouped by
+  // productVariantId then rolled up to the owning product) — powers the
+  // homepage "popular products" slider. Returns just the ordered id list;
+  // callers fetch full rows via findByIds and must re-apply this order
+  // themselves (findByIds/findMany don't preserve `in` array order).
+  async findPopularProductIds(limit: number): Promise<number[]> {
+    const grouped = await prisma.orderItem.groupBy({
+      by: ["productVariantId"],
+      where: { productVariantId: { not: null } },
+      _sum: { quantity: true },
+    });
+    if (grouped.length === 0) return [];
+
+    const variantIds = grouped.map((group) => group.productVariantId as number);
+    const variants = await prisma.productVariant.findMany({
+      where: { id: { in: variantIds } },
+      select: { id: true, productId: true },
+    });
+    const productIdByVariantId = new Map(variants.map((variant) => [variant.id, variant.productId]));
+
+    const totalsByProductId = new Map<number, number>();
+    for (const group of grouped) {
+      const productId = productIdByVariantId.get(group.productVariantId as number);
+      if (productId == null) continue;
+      const quantity = group._sum.quantity ?? 0;
+      totalsByProductId.set(productId, (totalsByProductId.get(productId) ?? 0) + quantity);
+    }
+
+    return Array.from(totalsByProductId.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([productId]) => productId);
   },
 
   findById(id: number) {

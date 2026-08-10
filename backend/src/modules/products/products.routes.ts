@@ -9,6 +9,7 @@ import { ROLES } from "../../lib/roles.js";
 import * as productsController from "./products.controller.js";
 import {
   createProductSchema,
+  popularProductsQuerySchema,
   productDetailQuerySchema,
   productDetailResponseSchema,
   productIdParamSchema,
@@ -20,9 +21,15 @@ import {
 
 export const productsRouter = Router();
 
-// Public: the guest shop page + product detail page read these three.
-// Everything else stays admin-only.
+// Public: the guest shop page + product detail page read these. Everything
+// else stays admin-only. /popular is registered before /:id so the literal
+// "popular" segment isn't swallowed by the :id param route.
 productsRouter.get("/", validate(productListQuerySchema, "query"), productsController.list);
+productsRouter.get(
+  "/popular",
+  validate(popularProductsQuerySchema, "query"),
+  productsController.getPopular,
+);
 productsRouter.get(
   "/by-slug/:slug",
   validate(productSlugParamSchema, "params"),
@@ -64,6 +71,17 @@ registry.registerPath({
   request: { query: productListQuerySchema },
   responses: {
     200: { description: "Products list", content: { "application/json": { schema: listResponse } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/products/popular",
+  tags: ["Products"],
+  summary: "List products ranked by total sold quantity (public — homepage popular-products slider)",
+  request: { query: popularProductsQuerySchema },
+  responses: {
+    200: { description: "Popular products", content: { "application/json": { schema: listResponse } } },
   },
 });
 

@@ -65,6 +65,11 @@ const columns: DataTableColumn<Product>[] = [
     render: (product) => product.variantCount,
     cellClassName: "text-muted-foreground",
   },
+  {
+    header: "ნახვები",
+    render: (product) => product.viewCount,
+    cellClassName: "text-muted-foreground",
+  },
 ];
 
 export function ProductsManager({

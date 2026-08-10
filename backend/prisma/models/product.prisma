@@ -14,6 +14,11 @@ model Product {
   slug            String                  @unique
   metaTitle       String?
   metaDescription String?
+  // Incremented once per product-detail-page view (see
+  // products.service.ts's getProductDetail) — a simple popularity/interest
+  // signal shown to admins, separate from the Order-based "most sold"
+  // ranking used by the homepage "popular products" slider.
+  viewCount       Int                     @default(0)
   variants        ProductVariant[]
   attributeValues ProductAttributeValue[]
   fitments        ProductFitment[]
