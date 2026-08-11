@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/format";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 import { WishlistButton } from "@/components/shared/WishlistButton";
+import { CompareButton } from "@/components/shared/CompareButton";
 import { AddToCartButton } from "@/components/shared/AddToCartButton";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 import type { Category } from "@/lib/api/categories";
@@ -91,6 +92,13 @@ export function VehicleListingDetailPage({
               variant="button"
               labelSave={tShop("wishlistSaveLabel")}
               labelSaved={tShop("wishlistSavedLabel")}
+            />
+            <CompareButton
+              itemType="VEHICLE_LISTING"
+              id={listing.id}
+              variant="button"
+              labelAdd={tShop("compareAddLabel")}
+              labelAdded={tShop("compareAddedLabel")}
             />
           </div>
 

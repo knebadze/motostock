@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
 import { WishlistButton } from "@/components/shared/WishlistButton";
+import { CompareButton } from "@/components/shared/CompareButton";
 import type { Product } from "@/lib/api/products";
 import type { ViewMode } from "./ViewModeToggle";
 
@@ -14,6 +15,8 @@ export function ProductCard({
   layout,
   wishlistItemId,
   onWishlistChange,
+  compareItemId,
+  onCompareChange,
 }: {
   product: Product;
   layout: ViewMode;
@@ -22,6 +25,9 @@ export function ProductCard({
   // removal so it can drop itself from that list.
   wishlistItemId?: number;
   onWishlistChange?: (wishlisted: boolean) => void;
+  // Same idea as wishlistItemId/onWishlistChange, passed by CompareManager.
+  compareItemId?: number;
+  onCompareChange?: (compared: boolean) => void;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
@@ -72,6 +78,15 @@ export function ProductCard({
           labelSave={t("wishlistSaveLabel")}
           labelSaved={t("wishlistSavedLabel")}
           className="absolute bottom-1.5 right-1.5"
+        />
+        <CompareButton
+          itemType="PRODUCT"
+          id={product.id}
+          initialCompareItemId={compareItemId}
+          onChange={onCompareChange}
+          labelAdd={t("compareAddLabel")}
+          labelAdded={t("compareAddedLabel")}
+          className="absolute bottom-1.5 left-1.5"
         />
       </div>
 

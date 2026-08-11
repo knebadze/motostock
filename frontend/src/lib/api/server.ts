@@ -24,6 +24,7 @@ import type { HeroSlide } from "./hero-slides";
 import type { HomepageSection } from "./homepage-sections";
 import type { PromoCode, PromoCodeDomain } from "./promo-codes";
 import type { WishlistItem } from "./wishlist";
+import type { CompareItem } from "./compare";
 import type { Cart } from "./cart";
 import type { AdminOrderSummary, Order, OrderSummary } from "./orders";
 import type { CompatibilityItem } from "./compatibility";
@@ -433,6 +434,20 @@ export async function getMyWishlistFromServer(): Promise<WishlistItem[]> {
 
   try {
     const { data } = await apiClient.get<{ items: WishlistItem[] }>("/users/me/wishlist", {
+      headers,
+    });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getMyCompareFromServer(): Promise<CompareItem[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: CompareItem[] }>("/users/me/compare", {
       headers,
     });
     return data.items;

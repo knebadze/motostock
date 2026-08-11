@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { formatPrice, pickLookupName } from "@/lib/format";
 import { WishlistButton } from "@/components/shared/WishlistButton";
+import { CompareButton } from "@/components/shared/CompareButton";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 import type { ViewMode } from "./ViewModeToggle";
 
@@ -14,6 +15,8 @@ export function VehicleListingCard({
   layout,
   wishlistItemId,
   onWishlistChange,
+  compareItemId,
+  onCompareChange,
 }: {
   listing: VehicleListing;
   layout: ViewMode;
@@ -22,6 +25,9 @@ export function VehicleListingCard({
   // removal so it can drop itself from that list.
   wishlistItemId?: number;
   onWishlistChange?: (wishlisted: boolean) => void;
+  // Same idea as wishlistItemId/onWishlistChange, passed by CompareManager.
+  compareItemId?: number;
+  onCompareChange?: (compared: boolean) => void;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
@@ -74,6 +80,15 @@ export function VehicleListingCard({
           labelSave={t("wishlistSaveLabel")}
           labelSaved={t("wishlistSavedLabel")}
           className="absolute bottom-1.5 right-1.5"
+        />
+        <CompareButton
+          itemType="VEHICLE_LISTING"
+          id={listing.id}
+          initialCompareItemId={compareItemId}
+          onChange={onCompareChange}
+          labelAdd={t("compareAddLabel")}
+          labelAdded={t("compareAddedLabel")}
+          className="absolute bottom-1.5 left-1.5"
         />
       </div>
 

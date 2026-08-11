@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { env } from "../config/env.js";
 import { mergeGuestWishlistIntoUser } from "../modules/wishlist/wishlist.service.js";
 import { mergeGuestCartIntoUser } from "../modules/cart/cart.service.js";
+import { mergeGuestCompareIntoUser } from "../modules/compare/compare.service.js";
 
 // One shared anonymous-visitor identity, reused by every guest-accessible
 // feature (wishlist, cart, ...) instead of each minting its own cookie —
@@ -30,9 +31,10 @@ export function resolveGuestId(req: Request, res: Response): string {
 
 // Called right after setAuthCookie at every login entry point (password
 // login/register/reset, Google/Facebook OAuth callbacks) — folds
-// everything tied to a guest-id cookie (wishlist items, cart items) into
-// the now-known account, then clears the cookie. A no-op when there was no
-// guest cookie (the common case — most logins aren't a guest converting).
+// everything tied to a guest-id cookie (wishlist items, cart items, compare
+// items) into the now-known account, then clears the cookie. A no-op when
+// there was no guest cookie (the common case — most logins aren't a guest
+// converting).
 export async function mergeGuestDataIntoUser(
   req: Pick<Request, "cookies">,
   res: Response,
@@ -43,5 +45,6 @@ export async function mergeGuestDataIntoUser(
 
   await mergeGuestWishlistIntoUser(guestId, userId);
   await mergeGuestCartIntoUser(guestId, userId);
+  await mergeGuestCompareIntoUser(guestId, userId);
   res.clearCookie(GUEST_ID_COOKIE_NAME);
 }

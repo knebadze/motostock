@@ -18,6 +18,7 @@
     "register": "რეგისტრაცია",
     "myAccount": "ჩემი ანგარიში",
     "wishlist": "სასურველები",
+    "compare": "შედარება",
     "cart": "კალათა",
     "logout": "გასვლა",
     "logoutError": "გამოსვლა ვერ მოხერხდა, სცადეთ ხელახლა",
@@ -57,7 +58,9 @@
     "discountBadge": "ფასდაკლება",
     "emptyState": "შედეგი ვერ მოიძებნა",
     "wishlistSaveLabel": "სასურველებში დამატება",
-    "wishlistSavedLabel": "სასურველებშია"
+    "wishlistSavedLabel": "სასურველებშია",
+    "compareAddLabel": "შედარებაში დამატება",
+    "compareAddedLabel": "შედარებაშია"
   },
   "ProductDetail": {
     "descriptionHeading": "აღწერა",
@@ -275,6 +278,7 @@
       "dashboard": "დეშბორდი",
       "garage": "გარაჟი",
       "wishlist": "სასურველები",
+      "compare": "შედარება",
       "cart": "კალათა",
       "orders": "შეკვეთების ისტორია",
       "address": "მისამართი",
@@ -344,6 +348,14 @@
       "vehiclesHeading": "ტრანსპორტი",
       "empty": "სასურველების სია ჯერ ცარიელია.",
       "removeSuccess": "წაიშალა სასურველებიდან"
+    },
+    "compare": {
+      "description": "შედარებისთვის დამატებული პროდუქტები და ტრანსპორტი.",
+      "productsHeading": "პროდუქტები",
+      "vehiclesHeading": "ტრანსპორტი",
+      "empty": "შედარების სია ჯერ ცარიელია.",
+      "priceLabel": "ფასი",
+      "removeLabel": "წაშლა შედარებიდან"
     },
     "orders": {
       "empty": "თქვენ ჯერ არცერთი შეკვეთა არ გაგიფორმებიათ."

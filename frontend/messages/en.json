@@ -18,6 +18,7 @@
     "register": "Sign up",
     "myAccount": "My account",
     "wishlist": "Wishlist",
+    "compare": "Compare",
     "cart": "Cart",
     "logout": "Log out",
     "logoutError": "Log out failed, please try again",
@@ -57,7 +58,9 @@
     "discountBadge": "Sale",
     "emptyState": "No results found",
     "wishlistSaveLabel": "Add to wishlist",
-    "wishlistSavedLabel": "Saved"
+    "wishlistSavedLabel": "Saved",
+    "compareAddLabel": "Add to compare",
+    "compareAddedLabel": "In comparison"
   },
   "ProductDetail": {
     "descriptionHeading": "Description",
@@ -275,6 +278,7 @@
       "dashboard": "Dashboard",
       "garage": "Garage",
       "wishlist": "Wishlist",
+      "compare": "Compare",
       "cart": "Cart",
       "orders": "Order history",
       "address": "Address",
@@ -344,6 +348,14 @@
       "vehiclesHeading": "Vehicles",
       "empty": "Your wishlist is empty for now.",
       "removeSuccess": "Removed from wishlist"
+    },
+    "compare": {
+      "description": "Products and vehicles added for comparison.",
+      "productsHeading": "Products",
+      "vehiclesHeading": "Vehicles",
+      "empty": "Your comparison list is empty for now.",
+      "priceLabel": "Price",
+      "removeLabel": "Remove from comparison"
     },
     "orders": {
       "empty": "You haven't placed any orders yet."

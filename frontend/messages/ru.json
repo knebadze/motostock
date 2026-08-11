@@ -18,6 +18,7 @@
     "register": "Регистрация",
     "myAccount": "Личный кабинет",
     "wishlist": "Избранное",
+    "compare": "Сравнение",
     "cart": "Корзина",
     "logout": "Выйти",
     "logoutError": "Не удалось выйти, попробуйте ещё раз",
@@ -57,7 +58,9 @@
     "discountBadge": "Скидка",
     "emptyState": "Ничего не найдено",
     "wishlistSaveLabel": "В избранное",
-    "wishlistSavedLabel": "В избранном"
+    "wishlistSavedLabel": "В избранном",
+    "compareAddLabel": "Добавить к сравнению",
+    "compareAddedLabel": "В сравнении"
   },
   "ProductDetail": {
     "descriptionHeading": "Описание",
@@ -275,6 +278,7 @@
       "dashboard": "Дешборд",
       "garage": "Гараж",
       "wishlist": "Избранное",
+      "compare": "Сравнение",
       "cart": "Корзина",
       "orders": "История заказов",
       "address": "Адрес",
@@ -344,6 +348,14 @@
       "vehiclesHeading": "Техника",
       "empty": "Список избранного пока пуст.",
       "removeSuccess": "Удалено из избранного"
+    },
+    "compare": {
+      "description": "Товары и техника, добавленные для сравнения.",
+      "productsHeading": "Товары",
+      "vehiclesHeading": "Техника",
+      "empty": "Список сравнения пока пуст.",
+      "priceLabel": "Цена",
+      "removeLabel": "Убрать из сравнения"
     },
     "orders": {
       "empty": "Вы ещё не оформили ни одного заказа."

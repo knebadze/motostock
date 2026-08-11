@@ -151,6 +151,25 @@ export function Header({
             </svg>
           </Link>
 
+          <Link
+            href="/compare"
+            aria-label={tHeader("compare")}
+            className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="size-5"
+            >
+              <path d="M4 20h16M7 20V10m5 10V4m5 16v-7" />
+            </svg>
+          </Link>
+
           <CartDropdown initialCount={cartCount} />
 
           {user ? (
@@ -313,6 +332,14 @@ export function Header({
               className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
             >
               {tHeader("wishlist")}
+            </Link>
+
+            <Link
+              href="/compare"
+              onClick={() => setIsOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+            >
+              {tHeader("compare")}
             </Link>
 
             <Link

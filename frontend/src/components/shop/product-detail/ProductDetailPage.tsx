@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatPrice, pickLookupName } from "@/lib/format";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 import { WishlistButton } from "@/components/shared/WishlistButton";
+import { CompareButton } from "@/components/shared/CompareButton";
 import { AddToCartButton } from "@/components/shared/AddToCartButton";
 import type {
   Product,
@@ -179,6 +180,13 @@ export function ProductDetailPage({
               variant="button"
               labelSave={tShop("wishlistSaveLabel")}
               labelSaved={tShop("wishlistSavedLabel")}
+            />
+            <CompareButton
+              itemType="PRODUCT"
+              id={product.id}
+              variant="button"
+              labelAdd={tShop("compareAddLabel")}
+              labelAdded={tShop("compareAddedLabel")}
             />
           </div>
 

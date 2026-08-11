@@ -1,0 +1,38 @@
+enum CompareItemType {
+  PRODUCT
+  VEHICLE_LISTING
+
+  @@schema("dbo")
+}
+
+// A product or vehicle listing added to the shopper's comparison list — same
+// dual-nullable-FK/dual-nullable-owner shape as WishlistItem (see
+// wishlist-item.prisma), and deliberately mirrors it closely: itemType picks
+// which of productId/vehicleListingId is populated, and owner is userId for
+// a logged-in account or guestId (the shared guest-id cookie, see
+// guest-identity.middleware.ts) for an anonymous visitor. Unlike wishlist,
+// guest access here is unconditional — no Settings toggle — since comparing
+// is a lightweight, no-commitment browsing aid. On login, guestId rows are
+// folded into the now-known userId (see compare.service.ts's
+// mergeGuestCompareIntoUser, called from guest-identity.middleware.ts
+// alongside the wishlist/cart merges).
+model CompareItem {
+  id               Int             @id @default(autoincrement())
+  userId           Int?
+  user             User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestId          String?
+  itemType         CompareItemType
+  productId        Int?
+  product          Product?        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  vehicleListingId Int?
+  vehicleListing   VehicleListing? @relation(fields: [vehicleListingId], references: [id], onDelete: Cascade)
+  createdAt        DateTime        @default(now())
+
+  @@unique([userId, productId])
+  @@unique([userId, vehicleListingId])
+  @@unique([guestId, productId])
+  @@unique([guestId, vehicleListingId])
+  @@index([userId])
+  @@index([guestId])
+  @@schema("dbo")
+}

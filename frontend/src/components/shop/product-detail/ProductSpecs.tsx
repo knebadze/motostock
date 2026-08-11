@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { SpecsList } from "@/components/shared/SpecsList";
 import type { ProductAttributeValue } from "@/lib/api/products";
 
-function formatValue(
+export function formatValue(
   value: ProductAttributeValue,
   locale: "ka" | "en" | "ru",
   yes: string,
