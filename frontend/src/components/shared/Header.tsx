@@ -12,6 +12,7 @@ import { CartDropdown } from "@/components/shared/CartDropdown";
 import { Logo } from "@/components/shared/Logo";
 import { logoutUser, type User } from "@/lib/api/auth";
 import { resolveMediaUrl } from "@/lib/api/client";
+import { formatShortName } from "@/lib/format";
 import type { Category } from "@/lib/api/categories";
 
 const MEGA_MENU_CLOSE_DELAY_MS = 150;
@@ -151,7 +152,7 @@ export function Header({
                 <span className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                   {user.name.charAt(0).toUpperCase()}
                 </span>
-                <span>{user.name}</span>
+                <span>{formatShortName(user.name)}</span>
               </button>
 
               {accountMenuOpen && (

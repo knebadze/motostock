@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { logoutUser } from "@/lib/api/auth";
 import { clearCache } from "@/lib/api/cache";
 import { ApiRequestError } from "@/lib/api/client";
+import { formatShortName } from "@/lib/format";
 
 export function UserMenu({ userName }: { userName: string }) {
   const router = useRouter();
@@ -66,7 +67,7 @@ export function UserMenu({ userName }: { userName: string }) {
         <span className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
           {userName.charAt(0).toUpperCase()}
         </span>
-        <span className="hidden sm:inline">{userName}</span>
+        <span className="hidden sm:inline">{formatShortName(userName)}</span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"

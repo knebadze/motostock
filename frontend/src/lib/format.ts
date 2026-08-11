@@ -31,6 +31,19 @@ export function pickLookupName(
   return item.nameKa;
 }
 
+// "გიორგი მამაცაშვილი" -> "გ. მამაცაშვილი" — shortens a full name to
+// first-name initial plus the full last name, so the header's account
+// button stays compact regardless of how long a user's name is. Single-word
+// names pass through unchanged (nothing to shorten).
+export function formatShortName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length < 2) return fullName;
+
+  const firstInitial = parts[0].charAt(0).toUpperCase();
+  const lastName = parts.slice(1).join(" ");
+  return `${firstInitial}. ${lastName}`;
+}
+
 type LocalizedName = { ka: string; en: string; ru: string };
 
 // "Brand Model variant (yearFrom–yearTo)" — the display label for a vehicle
