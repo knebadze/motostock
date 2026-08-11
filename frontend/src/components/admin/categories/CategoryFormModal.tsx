@@ -155,6 +155,7 @@ export function CategoryFormModal({
       open={open}
       onClose={onClose}
       title={isEditing ? "კატეგორიის რედაქტირება" : "ახალი კატეგორია"}
+      size="xl"
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <LocalizedNameFields
