@@ -10,7 +10,7 @@ import {
   getVehicleListingsFromServer,
 } from "@/lib/api/server";
 import { getAncestorChain, isVehicleCategory } from "@/lib/categories-tree";
-import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
+import { buildCanonicalUrl, getAlternateLanguages, jsonLdScriptProps } from "@/lib/seo";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { siteConfig } from "@/config/site";
 import { SELECTED_VEHICLE_COOKIE } from "@/lib/vehicle-selection";
@@ -172,14 +172,8 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
 
     return (
       <>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(vehicleJsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-        />
+        <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScriptProps(vehicleJsonLd)} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScriptProps(breadcrumbJsonLd)} />
         <VehicleListingDetailPage
           listing={listing}
           breadcrumbChain={breadcrumbChain}
@@ -267,14 +261,8 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScriptProps(productJsonLd)} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScriptProps(breadcrumbJsonLd)} />
       <ProductDetailPage
         product={product}
         breadcrumbChain={breadcrumbChain}

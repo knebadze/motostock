@@ -21,6 +21,14 @@ export function getAlternateLanguages(pathname: string): Record<string, string> 
   return languages;
 }
 
+// JSON.stringify never escapes "<", so a name/description containing a
+// literal "</script>" would otherwise close the tag early and let the rest
+// be parsed as HTML — escaping "<" to its unicode escape neutralizes that
+// while staying valid, semantically identical JSON.
+export function jsonLdScriptProps(data: unknown): { __html: string } {
+  return { __html: JSON.stringify(data).replace(/</g, "\\u003c") };
+}
+
 // Deliberately never includes a `sort` param — sort only reorders the same
 // item set, so it always canonicalizes back to the unsorted version (per
 // Google's faceted-navigation guidance). `page` is included when > 1 since

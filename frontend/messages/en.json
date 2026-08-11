@@ -92,6 +92,7 @@
     "remove": "Remove",
     "removeSuccess": "Removed from cart",
     "removeError": "Couldn't remove item",
+    "loadError": "Couldn't load cart",
     "updateError": "Couldn't update quantity",
     "decreaseQuantity": "Decrease quantity",
     "increaseQuantity": "Increase quantity",
@@ -387,7 +388,9 @@
       "vehiclesHeading": "Vehicles",
       "empty": "Your wishlist is empty for now.",
       "removeSuccess": "Removed from wishlist",
-      "removeLabel": "Remove from wishlist"
+      "removeLabel": "Remove from wishlist",
+      "removeError": "Couldn't remove item",
+      "loadError": "Couldn't load wishlist"
     },
     "compare": {
       "description": "Products and vehicles added for comparison.",
@@ -395,7 +398,9 @@
       "vehiclesHeading": "Vehicles",
       "empty": "Your comparison list is empty for now.",
       "priceLabel": "Price",
-      "removeLabel": "Remove from comparison"
+      "removeLabel": "Remove from comparison",
+      "removeError": "Couldn't remove item",
+      "loadError": "Couldn't load comparison list"
     },
     "orders": {
       "empty": "You haven't placed any orders yet."

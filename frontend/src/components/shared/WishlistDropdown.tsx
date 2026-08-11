@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
-import { resolveMediaUrl } from "@/lib/api/client";
+import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
 import { listMyWishlist, removeFromWishlist, type WishlistItem } from "@/lib/api/wishlist";
 
@@ -64,6 +65,8 @@ export function WishlistDropdown({ initialCount }: { initialCount: number }) {
     setLoading(true);
     try {
       setItems(await listMyWishlist());
+    } catch (error) {
+      toast.error(error instanceof ApiRequestError ? error.message : t("loadError"));
     } finally {
       setLoading(false);
     }
@@ -73,10 +76,13 @@ export function WishlistDropdown({ initialCount }: { initialCount: number }) {
     setItems((current) => (current ? current.filter((item) => item.id !== id) : current));
     try {
       await removeFromWishlist(id);
-    } catch {
+    } catch (error) {
       // The row is already gone from the visible list — a failed DELETE
       // just leaves a stale row server-side, harmless and self-corrects on
-      // the next add/remove of the same item.
+      // the next add/remove of the same item — but still worth telling the
+      // user, since otherwise a removal that silently didn't take effect
+      // looks identical to one that did.
+      toast.error(error instanceof ApiRequestError ? error.message : t("removeError"));
     }
   }
 

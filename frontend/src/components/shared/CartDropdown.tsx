@@ -43,6 +43,8 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
     setLoading(true);
     try {
       setCart(await getMyCart());
+    } catch (error) {
+      toast.error(error instanceof ApiRequestError ? error.message : tCart("loadError"));
     } finally {
       setLoading(false);
     }

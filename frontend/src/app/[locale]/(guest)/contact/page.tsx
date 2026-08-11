@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { getCompanyInfoFromServer } from "@/lib/api/server";
 import { facebookIcon, instagramIcon, tiktokIcon, youtubeIcon } from "@/components/shared/social-icons";
@@ -79,8 +80,13 @@ function ContactPageView({ companyInfo }: { companyInfo: CompanyInfo }) {
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="flex items-center gap-4">
         {logoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoUrl} alt={companyInfo.name} className="h-14 w-auto object-contain" />
+          <Image
+            src={logoUrl}
+            alt={companyInfo.name}
+            width={160}
+            height={56}
+            className="h-14 w-auto object-contain"
+          />
         )}
         <div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>

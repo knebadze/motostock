@@ -4,7 +4,7 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { RootShell } from "@/components/shared/RootShell";
-import { getAlternateLanguages, getSiteUrl } from "@/lib/seo";
+import { getAlternateLanguages, getSiteUrl, jsonLdScriptProps } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 
 export function generateStaticParams() {
@@ -40,10 +40,7 @@ function OrganizationJsonLd() {
   };
 
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-    />
+    <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScriptProps(jsonLd)} />
   );
 }
 
