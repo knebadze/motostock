@@ -13,6 +13,53 @@ import type { Product } from "@/lib/api/products";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 
 type Locale = "ka" | "en" | "ru";
+type Direction = "higherIsBetter" | "lowerIsBetter";
+
+const BETTER_CLASS = "bg-green-500/10 text-green-600";
+const WORSE_CLASS = "bg-red-500/10 text-red-600";
+
+// Known vehicle spec rows worth a better/worse call — anything not listed
+// here (text/lookup rows like color, condition, fuel type, ...) has no
+// meaningful ordering and is left uncolored. Most numeric specs read as
+// "more is better"; a short list of true exceptions (heavier, slower to
+// charge) is flipped.
+const VEHICLE_ROW_DIRECTION: Partial<Record<string, Direction>> = {
+  motorPower: "higherIsBetter",
+  batteryCapacity: "higherIsBetter",
+  range: "higherIsBetter",
+  chargingTime: "lowerIsBetter",
+  engineVolume: "higherIsBetter",
+  enginePower: "higherIsBetter",
+  cylinderCount: "higherIsBetter",
+  gearCount: "higherIsBetter",
+  seatCount: "higherIsBetter",
+  weight: "lowerIsBetter",
+  fuelTank: "higherIsBetter",
+  topSpeed: "higherIsBetter",
+  lockingDifferential: "higherIsBetter",
+  abs: "higherIsBetter",
+};
+
+// Only the strict max and strict min get colored (ties, or every value
+// equal, stay neutral) — with more than two columns the values in between
+// aren't clearly "best" or "worst", just in between.
+function comparisonClasses(values: (number | null)[], direction: Direction): (string | undefined)[] {
+  const finite = values.filter((value): value is number => value != null);
+  if (finite.length < 2) return values.map(() => undefined);
+
+  const max = Math.max(...finite);
+  const min = Math.min(...finite);
+  if (max === min) return values.map(() => undefined);
+
+  const better = direction === "higherIsBetter" ? max : min;
+  const worse = direction === "higherIsBetter" ? min : max;
+  return values.map((value) => {
+    if (value == null) return undefined;
+    if (value === better) return BETTER_CLASS;
+    if (value === worse) return WORSE_CLASS;
+    return undefined;
+  });
+}
 
 function buildProductAttributeRows(products: Product[], locale: Locale) {
   const rows = new Map<number, string>();
@@ -22,6 +69,19 @@ function buildProductAttributeRows(products: Product[], locale: Locale) {
     }
   }
   return Array.from(rows, ([attributeId, label]) => ({ attributeId, label }));
+}
+
+// Booleans compare as 1/0 (feature present = better); numbers compare
+// as-is. Product attributes are admin-defined and arbitrary, so there's no
+// per-attribute "higher/lower is better" metadata to draw on — numeric
+// attributes default to "higher is better", the same assumption most
+// comparison tables make. Option/text values have no ordering and are left
+// uncolored.
+function productAttributeRawValue(value: Product["attributeValues"][number] | undefined): number | null {
+  if (!value) return null;
+  if (value.valueBoolean != null) return value.valueBoolean ? 1 : 0;
+  if (value.valueNumber != null) return value.valueNumber;
+  return null;
 }
 
 export function CompareManager({ initialItems }: { initialItems: CompareItem[] }) {
@@ -130,33 +190,53 @@ export function CompareManager({ initialItems }: { initialItems: CompareItem[] }
                   <td className="sticky left-0 z-10 border-b border-border bg-card p-3 text-muted-foreground">
                     {t("priceLabel")}
                   </td>
-                  {productItems.map((item) => (
-                    <td key={item.id} className="border-b border-border p-3 text-center font-semibold text-primary">
-                      {item.product.activeDiscount
-                        ? formatPrice(item.product.activeDiscount.discountPrice)
-                        : item.product.minPrice != null
-                          ? formatPrice(item.product.minPrice)
-                          : "—"}
-                    </td>
-                  ))}
+                  {(() => {
+                    const priceValues = productItems.map((item) =>
+                      item.product.activeDiscount
+                        ? item.product.activeDiscount.discountPrice
+                        : item.product.minPrice,
+                    );
+                    const priceClasses = comparisonClasses(priceValues, "lowerIsBetter");
+                    return productItems.map((item, index) => (
+                      <td
+                        key={item.id}
+                        className={`border-b border-border p-3 text-center font-semibold ${
+                          priceClasses[index] ?? "text-primary"
+                        }`}
+                      >
+                        {priceValues[index] != null ? formatPrice(priceValues[index]) : "—"}
+                      </td>
+                    ));
+                  })()}
                 </tr>
-                {attributeRows.map((row) => (
-                  <tr key={row.attributeId}>
-                    <td className="sticky left-0 z-10 border-b border-border bg-card p-3 text-muted-foreground">
-                      {row.label}
-                    </td>
-                    {productItems.map((item) => {
-                      const value = item.product.attributeValues.find(
-                        (av) => av.attributeId === row.attributeId,
-                      );
-                      return (
-                        <td key={item.id} className="border-b border-border p-3 text-center">
-                          {value ? formatValue(value, locale, tProduct("yes"), tProduct("no")) : "—"}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                {attributeRows.map((row) => {
+                  const rawValues = productItems.map((item) =>
+                    productAttributeRawValue(
+                      item.product.attributeValues.find((av) => av.attributeId === row.attributeId),
+                    ),
+                  );
+                  const classes = comparisonClasses(rawValues, "higherIsBetter");
+                  return (
+                    <tr key={row.attributeId}>
+                      <td className="sticky left-0 z-10 border-b border-border bg-card p-3 text-muted-foreground">
+                        {row.label}
+                      </td>
+                      {productItems.map((item, index) => {
+                        const value = item.product.attributeValues.find(
+                          (av) => av.attributeId === row.attributeId,
+                        );
+                        return (
+                          <td
+                            key={item.id}
+                            className={`border-b border-border p-3 text-center ${classes[index] ?? ""}`}
+                          >
+                            {value ? formatValue(value, locale, tProduct("yes"), tProduct("no")) : "—"}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -225,29 +305,52 @@ export function CompareManager({ initialItems }: { initialItems: CompareItem[] }
                   <td className="sticky left-0 z-10 border-b border-border bg-card p-3 text-muted-foreground">
                     {t("priceLabel")}
                   </td>
-                  {vehicleItems.map((item) => (
-                    <td key={item.id} className="border-b border-border p-3 text-center font-semibold text-primary">
-                      {item.vehicleListing.activeDiscount
-                        ? formatPrice(item.vehicleListing.activeDiscount.discountPrice)
-                        : formatPrice(item.vehicleListing.price)}
-                    </td>
-                  ))}
+                  {(() => {
+                    const priceValues = vehicleItems.map((item) =>
+                      item.vehicleListing.activeDiscount
+                        ? item.vehicleListing.activeDiscount.discountPrice
+                        : item.vehicleListing.price,
+                    );
+                    const priceClasses = comparisonClasses(priceValues, "lowerIsBetter");
+                    return vehicleItems.map((item, index) => (
+                      <td
+                        key={item.id}
+                        className={`border-b border-border p-3 text-center font-semibold ${
+                          priceClasses[index] ?? "text-primary"
+                        }`}
+                      >
+                        {formatPrice(priceValues[index])}
+                      </td>
+                    ));
+                  })()}
                 </tr>
-                {Array.from(vehicleRowDefs, ([key, label]) => ({ key, label })).map((row) => (
-                  <tr key={row.key}>
-                    <td className="sticky left-0 z-10 border-b border-border bg-card p-3 text-muted-foreground">
-                      {row.label}
-                    </td>
-                    {vehicleRowsPerListing.map((rows, index) => {
-                      const value = rows.find((r) => r.key === row.key)?.value;
-                      return (
-                        <td key={vehicleItems[index].id} className="border-b border-border p-3 text-center">
-                          {value ?? "—"}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                {Array.from(vehicleRowDefs, ([key, label]) => ({ key, label })).map((row) => {
+                  const direction = VEHICLE_ROW_DIRECTION[row.key];
+                  const rawValues = vehicleRowsPerListing.map(
+                    (rows) => rows.find((r) => r.key === row.key)?.raw ?? null,
+                  );
+                  const classes = direction
+                    ? comparisonClasses(rawValues, direction)
+                    : rawValues.map(() => undefined);
+                  return (
+                    <tr key={row.key}>
+                      <td className="sticky left-0 z-10 border-b border-border bg-card p-3 text-muted-foreground">
+                        {row.label}
+                      </td>
+                      {vehicleRowsPerListing.map((rows, index) => {
+                        const value = rows.find((r) => r.key === row.key)?.value;
+                        return (
+                          <td
+                            key={vehicleItems[index].id}
+                            className={`border-b border-border p-3 text-center ${classes[index] ?? ""}`}
+                          >
+                            {value ?? "—"}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
