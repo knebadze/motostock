@@ -58,3 +58,8 @@ export const compareStatusResponseSchema = registry.register(
     ),
   }),
 );
+
+export const compareCountResponseSchema = registry.register(
+  "CompareCount",
+  z.object({ count: z.int().openapi({ example: 2 }) }),
+);

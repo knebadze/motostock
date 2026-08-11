@@ -5,8 +5,9 @@ import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
-import { ThemeToggle } from "@/components/shared/ThemeToggle";
-import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
+import { SettingsDropdown } from "@/components/shared/SettingsDropdown";
+import { WishlistDropdown } from "@/components/shared/WishlistDropdown";
+import { CompareDropdown } from "@/components/shared/CompareDropdown";
 import { CartDropdown } from "@/components/shared/CartDropdown";
 import { Logo } from "@/components/shared/Logo";
 import { logoutUser, type User } from "@/lib/api/auth";
@@ -18,11 +19,15 @@ const MEGA_MENU_CLOSE_DELAY_MS = 150;
 export function Header({
   user = null,
   categories = [],
+  wishlistCount = 0,
+  compareCount = 0,
   cartCount = 0,
 }: {
   user?: User | null;
   /** Full category tree (all depths) — the header derives top-level nav items and their children itself. */
   categories?: Category[];
+  wishlistCount?: number;
+  compareCount?: number;
   cartCount?: number;
 }) {
   const pathname = usePathname();
@@ -129,47 +134,9 @@ export function Header({
         </nav>
 
         <div className="flex items-center gap-1.5 sm:gap-3">
-          <LanguageSwitcher />
-          <ThemeToggle />
-
-          <Link
-            href="/wishlist"
-            aria-label={tHeader("wishlist")}
-            className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="size-5"
-            >
-              <path d="M12 21s-6.7-4.35-9.33-8.2C1.02 10.6 1.6 7.2 4.3 5.6c2.2-1.3 4.9-.8 6.3 1.1l1.4 1.9 1.4-1.9c1.4-1.9 4.1-2.4 6.3-1.1 2.7 1.6 3.28 5 1.63 7.2C18.7 16.65 12 21 12 21Z" />
-            </svg>
-          </Link>
-
-          <Link
-            href="/compare"
-            aria-label={tHeader("compare")}
-            className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="size-5"
-            >
-              <path d="M4 20h16M7 20V10m5 10V4m5 16v-7" />
-            </svg>
-          </Link>
-
+          <SettingsDropdown />
+          <WishlistDropdown initialCount={wishlistCount} />
+          <CompareDropdown initialCount={compareCount} />
           <CartDropdown initialCount={cartCount} />
 
           {user ? (
@@ -332,6 +299,7 @@ export function Header({
               className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
             >
               {tHeader("wishlist")}
+              {wishlistCount > 0 && <span className="text-muted-foreground"> ({wishlistCount})</span>}
             </Link>
 
             <Link
@@ -340,6 +308,7 @@ export function Header({
               className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
             >
               {tHeader("compare")}
+              {compareCount > 0 && <span className="text-muted-foreground"> ({compareCount})</span>}
             </Link>
 
             <Link

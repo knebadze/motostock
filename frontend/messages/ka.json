@@ -26,7 +26,10 @@
     "closeMenu": "მენიუს დახურვა",
     "switchToDark": "ჩართე მუქი რეჟიმი",
     "switchToLight": "ჩართე ღია რეჟიმი",
-    "language": "ენა"
+    "language": "ენა",
+    "settings": "პარამეტრები",
+    "themeHeading": "თემა",
+    "viewAll": "ყველას ნახვა"
   },
   "Shop": {
     "filtersHeading": "ფილტრი",
@@ -347,7 +350,8 @@
       "productsHeading": "პროდუქტები",
       "vehiclesHeading": "ტრანსპორტი",
       "empty": "სასურველების სია ჯერ ცარიელია.",
-      "removeSuccess": "წაიშალა სასურველებიდან"
+      "removeSuccess": "წაიშალა სასურველებიდან",
+      "removeLabel": "წაშლა სასურველებიდან"
     },
     "compare": {
       "description": "შედარებისთვის დამატებული პროდუქტები და ტრანსპორტი.",

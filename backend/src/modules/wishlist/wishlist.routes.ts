@@ -7,6 +7,7 @@ import * as wishlistController from "./wishlist.controller.js";
 import { resolveWishlistOwner } from "./wishlist.middleware.js";
 import {
   createWishlistItemSchema,
+  wishlistCountResponseSchema,
   wishlistItemIdParamSchema,
   wishlistItemResponseSchema,
   wishlistStatusQuerySchema,
@@ -29,6 +30,7 @@ wishlistRouter.get(
   wishlistController.status,
 );
 wishlistRouter.get("/me/wishlist", wishlistController.list);
+wishlistRouter.get("/me/wishlist/count", wishlistController.count);
 wishlistRouter.post(
   "/me/wishlist",
   validate(createWishlistItemSchema),
@@ -52,6 +54,18 @@ registry.registerPath({
   security,
   responses: {
     200: { description: "Wishlist items", content: { "application/json": { schema: listResponse } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/users/me/wishlist/count",
+  tags: ["Wishlist"],
+  summary: "Get the caller's wishlist item count — for a header badge",
+  security,
+  responses: {
+    200: { description: "Wishlist count", content: { "application/json": { schema: wishlistCountResponseSchema } } },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

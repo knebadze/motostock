@@ -442,6 +442,21 @@ export async function getMyWishlistFromServer(): Promise<WishlistItem[]> {
   }
 }
 
+// Lightweight — just the header badge count, not the full wishlist with
+// every nested product/vehicle detail. Same reasoning as
+// getMyCartCountFromServer.
+export async function getMyWishlistCountFromServer(): Promise<number> {
+  const headers = await authHeaders();
+  if (!headers) return 0;
+
+  try {
+    const { data } = await apiClient.get<{ count: number }>("/users/me/wishlist/count", { headers });
+    return data.count;
+  } catch {
+    return 0;
+  }
+}
+
 export async function getMyCompareFromServer(): Promise<CompareItem[]> {
   const headers = await authHeaders();
   if (!headers) return [];
@@ -453,6 +468,21 @@ export async function getMyCompareFromServer(): Promise<CompareItem[]> {
     return data.items;
   } catch {
     return [];
+  }
+}
+
+// Lightweight — just the header badge count, not the full comparison list
+// with every nested product/vehicle detail. Same reasoning as
+// getMyCartCountFromServer.
+export async function getMyCompareCountFromServer(): Promise<number> {
+  const headers = await authHeaders();
+  if (!headers) return 0;
+
+  try {
+    const { data } = await apiClient.get<{ count: number }>("/users/me/compare/count", { headers });
+    return data.count;
+  } catch {
+    return 0;
   }
 }
 

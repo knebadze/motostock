@@ -6,6 +6,7 @@ import { errorResponseSchema } from "../../docs/schemas.js";
 import * as compareController from "./compare.controller.js";
 import { resolveCompareOwner } from "./compare.middleware.js";
 import {
+  compareCountResponseSchema,
   compareItemIdParamSchema,
   compareItemResponseSchema,
   compareStatusQuerySchema,
@@ -28,6 +29,7 @@ compareRouter.get(
   compareController.status,
 );
 compareRouter.get("/me/compare", compareController.list);
+compareRouter.get("/me/compare/count", compareController.count);
 compareRouter.post("/me/compare", validate(createCompareItemSchema), compareController.create);
 compareRouter.delete(
   "/me/compare/:id",
@@ -47,6 +49,17 @@ registry.registerPath({
   security,
   responses: {
     200: { description: "Compare items", content: { "application/json": { schema: listResponse } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/users/me/compare/count",
+  tags: ["Compare"],
+  summary: "Get the caller's comparison list item count — for a header badge",
+  security,
+  responses: {
+    200: { description: "Compare count", content: { "application/json": { schema: compareCountResponseSchema } } },
   },
 });
 

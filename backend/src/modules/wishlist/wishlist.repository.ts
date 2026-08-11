@@ -25,6 +25,10 @@ export const wishlistRepository = {
     });
   },
 
+  countByOwner(owner: WishlistOwner) {
+    return prisma.wishlistItem.count({ where: ownerWhere(owner) });
+  },
+
   findById(id: number) {
     return prisma.wishlistItem.findUnique({ where: { id }, include: wishlistItemInclude });
   },

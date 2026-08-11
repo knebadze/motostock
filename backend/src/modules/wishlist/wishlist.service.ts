@@ -93,6 +93,11 @@ export async function removeWishlistItem(owner: WishlistOwner, id: number) {
   await wishlistRepository.delete(id);
 }
 
+// For the header badge — a plain count, not the full item list.
+export async function getWishlistCount(owner: WishlistOwner) {
+  return { count: await wishlistRepository.countByOwner(owner) };
+}
+
 export async function getWishlistStatus(
   owner: WishlistOwner,
   productIds: number[],

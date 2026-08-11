@@ -4,6 +4,8 @@ import {
   getCategoriesFromServer,
   getCurrentUserFromServer,
   getMyCartCountFromServer,
+  getMyWishlistCountFromServer,
+  getMyCompareCountFromServer,
 } from "@/lib/api/server";
 
 export default async function GuestLayout({
@@ -11,15 +13,23 @@ export default async function GuestLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [user, categories, cartCount] = await Promise.all([
+  const [user, categories, cartCount, wishlistCount, compareCount] = await Promise.all([
     getCurrentUserFromServer(),
     getCategoriesFromServer(),
     getMyCartCountFromServer(),
+    getMyWishlistCountFromServer(),
+    getMyCompareCountFromServer(),
   ]);
 
   return (
     <>
-      <Header user={user} categories={categories} cartCount={cartCount} />
+      <Header
+        user={user}
+        categories={categories}
+        cartCount={cartCount}
+        wishlistCount={wishlistCount}
+        compareCount={compareCount}
+      />
       <main className="flex-1">{children}</main>
       <Footer />
     </>

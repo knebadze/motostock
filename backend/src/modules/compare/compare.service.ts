@@ -104,6 +104,11 @@ export async function removeCompareItem(owner: CompareOwner, id: number) {
   await compareRepository.delete(id);
 }
 
+// For the header badge — a plain count, not the full item list.
+export async function getCompareCount(owner: CompareOwner) {
+  return { count: await compareRepository.countByOwner(owner) };
+}
+
 export async function getCompareStatus(
   owner: CompareOwner,
   productIds: number[],

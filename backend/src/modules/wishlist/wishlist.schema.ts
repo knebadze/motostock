@@ -59,3 +59,8 @@ export const wishlistStatusResponseSchema = registry.register(
     ),
   }),
 );
+
+export const wishlistCountResponseSchema = registry.register(
+  "WishlistCount",
+  z.object({ count: z.int().openapi({ example: 2 }) }),
+);

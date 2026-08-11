@@ -26,7 +26,10 @@
     "closeMenu": "Close menu",
     "switchToDark": "Switch to dark mode",
     "switchToLight": "Switch to light mode",
-    "language": "Language"
+    "language": "Language",
+    "settings": "Settings",
+    "themeHeading": "Theme",
+    "viewAll": "View all"
   },
   "Shop": {
     "filtersHeading": "Filters",
@@ -347,7 +350,8 @@
       "productsHeading": "Products",
       "vehiclesHeading": "Vehicles",
       "empty": "Your wishlist is empty for now.",
-      "removeSuccess": "Removed from wishlist"
+      "removeSuccess": "Removed from wishlist",
+      "removeLabel": "Remove from wishlist"
     },
     "compare": {
       "description": "Products and vehicles added for comparison.",

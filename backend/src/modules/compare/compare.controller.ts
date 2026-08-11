@@ -31,6 +31,11 @@ export async function remove(req: Request, res: Response) {
   res.status(204).send();
 }
 
+export async function count(req: Request, res: Response) {
+  const result = await compareService.getCompareCount(getOwner(req));
+  res.status(200).json(result);
+}
+
 export async function status(
   req: Request<unknown, unknown, unknown, CompareStatusQuery>,
   res: Response,
