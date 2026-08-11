@@ -263,6 +263,9 @@
     "linkLabel": "Подробнее",
     "acceptLabel": "Понятно"
   },
+  "ScrollToTop": {
+    "label": "Наверх"
+  },
   "Contact": {
     "title": "Контакты",
     "addressLabel": "Адрес",

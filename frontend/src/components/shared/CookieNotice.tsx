@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
-const STORAGE_KEY = "motostock_cookie_notice_dismissed";
+export const COOKIE_NOTICE_STORAGE_KEY = "motostock_cookie_notice_dismissed";
+// Same-tab localStorage writes don't fire a "storage" event (that only
+// fires in *other* tabs) — ScrollToTopButton listens for this to know when
+// to drop back down instead of staying clear of the dismissed banner.
+export const COOKIE_NOTICE_DISMISSED_EVENT = "motostock:cookie-notice-dismissed";
 
 // Every cookie this site sets (auth session, guest cart/wishlist/compare
 // identity, OAuth CSRF state) is strictly necessary — there's no
@@ -18,12 +22,13 @@ export function CookieNotice() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (!window.localStorage.getItem(STORAGE_KEY)) setVisible(true);
+    if (!window.localStorage.getItem(COOKIE_NOTICE_STORAGE_KEY)) setVisible(true);
   }, []);
 
   function dismiss() {
-    window.localStorage.setItem(STORAGE_KEY, "1");
+    window.localStorage.setItem(COOKIE_NOTICE_STORAGE_KEY, "1");
     setVisible(false);
+    window.dispatchEvent(new Event(COOKIE_NOTICE_DISMISSED_EVENT));
   }
 
   if (!visible) return null;

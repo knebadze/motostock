@@ -263,6 +263,9 @@
     "linkLabel": "დაწვრილებით",
     "acceptLabel": "გასაგებია"
   },
+  "ScrollToTop": {
+    "label": "თავში ასვლა"
+  },
   "Contact": {
     "title": "კონტაქტი",
     "addressLabel": "მისამართი",

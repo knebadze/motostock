@@ -1,6 +1,7 @@
 import { Header } from "@/components/shared/Header";
 import { Footer } from "@/components/shared/Footer";
 import { CookieNotice } from "@/components/shared/CookieNotice";
+import { ScrollToTopButton } from "@/components/shared/ScrollToTopButton";
 import {
   getCategoriesFromServer,
   getCurrentUserFromServer,
@@ -34,6 +35,7 @@ export default async function GuestLayout({
       <main className="flex-1">{children}</main>
       <Footer />
       <CookieNotice />
+      <ScrollToTopButton />
     </>
   );
 }

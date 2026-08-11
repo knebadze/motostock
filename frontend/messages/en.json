@@ -263,6 +263,9 @@
     "linkLabel": "Learn more",
     "acceptLabel": "Got it"
   },
+  "ScrollToTop": {
+    "label": "Scroll to top"
+  },
   "Contact": {
     "title": "Contact",
     "addressLabel": "Address",
