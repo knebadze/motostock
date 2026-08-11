@@ -126,7 +126,14 @@
     "placeError": "Couldn't place the order",
     "outOfStockItem": "Out of stock",
     "limitedStockItem": "Only {count} left in stock",
-    "stockIssueMessage": "Some items in your cart are no longer available in the requested quantity — reduce the quantity or remove them from your cart to place the order."
+    "stockIssueMessage": "Some items in your cart are no longer available in the requested quantity — reduce the quantity or remove them from your cart to place the order.",
+    "compatibilityHeading": "Check compatibility",
+    "compatibilityIntro": "Pick a vehicle from your garage, or enter its brand, model, and year — we'll check whether the products in your cart fit it.",
+    "compatibilityCheckButton": "Check",
+    "compatibilityChecking": "Checking...",
+    "compatibilityError": "Couldn't check compatibility",
+    "compatibleLabel": "Compatible",
+    "incompatibleLabel": "Not compatible"
   },
   "VehicleListingDetail": {
     "descriptionHeading": "Description",

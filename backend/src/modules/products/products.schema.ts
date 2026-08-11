@@ -151,6 +151,26 @@ export const popularProductsQuerySchema = z.object({
 });
 export type PopularProductsQuery = z.infer<typeof popularProductsQuerySchema>;
 
+// Checkout's "check compatibility" widget — a known set of cart product ids
+// against one vehicle, reusing buildVehicleCompatibilityWhere the same way
+// getProductDetail already does for buyTogether companions (see
+// products.service.ts's checkProductsCompatibility).
+export const checkCompatibilitySchema = registry.register(
+  "CheckCompatibilityInput",
+  z.object({
+    productIds: z.array(z.int().positive()).min(1).max(100),
+    vehicleCatalogId: z.int().positive(),
+  }),
+);
+export type CheckCompatibilityInput = z.infer<typeof checkCompatibilitySchema>;
+
+export const checkCompatibilityResponseSchema = registry.register(
+  "CheckCompatibilityResponse",
+  z.object({
+    compatibleProductIds: z.array(z.int()),
+  }),
+);
+
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
 
 const unitRefSchema = z.object({

@@ -6,6 +6,8 @@ import {
   getLookupItemsFromServer,
   getMyAddressesFromServer,
   getMyCartFromServer,
+  getMyGarageFromServer,
+  getVehicleCatalogFromServer,
 } from "@/lib/api/server";
 import { CheckoutManager } from "@/components/checkout/CheckoutManager";
 
@@ -34,12 +36,26 @@ export default async function CheckoutPage() {
     return null;
   }
 
+  // Only fetched when the cart actually has parts/accessories in it — the
+  // compatibility-check widget has nothing to check against a cart made up
+  // solely of vehicle listings.
+  const hasProductItems = cart.items.some((item) => item.itemType === "PRODUCT_VARIANT");
+  const [vehicleCatalog, garageVehicles] = hasProductItems
+    ? await Promise.all([getVehicleCatalogFromServer(), getMyGarageFromServer()])
+    : [[], []];
+
   const t = await getTranslations("Checkout");
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
       <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
-      <CheckoutManager addresses={addresses} cities={cities} />
+      <CheckoutManager
+        addresses={addresses}
+        cities={cities}
+        cart={cart}
+        vehicleCatalog={vehicleCatalog}
+        garageVehicles={garageVehicles}
+      />
     </div>
   );
 }

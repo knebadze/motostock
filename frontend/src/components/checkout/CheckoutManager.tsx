@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -16,19 +16,42 @@ import {
 } from "@/lib/api/orders";
 import type { Address } from "@/lib/api/addresses";
 import type { LookupItem } from "@/lib/api/lookups";
+import type { Cart } from "@/lib/api/cart";
+import type { GarageVehicle, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { LocalizedString } from "@/lib/api/categories";
 import { AddressFormModal } from "@/components/account/AddressFormModal";
+import { CompatibilityChecker } from "./CompatibilityChecker";
 
 export function CheckoutManager({
   addresses: initialAddresses,
   cities,
+  cart,
+  vehicleCatalog,
+  garageVehicles,
 }: {
   addresses: Address[];
   cities: LookupItem[];
+  cart: Cart;
+  vehicleCatalog: VehicleCatalogEntry[];
+  garageVehicles: GarageVehicle[];
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Checkout");
   const router = useRouter();
   const cityLabelKey = locale === "ka" ? "nameKa" : locale === "ru" ? "nameRu" : "nameEn";
+
+  // Deduped by product id — a cart can hold several variants of the same
+  // product (different size/color), but compatibility is a per-product
+  // concept (ProductFitment/ProductFitmentRule), not per-variant.
+  const cartProducts = useMemo(() => {
+    const byId = new Map<number, { id: number; name: LocalizedString }>();
+    for (const item of cart.items) {
+      if (item.itemType === "PRODUCT_VARIANT" && item.productVariant) {
+        byId.set(item.productVariant.product.id, item.productVariant.product);
+      }
+    }
+    return Array.from(byId.values());
+  }, [cart]);
 
   const [addresses, setAddresses] = useState(initialAddresses);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
@@ -235,6 +258,12 @@ export function CheckoutManager({
             })}
           </ul>
         </section>
+
+        <CompatibilityChecker
+          vehicleCatalog={vehicleCatalog}
+          garageVehicles={garageVehicles}
+          products={cartProducts}
+        />
       </div>
 
       <div className="flex h-fit flex-col gap-4">

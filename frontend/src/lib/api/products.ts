@@ -205,3 +205,16 @@ export async function uploadProductImage(id: number, file: File): Promise<Produc
   });
   return data.item;
 }
+
+// Checkout's "check compatibility" widget — which of these product ids fit
+// the given vehicle.
+export async function checkProductsCompatibility(
+  productIds: number[],
+  vehicleCatalogId: number,
+): Promise<number[]> {
+  const { data } = await apiClient.post<{ compatibleProductIds: number[] }>(
+    "/products/check-compatibility",
+    { productIds, vehicleCatalogId },
+  );
+  return data.compatibleProductIds;
+}

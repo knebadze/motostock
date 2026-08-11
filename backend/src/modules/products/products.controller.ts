@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
 import * as productsService from "./products.service.js";
 import type {
+  CheckCompatibilityInput,
   CreateProductInput,
   PopularProductsQuery,
   ProductDetailQuery,
@@ -21,6 +22,17 @@ export async function getPopular(
 ) {
   const items = await productsService.listPopularProducts(req.query.limit ?? 10);
   res.status(200).json({ items });
+}
+
+export async function checkCompatibility(
+  req: Request<unknown, unknown, CheckCompatibilityInput>,
+  res: Response,
+) {
+  const compatibleProductIds = await productsService.checkProductsCompatibility(
+    req.body.productIds,
+    req.body.vehicleCatalogId,
+  );
+  res.status(200).json({ compatibleProductIds });
 }
 
 export async function getOne(req: Request, res: Response) {

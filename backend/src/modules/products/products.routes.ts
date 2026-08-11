@@ -8,6 +8,8 @@ import { errorResponseSchema } from "../../docs/schemas.js";
 import { ROLES } from "../../lib/roles.js";
 import * as productsController from "./products.controller.js";
 import {
+  checkCompatibilitySchema,
+  checkCompatibilityResponseSchema,
   createProductSchema,
   popularProductsQuerySchema,
   productDetailQuerySchema,
@@ -35,6 +37,14 @@ productsRouter.get(
   validate(productSlugParamSchema, "params"),
   validate(productDetailQuerySchema, "query"),
   productsController.getBySlug,
+);
+// Checkout's "check compatibility" widget — POST (not GET) since the cart's
+// product id list can be arbitrarily long; no collision risk with /:id
+// regardless of declaration order (different HTTP method).
+productsRouter.post(
+  "/check-compatibility",
+  validate(checkCompatibilitySchema),
+  productsController.checkCompatibility,
 );
 productsRouter.get("/:id", validate(productIdParamSchema, "params"), productsController.getOne);
 
@@ -109,6 +119,20 @@ registry.registerPath({
       content: { "application/json": { schema: z.object({ item: productDetailResponseSchema }) } },
     },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/products/check-compatibility",
+  tags: ["Products"],
+  summary: "Check a set of product ids against one vehicle for fitment compatibility (public — checkout compatibility widget)",
+  request: { body: { content: { "application/json": { schema: checkCompatibilitySchema } } } },
+  responses: {
+    200: {
+      description: "Compatible product ids",
+      content: { "application/json": { schema: checkCompatibilityResponseSchema } },
+    },
   },
 });
 

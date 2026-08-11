@@ -446,6 +446,16 @@ export async function listPopularProducts(limit: number) {
     .map((row) => toResponse(row));
 }
 
+// Checkout's "check compatibility" widget — same buildVehicleCompatibilityWhere
+// + findIdsMatchingWhere combo getProductDetail already uses for buyTogether
+// companions, just exposed directly for an arbitrary caller-supplied id set
+// (the shopper's cart) instead of one product's fixed companion list.
+export async function checkProductsCompatibility(productIds: number[], vehicleCatalogId: number) {
+  const where = await buildVehicleCompatibilityWhere(vehicleCatalogId);
+  const rows = await productsRepository.findIdsMatchingWhere(productIds, where);
+  return rows.map((row) => row.id);
+}
+
 export async function getProduct(id: number) {
   const row = await productsRepository.findById(id);
   if (!row) {
