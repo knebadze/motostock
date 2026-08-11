@@ -17,6 +17,7 @@ import {
   ordersIcon,
   productsIcon,
   promoCodesIcon,
+  settingsIcon,
   statusesIcon,
   termsIcon,
   usersIcon,
@@ -39,15 +40,9 @@ export const adminNav: AdminNavSection[] = [
     label: "მთავარი",
     items: [
       { label: "დეშბორდი", href: "/admin", icon: dashboardIcon },
-      { label: "კომპანიის ინფორმაცია", href: "/admin/company-info", icon: companyInfoIcon },
-      { label: "წესები და პირობები", href: "/admin/terms", icon: termsIcon },
-      { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon },
       { label: "შეკვეთები", href: "/admin/orders", icon: ordersIcon },
-      { label: "იმეილის შაბლონები", href: "/admin/email-templates", icon: emailTemplatesIcon },
+      { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon },
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },
-      { label: "მთავარი გვერდის სერვისი", href: "/admin/hero-slides", icon: heroSlidesIcon },
-      { label: "მასობრივი ფასდაკლებები", href: "/admin/bulk-discounts", icon: discountRulesIcon },
-      { label: "პრომოკოდები", href: "/admin/promo-codes", icon: promoCodesIcon },
     ],
   },
   {
@@ -81,6 +76,25 @@ export const adminNav: AdminNavSection[] = [
       { label: "საერთო კლასიფიკატორები", href: "/admin/general-classifiers", icon: classifierIcon },
       { label: "ტრანსპორტის კლასიფიკატორები", href: "/admin/classifiers", icon: classifierIcon },
       { label: "სტატუსები", href: "/admin/statuses", icon: statusesIcon },
+    ],
+  },
+  {
+    label: "მარკეტინგი",
+    items: [
+      { label: "მთავარი გვერდის სერვისი", href: "/admin/hero-slides", icon: heroSlidesIcon },
+      { label: "მასობრივი ფასდაკლებები", href: "/admin/bulk-discounts", icon: discountRulesIcon },
+      { label: "პრომოკოდები", href: "/admin/promo-codes", icon: promoCodesIcon },
+    ],
+  },
+  // One-time setup content — filled in once and rarely touched again, so
+  // it belongs at the bottom, out of the way of daily-use sections above.
+  {
+    label: "საიტის მართვა",
+    items: [
+      { label: "კომპანიის ინფორმაცია", href: "/admin/company-info", icon: companyInfoIcon },
+      { label: "წესები და პირობები", href: "/admin/terms", icon: termsIcon },
+      { label: "იმეილის შაბლონები", href: "/admin/email-templates", icon: emailTemplatesIcon },
+      { label: "პარამეტრები", href: "/admin/settings", icon: settingsIcon },
     ],
   },
 ];
