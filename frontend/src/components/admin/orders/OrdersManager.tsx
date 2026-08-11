@@ -15,6 +15,7 @@ import {
 } from "@/lib/api/orders";
 import type { LookupItem } from "@/lib/api/lookups";
 import { OrderDetailModal } from "./OrderDetailModal";
+import { OrderStatusBadge } from "./OrderStatusBadge";
 
 const FULFILLMENT_LABELS: Record<OrderFulfillmentMethod, string> = {
   CARD: "ბარათით გადახდა",
@@ -25,29 +26,6 @@ const FULFILLMENT_LABELS: Record<OrderFulfillmentMethod, string> = {
 const FULFILLMENT_OPTIONS = (Object.keys(FULFILLMENT_LABELS) as OrderFulfillmentMethod[]).map(
   (value) => ({ value, label: FULFILLMENT_LABELS[value] }),
 );
-
-// Status keys come from the seeded "order-statuses" lookup (see
-// prisma/seed.ts's ORDER_STATUSES) — falls back to a neutral badge for any
-// status an admin later renames/adds via General Classifiers.
-const STATUS_BADGE_CLASSES: Record<string, string> = {
-  PENDING: "bg-muted text-muted-foreground",
-  CONFIRMED: "bg-blue-500/15 text-blue-600",
-  SHIPPED: "bg-amber-500/15 text-amber-600",
-  DELIVERED: "bg-green-500/15 text-green-600",
-  CANCELLED: "bg-red-500/15 text-red-600",
-};
-
-function statusBadge(status: AdminOrderSummary["status"]) {
-  return (
-    <span
-      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-        STATUS_BADGE_CLASSES[status.key] ?? "bg-muted text-muted-foreground"
-      }`}
-    >
-      {status.nameKa}
-    </span>
-  );
-}
 
 const columns: DataTableColumn<AdminOrderSummary>[] = [
   { header: "კოდი", render: (order) => order.orderCode },
@@ -62,7 +40,7 @@ const columns: DataTableColumn<AdminOrderSummary>[] = [
       </div>
     ),
   },
-  { header: "სტატუსი", render: (order) => statusBadge(order.status) },
+  { header: "სტატუსი", render: (order) => <OrderStatusBadge status={order.status} /> },
   { header: "მიწოდება", render: (order) => FULFILLMENT_LABELS[order.fulfillmentMethod] },
   {
     header: "თანხა",

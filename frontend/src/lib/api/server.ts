@@ -27,6 +27,7 @@ import type { WishlistItem } from "./wishlist";
 import type { CompareItem } from "./compare";
 import type { Cart } from "./cart";
 import type { AdminOrderSummary, Order, OrderSummary } from "./orders";
+import type { DashboardStats } from "./dashboard";
 import type { CompatibilityItem } from "./compatibility";
 import type { AdminProductBuyTogether } from "./product-buy-together";
 import type { CompanyInfo, WeekDay } from "./company-info";
@@ -548,6 +549,33 @@ export async function getOrdersFromServer(): Promise<AdminOrderSummary[]> {
     return data.orders;
   } catch {
     return [];
+  }
+}
+
+const EMPTY_DASHBOARD_STATS: DashboardStats = {
+  counts: {
+    totalOrders: 0,
+    totalUsers: 0,
+    totalProducts: 0,
+    totalVehicleListings: 0,
+    activePromoCodes: 0,
+    lowStockCount: 0,
+  },
+  revenueLast30Days: 0,
+  ordersByStatus: [],
+  recentOrders: [],
+  lowStockItems: [],
+};
+
+export async function getDashboardStatsFromServer(): Promise<DashboardStats> {
+  const headers = await authHeaders();
+  if (!headers) return EMPTY_DASHBOARD_STATS;
+
+  try {
+    const { data } = await apiClient.get<DashboardStats>("/dashboard/stats", { headers });
+    return data;
+  } catch {
+    return EMPTY_DASHBOARD_STATS;
   }
 }
 

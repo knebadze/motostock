@@ -11,6 +11,7 @@ import {
   discountRulesIcon,
   emailTemplatesIcon,
   filtersIcon,
+  finaSyncIcon,
   heroSlidesIcon,
   listingIcon,
   modelsIcon,
@@ -43,6 +44,7 @@ export const adminNav: AdminNavSection[] = [
       { label: "შეკვეთები", href: "/admin/orders", icon: ordersIcon },
       { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon },
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },
+      { label: "FINA სინქრონიზაცია", href: "/admin/fina-sync", icon: finaSyncIcon },
     ],
   },
   {

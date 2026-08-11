@@ -55,6 +55,7 @@ import { bulkVehicleListingDiscountsRouter } from "./modules/bulk-vehicle-listin
 import { promoCodesRouter } from "./modules/promo-codes/promo-codes.routes.js";
 import { ordersRouter } from "./modules/orders/orders.routes.js";
 import { compatibilityRouter } from "./modules/compatibility/compatibility.routes.js";
+import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
 import { globalRateLimit } from "./middleware/rateLimit.middleware.js";
@@ -128,6 +129,7 @@ app.use("/api/bulk-vehicle-listing-discounts", bulkVehicleListingDiscountsRouter
 app.use("/api/promo-codes", promoCodesRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/compatibility", compatibilityRouter);
+app.use("/api/dashboard", dashboardRouter);
 
 // registerPath() calls above already ran as a side effect of importing the
 // routers, so the registry is fully populated by the time this generates.

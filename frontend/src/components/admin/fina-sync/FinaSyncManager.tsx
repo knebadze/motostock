@@ -6,23 +6,7 @@ import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { getFinaSyncRuns, triggerFinaSync, type FinaSyncRun } from "@/lib/api/fina-sync";
 import { ApiRequestError } from "@/lib/api/client";
 import { formatDateTime } from "@/lib/format";
-
-const TRIGGER_LABEL: Record<FinaSyncRun["trigger"], string> = {
-  SCHEDULED: "ავტომატური",
-  MANUAL: "ხელით",
-};
-
-const STATUS_STYLE: Record<FinaSyncRun["status"], string> = {
-  SUCCESS: "bg-primary/15 text-primary",
-  PARTIAL: "bg-amber-500/15 text-amber-600",
-  FAILED: "bg-red-500/15 text-red-600",
-};
-
-const STATUS_LABEL: Record<FinaSyncRun["status"], string> = {
-  SUCCESS: "წარმატებული",
-  PARTIAL: "ნაწილობრივი",
-  FAILED: "წარუმატებელი",
-};
+import { FINA_SYNC_TRIGGER_LABEL, FinaSyncStatusBadge } from "./FinaSyncStatusBadge";
 
 export function FinaSyncManager({ initialRuns }: { initialRuns: FinaSyncRun[] }) {
   const [runs, setRuns] = useState(initialRuns);
@@ -51,15 +35,8 @@ export function FinaSyncManager({ initialRuns }: { initialRuns: FinaSyncRun[] })
 
   const columns: DataTableColumn<FinaSyncRun>[] = [
     { header: "დრო", render: (run) => formatDateTime(run.startedAt) },
-    { header: "ტიპი", render: (run) => TRIGGER_LABEL[run.trigger] },
-    {
-      header: "სტატუსი",
-      render: (run) => (
-        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLE[run.status]}`}>
-          {STATUS_LABEL[run.status]}
-        </span>
-      ),
-    },
+    { header: "ტიპი", render: (run) => FINA_SYNC_TRIGGER_LABEL[run.trigger] },
+    { header: "სტატუსი", render: (run) => <FinaSyncStatusBadge status={run.status} /> },
     {
       header: "ვარიანტები",
       render: (run) => `${run.variantsUpdated} / ${run.variantsChecked}`,
