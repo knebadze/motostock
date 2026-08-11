@@ -29,6 +29,18 @@ function failureRedirect(res: Response) {
   res.redirect(`${env.FRONTEND_ORIGIN}/login?error=oauth_failed`);
 }
 
+// Hashing both sides to a fixed 32-byte digest first means
+// crypto.timingSafeEqual never has to branch on the two inputs' raw
+// lengths (it throws on a length mismatch) — comparing digests instead of
+// the raw state strings keeps this constant-time regardless of what an
+// attacker sends as ?state=.
+function statesMatch(received: string | undefined, expected: string | undefined): boolean {
+  if (!received || !expected) return false;
+  const receivedHash = crypto.createHash("sha256").update(received).digest();
+  const expectedHash = crypto.createHash("sha256").update(expected).digest();
+  return crypto.timingSafeEqual(receivedHash, expectedHash);
+}
+
 export function redirectToGoogle(req: Request, res: Response) {
   if (!isGoogleConfigured()) {
     throw new ApiError(400, "Google-ით ავტორიზაცია არ არის კონფიგურირებული");
@@ -52,7 +64,7 @@ export async function handleGoogleCallback(req: Request, res: Response) {
   const cookieState = req.cookies?.[STATE_COOKIE_NAME];
   res.clearCookie(STATE_COOKIE_NAME);
 
-  if (!parsed.success || !parsed.data.code || !parsed.data.state || parsed.data.state !== cookieState) {
+  if (!parsed.success || !parsed.data.code || !statesMatch(parsed.data.state, cookieState)) {
     failureRedirect(res);
     return;
   }
@@ -72,7 +84,7 @@ export async function handleFacebookCallback(req: Request, res: Response) {
   const cookieState = req.cookies?.[STATE_COOKIE_NAME];
   res.clearCookie(STATE_COOKIE_NAME);
 
-  if (!parsed.success || !parsed.data.code || !parsed.data.state || parsed.data.state !== cookieState) {
+  if (!parsed.success || !parsed.data.code || !statesMatch(parsed.data.state, cookieState)) {
     failureRedirect(res);
     return;
   }

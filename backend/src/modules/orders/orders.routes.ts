@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
+import { checkoutRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
@@ -28,8 +29,18 @@ export const ordersRouter = Router();
 // different auth requirements, which doesn't apply here.
 ordersRouter.use(requireAuth);
 
-ordersRouter.post("/checkout/preview", validate(checkoutInputSchema), ordersController.preview);
-ordersRouter.post("/checkout", validate(checkoutInputSchema), ordersController.checkout);
+ordersRouter.post(
+  "/checkout/preview",
+  checkoutRateLimit,
+  validate(checkoutInputSchema),
+  ordersController.preview,
+);
+ordersRouter.post(
+  "/checkout",
+  checkoutRateLimit,
+  validate(checkoutInputSchema),
+  ordersController.checkout,
+);
 ordersRouter.get("/me", ordersController.list);
 ordersRouter.get("/me/:id", validate(orderIdParamSchema, "params"), ordersController.getOne);
 

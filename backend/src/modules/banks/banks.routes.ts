@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
+import { uploadRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import { imageUpload } from "../../middleware/upload.middleware.js";
 import { registry } from "../../docs/registry.js";
@@ -36,6 +37,7 @@ banksRouter.patch(
 );
 banksRouter.post(
   "/:id/logo",
+  uploadRateLimit,
   validate(bankIdParamSchema, "params"),
   imageUpload().single("logo"),
   banksController.uploadLogo,
