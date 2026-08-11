@@ -44,7 +44,14 @@ export async function getDashboardStats() {
     prisma.product.count(),
     prisma.vehicleListing.count(),
     prisma.promoCode.count({ where: { isActive: true, startDate: { lte: now }, endDate: { gte: now } } }),
-    prisma.order.aggregate({ _sum: { total: true }, where: { createdAt: { gte: revenueWindowStart } } }),
+    // Excludes CANCELLED orders — otherwise a cancelled order still counts
+    // toward "revenue" for the rest of its 30-day window, overstating what
+    // actually came in. Filtered by the status's stable `key` (statuses are
+    // admin-editable rows, not a fixed enum) rather than a hardcoded id.
+    prisma.order.aggregate({
+      _sum: { total: true },
+      where: { createdAt: { gte: revenueWindowStart }, status: { key: { not: "CANCELLED" } } },
+    }),
     prisma.order.groupBy({ by: ["statusId"], _count: { _all: true } }),
     prisma.orderStatus.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.order.findMany({

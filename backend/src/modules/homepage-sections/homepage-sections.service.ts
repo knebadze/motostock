@@ -102,37 +102,50 @@ function toResponse(row: HomepageSectionRow) {
 // HomepageSectionType) on first access instead of a seed script, same
 // pattern as CompanyInfo's getOrCreateCompanyInfo. Admin never
 // creates/deletes these rows directly.
-async function ensureBootstrapped(): Promise<void> {
-  for (const type of ALL_TYPES) {
-    const existing = await homepageSectionsRepository.findByType(type);
-    if (existing) continue;
+//
+// Single findMany() up front instead of one findUnique()-per-type lookup —
+// in steady state (the overwhelmingly common case, once every type
+// exists) this is one query instead of up to seven sequential round
+// trips, which matters here since listPublicHomepageSections runs on
+// every guest homepage load. Always checks against the FULL set (not just
+// active rows) so a section an admin deactivated is never mistaken for
+// "missing" and recreated (which would also crash on the type's unique
+// constraint).
+async function ensureBootstrapped(): Promise<HomepageSectionRow[]> {
+  const rows = await homepageSectionsRepository.findMany();
+  const existingTypes = new Set(rows.map((row) => row.type));
+  const missingTypes = ALL_TYPES.filter((type) => !existingTypes.has(type));
+  if (missingTypes.length === 0) return rows;
 
-    const defaults = DEFAULTS[type];
-    const isMixed = MIXED_TYPES.includes(type);
-    await homepageSectionsRepository.create({
-      type,
-      titleKa: defaults.titleKa,
-      titleEn: defaults.titleEn,
-      titleRu: defaults.titleRu,
-      isActive: true,
-      sortOrder: defaults.sortOrder,
-      itemCount: 10,
-      productItemCount: isMixed ? 5 : null,
-      vehicleItemCount: isMixed ? 5 : null,
-    });
-  }
+  const created = await Promise.all(
+    missingTypes.map((type) => {
+      const defaults = DEFAULTS[type];
+      const isMixed = MIXED_TYPES.includes(type);
+      return homepageSectionsRepository.create({
+        type,
+        titleKa: defaults.titleKa,
+        titleEn: defaults.titleEn,
+        titleRu: defaults.titleRu,
+        isActive: true,
+        sortOrder: defaults.sortOrder,
+        itemCount: 10,
+        productItemCount: isMixed ? 5 : null,
+        vehicleItemCount: isMixed ? 5 : null,
+      });
+    }),
+  );
+
+  return [...rows, ...created].sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 export async function listHomepageSections() {
-  await ensureBootstrapped();
-  const rows = await homepageSectionsRepository.findMany();
+  const rows = await ensureBootstrapped();
   return rows.map(toResponse);
 }
 
 export async function listPublicHomepageSections() {
-  await ensureBootstrapped();
-  const rows = await homepageSectionsRepository.findMany(true);
-  return rows.map(toResponse);
+  const rows = await ensureBootstrapped();
+  return rows.filter((row) => row.isActive).map(toResponse);
 }
 
 export async function updateHomepageSection(id: number, input: UpdateHomepageSectionInput) {

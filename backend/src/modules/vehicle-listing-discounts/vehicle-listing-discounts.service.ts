@@ -58,6 +58,15 @@ export async function createDiscount(
   if (endDate <= startDate) {
     throw new ApiError(400, "დასრულების თარიღი უნდა იყოს დაწყების თარიღის შემდეგ");
   }
+  // Catches an obvious typo (e.g. a wrong year) rather than silently
+  // accepting an already-expired discount — endDate is a calendar day, so
+  // "today" still passes (the active-window check elsewhere treats it as
+  // valid through 23:59:59 today, not just up to the current instant).
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  if (endDate < today) {
+    throw new ApiError(400, "დასრულების თარიღი არ უნდა იყოს წარსულში");
+  }
 
   const row = await vehicleListingDiscountsRepository.create({
     vehicleListingId,

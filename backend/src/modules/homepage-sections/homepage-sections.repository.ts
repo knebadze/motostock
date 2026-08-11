@@ -22,10 +22,6 @@ export const homepageSectionsRepository = {
     });
   },
 
-  findByType(type: HomepageSectionType) {
-    return prisma.homepageSection.findUnique({ where: { type } });
-  },
-
   findById(id: number) {
     return prisma.homepageSection.findUnique({ where: { id } });
   },
