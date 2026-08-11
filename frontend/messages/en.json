@@ -258,6 +258,22 @@
     "empty": "Content coming soon.",
     "loading": "Loading..."
   },
+  "About": {
+    "title": "About Us",
+    "introHeading": "Our story",
+    "introParagraph1": "MotoStock was founded by motorcycle enthusiasts with one simple goal — make quality parts, accessories, and vehicles accessible to everyone who loves time spent on the road.",
+    "introParagraph2": "Over the years our team has built up deep expertise in the field, so today we can offer a choice you can trust — vetted brands, precise compatibility, and service you can rely on.",
+    "galleryHeading": "Our workshop",
+    "whyUsHeading": "Why choose us",
+    "whyUs1Title": "Quality",
+    "whyUs1Description": "We only offer genuine, thoroughly checked products.",
+    "whyUs2Title": "Fast delivery",
+    "whyUs2Description": "Orders are processed quickly and shipped on time.",
+    "whyUs3Title": "Experience",
+    "whyUs3Description": "Years of experience in motorcycle gear and accessories.",
+    "whyUs4Title": "Support",
+    "whyUs4Description": "Always available for questions and advice."
+  },
   "CookieNotice": {
     "message": "This site only uses strictly necessary cookies (sign-in, cart, wishlist) to work properly.",
     "linkLabel": "Learn more",
