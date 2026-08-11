@@ -78,6 +78,8 @@
     "buyTogetherOutOfStock": "ყველა პროდუქტი მარაგში ამოიწურა",
     "buyTogetherPartiallyAdded": "ზოგიერთი პროდუქტი მარაგში არ იყო და ვერ დაემატა",
     "similarProductsHeading": "მსგავსი პროდუქტები",
+    "frequentlyBoughtTogetherHeading": "ხშირად ერთად ყიდულობენ",
+    "viewedTogetherHeading": "ასევე ნახეს",
     "selectSizeLabel": "ზომა",
     "selectColorLabel": "ფერი",
     "outOfStock": "არ არის მარაგში",

@@ -710,6 +710,122 @@ export async function getProductDetailFromServer(
   }
 }
 
+// Product detail page's "similar products" section — replaces the old
+// naive "everything else in the same category" slice with the algorithmic,
+// fitment-overlap-ranked list (see recommendations.service.ts).
+export async function getSimilarProductsFromServer(
+  productId: number,
+  vehicleCatalogId?: string,
+  limit?: number,
+): Promise<Product[]> {
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ items: Product[] }>(
+      `/products/${productId}/recommendations/similar`,
+      { headers, params: { vehicleCatalogId: vehicleCatalogId || undefined, limit } },
+    );
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+// Product detail page's algorithmic "frequently bought together" — a
+// fallback shown when the admin hasn't curated a buyTogether list for this
+// product (see FrequentlyBoughtTogether.tsx).
+export async function getFrequentlyBoughtTogetherFromServer(
+  productId: number,
+  vehicleCatalogId?: string,
+  limit?: number,
+): Promise<Product[]> {
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ items: Product[] }>(
+      `/products/${productId}/recommendations/frequently-bought-together`,
+      { headers, params: { vehicleCatalogId: vehicleCatalogId || undefined, limit } },
+    );
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+// Product detail page's algorithmic "customers who viewed this also
+// viewed" — view-based co-occurrence, independent of buyTogether/FBT.
+export async function getViewedTogetherFromServer(
+  productId: number,
+  vehicleCatalogId?: string,
+  limit?: number,
+): Promise<Product[]> {
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ items: Product[] }>(
+      `/products/${productId}/recommendations/viewed-together`,
+      { headers, params: { vehicleCatalogId: vehicleCatalogId || undefined, limit } },
+    );
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+// Homepage "recently viewed" section (RECENTLY_VIEWED) — works for guests
+// too (the backend always resolves an owner, minting a guest-id cookie if
+// needed), unlike getRecommendedForMeFromServer's auth-only gate.
+export async function getRecentlyViewedFromServer(limit?: number): Promise<Product[]> {
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ items: Product[] }>("/users/me/recently-viewed", {
+      headers,
+      params: { limit },
+    });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+// Homepage "popular for your vehicle" section (POPULAR_FOR_VEHICLE) — the
+// caller skips this entirely when there's no SELECTED_VEHICLE_COOKIE, same
+// as it does for getProductDetailFromServer's vehicleCatalogId.
+export async function getPopularForVehicleFromServer(
+  vehicleCatalogId: string,
+  limit?: number,
+): Promise<Product[]> {
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ items: Product[] }>("/recommendations/popular-for-vehicle", {
+      headers,
+      params: { vehicleCatalogId, limit },
+    });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+// Homepage "recommended for you" section (RECOMMENDED_FOR_YOU) — auth-gated
+// like getMyGarageFromServer; guests never even reach the API call.
+export async function getRecommendedForMeFromServer(limit?: number): Promise<Product[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: Product[] }>("/recommendations/for-me", {
+      headers,
+      params: { limit },
+    });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
 export async function getProductFromServer(id: number): Promise<Product | null> {
   const headers = await authHeaders();
   if (!headers) return null;

@@ -78,6 +78,8 @@
     "buyTogetherOutOfStock": "Все товары закончились",
     "buyTogetherPartiallyAdded": "Некоторые товары закончились и не были добавлены",
     "similarProductsHeading": "Похожие товары",
+    "frequentlyBoughtTogetherHeading": "Часто покупают вместе",
+    "viewedTogetherHeading": "С этим товаром также просматривают",
     "selectSizeLabel": "Размер",
     "selectColorLabel": "Цвет",
     "outOfStock": "Нет в наличии",

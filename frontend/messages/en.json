@@ -78,6 +78,8 @@
     "buyTogetherOutOfStock": "All items are out of stock",
     "buyTogetherPartiallyAdded": "Some items were out of stock and couldn't be added",
     "similarProductsHeading": "Similar products",
+    "frequentlyBoughtTogetherHeading": "Frequently bought together",
+    "viewedTogetherHeading": "Customers who viewed this also viewed",
     "selectSizeLabel": "Size",
     "selectColorLabel": "Color",
     "outOfStock": "Out of stock",

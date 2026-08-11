@@ -4,10 +4,12 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
   getCategoriesFromServer,
+  getFrequentlyBoughtTogetherFromServer,
   getProductDetailFromServer,
-  getProductsFromServer,
+  getSimilarProductsFromServer,
   getVehicleListingFromServer,
   getVehicleListingsFromServer,
+  getViewedTogetherFromServer,
 } from "@/lib/api/server";
 import { getAncestorChain, isVehicleCategory } from "@/lib/categories-tree";
 import { buildCanonicalUrl, getAlternateLanguages, jsonLdScriptProps } from "@/lib/seo";
@@ -192,10 +194,17 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
   const productCategory = categories.find((item) => item.slug === product.category.slug);
   const breadcrumbChain = productCategory ? getAncestorChain(categories, productCategory.id) : [];
 
-  const categoryProducts = await getProductsFromServer(product.category.id);
-  const similarProducts = categoryProducts
-    .filter((item) => item.id !== product.id)
-    .slice(0, 12);
+  // Algorithmic FBT is only fetched as a fallback for when the admin hasn't
+  // curated a buyTogether list for this product (see BuyTogether.tsx vs the
+  // new FrequentlyBoughtTogether.tsx) — no point paying for the extra query
+  // when there's already a curated list to show.
+  const [similarProducts, frequentlyBoughtTogether, viewedTogether] = await Promise.all([
+    getSimilarProductsFromServer(product.id, selectedVehicleCatalogId),
+    product.buyTogether.length === 0
+      ? getFrequentlyBoughtTogetherFromServer(product.id, selectedVehicleCatalogId)
+      : Promise.resolve([]),
+    getViewedTogetherFromServer(product.id, selectedVehicleCatalogId),
+  ]);
 
   const pathname = `/${product.category.slug}/${itemSlug}`;
   const canonicalUrl = getAlternateLanguages(pathname)[locale];
@@ -267,6 +276,8 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
         product={product}
         breadcrumbChain={breadcrumbChain}
         similarProducts={similarProducts}
+        frequentlyBoughtTogether={frequentlyBoughtTogether}
+        viewedTogether={viewedTogether}
       />
     </>
   );

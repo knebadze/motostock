@@ -20,6 +20,8 @@ import { VariantPicker } from "./VariantPicker";
 import { ProductSpecs } from "./ProductSpecs";
 import { SimilarProducts } from "./SimilarProducts";
 import { BuyTogether } from "./BuyTogether";
+import { FrequentlyBoughtTogether } from "./FrequentlyBoughtTogether";
+import { ViewedTogether } from "./ViewedTogether";
 
 // The thumbnail strip always shows every photo across every variant (plus
 // the product's own image as a fallback) so it stays populated and browsable
@@ -81,10 +83,14 @@ export function ProductDetailPage({
   product,
   breadcrumbChain,
   similarProducts,
+  frequentlyBoughtTogether,
+  viewedTogether,
 }: {
   product: ProductDetail;
   breadcrumbChain: Category[];
   similarProducts: Product[];
+  frequentlyBoughtTogether: Product[];
+  viewedTogether: Product[];
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("ProductDetail");
@@ -218,6 +224,8 @@ export function ProductDetailPage({
       </div>
 
       <BuyTogether product={product} />
+      <FrequentlyBoughtTogether products={frequentlyBoughtTogether} />
+      <ViewedTogether products={viewedTogether} />
 
       {description && (
         <section className="mt-14 border-t border-border pt-8">

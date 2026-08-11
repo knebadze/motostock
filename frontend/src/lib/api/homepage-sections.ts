@@ -8,7 +8,10 @@ export type HomepageSectionType =
   | "POPULAR_VEHICLES"
   | "DISCOUNTED_MIXED"
   | "POPULAR_MIXED"
-  | "CATEGORIES";
+  | "CATEGORIES"
+  | "POPULAR_FOR_VEHICLE"
+  | "RECOMMENDED_FOR_YOU"
+  | "RECENTLY_VIEWED";
 
 export type HomepageSection = {
   id: number;

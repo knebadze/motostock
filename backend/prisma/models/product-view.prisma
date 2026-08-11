@@ -1,0 +1,36 @@
+// Per-visitor product view tracking — recommendation Phase 2's data source
+// for "recently viewed" and view-based co-occurrence ("customers who viewed
+// this also viewed"), and a third (lightest-weight) affinity signal for
+// recommendations.service.ts's listRecommendedForUser. Distinct from
+// Product.viewCount, which is a single global counter with no per-visitor
+// breakdown.
+//
+// One row per (visitor, product) — an upsert target, not an append-only
+// event log, so the table stays bounded (num visitors x num distinct
+// products each has viewed) instead of growing one row per page load
+// forever. `updatedAt` (bumped on every repeat view) is what "recently
+// viewed" sorts by; `viewCount` is kept mainly as a future ranking signal.
+//
+// Owner is dual-nullable exactly like CartItem/WishlistItem: userId for a
+// logged-in account, guestId for the shared anonymous-visitor cookie (see
+// guest-identity.middleware.ts) — no settings gate on guest tracking (unlike
+// guest wishlist access), since this is a passive background signal, not a
+// user-facing feature an admin would need to switch off.
+model ProductView {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestId   String?
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  viewCount Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
+  @@unique([guestId, productId])
+  @@index([userId])
+  @@index([guestId])
+  @@index([productId])
+  @@schema("dbo")
+}

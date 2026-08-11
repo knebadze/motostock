@@ -1,14 +1,19 @@
+import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { SELECTED_VEHICLE_COOKIE } from "@/lib/vehicle-selection";
 import {
   getCategoriesFromServer,
   getMyGarageFromServer,
   getOnSaleProductsFromServer,
   getOnSaleVehicleListingsFromServer,
+  getPopularForVehicleFromServer,
   getPopularProductsFromServer,
   getPopularVehicleListingsFromServer,
   getPublicHeroSlidesFromServer,
   getPublicHomepageSectionsFromServer,
+  getRecentlyViewedFromServer,
+  getRecommendedForMeFromServer,
   getVehicleCatalogFromServer,
 } from "@/lib/api/server";
 import { HeroSlider } from "@/components/home/HeroSlider";
@@ -38,6 +43,11 @@ export default async function HomePage({
   const activeSections = [...sections]
     .filter((section) => section.isActive)
     .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  // Shared "shop-filter" vehicle pick (see vehicle-selection.ts) — read once
+  // here for the POPULAR_FOR_VEHICLE section below, same cookie the item
+  // detail/category pages already read.
+  const selectedVehicleCatalogId = (await cookies()).get(SELECTED_VEHICLE_COOKIE)?.value;
 
   // Only fetched when actually needed — most homepage loads won't have a
   // CATEGORY_FILTER hero slide or an active CATEGORIES section configured,
@@ -122,6 +132,40 @@ export default async function HomePage({
                 title={title}
                 categories={topLevelCategories.slice(0, section.itemCount)}
                 locale={localeKey}
+              />
+            ),
+          };
+        // Per-visitor, not global like every case above — renders nothing
+        // (via ProductsCarouselSection's own empty-state) rather than
+        // falling back to a generic list under a personalized heading when
+        // there's no vehicle selected/no signal for this particular visitor.
+        case "POPULAR_FOR_VEHICLE":
+          return {
+            key: section.id,
+            node: selectedVehicleCatalogId ? (
+              <ProductsCarouselSection
+                title={title}
+                products={await getPopularForVehicleFromServer(selectedVehicleCatalogId, section.itemCount)}
+              />
+            ) : null,
+          };
+        case "RECOMMENDED_FOR_YOU":
+          return {
+            key: section.id,
+            node: (
+              <ProductsCarouselSection
+                title={title}
+                products={await getRecommendedForMeFromServer(section.itemCount)}
+              />
+            ),
+          };
+        case "RECENTLY_VIEWED":
+          return {
+            key: section.id,
+            node: (
+              <ProductsCarouselSection
+                title={title}
+                products={await getRecentlyViewedFromServer(section.itemCount)}
               />
             ),
           };

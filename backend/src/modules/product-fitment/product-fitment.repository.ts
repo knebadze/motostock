@@ -41,4 +41,26 @@ export const productFitmentRepository = {
   delete(id: number) {
     return prisma.productFitment.delete({ where: { id } });
   },
+
+  // How many of each candidate product's explicit fitment rows land inside
+  // `vehicleCatalogIds` — a cheap, N+1-free ranking signal for "similar
+  // products" (more shared vehicles = more similar). Deliberately only
+  // counts explicit ProductFitment rows, not ProductFitmentRule matches:
+  // it's a soft ranking tiebreak, not the hard compatibility filter (that's
+  // buildVehicleCompatibilityWhere, which does account for rules), so the
+  // extra cost of resolving rules per candidate isn't worth it here.
+  async findOverlapCounts(
+    candidateProductIds: number[],
+    vehicleCatalogIds: number[],
+  ): Promise<Map<number, number>> {
+    if (candidateProductIds.length === 0 || vehicleCatalogIds.length === 0) return new Map();
+
+    const grouped = await prisma.productFitment.groupBy({
+      by: ["productId"],
+      where: { productId: { in: candidateProductIds }, vehicleCatalogId: { in: vehicleCatalogIds } },
+      _count: { vehicleCatalogId: true },
+    });
+
+    return new Map(grouped.map((row) => [row.productId, row._count.vehicleCatalogId]));
+  },
 };

@@ -69,6 +69,24 @@ const DEFAULTS: Record<
     titleRu: "Категории",
     sortOrder: 6,
   },
+  POPULAR_FOR_VEHICLE: {
+    titleKa: "პოპულარული თქვენი ტრანსპორტისთვის",
+    titleEn: "Popular For Your Vehicle",
+    titleRu: "Популярное для вашего транспорта",
+    sortOrder: 7,
+  },
+  RECOMMENDED_FOR_YOU: {
+    titleKa: "რეკომენდებული თქვენთვის",
+    titleEn: "Recommended For You",
+    titleRu: "Рекомендовано для вас",
+    sortOrder: 8,
+  },
+  RECENTLY_VIEWED: {
+    titleKa: "ბოლოს ნანახი",
+    titleEn: "Recently Viewed",
+    titleRu: "Недавно просмотренные",
+    sortOrder: 9,
+  },
 };
 
 const MIXED_TYPES: HomepageSectionType[] = ["DISCOUNTED_MIXED", "POPULAR_MIXED"];
@@ -81,6 +99,9 @@ const ALL_TYPES: HomepageSectionType[] = [
   "DISCOUNTED_MIXED",
   "POPULAR_MIXED",
   "CATEGORIES",
+  "POPULAR_FOR_VEHICLE",
+  "RECOMMENDED_FOR_YOU",
+  "RECENTLY_VIEWED",
 ];
 
 function toResponse(row: HomepageSectionRow) {

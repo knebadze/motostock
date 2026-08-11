@@ -6,6 +6,20 @@ enum HomepageSectionType {
   DISCOUNTED_MIXED
   POPULAR_MIXED
   CATEGORIES
+  // Algorithmic — products compatible with the shopper's SELECTED_VEHICLE_COOKIE
+  // pick, ranked by the same order-quantity popularity as POPULAR_PRODUCTS.
+  // Resolved per-visitor at read time (unlike every type above, which is
+  // identical for everyone), so it renders nothing when no vehicle is
+  // selected rather than falling back to a misleadingly-labeled global list.
+  POPULAR_FOR_VEHICLE
+  // Algorithmic — content-based, per-user: ranks products by category/brand
+  // affinity from the shopper's own order + wishlist history, further
+  // narrowed to their garage vehicles' compatible set when they have any.
+  // Renders nothing for guests or signed-in users with no signal yet.
+  RECOMMENDED_FOR_YOU
+  // Phase 2 — the shopper's own ProductView history, most-recent first.
+  // Works for guests too (shared guest-id cookie), unlike RECOMMENDED_FOR_YOU.
+  RECENTLY_VIEWED
 
   @@schema("dbo")
 }

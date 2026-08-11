@@ -10,6 +10,9 @@ export const homepageSectionTypeSchema = z.enum([
   "DISCOUNTED_MIXED",
   "POPULAR_MIXED",
   "CATEGORIES",
+  "POPULAR_FOR_VEHICLE",
+  "RECOMMENDED_FOR_YOU",
+  "RECENTLY_VIEWED",
 ]);
 export type HomepageSectionTypeInput = z.infer<typeof homepageSectionTypeSchema>;
 

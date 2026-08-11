@@ -27,6 +27,7 @@ model Product {
   buyTogetherOf   ProductBuyTogether[]    @relation("BuyTogetherRelated")
   wishlistItems   WishlistItem[]
   compareItems    CompareItem[]
+  views           ProductView[]
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
 

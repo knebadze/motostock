@@ -13,6 +13,7 @@ import { oauthRouter } from "./modules/oauth/oauth.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
 import { addressesRouter } from "./modules/addresses/addresses.routes.js";
 import { garageRouter } from "./modules/garage/garage.routes.js";
+import { productViewsRouter } from "./modules/product-views/product-views.routes.js";
 import { wishlistRouter } from "./modules/wishlist/wishlist.routes.js";
 import { compareRouter } from "./modules/compare/compare.routes.js";
 import { cartRouter } from "./modules/cart/cart.routes.js";
@@ -55,6 +56,10 @@ import { bulkVehicleListingDiscountsRouter } from "./modules/bulk-vehicle-listin
 import { promoCodesRouter } from "./modules/promo-codes/promo-codes.routes.js";
 import { ordersRouter } from "./modules/orders/orders.routes.js";
 import { compatibilityRouter } from "./modules/compatibility/compatibility.routes.js";
+import {
+  productRecommendationsRouter,
+  recommendationsRouter,
+} from "./modules/recommendations/recommendations.routes.js";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
 import { banksRouter } from "./modules/banks/banks.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
@@ -90,6 +95,7 @@ app.use("/api/auth", oauthRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/users", addressesRouter);
 app.use("/api/users", garageRouter);
+app.use("/api/users", productViewsRouter);
 app.use("/api/users", wishlistRouter);
 app.use("/api/users", compareRouter);
 app.use("/api/users", cartRouter);
@@ -130,6 +136,8 @@ app.use("/api/bulk-vehicle-listing-discounts", bulkVehicleListingDiscountsRouter
 app.use("/api/promo-codes", promoCodesRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/compatibility", compatibilityRouter);
+app.use("/api/products/:productId/recommendations", productRecommendationsRouter);
+app.use("/api/recommendations", recommendationsRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/banks", banksRouter);
 

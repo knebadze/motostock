@@ -116,6 +116,7 @@ type AttributeValueWriteData = {
 
 async function buildWhere(filters: {
   categoryIds?: number[];
+  excludeProductId?: number;
   // Pre-resolved by products.service.ts (which knows how to translate a
   // vehicleCatalogId into "explicit fitment OR a matching fitment rule") —
   // the repository just ANDs it in, same as adminWhere below.
@@ -132,6 +133,10 @@ async function buildWhere(filters: {
 
   if (filters.categoryIds && filters.categoryIds.length > 0) {
     and.push({ categoryId: { in: filters.categoryIds } });
+  }
+
+  if (filters.excludeProductId != null) {
+    and.push({ id: { not: filters.excludeProductId } });
   }
 
   if (filters.vehicleCompatibilityWhere) {
@@ -205,6 +210,7 @@ async function buildWhere(filters: {
 export const productsRepository = {
   async findMany(filters: {
     categoryIds?: number[];
+    excludeProductId?: number;
     vehicleCompatibilityWhere?: Prisma.ProductWhereInput;
     search?: string;
     brandIds?: number[];
@@ -227,6 +233,18 @@ export const productsRepository = {
     return prisma.product.findMany({ where: { id: { in: ids } }, include: productSummaryInclude });
   },
 
+  // Escape hatch for callers (recommendations.service.ts) whose where-clause
+  // shape (OR across category/brand affinity, composed with an AND'd vehicle
+  // compatibility clause) doesn't fit buildWhere's fixed structured filters.
+  findManyRaw(where: Prisma.ProductWhereInput, limit: number) {
+    return prisma.product.findMany({
+      where,
+      include: productSummaryInclude,
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
+  },
+
   incrementViewCount(id: number) {
     return prisma.product.update({
       where: { id },
@@ -240,10 +258,21 @@ export const productsRepository = {
   // homepage "popular products" slider. Returns just the ordered id list;
   // callers fetch full rows via findByIds and must re-apply this order
   // themselves (findByIds/findMany don't preserve `in` array order).
-  async findPopularProductIds(limit: number): Promise<number[]> {
+  //
+  // `productWhere` narrows which products are even eligible to rank, e.g.
+  // buildVehicleCompatibilityWhere's output for "popular among products that
+  // fit this vehicle" — filtered through the OrderItem->ProductVariant
+  // relation so it's one query instead of pre-fetching a candidate id list.
+  async findPopularProductIds(
+    limit: number,
+    options?: { productWhere?: Prisma.ProductWhereInput },
+  ): Promise<number[]> {
     const grouped = await prisma.orderItem.groupBy({
       by: ["productVariantId"],
-      where: { productVariantId: { not: null } },
+      where: {
+        productVariantId: { not: null },
+        ...(options?.productWhere ? { productVariant: { product: options.productWhere } } : {}),
+      },
       _sum: { quantity: true },
     });
     if (grouped.length === 0) return [];
@@ -267,6 +296,59 @@ export const productsRepository = {
       .sort((a, b) => b[1] - a[1])
       .slice(0, limit)
       .map(([productId]) => productId);
+  },
+
+  // Algorithmic "frequently bought together": every other product that has
+  // shared at least one order with `productId` (any of its variants),
+  // ranked by how many distinct orders they co-occurred in. Cart/order rows
+  // are unique per (owner, variant), so counting OrderItem rows here already
+  // counts distinct orders — no separate dedup step needed.
+  async findCoOccurringProductIds(productId: number, limit: number): Promise<number[]> {
+    const anchorVariants = await prisma.productVariant.findMany({
+      where: { productId },
+      select: { id: true },
+    });
+    const anchorVariantIds = anchorVariants.map((variant) => variant.id);
+    if (anchorVariantIds.length === 0) return [];
+
+    const anchorOrderRows = await prisma.orderItem.findMany({
+      where: { itemType: "PRODUCT_VARIANT", productVariantId: { in: anchorVariantIds } },
+      select: { orderId: true },
+      distinct: ["orderId"],
+    });
+    const orderIds = anchorOrderRows.map((row) => row.orderId);
+    if (orderIds.length === 0) return [];
+
+    const grouped = await prisma.orderItem.groupBy({
+      by: ["productVariantId"],
+      where: {
+        orderId: { in: orderIds },
+        itemType: "PRODUCT_VARIANT",
+        productVariantId: { notIn: anchorVariantIds },
+      },
+      _count: { orderId: true },
+    });
+    if (grouped.length === 0) return [];
+
+    const companionVariantIds = grouped.map((group) => group.productVariantId as number);
+    const companionVariants = await prisma.productVariant.findMany({
+      where: { id: { in: companionVariantIds } },
+      select: { id: true, productId: true },
+    });
+    const productIdByVariantId = new Map(companionVariants.map((v) => [v.id, v.productId]));
+
+    const countsByProductId = new Map<number, number>();
+    for (const group of grouped) {
+      const companionProductId = productIdByVariantId.get(group.productVariantId as number);
+      if (companionProductId == null) continue;
+      const count = group._count.orderId;
+      countsByProductId.set(companionProductId, (countsByProductId.get(companionProductId) ?? 0) + count);
+    }
+
+    return Array.from(countsByProductId.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([id]) => id);
   },
 
   findById(id: number) {
