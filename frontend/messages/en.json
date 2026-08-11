@@ -258,6 +258,11 @@
     "empty": "Content coming soon.",
     "loading": "Loading..."
   },
+  "CookieNotice": {
+    "message": "This site only uses strictly necessary cookies (sign-in, cart, wishlist) to work properly.",
+    "linkLabel": "Learn more",
+    "acceptLabel": "Got it"
+  },
   "Contact": {
     "title": "Contact",
     "addressLabel": "Address",
