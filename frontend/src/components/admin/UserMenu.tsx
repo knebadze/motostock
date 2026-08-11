@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { logoutUser } from "@/lib/api/auth";
 import { clearCache } from "@/lib/api/cache";
+import { triggerFinaSync } from "@/lib/api/fina-sync";
 import { ApiRequestError } from "@/lib/api/client";
 import { formatShortName } from "@/lib/format";
 
@@ -13,6 +14,7 @@ export function UserMenu({ userName }: { userName: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,6 +39,21 @@ export function UserMenu({ userName }: { userName: string }) {
       router.refresh();
     } catch {
       toast.error("გამოსვლა ვერ მოხერხდა, სცადეთ ხელახლა");
+    }
+  }
+
+  async function handleSyncNow() {
+    setSyncing(true);
+    try {
+      await triggerFinaSync();
+      toast.success("სინქრონიზაცია დასრულდა");
+      setOpen(false);
+    } catch (error) {
+      const message =
+        error instanceof ApiRequestError ? error.message : "სინქრონიზაცია ვერ მოხერხდა";
+      toast.error(message);
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -98,14 +115,15 @@ export function UserMenu({ userName }: { userName: string }) {
             </Link>
           </li>
           <li>
-            <Link
-              href="/admin/fina-sync"
-              onClick={() => setOpen(false)}
+            <button
+              type="button"
+              onClick={handleSyncNow}
+              disabled={syncing}
               role="menuitem"
-              className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary disabled:opacity-50"
             >
-              FINA სინქრონიზაცია
-            </Link>
+              {syncing ? "სინქრონიზაცია..." : "FINA სინქრონიზაცია ახლავე"}
+            </button>
           </li>
           <li>
             <Link
