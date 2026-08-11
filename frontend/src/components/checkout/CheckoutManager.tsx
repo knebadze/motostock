@@ -19,6 +19,7 @@ import type { LookupItem } from "@/lib/api/lookups";
 import type { Cart } from "@/lib/api/cart";
 import type { GarageVehicle, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 import type { LocalizedString } from "@/lib/api/categories";
+import type { PublicBank } from "@/lib/api/banks";
 import { AddressFormModal } from "@/components/account/AddressFormModal";
 import { CompatibilityChecker } from "./CompatibilityChecker";
 
@@ -28,12 +29,14 @@ export function CheckoutManager({
   cart,
   vehicleCatalog,
   garageVehicles,
+  banks,
 }: {
   addresses: Address[];
   cities: LookupItem[];
   cart: Cart;
   vehicleCatalog: VehicleCatalogEntry[];
   garageVehicles: GarageVehicle[];
+  banks: PublicBank[];
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Checkout");
@@ -59,6 +62,7 @@ export function CheckoutManager({
     addresses.length > 0 ? "CARD" : "PICKUP",
   );
   const [addressId, setAddressId] = useState<number | null>(addresses[0]?.id ?? null);
+  const [bankId, setBankId] = useState<number | null>(banks[0]?.id ?? null);
   const [deliverySpeed, setDeliverySpeed] = useState<OrderDeliverySpeed>("STANDARD");
   const [promoCodeInput, setPromoCodeInput] = useState("");
   const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
@@ -68,7 +72,8 @@ export function CheckoutManager({
   const [placing, setPlacing] = useState(false);
 
   const requiresAddress = fulfillmentMethod !== "PICKUP";
-  const canFetchPreview = !requiresAddress || addressId != null;
+  const requiresBank = fulfillmentMethod === "CARD";
+  const canFetchPreview = (!requiresAddress || addressId != null) && (!requiresBank || bankId != null);
   // Derived rather than reset via setState in the effect below (nothing to
   // preview yet when a courier method has no address picked) — avoids a
   // synchronous setState-in-effect that could instead just be computed here.
@@ -88,6 +93,7 @@ export function CheckoutManager({
         addressId: requiresAddress ? (addressId ?? undefined) : undefined,
         deliverySpeed: requiresAddress ? deliverySpeed : undefined,
         promoCode: appliedPromoCode ?? undefined,
+        bankId: requiresBank ? (bankId ?? undefined) : undefined,
       })
         .then((result) => {
           if (!cancelled) setPreview(result);
@@ -108,7 +114,16 @@ export function CheckoutManager({
       clearTimeout(timeoutId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fulfillmentMethod, addressId, deliverySpeed, appliedPromoCode, canFetchPreview, requiresAddress]);
+  }, [
+    fulfillmentMethod,
+    addressId,
+    bankId,
+    deliverySpeed,
+    appliedPromoCode,
+    canFetchPreview,
+    requiresAddress,
+    requiresBank,
+  ]);
 
   async function handleApplyPromoCode() {
     const code = promoCodeInput.trim();
@@ -121,6 +136,7 @@ export function CheckoutManager({
         addressId: requiresAddress ? (addressId ?? undefined) : undefined,
         deliverySpeed: requiresAddress ? deliverySpeed : undefined,
         promoCode: code,
+        bankId: requiresBank ? (bankId ?? undefined) : undefined,
       });
       setPreview(result);
       setAppliedPromoCode(code);
@@ -147,6 +163,10 @@ export function CheckoutManager({
       toast.error(t("addressRequired"));
       return;
     }
+    if (requiresBank && bankId == null) {
+      toast.error(t("bankRequired"));
+      return;
+    }
 
     setPlacing(true);
     try {
@@ -155,6 +175,7 @@ export function CheckoutManager({
         addressId: requiresAddress ? (addressId ?? undefined) : undefined,
         deliverySpeed: requiresAddress ? deliverySpeed : undefined,
         promoCode: appliedPromoCode ?? undefined,
+        bankId: requiresBank ? (bankId ?? undefined) : undefined,
       });
       toast.success(t("placeSuccess"));
       // Clears the router cache for the shared (guest) layout so the
@@ -299,6 +320,67 @@ export function CheckoutManager({
             </label>
           </div>
         </section>
+
+        {requiresBank && (
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <h2 className="font-semibold text-foreground">
+              {banks.length > 1 ? t("bankHeading") : t("bankLabel")}
+            </h2>
+            {banks.length === 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">{t("noBanks")}</p>
+            ) : banks.length === 1 ? (
+              // Nothing to actually choose — shown as a plain confirmation,
+              // not a picker, since presenting a single-option "choice" reads
+              // oddly. bankId already defaults to this bank's id on mount.
+              <div className="mt-3 flex items-center gap-3">
+                {resolveMediaUrl(banks[0].logoUrl) ? (
+                  <Image
+                    src={resolveMediaUrl(banks[0].logoUrl)!}
+                    alt={banks[0].name[locale]}
+                    width={80}
+                    height={40}
+                    className="h-8 w-auto object-contain"
+                  />
+                ) : null}
+                <span className="text-sm font-medium text-foreground">{banks[0].name[locale]}</span>
+              </div>
+            ) : (
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {banks.map((bank) => {
+                  const logoUrl = resolveMediaUrl(bank.logoUrl);
+                  return (
+                    <label
+                      key={bank.id}
+                      className="flex flex-col items-center gap-2 rounded-xl border border-border p-3 text-center text-xs has-[:checked]:border-primary"
+                    >
+                      <input
+                        type="radio"
+                        name="bankId"
+                        className="sr-only"
+                        checked={bankId === bank.id}
+                        onChange={() => setBankId(bank.id)}
+                      />
+                      <div className="flex h-10 w-full items-center justify-center">
+                        {logoUrl ? (
+                          <Image
+                            src={logoUrl}
+                            alt={bank.name[locale]}
+                            width={80}
+                            height={40}
+                            className="h-full w-auto object-contain"
+                          />
+                        ) : (
+                          <span className="font-semibold text-foreground">{bank.name[locale]}</span>
+                        )}
+                      </div>
+                      {logoUrl && <span className="font-medium text-foreground">{bank.name[locale]}</span>}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
 
         {requiresAddress && (
           <section className="rounded-2xl border border-border bg-card p-5">

@@ -55,6 +55,14 @@ model Order {
   promoCodeSnapshot    String?
   promoDiscountPercent Decimal?   @db.Decimal(5, 2)
 
+  // Only set when fulfillmentMethod=CARD (see orders.service.ts's
+  // resolveBank) — which bank the customer said they'd pay through. SetNull
+  // (not snapshotted like address/promo code): a bank's identity doesn't
+  // drift the way delivery pricing or a promo's discount percent does, so
+  // losing the live row on deletion is an acceptable, rare edge case.
+  bankId Int?
+  bank   Bank? @relation(fields: [bankId], references: [id], onDelete: SetNull)
+
   subtotal      Decimal @db.Decimal(10, 2)
   discountTotal Decimal @default(0) @db.Decimal(10, 2)
   total         Decimal @db.Decimal(10, 2)
@@ -66,6 +74,7 @@ model Order {
   @@index([userId])
   @@index([addressId])
   @@index([promoCodeId])
+  @@index([bankId])
   @@index([statusId])
   @@schema("dbo")
 }

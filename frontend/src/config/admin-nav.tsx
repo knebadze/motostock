@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import {
   attributesIcon,
+  banksIcon,
   brandsIcon,
   buyTogetherIcon,
   categoriesIcon,
@@ -87,6 +88,10 @@ export const adminNav: AdminNavSection[] = [
       { label: "მასობრივი ფასდაკლებები", href: "/admin/bulk-discounts", icon: discountRulesIcon },
       { label: "პრომოკოდები", href: "/admin/promo-codes", icon: promoCodesIcon },
     ],
+  },
+  {
+    label: "გადახდები",
+    items: [{ label: "ბანკები", href: "/admin/banks", icon: banksIcon }],
   },
   // One-time setup content — filled in once and rarely touched again, so
   // it belongs at the bottom, out of the way of daily-use sections above.

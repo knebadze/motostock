@@ -8,6 +8,7 @@ import {
 } from "../../generated/prisma/index.js";
 import { cartRepository } from "../cart/cart.repository.js";
 import { addressesRepository } from "../addresses/addresses.repository.js";
+import { banksRepository } from "../banks/banks.repository.js";
 import { syncVariantStockByIds } from "../fina-sync/fina-sync.service.js";
 import { sendEmailTemplate } from "../email-templates/email-templates.service.js";
 import { resolvePromoCodeForItems, promoCodeItemKey } from "../promo-codes/promo-codes.service.js";
@@ -288,6 +289,23 @@ async function resolveDelivery(
   };
 }
 
+// Only meaningful for CARD — COURIER/PICKUP never carry a bank. Shared by
+// placeOrder below (checkoutInputSchema's superRefine already requires
+// bankId when fulfillmentMethod=CARD, but that's just presence — this is
+// where "does it actually exist and is it active" gets checked).
+async function resolveBank(
+  fulfillmentMethod: OrderFulfillmentMethod,
+  bankId: number | undefined,
+): Promise<number | null> {
+  if (fulfillmentMethod !== "CARD") return null;
+
+  const bank = bankId ? await banksRepository.findById(bankId) : null;
+  if (!bank || !bank.isActive) {
+    throw new ApiError(400, "მითითებული ბანკი ვერ მოიძებნა ან აღარ არის აქტიური");
+  }
+  return bank.id;
+}
+
 function toItemResponse(item: { id: number | null } & Omit<PlaceOrderItemInput, "productVariantId" | "vehicleListingId">) {
   return {
     id: item.id,
@@ -350,6 +368,14 @@ function toOrderResponse(order: OrderRow) {
       order.promoCodeSnapshot != null
         ? { code: order.promoCodeSnapshot, discountPercent: Number(order.promoDiscountPercent) }
         : null,
+    bank: order.bank
+      ? {
+          id: order.bank.id,
+          key: order.bank.key,
+          name: { ka: order.bank.nameKa, en: order.bank.nameEn, ru: order.bank.nameRu },
+          logoUrl: order.bank.logoUrl,
+        }
+      : null,
     items: order.items.map((item) =>
       toItemResponse({
         id: item.id,
@@ -383,6 +409,7 @@ export async function placeOrder(userId: number, input: CheckoutInput) {
   }
 
   const delivery = await resolveDelivery(userId, input.fulfillmentMethod, input.addressId, input.deliverySpeed);
+  const bankId = await resolveBank(input.fulfillmentMethod, input.bankId);
 
   const items: PlaceOrderItemInput[] = breakdown.items.map(({ stockQuantity: _stockQuantity, ...item }) => item);
   const [statusId, soldStatusId] = await Promise.all([
@@ -399,6 +426,7 @@ export async function placeOrder(userId: number, input: CheckoutInput) {
         statusId,
         addressId: delivery.addressId,
         shippingSnapshot: delivery.shippingSnapshot,
+        bankId,
         promoCodeId: breakdown.promoCode?.id ?? null,
         promoCodeSnapshot: breakdown.promoCode?.code ?? null,
         promoDiscountPercent: breakdown.promoCode?.discountPercent ?? null,

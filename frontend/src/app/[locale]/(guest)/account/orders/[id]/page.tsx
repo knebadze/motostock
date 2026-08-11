@@ -52,6 +52,12 @@ function OrderDetailPageView({ order }: { order: NonNullable<Awaited<ReturnType<
             <p className="mt-2 text-sm text-muted-foreground">
               {t(FULFILLMENT_KEY[order.fulfillmentMethod])}
             </p>
+            {order.bank && (
+              <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                <span>{t("bankLabel")}:</span>
+                <span className="font-medium text-foreground">{order.bank.name[locale]}</span>
+              </p>
+            )}
             {order.shippingSnapshot && (
               <p className="mt-1 text-sm text-muted-foreground">
                 {order.shippingSnapshot.phone} · {order.shippingSnapshot.city[nameLocaleKey]},{" "}

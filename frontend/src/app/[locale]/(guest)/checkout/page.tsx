@@ -7,6 +7,7 @@ import {
   getMyAddressesFromServer,
   getMyCartFromServer,
   getMyGarageFromServer,
+  getPublicBanksFromServer,
   getVehicleCatalogFromServer,
 } from "@/lib/api/server";
 import { CheckoutManager } from "@/components/checkout/CheckoutManager";
@@ -26,10 +27,11 @@ export default async function CheckoutPage() {
     return null;
   }
 
-  const [addresses, cart, cities] = await Promise.all([
+  const [addresses, cart, cities, banks] = await Promise.all([
     getMyAddressesFromServer(),
     getMyCartFromServer(),
     getLookupItemsFromServer("cities"),
+    getPublicBanksFromServer(),
   ]);
   if (cart.items.length === 0) {
     redirect({ href: "/cart", locale });
@@ -55,6 +57,7 @@ export default async function CheckoutPage() {
         cart={cart}
         vehicleCatalog={vehicleCatalog}
         garageVehicles={garageVehicles}
+        banks={banks}
       />
     </div>
   );

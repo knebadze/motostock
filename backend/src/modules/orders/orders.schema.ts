@@ -15,6 +15,7 @@ export const checkoutInputSchema = registry.register(
       addressId: z.int().positive().optional(),
       deliverySpeed: orderDeliverySpeedSchema.optional(),
       promoCode: z.string().trim().min(1).max(30).optional(),
+      bankId: z.int().positive().optional(),
     })
     .superRefine((data, ctx) => {
       if (data.fulfillmentMethod !== "PICKUP" && data.addressId == null) {
@@ -22,6 +23,13 @@ export const checkoutInputSchema = registry.register(
           code: "custom",
           message: "კურიერით მიწოდებისას მისამართის მითითება საჭიროა",
           path: ["addressId"],
+        });
+      }
+      if (data.fulfillmentMethod === "CARD" && data.bankId == null) {
+        ctx.addIssue({
+          code: "custom",
+          message: "ბარათით გადახდისას ბანკის მითითება საჭიროა",
+          path: ["bankId"],
         });
       }
     }),
@@ -102,6 +110,13 @@ export const checkoutPreviewResponseSchema = registry.register(
   }),
 );
 
+const orderBankSchema = z.object({
+  id: z.int(),
+  key: z.string(),
+  name: localizedStringSchema,
+  logoUrl: z.string().nullable(),
+});
+
 export const orderResponseSchema = registry.register(
   "Order",
   z.object({
@@ -111,6 +126,7 @@ export const orderResponseSchema = registry.register(
     fulfillmentMethod: orderFulfillmentMethodSchema,
     shippingSnapshot: shippingSnapshotSchema.nullable(),
     promoCode: promoCodeSummarySchema.nullable(),
+    bank: orderBankSchema.nullable(),
     items: z.array(orderItemResponseSchema),
     subtotal: z.number(),
     discountTotal: z.number(),

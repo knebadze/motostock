@@ -21,6 +21,7 @@ import type { Product, ProductDetail } from "./products";
 import type { FinaSyncRun } from "./fina-sync";
 import type { AdminUser } from "./users";
 import type { HeroSlide } from "./hero-slides";
+import type { Bank, PublicBank } from "./banks";
 import type { HomepageSection } from "./homepage-sections";
 import type { PromoCode, PromoCodeDomain } from "./promo-codes";
 import type { WishlistItem } from "./wishlist";
@@ -779,6 +780,34 @@ export async function getPublicHeroSlidesFromServer(): Promise<HeroSlide[]> {
 
   try {
     const { data } = await apiClient.get<{ items: HeroSlide[] }>("/hero-slides/public", {
+      headers,
+    });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getBanksFromServer(): Promise<Bank[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: Bank[] }>("/banks", { headers });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getPublicBanksFromServer(): Promise<PublicBank[]> {
+  // Public endpoint (the checkout page's bank picker) — must not bail out
+  // just because there's no admin session cookie, same fix as
+  // getPublicHeroSlidesFromServer.
+  const headers = await authHeaders();
+
+  try {
+    const { data } = await apiClient.get<{ items: PublicBank[] }>("/banks/public", {
       headers,
     });
     return data.items;

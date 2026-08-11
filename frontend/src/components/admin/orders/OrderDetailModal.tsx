@@ -135,6 +135,9 @@ export function OrderDetailModal({
               {order.deliverySpeed && (
                 <p className="text-sm text-muted-foreground">{DELIVERY_SPEED_LABELS[order.deliverySpeed]}</p>
               )}
+              {order.bank && (
+                <p className="text-sm text-muted-foreground">ბანკი: {order.bank.name.ka}</p>
+              )}
               {order.shippingSnapshot && (
                 <p className="text-sm text-muted-foreground">
                   {order.shippingSnapshot.phone} · {order.shippingSnapshot.city.nameKa},{" "}

@@ -15,6 +15,7 @@ const buyerSelect = { id: true, firstName: true, lastName: true, email: true } a
 const orderItemsInclude = {
   items: { orderBy: { id: "asc" } },
   status: true,
+  bank: true,
   user: { select: buyerSelect },
 } as const;
 
@@ -78,6 +79,7 @@ export type PlaceOrderInput = {
   statusId: number;
   addressId?: number | null;
   shippingSnapshot?: Prisma.InputJsonValue;
+  bankId?: number | null;
   promoCodeId?: number | null;
   promoCodeSnapshot?: string | null;
   promoDiscountPercent?: number | null;

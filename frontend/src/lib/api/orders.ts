@@ -11,6 +11,7 @@ export type CheckoutInput = {
   addressId?: number;
   deliverySpeed?: OrderDeliverySpeed;
   promoCode?: string;
+  bankId?: number;
 };
 
 export type OrderItem = {
@@ -56,6 +57,8 @@ export type CheckoutPreview = {
   hasStockIssues: boolean;
 };
 
+export type OrderBank = { id: number; key: string; name: LocalizedString; logoUrl: string | null };
+
 export type Order = {
   id: number;
   orderCode: string;
@@ -71,6 +74,7 @@ export type Order = {
   deliveryTimeSnapshot: string | null;
   total: number;
   promoCode: OrderPromoCode | null;
+  bank: OrderBank | null;
 };
 
 export type OrderSummary = {

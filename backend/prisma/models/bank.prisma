@@ -1,0 +1,38 @@
+// Admin-configurable list of banks a customer can pay through when
+// checking out with fulfillmentMethod=CARD. No real payment gateway is
+// integrated yet (see order.prisma's note) — this exists so the admin can
+// set up the bank list and (later) credentials ahead of that integration,
+// and so the checkout UI has something real to let the customer choose
+// between right now.
+model Bank {
+  id        Int     @id @default(autoincrement())
+  // Stable identifier (e.g. "TBC", "BOG", "LIBERTY") — independent of the
+  // display name, which is localized and admin-editable.
+  key       String  @unique
+  nameKa    String
+  nameEn    String
+  nameRu    String
+  logoUrl   String?
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  // Purely informational for now — no installment/split-payment logic
+  // exists yet. Lets the checkout later filter which banks to offer for
+  // which payment type once that logic is built, without a schema change.
+  supportsInstallment  Boolean @default(false)
+  supportsSplitPayment Boolean @default(false)
+
+  // Free-form key/value pairs (merchant id, API key/secret, callback
+  // URL, ...) — each bank's real integration will need different fields,
+  // so a fixed column set would need a migration per bank added later.
+  // Admin-only: never returned by the public bank list (see
+  // banks.service.ts's toPublicResponse).
+  credentials Json?
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("dbo")
+}
