@@ -251,7 +251,15 @@
     "aboutUs": "ჩვენ შესახებ",
     "contactTitle": "კონტაქტი",
     "termsTitle": "წესები და პირობები",
-    "rights": "ყველა უფლება დაცულია."
+    "rights": "ყველა უფლება დაცულია.",
+    "hoursClosed": "დახურულია",
+    "mondayShort": "ორშ",
+    "tuesdayShort": "სამ",
+    "wednesdayShort": "ოთხ",
+    "thursdayShort": "ხუთ",
+    "fridayShort": "პარ",
+    "saturdayShort": "შაბ",
+    "sundayShort": "კვ"
   },
   "Terms": {
     "title": "წესები და პირობები",

@@ -251,7 +251,15 @@
     "aboutUs": "About us",
     "contactTitle": "Contact",
     "termsTitle": "Terms & Conditions",
-    "rights": "All rights reserved."
+    "rights": "All rights reserved.",
+    "hoursClosed": "Closed",
+    "mondayShort": "Mon",
+    "tuesdayShort": "Tue",
+    "wednesdayShort": "Wed",
+    "thursdayShort": "Thu",
+    "fridayShort": "Fri",
+    "saturdayShort": "Sat",
+    "sundayShort": "Sun"
   },
   "Terms": {
     "title": "Terms & Conditions",

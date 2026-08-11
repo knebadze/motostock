@@ -251,7 +251,15 @@
     "aboutUs": "О нас",
     "contactTitle": "Контакты",
     "termsTitle": "Условия использования",
-    "rights": "Все права защищены."
+    "rights": "Все права защищены.",
+    "hoursClosed": "Закрыто",
+    "mondayShort": "Пн",
+    "tuesdayShort": "Вт",
+    "wednesdayShort": "Ср",
+    "thursdayShort": "Чт",
+    "fridayShort": "Пт",
+    "saturdayShort": "Сб",
+    "sundayShort": "Вс"
   },
   "Terms": {
     "title": "Условия использования",

@@ -4,8 +4,19 @@ import { siteConfig } from "@/config/site";
 import { Logo } from "@/components/shared/Logo";
 import { getCategoriesFromServer, getCompanyInfoFromServer } from "@/lib/api/server";
 import { facebookIcon, instagramIcon, tiktokIcon, youtubeIcon } from "@/components/shared/social-icons";
-import type { CompanyInfo } from "@/lib/api/company-info";
+import { groupWorkingHours } from "@/lib/working-hours";
+import type { CompanyInfo, WeekDay } from "@/lib/api/company-info";
 import type { Category } from "@/lib/api/categories";
+
+const WEEK_DAY_SHORT_KEYS: Record<WeekDay, string> = {
+  MONDAY: "mondayShort",
+  TUESDAY: "tuesdayShort",
+  WEDNESDAY: "wednesdayShort",
+  THURSDAY: "thursdayShort",
+  FRIDAY: "fridayShort",
+  SATURDAY: "saturdayShort",
+  SUNDAY: "sundayShort",
+};
 
 export async function Footer() {
   const [companyInfo, categories] = await Promise.all([
@@ -45,6 +56,7 @@ function FooterView({
   ].filter((social): social is { href: string; icon: typeof facebookIcon; label: string } =>
     Boolean(social.href),
   );
+  const workingHoursGroups = groupWorkingHours(companyInfo.workingHours);
 
   return (
     <footer className="border-t border-border bg-muted/40">
@@ -99,6 +111,13 @@ function FooterView({
             {address && <li>{address}</li>}
             {companyInfo.phone && <li>{companyInfo.phone}</li>}
             {companyInfo.email && <li>{companyInfo.email}</li>}
+            {workingHoursGroups.map((group) => (
+              <li key={`${group.firstDay}-${group.lastDay}`}>
+                {tFooter(WEEK_DAY_SHORT_KEYS[group.firstDay])}
+                {group.firstDay !== group.lastDay && `–${tFooter(WEEK_DAY_SHORT_KEYS[group.lastDay])}`}:{" "}
+                {group.isClosed ? tFooter("hoursClosed") : `${group.openTime} – ${group.closeTime}`}
+              </li>
+            ))}
           </ul>
           {socialLinks.length > 0 && (
             <div className="mt-4 flex gap-2">
