@@ -7,6 +7,7 @@ import { ApiRequestError } from "@/lib/api/client";
 import { Tabs } from "@/components/shared/Tabs";
 import { GeneralSettingsTab } from "./GeneralSettingsTab";
 import { DeliverySettingsTab } from "./DeliverySettingsTab";
+import { FraudSettingsTab } from "./FraudSettingsTab";
 import { CacheTab } from "./CacheTab";
 
 export function SettingsManager({ initialSettings }: { initialSettings: Settings }) {
@@ -44,6 +45,11 @@ export function SettingsManager({ initialSettings }: { initialSettings: Settings
               key: "delivery",
               label: "მიტანა",
               content: <DeliverySettingsTab settings={settings} saving={saving} onSave={save} />,
+            },
+            {
+              key: "fraud",
+              label: "თაღლითობის ბარიერები",
+              content: <FraudSettingsTab settings={settings} saving={saving} onSave={save} />,
             },
             {
               key: "cache",

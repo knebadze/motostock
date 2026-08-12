@@ -1,0 +1,29 @@
+enum OrderRiskFlagType {
+  NEW_ACCOUNT_HIGH_VALUE
+  ORDER_VELOCITY
+  PROMO_CODE_MULTI_ACCOUNT
+  SHARED_IP_MULTIPLE_ACCOUNTS
+
+  @@schema("dbo")
+}
+
+// A relational table, not a Json column on Order — matches this codebase's
+// established convention for "a row can have zero-to-many structured,
+// queryable annotations" (see ProductFitmentRule, CategoryFilterConfig).
+// Json here (like Order.shippingSnapshot) is reserved for one-off, never-
+// queried snapshots, which risk flags are not: admins filter/count by them.
+// Computed best-effort, after the fact — see orders.service.ts's placeOrder
+// calling fraud.service.ts's evaluateOrderRisk. Never blocks or reverses an
+// order; flag-only, for admin review.
+model OrderRiskFlag {
+  id        Int               @id @default(autoincrement())
+  orderId   Int
+  order     Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type      OrderRiskFlagType
+  detail    String?
+  createdAt DateTime          @default(now())
+
+  @@index([orderId])
+  @@index([type])
+  @@schema("dbo")
+}

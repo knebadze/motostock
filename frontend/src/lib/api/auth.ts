@@ -6,6 +6,7 @@ export type User = {
   name: string;
   role: "USER" | "ADMIN";
   createdAt: string;
+  emailVerified: boolean;
 };
 
 export async function registerUser(input: {
@@ -45,6 +46,14 @@ export async function resetPassword(token: string, password: string): Promise<Us
     password,
   });
   return data.user;
+}
+
+export async function verifyEmail(token: string): Promise<void> {
+  await apiClient.post("/auth/verify-email", { token });
+}
+
+export async function resendVerificationEmail(): Promise<void> {
+  await apiClient.post("/auth/resend-verification");
 }
 
 export async function changePassword(

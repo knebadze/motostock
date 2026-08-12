@@ -20,6 +20,7 @@ export async function getUserById(id: number) {
     name: `${user.firstName} ${user.lastName}`,
     createdAt: user.createdAt,
     role: user.role.name,
+    emailVerified: user.emailVerifiedAt != null,
   };
 }
 

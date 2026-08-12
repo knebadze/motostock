@@ -19,6 +19,12 @@ export const updateSettingsSchema = registry.register(
     deliveryRegionsTime: z.string().openapi({ example: "3-5 სამუშაო დღე" }),
     deliveryExpressPrice: z.number().nonnegative().openapi({ example: 40 }),
     deliveryExpressTime: z.string().openapi({ example: "2-4 საათი" }),
+    fraudVelocityOrderCount: z.int().positive().openapi({ example: 3 }),
+    fraudVelocityWindowMinutes: z.int().positive().openapi({ example: 30 }),
+    fraudNewAccountWindowHours: z.int().positive().openapi({ example: 24 }),
+    fraudHighValueThreshold: z.number().nonnegative().openapi({ example: 1000 }),
+    fraudFailedLoginThreshold: z.int().positive().openapi({ example: 5 }),
+    fraudFailedLoginWindowMinutes: z.int().positive().openapi({ example: 15 }),
   }),
 );
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
@@ -38,6 +44,12 @@ export const settingsResponseSchema = registry.register(
     deliveryRegionsTime: z.string().openapi({ example: "3-5 სამუშაო დღე" }),
     deliveryExpressPrice: z.number().nonnegative().openapi({ example: 40 }),
     deliveryExpressTime: z.string().openapi({ example: "2-4 საათი" }),
+    fraudVelocityOrderCount: z.int().positive().openapi({ example: 3 }),
+    fraudVelocityWindowMinutes: z.int().positive().openapi({ example: 30 }),
+    fraudNewAccountWindowHours: z.int().positive().openapi({ example: 24 }),
+    fraudHighValueThreshold: z.number().nonnegative().openapi({ example: 1000 }),
+    fraudFailedLoginThreshold: z.int().positive().openapi({ example: 5 }),
+    fraudFailedLoginWindowMinutes: z.int().positive().openapi({ example: 15 }),
   }),
 );
 

@@ -27,8 +27,36 @@ const FULFILLMENT_OPTIONS = (Object.keys(FULFILLMENT_LABELS) as OrderFulfillment
   (value) => ({ value, label: FULFILLMENT_LABELS[value] }),
 );
 
+function RiskFlagIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-4 shrink-0 text-amber-500"
+      aria-label="საეჭვო შეკვეთა"
+    >
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
 const columns: DataTableColumn<AdminOrderSummary>[] = [
-  { header: "კოდი", render: (order) => order.orderCode },
+  {
+    header: "კოდი",
+    render: (order) => (
+      <div className="flex items-center gap-1.5">
+        {order.hasRiskFlags && <RiskFlagIcon />}
+        <span>{order.orderCode}</span>
+      </div>
+    ),
+  },
   {
     header: "მყიდველი",
     render: (order) => (
@@ -68,6 +96,7 @@ export function OrdersManager({
   const [fulfillmentMethods, setFulfillmentMethods] = useState<string[]>([]);
   const [createdFrom, setCreatedFrom] = useState("");
   const [createdTo, setCreatedTo] = useState("");
+  const [flaggedOnly, setFlaggedOnly] = useState(false);
   const [viewingOrderId, setViewingOrderId] = useState<number | null>(null);
   const { page, setPage, pageItems, totalPages } = usePagination(orders);
 
@@ -77,7 +106,8 @@ export function OrdersManager({
     statusIds.length > 0 ||
     fulfillmentMethods.length > 0 ||
     createdFrom !== "" ||
-    createdTo !== "";
+    createdTo !== "" ||
+    flaggedOnly;
 
   function currentFilters(): ListOrdersFilters {
     return {
@@ -87,6 +117,7 @@ export function OrdersManager({
         fulfillmentMethods.length > 0 ? (fulfillmentMethods as OrderFulfillmentMethod[]) : undefined,
       createdFrom: createdFrom || undefined,
       createdTo: createdTo || undefined,
+      flaggedOnly: flaggedOnly || undefined,
     };
   }
 
@@ -112,6 +143,7 @@ export function OrdersManager({
     setFulfillmentMethods([]);
     setCreatedFrom("");
     setCreatedTo("");
+    setFlaggedOnly(false);
     fetchOrders({});
   }
 
@@ -174,6 +206,15 @@ export function OrdersManager({
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
         </div>
+        <label className="flex items-center gap-2 pb-2 text-sm font-medium text-foreground">
+          <input
+            type="checkbox"
+            checked={flaggedOnly}
+            onChange={(event) => setFlaggedOnly(event.target.checked)}
+            className="size-4 accent-primary"
+          />
+          მხოლოდ დროშიანი (რისკის სიგნალი)
+        </label>
         <button
           type="button"
           onClick={handleApplyFilters}

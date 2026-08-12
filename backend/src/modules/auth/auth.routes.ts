@@ -1,15 +1,25 @@
 import { Router } from "express";
 import { z } from "zod";
+import { requireAuth } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
-import { authRateLimit } from "../../middleware/rateLimit.middleware.js";
+import { authRateLimit, resendVerificationRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema, userResponseSchema } from "../../docs/schemas.js";
-import { forgotPassword, login, logout, register, resetPasswordHandler } from "./auth.controller.js";
+import {
+  forgotPassword,
+  login,
+  logout,
+  register,
+  resendVerification,
+  resetPasswordHandler,
+  verifyEmailHandler,
+} from "./auth.controller.js";
 import {
   forgotPasswordSchema,
   loginSchema,
   registerSchema,
   resetPasswordSchema,
+  verifyEmailSchema,
 } from "./auth.schema.js";
 
 export const authRouter = Router();
@@ -33,6 +43,18 @@ authRouter.post(
   authRateLimit,
   validate(resetPasswordSchema),
   resetPasswordHandler,
+);
+authRouter.post(
+  "/verify-email",
+  authRateLimit,
+  validate(verifyEmailSchema),
+  verifyEmailHandler,
+);
+authRouter.post(
+  "/resend-verification",
+  requireAuth,
+  resendVerificationRateLimit,
+  resendVerification,
 );
 
 registry.registerPath({
@@ -126,5 +148,34 @@ registry.registerPath({
       description: "Token invalid or expired",
       content: { "application/json": { schema: errorResponseSchema } },
     },
+  },
+});
+
+const okResponse = z.object({ ok: z.boolean() });
+
+registry.registerPath({
+  method: "post",
+  path: "/auth/verify-email",
+  tags: ["Auth"],
+  summary: "Confirm an account's email using the token from the verification email — required before checkout, not before login",
+  request: {
+    body: { content: { "application/json": { schema: verifyEmailSchema } } },
+  },
+  responses: {
+    200: { description: "Verified", content: { "application/json": { schema: okResponse } } },
+    400: { description: "Token invalid or expired", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/auth/resend-verification",
+  tags: ["Auth"],
+  summary: "Resend the verification email to the caller's own address",
+  security: [{ cookieAuth: [] }],
+  responses: {
+    200: { description: "Sent", content: { "application/json": { schema: okResponse } } },
+    400: { description: "Already verified or mailer not configured", content: { "application/json": { schema: errorResponseSchema } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

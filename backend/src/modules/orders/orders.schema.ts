@@ -203,18 +203,42 @@ export const listOrdersQuerySchema = z.object({
   fulfillmentMethods: fulfillmentMethodListQuerySchema,
   createdFrom: z.iso.date().optional(),
   createdTo: z.iso.date().optional(),
+  // Narrows to orders with at least one OrderRiskFlag row — see
+  // fraud.service.ts's evaluateOrderRisk (admin-only, flag-for-review, never
+  // an automatic block).
+  flaggedOnly: z.coerce.boolean().optional(),
 });
 export type ListOrdersQuery = z.infer<typeof listOrdersQuerySchema>;
+
+export const orderRiskFlagTypeSchema = z.enum([
+  "NEW_ACCOUNT_HIGH_VALUE",
+  "ORDER_VELOCITY",
+  "PROMO_CODE_MULTI_ACCOUNT",
+  "SHARED_IP_MULTIPLE_ACCOUNTS",
+]);
+
+export const orderRiskFlagResponseSchema = registry.register(
+  "OrderRiskFlag",
+  z.object({
+    type: orderRiskFlagTypeSchema,
+    detail: z.string().nullable(),
+    createdAt: z.iso.datetime(),
+  }),
+);
 
 export const adminOrderSummaryResponseSchema = registry.register(
   "AdminOrderSummary",
   orderSummaryResponseSchema.extend({
     fulfillmentMethod: orderFulfillmentMethodSchema,
     buyer: buyerSummarySchema,
+    hasRiskFlags: z.boolean(),
   }),
 );
 
 export const adminOrderResponseSchema = registry.register(
   "AdminOrder",
-  orderResponseSchema.extend({ buyer: buyerSummarySchema }),
+  orderResponseSchema.extend({
+    buyer: buyerSummarySchema,
+    riskFlags: z.array(orderRiskFlagResponseSchema),
+  }),
 );

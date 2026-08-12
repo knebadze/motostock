@@ -37,6 +37,7 @@ import type { EmailTemplate } from "./email-templates";
 import type { OrderStatusItem } from "./order-statuses";
 import type { NewsletterSubscriber, NewsletterSubscriberCounts } from "./newsletter";
 import type { NewsletterCampaign } from "./newsletter-campaigns";
+import type { SuspiciousLoginActivity } from "./fraud";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -87,6 +88,12 @@ export async function getSettingsFromServer(): Promise<Settings> {
     deliveryRegionsTime: "",
     deliveryExpressPrice: 0,
     deliveryExpressTime: "",
+    fraudVelocityOrderCount: 3,
+    fraudVelocityWindowMinutes: 30,
+    fraudNewAccountWindowHours: 24,
+    fraudHighValueThreshold: 1000,
+    fraudFailedLoginThreshold: 5,
+    fraudFailedLoginWindowMinutes: 15,
   };
   if (!headers) return fallback;
 
@@ -1004,6 +1011,21 @@ export async function getNewsletterSubscriberCountsFromServer(): Promise<Newslet
       "/newsletter/subscribers/counts",
       { headers },
     );
+    return data;
+  } catch {
+    return empty;
+  }
+}
+
+export async function getSuspiciousLoginActivityFromServer(): Promise<SuspiciousLoginActivity> {
+  const headers = await authHeaders();
+  const empty = { windowMinutes: 0, threshold: 0, byEmail: [], byIp: [] };
+  if (!headers) return empty;
+
+  try {
+    const { data } = await apiClient.get<SuspiciousLoginActivity>("/fraud/suspicious-logins", {
+      headers,
+    });
     return data;
   } catch {
     return empty;

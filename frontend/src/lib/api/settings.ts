@@ -15,6 +15,12 @@ export type Settings = {
   deliveryRegionsTime: string;
   deliveryExpressPrice: number;
   deliveryExpressTime: string;
+  fraudVelocityOrderCount: number;
+  fraudVelocityWindowMinutes: number;
+  fraudNewAccountWindowHours: number;
+  fraudHighValueThreshold: number;
+  fraudFailedLoginThreshold: number;
+  fraudFailedLoginWindowMinutes: number;
 };
 
 export async function getSettings(): Promise<Settings> {

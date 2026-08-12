@@ -9,6 +9,7 @@ export const userResponseSchema = registry.register(
     name: z.string().openapi({ example: "Nika Beridze" }),
     role: z.enum(["USER", "ADMIN"]),
     createdAt: z.iso.datetime(),
+    emailVerified: z.boolean(),
   }),
 );
 

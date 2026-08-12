@@ -14,6 +14,7 @@ import {
   type AdminOrder,
   type OrderDeliverySpeed,
   type OrderFulfillmentMethod,
+  type OrderRiskFlagType,
 } from "@/lib/api/orders";
 import type { LookupItem } from "@/lib/api/lookups";
 
@@ -21,6 +22,13 @@ const FULFILLMENT_LABELS: Record<OrderFulfillmentMethod, string> = {
   CARD: "ბარათით გადახდა",
   COURIER: "კურიერთან გადახდა",
   PICKUP: "ადგილიდან გატანა",
+};
+
+const RISK_FLAG_LABELS: Record<OrderRiskFlagType, string> = {
+  NEW_ACCOUNT_HIGH_VALUE: "ახალი ანგარიში + მაღალი თანხა",
+  ORDER_VELOCITY: "შეკვეთების სიხშირე",
+  PROMO_CODE_MULTI_ACCOUNT: "პრომოკოდი — მრავალი ანგარიში",
+  SHARED_IP_MULTIPLE_ACCOUNTS: "საერთო IP რამდენიმე ანგარიშთან",
 };
 
 const DELIVERY_SPEED_LABELS: Record<OrderDeliverySpeed, string> = {
@@ -116,6 +124,22 @@ export function OrderDetailModal({
               </button>
             </div>
           </div>
+
+          {order.riskFlags.length > 0 && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">
+                რისკის სიგნალები
+              </p>
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {order.riskFlags.map((flag, index) => (
+                  <li key={index} className="text-sm">
+                    <span className="font-medium text-foreground">{RISK_FLAG_LABELS[flag.type]}</span>
+                    {flag.detail && <span className="text-muted-foreground"> — {flag.detail}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>

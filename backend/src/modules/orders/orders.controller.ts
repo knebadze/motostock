@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
+import { getClientIp } from "../../lib/request-ip.js";
 import * as ordersService from "./orders.service.js";
 import type { CheckoutInput, ListOrdersQuery, UpdateOrderStatusInput } from "./orders.schema.js";
 
@@ -18,7 +19,11 @@ export async function preview(req: Request<unknown, unknown, CheckoutInput>, res
 }
 
 export async function checkout(req: Request<unknown, unknown, CheckoutInput>, res: Response) {
-  const order = await ordersService.placeOrder(requireUserId(req), req.body);
+  const order = await ordersService.placeOrder(
+    requireUserId(req),
+    req.body,
+    getClientIp(req as unknown as Request),
+  );
   res.status(201).json({ order });
 }
 

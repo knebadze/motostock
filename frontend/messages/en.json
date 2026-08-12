@@ -137,6 +137,7 @@
     "placing": "Placing order...",
     "placeSuccess": "Order placed successfully",
     "placeError": "Couldn't place the order",
+    "emailVerificationRequired": "Verifying your email is required to place an order — check your inbox or resend the link.",
     "outOfStockItem": "Out of stock",
     "limitedStockItem": "Only {count} left in stock",
     "stockIssueMessage": "Some items in your cart are no longer available in the requested quantity — reduce the quantity or remove them from your cart to place the order.",
@@ -230,7 +231,16 @@
     "resetPasswordSubmitting": "Saving...",
     "resetPasswordInvalidToken": "This reset link is invalid or has expired",
     "resetPasswordMissingToken": "Invalid link — use the link from your email",
-    "backToForgotPassword": "Request a new link"
+    "backToForgotPassword": "Request a new link",
+    "verifyEmailTitle": "Verify your email",
+    "verifyEmailLoading": "Verifying...",
+    "verifyEmailSuccess": "Email verified! You can now place an order.",
+    "verifyEmailError": "This verification link is invalid or has expired.",
+    "verifyEmailBackToHome": "Back to homepage",
+    "resendVerification": "Resend",
+    "verificationResending": "Sending...",
+    "verificationResent": "Verification email sent again",
+    "verificationResendError": "Couldn't send the email"
   },
   "Home": {
     "heroTitle": "Gear you can trust on the <hl>road</hl>",
@@ -346,7 +356,8 @@
     },
     "dashboard": {
       "greeting": "Welcome, {name}",
-      "description": "From here you can keep track of your garage and orders, or change your password."
+      "description": "From here you can keep track of your garage and orders, or change your password.",
+      "verifyEmailReminder": "Verify your email so you can place orders."
     },
     "garage": {
       "description": "Add your vehicle by picking it from the catalog, or add a new entry if you can't find it.",

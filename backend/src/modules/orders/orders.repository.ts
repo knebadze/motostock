@@ -7,7 +7,16 @@ import type {
   Prisma,
 } from "../../generated/prisma/index.js";
 
-const buyerSelect = { id: true, firstName: true, lastName: true, email: true } as const;
+// createdAt included for fraud.service.ts's NEW_ACCOUNT_HIGH_VALUE check
+// (account age at order time) — harmless to also carry on the admin views
+// that reuse this select.
+const buyerSelect = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  createdAt: true,
+} as const;
 
 // Also used by the admin single-order detail lookup (see orders.service.ts's
 // getAnyOrder) — the customer-facing toOrderResponse simply never reads
@@ -17,6 +26,7 @@ const orderItemsInclude = {
   status: true,
   bank: true,
   user: { select: buyerSelect },
+  riskFlags: { orderBy: { createdAt: "desc" } },
 } as const;
 
 function buildAdminWhere(filters: {
@@ -25,8 +35,13 @@ function buildAdminWhere(filters: {
   fulfillmentMethods?: OrderFulfillmentMethod[];
   createdFrom?: string;
   createdTo?: string;
+  flaggedOnly?: boolean;
 }): Prisma.OrderWhereInput | undefined {
   const and: Prisma.OrderWhereInput[] = [];
+
+  if (filters.flaggedOnly) {
+    and.push({ riskFlags: { some: {} } });
+  }
 
   if (filters.search) {
     and.push({
@@ -89,6 +104,7 @@ export type PlaceOrderInput = {
   deliveryCost: number;
   deliveryTimeSnapshot?: string | null;
   total: number;
+  ipAddress?: string | null;
   items: PlaceOrderItemInput[];
   // Resolved once by orders.service.ts (same "look up the lookup row by
   // its stable key" pattern as statusId/PENDING above) — applied below to
@@ -125,10 +141,16 @@ export const ordersRepository = {
     fulfillmentMethods?: OrderFulfillmentMethod[];
     createdFrom?: string;
     createdTo?: string;
+    flaggedOnly?: boolean;
   }) {
     return prisma.order.findMany({
       where: buildAdminWhere(filters),
-      include: { items: { select: { quantity: true } }, status: true, user: { select: buyerSelect } },
+      include: {
+        items: { select: { quantity: true } },
+        status: true,
+        user: { select: buyerSelect },
+        _count: { select: { riskFlags: true } },
+      },
       orderBy: { createdAt: "desc" },
     });
   },

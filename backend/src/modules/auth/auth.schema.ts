@@ -37,3 +37,11 @@ export const resetPasswordSchema = registry.register(
   }),
 );
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const verifyEmailSchema = registry.register(
+  "VerifyEmailInput",
+  z.object({
+    token: z.string().min(1),
+  }),
+);
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;

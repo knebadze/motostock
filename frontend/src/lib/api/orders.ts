@@ -130,12 +130,25 @@ export async function reorderOrder(id: number): Promise<ReorderResult> {
 // visible regardless of buyer, and each row/detail carries a `buyer`.
 export type OrderBuyer = { id: number; firstName: string; lastName: string; email: string };
 
+export type OrderRiskFlagType =
+  | "NEW_ACCOUNT_HIGH_VALUE"
+  | "ORDER_VELOCITY"
+  | "PROMO_CODE_MULTI_ACCOUNT"
+  | "SHARED_IP_MULTIPLE_ACCOUNTS";
+
+export type OrderRiskFlag = {
+  type: OrderRiskFlagType;
+  detail: string | null;
+  createdAt: string;
+};
+
 export type AdminOrderSummary = OrderSummary & {
   fulfillmentMethod: OrderFulfillmentMethod;
   buyer: OrderBuyer;
+  hasRiskFlags: boolean;
 };
 
-export type AdminOrder = Order & { buyer: OrderBuyer };
+export type AdminOrder = Order & { buyer: OrderBuyer; riskFlags: OrderRiskFlag[] };
 
 export type ListOrdersFilters = {
   search?: string;
@@ -143,6 +156,7 @@ export type ListOrdersFilters = {
   fulfillmentMethods?: OrderFulfillmentMethod[];
   createdFrom?: string;
   createdTo?: string;
+  flaggedOnly?: boolean;
 };
 
 export async function listAllOrders(filters: ListOrdersFilters = {}): Promise<AdminOrderSummary[]> {

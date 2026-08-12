@@ -36,3 +36,15 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
     `,
   );
 }
+
+export async function sendVerificationEmail(to: string, verifyUrl: string): Promise<void> {
+  await sendTemplatedEmail(
+    to,
+    `დაადასტურეთ თქვენი ელფოსტა — ${SITE_NAME}`,
+    `
+      <p>მადლობთ, რომ დარეგისტრირდით ${SITE_NAME}-ზე!</p>
+      <p><a href="${verifyUrl}">დააჭირეთ აქ ელფოსტის დასადასტურებლად</a></p>
+      <p>დადასტურება საჭიროა შეკვეთის გასაფორმებლად. ბმულის ვადა 24 საათშია.</p>
+    `,
+  );
+}

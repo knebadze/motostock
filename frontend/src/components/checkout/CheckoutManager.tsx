@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
+import { EmailVerificationBanner } from "@/components/shared/EmailVerificationBanner";
 import {
   placeOrder,
   previewCheckout,
@@ -70,6 +71,7 @@ export function CheckoutManager({
   const [previewLoading, setPreviewLoading] = useState(false);
   const [promoApplying, setPromoApplying] = useState(false);
   const [placing, setPlacing] = useState(false);
+  const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
 
   const requiresAddress = fulfillmentMethod !== "PICKUP";
   const requiresBank = fulfillmentMethod === "CARD";
@@ -100,7 +102,11 @@ export function CheckoutManager({
         })
         .catch((error) => {
           if (!cancelled) {
-            toast.error(error instanceof ApiRequestError ? error.message : t("previewError"));
+            if (error instanceof ApiRequestError && error.status === 403) {
+              setEmailVerificationRequired(true);
+            } else {
+              toast.error(error instanceof ApiRequestError ? error.message : t("previewError"));
+            }
             setPreview(null);
           }
         })
@@ -186,13 +192,24 @@ export function CheckoutManager({
       router.refresh();
       router.push(`/account/orders/${order.id}`);
     } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : t("placeError"));
+      if (error instanceof ApiRequestError && error.status === 403) {
+        setEmailVerificationRequired(true);
+      } else {
+        toast.error(error instanceof ApiRequestError ? error.message : t("placeError"));
+      }
     } finally {
       setPlacing(false);
     }
   }
 
   return (
+    <>
+      {emailVerificationRequired && (
+        <div className="mt-6">
+          <EmailVerificationBanner message={t("emailVerificationRequired")} />
+        </div>
+      )}
+
     <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
       <div className="flex flex-col gap-6">
         {requiresAddress && (
@@ -493,5 +510,6 @@ export function CheckoutManager({
         cities={cities}
       />
     </div>
+    </>
   );
 }

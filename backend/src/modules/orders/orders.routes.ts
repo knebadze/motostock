@@ -92,6 +92,7 @@ registry.registerPath({
     200: { description: "Checkout preview", content: { "application/json": { schema: checkoutPreviewResponseSchema } } },
     400: { description: "Empty cart or invalid promo code", content: { "application/json": { schema: errorResponseSchema } } },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Email not verified", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 
@@ -106,6 +107,7 @@ registry.registerPath({
     201: { description: "Order placed", content: { "application/json": { schema: orderResponse } } },
     400: { description: "Empty cart or invalid promo code", content: { "application/json": { schema: errorResponseSchema } } },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Email not verified", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Address not found", content: { "application/json": { schema: errorResponseSchema } } },
     409: { description: "Out of stock", content: { "application/json": { schema: errorResponseSchema } } },
   },

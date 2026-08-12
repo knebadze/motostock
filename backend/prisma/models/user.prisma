@@ -1,15 +1,23 @@
 model User {
-  id                      Int                  @id @default(autoincrement())
-  email                   String               @unique
+  id                      Int                      @id @default(autoincrement())
+  email                   String                   @unique
   passwordHash            String?
-  googleId                String?              @unique
-  facebookId              String?              @unique
+  googleId                String?                  @unique
+  facebookId              String?                  @unique
   firstName               String
   lastName                String
+  // Null for password-registered accounts until they click the emailed
+  // verification link; set immediately at creation for OAuth accounts
+  // (Google/Facebook already confirmed the address) — see
+  // oauth.service.ts's user-creation call sites and auth.service.ts's
+  // verifyEmail. Gates checkout only (see orders.service.ts), not login.
+  emailVerifiedAt         DateTime?
   roleId                  Int
-  role                    Role                 @relation(fields: [roleId], references: [id])
+  role                    Role                     @relation(fields: [roleId], references: [id])
   finaSyncRuns            FinaSyncRun[]
   passwordResetTokens     PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  authEvents              AuthEvent[]
   addresses               Address[]
   garageVehicles          GarageVehicle[]
   submittedCatalogEntries VehicleCatalog[]
@@ -18,8 +26,8 @@ model User {
   cartItems               CartItem[]
   productViews            ProductView[]
   orders                  Order[]
-  createdAt               DateTime             @default(now())
-  updatedAt               DateTime             @updatedAt
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
 
   @@index([roleId])
   @@schema("dbo")

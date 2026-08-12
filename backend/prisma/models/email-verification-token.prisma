@@ -1,0 +1,17 @@
+// Exact mirror of PasswordResetToken's shape/lifecycle (see
+// password-reset-token.prisma) — a one-time, hashed, expiring token emailed
+// as a verification link. Only the SHA-256 hash is stored (see
+// auth.service.ts's hashToken), same reasoning as the password-reset flow:
+// a DB leak alone shouldn't hand out usable verification tokens.
+model EmailVerificationToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@schema("dbo")
+}

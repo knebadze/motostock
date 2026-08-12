@@ -17,6 +17,12 @@ export const DELIVERY_REGIONS_PRICE_KEY = "delivery_regions_price";
 export const DELIVERY_REGIONS_TIME_KEY = "delivery_regions_time";
 export const DELIVERY_EXPRESS_PRICE_KEY = "delivery_express_price";
 export const DELIVERY_EXPRESS_TIME_KEY = "delivery_express_time";
+export const FRAUD_VELOCITY_ORDER_COUNT_KEY = "fraud_velocity_order_count";
+export const FRAUD_VELOCITY_WINDOW_MINUTES_KEY = "fraud_velocity_window_minutes";
+export const FRAUD_NEW_ACCOUNT_WINDOW_HOURS_KEY = "fraud_new_account_window_hours";
+export const FRAUD_HIGH_VALUE_THRESHOLD_KEY = "fraud_high_value_threshold";
+export const FRAUD_FAILED_LOGIN_THRESHOLD_KEY = "fraud_failed_login_threshold";
+export const FRAUD_FAILED_LOGIN_WINDOW_MINUTES_KEY = "fraud_failed_login_window_minutes";
 
 const ALL_SETTING_KEYS = [
   USE_CLOUD_STORAGE_KEY,
@@ -31,7 +37,22 @@ const ALL_SETTING_KEYS = [
   DELIVERY_REGIONS_TIME_KEY,
   DELIVERY_EXPRESS_PRICE_KEY,
   DELIVERY_EXPRESS_TIME_KEY,
+  FRAUD_VELOCITY_ORDER_COUNT_KEY,
+  FRAUD_VELOCITY_WINDOW_MINUTES_KEY,
+  FRAUD_NEW_ACCOUNT_WINDOW_HOURS_KEY,
+  FRAUD_HIGH_VALUE_THRESHOLD_KEY,
+  FRAUD_FAILED_LOGIN_THRESHOLD_KEY,
+  FRAUD_FAILED_LOGIN_WINDOW_MINUTES_KEY,
 ];
+
+const FRAUD_DEFAULTS = {
+  velocityOrderCount: 3,
+  velocityWindowMinutes: 30,
+  newAccountWindowHours: 24,
+  highValueThreshold: 1000,
+  failedLoginThreshold: 5,
+  failedLoginWindowMinutes: 15,
+};
 
 // Same read-through pattern as lookups.service.ts's listLookupItems, just
 // generalized over the return type since settings getters parse to
@@ -144,6 +165,48 @@ export async function getDeliveryExpressTime(): Promise<string> {
   });
 }
 
+export async function getFraudVelocityOrderCount(): Promise<number> {
+  return cached(FRAUD_VELOCITY_ORDER_COUNT_KEY, async () => {
+    const setting = await settingsRepository.findByKey(FRAUD_VELOCITY_ORDER_COUNT_KEY);
+    return Number(setting?.value ?? FRAUD_DEFAULTS.velocityOrderCount);
+  });
+}
+
+export async function getFraudVelocityWindowMinutes(): Promise<number> {
+  return cached(FRAUD_VELOCITY_WINDOW_MINUTES_KEY, async () => {
+    const setting = await settingsRepository.findByKey(FRAUD_VELOCITY_WINDOW_MINUTES_KEY);
+    return Number(setting?.value ?? FRAUD_DEFAULTS.velocityWindowMinutes);
+  });
+}
+
+export async function getFraudNewAccountWindowHours(): Promise<number> {
+  return cached(FRAUD_NEW_ACCOUNT_WINDOW_HOURS_KEY, async () => {
+    const setting = await settingsRepository.findByKey(FRAUD_NEW_ACCOUNT_WINDOW_HOURS_KEY);
+    return Number(setting?.value ?? FRAUD_DEFAULTS.newAccountWindowHours);
+  });
+}
+
+export async function getFraudHighValueThreshold(): Promise<number> {
+  return cached(FRAUD_HIGH_VALUE_THRESHOLD_KEY, async () => {
+    const setting = await settingsRepository.findByKey(FRAUD_HIGH_VALUE_THRESHOLD_KEY);
+    return Number(setting?.value ?? FRAUD_DEFAULTS.highValueThreshold);
+  });
+}
+
+export async function getFraudFailedLoginThreshold(): Promise<number> {
+  return cached(FRAUD_FAILED_LOGIN_THRESHOLD_KEY, async () => {
+    const setting = await settingsRepository.findByKey(FRAUD_FAILED_LOGIN_THRESHOLD_KEY);
+    return Number(setting?.value ?? FRAUD_DEFAULTS.failedLoginThreshold);
+  });
+}
+
+export async function getFraudFailedLoginWindowMinutes(): Promise<number> {
+  return cached(FRAUD_FAILED_LOGIN_WINDOW_MINUTES_KEY, async () => {
+    const setting = await settingsRepository.findByKey(FRAUD_FAILED_LOGIN_WINDOW_MINUTES_KEY);
+    return Number(setting?.value ?? FRAUD_DEFAULTS.failedLoginWindowMinutes);
+  });
+}
+
 export async function getSettings() {
   return {
     useCloudStorage: await isCloudStorageEnabled(),
@@ -158,6 +221,12 @@ export async function getSettings() {
     deliveryRegionsTime: await getDeliveryRegionsTime(),
     deliveryExpressPrice: await getDeliveryExpressPrice(),
     deliveryExpressTime: await getDeliveryExpressTime(),
+    fraudVelocityOrderCount: await getFraudVelocityOrderCount(),
+    fraudVelocityWindowMinutes: await getFraudVelocityWindowMinutes(),
+    fraudNewAccountWindowHours: await getFraudNewAccountWindowHours(),
+    fraudHighValueThreshold: await getFraudHighValueThreshold(),
+    fraudFailedLoginThreshold: await getFraudFailedLoginThreshold(),
+    fraudFailedLoginWindowMinutes: await getFraudFailedLoginWindowMinutes(),
   };
 }
 
@@ -198,6 +267,30 @@ export async function updateSettings(input: UpdateSettingsInput) {
   await settingsRepository.upsert(DELIVERY_REGIONS_TIME_KEY, input.deliveryRegionsTime);
   await settingsRepository.upsert(DELIVERY_EXPRESS_PRICE_KEY, String(input.deliveryExpressPrice));
   await settingsRepository.upsert(DELIVERY_EXPRESS_TIME_KEY, input.deliveryExpressTime);
+  await settingsRepository.upsert(
+    FRAUD_VELOCITY_ORDER_COUNT_KEY,
+    String(input.fraudVelocityOrderCount),
+  );
+  await settingsRepository.upsert(
+    FRAUD_VELOCITY_WINDOW_MINUTES_KEY,
+    String(input.fraudVelocityWindowMinutes),
+  );
+  await settingsRepository.upsert(
+    FRAUD_NEW_ACCOUNT_WINDOW_HOURS_KEY,
+    String(input.fraudNewAccountWindowHours),
+  );
+  await settingsRepository.upsert(
+    FRAUD_HIGH_VALUE_THRESHOLD_KEY,
+    String(input.fraudHighValueThreshold),
+  );
+  await settingsRepository.upsert(
+    FRAUD_FAILED_LOGIN_THRESHOLD_KEY,
+    String(input.fraudFailedLoginThreshold),
+  );
+  await settingsRepository.upsert(
+    FRAUD_FAILED_LOGIN_WINDOW_MINUTES_KEY,
+    String(input.fraudFailedLoginWindowMinutes),
+  );
 
   for (const key of ALL_SETTING_KEYS) cache.del(cacheKey(key));
   return getSettings();

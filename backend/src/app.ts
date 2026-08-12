@@ -62,6 +62,7 @@ import {
 } from "./modules/recommendations/recommendations.routes.js";
 import { newsletterRouter } from "./modules/newsletter/newsletter.routes.js";
 import { newsletterCampaignsRouter } from "./modules/newsletter-campaigns/newsletter-campaigns.routes.js";
+import { fraudRouter } from "./modules/fraud/fraud.routes.js";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
 import { banksRouter } from "./modules/banks/banks.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
@@ -70,6 +71,13 @@ import { globalRateLimit } from "./middleware/rateLimit.middleware.js";
 import { ROLES } from "./lib/roles.js";
 
 export const app = express();
+
+// Required for req.ip (see lib/request-ip.ts) to reflect the real client
+// address instead of a reverse proxy's — Express only parses
+// X-Forwarded-For when trust proxy is set. `1` trusts exactly one hop
+// (a typical single nginx/PaaS-proxy deployment); adjust if this app ever
+// sits behind more than one proxy layer.
+app.set("trust proxy", 1);
 
 app.use(helmet());
 app.use(cors({ origin: env.FRONTEND_ORIGIN, credentials: true }));
@@ -142,6 +150,7 @@ app.use("/api/products/:productId/recommendations", productRecommendationsRouter
 app.use("/api/recommendations", recommendationsRouter);
 app.use("/api/newsletter", newsletterRouter);
 app.use("/api/newsletter-campaigns", newsletterCampaignsRouter);
+app.use("/api/fraud", fraudRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/banks", banksRouter);
 

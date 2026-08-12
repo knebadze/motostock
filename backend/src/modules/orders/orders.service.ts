@@ -11,8 +11,10 @@ import { cartRepository, type CartOwner } from "../cart/cart.repository.js";
 import { addCartItem } from "../cart/cart.service.js";
 import { addressesRepository } from "../addresses/addresses.repository.js";
 import { banksRepository } from "../banks/banks.repository.js";
+import { usersRepository } from "../users/users.repository.js";
 import { syncVariantStockByIds } from "../fina-sync/fina-sync.service.js";
 import { sendEmailTemplate } from "../email-templates/email-templates.service.js";
+import { evaluateOrderRisk } from "../fraud/fraud.service.js";
 import { resolvePromoCodeForItems, promoCodeItemKey } from "../promo-codes/promo-codes.service.js";
 import {
   isPromoStackingEnabled,
@@ -344,7 +346,23 @@ function toBreakdownResponse(breakdown: CheckoutBreakdown, delivery: DeliveryRes
   };
 }
 
+// Checkout-only gate (see user.prisma's emailVerifiedAt comment) — login,
+// browsing, cart, and order history all stay unaffected by verification
+// status. Returns the full user row so placeOrder can reuse createdAt for
+// evaluateOrderRisk's NEW_ACCOUNT_HIGH_VALUE check without a second lookup.
+async function assertEmailVerified(userId: number) {
+  const user = await usersRepository.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა");
+  }
+  if (!user.emailVerifiedAt) {
+    throw new ApiError(403, "შეკვეთის გასაფორმებლად საჭიროა ელფოსტის დადასტურება");
+  }
+  return user;
+}
+
 export async function previewCheckout(userId: number, input: CheckoutInput) {
+  await assertEmailVerified(userId);
   const breakdown = await computeCheckoutTotals(userId, input.promoCode);
   const delivery = await resolveDelivery(userId, input.fulfillmentMethod, input.addressId, input.deliverySpeed);
   return toBreakdownResponse(breakdown, delivery);
@@ -401,7 +419,8 @@ function toOrderResponse(order: OrderRow) {
   };
 }
 
-export async function placeOrder(userId: number, input: CheckoutInput) {
+export async function placeOrder(userId: number, input: CheckoutInput, ipAddress: string | null) {
+  const user = await assertEmailVerified(userId);
   const breakdown = await computeCheckoutTotals(userId, input.promoCode);
 
   for (const item of breakdown.items) {
@@ -438,6 +457,7 @@ export async function placeOrder(userId: number, input: CheckoutInput) {
         deliveryCost: delivery.deliveryCost,
         deliveryTimeSnapshot: delivery.deliveryTimeSnapshot,
         total: Math.round((breakdown.total + delivery.deliveryCost) * 100) / 100,
+        ipAddress,
         items,
         soldStatusId,
       });
@@ -447,6 +467,19 @@ export async function placeOrder(userId: number, input: CheckoutInput) {
         orderCode: order.orderCode,
         total: Number(order.total).toFixed(2),
       });
+
+      // Never throws (see fraud.service.ts) — safe to await inline without
+      // its own try/catch here.
+      await evaluateOrderRisk(
+        {
+          id: order.id,
+          userId,
+          total: Number(order.total),
+          promoCodeId: breakdown.promoCode?.id ?? null,
+          ipAddress,
+        },
+        user.createdAt,
+      );
 
       return toOrderResponse(order);
     } catch (error) {
@@ -591,6 +624,7 @@ export async function listAllOrders(filters: ListOrdersQuery) {
     itemCount: row.items.reduce((sum, item) => sum + item.quantity, 0),
     createdAt: row.createdAt,
     buyer: row.user,
+    hasRiskFlags: row._count.riskFlags > 0,
   }));
 }
 
@@ -599,7 +633,17 @@ export async function getAnyOrder(id: number) {
   if (!row) {
     throw new ApiError(404, "შეკვეთა ვერ მოიძებნა");
   }
-  return { ...toOrderResponse(row), buyer: row.user };
+  // riskFlags is only ever surfaced here (admin) — toOrderResponse itself is
+  // shared with the customer-facing getMyOrder, which must never see them.
+  return {
+    ...toOrderResponse(row),
+    buyer: row.user,
+    riskFlags: row.riskFlags.map((flag) => ({
+      type: flag.type,
+      detail: flag.detail,
+      createdAt: flag.createdAt,
+    })),
+  };
 }
 
 // Only the statuses a customer would actually want a notification about —

@@ -67,6 +67,13 @@ model Order {
   discountTotal Decimal @default(0) @db.Decimal(10, 2)
   total         Decimal @db.Decimal(10, 2)
 
+  // Captured at checkout time (see lib/request-ip.ts's getClientIp) — the
+  // one piece of fraud-relevant signal this codebase didn't track before.
+  // Used by fraud.service.ts's evaluateOrderRisk to detect promo-code abuse
+  // and multi-accounting; never shown to the customer.
+  ipAddress String?
+  riskFlags OrderRiskFlag[]
+
   items     OrderItem[]
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt

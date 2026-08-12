@@ -1,0 +1,31 @@
+enum AuthEventType {
+  REGISTER
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+
+  @@schema("dbo")
+}
+
+// A flat log of auth attempts — backs three fraud-detection needs at once:
+// failed-login velocity per account (credential stuffing), registration
+// velocity per IP (multi-accounting for promo abuse), and "which accounts
+// share an IP" (the join fraud.service.ts's evaluateOrderRisk needs for its
+// PROMO_CODE_MULTI_ACCOUNT/SHARED_IP_MULTIPLE_ACCOUNTS checks). `email` is
+// always recorded even when `userId` can't be resolved (e.g. a login
+// attempt against an email with no account) — a queryable identity is the
+// whole point of a LOGIN_FAILURE row.
+model AuthEvent {
+  id        Int           @id @default(autoincrement())
+  type      AuthEventType
+  userId    Int?
+  user      User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  ipAddress String?
+  createdAt DateTime      @default(now())
+
+  @@index([userId])
+  @@index([email])
+  @@index([ipAddress])
+  @@index([createdAt])
+  @@schema("dbo")
+}

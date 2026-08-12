@@ -13,6 +13,7 @@ import {
   emailTemplatesIcon,
   filtersIcon,
   finaSyncIcon,
+  fraudIcon,
   heroSlidesIcon,
   listingIcon,
   modelsIcon,
@@ -94,6 +95,10 @@ export const adminNav: AdminNavSection[] = [
   {
     label: "გადახდები",
     items: [{ label: "ბანკები", href: "/admin/banks", icon: banksIcon }],
+  },
+  {
+    label: "უსაფრთხოება",
+    items: [{ label: "თაღლითობის მონიტორინგი", href: "/admin/fraud", icon: fraudIcon }],
   },
   // One-time setup content — filled in once and rarely touched again, so
   // it belongs at the bottom, out of the way of daily-use sections above.

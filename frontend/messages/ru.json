@@ -137,6 +137,7 @@
     "placing": "Оформляется...",
     "placeSuccess": "Заказ успешно оформлен",
     "placeError": "Не удалось оформить заказ",
+    "emailVerificationRequired": "Для оформления заказа необходимо подтвердить email — проверьте почту или отправьте письмо повторно.",
     "outOfStockItem": "Нет в наличии",
     "limitedStockItem": "В наличии осталось {count}",
     "stockIssueMessage": "Некоторых товаров в корзине больше нет в запрошенном количестве — уменьшите количество или удалите их из корзины, чтобы оформить заказ.",
@@ -230,7 +231,16 @@
     "resetPasswordSubmitting": "Сохранение...",
     "resetPasswordInvalidToken": "Ссылка недействительна или срок её действия истёк",
     "resetPasswordMissingToken": "Неверная ссылка — используйте ссылку из письма",
-    "backToForgotPassword": "Запросить новую ссылку"
+    "backToForgotPassword": "Запросить новую ссылку",
+    "verifyEmailTitle": "Подтверждение email",
+    "verifyEmailLoading": "Подтверждение...",
+    "verifyEmailSuccess": "Email подтверждён! Теперь вы можете оформить заказ.",
+    "verifyEmailError": "Ссылка подтверждения неверна или устарела.",
+    "verifyEmailBackToHome": "На главную",
+    "resendVerification": "Отправить повторно",
+    "verificationResending": "Отправка...",
+    "verificationResent": "Письмо с подтверждением отправлено повторно",
+    "verificationResendError": "Не удалось отправить письмо"
   },
   "Home": {
     "heroTitle": "Экипировка, которой можно доверять на <hl>дороге</hl>",
@@ -346,7 +356,8 @@
     },
     "dashboard": {
       "greeting": "Добро пожаловать, {name}",
-      "description": "Здесь вы можете следить за гаражом и заказами или изменить пароль."
+      "description": "Здесь вы можете следить за гаражом и заказами или изменить пароль.",
+      "verifyEmailReminder": "Подтвердите email, чтобы иметь возможность оформлять заказы."
     },
     "garage": {
       "description": "Добавьте свою технику, выбрав её из каталога, или, если не нашли, добавьте новую запись.",

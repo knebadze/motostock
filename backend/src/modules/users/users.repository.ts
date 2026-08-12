@@ -65,7 +65,21 @@ export const usersRepository = {
     googleId?: string;
     facebookId?: string;
   }) {
-    return prisma.user.create({ data, include: { role: true } });
+    // OAuth accounts are pre-verified — the provider already confirmed this
+    // email address, so there's no password-registration-style verification
+    // step for them (see user.prisma's emailVerifiedAt comment).
+    return prisma.user.create({
+      data: { ...data, emailVerifiedAt: new Date() },
+      include: { role: true },
+    });
+  },
+
+  markEmailVerified(id: number) {
+    return prisma.user.update({
+      where: { id },
+      data: { emailVerifiedAt: new Date() },
+      include: { role: true },
+    });
   },
 
   linkGoogleId(id: number, googleId: string) {
