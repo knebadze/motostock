@@ -2,12 +2,13 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
-import { imageUpload } from "../../middleware/upload.middleware.js";
+import { imageUpload, spreadsheetUpload } from "../../middleware/upload.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
 import { ROLES } from "../../lib/roles.js";
 import * as vehicleCatalogController from "./vehicle-catalog.controller.js";
 import {
+  bulkImportVehicleCatalogResponseSchema,
   createVehicleCatalogSchema,
   submitVehicleCatalogSchema,
   updateVehicleCatalogSchema,
@@ -59,6 +60,12 @@ vehicleCatalogRouter.post(
   validate(vehicleCatalogIdParamSchema, "params"),
   imageUpload().single("image"),
   vehicleCatalogController.uploadImage,
+);
+vehicleCatalogRouter.get("/bulk-import/template", vehicleCatalogController.downloadTemplate);
+vehicleCatalogRouter.post(
+  "/bulk-import",
+  spreadsheetUpload().single("file"),
+  vehicleCatalogController.bulkImport,
 );
 
 const security = [{ cookieAuth: [] }];
@@ -143,6 +150,46 @@ registry.registerPath({
     204: { description: "Deleted" },
     400: { description: "In use, cannot delete", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-catalog/bulk-import/template",
+  tags: ["VehicleCatalog"],
+  summary: "Download the bulk-import Excel template, prefilled with classifier reference sheets",
+  security,
+  responses: {
+    200: {
+      description: "Excel template",
+      content: {
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": { schema: z.string().openapi({ format: "binary" }) },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/vehicle-catalog/bulk-import",
+  tags: ["VehicleCatalog"],
+  summary: "Bulk-create vehicle catalog entries from an uploaded Excel file",
+  security,
+  request: {
+    body: {
+      content: {
+        "multipart/form-data": {
+          schema: z.object({ file: z.string().openapi({ format: "binary" }) }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Per-row import results",
+      content: { "application/json": { schema: bulkImportVehicleCatalogResponseSchema } },
+    },
+    400: { description: "Invalid file", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 

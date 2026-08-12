@@ -150,6 +150,49 @@ export async function deleteVehicleCatalogEntry(id: number): Promise<void> {
   await apiClient.delete(`/vehicle-catalog/${id}`);
 }
 
+export type BulkImportRowResult = {
+  row: number;
+  status: "created" | "error";
+  message: string | null;
+  id: number | null;
+};
+
+export type BulkImportVehicleCatalogResult = {
+  totalRows: number;
+  createdCount: number;
+  errorCount: number;
+  results: BulkImportRowResult[];
+};
+
+export async function downloadVehicleCatalogTemplate(): Promise<void> {
+  const { data } = await apiClient.get<Blob>("/vehicle-catalog/bulk-import/template", {
+    responseType: "blob",
+  });
+
+  const url = URL.createObjectURL(data);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "vehicle-catalog-template.xlsx";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export async function bulkImportVehicleCatalog(
+  file: File,
+): Promise<BulkImportVehicleCatalogResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const { data } = await apiClient.post<BulkImportVehicleCatalogResult>(
+    "/vehicle-catalog/bulk-import",
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return data;
+}
+
 export async function uploadVehicleCatalogImage(
   id: number,
   file: File,

@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
 import * as vehicleCatalogService from "./vehicle-catalog.service.js";
+import { generateVehicleCatalogTemplate } from "./vehicle-catalog-template.service.js";
+import { bulkImportVehicleCatalog } from "./vehicle-catalog-bulk-import.service.js";
 import type {
   CreateVehicleCatalogInput,
   SubmitVehicleCatalogInput,
@@ -67,4 +69,24 @@ export async function uploadImage(req: Request, res: Response) {
     req.file,
   );
   res.status(200).json({ item });
+}
+
+export async function downloadTemplate(_req: Request, res: Response) {
+  const buffer = await generateVehicleCatalogTemplate();
+  res.status(200);
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  res.setHeader("Content-Disposition", 'attachment; filename="vehicle-catalog-template.xlsx"');
+  res.send(buffer);
+}
+
+export async function bulkImport(req: Request, res: Response) {
+  if (!req.file) {
+    throw new ApiError(400, "ფაილი არ არის მიბმული");
+  }
+
+  const result = await bulkImportVehicleCatalog(req.file.buffer);
+  res.status(200).json(result);
 }

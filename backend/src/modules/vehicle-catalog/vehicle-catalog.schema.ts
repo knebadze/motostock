@@ -112,6 +112,23 @@ export const submitVehicleCatalogSchema = registry.register(
 );
 export type SubmitVehicleCatalogInput = z.infer<typeof submitVehicleCatalogSchema>;
 
+const bulkImportRowResultSchema = z.object({
+  row: z.int(),
+  status: z.enum(["created", "error"]),
+  message: z.string().nullable(),
+  id: z.int().nullable(),
+});
+
+export const bulkImportVehicleCatalogResponseSchema = registry.register(
+  "BulkImportVehicleCatalogResult",
+  z.object({
+    totalRows: z.int(),
+    createdCount: z.int(),
+    errorCount: z.int(),
+    results: z.array(bulkImportRowResultSchema),
+  }),
+);
+
 export const vehicleCatalogResponseSchema = registry.register(
   "VehicleCatalog",
   z.object({

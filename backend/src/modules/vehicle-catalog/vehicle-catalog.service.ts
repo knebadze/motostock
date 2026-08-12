@@ -115,7 +115,9 @@ async function assertOptionalLookupExists(
   }
 }
 
-async function assertRefsExist(input: {
+// Exported for reuse by vehicle-catalog-bulk-import.service.ts, which needs
+// the exact same per-row FK validation as the single-row create endpoint.
+export async function assertRefsExist(input: {
   brandId: number;
   modelId: number;
   fuelTypeId?: number | null;
@@ -174,7 +176,9 @@ export async function getVehicleCatalogEntry(id: number) {
   return toVehicleCatalogResponse(row);
 }
 
-async function assertNoDuplicate(params: {
+// Exported for reuse by vehicle-catalog-bulk-import.service.ts — see
+// assertRefsExist above for the same reasoning.
+export async function assertNoDuplicate(params: {
   modelId: number;
   variant: string;
   yearFrom: number | null;

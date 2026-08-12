@@ -20,6 +20,7 @@ import type { Model } from "@/lib/api/models";
 import type { LookupItem } from "@/lib/api/lookups";
 import { buildVehicleCatalogFilterFields } from "@/config/admin-filters/vehicle-catalog-filters";
 import { VehicleCatalogFormModal } from "./VehicleCatalogFormModal";
+import { VehicleCatalogBulkImportModal } from "./VehicleCatalogBulkImportModal";
 
 const columns: DataTableColumn<VehicleCatalogEntry>[] = [
   {
@@ -105,6 +106,7 @@ export function VehicleCatalogManager({
 }) {
   const [entries, setEntries] = useState(initialEntries);
   const [formOpen, setFormOpen] = useState(false);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<VehicleCatalogEntry | null>(null);
   const [deletingEntry, setDeletingEntry] = useState<VehicleCatalogEntry | null>(null);
   const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
@@ -157,14 +159,24 @@ export function VehicleCatalogManager({
     <div>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">ტექნიკის კატალოგი</h1>
-        <button
-          type="button"
-          onClick={openCreateModal}
-          disabled={!canCreate}
-          className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
-        >
-          + ტექნიკის დამატება
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setBulkImportOpen(true)}
+            disabled={!canCreate}
+            className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+          >
+            Excel-ით ატვირთვა
+          </button>
+          <button
+            type="button"
+            onClick={openCreateModal}
+            disabled={!canCreate}
+            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
+          >
+            + ტექნიკის დამატება
+          </button>
+        </div>
       </div>
 
       {!canCreate && (
@@ -209,6 +221,12 @@ export function VehicleCatalogManager({
         startTypes={startTypes}
         powertrainTypes={powertrainTypes}
         entry={editingEntry}
+      />
+
+      <VehicleCatalogBulkImportModal
+        open={bulkImportOpen}
+        onClose={() => setBulkImportOpen(false)}
+        onImported={() => refresh()}
       />
 
       <ConfirmDialog
