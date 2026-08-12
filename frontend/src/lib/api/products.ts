@@ -109,6 +109,30 @@ export type ProductDetail = Product & {
   buyTogether: Product[];
 };
 
+export type ProductSaleOrder = {
+  orderId: number;
+  orderCode: string;
+  createdAt: string;
+  buyerName: string;
+  buyerEmail: string;
+  quantity: number;
+  lineTotal: number;
+  status: string;
+};
+
+export type ProductSalesSummary = {
+  totalQuantitySold: number;
+  totalRevenue: number;
+  orderCount: number;
+  recentOrders: ProductSaleOrder[];
+};
+
+// Admin-only detail — same as ProductDetail plus sales history, returned by
+// the admin "full view" endpoint (see getProductDetailAdmin below).
+export type ProductDetailAdmin = ProductDetail & {
+  sales: ProductSalesSummary;
+};
+
 export async function getProductBySlug(slug: string): Promise<ProductDetail> {
   const { data } = await apiClient.get<{ item: ProductDetail }>(`/products/by-slug/${slug}`);
   return data.item;
@@ -179,6 +203,14 @@ export async function listPopularProducts(limit?: number): Promise<Product[]> {
 
 export async function getProduct(id: number): Promise<Product> {
   const { data } = await apiClient.get<{ item: Product }>(`/products/${id}`);
+  return data.item;
+}
+
+// Admin "full view" counterpart to getProductBySlug — same ProductDetail
+// shape, but doesn't count as a customer view and isn't narrowed by any
+// vehicle-compatibility filter (see the backend's getProductDetailAdmin).
+export async function getProductDetailAdmin(id: number): Promise<ProductDetailAdmin> {
+  const { data } = await apiClient.get<{ item: ProductDetailAdmin }>(`/products/${id}/detail`);
   return data.item;
 }
 

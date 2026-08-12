@@ -1,14 +1,39 @@
 "use client";
 
 export function RowActions({
+  onView,
   onEdit,
   onDelete,
 }: {
+  onView?: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
     <div className="flex justify-end gap-1">
+      {onView && (
+        <button
+          type="button"
+          onClick={onView}
+          aria-label="სრულად ნახვა"
+          title="სრულად ნახვა"
+          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="size-4"
+          >
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </button>
+      )}
       <button
         type="button"
         onClick={onEdit}

@@ -16,6 +16,7 @@ import type { ProductBrand } from "@/lib/api/product-brands";
 import type { LookupItem } from "@/lib/api/lookups";
 import { buildProductFilterFields } from "@/config/admin-filters/product-filters";
 import { formatPrice } from "@/lib/format";
+import { ProductDetailModal } from "./ProductDetailModal";
 
 const columns: DataTableColumn<Product>[] = [
   {
@@ -93,6 +94,7 @@ export function ProductsManager({
   const [products, setProducts] = useState(initialProducts);
   const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [viewingProductId, setViewingProductId] = useState<number | null>(null);
   const { page, setPage, pageItems, totalPages } = usePagination(products);
 
   const canCreate = categories.length > 0;
@@ -156,6 +158,7 @@ export function ProductsManager({
           emptyMessage="პროდუქტი არ არსებობს"
           actions={(product) => (
             <RowActions
+              onView={() => setViewingProductId(product.id)}
               onEdit={() => router.push(`/admin/products/${product.id}`)}
               onDelete={() => setDeletingProduct(product)}
             />
@@ -163,6 +166,10 @@ export function ProductsManager({
         />
         <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
+
+      {viewingProductId != null && (
+        <ProductDetailModal productId={viewingProductId} onClose={() => setViewingProductId(null)} />
+      )}
 
       <ConfirmDialog
         open={deletingProduct !== null}

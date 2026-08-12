@@ -281,3 +281,30 @@ export const productDetailResponseSchema = registry.register(
     buyTogether: z.array(productResponseSchema),
   }),
 );
+
+const productSaleOrderSchema = z.object({
+  orderId: z.int(),
+  orderCode: z.string(),
+  createdAt: z.iso.datetime(),
+  buyerName: z.string(),
+  buyerEmail: z.string(),
+  quantity: z.int(),
+  lineTotal: z.number(),
+  status: z.string(),
+});
+
+const productSalesSummarySchema = z.object({
+  totalQuantitySold: z.int(),
+  totalRevenue: z.number(),
+  orderCount: z.int(),
+  recentOrders: z.array(productSaleOrderSchema),
+});
+
+// Admin-only counterpart to productDetailResponseSchema — adds sales
+// history, which the public by-slug endpoint has no reason to expose.
+export const productDetailAdminResponseSchema = registry.register(
+  "ProductDetailAdmin",
+  productDetailResponseSchema.extend({
+    sales: productSalesSummarySchema,
+  }),
+);

@@ -59,6 +59,11 @@ export async function getBySlug(
   res.status(200).json({ item });
 }
 
+export async function getDetailAdmin(req: Request, res: Response) {
+  const item = await productsService.getProductDetailAdmin(Number(req.params.id));
+  res.status(200).json({ item });
+}
+
 export async function create(
   req: Request<unknown, unknown, CreateProductInput>,
   res: Response,

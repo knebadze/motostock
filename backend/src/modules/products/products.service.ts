@@ -264,7 +264,8 @@ async function toFitmentRuleResponse(rule: FitmentRuleRow) {
   };
 }
 
-async function toDetailResponse(row: ProductDetailRow) {
+// Exported for reuse by getProductDetailAdmin below.
+export async function toDetailResponse(row: ProductDetailRow) {
   return {
     ...toResponse(row),
     variants: row.variants.map(toVariantDetailResponse),
@@ -492,6 +493,26 @@ export async function getProductDetail(slug: string, vehicleCatalogId?: number) 
     ...response,
     buyTogether: response.buyTogether.filter((product) => compatibleIdSet.has(product.id)),
   };
+}
+
+// Admin "full view" counterpart to getProductDetail — unlike that
+// customer-facing version, this never increments viewCount (an admin
+// opening the detail modal isn't a real customer visit) and never narrows
+// buyTogether by vehicle compatibility (the admin manages the full
+// configured list, not a shopper's filtered view of it).
+export async function getProductDetailAdmin(id: number) {
+  const row = await productsRepository.findDetailById(id);
+  if (!row) {
+    throw new ApiError(404, "პროდუქტი ვერ მოიძებნა");
+  }
+
+  const variantIds = row.variants.map((variant) => variant.id);
+  const [response, sales] = await Promise.all([
+    toDetailResponse(row),
+    productsRepository.findSalesSummary(variantIds),
+  ]);
+
+  return { ...response, sales };
 }
 
 export async function createProduct(input: CreateProductInput) {

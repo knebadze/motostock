@@ -12,6 +12,7 @@ import {
   checkCompatibilityResponseSchema,
   createProductSchema,
   popularProductsQuerySchema,
+  productDetailAdminResponseSchema,
   productDetailQuerySchema,
   productDetailResponseSchema,
   productIdParamSchema,
@@ -50,6 +51,11 @@ productsRouter.get("/:id", validate(productIdParamSchema, "params"), productsCon
 
 productsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
+productsRouter.get(
+  "/:id/detail",
+  validate(productIdParamSchema, "params"),
+  productsController.getDetailAdmin,
+);
 productsRouter.post("/", validate(createProductSchema), productsController.create);
 productsRouter.patch(
   "/:id",
@@ -133,6 +139,22 @@ registry.registerPath({
       description: "Compatible product ids",
       content: { "application/json": { schema: checkCompatibilityResponseSchema } },
     },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/products/{id}/detail",
+  tags: ["Products"],
+  summary: "Get a product's full detail (variants, images, discounts, fitments, buyTogether, sales history) by id — admin full-view, doesn't count as a customer view",
+  security,
+  request: { params: productIdParamSchema },
+  responses: {
+    200: {
+      description: "Product detail",
+      content: { "application/json": { schema: z.object({ item: productDetailAdminResponseSchema }) } },
+    },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 

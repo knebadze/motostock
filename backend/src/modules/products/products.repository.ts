@@ -363,6 +363,64 @@ export const productsRepository = {
     return prisma.product.findUnique({ where: { slug }, include: detailInclude });
   },
 
+  // Admin "full view" counterpart to findDetailBySlug — same detailInclude
+  // (nothing filtered for customer visibility), looked up by id since
+  // that's what the admin products table already has on hand.
+  findDetailById(id: number) {
+    return prisma.product.findUnique({ where: { id }, include: detailInclude });
+  },
+
+  // Sales history for the admin detail modal — OrderItem has no direct
+  // productId (only productVariantId, see order-item.prisma), so this is
+  // scoped to the caller's own variant ids rather than a single product FK
+  // lookup. Aggregate totals + a distinct-order count + the 10 most recent
+  // orders that included any of this product's variants.
+  async findSalesSummary(variantIds: number[]) {
+    if (variantIds.length === 0) {
+      return { totalQuantitySold: 0, totalRevenue: 0, orderCount: 0, recentOrders: [] };
+    }
+
+    const where = { productVariantId: { in: variantIds } };
+    const [totals, distinctOrders, recentItems] = await Promise.all([
+      prisma.orderItem.aggregate({ where, _sum: { quantity: true, lineTotal: true } }),
+      prisma.orderItem.findMany({ where, select: { orderId: true }, distinct: ["orderId"] }),
+      prisma.orderItem.findMany({
+        where,
+        select: {
+          quantity: true,
+          lineTotal: true,
+          order: {
+            select: {
+              id: true,
+              orderCode: true,
+              createdAt: true,
+              status: { select: { nameKa: true } },
+              user: { select: { firstName: true, lastName: true, email: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+    ]);
+
+    return {
+      totalQuantitySold: totals._sum.quantity ?? 0,
+      totalRevenue: Number(totals._sum.lineTotal ?? 0),
+      orderCount: distinctOrders.length,
+      recentOrders: recentItems.map((item) => ({
+        orderId: item.order.id,
+        orderCode: item.order.orderCode,
+        createdAt: item.order.createdAt,
+        buyerName: `${item.order.user.firstName} ${item.order.user.lastName}`.trim(),
+        buyerEmail: item.order.user.email,
+        quantity: item.quantity,
+        lineTotal: Number(item.lineTotal),
+        status: item.order.status.nameKa,
+      })),
+    };
+  },
+
   create(data: ProductWriteData) {
     return prisma.product.create({ data, include: productSummaryInclude });
   },
