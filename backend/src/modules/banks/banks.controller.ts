@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { ApiError } from "../../lib/ApiError.js";
 import * as banksService from "./banks.service.js";
 import type { CreateBankInput, ReorderBanksInput, UpdateBankInput } from "./banks.schema.js";
 
@@ -27,8 +28,7 @@ export async function update(
 
 export async function uploadLogo(req: Request<{ id: string }>, res: Response) {
   if (!req.file) {
-    res.status(400).json({ error: { message: "ლოგო არ არის ატვირთული" } });
-    return;
+    throw new ApiError(400, "ლოგო არ არის ატვირთული");
   }
   const item = await banksService.setBankLogo(Number(req.params.id), req.file);
   res.status(200).json({ item });

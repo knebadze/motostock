@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { ApiError } from "../../lib/ApiError.js";
 import * as heroSlidesService from "./hero-slides.service.js";
 import type {
   CreateHeroSlideInput,
@@ -31,8 +32,7 @@ export async function update(
 
 export async function uploadImage(req: Request<{ id: string }>, res: Response) {
   if (!req.file) {
-    res.status(400).json({ error: { message: "სურათი არ არის ატვირთული" } });
-    return;
+    throw new ApiError(400, "სურათი არ არის ატვირთული");
   }
   const item = await heroSlidesService.setHeroSlideImage(Number(req.params.id), req.file);
   res.status(200).json({ item });
