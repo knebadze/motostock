@@ -6,6 +6,7 @@ import { getMyOrderFromServer } from "@/lib/api/server";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { formatDateTime, formatPrice } from "@/lib/format";
 import type { OrderFulfillmentMethod } from "@/lib/api/orders";
+import { ReorderButton } from "@/components/shared/ReorderButton";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -39,9 +40,12 @@ function OrderDetailPageView({ order }: { order: NonNullable<Awaited<ReturnType<
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight">{order.orderCode}</h1>
-        <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground">
-          {order.status[nameLocaleKey]}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground">
+            {order.status[nameLocaleKey]}
+          </span>
+          <ReorderButton orderId={order.id} />
+        </div>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">{formatDateTime(order.createdAt)}</p>
 

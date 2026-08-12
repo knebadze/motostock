@@ -423,7 +423,13 @@
       "loadError": "Couldn't load comparison list"
     },
     "orders": {
-      "empty": "You haven't placed any orders yet."
+      "empty": "You haven't placed any orders yet.",
+      "reorderButton": "Buy again",
+      "reorderLoading": "Working...",
+      "reorderAllAdded": "All items added to cart",
+      "reorderNoneAvailable": "None of the items could be added — out of stock",
+      "reorderPartialSummary": "{added} item(s) added to cart, {issues} no longer available or short on stock",
+      "reorderError": "Couldn't add to cart"
     },
     "address": {
       "description": "Add your delivery addresses and contact phone number — we'll use them to deliver your orders. You can save more than one.",

@@ -32,6 +32,11 @@ export async function getOne(req: Request, res: Response) {
   res.status(200).json({ order });
 }
 
+export async function reorder(req: Request, res: Response) {
+  const result = await ordersService.reorderOrder(requireUserId(req), Number(req.params.id));
+  res.status(200).json(result);
+}
+
 // Admin-only — requireRole(ROLES.ADMIN) gates both routes (see orders.routes.ts).
 export async function listAll(
   req: Request<unknown, unknown, unknown, ListOrdersQuery>,

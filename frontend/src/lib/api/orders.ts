@@ -106,6 +106,25 @@ export async function getMyOrder(id: number): Promise<Order> {
   return data.order;
 }
 
+export type ReorderItemStatus = "ADDED" | "PARTIAL" | "UNAVAILABLE";
+
+export type ReorderItemResult = {
+  itemName: LocalizedString;
+  requestedQuantity: number;
+  addedQuantity: number;
+  status: ReorderItemStatus;
+};
+
+export type ReorderResult = { items: ReorderItemResult[] };
+
+// Re-adds a past order's items to the caller's current cart, best-effort
+// per item — see ReorderItemResult.status for which ones didn't fully make
+// it back in (sold out / no longer exist).
+export async function reorderOrder(id: number): Promise<ReorderResult> {
+  const { data } = await apiClient.post<ReorderResult>(`/orders/me/${id}/reorder`);
+  return data;
+}
+
 // Admin-only from here down — hits the requireRole(ADMIN)-gated /orders and
 // /orders/:id endpoints (not the /orders/me* ones above), so every order is
 // visible regardless of buyer, and each row/detail carries a `buyer`.

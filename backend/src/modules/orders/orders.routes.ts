@@ -16,6 +16,7 @@ import {
   orderIdParamSchema,
   orderResponseSchema,
   orderSummaryResponseSchema,
+  reorderResultResponseSchema,
   updateOrderStatusSchema,
 } from "./orders.schema.js";
 
@@ -43,6 +44,11 @@ ordersRouter.post(
 );
 ordersRouter.get("/me", ordersController.list);
 ordersRouter.get("/me/:id", validate(orderIdParamSchema, "params"), ordersController.getOne);
+ordersRouter.post(
+  "/me/:id/reorder",
+  validate(orderIdParamSchema, "params"),
+  ordersController.reorder,
+);
 
 // Admin-only, declared after /checkout*, /me, /me/:id above — "/me" is a
 // literal path matched before Express ever tries "/:id" against it, so
@@ -126,6 +132,20 @@ registry.registerPath({
   request: { params: orderIdParamSchema },
   responses: {
     200: { description: "Order", content: { "application/json": { schema: orderResponse } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/orders/me/{id}/reorder",
+  tags: ["Orders"],
+  summary: "Re-add a past order's items to the caller's cart, per-item best-effort (skips/partially-adds items no longer purchasable)",
+  security,
+  request: { params: orderIdParamSchema },
+  responses: {
+    200: { description: "Reorder result", content: { "application/json": { schema: reorderResultResponseSchema } } },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
   },

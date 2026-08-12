@@ -3,6 +3,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { getMyOrdersFromServer } from "@/lib/api/server";
 import { formatDateTime, formatPrice } from "@/lib/format";
+import { ReorderButton } from "@/components/shared/ReorderButton";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -27,22 +28,21 @@ function OrdersPageView({ orders }: { orders: Awaited<ReturnType<typeof getMyOrd
       ) : (
         <ul className="mt-6 flex flex-col gap-3">
           {orders.map((order) => (
-            <li key={order.id}>
-              <Link
-                href={`/account/orders/${order.id}`}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary"
-              >
-                <div>
-                  <p className="font-semibold text-foreground">{order.orderCode}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{formatDateTime(order.createdAt)}</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground">
-                    {order.status[statusLabelKey]}
-                  </span>
-                  <span className="font-semibold text-primary">{formatPrice(order.total)}</span>
-                </div>
+            <li
+              key={order.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary"
+            >
+              <Link href={`/account/orders/${order.id}`} className="flex-1">
+                <p className="font-semibold text-foreground">{order.orderCode}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{formatDateTime(order.createdAt)}</p>
               </Link>
+              <div className="flex items-center gap-4">
+                <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground">
+                  {order.status[statusLabelKey]}
+                </span>
+                <span className="font-semibold text-primary">{formatPrice(order.total)}</span>
+                <ReorderButton orderId={order.id} />
+              </div>
             </li>
           ))}
         </ul>

@@ -150,6 +150,26 @@ export const orderSummaryResponseSchema = registry.register(
   }),
 );
 
+// "Buy again" result — one entry per line item on the source order, not per
+// cart row, so the frontend can show exactly why each original item did or
+// didn't make it back into the cart (see orders.service.ts's reorderOrder).
+export const reorderItemStatusSchema = z.enum(["ADDED", "PARTIAL", "UNAVAILABLE"]);
+
+export const reorderItemResultSchema = registry.register(
+  "ReorderItemResult",
+  z.object({
+    itemName: localizedStringSchema,
+    requestedQuantity: z.int(),
+    addedQuantity: z.int(),
+    status: reorderItemStatusSchema,
+  }),
+);
+
+export const reorderResultResponseSchema = registry.register(
+  "ReorderResult",
+  z.object({ items: z.array(reorderItemResultSchema) }),
+);
+
 // Admin-only surface below — every route using these is gated by
 // requireRole(ROLES.ADMIN) in orders.routes.ts, not just requireAuth.
 
