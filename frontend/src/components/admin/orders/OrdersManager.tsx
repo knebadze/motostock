@@ -27,6 +27,35 @@ const FULFILLMENT_OPTIONS = (Object.keys(FULFILLMENT_LABELS) as OrderFulfillment
   (value) => ({ value, label: FULFILLMENT_LABELS[value] }),
 );
 
+const DELIVERY_URGENCY_CLASSES: Record<"green" | "yellow" | "red", string> = {
+  green: "bg-green-500/15 text-green-600",
+  yellow: "bg-amber-500/15 text-amber-600",
+  red: "bg-red-500/15 text-red-600",
+};
+
+// Terminal statuses stop counting down — a delivered/cancelled order isn't
+// "overdue" anymore, it's just done. Evaluated against the current moment
+// at render time (not baked into the API response), same as every other
+// formatted cell in this table.
+function getDeliveryUrgency(order: AdminOrderSummary): "green" | "yellow" | "red" | null {
+  if (!order.estimatedDeliveryDate) return null;
+  if (order.status.key === "DELIVERED" || order.status.key === "CANCELLED") return null;
+
+  const now = new Date();
+  const estimated = new Date(order.estimatedDeliveryDate);
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const estimatedDay = new Date(estimated.getFullYear(), estimated.getMonth(), estimated.getDate());
+  if (today >= estimatedDay) return "red";
+
+  const created = new Date(order.createdAt);
+  const totalWindowMs = estimated.getTime() - created.getTime();
+  if (totalWindowMs <= 0) return "red";
+
+  const elapsedMs = now.getTime() - created.getTime();
+  return elapsedMs >= totalWindowMs / 2 ? "yellow" : "green";
+}
+
 function RiskFlagIcon() {
   return (
     <svg
@@ -82,9 +111,23 @@ const columns: DataTableColumn<AdminOrderSummary>[] = [
   },
   {
     header: "მიწოდების მაქს. თარიღი",
-    render: (order) =>
-      order.estimatedDeliveryDate ? formatDate(order.estimatedDeliveryDate) : "—",
-    cellClassName: "text-muted-foreground",
+    render: (order) => {
+      if (!order.estimatedDeliveryDate) {
+        return <span className="text-muted-foreground">—</span>;
+      }
+      const urgency = getDeliveryUrgency(order);
+      const label = formatDate(order.estimatedDeliveryDate);
+      if (!urgency) {
+        return <span className="text-muted-foreground">{label}</span>;
+      }
+      return (
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${DELIVERY_URGENCY_CLASSES[urgency]}`}
+        >
+          {label}
+        </span>
+      );
+    },
   },
 ];
 
