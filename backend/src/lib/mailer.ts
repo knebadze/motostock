@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
 import { SITE_NAME } from "../config/site.js";
+import { wrapEmailHtml } from "./email-shell.js";
 
 export function isMailerConfigured(): boolean {
   return Boolean(env.SMTP_HOST && env.SMTP_PORT && env.SMTP_USER && env.SMTP_PASSWORD && env.SMTP_FROM);
@@ -22,7 +23,7 @@ function getTransport() {
 // skip sending gracefully instead of throwing.
 export async function sendTemplatedEmail(to: string, subject: string, html: string): Promise<void> {
   const transport = getTransport();
-  await transport.sendMail({ from: env.SMTP_FROM, to, subject, html });
+  await transport.sendMail({ from: env.SMTP_FROM, to, subject, html: await wrapEmailHtml(html) });
 }
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {

@@ -65,6 +65,7 @@ import { newsletterCampaignsRouter } from "./modules/newsletter-campaigns/newsle
 import { fraudRouter } from "./modules/fraud/fraud.routes.js";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
 import { banksRouter } from "./modules/banks/banks.routes.js";
+import { mediaRouter } from "./modules/media/media.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
 import { globalRateLimit } from "./middleware/rateLimit.middleware.js";
@@ -153,6 +154,7 @@ app.use("/api/newsletter-campaigns", newsletterCampaignsRouter);
 app.use("/api/fraud", fraudRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/banks", banksRouter);
+app.use("/api/media", mediaRouter);
 
 // registerPath() calls above already ran as a side effect of importing the
 // routers, so the registry is fully populated by the time this generates.
