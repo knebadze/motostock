@@ -19,6 +19,7 @@ import type { LookupItem } from "@/lib/api/lookups";
 import { formatPrice } from "@/lib/format";
 import { buildVehicleListingFilterFields } from "@/config/admin-filters/vehicle-listing-filters";
 import { VehicleListingFormModal } from "./VehicleListingFormModal";
+import { VehicleListingDetailModal } from "./VehicleListingDetailModal";
 
 const columns: DataTableColumn<VehicleListing>[] = [
   {
@@ -109,6 +110,7 @@ export function VehicleListingsManager({
   const [formOpen, setFormOpen] = useState(false);
   const [editingListing, setEditingListing] = useState<VehicleListing | null>(null);
   const [deletingListing, setDeletingListing] = useState<VehicleListing | null>(null);
+  const [viewingListingId, setViewingListingId] = useState<number | null>(null);
   const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
   const { page, setPage, pageItems, totalPages } = usePagination(listings);
 
@@ -176,6 +178,7 @@ export function VehicleListingsManager({
           emptyMessage="განცხადება არ არსებობს"
           actions={(listing) => (
             <RowActions
+              onView={() => setViewingListingId(listing.id)}
               onEdit={() => openEditModal(listing)}
               onDelete={() => setDeletingListing(listing)}
             />
@@ -195,6 +198,13 @@ export function VehicleListingsManager({
         colors={colors}
         listing={editingListing}
       />
+
+      {viewingListingId != null && (
+        <VehicleListingDetailModal
+          listingId={viewingListingId}
+          onClose={() => setViewingListingId(null)}
+        />
+      )}
 
       <ConfirmDialog
         open={deletingListing !== null}

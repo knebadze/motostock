@@ -186,6 +186,58 @@ export const vehicleListingRepository = {
     return prisma.vehicleListing.findUnique({ where: { id }, include });
   },
 
+  // Global counter bump — see getVehicleListing in vehicle-listing.service.ts.
+  // Independent of the per-visitor VehicleListingView tracking (see
+  // vehicle-listing-views module), same split as Product.viewCount.
+  incrementViewCount(id: number) {
+    return prisma.vehicleListing.update({ where: { id }, data: { viewCount: { increment: 1 } } });
+  },
+
+  // Sales history for the admin detail modal — same shape as
+  // products.repository.ts's findSalesSummary, but simpler: OrderItem
+  // already has a direct vehicleListingId (no variant indirection needed).
+  async findSalesSummary(listingId: number) {
+    const where = { vehicleListingId: listingId };
+    const [totals, distinctOrders, recentItems] = await Promise.all([
+      prisma.orderItem.aggregate({ where, _sum: { quantity: true, lineTotal: true } }),
+      prisma.orderItem.findMany({ where, select: { orderId: true }, distinct: ["orderId"] }),
+      prisma.orderItem.findMany({
+        where,
+        select: {
+          quantity: true,
+          lineTotal: true,
+          order: {
+            select: {
+              id: true,
+              orderCode: true,
+              createdAt: true,
+              status: { select: { nameKa: true } },
+              user: { select: { firstName: true, lastName: true, email: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+    ]);
+
+    return {
+      totalQuantitySold: totals._sum.quantity ?? 0,
+      totalRevenue: Number(totals._sum.lineTotal ?? 0),
+      orderCount: distinctOrders.length,
+      recentOrders: recentItems.map((item) => ({
+        orderId: item.order.id,
+        orderCode: item.order.orderCode,
+        createdAt: item.order.createdAt,
+        buyerName: `${item.order.user.firstName} ${item.order.user.lastName}`.trim(),
+        buyerEmail: item.order.user.email,
+        quantity: item.quantity,
+        lineTotal: Number(item.lineTotal),
+        status: item.order.status.nameKa,
+      })),
+    };
+  },
+
   create(data: VehicleListingWriteData) {
     return prisma.vehicleListing.create({ data, include });
   },

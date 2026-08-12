@@ -68,6 +68,7 @@ type VehicleListingRow = {
   descriptionRu: string | null;
   images: ImageRow[];
   discounts: DiscountRow[];
+  viewCount: number;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -137,6 +138,7 @@ export function toVehicleListingResponse(row: VehicleListingRow) {
     images: row.images.map(toImageResponse),
     discounts: row.discounts.map(toDiscountResponse),
     activeDiscount: activeDiscount ? { discountPrice: Number(activeDiscount.discountPrice) } : null,
+    viewCount: row.viewCount,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -227,12 +229,29 @@ export async function listPopularVehicleListings(limit: number) {
     .map((row) => toVehicleListingResponse(row));
 }
 
+// The only caller of this is the guest listing-detail page (see
+// vehicle-listings.ts's getVehicleListingFromServer) — admin editing reads
+// from the already-loaded table row instead of re-fetching by id, so it's
+// safe to always count this as a real view.
 export async function getVehicleListing(id: number) {
   const row = await vehicleListingRepository.findById(id);
   if (!row) {
     throw new ApiError(404, "განცხადება ვერ მოიძებნა");
   }
+  await vehicleListingRepository.incrementViewCount(id);
   return toVehicleListingResponse(row);
+}
+
+// Admin "full view" counterpart to getVehicleListing — adds sales history,
+// same reasoning as products.service.ts's getProductDetailAdmin.
+export async function getVehicleListingDetailAdmin(id: number) {
+  const row = await vehicleListingRepository.findById(id);
+  if (!row) {
+    throw new ApiError(404, "განცხადება ვერ მოიძებნა");
+  }
+
+  const sales = await vehicleListingRepository.findSalesSummary(id);
+  return { ...toVehicleListingResponse(row), sales };
 }
 
 export async function createVehicleListing(input: CreateVehicleListingInput) {

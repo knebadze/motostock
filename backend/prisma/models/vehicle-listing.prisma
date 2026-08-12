@@ -15,12 +15,18 @@ model VehicleListing {
   descriptionKa    String?
   descriptionEn    String?
   descriptionRu    String?
+  // Single global counter, bumped on every detail-page view — see
+  // vehicle-listing.service.ts's getVehicleListing. Distinct from
+  // VehicleListingView below, which is per-visitor (see that model's
+  // comment for why both exist — same split as Product.viewCount/ProductView).
+  viewCount        Int                      @default(0)
   images           VehicleListingImage[]
   discounts        VehicleListingDiscount[]
   wishlistItems    WishlistItem[]
   compareItems     CompareItem[]
   cartItems        CartItem[]
   orderItems       OrderItem[]
+  views            VehicleListingView[]
   createdAt        DateTime                 @default(now())
   updatedAt        DateTime                 @updatedAt
 

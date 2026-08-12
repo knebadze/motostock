@@ -172,7 +172,35 @@ export const vehicleListingResponseSchema = registry.register(
     // (the crossed-out original price always comes from the listing's own
     // `price`).
     activeDiscount: z.object({ discountPrice: z.number().openapi({ example: 3999 }) }).nullable(),
+    viewCount: z.int(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
+  }),
+);
+
+const vehicleListingSaleOrderSchema = z.object({
+  orderId: z.int(),
+  orderCode: z.string(),
+  createdAt: z.iso.datetime(),
+  buyerName: z.string(),
+  buyerEmail: z.string(),
+  quantity: z.int(),
+  lineTotal: z.number(),
+  status: z.string(),
+});
+
+const vehicleListingSalesSummarySchema = z.object({
+  totalQuantitySold: z.int(),
+  totalRevenue: z.number(),
+  orderCount: z.int(),
+  recentOrders: z.array(vehicleListingSaleOrderSchema),
+});
+
+// Admin-only counterpart to vehicleListingResponseSchema — adds sales
+// history, which the public endpoint has no reason to expose.
+export const vehicleListingDetailAdminResponseSchema = registry.register(
+  "VehicleListingDetailAdmin",
+  vehicleListingResponseSchema.extend({
+    sales: vehicleListingSalesSummarySchema,
   }),
 );

@@ -1,0 +1,25 @@
+// Per-visitor vehicle-listing view tracking — exact counterpart to
+// ProductView (see product-view.prisma for the full reasoning: this is an
+// upsert target bounded by (visitor x distinct listing), not an
+// append-only event log; `updatedAt` is the "recently viewed" sort key;
+// `viewCount` is a future ranking signal). Distinct from
+// VehicleListing.viewCount, which is a single global counter with no
+// per-visitor breakdown.
+model VehicleListingView {
+  id               Int            @id @default(autoincrement())
+  userId           Int?
+  user             User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestId          String?
+  vehicleListingId Int
+  vehicleListing   VehicleListing @relation(fields: [vehicleListingId], references: [id], onDelete: Cascade)
+  viewCount        Int            @default(1)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([userId, vehicleListingId])
+  @@unique([guestId, vehicleListingId])
+  @@index([userId])
+  @@index([guestId])
+  @@index([vehicleListingId])
+  @@schema("dbo")
+}

@@ -60,6 +60,7 @@ export type VehicleListing = {
   // discountPrice is ever read; the crossed-out original price always comes
   // from the listing's own `price`.
   activeDiscount: { discountPrice: number } | null;
+  viewCount: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -139,6 +140,37 @@ export async function listPopularVehicleListings(limit?: number): Promise<Vehicl
 
 export async function getVehicleListing(id: number): Promise<VehicleListing> {
   const { data } = await apiClient.get<{ item: VehicleListing }>(`/vehicle-listings/${id}`);
+  return data.item;
+}
+
+export type VehicleListingSaleOrder = {
+  orderId: number;
+  orderCode: string;
+  createdAt: string;
+  buyerName: string;
+  buyerEmail: string;
+  quantity: number;
+  lineTotal: number;
+  status: string;
+};
+
+export type VehicleListingSalesSummary = {
+  totalQuantitySold: number;
+  totalRevenue: number;
+  orderCount: number;
+  recentOrders: VehicleListingSaleOrder[];
+};
+
+// Admin-only detail — same as VehicleListing plus sales history, returned
+// by the admin "full view" endpoint (see getVehicleListingDetailAdmin).
+export type VehicleListingDetailAdmin = VehicleListing & {
+  sales: VehicleListingSalesSummary;
+};
+
+export async function getVehicleListingDetailAdmin(id: number): Promise<VehicleListingDetailAdmin> {
+  const { data } = await apiClient.get<{ item: VehicleListingDetailAdmin }>(
+    `/vehicle-listings/${id}/detail`,
+  );
   return data.item;
 }
 

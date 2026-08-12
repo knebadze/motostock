@@ -10,6 +10,7 @@ import {
   createVehicleListingSchema,
   popularVehicleListingsQuerySchema,
   updateVehicleListingSchema,
+  vehicleListingDetailAdminResponseSchema,
   vehicleListingIdParamSchema,
   vehicleListingListQuerySchema,
   vehicleListingResponseSchema,
@@ -38,6 +39,11 @@ vehicleListingRouter.get(
 
 vehicleListingRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
+vehicleListingRouter.get(
+  "/:id/detail",
+  validate(vehicleListingIdParamSchema, "params"),
+  vehicleListingController.getDetailAdmin,
+);
 vehicleListingRouter.post(
   "/",
   validate(createVehicleListingSchema),
@@ -88,6 +94,22 @@ registry.registerPath({
   request: { params: vehicleListingIdParamSchema },
   responses: {
     200: { description: "Vehicle listing", content: { "application/json": { schema: itemResponse } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-listings/{id}/detail",
+  tags: ["VehicleListings"],
+  summary: "Get a vehicle listing's full detail plus sales history by id — admin full-view",
+  security,
+  request: { params: vehicleListingIdParamSchema },
+  responses: {
+    200: {
+      description: "Vehicle listing detail",
+      content: { "application/json": { schema: z.object({ item: vehicleListingDetailAdminResponseSchema }) } },
+    },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
