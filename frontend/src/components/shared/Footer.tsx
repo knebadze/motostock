@@ -2,6 +2,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { siteConfig } from "@/config/site";
 import { Logo } from "@/components/shared/Logo";
+import { NewsletterSignupForm } from "@/components/shared/NewsletterSignupForm";
 import { getCategoriesFromServer, getCompanyInfoFromServer } from "@/lib/api/server";
 import { facebookIcon, instagramIcon, tiktokIcon, youtubeIcon } from "@/components/shared/social-icons";
 import { groupWorkingHours } from "@/lib/working-hours";
@@ -60,12 +61,13 @@ function FooterView({
 
   return (
     <footer className="border-t border-border bg-muted/40">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
-        <div className="sm:col-span-2 lg:col-span-1">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-5 lg:px-8">
+        <div className="sm:col-span-2 lg:col-span-2">
           <Logo className="h-9 w-auto" />
-          <p className="mt-3 max-w-xs text-sm text-muted-foreground">
+          <p className="mt-3 max-w-sm text-sm text-muted-foreground">
             {tFooter("description")}
           </p>
+          <NewsletterSignupForm />
         </div>
 
         <div>

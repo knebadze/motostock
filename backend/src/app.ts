@@ -60,6 +60,8 @@ import {
   productRecommendationsRouter,
   recommendationsRouter,
 } from "./modules/recommendations/recommendations.routes.js";
+import { newsletterRouter } from "./modules/newsletter/newsletter.routes.js";
+import { newsletterCampaignsRouter } from "./modules/newsletter-campaigns/newsletter-campaigns.routes.js";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
 import { banksRouter } from "./modules/banks/banks.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
@@ -138,6 +140,8 @@ app.use("/api/orders", ordersRouter);
 app.use("/api/compatibility", compatibilityRouter);
 app.use("/api/products/:productId/recommendations", productRecommendationsRouter);
 app.use("/api/recommendations", recommendationsRouter);
+app.use("/api/newsletter", newsletterRouter);
+app.use("/api/newsletter-campaigns", newsletterCampaignsRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/banks", banksRouter);
 

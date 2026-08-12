@@ -268,6 +268,24 @@
     "saturdayShort": "შაბ",
     "sundayShort": "კვ"
   },
+  "Newsletter": {
+    "signupTitle": "გამოიწერეთ სიახლეები",
+    "signupDescription": "ახალი პროდუქტები და აქციები პირველივე პირდაპირ თქვენს ელფოსტაზე.",
+    "emailPlaceholder": "თქვენი ელფოსტა",
+    "subscribeSubmit": "გამოწერა",
+    "subscribeSubmitting": "იგზავნება...",
+    "subscribeError": "გამოწერა ვერ მოხერხდა",
+    "checkYourEmail": "შეამოწმეთ ელფოსტა და დაადასტურეთ გამოწერა.",
+    "confirmTitle": "გამოწერის დადასტურება",
+    "confirmLoading": "მიმდინარეობს დადასტურება...",
+    "confirmSuccess": "გამოწერა დადასტურებულია! მადლობთ.",
+    "confirmError": "დადასტურების ბმული არასწორია ან ვადაგასულია.",
+    "unsubscribeTitle": "გამოწერის გაუქმება",
+    "unsubscribeLoading": "მიმდინარეობს გაუქმება...",
+    "unsubscribeSuccess": "გამოწერა გაუქმებულია.",
+    "unsubscribeError": "გამოწერის გაუქმების ბმული არასწორია.",
+    "backToHome": "მთავარ გვერდზე დაბრუნება"
+  },
   "Terms": {
     "title": "წესები და პირობები",
     "empty": "ტექსტი მალე დაემატება.",

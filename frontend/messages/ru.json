@@ -268,6 +268,24 @@
     "saturdayShort": "Сб",
     "sundayShort": "Вс"
   },
+  "Newsletter": {
+    "signupTitle": "Подпишитесь на новости",
+    "signupDescription": "Новинки и акции прямо на вашу почту.",
+    "emailPlaceholder": "Ваш email",
+    "subscribeSubmit": "Подписаться",
+    "subscribeSubmitting": "Отправка...",
+    "subscribeError": "Не удалось подписаться",
+    "checkYourEmail": "Проверьте почту и подтвердите подписку.",
+    "confirmTitle": "Подтверждение подписки",
+    "confirmLoading": "Подтверждение...",
+    "confirmSuccess": "Подписка подтверждена! Спасибо.",
+    "confirmError": "Ссылка подтверждения неверна или устарела.",
+    "unsubscribeTitle": "Отписка от рассылки",
+    "unsubscribeLoading": "Отписка...",
+    "unsubscribeSuccess": "Вы отписаны от рассылки.",
+    "unsubscribeError": "Ссылка для отписки неверна.",
+    "backToHome": "На главную"
+  },
   "Terms": {
     "title": "Условия использования",
     "empty": "Текст будет добавлен позже.",

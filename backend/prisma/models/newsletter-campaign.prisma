@@ -1,0 +1,31 @@
+enum NewsletterCampaignStatus {
+  DRAFT
+  SENDING
+  SENT
+  FAILED
+
+  @@schema("dbo")
+}
+
+// An admin-composed marketing email sent to every CONFIRMED
+// NewsletterSubscriber. Always Georgian, same reasoning as EmailTemplate
+// (see email-templates.service.ts — no per-user language preference exists
+// anywhere in this codebase yet). Sending is synchronous (see
+// newsletter-campaigns.service.ts's sendCampaign) — status flips to SENDING
+// immediately as a double-send guard, then SENT/FAILED once the loop over
+// subscribers finishes. A DRAFT can be edited freely; once sending has
+// started the subject/body are left untouched (same "a completed action's
+// record shouldn't silently change" reasoning as Order snapshots).
+model NewsletterCampaign {
+  id             Int                      @id @default(autoincrement())
+  subject        String
+  body           String
+  status         NewsletterCampaignStatus @default(DRAFT)
+  recipientCount Int                      @default(0)
+  failedCount    Int                      @default(0)
+  sentAt         DateTime?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  @@schema("dbo")
+}

@@ -1,0 +1,33 @@
+enum NewsletterSubscriberStatus {
+  PENDING
+  CONFIRMED
+  UNSUBSCRIBED
+
+  @@schema("dbo")
+}
+
+// Double opt-in: a signup starts PENDING with a one-time confirmTokenHash
+// (raw token emailed to the subscriber, only its SHA-256 hash stored here —
+// same tokenHash pattern as PasswordResetToken, see newsletter.service.ts
+// hashToken) emailed as a confirmation link; clicking it flips to CONFIRMED
+// and clears confirmTokenHash. unsubscribeToken, unlike confirmTokenHash, is
+// stored in plain text — it isn't a one-time verify-then-discard secret, it
+// has to be *read back* every time a new campaign is sent (to build that
+// email's unsubscribe link) for as long as the subscriber stays subscribed,
+// which a one-way hash can't support. Re-subscribing after UNSUBSCRIBED
+// reuses the same row (email stays unique) rather than creating a
+// duplicate — reset back to PENDING with a fresh confirmTokenHash.
+model NewsletterSubscriber {
+  id               Int                        @id @default(autoincrement())
+  email            String                     @unique
+  status           NewsletterSubscriberStatus @default(PENDING)
+  confirmTokenHash String?                    @unique
+  unsubscribeToken String                     @unique
+  confirmedAt      DateTime?
+  unsubscribedAt   DateTime?
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+
+  @@index([status])
+  @@schema("dbo")
+}

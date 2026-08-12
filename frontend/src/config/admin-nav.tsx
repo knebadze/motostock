@@ -16,6 +16,7 @@ import {
   heroSlidesIcon,
   listingIcon,
   modelsIcon,
+  newsletterIcon,
   ordersIcon,
   productsIcon,
   promoCodesIcon,
@@ -87,6 +88,7 @@ export const adminNav: AdminNavSection[] = [
       { label: "მთავარი გვერდის სერვისი", href: "/admin/hero-slides", icon: heroSlidesIcon },
       { label: "მასობრივი ფასდაკლებები", href: "/admin/bulk-discounts", icon: discountRulesIcon },
       { label: "პრომოკოდები", href: "/admin/promo-codes", icon: promoCodesIcon },
+      { label: "Newsletter", href: "/admin/newsletter", icon: newsletterIcon },
     ],
   },
   {

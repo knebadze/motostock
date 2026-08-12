@@ -268,6 +268,24 @@
     "saturdayShort": "Sat",
     "sundayShort": "Sun"
   },
+  "Newsletter": {
+    "signupTitle": "Subscribe to our newsletter",
+    "signupDescription": "New products and promotions straight to your inbox.",
+    "emailPlaceholder": "Your email",
+    "subscribeSubmit": "Subscribe",
+    "subscribeSubmitting": "Sending...",
+    "subscribeError": "Subscription failed",
+    "checkYourEmail": "Check your email to confirm your subscription.",
+    "confirmTitle": "Confirm subscription",
+    "confirmLoading": "Confirming...",
+    "confirmSuccess": "Subscription confirmed! Thank you.",
+    "confirmError": "This confirmation link is invalid or has expired.",
+    "unsubscribeTitle": "Unsubscribe",
+    "unsubscribeLoading": "Unsubscribing...",
+    "unsubscribeSuccess": "You've been unsubscribed.",
+    "unsubscribeError": "This unsubscribe link is invalid.",
+    "backToHome": "Back to homepage"
+  },
   "Terms": {
     "title": "Terms & Conditions",
     "empty": "Content coming soon.",

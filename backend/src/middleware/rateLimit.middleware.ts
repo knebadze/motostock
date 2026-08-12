@@ -33,6 +33,17 @@ export const checkoutRateLimit = rateLimit({
   message: { error: { message: "Too many requests, please slow down" } },
 });
 
+// Public, unauthenticated, and triggers an outbound email per call — without
+// this, POST /newsletter/subscribe could be used to spam arbitrary inboxes
+// with confirmation emails at globalRateLimit's full 300/min.
+export const newsletterRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { message: "Too many requests, please try again later" } },
+});
+
 // Image-upload routes (bank logos, etc.) sit behind requireRole(ADMIN)
 // already, so this is a second line of defense against a compromised admin
 // session being used to flood disk writes — generous enough for a normal

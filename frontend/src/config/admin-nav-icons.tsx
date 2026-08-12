@@ -347,6 +347,22 @@ export const emailTemplatesIcon = (
   </svg>
 );
 
+export const newsletterIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-5"
+  >
+    <path d="M3 11 19 4v14L3 12" />
+    <path d="M7 13.5V18a2 2 0 0 0 2 2h1" />
+  </svg>
+);
+
 export const settingsIcon = (
   <svg
     xmlns="http://www.w3.org/2000/svg"

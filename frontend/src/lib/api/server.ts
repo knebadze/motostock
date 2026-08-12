@@ -35,6 +35,8 @@ import type { CompanyInfo, WeekDay } from "./company-info";
 import type { Terms } from "./terms";
 import type { EmailTemplate } from "./email-templates";
 import type { OrderStatusItem } from "./order-statuses";
+import type { NewsletterSubscriber, NewsletterSubscriberCounts } from "./newsletter";
+import type { NewsletterCampaign } from "./newsletter-campaigns";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -960,5 +962,50 @@ export async function getPublicHomepageSectionsFromServer(): Promise<HomepageSec
     return data.items;
   } catch {
     return [];
+  }
+}
+
+export async function getNewsletterCampaignsFromServer(): Promise<NewsletterCampaign[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: NewsletterCampaign[] }>("/newsletter-campaigns", {
+      headers,
+    });
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getNewsletterSubscribersFromServer(): Promise<NewsletterSubscriber[]> {
+  const headers = await authHeaders();
+  if (!headers) return [];
+
+  try {
+    const { data } = await apiClient.get<{ items: NewsletterSubscriber[] }>(
+      "/newsletter/subscribers",
+      { headers },
+    );
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
+export async function getNewsletterSubscriberCountsFromServer(): Promise<NewsletterSubscriberCounts> {
+  const headers = await authHeaders();
+  const empty = { pending: 0, confirmed: 0, unsubscribed: 0 };
+  if (!headers) return empty;
+
+  try {
+    const { data } = await apiClient.get<NewsletterSubscriberCounts>(
+      "/newsletter/subscribers/counts",
+      { headers },
+    );
+    return data;
+  } catch {
+    return empty;
   }
 }
