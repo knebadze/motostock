@@ -147,6 +147,11 @@ export const orderSummaryResponseSchema = registry.register(
     total: z.number(),
     itemCount: z.int(),
     createdAt: z.iso.datetime(),
+    // Estimated, not a hard commitment — parsed from deliveryTimeSnapshot's
+    // free text (see orders.service.ts's computeEstimatedDeliveryDate). Null
+    // for PICKUP orders (no delivery time snapshot exists) or if the text
+    // didn't contain a parseable number.
+    estimatedDeliveryDate: z.iso.datetime().nullable(),
   }),
 );
 

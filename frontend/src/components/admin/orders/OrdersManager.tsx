@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, usePagination } from "@/components/shared/Pagination";
 import { Select } from "@/components/shared/Select";
-import { formatDateTime, formatPrice } from "@/lib/format";
+import { formatDate, formatDateTime, formatPrice } from "@/lib/format";
 import { ApiRequestError } from "@/lib/api/client";
 import {
   listAllOrders,
@@ -78,6 +78,12 @@ const columns: DataTableColumn<AdminOrderSummary>[] = [
   {
     header: "თარიღი",
     render: (order) => formatDateTime(order.createdAt),
+    cellClassName: "text-muted-foreground",
+  },
+  {
+    header: "მიწოდების მაქს. თარიღი",
+    render: (order) =>
+      order.estimatedDeliveryDate ? formatDate(order.estimatedDeliveryDate) : "—",
     cellClassName: "text-muted-foreground",
   },
 ];

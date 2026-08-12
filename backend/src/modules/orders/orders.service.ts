@@ -493,6 +493,35 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
   throw new ApiError(500, "შეკვეთის კოდის გენერაცია ვერ მოხერხდა");
 }
 
+const MS_PER_HOUR = 60 * 60 * 1000;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
+
+// deliveryTimeSnapshot is free text an admin types into Settings (e.g.
+// "1-2 სამუშაო დღე", "3-5 სამუშაო დღე", "2-4 საათი" — see
+// settings.schema.ts's delivery*Time fields), not a structured min/max
+// field, so this is necessarily an estimate: take the largest number found
+// in the text and add it to createdAt. Unit is inferred from deliverySpeed
+// rather than parsed from the text itself — EXPRESS orders' snapshot always
+// comes from deliveryExpressTime (hours), everything else (STANDARD) from
+// deliveryTbilisiTime/deliveryRegionsTime (days) — since that's reliably
+// known and parsing a unit out of free-form Georgian text is not. Returns
+// null for PICKUP orders (no deliveryTimeSnapshot at all) or if the admin's
+// text has no digits to parse.
+function computeEstimatedDeliveryDate(
+  createdAt: Date,
+  deliverySpeed: OrderDeliverySpeed | null,
+  deliveryTimeSnapshot: string | null,
+): Date | null {
+  if (!deliveryTimeSnapshot) return null;
+
+  const numbers = deliveryTimeSnapshot.match(/\d+/g);
+  if (!numbers || numbers.length === 0) return null;
+
+  const maxUnits = Math.max(...numbers.map(Number));
+  const msPerUnit = deliverySpeed === "EXPRESS" ? MS_PER_HOUR : MS_PER_DAY;
+  return new Date(createdAt.getTime() + maxUnits * msPerUnit);
+}
+
 export async function listMyOrders(userId: number) {
   const rows = await ordersRepository.findByUserId(userId);
   return rows.map((row) => ({
@@ -502,6 +531,11 @@ export async function listMyOrders(userId: number) {
     total: Number(row.total),
     itemCount: row.items.reduce((sum, item) => sum + item.quantity, 0),
     createdAt: row.createdAt,
+    estimatedDeliveryDate: computeEstimatedDeliveryDate(
+      row.createdAt,
+      row.deliverySpeed,
+      row.deliveryTimeSnapshot,
+    ),
   }));
 }
 
@@ -625,6 +659,11 @@ export async function listAllOrders(filters: ListOrdersQuery) {
     createdAt: row.createdAt,
     buyer: row.user,
     hasRiskFlags: row._count.riskFlags > 0,
+    estimatedDeliveryDate: computeEstimatedDeliveryDate(
+      row.createdAt,
+      row.deliverySpeed,
+      row.deliveryTimeSnapshot,
+    ),
   }));
 }
 

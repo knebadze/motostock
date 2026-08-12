@@ -84,6 +84,10 @@ export type OrderSummary = {
   total: number;
   itemCount: number;
   createdAt: string;
+  // Estimated from the delivery time text, not a hard commitment — null for
+  // PICKUP orders or if the admin's delivery-time text has no parseable
+  // number (see backend's computeEstimatedDeliveryDate).
+  estimatedDeliveryDate: string | null;
 };
 
 export async function previewCheckout(input: CheckoutInput): Promise<CheckoutPreview> {
