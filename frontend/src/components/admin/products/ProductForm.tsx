@@ -3,13 +3,8 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Select } from "@/components/shared/Select";
-import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
-import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
-import { RichTextEditor } from "@/components/shared/RichTextEditor";
 import { Tabs } from "@/components/shared/Tabs";
-import { Toggle } from "@/components/shared/Toggle";
 import {
   createProduct,
   updateProduct,
@@ -36,7 +31,6 @@ import { productVariantDiscountFormSchema } from "@/lib/validation/product-varia
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 import { ProductAttributeFields } from "./ProductAttributeFields";
 import { ProductVariantsPanel } from "./ProductVariantsPanel";
-import { ProductVariantImagesPanel } from "./ProductVariantImagesPanel";
 import {
   ProductFitmentPanel,
   DraftFitmentEditor,
@@ -44,10 +38,11 @@ import {
   type VehicleSpecLookupMap,
 } from "./ProductFitmentPanel";
 import { ProductBuyTogetherPanel } from "./ProductBuyTogetherPanel";
-
-function lookupOptions(items: LookupItem[]) {
-  return items.map((item) => ({ value: String(item.id), label: item.nameKa }));
-}
+import { ProductBasicInfoTab } from "./ProductBasicInfoTab";
+import { ProductDescriptionTab } from "./ProductDescriptionTab";
+import { ProductImageTab } from "./ProductImageTab";
+import { ProductSeoTab } from "./ProductSeoTab";
+import { ProductPricingTab, type DraftVariant } from "./ProductPricingTab";
 
 function toNullableHtml(html: string): string | null {
   const isBlank = html.replace(/<[^>]*>/g, "").trim() === "";
@@ -112,99 +107,6 @@ function toAttributeValueInputs(
   }
 
   return inputs;
-}
-
-type DraftVariant = {
-  draftId: number;
-  sizeId: number | null;
-  colorId: number | null;
-  conditionId: number | null;
-  statusId: number | null;
-  price: string;
-  stockQuantity: string;
-  sku: string;
-  isActive: boolean;
-};
-
-function DraftVariantsTable({
-  variants,
-  sizes,
-  colors,
-  onChange,
-  onRemove,
-}: {
-  variants: DraftVariant[];
-  sizes: LookupItem[];
-  colors: LookupItem[];
-  onChange: (draftId: number, patch: Partial<DraftVariant>) => void;
-  onRemove: (draftId: number) => void;
-}) {
-  if (variants.length === 0) return null;
-
-  function labelFor(items: LookupItem[], id: number | null) {
-    if (id == null) return "—";
-    return items.find((item) => item.id === id)?.nameKa ?? "—";
-  }
-
-  return (
-    <div className="overflow-x-auto rounded-2xl border border-border">
-      <table className="w-full text-left text-sm">
-        <thead className="border-b border-border bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
-          <tr>
-            <th className="px-4 py-3 font-medium">ზომა</th>
-            <th className="px-4 py-3 font-medium">ფერი</th>
-            <th className="px-4 py-3 font-medium">SKU</th>
-            <th className="px-4 py-3 font-medium">ფასი</th>
-            <th className="px-4 py-3 font-medium">მარაგი</th>
-            <th className="px-4 py-3 font-medium text-right">მოქმედება</th>
-          </tr>
-        </thead>
-        <tbody>
-          {variants.map((variant) => (
-            <tr key={variant.draftId} className="border-b border-border last:border-0">
-              <td className="px-4 py-2 text-muted-foreground">{labelFor(sizes, variant.sizeId)}</td>
-              <td className="px-4 py-2 text-muted-foreground">{labelFor(colors, variant.colorId)}</td>
-              <td className="px-4 py-2">
-                <input
-                  type="text"
-                  value={variant.sku}
-                  onChange={(event) => onChange(variant.draftId, { sku: event.target.value })}
-                  className="w-28 rounded-lg border border-border bg-background px-2 py-1 text-sm font-mono outline-none focus:border-primary"
-                />
-              </td>
-              <td className="px-4 py-2">
-                <input
-                  type="number"
-                  step="0.01"
-                  value={variant.price}
-                  onChange={(event) => onChange(variant.draftId, { price: event.target.value })}
-                  className="w-24 rounded-lg border border-border bg-background px-2 py-1 text-sm outline-none focus:border-primary"
-                />
-              </td>
-              <td className="px-4 py-2">
-                <input
-                  type="number"
-                  min={0}
-                  value={variant.stockQuantity}
-                  onChange={(event) => onChange(variant.draftId, { stockQuantity: event.target.value })}
-                  className="w-20 rounded-lg border border-border bg-background px-2 py-1 text-sm outline-none focus:border-primary"
-                />
-              </td>
-              <td className="px-4 py-2 text-right">
-                <button
-                  type="button"
-                  onClick={() => onRemove(variant.draftId)}
-                  className="rounded-full px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10"
-                >
-                  წაშლა
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
 }
 
 export function ProductForm({
@@ -323,12 +225,31 @@ export function ProductForm({
     }
   }
 
+  function handleEnglishNameChange(value: string) {
+    if (!slugTouched) setSlug(slugify(value));
+  }
+
   function handleDescriptionKaChange(html: string) {
     setDescriptionKa(html);
     if (!metaDescriptionTouched) {
       const plainText = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
       setMetaDescription(plainText.slice(0, 160));
     }
+  }
+
+  function handleSlugChange(value: string) {
+    setSlugTouched(true);
+    setSlug(value);
+  }
+
+  function handleMetaTitleChange(value: string) {
+    setMetaTitleTouched(true);
+    setMetaTitle(value);
+  }
+
+  function handleMetaDescriptionChange(value: string) {
+    setMetaDescriptionTouched(true);
+    setMetaDescription(value);
   }
 
   // Product brands are category-scoped (with tree inheritance, resolved
@@ -564,320 +485,73 @@ export function ProductForm({
     }
   }
 
-  const mainTabContent = (
-    <>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">კატეგორია *</label>
-          <Select
-            options={categoryOptions}
-            value={categoryId}
-            onChange={handleCategoryChange}
-            searchable
-            placeholder="აირჩიეთ კატეგორია"
-          />
-          <FieldError message={errors.categoryId} />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">ბრენდი</label>
-          <Select
-            options={productBrandOptions}
-            value={productBrandId}
-            onChange={setProductBrandId}
-            searchable
-            disabled={!categoryId}
-            placeholder={categoryId ? "— არცერთი —" : "ჯერ აირჩიეთ კატეგორია"}
-          />
-        </div>
-      </div>
-
-      <LocalizedNameFields
-        idPrefix="product-name"
-        value={{ ka: nameKa, en: nameEn, ru: nameRu }}
-        onChange={handleNameChange}
-        onEnglishChange={(value) => {
-          if (!slugTouched) setSlug(slugify(value));
-        }}
-        errors={{ ka: errors["name.ka"], en: errors["name.en"], ru: errors["name.ru"] }}
-      />
-    </>
-  );
-
-  const attributesTabContent = (
-    <ProductAttributeFields
-      categoryId={categoryId}
-      values={attributeValues}
-      onChange={handleAttributeChange}
-      errors={errors}
-      onAttributesLoaded={setCategoryAttributes}
-    />
-  );
-
-  const descriptionTabContent = (
-    <>
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium">აღწერა (ქართულად)</label>
-        <RichTextEditor value={descriptionKa} onChange={handleDescriptionKaChange} />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium">აღწერა (ინგლისურად)</label>
-        <RichTextEditor value={descriptionEn} onChange={setDescriptionEn} />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium">აღწერა (რუსულად)</label>
-        <RichTextEditor value={descriptionRu} onChange={setDescriptionRu} />
-      </div>
-    </>
-  );
-
-  const imageTabContent = (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor="product-image" className="text-sm font-medium">
-        სურათი
-      </label>
-      {previewUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={previewUrl}
-          alt=""
-          className="h-24 w-24 rounded-lg border border-border object-cover"
-        />
-      )}
-      <input
-        id="product-image"
-        type="file"
-        accept="image/*"
-        onChange={handleImageChange}
-        className="text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-border"
-      />
-    </div>
-  );
-
-  const seoTabContent = (
-    <>
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="product-slug" className="text-sm font-medium">
-          Slug *
-        </label>
-        <input
-          id="product-slug"
-          value={slug}
-          onChange={(event) => {
-            setSlugTouched(true);
-            setSlug(slugify(event.target.value));
-          }}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
-        />
-        <FieldError message={errors.slug} />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="product-meta-title" className="text-sm font-medium">
-          Meta სათაური
-        </label>
-        <input
-          id="product-meta-title"
-          value={metaTitle}
-          onChange={(event) => {
-            setMetaTitleTouched(true);
-            setMetaTitle(event.target.value);
-          }}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-        />
-        <p className="text-xs text-muted-foreground">
-          {metaTitle.length}/70 სიმბოლო — ავტომატურად ივსება სახელიდან, სანამ ხელით არ შეასწორებ
-        </p>
-        <FieldError message={errors.metaTitle} />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="product-meta-description" className="text-sm font-medium">
-          Meta აღწერა
-        </label>
-        <textarea
-          id="product-meta-description"
-          rows={3}
-          value={metaDescription}
-          onChange={(event) => {
-            setMetaDescriptionTouched(true);
-            setMetaDescription(event.target.value);
-          }}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-        />
-        <p className="text-xs text-muted-foreground">
-          {metaDescription.length}/200 სიმბოლო — ავტომატურად ივსება აღწერიდან, სანამ ხელით არ
-          შეასწორებ
-        </p>
-        <FieldError message={errors.metaDescription} />
-      </div>
-    </>
-  );
-
-  const pricingTabContent = (
-    <>
-      <p className="text-xs text-muted-foreground">
-        არასავალდებულოა — აირჩიეთ ზომები/ფერები და დააჭირეთ გენერაციას, პროდუქტთან ერთად
-        დაემატება ყველა კომბინაცია ერთდროულად (სურათებითა და ფასდაკლებით — მხოლოდ პირველ
-        გენერირებულ ვარიანტზე). ცარიელი დატოვების შემთხვევაში პროდუქტი შეინახება მხოლოდ
-        სპეციფიკაციად — ვარიანტებს მოგვიანებით, რედაქტირებიდან დაამატებთ.
-      </p>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">ზომები</label>
-          <Select
-            multiple
-            options={lookupOptions(sizes)}
-            value={initialSizeIds}
-            onChange={setInitialSizeIds}
-            searchable
-            placeholder="— არცერთი —"
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">ფერები</label>
-          <Select
-            multiple
-            options={lookupOptions(colors)}
-            value={initialColorIds}
-            onChange={setInitialColorIds}
-            searchable
-            placeholder="— არცერთი —"
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">მდგომარეობა</label>
-          <Select options={lookupOptions(conditions)} value={initialConditionId} onChange={setInitialConditionId} searchable placeholder="— არცერთი —" />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">სტატუსი</label>
-          <Select options={lookupOptions(statuses)} value={initialStatusId} onChange={setInitialStatusId} searchable placeholder="— არცერთი —" />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">SKU</label>
-          <input
-            type="text"
-            value={initialBaseSku}
-            onChange={(event) => setInitialBaseSku(event.target.value)}
-            placeholder="საერთო ყველასთვის, ან ცარიელი"
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">ფასი</label>
-          <input
-            type="number"
-            step="0.01"
-            value={initialBasePrice}
-            onChange={(event) => setInitialBasePrice(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-          <FieldError message={errors.price} />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">მარაგში (ცალი)</label>
-          <input
-            type="number"
-            min={1}
-            value={initialBaseStockQuantity}
-            onChange={(event) => setInitialBaseStockQuantity(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-          <FieldError message={errors.stockQuantity} />
-        </div>
-        <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium">
-          <Toggle checked={initialIsActive} onChange={setInitialIsActive} />
-          აქტიურია
-        </label>
-      </div>
-
-      <button
-        type="button"
-        onClick={handleGenerateDraftVariants}
-        className="w-fit rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
-      >
-        + ვარიანტების გენერაცია
-      </button>
-
-      <DraftVariantsTable
-        variants={draftVariants}
-        sizes={sizes}
-        colors={colors}
-        onChange={updateDraftVariant}
-        onRemove={removeDraftVariant}
-      />
-
-      {draftVariants.length > 0 && (
-        <>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">სურათები</label>
-            <p className="text-xs text-muted-foreground">დაერთვება პირველ გენერირებულ ვარიანტს.</p>
-            <ProductVariantImagesPanel
-              variantId={null}
-              onPendingFilesChange={(files) => {
-                pendingVariantImageFilesRef.current = files;
-              }}
-            />
-          </div>
-
-          <div className="flex flex-col gap-3 rounded-lg border border-border p-3">
-            <h3 className="text-sm font-semibold">ფასდაკლება (არასავალდებულო, პირველ ვარიანტზე)</h3>
-            <div className="grid gap-3 sm:grid-cols-4">
-              <div className="flex flex-col gap-1.5">
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step="0.01"
-                  placeholder="ფასდაკლება (%)"
-                  value={initialDiscountPercent}
-                  onChange={(event) => handleInitialDiscountPercentChange(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.discountPercent} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="ფასდაკლების ფასი"
-                  value={initialDiscountPrice}
-                  onChange={(event) => setInitialDiscountPrice(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.discountPrice} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <input
-                  type="date"
-                  value={initialDiscountStartDate}
-                  onChange={(event) => setInitialDiscountStartDate(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.startDate} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <input
-                  type="date"
-                  value={initialDiscountEndDate}
-                  onChange={(event) => setInitialDiscountEndDate(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.endDate} />
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-    </>
-  );
-
   const tabs = [
-    { key: "main", label: "ძირითადი", content: mainTabContent },
-    { key: "attributes", label: "მახასიათებლები", content: attributesTabContent },
-    { key: "description", label: "აღწერა", content: descriptionTabContent },
-    { key: "image", label: "სურათი", content: imageTabContent },
-    { key: "seo", label: "SEO", content: seoTabContent },
+    {
+      key: "main",
+      label: "ძირითადი",
+      content: (
+        <ProductBasicInfoTab
+          categoryOptions={categoryOptions}
+          categoryId={categoryId}
+          onCategoryChange={handleCategoryChange}
+          categoryError={errors.categoryId}
+          productBrandOptions={productBrandOptions}
+          productBrandId={productBrandId}
+          onProductBrandChange={setProductBrandId}
+          name={{ ka: nameKa, en: nameEn, ru: nameRu }}
+          onNameChange={handleNameChange}
+          onEnglishChange={handleEnglishNameChange}
+          nameErrors={{ ka: errors["name.ka"], en: errors["name.en"], ru: errors["name.ru"] }}
+        />
+      ),
+    },
+    {
+      key: "attributes",
+      label: "მახასიათებლები",
+      content: (
+        <ProductAttributeFields
+          categoryId={categoryId}
+          values={attributeValues}
+          onChange={handleAttributeChange}
+          errors={errors}
+          onAttributesLoaded={setCategoryAttributes}
+        />
+      ),
+    },
+    {
+      key: "description",
+      label: "აღწერა",
+      content: (
+        <ProductDescriptionTab
+          descriptionKa={descriptionKa}
+          onDescriptionKaChange={handleDescriptionKaChange}
+          descriptionEn={descriptionEn}
+          onDescriptionEnChange={setDescriptionEn}
+          descriptionRu={descriptionRu}
+          onDescriptionRuChange={setDescriptionRu}
+        />
+      ),
+    },
+    {
+      key: "image",
+      label: "სურათი",
+      content: <ProductImageTab previewUrl={previewUrl} onImageChange={handleImageChange} />,
+    },
+    {
+      key: "seo",
+      label: "SEO",
+      content: (
+        <ProductSeoTab
+          slug={slug}
+          onSlugChange={handleSlugChange}
+          metaTitle={metaTitle}
+          onMetaTitleChange={handleMetaTitleChange}
+          metaDescription={metaDescription}
+          onMetaDescriptionChange={handleMetaDescriptionChange}
+          errors={{ slug: errors.slug, metaTitle: errors.metaTitle, metaDescription: errors.metaDescription }}
+        />
+      ),
+    },
     ...(isEditing
       ? [
           {
@@ -894,7 +568,52 @@ export function ProductForm({
             ),
           },
         ]
-      : [{ key: "pricing", label: "ფასი", content: pricingTabContent }]),
+      : [
+          {
+            key: "pricing",
+            label: "ფასი",
+            content: (
+              <ProductPricingTab
+                sizes={sizes}
+                colors={colors}
+                conditions={conditions}
+                statuses={statuses}
+                initialSizeIds={initialSizeIds}
+                onInitialSizeIdsChange={setInitialSizeIds}
+                initialColorIds={initialColorIds}
+                onInitialColorIdsChange={setInitialColorIds}
+                initialConditionId={initialConditionId}
+                onInitialConditionIdChange={setInitialConditionId}
+                initialStatusId={initialStatusId}
+                onInitialStatusIdChange={setInitialStatusId}
+                initialBaseSku={initialBaseSku}
+                onInitialBaseSkuChange={setInitialBaseSku}
+                initialBasePrice={initialBasePrice}
+                onInitialBasePriceChange={setInitialBasePrice}
+                initialBaseStockQuantity={initialBaseStockQuantity}
+                onInitialBaseStockQuantityChange={setInitialBaseStockQuantity}
+                initialIsActive={initialIsActive}
+                onInitialIsActiveChange={setInitialIsActive}
+                onGenerateDraftVariants={handleGenerateDraftVariants}
+                draftVariants={draftVariants}
+                onDraftVariantChange={updateDraftVariant}
+                onDraftVariantRemove={removeDraftVariant}
+                onPendingVariantImageFilesChange={(files) => {
+                  pendingVariantImageFilesRef.current = files;
+                }}
+                initialDiscountPercent={initialDiscountPercent}
+                onInitialDiscountPercentChange={handleInitialDiscountPercentChange}
+                initialDiscountPrice={initialDiscountPrice}
+                onInitialDiscountPriceChange={setInitialDiscountPrice}
+                initialDiscountStartDate={initialDiscountStartDate}
+                onInitialDiscountStartDateChange={setInitialDiscountStartDate}
+                initialDiscountEndDate={initialDiscountEndDate}
+                onInitialDiscountEndDateChange={setInitialDiscountEndDate}
+                errors={errors}
+              />
+            ),
+          },
+        ]),
     {
       key: "fitment",
       label: "თავსებადობა",

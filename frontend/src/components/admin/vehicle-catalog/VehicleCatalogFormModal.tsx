@@ -3,10 +3,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
-import { Select, type SelectOption } from "@/components/shared/Select";
-import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
-import { RichTextEditor } from "@/components/shared/RichTextEditor";
 import { Tabs } from "@/components/shared/Tabs";
 import {
   createVehicleCatalogEntry,
@@ -23,6 +20,9 @@ import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { flattenTree, isVehicleCategory } from "@/lib/categories-tree";
 import { vehicleCatalogFormSchema } from "@/lib/validation/vehicle-catalog";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+import { VehicleCatalogSpecsTab } from "./VehicleCatalogSpecsTab";
+import { VehicleCatalogDescriptionTab } from "./VehicleCatalogDescriptionTab";
+import { VehicleCatalogImageTab } from "./VehicleCatalogImageTab";
 
 function toNullableInt(value: string): number | null {
   return value.trim() === "" ? null : Number(value);
@@ -34,10 +34,6 @@ function toNullableFloat(value: string): number | null {
 
 function toInputValue(value: number | null | undefined): string {
   return value == null ? "" : String(value);
-}
-
-function lookupOptions(items: LookupItem[]): SelectOption[] {
-  return items.map((item) => ({ value: String(item.id), label: item.nameKa }));
 }
 
 function toNullableHtml(html: string): string | null {
@@ -159,8 +155,6 @@ export function VehicleCatalogFormModal({
     () => brands.map((brand) => ({ value: String(brand.id), label: brand.name.ka })),
     [brands],
   );
-
-  const powertrainOptions = useMemo(() => lookupOptions(powertrainTypes), [powertrainTypes]);
 
   const isElectric = useMemo(
     () =>
@@ -310,415 +304,6 @@ export function VehicleCatalogFormModal({
     }
   }
 
-  const mainTabContent = (
-    <>
-      <div className="grid gap-4 sm:grid-cols-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">ტიპი (ფილტრი)</label>
-            <Select
-              options={categoryOptions}
-              value={categoryFilter}
-              onChange={handleCategoryFilterChange}
-              searchable
-              placeholder="ყველა ტიპი"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">მარკა *</label>
-            <Select
-              options={brandOptions}
-              value={brandId}
-              onChange={handleBrandChange}
-              searchable
-              placeholder="აირჩიეთ მარკა"
-            />
-            <FieldError message={errors.brandId} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">მოდელი *</label>
-            <Select
-              options={modelOptions}
-              value={modelId}
-              onChange={handleModelChange}
-              searchable
-              disabled={!brandId}
-              placeholder={brandId ? "აირჩიეთ მოდელი" : "ჯერ აირჩიეთ მარკა"}
-            />
-            <FieldError message={errors.modelId} />
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="vc-variant" className="text-sm font-medium">
-            ვარიანტი / კომპლექტაცია
-          </label>
-          <input
-            id="vc-variant"
-            type="text"
-            value={variant}
-            onChange={(event) => setVariant(event.target.value)}
-            placeholder="მაგ. ABS, Special Edition (არასავალდებულო)"
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-          <FieldError message={errors.variant} />
-          <p className="text-xs text-muted-foreground">
-            გამოიყენეთ, თუ ერთი და იმავე მოდელის რამდენიმე კონფიგურაცია გაქვთ კატალოგში
-            (განსხვავებული სპეც-მონაცემებით).
-          </p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">ძრავის ტიპი</label>
-            <Select
-              options={powertrainOptions}
-              value={powertrainTypeId}
-              onChange={setPowertrainTypeId}
-              placeholder="— არცერთი —"
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-4">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="vc-year-from" className="text-sm font-medium">
-              წელი (დან)
-            </label>
-            <input
-              id="vc-year-from"
-              type="number"
-              value={yearFrom}
-              onChange={(event) => setYearFrom(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            <FieldError message={errors.yearFrom} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="vc-year-to" className="text-sm font-medium">
-              წელი (მდე)
-            </label>
-            <input
-              id="vc-year-to"
-              type="number"
-              value={yearTo}
-              onChange={(event) => setYearTo(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            <FieldError message={errors.yearTo} />
-          </div>
-          {isElectric ? (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="vc-motor-watt" className="text-sm font-medium">
-                  ძრავის სიმძლავრე (ვტ)
-                </label>
-                <input
-                  id="vc-motor-watt"
-                  type="number"
-                  value={motorPowerWatt}
-                  onChange={(event) => setMotorPowerWatt(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.motorPowerWatt} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="vc-battery-wh" className="text-sm font-medium">
-                  აკუმულატორი (Wh)
-                </label>
-                <input
-                  id="vc-battery-wh"
-                  type="number"
-                  value={batteryCapacityWh}
-                  onChange={(event) => setBatteryCapacityWh(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.batteryCapacityWh} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="vc-range-km" className="text-sm font-medium">
-                  სავალი მანძილი (კმ)
-                </label>
-                <input
-                  id="vc-range-km"
-                  type="number"
-                  value={rangeKm}
-                  onChange={(event) => setRangeKm(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.rangeKm} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="vc-charging-time" className="text-sm font-medium">
-                  დამუხტვის დრო (წთ)
-                </label>
-                <input
-                  id="vc-charging-time"
-                  type="number"
-                  value={chargingTimeMinutes}
-                  onChange={(event) => setChargingTimeMinutes(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.chargingTimeMinutes} />
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="vc-engine-cc" className="text-sm font-medium">
-                  მოცულობა (cc)
-                </label>
-                <input
-                  id="vc-engine-cc"
-                  type="number"
-                  value={engineVolumeCc}
-                  onChange={(event) => setEngineVolumeCc(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.engineVolumeCc} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="vc-power-hp" className="text-sm font-medium">
-                  სიმძლავრე (ც.ძ)
-                </label>
-                <input
-                  id="vc-power-hp"
-                  type="number"
-                  value={enginePowerHp}
-                  onChange={(event) => setEnginePowerHp(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.enginePowerHp} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="vc-cylinders" className="text-sm font-medium">
-                  ცილინდრები
-                </label>
-                <input
-                  id="vc-cylinders"
-                  type="number"
-                  value={cylinderCount}
-                  onChange={(event) => setCylinderCount(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.cylinderCount} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="vc-gears" className="text-sm font-medium">
-                  გადაცემები
-                </label>
-                <input
-                  id="vc-gears"
-                  type="number"
-                  value={gearCount}
-                  onChange={(event) => setGearCount(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.gearCount} />
-              </div>
-            </>
-          )}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="vc-seats" className="text-sm font-medium">
-              ადგილები
-            </label>
-            <input
-              id="vc-seats"
-              type="number"
-              value={seatCount}
-              onChange={(event) => setSeatCount(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            <FieldError message={errors.seatCount} />
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-4">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="vc-weight-kg" className="text-sm font-medium">
-              წონა (კგ)
-            </label>
-            <input
-              id="vc-weight-kg"
-              type="number"
-              value={weightKg}
-              onChange={(event) => setWeightKg(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            <FieldError message={errors.weightKg} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="vc-seat-height" className="text-sm font-medium">
-              სავარძლის სიმაღლე (მმ)
-            </label>
-            <input
-              id="vc-seat-height"
-              type="number"
-              value={seatHeightMm}
-              onChange={(event) => setSeatHeightMm(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            <FieldError message={errors.seatHeightMm} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="vc-top-speed" className="text-sm font-medium">
-              მაქს. სიჩქარე (კმ/სთ)
-            </label>
-            <input
-              id="vc-top-speed"
-              type="number"
-              value={topSpeedKmh}
-              onChange={(event) => setTopSpeedKmh(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            <FieldError message={errors.topSpeedKmh} />
-          </div>
-          {!isElectric && (
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="vc-fuel-tank" className="text-sm font-medium">
-                საწვავის ავზი (ლ)
-              </label>
-              <input
-                id="vc-fuel-tank"
-                type="number"
-                step="0.1"
-                value={fuelTankLiters}
-                onChange={(event) => setFuelTankLiters(event.target.value)}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-              <FieldError message={errors.fuelTankLiters} />
-            </div>
-          )}
-          <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium">
-            <input
-              type="checkbox"
-              checked={hasAbs}
-              onChange={(event) => setHasAbs(event.target.checked)}
-              className="size-4 rounded border-border accent-primary"
-            />
-            ABS
-          </label>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          {!isElectric && (
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">საწვავის ტიპი</label>
-              <Select
-                options={lookupOptions(fuelTypes)}
-                value={fuelTypeId}
-                onChange={setFuelTypeId}
-                searchable
-                placeholder="— არცერთი —"
-              />
-            </div>
-          )}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">გადაცემათა კოლოფი</label>
-            <Select
-              options={lookupOptions(transmissionTypes)}
-              value={transmissionTypeId}
-              onChange={setTransmissionTypeId}
-              searchable
-              placeholder="— არცერთი —"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">გაგრილება</label>
-            <Select
-              options={lookupOptions(coolingTypes)}
-              value={coolingTypeId}
-              onChange={setCoolingTypeId}
-              searchable
-              placeholder="— არცერთი —"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">საბოლოო გადაცემა</label>
-            <Select
-              options={lookupOptions(finalDriveTypes)}
-              value={finalDriveTypeId}
-              onChange={setFinalDriveTypeId}
-              searchable
-              placeholder="— არცერთი —"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">წამყვანი თვლები</label>
-            <Select
-              options={lookupOptions(driveTypes)}
-              value={driveTypeId}
-              onChange={setDriveTypeId}
-              searchable
-              placeholder="— არცერთი —"
-            />
-          </div>
-          {!isElectric && (
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">გაშვების სისტემა</label>
-              <Select
-                options={lookupOptions(startTypes)}
-                value={startTypeId}
-                onChange={setStartTypeId}
-                searchable
-                placeholder="— არცერთი —"
-              />
-            </div>
-          )}
-          <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium">
-            <input
-              type="checkbox"
-              checked={hasLockingDifferential}
-              onChange={(event) => setHasLockingDifferential(event.target.checked)}
-              className="size-4 rounded border-border accent-primary"
-            />
-            დიფერენციალის ბლოკირება
-          </label>
-        </div>
-    </>
-  );
-
-  const descriptionTabContent = (
-    <>
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium">აღწერა (ქართულად)</label>
-        <RichTextEditor value={descriptionKa} onChange={setDescriptionKa} />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium">აღწერა (ინგლისურად)</label>
-        <RichTextEditor value={descriptionEn} onChange={setDescriptionEn} />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium">აღწერა (რუსულად)</label>
-        <RichTextEditor value={descriptionRu} onChange={setDescriptionRu} />
-      </div>
-    </>
-  );
-
-  const imageTabContent = (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor="vc-image" className="text-sm font-medium">
-        სურათი
-      </label>
-      {previewUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={previewUrl}
-          alt=""
-          className="h-24 w-24 rounded-lg border border-border object-cover"
-        />
-      )}
-      <input
-        id="vc-image"
-        type="file"
-        accept="image/*"
-        onChange={handleImageChange}
-        className="text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-border"
-      />
-    </div>
-  );
-
   return (
     <Modal
       open={open}
@@ -729,9 +314,101 @@ export function VehicleCatalogFormModal({
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Tabs
           tabs={[
-            { key: "main", label: "ძირითადი", content: mainTabContent },
-            { key: "description", label: "აღწერა", content: descriptionTabContent },
-            { key: "image", label: "სურათი", content: imageTabContent },
+            {
+              key: "main",
+              label: "ძირითადი",
+              content: (
+                <VehicleCatalogSpecsTab
+                  categoryOptions={categoryOptions}
+                  categoryFilter={categoryFilter}
+                  onCategoryFilterChange={handleCategoryFilterChange}
+                  brandOptions={brandOptions}
+                  brandId={brandId}
+                  onBrandChange={handleBrandChange}
+                  modelOptions={modelOptions}
+                  modelId={modelId}
+                  onModelChange={handleModelChange}
+                  variant={variant}
+                  onVariantChange={setVariant}
+                  powertrainTypes={powertrainTypes}
+                  powertrainTypeId={powertrainTypeId}
+                  onPowertrainTypeIdChange={setPowertrainTypeId}
+                  isElectric={isElectric}
+                  yearFrom={yearFrom}
+                  onYearFromChange={setYearFrom}
+                  yearTo={yearTo}
+                  onYearToChange={setYearTo}
+                  motorPowerWatt={motorPowerWatt}
+                  onMotorPowerWattChange={setMotorPowerWatt}
+                  batteryCapacityWh={batteryCapacityWh}
+                  onBatteryCapacityWhChange={setBatteryCapacityWh}
+                  rangeKm={rangeKm}
+                  onRangeKmChange={setRangeKm}
+                  chargingTimeMinutes={chargingTimeMinutes}
+                  onChargingTimeMinutesChange={setChargingTimeMinutes}
+                  engineVolumeCc={engineVolumeCc}
+                  onEngineVolumeCcChange={setEngineVolumeCc}
+                  enginePowerHp={enginePowerHp}
+                  onEnginePowerHpChange={setEnginePowerHp}
+                  cylinderCount={cylinderCount}
+                  onCylinderCountChange={setCylinderCount}
+                  gearCount={gearCount}
+                  onGearCountChange={setGearCount}
+                  seatCount={seatCount}
+                  onSeatCountChange={setSeatCount}
+                  weightKg={weightKg}
+                  onWeightKgChange={setWeightKg}
+                  seatHeightMm={seatHeightMm}
+                  onSeatHeightMmChange={setSeatHeightMm}
+                  topSpeedKmh={topSpeedKmh}
+                  onTopSpeedKmhChange={setTopSpeedKmh}
+                  fuelTankLiters={fuelTankLiters}
+                  onFuelTankLitersChange={setFuelTankLiters}
+                  hasAbs={hasAbs}
+                  onHasAbsChange={setHasAbs}
+                  fuelTypes={fuelTypes}
+                  fuelTypeId={fuelTypeId}
+                  onFuelTypeIdChange={setFuelTypeId}
+                  transmissionTypes={transmissionTypes}
+                  transmissionTypeId={transmissionTypeId}
+                  onTransmissionTypeIdChange={setTransmissionTypeId}
+                  coolingTypes={coolingTypes}
+                  coolingTypeId={coolingTypeId}
+                  onCoolingTypeIdChange={setCoolingTypeId}
+                  finalDriveTypes={finalDriveTypes}
+                  finalDriveTypeId={finalDriveTypeId}
+                  onFinalDriveTypeIdChange={setFinalDriveTypeId}
+                  driveTypes={driveTypes}
+                  driveTypeId={driveTypeId}
+                  onDriveTypeIdChange={setDriveTypeId}
+                  startTypes={startTypes}
+                  startTypeId={startTypeId}
+                  onStartTypeIdChange={setStartTypeId}
+                  hasLockingDifferential={hasLockingDifferential}
+                  onHasLockingDifferentialChange={setHasLockingDifferential}
+                  errors={errors}
+                />
+              ),
+            },
+            {
+              key: "description",
+              label: "აღწერა",
+              content: (
+                <VehicleCatalogDescriptionTab
+                  descriptionKa={descriptionKa}
+                  onDescriptionKaChange={setDescriptionKa}
+                  descriptionEn={descriptionEn}
+                  onDescriptionEnChange={setDescriptionEn}
+                  descriptionRu={descriptionRu}
+                  onDescriptionRuChange={setDescriptionRu}
+                />
+              ),
+            },
+            {
+              key: "image",
+              label: "სურათი",
+              content: <VehicleCatalogImageTab previewUrl={previewUrl} onImageChange={handleImageChange} />,
+            },
           ]}
         />
 
