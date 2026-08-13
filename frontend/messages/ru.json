@@ -264,6 +264,7 @@
   "Footer": {
     "description": "Аксессуары, экипировка, шлемы и запчасти для мототехники.",
     "catalogTitle": "Каталог",
+    "viewCatalog": "Смотреть каталог",
     "companyTitle": "Компания",
     "aboutUs": "О нас",
     "contactTitle": "Контакты",
@@ -277,6 +278,11 @@
     "fridayShort": "Пт",
     "saturdayShort": "Сб",
     "sundayShort": "Вс"
+  },
+  "Catalog": {
+    "title": "Каталог",
+    "viewAll": "Смотреть все",
+    "subcategoryCount": "{count, plural, one {# подкатегория} few {# подкатегории} many {# подкатегорий} other {# подкатегорий}}"
   },
   "Newsletter": {
     "signupTitle": "Подпишитесь на новости",

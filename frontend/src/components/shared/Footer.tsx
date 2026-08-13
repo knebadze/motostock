@@ -73,6 +73,11 @@ function FooterView({
         <div>
           <h3 className="text-sm font-semibold">{tFooter("catalogTitle")}</h3>
           <ul className="mt-4 flex flex-col gap-2.5 text-sm text-muted-foreground">
+            <li>
+              <Link href="/catalog" className="font-medium transition-colors hover:text-primary">
+                {tFooter("viewCatalog")}
+              </Link>
+            </li>
             {topLevelCategories.map((category) => (
               <li key={category.id}>
                 <Link

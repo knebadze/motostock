@@ -264,6 +264,7 @@
   "Footer": {
     "description": "Accessories, clothing, helmets, and parts for motorcycles.",
     "catalogTitle": "Catalog",
+    "viewCatalog": "Browse catalog",
     "companyTitle": "Company",
     "aboutUs": "About us",
     "contactTitle": "Contact",
@@ -277,6 +278,11 @@
     "fridayShort": "Fri",
     "saturdayShort": "Sat",
     "sundayShort": "Sun"
+  },
+  "Catalog": {
+    "title": "Catalog",
+    "viewAll": "View all",
+    "subcategoryCount": "{count, plural, one {# subcategory} other {# subcategories}}"
   },
   "Newsletter": {
     "signupTitle": "Subscribe to our newsletter",

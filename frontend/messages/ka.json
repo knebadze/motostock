@@ -264,6 +264,7 @@
   "Footer": {
     "description": "აქსესუარები, ჩასაცმელი, ჩაფხუტები და ნაწილები მოტოტექნიკისთვის.",
     "catalogTitle": "კატალოგი",
+    "viewCatalog": "კატალოგის ნახვა",
     "companyTitle": "კომპანია",
     "aboutUs": "ჩვენ შესახებ",
     "contactTitle": "კონტაქტი",
@@ -277,6 +278,11 @@
     "fridayShort": "პარ",
     "saturdayShort": "შაბ",
     "sundayShort": "კვ"
+  },
+  "Catalog": {
+    "title": "კატალოგი",
+    "viewAll": "ყველას ნახვა",
+    "subcategoryCount": "{count, plural, other {# ქვეკატეგორია}}"
   },
   "Newsletter": {
     "signupTitle": "გამოიწერეთ სიახლეები",

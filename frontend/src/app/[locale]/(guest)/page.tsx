@@ -196,7 +196,7 @@ export default async function HomePage({
               {t("heroSubtitle")}
             </p>
             <Link
-              href="/helmets"
+              href="/catalog"
               className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
             >
               {t("browseCatalog")}
