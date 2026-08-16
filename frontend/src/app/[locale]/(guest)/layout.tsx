@@ -4,6 +4,7 @@ import { CookieNotice } from "@/components/shared/CookieNotice";
 import { ScrollToTopButton } from "@/components/shared/ScrollToTopButton";
 import {
   getCategoriesFromServer,
+  getCompanyInfoFromServer,
   getCurrentUserFromServer,
   getMyCartCountFromServer,
   getMyWishlistCountFromServer,
@@ -15,9 +16,10 @@ export default async function GuestLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [user, categories, cartCount, wishlistCount, compareCount] = await Promise.all([
+  const [user, categories, companyInfo, cartCount, wishlistCount, compareCount] = await Promise.all([
     getCurrentUserFromServer(),
     getCategoriesFromServer(),
+    getCompanyInfoFromServer(),
     getMyCartCountFromServer(),
     getMyWishlistCountFromServer(),
     getMyCompareCountFromServer(),
@@ -28,6 +30,7 @@ export default async function GuestLayout({
       <Header
         user={user}
         categories={categories}
+        companyInfo={companyInfo}
         cartCount={cartCount}
         wishlistCount={wishlistCount}
         compareCount={compareCount}

@@ -2,13 +2,22 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Header } from "@/components/shared/Header";
 import { Footer } from "@/components/shared/Footer";
+import { getCompanyInfoFromServer } from "@/lib/api/server";
+import type { CompanyInfo } from "@/lib/api/company-info";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const companyInfo = await getCompanyInfoFromServer();
+  return <NotFoundView companyInfo={companyInfo} />;
+}
+
+// Split out so useTranslations (a hook) isn't called inside the async
+// NotFound above — see Footer.tsx's FooterView for the same pattern.
+function NotFoundView({ companyInfo }: { companyInfo: CompanyInfo }) {
   const t = useTranslations("NotFound");
 
   return (
     <>
-      <Header />
+      <Header companyInfo={companyInfo} />
       <main className="flex flex-1 items-center justify-center px-4 py-24">
         <div className="text-center">
           <p className="text-sm font-semibold text-primary">404</p>
