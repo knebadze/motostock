@@ -203,6 +203,9 @@ export function BankFormModal({
             onChange={handleLogoChange}
             className="text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-border"
           />
+          <p className="text-xs text-muted-foreground">
+            რეკომენდებული ზომა 240×120px (გამჭვირვალე PNG)
+          </p>
         </div>
 
         <div className="flex flex-col gap-3 rounded-xl border border-border p-4">

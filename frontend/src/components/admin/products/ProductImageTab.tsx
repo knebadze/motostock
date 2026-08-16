@@ -27,6 +27,10 @@ export function ProductImageTab({
         onChange={onImageChange}
         className="text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-border"
       />
+      <p className="text-xs text-muted-foreground">
+        რეკომენდებული ზომა მინ. 1200×1200px (კვადრატული) — მაღალი გარჩევადობა საჭიროა შოპში zoom-ის
+        ფუნქციისთვის
+      </p>
     </div>
   );
 }

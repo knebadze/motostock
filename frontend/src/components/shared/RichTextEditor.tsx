@@ -28,6 +28,7 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
+      title={label}
       aria-pressed={active}
       className={`flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-sm font-semibold transition-colors hover:bg-muted disabled:opacity-50 ${
         active ? "bg-muted text-primary" : "text-foreground"
@@ -164,7 +165,7 @@ function Toolbar({ editor }: { editor: Editor }) {
           🔗
         </ToolbarButton>
         <ToolbarButton
-          label="სურათი"
+          label="სურათის ატვირთვა (რეკომენდებული სიგანე მაქს. 1200px)"
           disabled={uploadingImage}
           onClick={() => fileInputRef.current?.click()}
         >

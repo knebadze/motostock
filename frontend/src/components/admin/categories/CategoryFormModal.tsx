@@ -234,6 +234,7 @@ export function CategoryFormModal({
             onChange={handleImageChange}
             className="text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-border"
           />
+          <p className="text-xs text-muted-foreground">რეკომენდებული ზომა 400×400px (კვადრატული)</p>
         </div>
 
         <div className="flex flex-col gap-1.5">
