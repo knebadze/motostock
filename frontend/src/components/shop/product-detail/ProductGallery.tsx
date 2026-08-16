@@ -3,8 +3,25 @@
 import { useState } from "react";
 import Image from "next/image";
 import { resolveMediaUrl } from "@/lib/api/client";
+import { ImageLightbox } from "./ImageLightbox";
 
 export type GalleryImage = { url: string; variantId: number | null };
+
+const zoomIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-4"
+  >
+    <circle cx="11" cy="11" r="7" />
+    <path d="m21 21-4.3-4.3M11 8v6M8 11h6" />
+  </svg>
+);
 
 export function ProductGallery({
   images,
@@ -26,6 +43,7 @@ export function ProductGallery({
     const index = resolvedPreferred ? resolved.findIndex((image) => image.url === resolvedPreferred) : -1;
     return index >= 0 ? index : 0;
   });
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   function selectImage(index: number) {
     setActiveIndex(index);
@@ -43,7 +61,12 @@ export function ProductGallery({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-border bg-muted">
+      <button
+        type="button"
+        onClick={() => setLightboxOpen(true)}
+        aria-label={alt}
+        className="relative aspect-square w-full cursor-zoom-in overflow-hidden rounded-2xl border border-border bg-muted"
+      >
         <Image
           src={activeImage.url}
           alt={alt}
@@ -52,7 +75,10 @@ export function ProductGallery({
           className="object-cover"
           priority
         />
-      </div>
+        <span className="absolute bottom-3 right-3 flex size-8 items-center justify-center rounded-full bg-black/50 text-white">
+          {zoomIcon}
+        </span>
+      </button>
       {resolved.length > 1 && (
         <div className="flex gap-2 overflow-x-auto">
           {resolved.map((image, index) => (
@@ -70,6 +96,15 @@ export function ProductGallery({
           ))}
         </div>
       )}
+
+      <ImageLightbox
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        images={resolved}
+        index={activeIndex}
+        onIndexChange={selectImage}
+        alt={alt}
+      />
     </div>
   );
 }
