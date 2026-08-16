@@ -44,7 +44,6 @@ export function ProductShopPage({
   garageVehicles,
   initialPage = 1,
   initialSort = "newest",
-  initialVehicleCatalogId = "",
 }: {
   category: Category;
   breadcrumbChain: Category[];
@@ -54,7 +53,6 @@ export function ProductShopPage({
   garageVehicles: GarageVehicle[];
   initialPage?: number;
   initialSort?: string;
-  initialVehicleCatalogId?: string;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
@@ -65,7 +63,9 @@ export function ProductShopPage({
   const [selectedBrandIds, setSelectedBrandIds] = useState<number[]>([]);
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
-  const [selectedVehicleCatalogId, setSelectedVehicleCatalogId] = useState(initialVehicleCatalogId);
+  // Never seeded from the garage/session vehicle cookie — the MY_VEHICLE
+  // filter only takes effect once the shopper explicitly picks it here.
+  const [selectedVehicleCatalogId, setSelectedVehicleCatalogId] = useState("");
   const [attributeFilterState, setAttributeFilterState] = useState<Record<number, AttributeFilterState>>(
     {},
   );
