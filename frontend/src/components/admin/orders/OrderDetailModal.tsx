@@ -17,7 +17,7 @@ import {
   type OrderRiskFlagType,
 } from "@/lib/api/orders";
 import { syncOrderStock, type OrderStockSyncItem } from "@/lib/api/fina-sync";
-import type { LookupItem } from "@/lib/api/lookups";
+import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
 
 const FULFILLMENT_LABELS: Record<OrderFulfillmentMethod, string> = {
   CARD: "ბარათით გადახდა",
@@ -54,15 +54,19 @@ export function OrderDetailModal({
   const [savingStatus, setSavingStatus] = useState(false);
   const [syncingStock, setSyncingStock] = useState(false);
   const [stockByVariantId, setStockByVariantId] = useState<Map<number, OrderStockSyncItem>>(new Map());
+  const [cancellationReasons, setCancellationReasons] = useState<LookupItem[]>([]);
+  const [cancellationReasonId, setCancellationReasonId] = useState("");
+  const [cancellationNote, setCancellationNote] = useState("");
 
   useEffect(() => {
     let cancelled = false;
 
-    getAnyOrder(orderId)
-      .then((data) => {
+    Promise.all([getAnyOrder(orderId), listLookupItems("cancellation-reasons")])
+      .then(([data, reasons]) => {
         if (!cancelled) {
           setOrder(data);
           setStatusId(String(data.status.id));
+          setCancellationReasons(reasons);
         }
       })
       .catch((error) => {
@@ -81,13 +85,28 @@ export function OrderDetailModal({
     };
   }, [orderId, onClose]);
 
+  const isCancellingTo =
+    statuses.find((status) => String(status.id) === statusId)?.key === "CANCELLED";
+
   async function handleStatusSave() {
     if (!order || statusId === String(order.status.id)) return;
 
+    if (isCancellingTo && !cancellationReasonId) {
+      toast.error("შეკვეთის გაუქმებისას მიზეზის მითითება საჭიროა");
+      return;
+    }
+
     setSavingStatus(true);
     try {
-      const updated = await updateOrderStatus(order.id, Number(statusId));
+      const updated = await updateOrderStatus(
+        order.id,
+        Number(statusId),
+        isCancellingTo ? Number(cancellationReasonId) : undefined,
+        isCancellingTo ? cancellationNote.trim() || undefined : undefined,
+      );
       setOrder(updated);
+      setCancellationReasonId("");
+      setCancellationNote("");
       onStatusChanged();
       toast.success("სტატუსი განახლდა და მომხმარებელს ეცნობა იმეილით");
     } catch (error) {
@@ -119,6 +138,10 @@ export function OrderDetailModal({
   }
 
   const statusOptions = statuses.map((status) => ({ value: String(status.id), label: status.nameKa }));
+  const cancellationReasonOptions = cancellationReasons.map((reason) => ({
+    value: String(reason.id),
+    label: reason.nameKa,
+  }));
 
   return (
     <Modal open onClose={onClose} title="შეკვეთის დეტალები" size="2xl">
@@ -147,6 +170,41 @@ export function OrderDetailModal({
               </button>
             </div>
           </div>
+
+          {isCancellingTo && statusId !== String(order.status.id) && (
+            <div className="flex flex-col gap-3 rounded-xl border border-border p-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium">გაუქმების მიზეზი *</label>
+                <Select
+                  options={cancellationReasonOptions}
+                  value={cancellationReasonId}
+                  onChange={setCancellationReasonId}
+                  placeholder="აირჩიეთ მიზეზი"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium">შენიშვნა (არასავალდებულო)</label>
+                <textarea
+                  value={cancellationNote}
+                  onChange={(event) => setCancellationNote(event.target.value)}
+                  rows={2}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+          )}
+
+          {order.cancellationReason && (
+            <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-red-600">
+                გაუქმების მიზეზი
+              </p>
+              <p className="mt-1 text-sm text-foreground">{order.cancellationReason.nameKa}</p>
+              {order.cancellationNote && (
+                <p className="mt-1 text-sm text-muted-foreground">{order.cancellationNote}</p>
+              )}
+            </div>
+          )}
 
           {order.riskFlags.length > 0 && (
             <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">

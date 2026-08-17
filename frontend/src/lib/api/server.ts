@@ -29,6 +29,7 @@ import type { CompareItem } from "./compare";
 import type { Cart } from "./cart";
 import type { AdminOrderSummary, Order, OrderSummary } from "./orders";
 import type { DashboardStats } from "./dashboard";
+import type { AnalyticsFilters, AnalyticsOverview } from "./analytics";
 import type { CompatibilityItem } from "./compatibility";
 import type { AdminProductBuyTogether } from "./product-buy-together";
 import type { CompanyInfo, WeekDay } from "./company-info";
@@ -468,6 +469,25 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
 export async function getDashboardStatsFromServer(): Promise<DashboardStats> {
   return fetchFromServer<DashboardStats, DashboardStats>("/dashboard/stats", {
     fallback: EMPTY_DASHBOARD_STATS,
+    extract: (data) => data,
+    requireAuth: true,
+  });
+}
+
+const EMPTY_ANALYTICS_OVERVIEW: AnalyticsOverview = {
+  range: { from: "", to: "" },
+  financial: { revenue: 0, orderCount: 0, cancelledCount: 0, cancellationRate: 0, lostRevenue: 0 },
+  revenueSeries: [],
+  ordersByStatus: [],
+  topProducts: [],
+  topVehicleListings: [],
+  cancellations: { reasonBreakdown: [], recentOrders: [] },
+};
+
+export async function getAnalyticsFromServer(filters: AnalyticsFilters = {}): Promise<AnalyticsOverview> {
+  return fetchFromServer<AnalyticsOverview, AnalyticsOverview>("/analytics/overview", {
+    params: { dateFrom: filters.dateFrom || undefined, dateTo: filters.dateTo || undefined },
+    fallback: EMPTY_ANALYTICS_OVERVIEW,
     extract: (data) => data,
     requireAuth: true,
   });

@@ -135,6 +135,15 @@ const ORDER_STATUSES: LookupEntry[] = [
   { key: "CANCELLED", nameKa: "გაუქმებულია", nameEn: "Cancelled", nameRu: "Отменён" },
 ];
 
+const CANCELLATION_REASONS: LookupEntry[] = [
+  { key: "CUSTOMER_CHANGED_MIND", nameKa: "მომხმარებელმა გადაიფიქრა", nameEn: "Customer changed their mind", nameRu: "Клиент передумал" },
+  { key: "OUT_OF_STOCK", nameKa: "მარაგი ამოიწურა", nameEn: "Out of stock", nameRu: "Нет в наличии" },
+  { key: "PAYMENT_ISSUE", nameKa: "გადახდის პრობლემა", nameEn: "Payment issue", nameRu: "Проблема с оплатой" },
+  { key: "DUPLICATE_ORDER", nameKa: "დუბლირებული შეკვეთა", nameEn: "Duplicate order", nameRu: "Дублирующий заказ" },
+  { key: "SUSPECTED_FRAUD", nameKa: "საეჭვო შეკვეთა", nameEn: "Suspected fraud", nameRu: "Подозрение на мошенничество" },
+  { key: "OTHER", nameKa: "სხვა", nameEn: "Other", nameRu: "Другое" },
+];
+
 const COLORS: LookupEntry[] = [
   { key: "BLACK", nameKa: "შავი", nameEn: "Black", nameRu: "Черный" },
   { key: "WHITE", nameKa: "თეთრი", nameEn: "White", nameRu: "Белый" },
@@ -947,6 +956,7 @@ async function main() {
   await seedLookup("Powertrain types", prisma.powertrainType, POWERTRAIN_TYPES);
   await seedLookup("Conditions", prisma.condition, CONDITIONS);
   await seedLookup("Listing statuses", prisma.listingStatus, LISTING_STATUSES);
+  await seedLookup("Cancellation reasons", prisma.cancellationReason, CANCELLATION_REASONS);
 
   // Not seedLookup — OrderStatus has its own dedicated module now (see
   // order-statuses.*) with an admin-controlled sortOrder, so this seeds

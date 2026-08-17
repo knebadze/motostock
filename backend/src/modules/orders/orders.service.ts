@@ -713,10 +713,29 @@ const STATUS_KEY_TO_EMAIL_TEMPLATE: Partial<Record<string, EmailTemplateKey>> = 
   CANCELLED: "ORDER_CANCELLED",
 };
 
-export async function updateOrderStatus(id: number, statusId: number) {
+export async function updateOrderStatus(
+  id: number,
+  statusId: number,
+  cancellationReasonId?: number,
+  cancellationNote?: string,
+) {
   const status = await orderStatusesRepository.findById(statusId);
   if (!status) {
     throw new ApiError(400, "მითითებული სტატუსი არ არსებობს");
+  }
+
+  const isCancelling = status.key === "CANCELLED";
+  if (isCancelling && cancellationReasonId == null) {
+    throw new ApiError(400, "შეკვეთის გაუქმებისას მიზეზის მითითება საჭიროა");
+  }
+  if (isCancelling) {
+    const reason = await lookupsRepository.findById(
+      getLookupDelegate("cancellation-reasons"),
+      cancellationReasonId!,
+    );
+    if (!reason) {
+      throw new ApiError(400, "მითითებული მიზეზი ვერ მოიძებნა");
+    }
   }
 
   const existing = await ordersRepository.findById(id);
@@ -724,7 +743,10 @@ export async function updateOrderStatus(id: number, statusId: number) {
     throw new ApiError(404, "შეკვეთა ვერ მოიძებნა");
   }
 
-  const order = await ordersRepository.updateStatus(id, statusId);
+  const order = await ordersRepository.updateStatus(id, statusId, {
+    cancellationReasonId: isCancelling ? cancellationReasonId! : null,
+    cancellationNote: isCancelling ? (cancellationNote ?? null) : null,
+  });
 
   const templateKey = STATUS_KEY_TO_EMAIL_TEMPLATE[status.key];
   if (templateKey) {
@@ -735,5 +757,23 @@ export async function updateOrderStatus(id: number, statusId: number) {
     });
   }
 
-  return { ...toOrderResponse(order), buyer: order.user };
+  return {
+    ...toOrderResponse(order),
+    buyer: order.user,
+    riskFlags: order.riskFlags.map((flag) => ({
+      type: flag.type,
+      detail: flag.detail,
+      createdAt: flag.createdAt,
+    })),
+    cancellationReason: order.cancellationReason
+      ? {
+          id: order.cancellationReason.id,
+          key: order.cancellationReason.key,
+          nameKa: order.cancellationReason.nameKa,
+          nameEn: order.cancellationReason.nameEn,
+          nameRu: order.cancellationReason.nameRu,
+        }
+      : null,
+    cancellationNote: order.cancellationNote,
+  };
 }

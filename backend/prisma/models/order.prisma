@@ -63,6 +63,16 @@ model Order {
   bankId Int?
   bank   Bank? @relation(fields: [bankId], references: [id], onDelete: SetNull)
 
+  // Only set when status.key = CANCELLED (enforced in orders.service.ts's
+  // updateOrderStatus, not here). Deliberately default (Restrict) onDelete,
+  // unlike bankId's SetNull — this is a plain classifier lookup, and
+  // lookups.service.ts's delete guard should block removing a reason that's
+  // still referenced by an order, so the analytics reason-breakdown can't
+  // silently lose data under it.
+  cancellationReasonId Int?
+  cancellationReason   CancellationReason? @relation(fields: [cancellationReasonId], references: [id], onDelete: Restrict)
+  cancellationNote     String?
+
   subtotal      Decimal @db.Decimal(10, 2)
   discountTotal Decimal @default(0) @db.Decimal(10, 2)
   total         Decimal @db.Decimal(10, 2)
@@ -83,5 +93,6 @@ model Order {
   @@index([promoCodeId])
   @@index([bankId])
   @@index([statusId])
+  @@index([cancellationReasonId])
   @@schema("dbo")
 }

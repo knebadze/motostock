@@ -1,0 +1,14 @@
+// Plain admin-editable classifier (no sortOrder, unlike OrderStatus) — same
+// shape as Condition/Color, registered into the generic lookups system (see
+// lookups.registry.ts) so /admin/general-classifiers manages it with zero
+// new UI. Referenced by Order.cancellationReasonId.
+model CancellationReason {
+  id     Int     @id @default(autoincrement())
+  key    String  @unique
+  nameKa String
+  nameEn String
+  nameRu String
+  orders Order[]
+
+  @@schema("cla")
+}

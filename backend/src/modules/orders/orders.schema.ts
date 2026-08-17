@@ -40,10 +40,16 @@ export const orderIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+// Cross-field rule ("reason required when the target status is CANCELLED")
+// isn't checked here — this schema only sees statusId, not the status's
+// key, and the mapping is a DB row (OrderStatus is admin-editable, not a
+// fixed enum). That check happens in orders.service.ts's updateOrderStatus.
 export const updateOrderStatusSchema = registry.register(
   "UpdateOrderStatusInput",
   z.object({
     statusId: z.int().positive(),
+    cancellationReasonId: z.int().positive().optional(),
+    cancellationNote: z.string().trim().min(1).optional(),
   }),
 );
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
@@ -249,5 +255,7 @@ export const adminOrderResponseSchema = registry.register(
   orderResponseSchema.extend({
     buyer: buyerSummarySchema,
     riskFlags: z.array(orderRiskFlagResponseSchema),
+    cancellationReason: lookupItemResponseSchema.nullable(),
+    cancellationNote: z.string().nullable(),
   }),
 );

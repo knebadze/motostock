@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import {
+  analyticsIcon,
   attributesIcon,
   banksIcon,
   brandsIcon,
@@ -45,6 +46,7 @@ export const adminNav: AdminNavSection[] = [
     label: "მთავარი",
     items: [
       { label: "დეშბორდი", href: "/admin", icon: dashboardIcon },
+      { label: "ანალიტიკა", href: "/admin/analytics", icon: analyticsIcon },
       { label: "შეკვეთები", href: "/admin/orders", icon: ordersIcon },
       { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon },
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },

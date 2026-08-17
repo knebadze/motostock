@@ -60,6 +60,11 @@ export async function updateStatus(
   req: Request<{ id: string }, unknown, UpdateOrderStatusInput>,
   res: Response,
 ) {
-  const order = await ordersService.updateOrderStatus(Number(req.params.id), req.body.statusId);
+  const order = await ordersService.updateOrderStatus(
+    Number(req.params.id),
+    req.body.statusId,
+    req.body.cancellationReasonId,
+    req.body.cancellationNote,
+  );
   res.status(200).json({ order });
 }

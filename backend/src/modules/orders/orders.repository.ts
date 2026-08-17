@@ -25,6 +25,7 @@ const orderItemsInclude = {
   items: { orderBy: { id: "asc" } },
   status: true,
   bank: true,
+  cancellationReason: true,
   user: { select: buyerSelect },
   riskFlags: { orderBy: { createdAt: "desc" } },
 } as const;
@@ -126,8 +127,15 @@ export const ordersRepository = {
     return prisma.order.findUnique({ where: { id }, include: orderItemsInclude });
   },
 
-  async updateStatus(id: number, statusId: number) {
-    await prisma.order.update({ where: { id }, data: { statusId } });
+  async updateStatus(
+    id: number,
+    statusId: number,
+    cancellation?: { cancellationReasonId: number | null; cancellationNote: string | null },
+  ) {
+    await prisma.order.update({
+      where: { id },
+      data: { statusId, ...cancellation },
+    });
     return prisma.order.findUniqueOrThrow({ where: { id }, include: orderItemsInclude });
   },
 
