@@ -1,15 +1,15 @@
 import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
-import { AboutGallery, type AboutGalleryImage } from "@/components/about/AboutGallery";
+import { ImageCarousel, type CarouselImage } from "@/components/shared/ImageCarousel";
 import { getPublicTeamMembersFromServer } from "@/lib/api/server";
 import { resolveMediaUrl } from "@/lib/api/client";
 
 // Static, hand-authored page (not admin/DB-driven) — heavy on images/text/
 // a slider, unlike the single admin-edited rich-text block Terms uses.
 // Swap these in once the real photos are dropped into public/about/ — each
-// slot renders a placeholder box until then (see AboutGallery.tsx).
+// slot renders a placeholder box until then (see ImageCarousel.tsx).
 const INTRO_IMAGE_SRC = "";
-const GALLERY_IMAGES: AboutGalleryImage[] = [
+const GALLERY_IMAGES: CarouselImage[] = [
   { src: "", alt: "სამუშაო სივრცე 1" },
   { src: "", alt: "სამუშაო სივრცე 2" },
   { src: "", alt: "სამუშაო სივრცე 3" },
@@ -80,7 +80,7 @@ export default async function AboutPage() {
 
       <div className="mt-16">
         <h2 className="mb-5 text-xl font-bold tracking-tight">{t("galleryHeading")}</h2>
-        <AboutGallery images={GALLERY_IMAGES} />
+        <ImageCarousel images={GALLERY_IMAGES} />
       </div>
 
       <div className="mt-16">

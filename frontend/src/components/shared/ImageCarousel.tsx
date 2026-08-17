@@ -5,15 +5,29 @@ import Image from "next/image";
 
 const AUTOPLAY_MS = 5000;
 
-export type AboutGalleryImage = {
-  // Empty until the real photo is dropped into public/about/ — the slot
-  // renders as a placeholder box until then, same "no image" treatment
-  // used across the shop (see ProductCard.tsx etc).
+export type CarouselImage = {
+  // Empty until the real photo is dropped in — the slot renders as a
+  // placeholder box until then, same "no image" treatment used across the
+  // shop (see ProductCard.tsx etc).
   src: string;
   alt: string;
 };
 
-export function AboutGallery({ images }: { images: AboutGalleryImage[] }) {
+// Shared by the About page's gallery and the homepage info cards — same
+// autoplay/pause-on-hover/dots/arrows carousel, just re-sized per caller via
+// aspectClassName instead of being hardcoded to one page's layout.
+export function ImageCarousel({
+  images,
+  aspectClassName = "aspect-video",
+  // Set false when the caller already provides its own rounded/bordered
+  // wrapper (e.g. a card that clips this carousel at its top) — avoids a
+  // visible double border/corner-radius.
+  bordered = true,
+}: {
+  images: CarouselImage[];
+  aspectClassName?: string;
+  bordered?: boolean;
+}) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -33,7 +47,7 @@ export function AboutGallery({ images }: { images: AboutGalleryImage[] }) {
     <div
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border bg-muted"
+      className={`relative w-full overflow-hidden bg-muted ${bordered ? "rounded-2xl border border-border" : ""} ${aspectClassName}`}
     >
       {image.src ? (
         <Image src={image.src} alt={image.alt} fill priority={index === 0} className="object-cover" />

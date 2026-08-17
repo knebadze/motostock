@@ -272,6 +272,19 @@
     "searchOrDivider": "or",
     "searchButton": "Search"
   },
+  "HomeInfoCards": {
+    "heading": "Get to know MotoStock",
+    "readMore": "Read more",
+    "shopTitle": "Shop — Accessories, Gear and Parts",
+    "shopShort": "MotoStock brings together moto accessories, gear and spare parts in one place.",
+    "shopFull": "MotoStock is a store where everything a motorcycle enthusiast needs comes together — accessories, various types of gear, and spare parts. A wide selection, trusted brands, and precise compatibility, all in one place, so you never waste time searching.",
+    "serviceTitle": "Full Moto Service",
+    "serviceShort": "A dedicated service center is at your disposal — professional technical care from real specialists.",
+    "serviceFull": "MotoStock offers a full-service center — from routine maintenance to repairs and parts replacement. Our experienced specialists make sure your vehicle is always ready for the road.",
+    "driveTitle": "Drive — Lounge Space",
+    "driveShort": "While your vehicle is being serviced, relax in our comfortable Drive lounge.",
+    "driveFull": "While we prepare your vehicle in the service center, you don't have to stand around waiting — the Drive space was created so you can spend your waiting time comfortably and enjoyably."
+  },
   "Footer": {
     "description": "Accessories, clothing, helmets, and parts for motorcycles.",
     "catalogTitle": "Catalog",

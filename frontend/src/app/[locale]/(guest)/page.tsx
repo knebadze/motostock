@@ -21,6 +21,7 @@ import { ProductsCarouselSection } from "@/components/home/ProductsCarouselSecti
 import { VehicleListingsCarouselSection } from "@/components/home/VehicleListingsCarouselSection";
 import { MixedCarouselSection } from "@/components/home/MixedCarouselSection";
 import { CategoriesSection } from "@/components/home/CategoriesSection";
+import { HomeInfoCardsSection } from "@/components/home/HomeInfoCardsSection";
 
 type Locale = "ka" | "en" | "ru";
 
@@ -208,6 +209,8 @@ export default async function HomePage({
       {sectionContent.map(({ key, node }) => (
         <div key={key}>{node}</div>
       ))}
+
+      <HomeInfoCardsSection />
     </>
   );
 }
