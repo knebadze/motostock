@@ -16,6 +16,15 @@ export default async function AccountLayout({
     return null;
   }
 
+  // Hard gate — an unverified account never reaches any /account/* page,
+  // not just checkout (see orders.service.ts's assertEmailVerified for the
+  // other half of this gate).
+  if (!user.emailVerified) {
+    const locale = await getLocale();
+    redirect({ href: "/verify-required", locale });
+    return null;
+  }
+
   return (
     <main className="flex-1">
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">

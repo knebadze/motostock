@@ -42,8 +42,11 @@ export function VerifyEmailView() {
             : t("verifyEmailError")}
       </p>
       {status !== "loading" && (
-        <Link href="/" className="mt-6 inline-block font-semibold text-primary hover:underline">
-          {t("verifyEmailBackToHome")}
+        <Link
+          href={status === "success" ? "/account" : "/"}
+          className="mt-6 inline-block font-semibold text-primary hover:underline"
+        >
+          {status === "success" ? t("verifyEmailGoToAccount") : t("verifyEmailBackToHome")}
         </Link>
       )}
     </div>

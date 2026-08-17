@@ -235,13 +235,19 @@
     "backToForgotPassword": "მოითხოვეთ ახალი ბმული",
     "verifyEmailTitle": "ელფოსტის დადასტურება",
     "verifyEmailLoading": "მიმდინარეობს დადასტურება...",
-    "verifyEmailSuccess": "ელფოსტა დადასტურებულია! ახლა შეგიძლიათ შეკვეთის გაფორმება.",
+    "verifyEmailSuccess": "ელფოსტა დადასტურებულია! ახლა შეგიძლიათ პროფილზე შესვლა და შეკვეთის გაფორმება.",
     "verifyEmailError": "დადასტურების ბმული არასწორია ან ვადაგასულია.",
     "verifyEmailBackToHome": "მთავარ გვერდზე დაბრუნება",
+    "verifyEmailGoToAccount": "პროფილზე გადასვლა",
     "resendVerification": "ხელახლა გაგზავნა",
     "verificationResending": "იგზავნება...",
     "verificationResent": "დადასტურების წერილი ხელახლა გამოიგზავნა",
-    "verificationResendError": "წერილის გაგზავნა ვერ მოხერხდა"
+    "verificationResendError": "წერილის გაგზავნა ვერ მოხერხდა",
+    "verifyRequiredTitle": "დაადასტურეთ თქვენი ელფოსტა",
+    "verifyRequiredDescription": "პროფილზე წვდომამდე საჭიროა ელფოსტის დადასტურება. დამადასტურებელი ბმული გამოგზავნილია მისამართზე {email}.",
+    "verifyRequiredBannerMessage": "არ მიგიღიათ წერილი?",
+    "verifyRequiredLogout": "გამოსვლა",
+    "verifyRequiredLogoutError": "გამოსვლა ვერ მოხერხდა"
   },
   "Home": {
     "heroTitle": "აღჭურვილობა, რომელსაც <hl>გზაზე</hl> ენდობი",
@@ -368,8 +374,7 @@
     },
     "dashboard": {
       "greeting": "მოგესალმებით, {name}",
-      "description": "აქედან შეგიძლიათ თვალი ადევნოთ თქვენს გარაჟსა და შეკვეთებს, ან შეცვალოთ პაროლი.",
-      "verifyEmailReminder": "დაადასტურეთ თქვენი ელფოსტა, რომ შეკვეთის გაფორმება შეგეძლოთ."
+      "description": "აქედან შეგიძლიათ თვალი ადევნოთ თქვენს გარაჟსა და შეკვეთებს, ან შეცვალოთ პაროლი."
     },
     "garage": {
       "description": "დაამატეთ თქვენი ტექნიკა კატალოგიდან არჩევით, ან, თუ ვერ პოულობთ, დაამატეთ ახალი ჩანაწერი.",

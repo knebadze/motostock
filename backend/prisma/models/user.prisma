@@ -10,7 +10,9 @@ model User {
   // verification link; set immediately at creation for OAuth accounts
   // (Google/Facebook already confirmed the address) — see
   // oauth.service.ts's user-creation call sites and auth.service.ts's
-  // verifyEmail. Gates checkout only (see orders.service.ts), not login.
+  // verifyEmail. Gates checkout (orders.service.ts) and the whole /account
+  // area (frontend's account/layout.tsx redirects to /verify-required when
+  // unset) — login itself stays unaffected either way.
   emailVerifiedAt         DateTime?
   roleId                  Int
   role                    Role                     @relation(fields: [roleId], references: [id])

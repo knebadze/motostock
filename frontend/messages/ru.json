@@ -235,13 +235,19 @@
     "backToForgotPassword": "Запросить новую ссылку",
     "verifyEmailTitle": "Подтверждение email",
     "verifyEmailLoading": "Подтверждение...",
-    "verifyEmailSuccess": "Email подтверждён! Теперь вы можете оформить заказ.",
+    "verifyEmailSuccess": "Email подтверждён! Теперь вам доступен личный кабинет и оформление заказов.",
     "verifyEmailError": "Ссылка подтверждения неверна или устарела.",
     "verifyEmailBackToHome": "На главную",
+    "verifyEmailGoToAccount": "Перейти в личный кабинет",
     "resendVerification": "Отправить повторно",
     "verificationResending": "Отправка...",
     "verificationResent": "Письмо с подтверждением отправлено повторно",
-    "verificationResendError": "Не удалось отправить письмо"
+    "verificationResendError": "Не удалось отправить письмо",
+    "verifyRequiredTitle": "Подтвердите ваш email",
+    "verifyRequiredDescription": "Для доступа к личному кабинету необходимо подтвердить email. Ссылка для подтверждения отправлена на {email}.",
+    "verifyRequiredBannerMessage": "Не получили письмо?",
+    "verifyRequiredLogout": "Выйти",
+    "verifyRequiredLogoutError": "Не удалось выйти"
   },
   "Home": {
     "heroTitle": "Экипировка, которой можно доверять на <hl>дороге</hl>",
@@ -368,8 +374,7 @@
     },
     "dashboard": {
       "greeting": "Добро пожаловать, {name}",
-      "description": "Здесь вы можете следить за гаражом и заказами или изменить пароль.",
-      "verifyEmailReminder": "Подтвердите email, чтобы иметь возможность оформлять заказы."
+      "description": "Здесь вы можете следить за гаражом и заказами или изменить пароль."
     },
     "garage": {
       "description": "Добавьте свою технику, выбрав её из каталога, или, если не нашли, добавьте новую запись.",

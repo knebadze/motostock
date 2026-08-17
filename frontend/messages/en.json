@@ -235,13 +235,19 @@
     "backToForgotPassword": "Request a new link",
     "verifyEmailTitle": "Verify your email",
     "verifyEmailLoading": "Verifying...",
-    "verifyEmailSuccess": "Email verified! You can now place an order.",
+    "verifyEmailSuccess": "Email verified! You can now access your account and place orders.",
     "verifyEmailError": "This verification link is invalid or has expired.",
     "verifyEmailBackToHome": "Back to homepage",
+    "verifyEmailGoToAccount": "Go to my account",
     "resendVerification": "Resend",
     "verificationResending": "Sending...",
     "verificationResent": "Verification email sent again",
-    "verificationResendError": "Couldn't send the email"
+    "verificationResendError": "Couldn't send the email",
+    "verifyRequiredTitle": "Verify your email",
+    "verifyRequiredDescription": "You need to verify your email before you can access your account. A verification link has been sent to {email}.",
+    "verifyRequiredBannerMessage": "Didn't get the email?",
+    "verifyRequiredLogout": "Log out",
+    "verifyRequiredLogoutError": "Couldn't log out"
   },
   "Home": {
     "heroTitle": "Gear you can trust on the <hl>road</hl>",
@@ -368,8 +374,7 @@
     },
     "dashboard": {
       "greeting": "Welcome, {name}",
-      "description": "From here you can keep track of your garage and orders, or change your password.",
-      "verifyEmailReminder": "Verify your email so you can place orders."
+      "description": "From here you can keep track of your garage and orders, or change your password."
     },
     "garage": {
       "description": "Add your vehicle by picking it from the catalog, or add a new entry if you can't find it.",
