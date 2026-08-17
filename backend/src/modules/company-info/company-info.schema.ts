@@ -29,7 +29,7 @@ const workingHourInputSchema = z.object({
 export const updateCompanyInfoSchema = registry.register(
   "UpdateCompanyInfoInput",
   z.object({
-    name: z.string().trim().min(1).max(200).openapi({ example: "MotoStock" }),
+    name: z.string().trim().min(1).max(200).openapi({ example: "MotoStock 22" }),
     cityId: z.int().positive().nullable().optional(),
     street: z.string().trim().max(200).nullable().optional(),
     phone: z.string().trim().max(30).nullable().optional().openapi({ example: "+995555123456" }),

@@ -96,7 +96,7 @@ export async function generateVehicleCatalogTemplate(): Promise<Buffer> {
   ]);
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "MotoStock";
+  workbook.creator = "MotoStock 22";
   workbook.created = new Date();
 
   const infoSheet = workbook.addWorksheet("ინსტრუქცია");
