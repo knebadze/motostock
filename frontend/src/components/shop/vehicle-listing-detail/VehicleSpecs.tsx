@@ -19,7 +19,7 @@ export type VehicleSpecRow = SpecRow & { key: string; raw: number | null };
 export function buildVehicleSpecRows(
   listing: VehicleListing,
   locale: Locale,
-  t: (key: string) => string,
+  t: (key: string, values?: Record<string, string | number>) => string,
 ): VehicleSpecRow[] {
   const catalog = listing.vehicleCatalog;
   const isElectric = catalog.powertrainType?.key === "ELECTRIC";
@@ -29,6 +29,26 @@ export function buildVehicleSpecRows(
     { key: "color", label: t("colorLabel"), value: pickLookupName(listing.color, locale), raw: null },
     { key: "year", label: t("yearLabel"), value: String(listing.year), raw: listing.year },
   ];
+
+  if (listing.mileageKm != null) {
+    rows.push({
+      key: "mileage",
+      label: t("mileageLabel"),
+      value: `${listing.mileageKm} km`,
+      raw: listing.mileageKm,
+    });
+  }
+
+  if (listing.warrantyValue != null && listing.warrantyUnit != null) {
+    rows.push({
+      key: "warranty",
+      label: t("warrantyLabel"),
+      value: t(listing.warrantyUnit === "YEAR" ? "warrantyYearsValue" : "warrantyMonthsValue", {
+        value: listing.warrantyValue,
+      }),
+      raw: listing.warrantyValue,
+    });
+  }
 
   if (catalog.powertrainType) {
     rows.push({

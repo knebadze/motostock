@@ -77,6 +77,11 @@ export function VehicleListingFormModal({
     listing ? String(listing.color.id) : colors[0] ? String(colors[0].id) : "",
   );
   const [year, setYear] = useState(listing ? String(listing.year) : "");
+  const [mileageKm, setMileageKm] = useState(listing?.mileageKm != null ? String(listing.mileageKm) : "");
+  const [warrantyValue, setWarrantyValue] = useState(
+    listing?.warrantyValue != null ? String(listing.warrantyValue) : "",
+  );
+  const [warrantyUnit, setWarrantyUnit] = useState(listing?.warrantyUnit ?? "");
   const [isActive, setIsActive] = useState(listing?.isActive ?? true);
   const [price, setPrice] = useState(listing ? String(listing.price) : "");
   const [stockQuantity, setStockQuantity] = useState(
@@ -96,6 +101,11 @@ export function VehicleListingFormModal({
   const conditionOptions = conditions.map((item) => ({ value: String(item.id), label: item.nameKa }));
   const statusOptions = statuses.map((item) => ({ value: String(item.id), label: item.nameKa }));
   const colorOptions = colors.map((item) => ({ value: String(item.id), label: item.nameKa }));
+  const warrantyUnitOptions = [
+    { value: "", label: "—" },
+    { value: "YEAR", label: "წელი" },
+    { value: "MONTH", label: "თვე" },
+  ];
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -106,6 +116,9 @@ export function VehicleListingFormModal({
       statusId,
       colorId,
       year,
+      mileageKm,
+      warrantyValue,
+      warrantyUnit,
       price,
       stockQuantity,
     });
@@ -125,6 +138,9 @@ export function VehicleListingFormModal({
         statusId: Number(statusId),
         colorId: Number(colorId),
         year: Number(year),
+        mileageKm: mileageKm ? Number(mileageKm) : null,
+        warrantyValue: warrantyValue ? Number(warrantyValue) : null,
+        warrantyUnit: warrantyUnit ? (warrantyUnit as "YEAR" | "MONTH") : null,
         isActive,
         price: Number(price),
         stockQuantity: stockQuantity ? Number(stockQuantity) : undefined,
@@ -233,6 +249,43 @@ export function VehicleListingFormModal({
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
           <FieldError message={errors.stockQuantity} />
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="vl-mileage" className="text-sm font-medium">
+            გარბენი (კმ)
+          </label>
+          <input
+            id="vl-mileage"
+            type="number"
+            min={0}
+            value={mileageKm}
+            onChange={(event) => setMileageKm(event.target.value)}
+            placeholder="მხოლოდ მეორადისთვის"
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.mileageKm} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="vl-warranty-value" className="text-sm font-medium">
+            გარანტია
+          </label>
+          <input
+            id="vl-warranty-value"
+            type="number"
+            min={1}
+            value={warrantyValue}
+            onChange={(event) => setWarrantyValue(event.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.warrantyValue} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium">გარანტიის ერთეული</label>
+          <Select options={warrantyUnitOptions} value={warrantyUnit} onChange={setWarrantyUnit} />
+          <FieldError message={errors.warrantyUnit} />
         </div>
       </div>
 

@@ -36,6 +36,9 @@ type VehicleListingWriteData = {
   statusId: number;
   colorId: number;
   year: number;
+  mileageKm?: number | null;
+  warrantyValue?: number | null;
+  warrantyUnit?: "YEAR" | "MONTH" | null;
   isActive?: boolean;
   price: number;
   stockQuantity?: number;

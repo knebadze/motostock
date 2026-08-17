@@ -60,6 +60,9 @@ type VehicleListingRow = {
   status: LookupRow;
   color: LookupRow;
   year: number;
+  mileageKm: number | null;
+  warrantyValue: number | null;
+  warrantyUnit: "YEAR" | "MONTH" | null;
   isActive: boolean;
   price: { toString(): string };
   stockQuantity: number;
@@ -129,6 +132,9 @@ export function toVehicleListingResponse(row: VehicleListingRow) {
     status: row.status,
     color: row.color,
     year: row.year,
+    mileageKm: row.mileageKm,
+    warrantyValue: row.warrantyValue,
+    warrantyUnit: row.warrantyUnit,
     isActive: row.isActive,
     price: Number(row.price),
     stockQuantity: row.stockQuantity,

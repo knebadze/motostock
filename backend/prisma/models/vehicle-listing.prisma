@@ -1,3 +1,10 @@
+enum WarrantyUnit {
+  YEAR
+  MONTH
+
+  @@schema("dbo")
+}
+
 model VehicleListing {
   id               Int                      @id @default(autoincrement())
   vehicleCatalogId Int
@@ -9,6 +16,13 @@ model VehicleListing {
   colorId          Int
   color            Color                    @relation(fields: [colorId], references: [id])
   year             Int
+  // Odometer reading in km — relevant for used units (secondhand vehicles),
+  // null for new stock.
+  mileageKm        Int?
+  // Remaining warranty on this specific unit, e.g. "3 YEAR" or "6 MONTH" —
+  // both null together mean no warranty is advertised for this listing.
+  warrantyValue    Int?
+  warrantyUnit     WarrantyUnit?
   isActive         Boolean                  @default(true)
   price            Decimal                  @db.Decimal(10, 2)
   stockQuantity    Int                      @default(1)

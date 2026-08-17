@@ -7,27 +7,50 @@ import { vehicleListingImageResponseSchema } from "../vehicle-listing-images/veh
 import { vehicleSpecFieldSchema } from "../vehicle-category-filters/vehicle-category-filters.schema.js";
 import { adminFiltersQuerySchema } from "../filters/filter-request.schema.js";
 
+export const warrantyUnitSchema = z.enum(["YEAR", "MONTH"]);
+
+// Both null together (no warranty advertised) or both set — never just one,
+// on either create or a partial update.
+function requireWarrantyPair(
+  data: { warrantyValue?: number | null; warrantyUnit?: "YEAR" | "MONTH" | null },
+  ctx: z.RefinementCtx,
+) {
+  if ((data.warrantyValue != null) !== (data.warrantyUnit != null)) {
+    ctx.addIssue({
+      code: "custom",
+      message: "გარანტიის მითითებისას საჭიროა როგორც ვადა, ისე ერთეული (წელი/თვე)",
+      path: ["warrantyUnit"],
+    });
+  }
+}
+
+const baseVehicleListingSchema = z.object({
+  vehicleCatalogId: z.int().positive(),
+  conditionId: z.int().positive(),
+  statusId: z.int().positive(),
+  colorId: z.int().positive(),
+  year: z.int().min(1900).max(2100).openapi({ example: 2022 }),
+  // Odometer reading — relevant for used units, left unset for new stock.
+  mileageKm: z.int().nonnegative().nullable().optional(),
+  warrantyValue: z.int().positive().nullable().optional(),
+  warrantyUnit: warrantyUnitSchema.nullable().optional(),
+  isActive: z.boolean().optional(),
+  price: z.coerce.number().positive().openapi({ example: 4500 }),
+  stockQuantity: z.int().positive().optional(),
+  descriptionKa: z.string().max(20000).nullable().optional(),
+  descriptionEn: z.string().max(20000).nullable().optional(),
+  descriptionRu: z.string().max(20000).nullable().optional(),
+});
+
 export const createVehicleListingSchema = registry.register(
   "CreateVehicleListingInput",
-  z.object({
-    vehicleCatalogId: z.int().positive(),
-    conditionId: z.int().positive(),
-    statusId: z.int().positive(),
-    colorId: z.int().positive(),
-    year: z.int().min(1900).max(2100).openapi({ example: 2022 }),
-    isActive: z.boolean().optional(),
-    price: z.coerce.number().positive().openapi({ example: 4500 }),
-    stockQuantity: z.int().positive().optional(),
-    descriptionKa: z.string().max(20000).nullable().optional(),
-    descriptionEn: z.string().max(20000).nullable().optional(),
-    descriptionRu: z.string().max(20000).nullable().optional(),
-  }),
+  baseVehicleListingSchema.superRefine(requireWarrantyPair),
 );
 export type CreateVehicleListingInput = z.infer<typeof createVehicleListingSchema>;
 
 export const updateVehicleListingSchema = registry.register(
   "UpdateVehicleListingInput",
-  createVehicleListingSchema.partial(),
+  baseVehicleListingSchema.partial().superRefine(requireWarrantyPair),
 );
 export type UpdateVehicleListingInput = z.infer<typeof updateVehicleListingSchema>;
 
@@ -158,6 +181,9 @@ export const vehicleListingResponseSchema = registry.register(
     status: lookupItemResponseSchema,
     color: lookupItemResponseSchema,
     year: z.int(),
+    mileageKm: z.int().nullable(),
+    warrantyValue: z.int().nullable(),
+    warrantyUnit: warrantyUnitSchema.nullable(),
     isActive: z.boolean(),
     price: z.number().openapi({ example: 4500 }),
     stockQuantity: z.int(),

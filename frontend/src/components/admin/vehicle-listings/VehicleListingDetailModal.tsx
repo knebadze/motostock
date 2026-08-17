@@ -32,6 +32,12 @@ function boolLabel(value: boolean | null): string {
   return value == null ? "—" : value ? "კი" : "არა";
 }
 
+function warrantyLabel(listing: VehicleListingDetailAdmin): string {
+  if (listing.warrantyValue == null || listing.warrantyUnit == null) return "—";
+  const unit = listing.warrantyUnit === "YEAR" ? "წელი" : "თვე";
+  return `${listing.warrantyValue} ${unit}`;
+}
+
 function MainTab({ listing }: { listing: VehicleListingDetailAdmin }) {
   const { vehicleCatalog: catalog } = listing;
   return (
@@ -50,6 +56,8 @@ function MainTab({ listing }: { listing: VehicleListingDetailAdmin }) {
       <SpecsList
         rows={[
           { label: "წელი", value: String(listing.year) },
+          { label: "გარბენი", value: listing.mileageKm != null ? `${listing.mileageKm} კმ` : "—" },
+          { label: "გარანტია", value: warrantyLabel(listing) },
           { label: "მდგომარეობა", value: listing.condition.nameKa },
           { label: "ფერი", value: listing.color.nameKa },
           { label: "სტატუსი", value: listing.status.nameKa },

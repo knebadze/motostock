@@ -6,6 +6,8 @@ import type { VehicleListingImage } from "./vehicle-listing-images";
 import type { VehicleSpecField } from "./vehicle-category-filters";
 import type { AdminFilterEntry } from "./admin-filters";
 
+export type WarrantyUnit = "YEAR" | "MONTH";
+
 export type VehicleListing = {
   id: number;
   vehicleCatalog: {
@@ -47,6 +49,9 @@ export type VehicleListing = {
   status: LookupItem;
   color: LookupItem;
   year: number;
+  mileageKm: number | null;
+  warrantyValue: number | null;
+  warrantyUnit: WarrantyUnit | null;
   isActive: boolean;
   price: number;
   stockQuantity: number;
@@ -71,6 +76,9 @@ export type VehicleListingInput = {
   statusId: number;
   colorId: number;
   year: number;
+  mileageKm?: number | null;
+  warrantyValue?: number | null;
+  warrantyUnit?: WarrantyUnit | null;
   isActive?: boolean;
   price: number;
   stockQuantity?: number;
