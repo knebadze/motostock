@@ -63,6 +63,8 @@
     "outOfStock": "Нет в наличии",
     "discountBadge": "Скидка",
     "emptyState": "Ничего не найдено",
+    "loadProductsError": "Не удалось загрузить товары",
+    "loadVehiclesError": "Не удалось загрузить технику",
     "wishlistSaveLabel": "В избранное",
     "wishlistSavedLabel": "В избранном",
     "compareAddLabel": "Добавить к сравнению",
@@ -537,5 +539,61 @@
     "description": "Пожалуйста, попробуйте ещё раз или зайдите позже.",
     "retry": "Повторить попытку",
     "backHome": "Вернуться на главную"
+  },
+  "Common": {
+    "genericError": "Произошла ошибка, попробуйте снова",
+    "select": {
+      "placeholder": "Выбрать",
+      "clear": "Очистить",
+      "search": "Поиск...",
+      "empty": "Ничего не найдено"
+    },
+    "modal": {
+      "close": "Закрыть"
+    },
+    "formActions": {
+      "cancel": "Отмена"
+    },
+    "confirmDialog": {
+      "cancel": "Отмена",
+      "processing": "Обработка...",
+      "genericError": "Действие не выполнено"
+    },
+    "pagination": {
+      "nav": "Страницы",
+      "prev": "Предыдущая страница",
+      "next": "Следующая страница"
+    },
+    "loader": {
+      "loading": "Загрузка"
+    },
+    "carousel": {
+      "prev": "Назад",
+      "next": "Вперёд"
+    },
+    "imageCarousel": {
+      "prevImage": "Предыдущее изображение",
+      "nextImage": "Следующее изображение",
+      "imageDot": "Изображение {index}"
+    },
+    "compareButton": {
+      "add": "Добавить к сравнению",
+      "added": "В сравнении",
+      "error": "Не удалось выполнить, попробуйте снова"
+    },
+    "wishlistButton": {
+      "save": "Добавить в избранное",
+      "saved": "В избранном",
+      "error": "Не удалось выполнить, попробуйте снова"
+    },
+    "passwordInput": {
+      "show": "Показать пароль",
+      "hide": "Скрыть пароль"
+    },
+    "heroSlider": {
+      "prevSlide": "Предыдущий слайд",
+      "nextSlide": "Следующий слайд",
+      "slideDot": "Слайд {index}"
+    }
   }
 }

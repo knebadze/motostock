@@ -16,6 +16,7 @@ export function AddressManager({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Account.address");
+  const tCommon = useTranslations("Common");
   const [addresses, setAddresses] = useState(initialAddresses);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -115,6 +116,11 @@ export function AddressManager({
         confirmLabel={t("deleteButton")}
         successMessage={t("deleteSuccess")}
         onConfirm={handleDelete}
+        cancelLabel={tCommon("confirmDialog.cancel")}
+        processingLabel={tCommon("confirmDialog.processing")}
+        errorFallback={tCommon("confirmDialog.genericError")}
+        closeLabel={tCommon("modal.close")}
+        loaderLabel={tCommon("loader.loading")}
       />
     </div>
   );

@@ -28,6 +28,7 @@ export function AddressFormModal({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Account.address");
+  const tCommon = useTranslations("Common");
   const isEditing = initialAddress !== null;
   const [phone, setPhone] = useState(initialAddress?.phone ?? "");
   const [cityId, setCityId] = useState(initialAddress ? String(initialAddress.city.id) : "");
@@ -77,7 +78,12 @@ export function AddressFormModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={isEditing ? t("modalEditTitle") : t("modalAddTitle")}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={isEditing ? t("modalEditTitle") : t("modalAddTitle")}
+      closeLabel={tCommon("modal.close")}
+    >
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="address-phone" className="text-sm font-medium">
@@ -102,6 +108,8 @@ export function AddressFormModal({
             onChange={setCityId}
             searchable
             placeholder={t("cityPlaceholder")}
+            searchPlaceholder={tCommon("select.search")}
+            emptyLabel={tCommon("select.empty")}
           />
           <FieldError message={errors.cityId} />
         </div>
@@ -171,6 +179,7 @@ export function AddressFormModal({
           loading={loading}
           submitLabel={t("submit")}
           loadingLabel={t("submitting")}
+          cancelLabel={tCommon("formActions.cancel")}
         />
       </form>
     </Modal>

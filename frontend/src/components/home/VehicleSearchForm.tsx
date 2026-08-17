@@ -21,6 +21,7 @@ export function VehicleSearchForm({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Home");
+  const tSelect = useTranslations("Common.select");
   const router = useRouter();
 
   const [garageVehicleId, setGarageVehicleId] = useState("");
@@ -109,6 +110,8 @@ export function VehicleSearchForm({
               onChange={handleGarageChange}
               searchable
               placeholder={t("searchGaragePlaceholder")}
+              searchPlaceholder={tSelect("search")}
+              emptyLabel={tSelect("empty")}
             />
           </div>
 

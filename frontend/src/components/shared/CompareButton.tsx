@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api/client";
 import {
@@ -14,12 +15,15 @@ import {
 // distinct from WishlistButton's heart at a glance.
 const scalesPath = "M4 20h16M7 20V10m5 10V4m5 16v-7";
 
+// Only ever rendered on the storefront (product/vehicle cards and detail
+// pages), never in the admin panel — safe to call useTranslations directly
+// instead of threading translated label props from every call site.
 export function CompareButton({
   itemType,
   id,
   variant = "icon",
-  labelAdd = "შედარებაში დამატება",
-  labelAdded = "შედარებაშია",
+  labelAdd,
+  labelAdded,
   className = "",
   initialCompareItemId = undefined,
   onChange,
@@ -38,6 +42,9 @@ export function CompareButton({
   // full refetch.
   onChange?: (compared: boolean) => void;
 }) {
+  const t = useTranslations("Common.compareButton");
+  const resolvedLabelAdd = labelAdd ?? t("add");
+  const resolvedLabelAdded = labelAdded ?? t("added");
   // The compare row's own id (needed for DELETE) — not just a boolean —
   // since it's fetched lazily per button rather than batched across a
   // whole grid. Fine at current catalog size; worth batching later if a
@@ -98,7 +105,7 @@ export function CompareButton({
         toast.error(error.message);
         return;
       }
-      toast.error("ვერ განხორციელდა, სცადეთ თავიდან");
+      toast.error(t("error"));
     } finally {
       setLoading(false);
     }
@@ -121,7 +128,7 @@ export function CompareButton({
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4">
           <path d={scalesPath} strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        {active ? labelAdded : labelAdd}
+        {active ? resolvedLabelAdded : resolvedLabelAdd}
       </button>
     );
   }
@@ -131,7 +138,7 @@ export function CompareButton({
       type="button"
       onClick={toggle}
       disabled={loading}
-      aria-label={active ? labelAdded : labelAdd}
+      aria-label={active ? resolvedLabelAdded : resolvedLabelAdd}
       aria-pressed={active}
       className={`flex size-8 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:text-primary disabled:opacity-60 ${
         active ? "text-primary" : ""

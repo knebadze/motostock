@@ -55,6 +55,7 @@ export function ProductFilters({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
+  const tSelect = useTranslations("Common.select");
 
   return (
     <div className="flex flex-col gap-6">
@@ -150,6 +151,8 @@ export function ProductFilters({
                 onChange={onVehicleChange}
                 searchable
                 placeholder={t("myVehiclePlaceholder")}
+                searchPlaceholder={tSelect("search")}
+                emptyLabel={tSelect("empty")}
               />
             </div>
           );

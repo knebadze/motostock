@@ -8,6 +8,7 @@ import { sanitizeRichText } from "@/lib/sanitize-html";
 
 export function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useTranslations("Terms");
+  const tCommon = useTranslations("Common");
   const locale = useLocale() as "ka" | "en" | "ru";
   const [content, setContent] = useState<string | null>(null);
   const loading = open && content === null;
@@ -21,7 +22,13 @@ export function TermsModal({ open, onClose }: { open: boolean; onClose: () => vo
   }, [open, content, locale]);
 
   return (
-    <Modal open={open} onClose={onClose} title={t("title")} size="xl">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={t("title")}
+      size="xl"
+      closeLabel={tCommon("modal.close")}
+    >
       {loading ? (
         <p className="text-sm text-muted-foreground">{t("loading")}</p>
       ) : content ? (

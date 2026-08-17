@@ -28,6 +28,7 @@ export function GarageManager({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Account.garage");
+  const tCommon = useTranslations("Common");
   const [garage, setGarage] = useState(initialGarage);
   const [catalog, setCatalog] = useState(vehicleCatalog);
   const [modalOpen, setModalOpen] = useState(false);
@@ -114,6 +115,11 @@ export function GarageManager({
         confirmLabel={t("delete")}
         successMessage={t("deleteSuccess")}
         onConfirm={handleDelete}
+        cancelLabel={tCommon("confirmDialog.cancel")}
+        processingLabel={tCommon("confirmDialog.processing")}
+        errorFallback={tCommon("confirmDialog.genericError")}
+        closeLabel={tCommon("modal.close")}
+        loaderLabel={tCommon("loader.loading")}
       />
     </div>
   );

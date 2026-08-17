@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 const AUTOPLAY_MS = 5000;
 
@@ -15,7 +16,9 @@ export type CarouselImage = {
 
 // Shared by the About page's gallery and the homepage info cards — same
 // autoplay/pause-on-hover/dots/arrows carousel, just re-sized per caller via
-// aspectClassName instead of being hardcoded to one page's layout.
+// aspectClassName instead of being hardcoded to one page's layout. Both
+// callers are storefront-only, never admin — safe to call useTranslations
+// directly instead of threading translated label props from every caller.
 export function ImageCarousel({
   images,
   aspectClassName = "aspect-video",
@@ -28,6 +31,7 @@ export function ImageCarousel({
   aspectClassName?: string;
   bordered?: boolean;
 }) {
+  const t = useTranslations("Common.imageCarousel");
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -61,7 +65,7 @@ export function ImageCarousel({
         <>
           <button
             type="button"
-            aria-label="წინა სურათი"
+            aria-label={t("prevImage")}
             onClick={() => setIndex((current) => (current - 1 + images.length) % images.length)}
             className="absolute left-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/30 p-2 text-white transition-colors hover:bg-black/50 sm:flex"
           >
@@ -71,7 +75,7 @@ export function ImageCarousel({
           </button>
           <button
             type="button"
-            aria-label="შემდეგი სურათი"
+            aria-label={t("nextImage")}
             onClick={() => setIndex((current) => (current + 1) % images.length)}
             className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/30 p-2 text-white transition-colors hover:bg-black/50 sm:flex"
           >
@@ -85,7 +89,7 @@ export function ImageCarousel({
               <button
                 key={img.alt}
                 type="button"
-                aria-label={`სურათი ${i + 1}`}
+                aria-label={t("imageDot", { index: i + 1 })}
                 onClick={() => setIndex(i)}
                 className={`size-2.5 rounded-full transition-colors ${i === index ? "bg-white" : "bg-white/40"}`}
               />

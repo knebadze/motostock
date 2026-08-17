@@ -54,6 +54,7 @@ export function GarageVehicleFormModal({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Account.garage");
+  const tCommon = useTranslations("Common");
   const [mode, setMode] = useState<Mode>("pick");
 
   // Shared across both modes — deciding "what kind of vehicle" comes first
@@ -298,7 +299,13 @@ export function GarageVehicleFormModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={t("modalTitle")} size="xl">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={t("modalTitle")}
+      size="xl"
+      closeLabel={tCommon("modal.close")}
+    >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium">{t("categoryLabel")}</label>
@@ -308,6 +315,8 @@ export function GarageVehicleFormModal({
             onChange={handleCategoryChange}
             searchable
             placeholder={t("categoryPlaceholder")}
+            searchPlaceholder={tCommon("select.search")}
+            emptyLabel={tCommon("select.empty")}
           />
         </div>
 
@@ -332,7 +341,7 @@ export function GarageVehicleFormModal({
                 disabled={decodingVin || vin.trim().length !== 17}
                 className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
               >
-                {decodingVin && <Loader size="xs" />}
+                {decodingVin && <Loader size="xs" label={tCommon("loader.loading")} />}
                 {decodingVin ? t("vinDecoding") : t("fillWithVin")}
               </button>
             </div>
@@ -350,6 +359,8 @@ export function GarageVehicleFormModal({
                 searchable
                 disabled={!categoryId}
                 placeholder={categoryId ? t("catalogPlaceholder") : t("selectCategoryFirst")}
+                searchPlaceholder={tCommon("select.search")}
+                emptyLabel={tCommon("select.empty")}
               />
               <FieldError message={errors.vehicleCatalogId} />
             </div>
@@ -388,6 +399,8 @@ export function GarageVehicleFormModal({
                   searchable
                   disabled={!categoryId}
                   placeholder={categoryId ? t("brandPlaceholder") : t("selectCategoryFirst")}
+                  searchPlaceholder={tCommon("select.search")}
+                  emptyLabel={tCommon("select.empty")}
                 />
                 <FieldError message={errors.brandId} />
               </div>
@@ -400,6 +413,8 @@ export function GarageVehicleFormModal({
                   searchable
                   disabled={!brandId}
                   placeholder={brandId ? t("modelPlaceholder") : t("modelSelectBrandFirst")}
+                  searchPlaceholder={tCommon("select.search")}
+                  emptyLabel={tCommon("select.empty")}
                 />
                 <FieldError message={errors.modelId} />
               </div>
@@ -517,6 +532,7 @@ export function GarageVehicleFormModal({
                   value={fuelTypeId}
                   onChange={setFuelTypeId}
                   placeholder={t("optionalPlaceholder")}
+                  emptyLabel={tCommon("select.empty")}
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -526,6 +542,7 @@ export function GarageVehicleFormModal({
                   value={transmissionTypeId}
                   onChange={setTransmissionTypeId}
                   placeholder={t("optionalPlaceholder")}
+                  emptyLabel={tCommon("select.empty")}
                 />
               </div>
             </div>
@@ -545,6 +562,7 @@ export function GarageVehicleFormModal({
           loading={loading}
           submitLabel={t("submit")}
           loadingLabel={t("submitting")}
+          cancelLabel={tCommon("formActions.cancel")}
         />
       </form>
     </Modal>

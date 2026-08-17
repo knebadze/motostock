@@ -29,6 +29,7 @@ export function ManualVehicleSelect({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Home");
+  const tSelect = useTranslations("Common.select");
 
   const brandOptions = useMemo(() => {
     const byId = new Map<number, VehicleCatalogEntry["brand"]>();
@@ -81,6 +82,8 @@ export function ManualVehicleSelect({
           searchable
           disabled={disabled}
           placeholder={t("searchBrandPlaceholder")}
+          searchPlaceholder={tSelect("search")}
+          emptyLabel={tSelect("empty")}
         />
       </div>
       <div className="flex-1">
@@ -94,6 +97,8 @@ export function ManualVehicleSelect({
           searchable
           disabled={disabled || !brandId}
           placeholder={brandId ? t("searchModelPlaceholder") : t("searchSelectBrandFirst")}
+          searchPlaceholder={tSelect("search")}
+          emptyLabel={tSelect("empty")}
         />
       </div>
       <div className="flex-1">
@@ -106,6 +111,7 @@ export function ManualVehicleSelect({
           onChange={onYearChange}
           disabled={disabled || !modelId}
           placeholder={t("searchYearPlaceholder")}
+          emptyLabel={tSelect("empty")}
         />
       </div>
     </>

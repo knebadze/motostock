@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
 import type { HeroSlide, HeroSlideTextPosition, HeroSlideVerticalPosition } from "@/lib/api/hero-slides";
@@ -48,6 +48,7 @@ export function HeroSlider({
   categories: Category[];
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
+  const t = useTranslations("Common.heroSlider");
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -117,7 +118,7 @@ export function HeroSlider({
         <>
           <button
             type="button"
-            aria-label="წინა სლაიდი"
+            aria-label={t("prevSlide")}
             onClick={() => setIndex((current) => (current - 1 + slides.length) % slides.length)}
             className="absolute left-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/30 p-2 text-white transition-colors hover:bg-black/50 sm:flex"
           >
@@ -127,7 +128,7 @@ export function HeroSlider({
           </button>
           <button
             type="button"
-            aria-label="შემდეგი სლაიდი"
+            aria-label={t("nextSlide")}
             onClick={() => setIndex((current) => (current + 1) % slides.length)}
             className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/30 p-2 text-white transition-colors hover:bg-black/50 sm:flex"
           >
@@ -141,7 +142,7 @@ export function HeroSlider({
               <button
                 key={s.id}
                 type="button"
-                aria-label={`სლაიდი ${i + 1}`}
+                aria-label={t("slideDot", { index: i + 1 })}
                 onClick={() => setIndex(i)}
                 className={`size-2.5 rounded-full transition-colors ${i === index ? "bg-white" : "bg-white/40"}`}
               />

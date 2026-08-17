@@ -18,12 +18,16 @@ export function Modal({
   title,
   children,
   size = "md",
+  closeLabel = "დახურვა",
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
   size?: keyof typeof SIZE_CLASSES;
+  // Georgian default matches the admin panel's untranslated copy —
+  // storefront callers pass a next-intl-translated override.
+  closeLabel?: string;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
@@ -98,7 +102,7 @@ export function Modal({
           <button
             type="button"
             onClick={onClose}
-            aria-label="დახურვა"
+            aria-label={closeLabel}
             className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <svg

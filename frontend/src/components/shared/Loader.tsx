@@ -11,9 +11,13 @@ const SIZE_CLASSES = {
 export function Loader({
   size = "sm",
   className = "",
+  label = "იტვირთება",
 }: {
   size?: keyof typeof SIZE_CLASSES;
   className?: string;
+  // Georgian default matches the admin panel's untranslated copy —
+  // storefront callers pass a next-intl-translated override.
+  label?: string;
 }) {
   return (
     <svg
@@ -22,7 +26,7 @@ export function Loader({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="status"
-      aria-label="იტვირთება"
+      aria-label={label}
     >
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path

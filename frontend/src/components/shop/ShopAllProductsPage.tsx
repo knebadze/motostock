@@ -46,6 +46,7 @@ export function ShopAllProductsPage({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
+  const tCommon = useTranslations("Common");
   const [baseProducts, setBaseProducts] = useState(products);
   const [vehicleCatalogId, setVehicleCatalogId] = useState("");
   const [vehicleLoading, setVehicleLoading] = useState(false);
@@ -69,7 +70,7 @@ export function ShopAllProductsPage({
       setBaseProducts(next);
     } catch (error) {
       const message =
-        error instanceof ApiRequestError ? error.message : "პროდუქტების ჩატვირთვა ვერ მოხერხდა";
+        error instanceof ApiRequestError ? error.message : t("loadProductsError");
       toast.error(message);
     } finally {
       setVehicleLoading(false);
@@ -202,6 +203,8 @@ export function ShopAllProductsPage({
             }}
             searchable
             placeholder={t("myVehiclePlaceholder")}
+            searchPlaceholder={tCommon("select.search")}
+            emptyLabel={tCommon("select.empty")}
           />
         </div>
       ) : (
@@ -283,7 +286,14 @@ export function ShopAllProductsPage({
                 loading={vehicleLoading}
               />
 
-              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                navLabel={tCommon("pagination.nav")}
+                prevLabel={tCommon("pagination.prev")}
+                nextLabel={tCommon("pagination.next")}
+              />
             </div>
           </div>
         </div>

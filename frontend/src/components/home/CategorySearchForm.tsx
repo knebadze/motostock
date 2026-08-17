@@ -10,6 +10,7 @@ import type { Category } from "@/lib/api/categories";
 export function CategorySearchForm({ categories }: { categories: Category[] }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Home");
+  const tSelect = useTranslations("Common.select");
   const router = useRouter();
 
   const [categorySlug, setCategorySlug] = useState("");
@@ -40,6 +41,8 @@ export function CategorySearchForm({ categories }: { categories: Category[] }) {
           onChange={setCategorySlug}
           searchable
           placeholder={t("searchCategoryPlaceholder")}
+          searchPlaceholder={tSelect("search")}
+          emptyLabel={tSelect("empty")}
         />
       </div>
       <button

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api/client";
@@ -14,12 +15,15 @@ import {
 const heartPath =
   "M12 21s-6.7-4.35-9.33-8.2C1.02 10.6 1.6 7.2 4.3 5.6c2.2-1.3 4.9-.8 6.3 1.1l1.4 1.9 1.4-1.9c1.4-1.9 4.1-2.4 6.3-1.1 2.7 1.6 3.28 5 1.63 7.2C18.7 16.65 12 21 12 21Z";
 
+// Only ever rendered on the storefront (product/vehicle cards and detail
+// pages), never in the admin panel — safe to call useTranslations directly
+// instead of threading translated label props from every call site.
 export function WishlistButton({
   itemType,
   id,
   variant = "icon",
-  labelSave = "სასურველებში დამატება",
-  labelSaved = "სასურველებშია",
+  labelSave,
+  labelSaved,
   className = "",
   initialWishlistItemId = undefined,
   onChange,
@@ -40,6 +44,9 @@ export function WishlistButton({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations("Common.wishlistButton");
+  const resolvedLabelSave = labelSave ?? t("save");
+  const resolvedLabelSaved = labelSaved ?? t("saved");
   // The wishlist row's own id (needed for DELETE) — not just a boolean —
   // since it's fetched lazily per button rather than batched across a
   // whole grid. Fine at current catalog size; worth batching later if a
@@ -99,7 +106,7 @@ export function WishlistButton({
         router.push({ pathname: "/login", query: { redirect: pathname } });
         return;
       }
-      toast.error("ვერ განხორციელდა, სცადეთ თავიდან");
+      toast.error(t("error"));
     } finally {
       setLoading(false);
     }
@@ -122,7 +129,7 @@ export function WishlistButton({
         <svg viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2} className="size-4">
           <path d={heartPath} strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        {active ? labelSaved : labelSave}
+        {active ? resolvedLabelSaved : resolvedLabelSave}
       </button>
     );
   }
@@ -132,7 +139,7 @@ export function WishlistButton({
       type="button"
       onClick={toggle}
       disabled={loading}
-      aria-label={active ? labelSaved : labelSave}
+      aria-label={active ? resolvedLabelSaved : resolvedLabelSave}
       aria-pressed={active}
       className={`flex size-8 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:text-primary disabled:opacity-60 ${
         active ? "text-primary" : ""

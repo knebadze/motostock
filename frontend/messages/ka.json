@@ -63,6 +63,8 @@
     "outOfStock": "არ არის მარაგში",
     "discountBadge": "ფასდაკლება",
     "emptyState": "შედეგი ვერ მოიძებნა",
+    "loadProductsError": "პროდუქტების ჩატვირთვა ვერ მოხერხდა",
+    "loadVehiclesError": "ტექნიკის ჩატვირთვა ვერ მოხერხდა",
     "wishlistSaveLabel": "სასურველებში დამატება",
     "wishlistSavedLabel": "სასურველებშია",
     "compareAddLabel": "შედარებაში დამატება",
@@ -537,5 +539,61 @@
     "description": "სცადეთ გვერდის განახლება, ან სცადეთ მოგვიანებით.",
     "retry": "ხელახლა ცდა",
     "backHome": "მთავარ გვერდზე დაბრუნება"
+  },
+  "Common": {
+    "genericError": "დაფიქსირდა შეცდომა, სცადეთ თავიდან",
+    "select": {
+      "placeholder": "აირჩიეთ",
+      "clear": "გაწმენდა",
+      "search": "ძებნა...",
+      "empty": "არაფერი მოიძებნა"
+    },
+    "modal": {
+      "close": "დახურვა"
+    },
+    "formActions": {
+      "cancel": "გაუქმება"
+    },
+    "confirmDialog": {
+      "cancel": "გაუქმება",
+      "processing": "მუშავდება...",
+      "genericError": "მოქმედება ვერ შესრულდა"
+    },
+    "pagination": {
+      "nav": "გვერდები",
+      "prev": "წინა გვერდი",
+      "next": "შემდეგი გვერდი"
+    },
+    "loader": {
+      "loading": "იტვირთება"
+    },
+    "carousel": {
+      "prev": "წინა",
+      "next": "შემდეგი"
+    },
+    "imageCarousel": {
+      "prevImage": "წინა სურათი",
+      "nextImage": "შემდეგი სურათი",
+      "imageDot": "სურათი {index}"
+    },
+    "compareButton": {
+      "add": "შედარებაში დამატება",
+      "added": "შედარებაშია",
+      "error": "ვერ განხორციელდა, სცადეთ თავიდან"
+    },
+    "wishlistButton": {
+      "save": "სასურველებში დამატება",
+      "saved": "სასურველებშია",
+      "error": "ვერ განხორციელდა, სცადეთ თავიდან"
+    },
+    "passwordInput": {
+      "show": "პაროლის ჩვენება",
+      "hide": "პაროლის დამალვა"
+    },
+    "heroSlider": {
+      "prevSlide": "წინა სლაიდი",
+      "nextSlide": "შემდეგი სლაიდი",
+      "slideDot": "სლაიდი {index}"
+    }
   }
 }

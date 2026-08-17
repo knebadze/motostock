@@ -7,11 +7,15 @@ export function FormActions({
   loading,
   submitLabel = "შენახვა",
   loadingLabel = "ინახება...",
+  cancelLabel = "გაუქმება",
 }: {
   onCancel: () => void;
   loading: boolean;
   submitLabel?: string;
   loadingLabel?: string;
+  // Georgian default matches the admin panel's untranslated copy —
+  // storefront callers pass a next-intl-translated override.
+  cancelLabel?: string;
 }) {
   return (
     <div className="mt-2 flex justify-end gap-3">
@@ -20,7 +24,7 @@ export function FormActions({
         onClick={onCancel}
         className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
       >
-        გაუქმება
+        {cancelLabel}
       </button>
       <button
         type="submit"

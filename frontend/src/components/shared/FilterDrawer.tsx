@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -11,7 +12,8 @@ const FOCUSABLE_SELECTOR =
 // filter fields, rendered here instead behind a "ფილტრი" button on small
 // screens. Same focus-trap/Escape/scroll-lock/portal plumbing as Modal.tsx,
 // just slid in from the left edge instead of centered, with a close button
-// pinned above the (independently scrollable) filter list.
+// pinned above the (independently scrollable) filter list. Only used by the
+// storefront shop pages, never admin — safe to call useTranslations directly.
 export function FilterDrawer({
   open,
   onClose,
@@ -23,6 +25,7 @@ export function FilterDrawer({
   title: string;
   children: React.ReactNode;
 }) {
+  const t = useTranslations("Common.modal");
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
   // Drives the slide-in transition — starts false so the panel paints
@@ -103,7 +106,7 @@ export function FilterDrawer({
           <button
             type="button"
             onClick={onClose}
-            aria-label="დახურვა"
+            aria-label={t("close")}
             className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <svg

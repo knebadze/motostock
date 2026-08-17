@@ -5,30 +5,24 @@ import { useTranslations } from "next-intl";
 import { Modal } from "@/components/shared/Modal";
 import { ImageCarousel, type CarouselImage } from "@/components/shared/ImageCarousel";
 
+const IMAGES_PER_CARD = 3;
+
 // Static, hand-authored content (not admin/DB-driven) — same convention as
 // About page's "why us" grid: a fixed, small set of marketing cards, not an
 // open-ended admin-managed list. Swap the src values in once real photos are
-// available — each slot renders a placeholder box until then.
-const CARD_IMAGES: Record<"shop" | "service" | "drive", CarouselImage[]> = {
-  shop: [
-    { src: "", alt: "მაღაზია 1" },
-    { src: "", alt: "მაღაზია 2" },
-    { src: "", alt: "მაღაზია 3" },
-  ],
-  service: [
-    { src: "", alt: "სერვისი 1" },
-    { src: "", alt: "სერვისი 2" },
-    { src: "", alt: "სერვისი 3" },
-  ],
-  drive: [
-    { src: "", alt: "Drive 1" },
-    { src: "", alt: "Drive 2" },
-    { src: "", alt: "Drive 3" },
-  ],
-};
+// available — each slot renders a placeholder box until then. Alt text is
+// derived from the (translated) card title rather than hardcoded per-locale
+// strings, so it stays correct in en/ru without needing 9 extra i18n keys.
+function cardImages(title: string): CarouselImage[] {
+  return Array.from({ length: IMAGES_PER_CARD }, (_, index) => ({
+    src: "",
+    alt: `${title} ${index + 1}`,
+  }));
+}
 
 export function HomeInfoCardsSection() {
   const t = useTranslations("HomeInfoCards");
+  const tCommon = useTranslations("Common");
   const [openCard, setOpenCard] = useState<"shop" | "service" | "drive" | null>(null);
 
   const cards = [
@@ -48,7 +42,7 @@ export function HomeInfoCardsSection() {
             key={card.key}
             className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card"
           >
-            <ImageCarousel images={CARD_IMAGES[card.key]} aspectClassName="aspect-4/3" bordered={false} />
+            <ImageCarousel images={cardImages(card.title)} aspectClassName="aspect-4/3" bordered={false} />
             <div className="flex flex-1 flex-col gap-3 p-6">
               <h3 className="text-lg font-semibold text-foreground">{card.title}</h3>
               <p className="flex-1 text-sm text-muted-foreground">{card.shortText}</p>
@@ -64,7 +58,13 @@ export function HomeInfoCardsSection() {
         ))}
       </div>
 
-      <Modal open={activeCard !== null} onClose={() => setOpenCard(null)} title={activeCard?.title ?? ""} size="xl">
+      <Modal
+        open={activeCard !== null}
+        onClose={() => setOpenCard(null)}
+        title={activeCard?.title ?? ""}
+        size="xl"
+        closeLabel={tCommon("modal.close")}
+      >
         <p className="whitespace-pre-line text-sm leading-6 text-muted-foreground">{activeCard?.fullText}</p>
       </Modal>
     </section>

@@ -63,6 +63,8 @@
     "outOfStock": "Out of stock",
     "discountBadge": "Sale",
     "emptyState": "No results found",
+    "loadProductsError": "Failed to load products",
+    "loadVehiclesError": "Failed to load vehicles",
     "wishlistSaveLabel": "Add to wishlist",
     "wishlistSavedLabel": "Saved",
     "compareAddLabel": "Add to compare",
@@ -537,5 +539,61 @@
     "description": "Please try again, or come back later.",
     "retry": "Try again",
     "backHome": "Back to homepage"
+  },
+  "Common": {
+    "genericError": "Something went wrong, please try again",
+    "select": {
+      "placeholder": "Select",
+      "clear": "Clear",
+      "search": "Search...",
+      "empty": "Nothing found"
+    },
+    "modal": {
+      "close": "Close"
+    },
+    "formActions": {
+      "cancel": "Cancel"
+    },
+    "confirmDialog": {
+      "cancel": "Cancel",
+      "processing": "Processing...",
+      "genericError": "Action failed"
+    },
+    "pagination": {
+      "nav": "Pages",
+      "prev": "Previous page",
+      "next": "Next page"
+    },
+    "loader": {
+      "loading": "Loading"
+    },
+    "carousel": {
+      "prev": "Previous",
+      "next": "Next"
+    },
+    "imageCarousel": {
+      "prevImage": "Previous image",
+      "nextImage": "Next image",
+      "imageDot": "Image {index}"
+    },
+    "compareButton": {
+      "add": "Add to compare",
+      "added": "In comparison",
+      "error": "Something went wrong, try again"
+    },
+    "wishlistButton": {
+      "save": "Add to wishlist",
+      "saved": "In wishlist",
+      "error": "Something went wrong, try again"
+    },
+    "passwordInput": {
+      "show": "Show password",
+      "hide": "Hide password"
+    },
+    "heroSlider": {
+      "prevSlide": "Previous slide",
+      "nextSlide": "Next slide",
+      "slideDot": "Slide {index}"
+    }
   }
 }

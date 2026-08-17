@@ -59,6 +59,7 @@ export function ProductShopPage({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
+  const tCommon = useTranslations("Common");
   const pathname = usePathname();
   const router = useRouter();
 
@@ -160,7 +161,7 @@ export function ProductShopPage({
         .then(setDisplayedProducts)
         .catch((error) => {
           const message =
-            error instanceof ApiRequestError ? error.message : "პროდუქტების ჩატვირთვა ვერ მოხერხდა";
+            error instanceof ApiRequestError ? error.message : t("loadProductsError");
           toast.error(message);
         })
         .finally(() => setLoading(false));
@@ -175,6 +176,7 @@ export function ProductShopPage({
     priceMax,
     attributeFilters,
     selectedVehicleCatalogId,
+    t,
   ]);
 
   const sorted = useMemo(() => {
@@ -415,7 +417,14 @@ export function ProductShopPage({
                 loading={loading}
               />
 
-              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                navLabel={tCommon("pagination.nav")}
+                prevLabel={tCommon("pagination.prev")}
+                nextLabel={tCommon("pagination.next")}
+              />
             </div>
           </div>
         </div>

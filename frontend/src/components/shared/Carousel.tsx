@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 
+// Only ever rendered on the storefront (home/product/vehicle "similar
+// items" rows), never in the admin panel — safe to call useTranslations
+// directly instead of threading translated label props from every caller.
 export function Carousel<T>({
   items,
   getKey,
@@ -11,6 +15,7 @@ export function Carousel<T>({
   getKey: (item: T) => string | number;
   renderItem: (item: T) => ReactNode;
 }) {
+  const t = useTranslations("Common.carousel");
   const trackRef = useRef<HTMLDivElement>(null);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
@@ -47,7 +52,7 @@ export function Carousel<T>({
         <button
           type="button"
           onClick={() => scrollByPage(-1)}
-          aria-label="წინა"
+          aria-label={t("prev")}
           className="absolute -left-4 top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md transition-colors hover:border-primary hover:text-primary sm:flex"
         >
           <svg
@@ -80,7 +85,7 @@ export function Carousel<T>({
         <button
           type="button"
           onClick={() => scrollByPage(1)}
-          aria-label="შემდეგი"
+          aria-label={t("next")}
           className="absolute -right-4 top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md transition-colors hover:border-primary hover:text-primary sm:flex"
         >
           <svg

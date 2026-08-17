@@ -39,20 +39,28 @@ export function Pagination({
   currentPage,
   totalPages,
   onPageChange,
+  navLabel = "გვერდები",
+  prevLabel = "წინა გვერდი",
+  nextLabel = "შემდეგი გვერდი",
 }: {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  // Georgian defaults match the admin panel's untranslated copy —
+  // storefront callers pass next-intl-translated overrides.
+  navLabel?: string;
+  prevLabel?: string;
+  nextLabel?: string;
 }) {
   if (totalPages <= 1) return null;
 
   return (
-    <nav className="mt-4 flex items-center justify-center gap-1.5" aria-label="გვერდები">
+    <nav className="mt-4 flex items-center justify-center gap-1.5" aria-label={navLabel}>
       <button
         type="button"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        aria-label="წინა გვერდი"
+        aria-label={prevLabel}
         className="flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-40"
       >
         <svg
@@ -95,7 +103,7 @@ export function Pagination({
         type="button"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        aria-label="შემდეგი გვერდი"
+        aria-label={nextLabel}
         className="flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-40"
       >
         <svg

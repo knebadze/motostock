@@ -29,6 +29,7 @@ export function CompatibilityChecker({
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Checkout");
   const tHome = useTranslations("Home");
+  const tSelect = useTranslations("Common.select");
 
   const [garageVehicleId, setGarageVehicleId] = useState("");
   const [brandId, setBrandId] = useState("");
@@ -142,6 +143,8 @@ export function CompatibilityChecker({
                 onChange={handleGarageChange}
                 searchable
                 placeholder={tHome("searchGaragePlaceholder")}
+                searchPlaceholder={tSelect("search")}
+                emptyLabel={tSelect("empty")}
               />
             </div>
             <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">

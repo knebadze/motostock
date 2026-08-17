@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type InputHTMLAttributes } from "react";
+import { useTranslations } from "next-intl";
 
 const eyeIcon = (
   <svg
@@ -37,10 +38,13 @@ const eyeOffIcon = (
 
 // Password field with a show/hide toggle — accepts the same props as a plain
 // <input>, minus `type` (always password/text depending on visibility state).
+// Only ever rendered on the storefront (RegisterForm), never in the admin
+// panel — safe to call useTranslations directly.
 export function PasswordInput({
   className,
   ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  const t = useTranslations("Common.passwordInput");
   const [visible, setVisible] = useState(false);
 
   return (
@@ -54,7 +58,7 @@ export function PasswordInput({
         type="button"
         onClick={() => setVisible((current) => !current)}
         tabIndex={-1}
-        aria-label={visible ? "პაროლის დამალვა" : "პაროლის ჩვენება"}
+        aria-label={visible ? t("hide") : t("show")}
         className="absolute right-0 top-0 flex h-full w-10 items-center justify-center text-muted-foreground transition-colors hover:text-primary"
       >
         {visible ? eyeOffIcon : eyeIcon}

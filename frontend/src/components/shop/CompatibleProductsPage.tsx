@@ -31,6 +31,7 @@ export function CompatibleProductsPage({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
+  const tCommon = useTranslations("Common");
   const [search, setSearch] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [sortBy, setSortBy] = useState<SortBy>(() => parseSortBy("newest"));
@@ -206,7 +207,14 @@ export function CompatibleProductsPage({
                 renderItem={(product, layout) => <ProductCard product={product} layout={layout} />}
               />
 
-              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                navLabel={tCommon("pagination.nav")}
+                prevLabel={tCommon("pagination.prev")}
+                nextLabel={tCommon("pagination.next")}
+              />
             </div>
           </div>
         </div>

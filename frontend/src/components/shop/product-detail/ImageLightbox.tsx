@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import type { GalleryImage } from "./ProductGallery";
 
@@ -97,7 +98,8 @@ function ZoomableImage({ src, alt }: { src: string; alt: string }) {
 
 // Fullscreen image viewer — a hand-rolled lightbox rather than a pinch-zoom
 // library, same convention as this codebase's hand-rolled icons (see
-// social-icons.tsx).
+// social-icons.tsx). Storefront-only (product detail gallery), never admin
+// — safe to call useTranslations directly.
 export function ImageLightbox({
   open,
   onClose,
@@ -113,6 +115,8 @@ export function ImageLightbox({
   onIndexChange: (index: number) => void;
   alt: string;
 }) {
+  const tModal = useTranslations("Common.modal");
+  const tCarousel = useTranslations("Common.imageCarousel");
   useEffect(() => {
     if (!open) return;
     function handleKeyDown(event: KeyboardEvent) {
@@ -145,7 +149,7 @@ export function ImageLightbox({
         <button
           type="button"
           onClick={onClose}
-          aria-label="დახურვა"
+          aria-label={tModal("close")}
           className="flex size-9 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
         >
           {closeIcon}
@@ -159,7 +163,7 @@ export function ImageLightbox({
           <>
             <button
               type="button"
-              aria-label="წინა სურათი"
+              aria-label={tCarousel("prevImage")}
               onClick={(event) => {
                 event.stopPropagation();
                 onIndexChange((index - 1 + images.length) % images.length);
@@ -170,7 +174,7 @@ export function ImageLightbox({
             </button>
             <button
               type="button"
-              aria-label="შემდეგი სურათი"
+              aria-label={tCarousel("nextImage")}
               onClick={(event) => {
                 event.stopPropagation();
                 onIndexChange((index + 1) % images.length);

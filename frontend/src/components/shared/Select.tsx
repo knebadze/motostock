@@ -10,6 +10,12 @@ type BaseProps = {
   searchable?: boolean;
   placeholder?: string;
   disabled?: boolean;
+  // Georgian defaults below match the admin panel's (deliberately
+  // untranslated) copy — storefront callers pass next-intl-translated
+  // overrides so EN/RU visitors don't see Georgian leak through.
+  clearLabel?: string;
+  searchPlaceholder?: string;
+  emptyLabel?: string;
 };
 
 type SingleSelectProps = BaseProps & {
@@ -29,7 +35,15 @@ export type SelectProps = SingleSelectProps | MultiSelectProps;
 type PanelPosition = { top: number; left: number; width: number; maxHeight: number };
 
 export function Select(props: SelectProps) {
-  const { options, searchable = false, placeholder = "აირჩიეთ", disabled } = props;
+  const {
+    options,
+    searchable = false,
+    placeholder = "აირჩიეთ",
+    disabled,
+    clearLabel = "გაწმენდა",
+    searchPlaceholder = "ძებნა...",
+    emptyLabel = "არაფერი მოიძებნა",
+  } = props;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [position, setPosition] = useState<PanelPosition | null>(null);
@@ -204,7 +218,7 @@ export function Select(props: SelectProps) {
                   }}
                   className="ml-auto shrink-0 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
                 >
-                  გაწმენდა
+                  {clearLabel}
                 </button>
               </div>
             )}
@@ -214,7 +228,7 @@ export function Select(props: SelectProps) {
                   autoFocus
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="ძებნა..."
+                  placeholder={searchPlaceholder}
                   className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
                 />
               </div>
@@ -222,7 +236,7 @@ export function Select(props: SelectProps) {
             <ul role="listbox" className="flex-1 overflow-y-auto py-1">
               {filteredOptions.length === 0 && (
                 <li className="px-3 py-2 text-sm text-muted-foreground">
-                  არაფერი მოიძებნა
+                  {emptyLabel}
                 </li>
               )}
               {filteredOptions.map((option) => {

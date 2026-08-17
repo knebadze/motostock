@@ -63,6 +63,7 @@ export function VehicleShopPage({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
+  const tCommon = useTranslations("Common");
   const pathname = usePathname();
   const router = useRouter();
 
@@ -163,14 +164,14 @@ export function VehicleShopPage({
         .then(setDisplayedListings)
         .catch((error) => {
           const message =
-            error instanceof ApiRequestError ? error.message : "ტექნიკის ჩატვირთვა ვერ მოხერხდა";
+            error instanceof ApiRequestError ? error.message : t("loadVehiclesError");
           toast.error(message);
         })
         .finally(() => setLoading(false));
     }, FILTER_DEBOUNCE_MS);
 
     return () => clearTimeout(timeoutId);
-  }, [category.id, search, selectedBrandIds, yearMin, yearMax, priceMin, priceMax, specFilters]);
+  }, [category.id, search, selectedBrandIds, yearMin, yearMax, priceMin, priceMax, specFilters, t]);
 
   const sorted = useMemo(() => {
     const result = [...displayedListings];
@@ -413,7 +414,14 @@ export function VehicleShopPage({
                 loading={loading}
               />
 
-              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                navLabel={tCommon("pagination.nav")}
+                prevLabel={tCommon("pagination.prev")}
+                nextLabel={tCommon("pagination.next")}
+              />
             </div>
           </div>
         </div>
