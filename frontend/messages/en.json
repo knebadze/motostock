@@ -33,6 +33,7 @@
   },
   "Shop": {
     "filtersHeading": "Filters",
+    "clearFiltersLabel": "Clear all",
     "subcategoriesHeading": "Subcategories",
     "searchPlaceholder": "Search...",
     "brandFilterLabel": "Brand",

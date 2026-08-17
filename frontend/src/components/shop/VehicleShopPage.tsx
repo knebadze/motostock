@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import type { SelectOption } from "@/components/shared/Select";
 import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { FilterDrawer } from "@/components/shared/FilterDrawer";
 import { ApiRequestError } from "@/lib/api/client";
 import type { Category } from "@/lib/api/categories";
 import {
@@ -14,6 +15,7 @@ import {
   type VehicleSpecFilters,
 } from "@/lib/api/vehicle-listings";
 import type { VehicleCategoryFilter, VehicleSpecField } from "@/lib/api/vehicle-category-filters";
+import { ActiveFilterTags, type ActiveFilterTag } from "./ActiveFilterTags";
 import { VehicleFilters, type SpecFilterState } from "./VehicleFilters";
 import type { BrandOption } from "./ProductFilters";
 import { VehicleListingCard } from "./VehicleListingCard";
@@ -77,6 +79,7 @@ export function VehicleShopPage({
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [displayedListings, setDisplayedListings] = useState(listings);
   const [loading, setLoading] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   // Brand checkboxes always reflect the category's full, unfiltered catalog
   // (not the currently-filtered result) — otherwise checked brands would
@@ -205,6 +208,172 @@ export function VehicleShopPage({
     { value: "year-desc", label: t("sortYearDesc") },
   ];
 
+  const specFiltersByField = useMemo(() => {
+    const map = new Map<VehicleSpecField, VehicleCategoryFilter>();
+    for (const filter of filters) {
+      if (filter.specField) map.set(filter.specField, filter);
+    }
+    return map;
+  }, [filters]);
+
+  const activeTags: ActiveFilterTag[] = useMemo(() => {
+    const tags: ActiveFilterTag[] = [];
+
+    if (search.trim()) {
+      tags.push({ key: "search", label: search.trim(), onRemove: () => setSearch("") });
+    }
+
+    for (const brandId of selectedBrandIds) {
+      const brand = brandOptions.find((option) => option.id === brandId);
+      if (brand) {
+        tags.push({
+          key: `brand-${brandId}`,
+          label: brand.label,
+          onRemove: () => {
+            setSelectedBrandIds((current) => current.filter((id) => id !== brandId));
+            resetToFirstPage();
+          },
+        });
+      }
+    }
+
+    if (yearMin.trim() || yearMax.trim()) {
+      tags.push({
+        key: "year",
+        label: `${t("yearFilterLabel")}: ${yearMin || "?"}–${yearMax || "?"}`,
+        onRemove: () => {
+          setYearMin("");
+          setYearMax("");
+          resetToFirstPage();
+        },
+      });
+    }
+
+    if (priceMin.trim() || priceMax.trim()) {
+      tags.push({
+        key: "price",
+        label: `${t("priceFilterLabel")}: ${priceMin || "?"}–${priceMax || "?"}`,
+        onRemove: () => {
+          setPriceMin("");
+          setPriceMax("");
+          resetToFirstPage();
+        },
+      });
+    }
+
+    for (const [fieldText, state] of Object.entries(specFilterState)) {
+      const field = fieldText as VehicleSpecField;
+      const filter = specFiltersByField.get(field);
+      if (!filter) continue;
+
+      for (const optionId of state.optionIds) {
+        const option = filter.lookupOptions?.find((item) => item.id === optionId);
+        if (!option) continue;
+        tags.push({
+          key: `spec-${field}-opt-${optionId}`,
+          label: option.label[locale],
+          onRemove: () => toggleSpecOption(field, optionId),
+        });
+      }
+
+      if (state.booleanEnabled) {
+        tags.push({
+          key: `spec-${field}-bool`,
+          label: filter.specFieldLabel?.[locale] ?? field,
+          onRemove: () => toggleSpecBoolean(field),
+        });
+      }
+
+      if (state.numberMin.trim() || state.numberMax.trim()) {
+        tags.push({
+          key: `spec-${field}-range`,
+          label: `${filter.specFieldLabel?.[locale] ?? field}: ${state.numberMin || "?"}–${state.numberMax || "?"}`,
+          onRemove: () => {
+            updateSpecState(field, { numberMin: "", numberMax: "" });
+            resetToFirstPage();
+          },
+        });
+      }
+    }
+
+    return tags;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    search,
+    selectedBrandIds,
+    brandOptions,
+    yearMin,
+    yearMax,
+    priceMin,
+    priceMax,
+    specFilterState,
+    specFiltersByField,
+    locale,
+  ]);
+
+  function handleClearAllFilters() {
+    setSearch("");
+    setSelectedBrandIds([]);
+    setYearMin("");
+    setYearMax("");
+    setPriceMin("");
+    setPriceMax("");
+    setSpecFilterState({});
+    resetToFirstPage();
+  }
+
+  // Rendered twice below (desktop <aside>, mobile FilterDrawer) — kept as
+  // one node so the two never drift out of sync.
+  const filterFields = (
+    <div className="flex flex-col gap-6">
+      <ActiveFilterTags
+        tags={activeTags}
+        onClearAll={handleClearAllFilters}
+        clearAllLabel={t("clearFiltersLabel")}
+      />
+      <VehicleFilters
+        search={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          resetToFirstPage();
+        }}
+        filters={filters}
+        brandOptions={brandOptions}
+        selectedBrandIds={selectedBrandIds}
+        onToggleBrand={(brandId) => {
+          setSelectedBrandIds((current) =>
+            current.includes(brandId) ? current.filter((id) => id !== brandId) : [...current, brandId],
+          );
+          resetToFirstPage();
+        }}
+        yearMin={yearMin}
+        yearMax={yearMax}
+        onYearMinChange={(value) => {
+          setYearMin(value);
+          resetToFirstPage();
+        }}
+        onYearMaxChange={(value) => {
+          setYearMax(value);
+          resetToFirstPage();
+        }}
+        priceMin={priceMin}
+        priceMax={priceMax}
+        onPriceMinChange={(value) => {
+          setPriceMin(value);
+          resetToFirstPage();
+        }}
+        onPriceMaxChange={(value) => {
+          setPriceMax(value);
+          resetToFirstPage();
+        }}
+        specFilterState={specFilterState}
+        onToggleSpecOption={toggleSpecOption}
+        onToggleSpecBoolean={toggleSpecBoolean}
+        onSpecNumberRangeChange={handleSpecNumberRangeChange}
+      />
+    </div>
+  );
+
   return (
     <>
       <ShopHero category={category} breadcrumbChain={breadcrumbChain} />
@@ -212,52 +381,11 @@ export function VehicleShopPage({
       <div className="border-t border-border bg-muted/40">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr]">
-            <aside className="h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:sticky md:top-24">
+            <aside className="hidden h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:block md:sticky md:top-24">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("filtersHeading")}
               </h2>
-              <VehicleFilters
-                search={search}
-                onSearchChange={(value) => {
-                  setSearch(value);
-                  resetToFirstPage();
-                }}
-                filters={filters}
-                brandOptions={brandOptions}
-                selectedBrandIds={selectedBrandIds}
-                onToggleBrand={(brandId) => {
-                  setSelectedBrandIds((current) =>
-                    current.includes(brandId)
-                      ? current.filter((id) => id !== brandId)
-                      : [...current, brandId],
-                  );
-                  resetToFirstPage();
-                }}
-                yearMin={yearMin}
-                yearMax={yearMax}
-                onYearMinChange={(value) => {
-                  setYearMin(value);
-                  resetToFirstPage();
-                }}
-                onYearMaxChange={(value) => {
-                  setYearMax(value);
-                  resetToFirstPage();
-                }}
-                priceMin={priceMin}
-                priceMax={priceMax}
-                onPriceMinChange={(value) => {
-                  setPriceMin(value);
-                  resetToFirstPage();
-                }}
-                onPriceMaxChange={(value) => {
-                  setPriceMax(value);
-                  resetToFirstPage();
-                }}
-                specFilterState={specFilterState}
-                onToggleSpecOption={toggleSpecOption}
-                onToggleSpecBoolean={toggleSpecBoolean}
-                onSpecNumberRangeChange={handleSpecNumberRangeChange}
-              />
+              {filterFields}
             </aside>
 
             <div className="flex flex-col gap-6">
@@ -270,6 +398,8 @@ export function VehicleShopPage({
                 onViewModeChange={setViewMode}
                 gridLabel={t("viewGrid")}
                 listLabel={t("viewList")}
+                filterButtonLabel={t("filtersHeading")}
+                onFilterClick={() => setFilterDrawerOpen(true)}
               />
 
               <ShopItemGrid
@@ -288,6 +418,14 @@ export function VehicleShopPage({
           </div>
         </div>
       </div>
+
+      <FilterDrawer
+        open={filterDrawerOpen}
+        onClose={() => setFilterDrawerOpen(false)}
+        title={t("filtersHeading")}
+      >
+        {filterFields}
+      </FilterDrawer>
     </>
   );
 }

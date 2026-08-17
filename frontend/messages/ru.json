@@ -33,6 +33,7 @@
   },
   "Shop": {
     "filtersHeading": "Фильтры",
+    "clearFiltersLabel": "Очистить всё",
     "subcategoriesHeading": "Подкатегории",
     "searchPlaceholder": "Поиск...",
     "brandFilterLabel": "Бренд",

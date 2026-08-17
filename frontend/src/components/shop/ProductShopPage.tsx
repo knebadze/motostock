@@ -6,12 +6,15 @@ import { toast } from "sonner";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import type { SelectOption } from "@/components/shared/Select";
 import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { FilterDrawer } from "@/components/shared/FilterDrawer";
 import { ApiRequestError } from "@/lib/api/client";
 import { listProducts, type Product, type ProductAttributeFilters } from "@/lib/api/products";
 import type { Category } from "@/lib/api/categories";
-import type { CategoryFilter } from "@/lib/api/category-filters";
+import type { CategoryFilter, CategoryFilterAttribute } from "@/lib/api/category-filters";
 import type { GarageVehicle } from "@/lib/api/vehicle-catalog";
+import { formatVehicleCatalogLabel } from "@/lib/format";
 import { persistSelectedVehicleCookie } from "@/lib/vehicle-selection";
+import { ActiveFilterTags, type ActiveFilterTag } from "./ActiveFilterTags";
 import { ProductFilters, type AttributeFilterState, type BrandOption } from "./ProductFilters";
 import { ProductCard } from "./ProductCard";
 import { ShopHero } from "./ShopHero";
@@ -73,6 +76,7 @@ export function ProductShopPage({
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [displayedProducts, setDisplayedProducts] = useState(products);
   const [loading, setLoading] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   // Brand checkboxes always reflect the category's full, unfiltered catalog
   // (not the currently-filtered result) — otherwise checked brands would
@@ -206,6 +210,174 @@ export function ProductShopPage({
     { value: "price-desc", label: t("sortPriceDesc") },
   ];
 
+  const attributesById = useMemo(() => {
+    const map = new Map<number, CategoryFilterAttribute>();
+    for (const filter of filters) {
+      if (filter.attribute) map.set(filter.attribute.id, filter.attribute);
+    }
+    return map;
+  }, [filters]);
+
+  const activeTags: ActiveFilterTag[] = useMemo(() => {
+    const tags: ActiveFilterTag[] = [];
+
+    if (search.trim()) {
+      tags.push({ key: "search", label: search.trim(), onRemove: () => setSearch("") });
+    }
+
+    for (const brandId of selectedBrandIds) {
+      const brand = brandOptions.find((option) => option.id === brandId);
+      if (brand) {
+        tags.push({
+          key: `brand-${brandId}`,
+          label: brand.label,
+          onRemove: () => {
+            setSelectedBrandIds((current) => current.filter((id) => id !== brandId));
+            resetToFirstPage();
+          },
+        });
+      }
+    }
+
+    if (priceMin.trim() || priceMax.trim()) {
+      tags.push({
+        key: "price",
+        label: `${t("priceFilterLabel")}: ${priceMin || "?"}–${priceMax || "?"}`,
+        onRemove: () => {
+          setPriceMin("");
+          setPriceMax("");
+          resetToFirstPage();
+        },
+      });
+    }
+
+    if (selectedVehicleCatalogId) {
+      const vehicle = garageVehicles.find(
+        (item) => String(item.vehicleCatalog.id) === selectedVehicleCatalogId,
+      );
+      if (vehicle) {
+        tags.push({
+          key: "vehicle",
+          label: formatVehicleCatalogLabel(vehicle.vehicleCatalog, locale),
+          onRemove: () => {
+            setSelectedVehicleCatalogId("");
+            persistSelectedVehicleCookie("");
+            resetToFirstPage();
+          },
+        });
+      }
+    }
+
+    for (const [attributeIdText, state] of Object.entries(attributeFilterState)) {
+      const attributeId = Number(attributeIdText);
+      const attribute = attributesById.get(attributeId);
+      if (!attribute) continue;
+
+      for (const optionId of state.optionIds) {
+        const option = attribute.options.find((item) => item.id === optionId);
+        if (!option) continue;
+        tags.push({
+          key: `attr-${attributeId}-opt-${optionId}`,
+          label: option.label[locale],
+          onRemove: () => toggleOption(attributeId, optionId),
+        });
+      }
+
+      if (state.booleanEnabled) {
+        tags.push({
+          key: `attr-${attributeId}-bool`,
+          label: attribute.name[locale],
+          onRemove: () => toggleBoolean(attributeId),
+        });
+      }
+
+      if (state.numberMin.trim() || state.numberMax.trim()) {
+        tags.push({
+          key: `attr-${attributeId}-range`,
+          label: `${attribute.name[locale]}: ${state.numberMin || "?"}–${state.numberMax || "?"}`,
+          onRemove: () => {
+            updateAttributeState(attributeId, { numberMin: "", numberMax: "" });
+            resetToFirstPage();
+          },
+        });
+      }
+    }
+
+    return tags;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    search,
+    selectedBrandIds,
+    brandOptions,
+    priceMin,
+    priceMax,
+    selectedVehicleCatalogId,
+    garageVehicles,
+    locale,
+    attributeFilterState,
+    attributesById,
+  ]);
+
+  function handleClearAllFilters() {
+    setSearch("");
+    setSelectedBrandIds([]);
+    setPriceMin("");
+    setPriceMax("");
+    setSelectedVehicleCatalogId("");
+    persistSelectedVehicleCookie("");
+    setAttributeFilterState({});
+    resetToFirstPage();
+  }
+
+  // Rendered twice below (desktop <aside>, mobile FilterDrawer) — kept as
+  // one node so the two never drift out of sync.
+  const filterFields = (
+    <div className="flex flex-col gap-6">
+      <ActiveFilterTags
+        tags={activeTags}
+        onClearAll={handleClearAllFilters}
+        clearAllLabel={t("clearFiltersLabel")}
+      />
+      <ProductFilters
+        search={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          resetToFirstPage();
+        }}
+        filters={filters}
+        brandOptions={brandOptions}
+        selectedBrandIds={selectedBrandIds}
+        onToggleBrand={(brandId) => {
+          setSelectedBrandIds((current) =>
+            current.includes(brandId) ? current.filter((id) => id !== brandId) : [...current, brandId],
+          );
+          resetToFirstPage();
+        }}
+        priceMin={priceMin}
+        priceMax={priceMax}
+        onPriceMinChange={(value) => {
+          setPriceMin(value);
+          resetToFirstPage();
+        }}
+        onPriceMaxChange={(value) => {
+          setPriceMax(value);
+          resetToFirstPage();
+        }}
+        attributeFilterState={attributeFilterState}
+        onToggleOption={toggleOption}
+        onToggleBoolean={toggleBoolean}
+        onNumberRangeChange={handleNumberRangeChange}
+        garageVehicles={garageVehicles}
+        selectedVehicleCatalogId={selectedVehicleCatalogId}
+        onVehicleChange={(value) => {
+          setSelectedVehicleCatalogId(value);
+          persistSelectedVehicleCookie(value);
+          resetToFirstPage();
+        }}
+      />
+    </div>
+  );
+
   return (
     <>
       <ShopHero category={category} breadcrumbChain={breadcrumbChain} />
@@ -213,49 +385,11 @@ export function ProductShopPage({
       <div className="border-t border-border bg-muted/40">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr]">
-            <aside className="h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:sticky md:top-24">
+            <aside className="hidden h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:block md:sticky md:top-24">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("filtersHeading")}
               </h2>
-              <ProductFilters
-                search={search}
-                onSearchChange={(value) => {
-                  setSearch(value);
-                  resetToFirstPage();
-                }}
-                filters={filters}
-                brandOptions={brandOptions}
-                selectedBrandIds={selectedBrandIds}
-                onToggleBrand={(brandId) => {
-                  setSelectedBrandIds((current) =>
-                    current.includes(brandId)
-                      ? current.filter((id) => id !== brandId)
-                      : [...current, brandId],
-                  );
-                  resetToFirstPage();
-                }}
-                priceMin={priceMin}
-                priceMax={priceMax}
-                onPriceMinChange={(value) => {
-                  setPriceMin(value);
-                  resetToFirstPage();
-                }}
-                onPriceMaxChange={(value) => {
-                  setPriceMax(value);
-                  resetToFirstPage();
-                }}
-                attributeFilterState={attributeFilterState}
-                onToggleOption={toggleOption}
-                onToggleBoolean={toggleBoolean}
-                onNumberRangeChange={handleNumberRangeChange}
-                garageVehicles={garageVehicles}
-                selectedVehicleCatalogId={selectedVehicleCatalogId}
-                onVehicleChange={(value) => {
-                  setSelectedVehicleCatalogId(value);
-                  persistSelectedVehicleCookie(value);
-                  resetToFirstPage();
-                }}
-              />
+              {filterFields}
             </aside>
 
             <div className="flex flex-col gap-6">
@@ -268,6 +402,8 @@ export function ProductShopPage({
                 onViewModeChange={setViewMode}
                 gridLabel={t("viewGrid")}
                 listLabel={t("viewList")}
+                filterButtonLabel={t("filtersHeading")}
+                onFilterClick={() => setFilterDrawerOpen(true)}
               />
 
               <ShopItemGrid
@@ -284,6 +420,14 @@ export function ProductShopPage({
           </div>
         </div>
       </div>
+
+      <FilterDrawer
+        open={filterDrawerOpen}
+        onClose={() => setFilterDrawerOpen(false)}
+        title={t("filtersHeading")}
+      >
+        {filterFields}
+      </FilterDrawer>
     </>
   );
 }

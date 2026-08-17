@@ -178,6 +178,36 @@ export function Select(props: SelectProps) {
             }}
             className="z-200 flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg"
           >
+            {props.multiple && selectedOptions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 border-b border-border p-2">
+                {selectedOptions.map((option) => (
+                  <span
+                    key={option.value}
+                    className="flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary"
+                  >
+                    {option.label}
+                    <span
+                      role="button"
+                      tabIndex={-1}
+                      onClick={(event) => removeTag(option.value, event)}
+                      className="cursor-pointer text-primary/70 hover:text-primary"
+                    >
+                      ×
+                    </span>
+                  </span>
+                ))}
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    props.onChange([]);
+                  }}
+                  className="ml-auto shrink-0 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
+                >
+                  გაწმენდა
+                </button>
+              </div>
+            )}
             {searchable && (
               <div className="shrink-0 border-b border-border p-2">
                 <input

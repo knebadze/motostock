@@ -33,6 +33,7 @@
   },
   "Shop": {
     "filtersHeading": "ფილტრი",
+    "clearFiltersLabel": "ყველას გასუფთავება",
     "subcategoriesHeading": "ქვეკატეგორიები",
     "searchPlaceholder": "ძიება...",
     "brandFilterLabel": "ბრენდი",
