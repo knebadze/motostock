@@ -1,0 +1,19 @@
+// Admin-managed public FAQ list — localized question/answer pairs, ordered
+// and toggleable exactly like Bank/HeroSlide (see bank.prisma's sortOrder/
+// isActive precedent). Answer is admin-authored rich text (same convention
+// as TermsAndConditions.contentKa/En/Ru); question is short plain text.
+model Faq {
+  id         Int      @id @default(autoincrement())
+  questionKa String
+  questionEn String
+  questionRu String
+  answerKa   String
+  answerEn   String
+  answerRu   String
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@schema("dbo")
+}

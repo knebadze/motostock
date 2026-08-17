@@ -331,6 +331,23 @@ export const termsIcon = (
   </svg>
 );
 
+export const faqIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-5"
+  >
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 2-2.5 3" />
+    <line x1="12" y1="16.5" x2="12.01" y2="16.5" />
+  </svg>
+);
+
 export const emailTemplatesIcon = (
   <svg
     xmlns="http://www.w3.org/2000/svg"

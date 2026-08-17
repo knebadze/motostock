@@ -11,6 +11,7 @@ import {
   dashboardIcon,
   discountRulesIcon,
   emailTemplatesIcon,
+  faqIcon,
   filtersIcon,
   finaSyncIcon,
   fraudIcon,
@@ -107,6 +108,7 @@ export const adminNav: AdminNavSection[] = [
     items: [
       { label: "კომპანიის ინფორმაცია", href: "/admin/company-info", icon: companyInfoIcon },
       { label: "წესები და პირობები", href: "/admin/terms", icon: termsIcon },
+      { label: "ხშირად დასმული კითხვები", href: "/admin/faq", icon: faqIcon },
       { label: "იმეილის შაბლონები", href: "/admin/email-templates", icon: emailTemplatesIcon },
       { label: "პარამეტრები", href: "/admin/settings", icon: settingsIcon },
     ],

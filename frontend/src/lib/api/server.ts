@@ -33,6 +33,7 @@ import type { CompatibilityItem } from "./compatibility";
 import type { AdminProductBuyTogether } from "./product-buy-together";
 import type { CompanyInfo, WeekDay } from "./company-info";
 import type { Terms } from "./terms";
+import type { Faq } from "./faq";
 import type { EmailTemplate } from "./email-templates";
 import type { OrderStatusItem } from "./order-statuses";
 import type { NewsletterSubscriber, NewsletterSubscriberCounts } from "./newsletter";
@@ -194,6 +195,26 @@ export async function getTermsFromServer(): Promise<Terms> {
   return fetchFromServer<{ terms: Terms }, Terms>("/terms", {
     fallback: { id: 0, content: { ka: "", en: "", ru: "" }, updatedAt: new Date(0).toISOString() },
     extract: (data) => data.terms,
+  });
+}
+
+// Public endpoint (the guest /faq page reads this) — must not bail out just
+// because there's no admin session cookie, same fix as getCategoriesFromServer.
+export async function getFaqListFromServer(): Promise<Faq[]> {
+  return fetchFromServer<{ items: Faq[] }, Faq[]>("/faq/public", {
+    fallback: [],
+    extract: (data) => data.items,
+  });
+}
+
+// Admin — every FAQ entry, including inactive ones (see the admin FAQ
+// manager). Distinct from getFaqListFromServer's public/active-only list,
+// same split as getBanksFromServer vs getPublicBanksFromServer.
+export async function getAllFaqsFromServer(): Promise<Faq[]> {
+  return fetchFromServer<{ items: Faq[] }, Faq[]>("/faq", {
+    fallback: [],
+    extract: (data) => data.items,
+    requireAuth: true,
   });
 }
 

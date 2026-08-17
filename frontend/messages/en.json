@@ -269,6 +269,7 @@
     "aboutUs": "About us",
     "contactTitle": "Contact",
     "termsTitle": "Terms & Conditions",
+    "faqTitle": "FAQ",
     "rights": "All rights reserved.",
     "hoursClosed": "Closed",
     "mondayShort": "Mon",
@@ -306,6 +307,10 @@
     "title": "Terms & Conditions",
     "empty": "Content coming soon.",
     "loading": "Loading..."
+  },
+  "Faq": {
+    "title": "Frequently Asked Questions",
+    "empty": "Questions coming soon."
   },
   "About": {
     "title": "About Us",
