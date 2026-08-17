@@ -1,0 +1,20 @@
+# No domain yet (test server, accessed by IP) — this binds to plain HTTP on
+# port 80 regardless of what Host header arrives, so no DNS/TLS setup is
+# needed to get this running. Path-routes both apps behind one origin so
+# the tester only ever needs "http://<VPS_IP>/".
+#
+# Once a real domain is ready, replace this whole block with two domain
+# blocks (Caddy then issues Let's Encrypt certs automatically) — see the
+# "რეალურ დომენზე გადასვლა" section in DEPLOY.md for the exact swap.
+
+:80 {
+	handle /api/* {
+		reverse_proxy backend:4000
+	}
+	handle /uploads/* {
+		reverse_proxy backend:4000
+	}
+	handle {
+		reverse_proxy frontend:3000
+	}
+}

@@ -28,6 +28,10 @@ const apiOrigin = resolveApiOrigin();
 const isLocalApiOrigin = ["localhost", "127.0.0.1", "::1"].includes(apiOrigin.hostname);
 
 const nextConfig: NextConfig = {
+  // Traces only the deps each route actually needs into .next/standalone —
+  // Docker's frontend runtime image ships that folder instead of the full
+  // node_modules tree (see frontend/Dockerfile).
+  output: "standalone",
   images: {
     unoptimized: isLocalApiOrigin,
     remotePatterns: [
