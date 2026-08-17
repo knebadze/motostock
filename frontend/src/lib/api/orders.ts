@@ -17,6 +17,9 @@ export type CheckoutInput = {
 export type OrderItem = {
   id: number | null;
   itemType: CartItemType;
+  // Only set for product items (null for vehicle listings) — lets the admin
+  // order-detail view match a FINA stock-sync result back to this line.
+  productVariantId: number | null;
   itemName: LocalizedString;
   imageUrl: string | null;
   quantity: number;

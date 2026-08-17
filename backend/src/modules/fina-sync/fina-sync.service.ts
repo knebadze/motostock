@@ -2,7 +2,7 @@ import { env } from "../../config/env.js";
 import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { logger } from "../../lib/logger.js";
-import { FinaApiError, getProductsRestByStore, isFinaConfigured } from "./fina-client.js";
+import { FinaApiError, getProductsRestArray, getProductsRestByStore, isFinaConfigured } from "./fina-client.js";
 import { finaSyncRepository } from "./fina-sync.repository.js";
 import type { FinaSyncTrigger } from "../../generated/prisma/index.js";
 
@@ -100,28 +100,42 @@ export function listSyncRuns(limit = 50) {
 // distinct from runSync's full-catalog admin job above: scoped to just the
 // cart's variant ids, and NOT logged as a FinaSyncRun (that history table
 // is for the scheduled/manual admin job, not every shopper's checkout
-// visit). Silently no-ops on missing config or a failed FINA call — the
-// caller falls back to whatever stockQuantity is already in the DB rather
-// than failing checkout outright over an external API hiccup.
+// visit). Never throws on missing config or a failed FINA call — the caller
+// falls back to whatever stockQuantity is already in the DB rather than
+// failing checkout outright over an external API hiccup. The boolean return
+// (added for placeOrder's CONFIRMED-vs-PENDING decision — see
+// orders.service.ts) reports whether FINA was actually reached and
+// confirmed *something*, not just "no error was thrown".
 const RECENT_SYNC_TTL_MS = 20_000;
 const recentSyncAt = new Map<string, number>();
+const recentSyncConfirmed = new Map<string, boolean>();
 
 function syncThrottleKey(variantIds: number[]): string {
   return [...variantIds].sort((a, b) => a - b).join(",");
 }
 
-export async function syncVariantStockByIds(variantIds: number[]): Promise<void> {
-  if (variantIds.length === 0 || !isFinaConfigured()) return;
+export async function syncVariantStockByIds(variantIds: number[]): Promise<boolean> {
+  if (variantIds.length === 0 || !isFinaConfigured()) return false;
 
   const key = syncThrottleKey(variantIds);
   const now = Date.now();
   const last = recentSyncAt.get(key);
-  if (last != null && now - last < RECENT_SYNC_TTL_MS) return;
+  // Within the throttle window, reuse the *previous* call's outcome instead
+  // of re-hitting FINA — still an accurate "did FINA confirm these items
+  // recently" answer, just not a fresh round-trip.
+  if (last != null && now - last < RECENT_SYNC_TTL_MS) {
+    return recentSyncConfirmed.get(key) ?? false;
+  }
   recentSyncAt.set(key, now);
 
   try {
     const variants = await finaSyncRepository.findLinkedVariantsByIds(variantIds);
-    if (variants.length === 0) return;
+    if (variants.length === 0) {
+      // None of these variants are FINA-linked at all — nothing for FINA to
+      // confirm, so this isn't a "confirmation" either way.
+      recentSyncConfirmed.set(key, false);
+      return false;
+    }
 
     const rests = await getProductsRestByStore(env.FINA_STORE!);
     const restByFinaId = new Map(rests.map((r) => [r.id, r.rest]));
@@ -131,7 +145,61 @@ export async function syncVariantStockByIds(variantIds: number[]): Promise<void>
       if (rest === undefined) continue;
       await finaSyncRepository.updateStock(variant.id, Math.max(0, Math.floor(rest)));
     }
+
+    recentSyncConfirmed.set(key, true);
+    return true;
   } catch (err) {
     logger.error({ err }, "FINA checkout stock refresh failed");
+    recentSyncConfirmed.set(key, false);
+    return false;
+  }
+}
+
+export type OrderStockSyncResult = {
+  checked: number;
+  updated: number;
+  items: { productVariantId: number; previousStock: number; newStock: number | null }[];
+};
+
+// Admin order-detail action (see fina-sync.controller.ts's syncOrder) — an
+// explicit, on-demand re-check of FINA stock for just the FINA-linked
+// product variants on one order, using getProductsRestArray's id-scoped
+// lookup instead of runSync's whole-catalog pull. Unlike
+// syncVariantStockByIds above, this is a deliberate admin click with its own
+// error toast, so a FINA failure surfaces as a thrown ApiError rather than
+// degrading silently.
+export async function syncOrderStock(orderId: number): Promise<OrderStockSyncResult> {
+  if (!isFinaConfigured()) {
+    throw new ApiError(400, "FINA სინქრონიზაცია არ არის კონფიგურირებული");
+  }
+
+  const variants = await finaSyncRepository.findLinkedVariantsForOrder(orderId);
+  if (variants.length === 0) {
+    return { checked: 0, updated: 0, items: [] };
+  }
+
+  try {
+    const rests = await getProductsRestArray(variants.map((variant) => variant.finaId!));
+    const restByFinaId = new Map(rests.map((r) => [r.id, r.rest]));
+
+    const items: OrderStockSyncResult["items"] = [];
+    let updated = 0;
+    for (const variant of variants) {
+      const rest = restByFinaId.get(variant.finaId!);
+      if (rest === undefined) {
+        items.push({ productVariantId: variant.id, previousStock: variant.stockQuantity, newStock: null });
+        continue;
+      }
+      const newStock = Math.max(0, Math.floor(rest));
+      await finaSyncRepository.updateStock(variant.id, newStock);
+      updated += 1;
+      items.push({ productVariantId: variant.id, previousStock: variant.stockQuantity, newStock });
+    }
+
+    return { checked: variants.length, updated, items };
+  } catch (err) {
+    const message = err instanceof FinaApiError ? err.message : "მოულოდნელი შეცდომა FINA სინქრონიზაციისას";
+    logger.error({ err }, "FINA order stock sync failed");
+    throw new ApiError(502, message);
   }
 }

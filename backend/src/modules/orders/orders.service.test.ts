@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../../lib/ApiError.js";
 import { cartRepository } from "../cart/cart.repository.js";
+import { syncVariantStockByIds } from "../fina-sync/fina-sync.service.js";
 import { isPromoStackingEnabled } from "../settings/settings.service.js";
 import { resolvePromoCodeForItems, promoCodeItemKey } from "../promo-codes/promo-codes.service.js";
 import { computeCheckoutTotals } from "./orders.service.js";
@@ -10,7 +11,7 @@ vi.mock("../cart/cart.repository.js", () => ({
 }));
 
 vi.mock("../fina-sync/fina-sync.service.js", () => ({
-  syncVariantStockByIds: vi.fn().mockResolvedValue(undefined),
+  syncVariantStockByIds: vi.fn().mockResolvedValue(false),
 }));
 
 // computeCheckoutTotals only ever calls isPromoStackingEnabled — the other
@@ -97,6 +98,7 @@ describe("computeCheckoutTotals", () => {
   beforeEach(() => {
     vi.mocked(isPromoStackingEnabled).mockResolvedValue(false);
     vi.mocked(resolvePromoCodeForItems).mockReset();
+    vi.mocked(syncVariantStockByIds).mockResolvedValue(false);
   });
 
   it("rejects an empty cart", async () => {
@@ -250,5 +252,41 @@ describe("computeCheckoutTotals", () => {
     expect(result.subtotal).toBe(5100);
     expect(result.total).toBe(5100);
     expect(result.items).toHaveLength(2);
+  });
+
+  it("surfaces finaConfirmed=true when FINA confirmed stock for this cart", async () => {
+    vi.mocked(cartRepository.findByOwner).mockResolvedValue([
+      productVariantCartRow({ id: 1, price: 100, quantity: 1 }),
+    ]);
+    vi.mocked(syncVariantStockByIds).mockResolvedValue(true);
+
+    const result = await computeCheckoutTotals(1);
+
+    expect(result.finaConfirmed).toBe(true);
+  });
+
+  it("surfaces finaConfirmed=false when FINA wasn't reached (not configured, failed, or nothing FINA-linked)", async () => {
+    vi.mocked(cartRepository.findByOwner).mockResolvedValue([
+      productVariantCartRow({ id: 1, price: 100, quantity: 1 }),
+    ]);
+    vi.mocked(syncVariantStockByIds).mockResolvedValue(false);
+
+    const result = await computeCheckoutTotals(1);
+
+    expect(result.finaConfirmed).toBe(false);
+  });
+
+  it("never calls FINA (and finaConfirmed stays false) for a cart with only vehicle-listing items", async () => {
+    vi.mocked(cartRepository.findByOwner).mockResolvedValue([
+      vehicleListingCartRow({ id: 1, price: 5000, quantity: 1 }),
+    ]);
+
+    const result = await computeCheckoutTotals(1);
+
+    // No productVariantIds to sync — computeCheckoutTotals still calls
+    // syncVariantStockByIds([]), which fina-sync.service.ts's own guard
+    // resolves to false without making any real FINA call.
+    expect(vi.mocked(syncVariantStockByIds)).toHaveBeenCalledWith([]);
+    expect(result.finaConfirmed).toBe(false);
   });
 });

@@ -16,3 +16,23 @@ export const finaSyncRunResponseSchema = registry.register(
   }),
 );
 export type FinaSyncRunResponse = z.infer<typeof finaSyncRunResponseSchema>;
+
+export const orderStockSyncResultSchema = registry.register(
+  "OrderStockSyncResult",
+  z.object({
+    checked: z.int(),
+    updated: z.int(),
+    items: z.array(
+      z.object({
+        productVariantId: z.int(),
+        previousStock: z.int(),
+        newStock: z.int().nullable(),
+      }),
+    ),
+  }),
+);
+export type OrderStockSyncResult = z.infer<typeof orderStockSyncResultSchema>;
+
+export const orderIdParamSchema = z.object({
+  orderId: z.coerce.number().int().positive(),
+});

@@ -16,6 +16,7 @@ import {
   type OrderFulfillmentMethod,
   type OrderRiskFlagType,
 } from "@/lib/api/orders";
+import { syncOrderStock, type OrderStockSyncItem } from "@/lib/api/fina-sync";
 import type { LookupItem } from "@/lib/api/lookups";
 
 const FULFILLMENT_LABELS: Record<OrderFulfillmentMethod, string> = {
@@ -51,6 +52,8 @@ export function OrderDetailModal({
   const [loading, setLoading] = useState(true);
   const [statusId, setStatusId] = useState("");
   const [savingStatus, setSavingStatus] = useState(false);
+  const [syncingStock, setSyncingStock] = useState(false);
+  const [stockByVariantId, setStockByVariantId] = useState<Map<number, OrderStockSyncItem>>(new Map());
 
   useEffect(() => {
     let cancelled = false;
@@ -92,6 +95,26 @@ export function OrderDetailModal({
       toast.error(message);
     } finally {
       setSavingStatus(false);
+    }
+  }
+
+  async function handleSyncStock() {
+    if (!order) return;
+
+    setSyncingStock(true);
+    try {
+      const result = await syncOrderStock(order.id);
+      setStockByVariantId(new Map(result.items.map((item) => [item.productVariantId, item])));
+      if (result.checked === 0) {
+        toast.info("ამ შეკვეთაში FINA-სთან დაკავშირებული პროდუქტი არ არის");
+      } else {
+        toast.success(`შემოწმდა ${result.checked} პროდუქტი, განახლდა ${result.updated}`);
+      }
+    } catch (error) {
+      const message = error instanceof ApiRequestError ? error.message : "მარაგის სინქრონიზაცია ვერ მოხერხდა";
+      toast.error(message);
+    } finally {
+      setSyncingStock(false);
     }
   }
 
@@ -174,10 +197,22 @@ export function OrderDetailModal({
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold">ნივთები</h4>
+            <div className="flex items-center justify-between gap-3">
+              <h4 className="text-sm font-semibold">ნივთები</h4>
+              <button
+                type="button"
+                onClick={handleSyncStock}
+                disabled={syncingStock}
+                className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {syncingStock ? "შემოწმდება..." : "FINA მარაგის შემოწმება"}
+              </button>
+            </div>
             <ul className="mt-2 flex flex-col gap-3">
               {order.items.map((item, index) => {
                 const imageUrl = resolveMediaUrl(item.imageUrl);
+                const stockResult =
+                  item.productVariantId != null ? stockByVariantId.get(item.productVariantId) : undefined;
                 return (
                   <li key={item.id ?? index} className="flex items-center gap-3">
                     <div className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-muted">
@@ -200,6 +235,21 @@ export function OrderDetailModal({
                       <span className="text-xs text-muted-foreground">
                         {item.quantity} × {formatPrice(item.unitPrice)}
                       </span>
+                      {stockResult && (
+                        <span
+                          className={`mt-0.5 text-xs font-medium ${
+                            stockResult.newStock === null
+                              ? "text-muted-foreground"
+                              : stockResult.newStock > 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                          }`}
+                        >
+                          {stockResult.newStock === null
+                            ? "FINA-ში ვერ მოიძებნა"
+                            : `FINA მარაგშია: ${stockResult.newStock} ცალი`}
+                        </span>
+                      )}
                     </div>
                     <span className="font-semibold text-foreground">{formatPrice(item.lineTotal)}</span>
                   </li>

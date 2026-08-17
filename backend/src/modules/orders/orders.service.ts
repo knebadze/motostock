@@ -50,10 +50,18 @@ function generateOrderCode(): string {
 // resolved by its stable `key` rather than relying on a fragile "row id 1"
 // assumption. Throws loudly if the lookup wasn't seeded (see
 // prisma/seed.ts's ORDER_STATUSES) instead of silently failing later.
-async function resolvePendingStatusId(): Promise<number> {
-  const status = await orderStatusesRepository.findByKey("PENDING");
+//
+// Which key gets resolved depends on whether FINA actually confirmed stock
+// for this order's items during computeCheckoutTotals's live refresh (see
+// CheckoutBreakdown.finaConfirmed): confirmed orders skip straight to
+// CONFIRMED, everything else (FINA not configured, no FINA-linked items in
+// the cart, or the FINA call itself failed) lands on PENDING exactly like
+// before, for an admin to confirm by hand once they've checked stock.
+async function resolveInitialOrderStatusId(finaConfirmed: boolean): Promise<number> {
+  const key = finaConfirmed ? "CONFIRMED" : "PENDING";
+  const status = await orderStatusesRepository.findByKey(key);
   if (!status) {
-    throw new ApiError(500, "შეკვეთის საწყისი სტატუსი ვერ მოიძებნა — გაუშვით prisma/seed.ts");
+    throw new ApiError(500, `შეკვეთის საწყისი სტატუსი ("${key}") ვერ მოიძებნა — გაუშვით prisma/seed.ts`);
   }
   return status.id;
 }
@@ -94,6 +102,10 @@ type CheckoutBreakdown = {
   discountTotal: number;
   total: number;
   promoCode: { id: number; code: string; discountPercent: number } | null;
+  // Whether FINA was actually reached and confirmed stock for this cart's
+  // FINA-linked items during the live refresh below — see placeOrder's use
+  // of this to pick the order's initial status (resolveInitialOrderStatusId).
+  finaConfirmed: boolean;
 };
 
 function buildBreakdownItem(row: CartRow, unitPrice: number): BreakdownItem {
@@ -159,7 +171,7 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
   const productVariantIds = initialRows
     .map((row) => row.productVariant?.id)
     .filter((id): id is number => id != null);
-  await syncVariantStockByIds(productVariantIds);
+  const finaConfirmed = await syncVariantStockByIds(productVariantIds);
   const cartRows = productVariantIds.length > 0 ? await cartRepository.findByOwner({ userId }) : initialRows;
 
   const stackingEnabled = await isPromoStackingEnabled();
@@ -223,6 +235,7 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
     promoCode: promoMatch
       ? { id: promoMatch.id, code: promoMatch.code, discountPercent: promoMatch.discountPercent }
       : null,
+    finaConfirmed,
   };
 }
 
@@ -310,10 +323,13 @@ async function resolveBank(
   return bank.id;
 }
 
-function toItemResponse(item: { id: number | null } & Omit<PlaceOrderItemInput, "productVariantId" | "vehicleListingId">) {
+function toItemResponse(
+  item: { id: number | null } & Omit<PlaceOrderItemInput, "vehicleListingId">,
+) {
   return {
     id: item.id,
     itemType: item.itemType,
+    productVariantId: item.productVariantId ?? null,
     itemName: { ka: item.itemNameKa, en: item.itemNameEn, ru: item.itemNameRu },
     imageUrl: item.imageUrl ?? null,
     quantity: item.quantity,
@@ -400,6 +416,7 @@ function toOrderResponse(order: OrderRow) {
       toItemResponse({
         id: item.id,
         itemType: item.itemType,
+        productVariantId: item.productVariantId,
         itemNameKa: item.itemNameKa,
         itemNameEn: item.itemNameEn,
         itemNameRu: item.itemNameRu,
@@ -434,7 +451,7 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
 
   const items: PlaceOrderItemInput[] = breakdown.items.map(({ stockQuantity: _stockQuantity, ...item }) => item);
   const [statusId, soldStatusId] = await Promise.all([
-    resolvePendingStatusId(),
+    resolveInitialOrderStatusId(breakdown.finaConfirmed),
     resolveSoldStatusId(),
   ]);
 

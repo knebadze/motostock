@@ -77,6 +77,10 @@ export const orderItemResponseSchema = registry.register(
   z.object({
     id: z.int().nullable(),
     itemType: cartItemTypeSchema,
+    // Only set for product items (null for vehicle listings) — lets the
+    // admin order-detail view correlate a FINA stock-sync result (see
+    // fina-sync module's syncOrderStock) back to the matching line item.
+    productVariantId: z.int().nullable(),
     itemName: localizedStringSchema,
     imageUrl: z.string().nullable(),
     quantity: z.int(),

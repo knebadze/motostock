@@ -10,3 +10,8 @@ export async function list(_req: Request, res: Response) {
   const runs = await finaSyncService.listSyncRuns();
   res.status(200).json({ runs });
 }
+
+export async function syncOrder(req: Request, res: Response) {
+  const result = await finaSyncService.syncOrderStock(Number(req.params.orderId));
+  res.status(200).json(result);
+}
