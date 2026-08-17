@@ -50,6 +50,11 @@ model VehicleCatalog {
   userId                 Int?
   submittedBy            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   garageEntries          GarageVehicle[]
+  // Denormalized count of GarageVehicle rows pointing at this entry, kept in
+  // sync in real time by the garage module (add/remove/reassign). Drives the
+  // catalog's default "most garaged first" sort — see
+  // vehicle-listing.repository.ts.
+  popularity             Int               @default(0)
   createdAt              DateTime          @default(now())
   updatedAt              DateTime          @updatedAt
 
@@ -64,5 +69,6 @@ model VehicleCatalog {
   @@index([startTypeId])
   @@index([powertrainTypeId])
   @@index([userId])
+  @@index([popularity])
   @@schema("dbo")
 }

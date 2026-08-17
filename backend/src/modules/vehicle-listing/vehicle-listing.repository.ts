@@ -156,7 +156,10 @@ export const vehicleListingRepository = {
     return prisma.vehicleListing.findMany({
       where: buildWhere(filters),
       include,
-      orderBy: { createdAt: "desc" },
+      // Most-garaged vehicles first (VehicleCatalog.popularity, kept live by
+      // the garage module), createdAt as the tiebreaker for equally popular
+      // (including brand-new, popularity 0) entries.
+      orderBy: [{ vehicleCatalog: { popularity: "desc" } }, { createdAt: "desc" }],
       take: filters.limit,
     });
   },

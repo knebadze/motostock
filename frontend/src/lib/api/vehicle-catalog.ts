@@ -44,6 +44,7 @@ export type VehicleCatalogEntry = {
   descriptionKa: string | null;
   descriptionEn: string | null;
   descriptionRu: string | null;
+  popularity: number;
   createdAt: string;
   updatedAt: string;
 };

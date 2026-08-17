@@ -100,7 +100,10 @@ export const vehicleCatalogRepository = {
     vin?: string | null,
   ) {
     return prisma.$transaction(async (tx) => {
-      const catalog = await tx.vehicleCatalog.create({ data: catalogData, include });
+      const catalog = await tx.vehicleCatalog.create({
+        data: { ...catalogData, popularity: 1 },
+        include,
+      });
       const garageVehicle = await tx.garageVehicle.create({
         data: { userId: garageUserId, vehicleCatalogId: catalog.id, year, vin: vin ?? null },
       });
@@ -114,6 +117,22 @@ export const vehicleCatalogRepository = {
 
   updateImage(id: number, imageUrl: string) {
     return prisma.vehicleCatalog.update({ where: { id }, data: { imageUrl }, include });
+  },
+
+  // Kept in sync by the garage module on add/remove/reassign — see
+  // garage.service.ts. No `include`/return value needed, callers don't use it.
+  incrementPopularity(id: number) {
+    return prisma.vehicleCatalog.update({
+      where: { id },
+      data: { popularity: { increment: 1 } },
+    });
+  },
+
+  decrementPopularity(id: number) {
+    return prisma.vehicleCatalog.update({
+      where: { id },
+      data: { popularity: { decrement: 1 } },
+    });
   },
 
   delete(id: number) {

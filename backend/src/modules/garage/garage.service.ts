@@ -59,6 +59,7 @@ export async function createGarageVehicle(userId: number, input: CreateGarageVeh
     year: input.year,
     vin: input.vin ?? null,
   });
+  await vehicleCatalogRepository.incrementPopularity(input.vehicleCatalogId);
   return toResponse(row);
 }
 
@@ -79,6 +80,10 @@ export async function updateGarageVehicle(
     year: input.year,
     vin: input.vin ?? null,
   });
+  if (input.vehicleCatalogId !== existing.vehicleCatalogId) {
+    await vehicleCatalogRepository.decrementPopularity(existing.vehicleCatalogId);
+    await vehicleCatalogRepository.incrementPopularity(input.vehicleCatalogId);
+  }
   return toResponse(row);
 }
 
@@ -89,4 +94,5 @@ export async function deleteGarageVehicle(userId: number, id: number) {
   }
 
   await garageRepository.delete(id);
+  await vehicleCatalogRepository.decrementPopularity(existing.vehicleCatalogId);
 }

@@ -52,6 +52,7 @@ type VehicleCatalogRow = {
   descriptionKa: string | null;
   descriptionEn: string | null;
   descriptionRu: string | null;
+  popularity: number;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -98,6 +99,7 @@ export function toVehicleCatalogResponse(row: VehicleCatalogRow) {
     descriptionKa: row.descriptionKa,
     descriptionEn: row.descriptionEn,
     descriptionRu: row.descriptionRu,
+    popularity: row.popularity,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
