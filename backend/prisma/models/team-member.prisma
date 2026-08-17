@@ -1,0 +1,19 @@
+// Admin-editable "our team" list for the public /about page — same
+// image+order+active-toggle shape as HeroSlide, without any of its
+// type-branching (no CTA/discount targeting here).
+model TeamMember {
+  id        Int      @id @default(autoincrement())
+  nameKa    String
+  nameEn    String
+  nameRu    String
+  roleKa    String
+  roleEn    String
+  roleRu    String
+  imageUrl  String?
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("dbo")
+}

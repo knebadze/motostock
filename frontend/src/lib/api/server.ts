@@ -21,6 +21,7 @@ import type { Product, ProductDetail } from "./products";
 import type { FinaSyncRun } from "./fina-sync";
 import type { AdminUser } from "./users";
 import type { HeroSlide } from "./hero-slides";
+import type { TeamMember } from "./team-members";
 import type { Bank, PublicBank } from "./banks";
 import type { HomepageSection } from "./homepage-sections";
 import type { PromoCode, PromoCodeDomain } from "./promo-codes";
@@ -712,6 +713,23 @@ export async function getPromoCodesFromServer(domain: PromoCodeDomain): Promise<
 // there's no admin session cookie, same fix as getCategoriesFromServer.
 export async function getPublicHeroSlidesFromServer(): Promise<HeroSlide[]> {
   return fetchFromServer<{ items: HeroSlide[] }, HeroSlide[]>("/hero-slides/public", {
+    fallback: [],
+    extract: (data) => data.items,
+  });
+}
+
+export async function getTeamMembersFromServer(): Promise<TeamMember[]> {
+  return fetchFromServer<{ items: TeamMember[] }, TeamMember[]>("/team-members", {
+    fallback: [],
+    extract: (data) => data.items,
+    requireAuth: true,
+  });
+}
+
+// Public endpoint (the /about page) — must not bail out just because
+// there's no admin session cookie, same fix as getCategoriesFromServer.
+export async function getPublicTeamMembersFromServer(): Promise<TeamMember[]> {
+  return fetchFromServer<{ items: TeamMember[] }, TeamMember[]>("/team-members/public", {
     fallback: [],
     extract: (data) => data.items,
   });

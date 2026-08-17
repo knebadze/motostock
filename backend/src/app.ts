@@ -65,6 +65,7 @@ import { newsletterCampaignsRouter } from "./modules/newsletter-campaigns/newsle
 import { fraudRouter } from "./modules/fraud/fraud.routes.js";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
 import { analyticsRouter } from "./modules/analytics/analytics.routes.js";
+import { teamMembersRouter } from "./modules/team-members/team-members.routes.js";
 import { banksRouter } from "./modules/banks/banks.routes.js";
 import { mediaRouter } from "./modules/media/media.routes.js";
 import { faqRouter } from "./modules/faq/faq.routes.js";
@@ -156,6 +157,7 @@ app.use("/api/newsletter-campaigns", newsletterCampaignsRouter);
 app.use("/api/fraud", fraudRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/analytics", analyticsRouter);
+app.use("/api/team-members", teamMembersRouter);
 app.use("/api/banks", banksRouter);
 app.use("/api/media", mediaRouter);
 app.use("/api/faq", faqRouter);

@@ -1,6 +1,8 @@
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import { AboutGallery, type AboutGalleryImage } from "@/components/about/AboutGallery";
+import { getPublicTeamMembersFromServer } from "@/lib/api/server";
+import { resolveMediaUrl } from "@/lib/api/client";
 
 // Static, hand-authored page (not admin/DB-driven) — heavy on images/text/
 // a slider, unlike the single admin-edited rich-text block Terms uses.
@@ -45,8 +47,10 @@ const whyUsIcons = {
   ),
 };
 
-export default function AboutPage() {
-  const t = useTranslations("About");
+export default async function AboutPage() {
+  const t = await getTranslations("About");
+  const locale = (await getLocale()) as "ka" | "en" | "ru";
+  const team = await getPublicTeamMembersFromServer();
 
   const whyUsItems = [
     { icon: whyUsIcons.quality, title: t("whyUs1Title"), description: t("whyUs1Description") },
@@ -93,6 +97,30 @@ export default function AboutPage() {
           ))}
         </div>
       </div>
+
+      {team.length > 0 && (
+        <div className="mt-16">
+          <h2 className="mb-6 text-xl font-bold tracking-tight">{t("teamHeading")}</h2>
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+            {team.map((member) => {
+              const photoUrl = resolveMediaUrl(member.imageUrl);
+              return (
+                <div key={member.id} className="flex flex-col items-center text-center">
+                  <div className="relative size-28 overflow-hidden rounded-full bg-muted">
+                    {photoUrl ? (
+                      <Image src={photoUrl} alt={member.name[locale]} fill className="object-cover" />
+                    ) : (
+                      <div className="size-full border border-dashed border-border" />
+                    )}
+                  </div>
+                  <p className="mt-3 font-semibold text-foreground">{member.name[locale]}</p>
+                  <p className="text-sm text-muted-foreground">{member.role[locale]}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
