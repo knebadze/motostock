@@ -40,6 +40,8 @@
     "myVehicleFilterLabel": "ჩემი ტრანსპორტის მიხედვით",
     "myVehiclePlaceholder": "აირჩიეთ თქვენი ტექნიკა",
     "myVehicleAllOption": "ყველა ტექნიკა",
+    "myVehicleEmptyMessage": "ამ ფილტრის გამოსაყენებლად დაამატეთ თქვენი ტექნიკა გარაჟში.",
+    "myVehicleAddButton": "+ ტექნიკის დამატება",
     "categoryFilterLabel": "კატეგორია",
     "compatibleProductsHeading": "თავსებადი პროდუქტები — {vehicle}",
     "saleHeading": "აქციები",

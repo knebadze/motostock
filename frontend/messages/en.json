@@ -40,6 +40,8 @@
     "myVehicleFilterLabel": "By my vehicle",
     "myVehiclePlaceholder": "Choose your vehicle",
     "myVehicleAllOption": "All vehicles",
+    "myVehicleEmptyMessage": "Add your vehicle to your garage to use this filter.",
+    "myVehicleAddButton": "+ Add vehicle",
     "categoryFilterLabel": "Category",
     "compatibleProductsHeading": "Compatible products — {vehicle}",
     "saleHeading": "Sale",

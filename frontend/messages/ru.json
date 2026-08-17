@@ -40,6 +40,8 @@
     "myVehicleFilterLabel": "По моей технике",
     "myVehiclePlaceholder": "Выберите свою технику",
     "myVehicleAllOption": "Вся техника",
+    "myVehicleEmptyMessage": "Добавьте свою технику в гараж, чтобы использовать этот фильтр.",
+    "myVehicleAddButton": "+ Добавить технику",
     "categoryFilterLabel": "Категория",
     "compatibleProductsHeading": "Совместимые товары — {vehicle}",
     "saleHeading": "Акции",

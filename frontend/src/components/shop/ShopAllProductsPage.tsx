@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Pagination, usePagination } from "@/components/shared/Pagination";
 import { Select, type SelectOption } from "@/components/shared/Select";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
+import { Link } from "@/i18n/navigation";
 import { ActiveFilterTags, type ActiveFilterTag } from "./ActiveFilterTags";
 import { ShopToolbar } from "./ShopToolbar";
 import { ShopItemGrid } from "./ShopItemGrid";
@@ -189,7 +190,7 @@ export function ShopAllProductsPage({
         className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
       />
 
-      {garageVehicles.length > 0 && (
+      {garageVehicles.length > 0 ? (
         <div className="flex flex-col gap-2">
           <span className="text-sm font-medium">{t("myVehicleFilterLabel")}</span>
           <Select
@@ -202,6 +203,20 @@ export function ShopAllProductsPage({
             searchable
             placeholder={t("myVehiclePlaceholder")}
           />
+        </div>
+      ) : (
+        // Covers both "not logged in" and "empty garage" — garageVehicles is
+        // always [] for a guest (see getMyGarageFromServer); clicking through
+        // lands on /account/garage, which itself redirects to /login when needed.
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium">{t("myVehicleFilterLabel")}</span>
+          <p className="text-sm text-muted-foreground">{t("myVehicleEmptyMessage")}</p>
+          <Link
+            href="/account/garage"
+            className="self-start rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+          >
+            {t("myVehicleAddButton")}
+          </Link>
         </div>
       )}
 

@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { Select } from "@/components/shared/Select";
+import { Link } from "@/i18n/navigation";
 import type { CategoryFilter } from "@/lib/api/category-filters";
 import type { GarageVehicle } from "@/lib/api/vehicle-catalog";
 import { formatVehicleCatalogLabel } from "@/lib/format";
@@ -115,10 +116,24 @@ export function ProductFilters({
         }
 
         if (filter.filterType === "MY_VEHICLE") {
-          // Only ever populated for a logged-in customer with saved vehicles
-          // — nothing meaningful to filter by otherwise, so the block simply
-          // doesn't render (covers both "not logged in" and "empty garage").
-          if (garageVehicles.length === 0) return null;
+          // Covers both "not logged in" and "empty garage" — garageVehicles
+          // is always [] for a guest (see getMyGarageFromServer), so this
+          // prompt doubles as the guest case too; clicking through lands on
+          // /account/garage, which itself redirects to /login when needed.
+          if (garageVehicles.length === 0) {
+            return (
+              <div key={filter.id} className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{t("myVehicleFilterLabel")}</span>
+                <p className="text-sm text-muted-foreground">{t("myVehicleEmptyMessage")}</p>
+                <Link
+                  href="/account/garage"
+                  className="self-start rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+                >
+                  {t("myVehicleAddButton")}
+                </Link>
+              </div>
+            );
+          }
           const vehicleOptions = [
             { value: "", label: t("myVehicleAllOption") },
             ...garageVehicles.map((vehicle) => ({
