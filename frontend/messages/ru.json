@@ -361,6 +361,14 @@
   "ScrollToTop": {
     "label": "Наверх"
   },
+  "ChatWidget": {
+    "openLabel": "Открыть чат",
+    "closeLabel": "Закрыть",
+    "title": "Есть вопрос?",
+    "greeting": "Выберите часто задаваемый вопрос или напишите нам в WhatsApp.",
+    "whatsappCta": "Написать в WhatsApp",
+    "whatsappMessage": "Здравствуйте! У меня есть вопрос по MotoStock."
+  },
   "Contact": {
     "title": "Контакты",
     "addressLabel": "Адрес",

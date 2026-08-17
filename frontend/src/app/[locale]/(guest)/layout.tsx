@@ -2,10 +2,12 @@ import { Header } from "@/components/shared/Header";
 import { Footer } from "@/components/shared/Footer";
 import { CookieNotice } from "@/components/shared/CookieNotice";
 import { ScrollToTopButton } from "@/components/shared/ScrollToTopButton";
+import { ChatWidget } from "@/components/shared/ChatWidget";
 import {
   getCategoriesFromServer,
   getCompanyInfoFromServer,
   getCurrentUserFromServer,
+  getFaqListFromServer,
   getMyCartCountFromServer,
   getMyWishlistCountFromServer,
   getMyCompareCountFromServer,
@@ -16,13 +18,14 @@ export default async function GuestLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [user, categories, companyInfo, cartCount, wishlistCount, compareCount] = await Promise.all([
+  const [user, categories, companyInfo, cartCount, wishlistCount, compareCount, faqs] = await Promise.all([
     getCurrentUserFromServer(),
     getCategoriesFromServer(),
     getCompanyInfoFromServer(),
     getMyCartCountFromServer(),
     getMyWishlistCountFromServer(),
     getMyCompareCountFromServer(),
+    getFaqListFromServer(),
   ]);
 
   return (
@@ -39,6 +42,7 @@ export default async function GuestLayout({
       <Footer />
       <CookieNotice />
       <ScrollToTopButton />
+      <ChatWidget faqs={faqs} phone={companyInfo.phone} />
     </>
   );
 }

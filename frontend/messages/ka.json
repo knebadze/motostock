@@ -361,6 +361,14 @@
   "ScrollToTop": {
     "label": "თავში ასვლა"
   },
+  "ChatWidget": {
+    "openLabel": "ჩატის გახსნა",
+    "closeLabel": "დახურვა",
+    "title": "შეკითხვები გაქვთ?",
+    "greeting": "აირჩიეთ ხშირად დასმული კითხვა, ან დაგვიწერეთ WhatsApp-ზე.",
+    "whatsappCta": "დაგვიწერეთ WhatsApp-ზე",
+    "whatsappMessage": "გამარჯობა! კითხვა მაქვს MotoStock-თან დაკავშირებით."
+  },
   "Contact": {
     "title": "კონტაქტი",
     "addressLabel": "მისამართი",

@@ -361,6 +361,14 @@
   "ScrollToTop": {
     "label": "Scroll to top"
   },
+  "ChatWidget": {
+    "openLabel": "Open chat",
+    "closeLabel": "Close",
+    "title": "Have a question?",
+    "greeting": "Pick a frequently asked question, or message us on WhatsApp.",
+    "whatsappCta": "Message us on WhatsApp",
+    "whatsappMessage": "Hi! I have a question about MotoStock."
+  },
   "Contact": {
     "title": "Contact",
     "addressLabel": "Address",
