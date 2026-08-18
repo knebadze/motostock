@@ -34,7 +34,7 @@ export function getCartItemDisplay(item: CartItem, locale: "ka" | "en" | "ru") {
     const listing = item.vehicleListing;
     return {
       href: `/${listing.vehicleCatalog.category.slug}/${listing.id}`,
-      title: `${listing.vehicleCatalog.brand.name[locale]} ${listing.vehicleCatalog.model.name[locale]}`,
+      title: `${listing.vehicleCatalog.brand.name} ${listing.vehicleCatalog.model.name}`,
       subtitle: `${pickLookupName(listing.color, locale)} · ${listing.year}`,
       imageUrl: resolveMediaUrl(listing.images[0]?.imageUrl ?? listing.vehicleCatalog.imageUrl),
     };

@@ -50,23 +50,19 @@ export function formatShortName(fullName: string): string {
   return `${firstInitial}. ${lastName}`;
 }
 
-type LocalizedName = { ka: string; en: string; ru: string };
-
 // "Brand Model variant (yearFrom–yearTo)" — the display label for a vehicle
 // catalog entry, used anywhere one needs to be shown to a customer (garage
 // cards/forms, the "my vehicle" shop filter, the compatible-products page).
-export function formatVehicleCatalogLabel(
-  entry: {
-    brand: { name: LocalizedName };
-    model: { name: LocalizedName };
-    variant: string;
-    yearFrom: number | null;
-    yearTo: number | null;
-  },
-  locale: "ka" | "en" | "ru",
-): string {
+// Brand/Model names are locale-invariant, so this needs no locale argument.
+export function formatVehicleCatalogLabel(entry: {
+  brand: { name: string };
+  model: { name: string };
+  variant: string;
+  yearFrom: number | null;
+  yearTo: number | null;
+}): string {
   const year =
     entry.yearFrom || entry.yearTo ? ` (${entry.yearFrom ?? "?"}–${entry.yearTo ?? "?"})` : "";
   const variant = entry.variant ? ` ${entry.variant}` : "";
-  return `${entry.brand.name[locale]} ${entry.model.name[locale]}${variant}${year}`;
+  return `${entry.brand.name} ${entry.model.name}${variant}${year}`;
 }

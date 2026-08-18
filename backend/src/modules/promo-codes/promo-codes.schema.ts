@@ -4,6 +4,7 @@ import { localizedStringSchema } from "../../lib/localized.js";
 import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
 
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
+const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
 
 export const promoCodeDomainSchema = z.enum(["PRODUCT", "VEHICLE"]);
 export type PromoCodeDomainInput = z.infer<typeof promoCodeDomainSchema>;
@@ -195,8 +196,8 @@ export const promoCodeResponseSchema = registry.register(
     productBrand: namedRefSchema.nullable(),
     attribute: z.object({ id: z.int(), name: localizedStringSchema }).nullable(),
     attributeOption: z.object({ id: z.int(), key: z.string(), label: localizedStringSchema }).nullable(),
-    brand: namedRefSchema.nullable(),
-    model: namedRefSchema.nullable(),
+    brand: brandModelRefSchema.nullable(),
+    model: brandModelRefSchema.nullable(),
     specField: vehicleSpecFieldSchema.nullable(),
     specFieldLabel: localizedStringSchema.nullable(),
     specValue: lookupItemResponseSchema.nullable(),

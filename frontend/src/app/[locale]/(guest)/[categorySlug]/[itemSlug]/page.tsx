@@ -44,7 +44,7 @@ export async function generateMetadata({
     const listing = Number.isInteger(id) ? await getVehicleListingFromServer(id) : null;
     if (!listing) return {};
 
-    const title = [listing.vehicleCatalog.brand.name[locale], listing.vehicleCatalog.model.name[locale]]
+    const title = [listing.vehicleCatalog.brand.name, listing.vehicleCatalog.model.name]
       .filter(Boolean)
       .join(" ");
     const fullTitle = `${title} — ${siteConfig.name}`;
@@ -113,7 +113,7 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
     const allListings = await getVehicleListingsFromServer(listing.vehicleCatalog.category.id);
     const similarListings = allListings.filter((item) => item.id !== listing.id).slice(0, 12);
 
-    const title = [listing.vehicleCatalog.brand.name[locale], listing.vehicleCatalog.model.name[locale]]
+    const title = [listing.vehicleCatalog.brand.name, listing.vehicleCatalog.model.name]
       .filter(Boolean)
       .join(" ");
     const pathname = `/${listing.vehicleCatalog.category.slug}/${listing.id}`;
@@ -136,7 +136,7 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
               : listing.descriptionKa;
         return raw ? stripHtml(raw) : undefined;
       })(),
-      brand: { "@type": "Brand", name: listing.vehicleCatalog.brand.name[locale] },
+      brand: { "@type": "Brand", name: listing.vehicleCatalog.brand.name },
       offers: {
         "@type": "Offer",
         priceCurrency: "GEL",

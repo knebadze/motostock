@@ -46,7 +46,7 @@ function MainTab({ listing }: { listing: VehicleListingDetailAdmin }) {
         <Thumbnail url={listing.images[0]?.imageUrl ?? catalog.imageUrl} alt="" />
         <div>
           <h3 className="text-lg font-semibold">
-            {catalog.brand.name.ka} {catalog.model.name.ka}
+            {catalog.brand.name} {catalog.model.name}
             {catalog.variant ? ` (${catalog.variant})` : ""}
           </h3>
           <p className="text-sm text-muted-foreground">{catalog.category.name.ka}</p>

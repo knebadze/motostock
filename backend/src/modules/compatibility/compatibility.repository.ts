@@ -2,6 +2,7 @@ import { prisma } from "../../config/prisma.js";
 import type { Prisma } from "../../generated/prisma/index.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
+const brandModelRefSelect = { id: true, name: true, slug: true } as const;
 const productRefSelect = { ...namedRefSelect, category: { select: namedRefSelect } } as const;
 
 const fitmentInclude = {
@@ -12,8 +13,8 @@ const fitmentInclude = {
       variant: true,
       yearFrom: true,
       yearTo: true,
-      brand: { select: namedRefSelect },
-      model: { select: namedRefSelect },
+      brand: { select: brandModelRefSelect },
+      model: { select: brandModelRefSelect },
     },
   },
 } as const;

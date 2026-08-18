@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { GarageVehicleFormModal } from "./GarageVehicleFormModal";
@@ -26,7 +26,6 @@ export function GarageManager({
   transmissionTypes: LookupItem[];
   vinDecodeEnabled: boolean;
 }) {
-  const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Account.garage");
   const tCommon = useTranslations("Common");
   const [garage, setGarage] = useState(initialGarage);
@@ -59,7 +58,7 @@ export function GarageManager({
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {garage.map((vehicle) => (
             <div key={vehicle.id} className="rounded-2xl border border-border bg-card p-4">
-              <p className="font-semibold">{formatVehicleCatalogLabel(vehicle.vehicleCatalog, locale)}</p>
+              <p className="font-semibold">{formatVehicleCatalogLabel(vehicle.vehicleCatalog)}</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t("yearLabel")}: {vehicle.year}
               </p>

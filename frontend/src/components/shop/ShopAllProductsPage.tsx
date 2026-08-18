@@ -81,7 +81,7 @@ export function ShopAllProductsPage({
     { value: "", label: t("myVehicleAllOption") },
     ...garageVehicles.map((vehicle) => ({
       value: String(vehicle.vehicleCatalog.id),
-      label: formatVehicleCatalogLabel(vehicle.vehicleCatalog, locale),
+      label: formatVehicleCatalogLabel(vehicle.vehicleCatalog),
     })),
   ];
 
@@ -146,7 +146,7 @@ export function ShopAllProductsPage({
       if (vehicle) {
         tags.push({
           key: "vehicle",
-          label: formatVehicleCatalogLabel(vehicle.vehicleCatalog, locale),
+          label: formatVehicleCatalogLabel(vehicle.vehicleCatalog),
           onRemove: () => handleVehicleChange(""),
         });
       }

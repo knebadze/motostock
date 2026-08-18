@@ -260,7 +260,7 @@ export function ProductShopPage({
       if (vehicle) {
         tags.push({
           key: "vehicle",
-          label: formatVehicleCatalogLabel(vehicle.vehicleCatalog, locale),
+          label: formatVehicleCatalogLabel(vehicle.vehicleCatalog),
           onRemove: () => {
             setSelectedVehicleCatalogId("");
             persistSelectedVehicleCookie("");

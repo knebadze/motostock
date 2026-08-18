@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Select } from "@/components/shared/Select";
 import type { GarageVehicle, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
@@ -19,7 +19,6 @@ export function VehicleSearchForm({
   vehicleCatalog: VehicleCatalogEntry[];
   garageVehicles: GarageVehicle[];
 }) {
-  const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Home");
   const tSelect = useTranslations("Common.select");
   const router = useRouter();
@@ -92,7 +91,7 @@ export function VehicleSearchForm({
     { value: "", label: t("searchGaragePlaceholder") },
     ...garageVehicles.map((vehicle) => ({
       value: String(vehicle.vehicleCatalog.id),
-      label: formatVehicleCatalogLabel(vehicle.vehicleCatalog, locale),
+      label: formatVehicleCatalogLabel(vehicle.vehicleCatalog),
     })),
   ];
 

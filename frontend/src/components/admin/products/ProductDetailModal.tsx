@@ -253,7 +253,7 @@ function FitmentTab({ product }: { product: ProductDetailAdmin }) {
           <ul className="mt-2 flex flex-col gap-1.5">
             {product.fitments.map((vehicle) => (
               <li key={vehicle.id} className="text-sm">
-                {vehicle.brand.name.ka} {vehicle.model.name.ka}
+                {vehicle.brand.name} {vehicle.model.name}
               </li>
             ))}
           </ul>

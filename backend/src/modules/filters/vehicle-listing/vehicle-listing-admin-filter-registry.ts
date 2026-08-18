@@ -43,12 +43,8 @@ const FIXED_HANDLERS: Record<string, Handler> = {
   SEARCH: (value) =>
     buildContainsAnyClause(
       [
-        ["vehicleCatalog", "brand", "nameKa"],
-        ["vehicleCatalog", "brand", "nameEn"],
-        ["vehicleCatalog", "brand", "nameRu"],
-        ["vehicleCatalog", "model", "nameKa"],
-        ["vehicleCatalog", "model", "nameEn"],
-        ["vehicleCatalog", "model", "nameRu"],
+        ["vehicleCatalog", "brand", "name"],
+        ["vehicleCatalog", "model", "name"],
       ],
       asText(value),
     ),

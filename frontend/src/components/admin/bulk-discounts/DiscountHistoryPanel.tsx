@@ -57,7 +57,7 @@ function fromVehicleRow(row: VehicleDiscountHistoryRow): UnifiedRow {
   return {
     key: `vehicle-${row.id}`,
     type: "VEHICLE",
-    label: `${row.brand.name.ka} ${row.model.name.ka}${row.variant ? ` — ${row.variant}` : ""} (${row.year})`,
+    label: `${row.brand.name} ${row.model.name}${row.variant ? ` — ${row.variant}` : ""} (${row.year})`,
     subLabel: [row.condition.nameKa, row.color.nameKa].filter(Boolean).join(" · ") || "—",
     price: row.price,
     discountPrice: row.discountPrice,

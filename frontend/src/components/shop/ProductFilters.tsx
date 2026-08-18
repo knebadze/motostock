@@ -139,7 +139,7 @@ export function ProductFilters({
             { value: "", label: t("myVehicleAllOption") },
             ...garageVehicles.map((vehicle) => ({
               value: String(vehicle.vehicleCatalog.id),
-              label: formatVehicleCatalogLabel(vehicle.vehicleCatalog, locale),
+              label: formatVehicleCatalogLabel(vehicle.vehicleCatalog),
             })),
           ];
           return (

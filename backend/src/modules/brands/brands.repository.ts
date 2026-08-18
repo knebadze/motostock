@@ -1,15 +1,13 @@
 import { prisma } from "../../config/prisma.js";
 
 type BrandWriteData = {
-  nameKa: string;
-  nameEn: string;
-  nameRu: string;
+  name: string;
   slug: string;
 };
 
 export const brandsRepository = {
   findMany() {
-    return prisma.brand.findMany({ orderBy: { nameKa: "asc" } });
+    return prisma.brand.findMany({ orderBy: { name: "asc" } });
   },
 
   findById(id: number) {

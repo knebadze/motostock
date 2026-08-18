@@ -38,11 +38,11 @@ const columns: DataTableColumn<VehicleCatalogEntry>[] = [
       ),
   },
   { header: "კატეგორია", render: (entry) => entry.category.name.ka },
-  { header: "მარკა", render: (entry) => entry.brand.name.ka },
+  { header: "მარკა", render: (entry) => entry.brand.name },
   {
     header: "მოდელი",
     render: (entry) =>
-      entry.variant ? `${entry.model.name.ka} (${entry.variant})` : entry.model.name.ka,
+      entry.variant ? `${entry.model.name} (${entry.variant})` : entry.model.name,
   },
   {
     header: "წელი",
@@ -237,7 +237,7 @@ export function VehicleCatalogManager({
           <>
             დარწმუნებული ხართ, რომ გსურთ წაშალოთ{" "}
             <span className="font-semibold text-foreground">
-              {deletingEntry?.brand.name.ka} {deletingEntry?.model.name.ka}
+              {deletingEntry?.brand.name} {deletingEntry?.model.name}
             </span>
             ? ამ მოქმედების გაუქმება შეუძლებელია.
           </>

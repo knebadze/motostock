@@ -31,7 +31,7 @@ export const analyticsRepository = {
         id: true,
         viewCount: true,
         vehicleCatalog: {
-          select: { brand: { select: { nameKa: true } }, model: { select: { nameKa: true } } },
+          select: { brand: { select: { name: true } }, model: { select: { name: true } } },
         },
       },
     });

@@ -18,7 +18,7 @@ import { bulkProductDiscountFormSchema } from "@/lib/validation/bulk-product-dis
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
 function candidateLabel(candidate: BulkVehicleDiscountCandidate): string {
-  return `${candidate.brand.name.ka} ${candidate.model.name.ka}${candidate.variant ? ` — ${candidate.variant}` : ""} (${candidate.year})`;
+  return `${candidate.brand.name} ${candidate.model.name}${candidate.variant ? ` — ${candidate.variant}` : ""} (${candidate.year})`;
 }
 
 function candidateSpecSummary(candidate: BulkVehicleDiscountCandidate): string {
@@ -85,7 +85,7 @@ export function BulkVehicleListingDiscountsPanel({ categories }: { categories: C
 
   const brandOptions = useMemo(() => {
     const map = new Map<number, string>();
-    for (const candidate of candidates) map.set(candidate.brand.id, candidate.brand.name.ka);
+    for (const candidate of candidates) map.set(candidate.brand.id, candidate.brand.name);
     return Array.from(map, ([id, label]) => ({ value: String(id), label }));
   }, [candidates]);
 

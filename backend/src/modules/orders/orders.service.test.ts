@@ -84,8 +84,8 @@ function vehicleListingCartRow(params: {
       images: [],
       vehicleCatalog: {
         imageUrl: null,
-        brand: { nameKa: "მარკა", nameEn: "Brand", nameRu: "Марка" },
-        model: { nameKa: "მოდელი", nameEn: "Model", nameRu: "Модель" },
+        brand: { name: "Brand" },
+        model: { name: "Model" },
       },
     },
   } as unknown as CartRow;

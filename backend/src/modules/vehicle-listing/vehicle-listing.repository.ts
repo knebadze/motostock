@@ -6,12 +6,13 @@ import type { FilterEntry } from "../filters/filter-request.schema.js";
 import type { SpecFilterInput } from "./vehicle-listing.schema.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
+const brandModelRefSelect = { id: true, name: true, slug: true } as const;
 
 export const vehicleListingInclude = {
   vehicleCatalog: {
     include: {
-      brand: { select: namedRefSelect },
-      model: { select: { ...namedRefSelect, category: { select: namedRefSelect } } },
+      brand: { select: brandModelRefSelect },
+      model: { select: { ...brandModelRefSelect, category: { select: namedRefSelect } } },
       fuelType: true,
       transmissionType: true,
       coolingType: true,
@@ -68,12 +69,8 @@ function buildWhere(filters: {
   if (filters.search) {
     and.push({
       OR: [
-        { vehicleCatalog: { brand: { nameKa: { contains: filters.search, mode: "insensitive" } } } },
-        { vehicleCatalog: { brand: { nameEn: { contains: filters.search, mode: "insensitive" } } } },
-        { vehicleCatalog: { brand: { nameRu: { contains: filters.search, mode: "insensitive" } } } },
-        { vehicleCatalog: { model: { nameKa: { contains: filters.search, mode: "insensitive" } } } },
-        { vehicleCatalog: { model: { nameEn: { contains: filters.search, mode: "insensitive" } } } },
-        { vehicleCatalog: { model: { nameRu: { contains: filters.search, mode: "insensitive" } } } },
+        { vehicleCatalog: { brand: { name: { contains: filters.search, mode: "insensitive" } } } },
+        { vehicleCatalog: { model: { name: { contains: filters.search, mode: "insensitive" } } } },
       ],
     });
   }

@@ -1,14 +1,14 @@
 import { apiClient } from "./client";
 import type { LocalizedString } from "./categories";
-import type { NamedRef } from "./vehicle-catalog";
+import type { BrandModelRef, NamedRef } from "./vehicle-catalog";
 import type { LookupItem } from "./lookups";
 
 export type CompatibilityItemKind = "FITMENT" | "RULE_ALL" | "RULE_CATEGORY" | "RULE_SPEC";
 
 export type CompatibleVehicle = {
   id: number;
-  brand: NamedRef;
-  model: NamedRef;
+  brand: BrandModelRef;
+  model: BrandModelRef;
   variant: string;
   yearFrom: number | null;
   yearTo: number | null;

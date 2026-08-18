@@ -1,6 +1,6 @@
 import { prisma } from "../../config/prisma.js";
 
-const brandSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
+const brandSelect = { id: true, name: true, slug: true } as const;
 const categorySelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
 const modelInclude = {
   brand: { select: brandSelect },
@@ -10,9 +10,7 @@ const modelInclude = {
 type ModelWriteData = {
   brandId: number;
   categoryId: number;
-  nameKa: string;
-  nameEn: string;
-  nameRu: string;
+  name: string;
   slug: string;
 };
 
@@ -21,7 +19,7 @@ export const modelsRepository = {
     return prisma.model.findMany({
       where: brandId ? { brandId } : undefined,
       include: modelInclude,
-      orderBy: { nameKa: "asc" },
+      orderBy: { name: "asc" },
     });
   },
 

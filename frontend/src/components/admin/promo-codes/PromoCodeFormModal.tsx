@@ -263,8 +263,8 @@ export function PromoCodeFormModal({
     value: String(option.id),
     label: option.label.ka,
   }));
-  const brandOptions = brands.map((brand) => ({ value: String(brand.id), label: brand.name.ka }));
-  const modelOptions = models.map((model) => ({ value: String(model.id), label: model.name.ka }));
+  const brandOptions = brands.map((brand) => ({ value: String(brand.id), label: brand.name }));
+  const modelOptions = models.map((model) => ({ value: String(model.id), label: model.name }));
   const specFieldOptions = SPEC_FIELD_OPTIONS.map((item) => ({ value: item.field, label: item.label }));
   const specValueSelectOptions = specValueOptions.map((item) => ({ value: String(item.id), label: item.nameKa }));
 

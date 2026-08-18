@@ -13,10 +13,8 @@ import { ApiRequestError } from "@/lib/api/client";
 import { ModelFormModal } from "./ModelFormModal";
 
 const columns: DataTableColumn<Model>[] = [
-  { header: "მარკა", render: (model) => model.brand.name.ka },
-  { header: "სახელი", render: (model) => model.name.ka },
-  { header: "სახელი (EN)", render: (model) => model.name.en, cellClassName: "text-muted-foreground" },
-  { header: "სახელი (RU)", render: (model) => model.name.ru, cellClassName: "text-muted-foreground" },
+  { header: "მარკა", render: (model) => model.brand.name },
+  { header: "სახელი", render: (model) => model.name },
   {
     header: "ტიპი",
     render: (model) => model.category.name.ka,
@@ -42,7 +40,7 @@ export function ModelsManager({
 
   const brandFilterOptions = [
     { value: "", label: "ყველა მარკა" },
-    ...brands.map((brand) => ({ value: String(brand.id), label: brand.name.ka })),
+    ...brands.map((brand) => ({ value: String(brand.id), label: brand.name })),
   ];
 
   async function refresh() {
@@ -138,7 +136,7 @@ export function ModelsManager({
         message={
           <>
             დარწმუნებული ხართ, რომ გსურთ წაშალოთ მოდელი{" "}
-            <span className="font-semibold text-foreground">{deletingModel?.name.ka}</span>?
+            <span className="font-semibold text-foreground">{deletingModel?.name}</span>?
             ამ მოქმედების გაუქმება შეუძლებელია.
           </>
         }

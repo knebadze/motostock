@@ -9,16 +9,14 @@ const slugField = z
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "მხოლოდ პატარა ლათინური ასოები, ციფრები და დეფისი")
   .openapi({ example: "cbr600rr" });
 
-const localizedNameField = localizedStringSchema.openapi({
-  example: { ka: "CBR600RR", en: "CBR600RR", ru: "CBR600RR" },
-});
+const nameField = z.string().min(1).max(120).openapi({ example: "CBR600RR" });
 
 export const createModelSchema = registry.register(
   "CreateModelInput",
   z.object({
     brandId: z.int().positive(),
     categoryId: z.int().positive(),
-    name: localizedNameField,
+    name: nameField,
     slug: slugField,
   }),
 );
@@ -43,10 +41,10 @@ export const modelResponseSchema = registry.register(
   z.object({
     id: z.int().openapi({ example: 1 }),
     brandId: z.int(),
-    brand: z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() }),
+    brand: z.object({ id: z.int(), name: z.string(), slug: z.string() }),
     categoryId: z.int(),
     category: z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() }),
-    name: localizedNameField,
+    name: nameField,
     slug: z.string().openapi({ example: "cbr600rr" }),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),

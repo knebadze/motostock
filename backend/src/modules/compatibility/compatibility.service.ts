@@ -12,11 +12,12 @@ import type { ListCompatibilityQuery } from "./compatibility.schema.js";
 import type { Prisma } from "../../generated/prisma/index.js";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
+type BrandModelRefRow = { id: number; name: string; slug: string };
 type ProductRefRow = NamedRefRow & { category: NamedRefRow };
 type VehicleRefRow = {
   id: number;
-  brand: NamedRefRow;
-  model: NamedRefRow;
+  brand: BrandModelRefRow;
+  model: BrandModelRefRow;
   variant: string;
   yearFrom: number | null;
   yearTo: number | null;
@@ -44,8 +45,8 @@ function ruleKind(type: "CATEGORY" | "SPEC" | "ALL"): "RULE_ALL" | "RULE_CATEGOR
 function toVehicleRef(row: VehicleRefRow) {
   return {
     id: row.id,
-    brand: toNamedRef(row.brand),
-    model: toNamedRef(row.model),
+    brand: row.brand,
+    model: row.model,
     variant: row.variant,
     yearFrom: row.yearFrom,
     yearTo: row.yearTo,

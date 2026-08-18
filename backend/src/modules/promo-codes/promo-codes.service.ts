@@ -26,6 +26,7 @@ import type { CartItemType, PromoCodeDomain, VehicleSpecField } from "../../gene
 const VEHICLE_ROOT_CATEGORY_SLUG = "transport";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
+type BrandModelRefRow = { id: number; name: string; slug: string };
 type AttributeRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string };
 type AttributeOptionRefRow = { id: number; key: string; labelKa: string; labelEn: string; labelRu: string };
 type LookupRow = { id: number; key: string; nameKa: string; nameEn: string; nameRu: string };
@@ -38,8 +39,8 @@ type PromoCodeRow = {
   productBrand: NamedRefRow | null;
   attribute: AttributeRefRow | null;
   attributeOption: AttributeOptionRefRow | null;
-  brand: NamedRefRow | null;
-  model: NamedRefRow | null;
+  brand: BrandModelRefRow | null;
+  model: BrandModelRefRow | null;
   specField: VehicleSpecField | null;
   specLookupItemId: number | null;
   discountPercent: { toString(): string };
@@ -98,8 +99,8 @@ async function toResponse(row: PromoCodeRow) {
           },
         }
       : null,
-    brand: row.brand ? toNamedRef(row.brand) : null,
-    model: row.model ? toNamedRef(row.model) : null,
+    brand: row.brand,
+    model: row.model,
     specField: row.specField,
     specFieldLabel,
     specValue,

@@ -29,7 +29,7 @@ function vehicleCatalogLabel(entry: VehicleCatalogEntry): string {
   const year =
     entry.yearFrom || entry.yearTo ? ` (${entry.yearFrom ?? "?"}–${entry.yearTo ?? "?"})` : "";
   const variant = entry.variant ? ` — ${entry.variant}` : "";
-  return `${entry.brand.name.ka} ${entry.model.name.ka}${variant}${year}`;
+  return `${entry.brand.name} ${entry.model.name}${variant}${year}`;
 }
 
 const columns: DataTableColumn<ProductFitment>[] = [
@@ -41,7 +41,7 @@ const columns: DataTableColumn<ProductFitment>[] = [
           ? ` (${fitment.vehicleCatalog.yearFrom ?? "?"}–${fitment.vehicleCatalog.yearTo ?? "?"})`
           : "";
       const variant = fitment.vehicleCatalog.variant ? ` — ${fitment.vehicleCatalog.variant}` : "";
-      return `${fitment.vehicleCatalog.brand.name.ka} ${fitment.vehicleCatalog.model.name.ka}${variant}${year}`;
+      return `${fitment.vehicleCatalog.brand.name} ${fitment.vehicleCatalog.model.name}${variant}${year}`;
     },
   },
 ];

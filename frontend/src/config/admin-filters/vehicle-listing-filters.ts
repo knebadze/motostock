@@ -8,6 +8,13 @@ function dedupeNamedRefs(refs: { id: number; name: { ka: string } }[]) {
   return Array.from(byId.values()).sort((a, b) => a.name.ka.localeCompare(b.name.ka));
 }
 
+// Brand/Model names are locale-invariant plain strings, unlike Category's
+// localized name — same dedupe/sort shape, different name field type.
+function dedupeBrandModelRefs(refs: { id: number; name: string }[]) {
+  const byId = new Map(refs.map((ref) => [ref.id, ref]));
+  return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
 function toLookupOptions(items: LookupItem[]) {
   return items.map((item) => ({ value: String(item.id), label: item.nameKa }));
 }
@@ -22,8 +29,8 @@ export function buildVehicleListingFilterFields(data: {
   statuses: LookupItem[];
   colors: LookupItem[];
 }): AdminFilterField[] {
-  const brands = dedupeNamedRefs(data.vehicleCatalog.map((entry) => entry.brand));
-  const models = dedupeNamedRefs(data.vehicleCatalog.map((entry) => entry.model));
+  const brands = dedupeBrandModelRefs(data.vehicleCatalog.map((entry) => entry.brand));
+  const models = dedupeBrandModelRefs(data.vehicleCatalog.map((entry) => entry.model));
   const categories = dedupeNamedRefs(data.vehicleCatalog.map((entry) => entry.category));
 
   const basicFields: AdminFilterField[] = [
@@ -40,14 +47,14 @@ export function buildVehicleListingFilterFields(data: {
       label: "მარკა",
       section: "ძირითადი",
       kind: "MULTI_SELECT",
-      options: brands.map((b) => ({ value: String(b.id), label: b.name.ka })),
+      options: brands.map((b) => ({ value: String(b.id), label: b.name })),
     },
     {
       key: "MODEL",
       label: "მოდელი",
       section: "ძირითადი",
       kind: "MULTI_SELECT",
-      options: models.map((m) => ({ value: String(m.id), label: m.name.ka })),
+      options: models.map((m) => ({ value: String(m.id), label: m.name })),
     },
     { key: "PRICE", label: "ფასი", section: "ძირითადი", kind: "RANGE" },
     { key: "YEAR", label: "წელი", section: "ძირითადი", kind: "RANGE" },

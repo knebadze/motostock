@@ -1,9 +1,8 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
 
 export type Brand = {
   id: number;
-  name: LocalizedString;
+  name: string;
   slug: string;
   logoUrl: string | null;
   createdAt: string;
@@ -11,7 +10,7 @@ export type Brand = {
 };
 
 export type BrandInput = {
-  name: LocalizedString;
+  name: string;
   slug: string;
 };
 

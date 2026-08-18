@@ -37,14 +37,14 @@ export function buildVehicleCatalogFilterFields(data: {
       label: "მარკა",
       section: "ძირითადი",
       kind: "MULTI_SELECT",
-      options: toOptions(data.brands, (b) => b.name.ka),
+      options: toOptions(data.brands, (b) => b.name),
     },
     {
       key: "MODEL",
       label: "მოდელი",
       section: "ძირითადი",
       kind: "MULTI_SELECT",
-      options: toOptions(data.models, (m) => m.name.ka),
+      options: toOptions(data.models, (m) => m.name),
     },
     {
       key: "CATEGORY",

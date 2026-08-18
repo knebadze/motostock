@@ -26,7 +26,7 @@ async function lookupId(
   return row.id;
 }
 
-type BrandSeed = { slug: string; nameKa: string; nameEn: string; nameRu: string };
+type BrandSeed = { slug: string; name: string };
 
 async function getOrCreateBrand(seed: BrandSeed) {
   return prisma.brand.upsert({
@@ -64,9 +64,7 @@ type VehicleSeed = {
   categorySlug: string;
   brand: BrandSeed;
   modelSlug: string;
-  modelNameKa: string;
-  modelNameEn: string;
-  modelNameRu: string;
+  modelName: string;
   yearFrom: number;
   yearTo: number;
   spec: FullSpec;
@@ -86,11 +84,9 @@ type VehicleSeed = {
 const VEHICLES: VehicleSeed[] = [
   {
     categorySlug: "moto-naked",
-    brand: { slug: "kawasaki", nameKa: "კავასაკი", nameEn: "Kawasaki", nameRu: "Кавасаки" },
+    brand: { slug: "kawasaki", name: "Kawasaki" },
     modelSlug: "z900",
-    modelNameKa: "Z900",
-    modelNameEn: "Z900",
-    modelNameRu: "Z900",
+    modelName: "Z900",
     yearFrom: 2020,
     yearTo: 2025,
     spec: {
@@ -129,11 +125,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-sportbike",
-    brand: { slug: "yamaha", nameKa: "იამაჰა", nameEn: "Yamaha", nameRu: "Ямаха" },
+    brand: { slug: "yamaha", name: "Yamaha" },
     modelSlug: "yzf-r6",
-    modelNameKa: "YZF-R6",
-    modelNameEn: "YZF-R6",
-    modelNameRu: "YZF-R6",
+    modelName: "YZF-R6",
     yearFrom: 2017,
     yearTo: 2020,
     spec: {
@@ -172,11 +166,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-sportbike",
-    brand: { slug: "kawasaki", nameKa: "კავასაკი", nameEn: "Kawasaki", nameRu: "Кавасаки" },
+    brand: { slug: "kawasaki", name: "Kawasaki" },
     modelSlug: "ninja-zx-6r",
-    modelNameKa: "Ninja ZX-6R",
-    modelNameEn: "Ninja ZX-6R",
-    modelNameRu: "Ninja ZX-6R",
+    modelName: "Ninja ZX-6R",
     yearFrom: 2019,
     yearTo: 2023,
     spec: {
@@ -215,11 +207,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-sportbike",
-    brand: { slug: "suzuki", nameKa: "სუზუკი", nameEn: "Suzuki", nameRu: "Сузуки" },
+    brand: { slug: "suzuki", name: "Suzuki" },
     modelSlug: "gsx-r750",
-    modelNameKa: "GSX-R750",
-    modelNameEn: "GSX-R750",
-    modelNameRu: "GSX-R750",
+    modelName: "GSX-R750",
     yearFrom: 2018,
     yearTo: 2022,
     spec: {
@@ -258,11 +248,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-sportbike",
-    brand: { slug: "honda", nameKa: "ჰონდა", nameEn: "Honda", nameRu: "Хонда" },
+    brand: { slug: "honda", name: "Honda" },
     modelSlug: "cbr600rr",
-    modelNameKa: "CBR600RR",
-    modelNameEn: "CBR600RR",
-    modelNameRu: "CBR600RR",
+    modelName: "CBR600RR",
     yearFrom: 2019,
     yearTo: 2024,
     spec: {
@@ -301,11 +289,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-sportbike",
-    brand: { slug: "ducati", nameKa: "დუკატი", nameEn: "Ducati", nameRu: "Дукати" },
+    brand: { slug: "ducati", name: "Ducati" },
     modelSlug: "panigale-v2",
-    modelNameKa: "Panigale V2",
-    modelNameEn: "Panigale V2",
-    modelNameRu: "Panigale V2",
+    modelName: "Panigale V2",
     yearFrom: 2020,
     yearTo: 2024,
     spec: {
@@ -344,11 +330,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-sportbike",
-    brand: { slug: "bmw", nameKa: "ბმვ", nameEn: "BMW", nameRu: "БМВ" },
+    brand: { slug: "bmw", name: "BMW" },
     modelSlug: "s1000rr",
-    modelNameKa: "S 1000 RR",
-    modelNameEn: "S 1000 RR",
-    modelNameRu: "S 1000 RR",
+    modelName: "S 1000 RR",
     yearFrom: 2021,
     yearTo: 2025,
     spec: {
@@ -387,11 +371,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-cruiser",
-    brand: { slug: "harley-davidson", nameKa: "ჰარლი-დევიდსონი", nameEn: "Harley-Davidson", nameRu: "Харли-Дэвидсон" },
+    brand: { slug: "harley-davidson", name: "Harley-Davidson" },
     modelSlug: "iron-883",
-    modelNameKa: "Iron 883",
-    modelNameEn: "Iron 883",
-    modelNameRu: "Iron 883",
+    modelName: "Iron 883",
     yearFrom: 2015,
     yearTo: 2022,
     spec: {
@@ -416,11 +398,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-touring",
-    brand: { slug: "honda", nameKa: "ჰონდა", nameEn: "Honda", nameRu: "Хонда" },
+    brand: { slug: "honda", name: "Honda" },
     modelSlug: "gold-wing",
-    modelNameKa: "Gold Wing",
-    modelNameEn: "Gold Wing",
-    modelNameRu: "Gold Wing",
+    modelName: "Gold Wing",
     yearFrom: 2018,
     yearTo: 2024,
     spec: { engineVolumeCc: 1833, fuelTypeKey: "PETROL" },
@@ -441,11 +421,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-adventure",
-    brand: { slug: "bmw", nameKa: "ბმვ", nameEn: "BMW", nameRu: "БМВ" },
+    brand: { slug: "bmw", name: "BMW" },
     modelSlug: "r-1250-gs",
-    modelNameKa: "R 1250 GS",
-    modelNameEn: "R 1250 GS",
-    modelNameRu: "R 1250 GS",
+    modelName: "R 1250 GS",
     yearFrom: 2019,
     yearTo: 2025,
     spec: {
@@ -484,11 +462,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-dual-sport",
-    brand: { slug: "suzuki", nameKa: "სუზუკი", nameEn: "Suzuki", nameRu: "Сузуки" },
+    brand: { slug: "suzuki", name: "Suzuki" },
     modelSlug: "dr650",
-    modelNameKa: "DR650",
-    modelNameEn: "DR650",
-    modelNameRu: "DR650",
+    modelName: "DR650",
     yearFrom: 2016,
     yearTo: 2023,
     spec: { engineVolumeCc: 644, fuelTypeKey: "PETROL" },
@@ -509,11 +485,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-enduro",
-    brand: { slug: "ktm", nameKa: "კტმ", nameEn: "KTM", nameRu: "КТМ" },
+    brand: { slug: "ktm", name: "KTM" },
     modelSlug: "300-exc",
-    modelNameKa: "300 EXC",
-    modelNameEn: "300 EXC",
-    modelNameRu: "300 EXC",
+    modelName: "300 EXC",
     yearFrom: 2021,
     yearTo: 2025,
     spec: {
@@ -552,11 +526,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-supermoto",
-    brand: { slug: "ktm", nameKa: "კტმ", nameEn: "KTM", nameRu: "КТМ" },
+    brand: { slug: "ktm", name: "KTM" },
     modelSlug: "690-smc-r",
-    modelNameKa: "690 SMC R",
-    modelNameEn: "690 SMC R",
-    modelNameRu: "690 SMC R",
+    modelName: "690 SMC R",
     yearFrom: 2019,
     yearTo: 2024,
     spec: { engineVolumeCc: 693, fuelTypeKey: "PETROL" },
@@ -575,11 +547,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-cafe-racer",
-    brand: { slug: "triumph", nameKa: "ტრაიუმფი", nameEn: "Triumph", nameRu: "Триумф" },
+    brand: { slug: "triumph", name: "Triumph" },
     modelSlug: "street-twin",
-    modelNameKa: "Street Twin",
-    modelNameEn: "Street Twin",
-    modelNameRu: "Street Twin",
+    modelName: "Street Twin",
     yearFrom: 2017,
     yearTo: 2023,
     spec: { engineVolumeCc: 900, fuelTypeKey: "PETROL" },
@@ -600,11 +570,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-bobber",
-    brand: { slug: "triumph", nameKa: "ტრაიუმფი", nameEn: "Triumph", nameRu: "Триумф" },
+    brand: { slug: "triumph", name: "Triumph" },
     modelSlug: "bonneville-bobber",
-    modelNameKa: "Bonneville Bobber",
-    modelNameEn: "Bonneville Bobber",
-    modelNameRu: "Bonneville Bobber",
+    modelName: "Bonneville Bobber",
     yearFrom: 2017,
     yearTo: 2023,
     spec: { engineVolumeCc: 1200, fuelTypeKey: "PETROL" },
@@ -623,11 +591,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "moto-sport-touring",
-    brand: { slug: "kawasaki", nameKa: "კავასაკი", nameEn: "Kawasaki", nameRu: "Кавасаки" },
+    brand: { slug: "kawasaki", name: "Kawasaki" },
     modelSlug: "ninja-1000sx",
-    modelNameKa: "Ninja 1000SX",
-    modelNameEn: "Ninja 1000SX",
-    modelNameRu: "Ninja 1000SX",
+    modelName: "Ninja 1000SX",
     yearFrom: 2020,
     yearTo: 2025,
     spec: { engineVolumeCc: 1043, fuelTypeKey: "PETROL" },
@@ -646,11 +612,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "atvs",
-    brand: { slug: "can-am", nameKa: "კან-ამ", nameEn: "Can-Am", nameRu: "Can-Am" },
+    brand: { slug: "can-am", name: "Can-Am" },
     modelSlug: "outlander",
-    modelNameKa: "Outlander",
-    modelNameEn: "Outlander",
-    modelNameRu: "Outlander",
+    modelName: "Outlander",
     yearFrom: 2019,
     yearTo: 2024,
     spec: { engineVolumeCc: 570, fuelTypeKey: "PETROL" },
@@ -668,11 +632,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "scooters",
-    brand: { slug: "honda", nameKa: "ჰონდა", nameEn: "Honda", nameRu: "Хонда" },
+    brand: { slug: "honda", name: "Honda" },
     modelSlug: "pcx150",
-    modelNameKa: "PCX150",
-    modelNameEn: "PCX150",
-    modelNameRu: "PCX150",
+    modelName: "PCX150",
     yearFrom: 2018,
     yearTo: 2024,
     spec: { engineVolumeCc: 150, fuelTypeKey: "PETROL" },
@@ -690,11 +652,9 @@ const VEHICLES: VehicleSeed[] = [
   },
   {
     categorySlug: "kick-scooters",
-    brand: { slug: "xiaomi", nameKa: "სიაომი", nameEn: "Xiaomi", nameRu: "Сяоми" },
+    brand: { slug: "xiaomi", name: "Xiaomi" },
     modelSlug: "electric-scooter-4",
-    modelNameKa: "Electric Scooter 4",
-    modelNameEn: "Electric Scooter 4",
-    modelNameRu: "Electric Scooter 4",
+    modelName: "Electric Scooter 4",
     yearFrom: 2022,
     yearTo: 2025,
     spec: {
@@ -738,9 +698,7 @@ async function seedVehicle(seed: VehicleSeed) {
       brandId: brand.id,
       categoryId: catId,
       slug: seed.modelSlug,
-      nameKa: seed.modelNameKa,
-      nameEn: seed.modelNameEn,
-      nameRu: seed.modelNameRu,
+      name: seed.modelName,
     },
   });
 
@@ -795,7 +753,7 @@ async function seedVehicle(seed: VehicleSeed) {
     where: { vehicleCatalogId: vehicleCatalog.id },
   });
   if (existingListing) {
-    console.log(`Listing already exists for ${seed.brand.nameEn} ${seed.modelNameEn}, skipping`);
+    console.log(`Listing already exists for ${seed.brand.name} ${seed.modelName}, skipping`);
     return;
   }
 
@@ -814,7 +772,7 @@ async function seedVehicle(seed: VehicleSeed) {
       descriptionRu: listing.descriptionRu,
     },
   });
-  console.log(`Created listing: ${seed.brand.nameEn} ${seed.modelNameEn} (${seed.categorySlug})`);
+  console.log(`Created listing: ${seed.brand.name} ${seed.modelName} (${seed.categorySlug})`);
 }
 
 async function main() {

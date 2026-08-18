@@ -6,9 +6,7 @@ import type { CreateBrandInput, UpdateBrandInput } from "./brands.schema.js";
 
 type BrandRow = {
   id: number;
-  nameKa: string;
-  nameEn: string;
-  nameRu: string;
+  name: string;
   slug: string;
   logoUrl: string | null;
   createdAt: Date;
@@ -18,7 +16,7 @@ type BrandRow = {
 function toResponse(brand: BrandRow) {
   return {
     id: brand.id,
-    name: { ka: brand.nameKa, en: brand.nameEn, ru: brand.nameRu },
+    name: brand.name,
     slug: brand.slug,
     logoUrl: brand.logoUrl,
     createdAt: brand.createdAt,
@@ -46,9 +44,7 @@ export async function createBrand(input: CreateBrandInput) {
   }
 
   const brand = await brandsRepository.create({
-    nameKa: input.name.ka,
-    nameEn: input.name.en,
-    nameRu: input.name.ru,
+    name: input.name,
     slug: input.slug,
   });
   return toResponse(brand);
@@ -68,9 +64,7 @@ export async function updateBrand(id: number, input: UpdateBrandInput) {
   }
 
   const brand = await brandsRepository.update(id, {
-    ...(input.name !== undefined
-      ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
-      : {}),
+    ...(input.name !== undefined ? { name: input.name } : {}),
     ...(input.slug !== undefined ? { slug: input.slug } : {}),
   });
   return toResponse(brand);

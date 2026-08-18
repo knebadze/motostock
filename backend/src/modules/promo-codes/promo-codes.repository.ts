@@ -2,14 +2,15 @@ import { prisma } from "../../config/prisma.js";
 import type { Prisma, PromoCodeDomain, VehicleSpecField } from "../../generated/prisma/index.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
+const brandModelRefSelect = { id: true, name: true, slug: true } as const;
 
 const include = {
   category: { select: namedRefSelect },
   productBrand: { select: namedRefSelect },
   attribute: { select: { id: true, nameKa: true, nameEn: true, nameRu: true } },
   attributeOption: { select: { id: true, key: true, labelKa: true, labelEn: true, labelRu: true } },
-  brand: { select: namedRefSelect },
-  model: { select: namedRefSelect },
+  brand: { select: brandModelRefSelect },
+  model: { select: brandModelRefSelect },
 } as const;
 
 type PromoCodeWriteData = {

@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 import type { LocalizedString } from "./categories";
-import type { NamedRef } from "./vehicle-catalog";
+import type { BrandModelRef, NamedRef } from "./vehicle-catalog";
 import type { AttributeValueType } from "./attributes";
 import type { LookupItem } from "./lookups";
 import type { ProductVariantImage } from "./product-variant-images";
@@ -87,8 +87,8 @@ export type ProductVariantDetail = {
 
 export type CompatibleVehicle = {
   id: number;
-  brand: NamedRef;
-  model: NamedRef;
+  brand: BrandModelRef;
+  model: BrandModelRef;
 };
 
 // Summarized, not enumerated — an "all vehicles" rule would otherwise mean

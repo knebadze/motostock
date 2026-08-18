@@ -122,13 +122,12 @@ export async function generateVehicleCatalogTemplate(): Promise<Buffer> {
   const brandsSheet = workbook.addWorksheet("მარკები");
   brandsSheet.columns = [
     { header: "id", key: "id", width: 8 },
-    { header: "დასახელება (ka)", key: "nameKa", width: 26 },
-    { header: "დასახელება (en)", key: "nameEn", width: 26 },
+    { header: "დასახელება", key: "name", width: 26 },
     { header: "slug", key: "slug", width: 22 },
   ];
   styleHeaderRow(brandsSheet);
   for (const brand of brands) {
-    brandsSheet.addRow({ id: brand.id, nameKa: brand.nameKa, nameEn: brand.nameEn, slug: brand.slug });
+    brandsSheet.addRow({ id: brand.id, name: brand.name, slug: brand.slug });
   }
 
   const modelsSheet = workbook.addWorksheet("მოდელები");
@@ -137,7 +136,7 @@ export async function generateVehicleCatalogTemplate(): Promise<Buffer> {
     { header: "brandId", key: "brandId", width: 10 },
     { header: "მარკა", key: "brandName", width: 22 },
     { header: "კატეგორია", key: "categoryName", width: 22 },
-    { header: "დასახელება (ka)", key: "nameKa", width: 26 },
+    { header: "დასახელება", key: "name", width: 26 },
     { header: "slug", key: "slug", width: 22 },
   ];
   styleHeaderRow(modelsSheet);
@@ -145,9 +144,9 @@ export async function generateVehicleCatalogTemplate(): Promise<Buffer> {
     modelsSheet.addRow({
       id: model.id,
       brandId: model.brandId,
-      brandName: model.brand.nameKa,
+      brandName: model.brand.name,
       categoryName: model.category.nameKa,
-      nameKa: model.nameKa,
+      name: model.name,
       slug: model.slug,
     });
   }

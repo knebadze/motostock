@@ -1,13 +1,13 @@
 import { apiClient } from "./client";
-import type { NamedRef } from "./vehicle-catalog";
+import type { BrandModelRef } from "./vehicle-catalog";
 
 export type ProductFitment = {
   id: number;
   productId: number;
   vehicleCatalog: {
     id: number;
-    brand: NamedRef;
-    model: NamedRef;
+    brand: BrandModelRef;
+    model: BrandModelRef;
     variant: string;
     yearFrom: number | null;
     yearTo: number | null;

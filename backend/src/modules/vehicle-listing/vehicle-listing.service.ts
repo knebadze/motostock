@@ -17,6 +17,7 @@ import type {
 } from "./vehicle-listing.schema.js";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
+type BrandModelRefRow = { id: number; name: string; slug: string };
 type LookupRow = { id: number; key: string; nameKa: string; nameEn: string; nameRu: string };
 type ImageRow = { id: number; imageUrl: string; position: number };
 
@@ -24,8 +25,8 @@ type VehicleListingRow = {
   id: number;
   vehicleCatalog: {
     id: number;
-    brand: NamedRefRow;
-    model: NamedRefRow & { category: NamedRefRow };
+    brand: BrandModelRefRow;
+    model: BrandModelRefRow & { category: NamedRefRow };
     variant: string;
     yearFrom: number | null;
     yearTo: number | null;
@@ -95,8 +96,8 @@ export function toVehicleListingResponse(row: VehicleListingRow) {
     vehicleCatalog: {
       id: row.vehicleCatalog.id,
       category: toNamedRef(row.vehicleCatalog.model.category),
-      brand: toNamedRef(row.vehicleCatalog.brand),
-      model: toNamedRef(row.vehicleCatalog.model),
+      brand: { id: row.vehicleCatalog.brand.id, name: row.vehicleCatalog.brand.name, slug: row.vehicleCatalog.brand.slug },
+      model: { id: row.vehicleCatalog.model.id, name: row.vehicleCatalog.model.name, slug: row.vehicleCatalog.model.slug },
       variant: row.vehicleCatalog.variant,
       yearFrom: row.vehicleCatalog.yearFrom,
       yearTo: row.vehicleCatalog.yearTo,

@@ -24,9 +24,7 @@ const columns: DataTableColumn<Brand>[] = [
         <div className="size-10 rounded-lg border border-dashed border-border" />
       ),
   },
-  { header: "სახელი", render: (brand) => brand.name.ka },
-  { header: "სახელი (EN)", render: (brand) => brand.name.en, cellClassName: "text-muted-foreground" },
-  { header: "სახელი (RU)", render: (brand) => brand.name.ru, cellClassName: "text-muted-foreground" },
+  { header: "სახელი", render: (brand) => brand.name },
   { header: "Slug", render: (brand) => brand.slug, cellClassName: "font-mono text-muted-foreground" },
 ];
 
@@ -99,7 +97,7 @@ export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
         message={
           <>
             დარწმუნებული ხართ, რომ გსურთ წაშალოთ მარკა{" "}
-            <span className="font-semibold text-foreground">{deletingBrand?.name.ka}</span>?
+            <span className="font-semibold text-foreground">{deletingBrand?.name}</span>?
             ამ მოქმედების გაუქმება შეუძლებელია.
           </>
         }

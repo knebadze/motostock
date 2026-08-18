@@ -152,7 +152,7 @@ export function VehicleCatalogFormModal({
   }, [categories]);
 
   const brandOptions = useMemo(
-    () => brands.map((brand) => ({ value: String(brand.id), label: brand.name.ka })),
+    () => brands.map((brand) => ({ value: String(brand.id), label: brand.name })),
     [brands],
   );
 
@@ -170,7 +170,7 @@ export function VehicleCatalogFormModal({
             String(model.brandId) === brandId &&
             (categoryFilter === "" || String(model.category.id) === categoryFilter),
         )
-        .map((model) => ({ value: String(model.id), label: model.name.ka })),
+        .map((model) => ({ value: String(model.id), label: model.name })),
     [models, brandId, categoryFilter],
   );
 

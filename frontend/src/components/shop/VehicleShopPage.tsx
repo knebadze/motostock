@@ -90,11 +90,11 @@ export function VehicleShopPage({
     for (const listing of listings) {
       const brand = listing.vehicleCatalog.brand;
       if (!byId.has(brand.id)) {
-        byId.set(brand.id, { id: brand.id, label: brand.name[locale] });
+        byId.set(brand.id, { id: brand.id, label: brand.name });
       }
     }
     return Array.from(byId.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [listings, locale]);
+  }, [listings]);
 
   function resetToFirstPage() {
     setPage(1);

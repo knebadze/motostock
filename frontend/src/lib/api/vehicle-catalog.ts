@@ -9,11 +9,19 @@ export type NamedRef = {
   slug: string;
 };
 
+// Brand/Model names are locale-invariant (not per-language translated), so
+// they're plain strings unlike Category/ProductBrand's NamedRef.
+export type BrandModelRef = {
+  id: number;
+  name: string;
+  slug: string;
+};
+
 export type VehicleCatalogEntry = {
   id: number;
   category: NamedRef;
-  brand: NamedRef;
-  model: NamedRef;
+  brand: BrandModelRef;
+  model: BrandModelRef;
   submittedBy: { id: number; name: string } | null;
   variant: string;
   yearFrom: number | null;

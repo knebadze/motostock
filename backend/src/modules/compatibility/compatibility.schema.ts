@@ -17,6 +17,7 @@ export const compatibilityProductIdParamSchema = z.object({
 });
 
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
+const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
 
 const productRefSchema = z.object({
   id: z.int(),
@@ -27,8 +28,8 @@ const productRefSchema = z.object({
 
 const vehicleRefSchema = z.object({
   id: z.int(),
-  brand: namedRefSchema,
-  model: namedRefSchema,
+  brand: brandModelRefSchema,
+  model: brandModelRefSchema,
   variant: z.string(),
   yearFrom: z.int().nullable(),
   yearTo: z.int().nullable(),

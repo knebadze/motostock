@@ -174,7 +174,7 @@ export function CompatibleProductsPage({
       <div className="border-t border-border bg-muted/40">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
           <h1 className="text-2xl font-bold tracking-tight">
-            {t("compatibleProductsHeading", { vehicle: formatVehicleCatalogLabel(vehicle, locale) })}
+            {t("compatibleProductsHeading", { vehicle: formatVehicleCatalogLabel(vehicle) })}
           </h1>
 
           <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr]">

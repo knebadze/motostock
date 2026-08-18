@@ -214,7 +214,7 @@ export function ProductDetailPage({
                 ))}
                 {product.fitments.map((fitment) => (
                   <li key={fitment.id} className="rounded-full border border-border px-3 py-1">
-                    {fitment.brand.name[locale]} {fitment.model.name[locale]}
+                    {fitment.brand.name} {fitment.model.name}
                   </li>
                 ))}
               </ul>

@@ -18,18 +18,12 @@ import { decodeVin } from "@/lib/api/vin-decode";
 import type { Model } from "@/lib/api/models";
 import type { LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError } from "@/lib/api/client";
+import { formatVehicleCatalogLabel } from "@/lib/format";
 import {
   createGarageCatalogPickFormSchema,
   createGarageSubmitFormSchema,
 } from "@/lib/validation/garage";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
-
-function vehicleCatalogLabel(entry: VehicleCatalogEntry, locale: "ka" | "en" | "ru"): string {
-  const year =
-    entry.yearFrom || entry.yearTo ? ` (${entry.yearFrom ?? "?"}–${entry.yearTo ?? "?"})` : "";
-  const variant = entry.variant ? ` ${entry.variant}` : "";
-  return `${entry.brand.name[locale]} ${entry.model.name[locale]}${variant}${year}`;
-}
 
 type Mode = "pick" | "submit";
 
@@ -142,8 +136,8 @@ export function GarageVehicleFormModal({
     () =>
       vehicleCatalog
         .filter((entry) => String(entry.category.id) === categoryId)
-        .map((entry) => ({ value: String(entry.id), label: vehicleCatalogLabel(entry, locale) })),
-    [vehicleCatalog, categoryId, locale],
+        .map((entry) => ({ value: String(entry.id), label: formatVehicleCatalogLabel(entry) })),
+    [vehicleCatalog, categoryId],
   );
 
   const brandOptions = useMemo(() => {
@@ -153,7 +147,7 @@ export function GarageVehicleFormModal({
       if (!byId.has(model.brandId)) byId.set(model.brandId, model.brand);
     }
     return Array.from(byId.values())
-      .map((brand) => ({ value: String(brand.id), label: brand.name[locale] }))
+      .map((brand) => ({ value: String(brand.id), label: brand.name }))
       .sort((a, b) => a.label.localeCompare(b.label, locale));
   }, [models, categoryId, locale]);
 
@@ -161,7 +155,7 @@ export function GarageVehicleFormModal({
     () =>
       models
         .filter((model) => String(model.categoryId) === categoryId && String(model.brandId) === brandId)
-        .map((model) => ({ value: String(model.id), label: model.name[locale] }))
+        .map((model) => ({ value: String(model.id), label: model.name }))
         .sort((a, b) => a.label.localeCompare(b.label, locale)),
     [models, categoryId, brandId, locale],
   );
@@ -431,7 +425,7 @@ export function GarageVehicleFormModal({
                       onClick={() => selectSuggestedEntry(entry)}
                       className="rounded-full border border-primary/40 bg-card px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
                     >
-                      {vehicleCatalogLabel(entry, locale)}
+                      {formatVehicleCatalogLabel(entry)}
                     </button>
                   ))}
                 </div>

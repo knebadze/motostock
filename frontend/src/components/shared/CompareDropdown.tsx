@@ -25,7 +25,7 @@ function itemDisplay(item: CompareItem, locale: "ka" | "en" | "ru") {
     const { vehicleListing } = item;
     return {
       href: `/${vehicleListing.vehicleCatalog.category.slug}/${vehicleListing.id}`,
-      name: `${vehicleListing.vehicleCatalog.brand.name[locale]} ${vehicleListing.vehicleCatalog.model.name[locale]}`,
+      name: `${vehicleListing.vehicleCatalog.brand.name} ${vehicleListing.vehicleCatalog.model.name}`,
       imageUrl: resolveMediaUrl(
         vehicleListing.images[0]?.imageUrl ?? vehicleListing.vehicleCatalog.imageUrl,
       ),

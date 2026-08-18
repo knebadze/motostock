@@ -4,7 +4,7 @@ import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.rep
 import { productFitmentRepository } from "./product-fitment.repository.js";
 import type { CreateProductFitmentInput } from "./product-fitment.schema.js";
 
-type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
+type BrandModelRefRow = { id: number; name: string; slug: string };
 
 type ProductFitmentRow = {
   id: number;
@@ -14,15 +14,11 @@ type ProductFitmentRow = {
     variant: string;
     yearFrom: number | null;
     yearTo: number | null;
-    brand: NamedRefRow;
-    model: NamedRefRow;
+    brand: BrandModelRefRow;
+    model: BrandModelRefRow;
   };
   createdAt: Date;
 };
-
-function toNamedRef(row: NamedRefRow) {
-  return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
-}
 
 function toResponse(row: ProductFitmentRow) {
   return {
@@ -30,8 +26,8 @@ function toResponse(row: ProductFitmentRow) {
     productId: row.productId,
     vehicleCatalog: {
       id: row.vehicleCatalog.id,
-      brand: toNamedRef(row.vehicleCatalog.brand),
-      model: toNamedRef(row.vehicleCatalog.model),
+      brand: row.vehicleCatalog.brand,
+      model: row.vehicleCatalog.model,
       variant: row.vehicleCatalog.variant,
       yearFrom: row.vehicleCatalog.yearFrom,
       yearTo: row.vehicleCatalog.yearTo,

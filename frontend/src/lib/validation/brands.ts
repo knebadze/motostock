@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { localizedNameSchema, slugSchema } from "./common";
+import { nameSchema, slugSchema } from "./common";
 
 export const brandFormSchema = z.object({
-  name: localizedNameSchema,
+  name: nameSchema,
   slug: slugSchema,
 });

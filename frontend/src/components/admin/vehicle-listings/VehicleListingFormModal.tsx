@@ -27,7 +27,7 @@ import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 function vehicleCatalogLabel(entry: VehicleCatalogEntry): string {
   const year =
     entry.yearFrom || entry.yearTo ? ` (${entry.yearFrom ?? "?"}–${entry.yearTo ?? "?"})` : "";
-  return `${entry.brand.name.ka} ${entry.model.name.ka}${year}`;
+  return `${entry.brand.name} ${entry.model.name}${year}`;
 }
 
 function toNullableHtml(html: string): string | null {

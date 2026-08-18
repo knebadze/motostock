@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 import type { LocalizedString } from "./categories";
-import type { NamedRef } from "./vehicle-catalog";
+import type { BrandModelRef } from "./vehicle-catalog";
 import type { LookupItem } from "./lookups";
 import type { VehicleSpecField } from "./vehicle-category-filters";
 import type { VehicleListingDiscount } from "./vehicle-listing-discounts";
@@ -13,8 +13,8 @@ export type BulkVehicleDiscountCandidateSpecValue = {
 
 export type BulkVehicleDiscountCandidate = {
   vehicleListingId: number;
-  brand: NamedRef;
-  model: NamedRef;
+  brand: BrandModelRef;
+  model: BrandModelRef;
   variant: string;
   year: number;
   condition: LookupItem;
@@ -36,8 +36,8 @@ export type VehicleDiscountStatus = "ACTIVE" | "SCHEDULED" | "EXPIRED";
 export type VehicleDiscountHistoryRow = {
   id: number;
   vehicleListingId: number;
-  brand: NamedRef;
-  model: NamedRef;
+  brand: BrandModelRef;
+  model: BrandModelRef;
   variant: string;
   year: number;
   condition: LookupItem;

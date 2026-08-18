@@ -28,7 +28,7 @@ export function VehicleListingDetailPage({
   const tCart = useTranslations("Cart");
 
   const outOfStock = listing.stockQuantity === 0;
-  const title = [listing.vehicleCatalog.model.name[locale], listing.vehicleCatalog.variant]
+  const title = [listing.vehicleCatalog.model.name, listing.vehicleCatalog.variant]
     .filter(Boolean)
     .join(" ");
 
@@ -51,7 +51,7 @@ export function VehicleListingDetailPage({
 
         <div className="flex flex-col gap-5">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {listing.vehicleCatalog.brand.name[locale]} · {listing.year}
+            {listing.vehicleCatalog.brand.name} · {listing.year}
           </span>
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{title}</h1>
 

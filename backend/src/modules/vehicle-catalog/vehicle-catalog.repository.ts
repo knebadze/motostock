@@ -5,9 +5,11 @@ const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slu
 
 const submitterSelect = { id: true, firstName: true, lastName: true } as const;
 
+const brandModelRefSelect = { id: true, name: true, slug: true } as const;
+
 export const vehicleCatalogInclude = {
-  brand: { select: namedRefSelect },
-  model: { select: { ...namedRefSelect, category: { select: namedRefSelect } } },
+  brand: { select: brandModelRefSelect },
+  model: { select: { ...brandModelRefSelect, category: { select: namedRefSelect } } },
   fuelType: true,
   transmissionType: true,
   coolingType: true,

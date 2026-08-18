@@ -38,8 +38,8 @@ const columns: DataTableColumn<VehicleListing>[] = [
       );
     },
   },
-  { header: "მარკა", render: (listing) => listing.vehicleCatalog.brand.name.ka },
-  { header: "მოდელი", render: (listing) => listing.vehicleCatalog.model.name.ka },
+  { header: "მარკა", render: (listing) => listing.vehicleCatalog.brand.name },
+  { header: "მოდელი", render: (listing) => listing.vehicleCatalog.model.name },
   { header: "წელი", render: (listing) => listing.year, cellClassName: "text-muted-foreground" },
   {
     header: "მდგომარეობა",
@@ -214,8 +214,8 @@ export function VehicleListingsManager({
           <>
             დარწმუნებული ხართ, რომ გსურთ წაშალოთ{" "}
             <span className="font-semibold text-foreground">
-              {deletingListing?.vehicleCatalog.brand.name.ka}{" "}
-              {deletingListing?.vehicleCatalog.model.name.ka}
+              {deletingListing?.vehicleCatalog.brand.name}{" "}
+              {deletingListing?.vehicleCatalog.model.name}
             </span>
             ? ამ მოქმედების გაუქმება შეუძლებელია.
           </>

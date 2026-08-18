@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 import type { LocalizedString } from "./categories";
-import type { NamedRef } from "./vehicle-catalog";
+import type { BrandModelRef, NamedRef } from "./vehicle-catalog";
 import type { LookupItem } from "./lookups";
 import type { VehicleSpecField } from "./vehicle-category-filters";
 
@@ -15,8 +15,8 @@ export type PromoCode = {
   productBrand: NamedRef | null;
   attribute: { id: number; name: LocalizedString } | null;
   attributeOption: { id: number; key: string; label: LocalizedString } | null;
-  brand: NamedRef | null;
-  model: NamedRef | null;
+  brand: BrandModelRef | null;
+  model: BrandModelRef | null;
   specField: VehicleSpecField | null;
   specFieldLabel: LocalizedString | null;
   specValue: LookupItem | null;

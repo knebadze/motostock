@@ -20,6 +20,10 @@ export const localizedNameSchema = z.object({
   ru: z.string().trim().min(1, "შეავსეთ სახელი (რუსულად)"),
 });
 
+// Single plain-string name — for entities like vehicle Brand/Model whose
+// names aren't per-locale translated (unlike localizedNameSchema above).
+export const nameSchema = z.string().trim().min(1, "შეავსეთ დასახელება").max(120, "მაქს. 120 სიმბოლო");
+
 export const slugSchema = z
   .string()
   .trim()

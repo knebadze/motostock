@@ -4,7 +4,6 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Select } from "@/components/shared/Select";
-import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { createModel, updateModel, type Model } from "@/lib/api/models";
@@ -45,15 +44,13 @@ export function ModelFormModal({
   const [categoryId, setCategoryId] = useState<string>(
     model ? String(model.categoryId) : flatCategories[0] ? String(flatCategories[0].id) : "",
   );
-  const [nameKa, setNameKa] = useState(model?.name.ka ?? "");
-  const [nameEn, setNameEn] = useState(model?.name.en ?? "");
-  const [nameRu, setNameRu] = useState(model?.name.ru ?? "");
+  const [name, setName] = useState(model?.name ?? "");
   const [slug, setSlug] = useState(model?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
 
-  const brandOptions = brands.map((brand) => ({ value: String(brand.id), label: brand.name.ka }));
+  const brandOptions = brands.map((brand) => ({ value: String(brand.id), label: brand.name }));
   const categoryOptions = flatCategories.map((category) => ({
     value: String(category.id),
     label: `${"— ".repeat(category.depth)}${category.name.ka}`,
@@ -65,7 +62,7 @@ export function ModelFormModal({
     const result = modelFormSchema.safeParse({
       brandId,
       categoryId,
-      name: { ka: nameKa, en: nameEn, ru: nameRu },
+      name,
       slug,
     });
     if (!result.success) {
@@ -81,7 +78,7 @@ export function ModelFormModal({
       const input = {
         brandId: Number(brandId),
         categoryId: Number(categoryId),
-        name: { ka: nameKa.trim(), en: nameEn.trim(), ru: nameRu.trim() },
+        name: name.trim(),
         slug: slug.trim(),
       };
 
@@ -124,19 +121,22 @@ export function ModelFormModal({
           <FieldError message={errors.categoryId} />
         </div>
 
-        <LocalizedNameFields
-          idPrefix="model-name"
-          value={{ ka: nameKa, en: nameEn, ru: nameRu }}
-          onChange={(next) => {
-            setNameKa(next.ka);
-            setNameEn(next.en);
-            setNameRu(next.ru);
-          }}
-          onEnglishChange={(value) => {
-            if (!slugTouched) setSlug(slugify(value));
-          }}
-          errors={{ ka: errors["name.ka"], en: errors["name.en"], ru: errors["name.ru"] }}
-        />
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="model-name" className="text-sm font-medium">
+            დასახელება *
+          </label>
+          <input
+            id="model-name"
+            value={name}
+            onChange={(event) => {
+              const value = event.target.value;
+              setName(value);
+              if (!slugTouched) setSlug(slugify(value));
+            }}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.name} />
+        </div>
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="model-slug" className="text-sm font-medium">

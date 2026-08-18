@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
-import { localizedStringSchema } from "../../lib/localized.js";
 
 const slugField = z
   .string()
@@ -9,14 +8,12 @@ const slugField = z
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "მხოლოდ პატარა ლათინური ასოები, ციფრები და დეფისი")
   .openapi({ example: "honda" });
 
-const localizedNameField = localizedStringSchema.openapi({
-  example: { ka: "ჰონდა", en: "Honda", ru: "Хонда" },
-});
+const nameField = z.string().min(1).max(120).openapi({ example: "Honda" });
 
 export const createBrandSchema = registry.register(
   "CreateBrandInput",
   z.object({
-    name: localizedNameField,
+    name: nameField,
     slug: slugField,
   }),
 );
@@ -37,7 +34,7 @@ export const brandResponseSchema = registry.register(
   "Brand",
   z.object({
     id: z.int().openapi({ example: 1 }),
-    name: localizedNameField,
+    name: nameField,
     slug: z.string().openapi({ example: "honda" }),
     logoUrl: z.string().nullable(),
     createdAt: z.iso.datetime(),

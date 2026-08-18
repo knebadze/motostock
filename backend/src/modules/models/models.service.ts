@@ -5,23 +5,22 @@ import { categoriesRepository } from "../categories/categories.repository.js";
 import { modelsRepository } from "./models.repository.js";
 import type { CreateModelInput, UpdateModelInput } from "./models.schema.js";
 
-type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
+type BrandRefRow = { id: number; name: string; slug: string };
+type CategoryRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
 
 type ModelRow = {
   id: number;
   brandId: number;
   categoryId: number;
-  nameKa: string;
-  nameEn: string;
-  nameRu: string;
+  name: string;
   slug: string;
   createdAt: Date;
   updatedAt: Date;
-  brand: NamedRefRow;
-  category: NamedRefRow;
+  brand: BrandRefRow;
+  category: CategoryRefRow;
 };
 
-function toNamedRef(row: NamedRefRow) {
+function toCategoryRef(row: CategoryRefRow) {
   return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
 }
 
@@ -29,10 +28,10 @@ function toResponse(model: ModelRow) {
   return {
     id: model.id,
     brandId: model.brandId,
-    brand: toNamedRef(model.brand),
+    brand: model.brand,
     categoryId: model.categoryId,
-    category: toNamedRef(model.category),
-    name: { ka: model.nameKa, en: model.nameEn, ru: model.nameRu },
+    category: toCategoryRef(model.category),
+    name: model.name,
     slug: model.slug,
     createdAt: model.createdAt,
     updatedAt: model.updatedAt,
@@ -78,9 +77,7 @@ export async function createModel(input: CreateModelInput) {
   const model = await modelsRepository.create({
     brandId: input.brandId,
     categoryId: input.categoryId,
-    nameKa: input.name.ka,
-    nameEn: input.name.en,
-    nameRu: input.name.ru,
+    name: input.name,
     slug: input.slug,
   });
   return toResponse(model);
@@ -110,9 +107,7 @@ export async function updateModel(id: number, input: UpdateModelInput) {
   const model = await modelsRepository.update(id, {
     ...(input.brandId !== undefined ? { brandId: input.brandId } : {}),
     ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
-    ...(input.name !== undefined
-      ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
-      : {}),
+    ...(input.name !== undefined ? { name: input.name } : {}),
     ...(input.slug !== undefined ? { slug: input.slug } : {}),
   });
   return toResponse(model);

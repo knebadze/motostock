@@ -5,24 +5,15 @@ import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Loader } from "@/components/shared/Loader";
 import { getUser, type AdminUserDetail } from "@/lib/api/users";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 import type { WishlistItem } from "@/lib/api/wishlist";
 import { ApiRequestError } from "@/lib/api/client";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatVehicleCatalogLabel } from "@/lib/format";
 import { getCartItemDisplay } from "@/lib/cart-item-display";
-
-function vehicleCatalogLabel(entry: VehicleCatalogEntry): string {
-  const year =
-    entry.yearFrom || entry.yearTo ? ` (${entry.yearFrom ?? "?"}–${entry.yearTo ?? "?"})` : "";
-  const variant = entry.variant ? ` ${entry.variant}` : "";
-  return `${entry.brand.name.ka} ${entry.model.name.ka}${variant}${year}`;
-}
 
 function wishlistItemLabel(item: WishlistItem): string {
   if (item.product) return item.product.name.ka;
   if (item.vehicleListing) {
-    const catalog = item.vehicleListing.vehicleCatalog;
-    return `${catalog.brand.name.ka} ${catalog.model.name.ka}`;
+    return formatVehicleCatalogLabel(item.vehicleListing.vehicleCatalog);
   }
   return "";
 }
@@ -148,7 +139,7 @@ export function UserDetailModal({ userId, onClose }: { userId: number; onClose: 
                 {detail.garage.map((vehicle) => (
                   <div key={vehicle.id} className="rounded-xl border border-border bg-card p-4">
                     <p className="text-sm font-semibold">
-                      {vehicleCatalogLabel(vehicle.vehicleCatalog)}
+                      {formatVehicleCatalogLabel(vehicle.vehicleCatalog)}
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">წელი: {vehicle.year}</p>
                     {vehicle.vehicleCatalog.submittedBy && (

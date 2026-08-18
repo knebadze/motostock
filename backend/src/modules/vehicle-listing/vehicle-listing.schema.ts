@@ -137,6 +137,7 @@ export const popularVehicleListingsQuerySchema = z.object({
 export type PopularVehicleListingsQuery = z.infer<typeof popularVehicleListingsQuerySchema>;
 
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
+const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
 
 export const vehicleListingResponseSchema = registry.register(
   "VehicleListing",
@@ -145,8 +146,8 @@ export const vehicleListingResponseSchema = registry.register(
     vehicleCatalog: z.object({
       id: z.int(),
       category: namedRefSchema,
-      brand: namedRefSchema,
-      model: namedRefSchema,
+      brand: brandModelRefSchema,
+      model: brandModelRefSchema,
       variant: z.string(),
       yearFrom: z.int().nullable(),
       yearTo: z.int().nullable(),

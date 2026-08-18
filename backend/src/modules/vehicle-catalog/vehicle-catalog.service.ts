@@ -15,13 +15,14 @@ import type {
 } from "./vehicle-catalog.schema.js";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
+type BrandModelRefRow = { id: number; name: string; slug: string };
 type LookupRow = { id: number; key: string; nameKa: string; nameEn: string; nameRu: string } | null;
 type SubmitterRow = { id: number; firstName: string; lastName: string } | null;
 
 type VehicleCatalogRow = {
   id: number;
-  brand: NamedRefRow;
-  model: NamedRefRow & { category: NamedRefRow };
+  brand: BrandModelRefRow;
+  model: BrandModelRefRow & { category: NamedRefRow };
   submittedBy: SubmitterRow;
   variant: string;
   yearFrom: number | null;
@@ -65,8 +66,8 @@ export function toVehicleCatalogResponse(row: VehicleCatalogRow) {
   return {
     id: row.id,
     category: toNamedRef(row.model.category),
-    brand: toNamedRef(row.brand),
-    model: toNamedRef(row.model),
+    brand: { id: row.brand.id, name: row.brand.name, slug: row.brand.slug },
+    model: { id: row.model.id, name: row.model.name, slug: row.model.slug },
     submittedBy: row.submittedBy
       ? { id: row.submittedBy.id, name: `${row.submittedBy.firstName} ${row.submittedBy.lastName}` }
       : null,

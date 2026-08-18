@@ -40,7 +40,7 @@ function productLabel(product: Product): string {
 
 function targetLabel(item: CompatibilityItem): string {
   if (item.kind === "FITMENT" && item.vehicle) {
-    return formatVehicleCatalogLabel(item.vehicle, "ka");
+    return formatVehicleCatalogLabel(item.vehicle);
   }
   if (item.kind === "RULE_ALL") return "ყველა ტრანსპორტი";
   if (item.kind === "RULE_CATEGORY" && item.category) return item.category.name.ka;
@@ -201,7 +201,7 @@ function CompatibilityCheckTab({
 
   const vehicleOptions = vehicleCatalog.map((entry) => ({
     value: String(entry.id),
-    label: formatVehicleCatalogLabel(entry, "ka"),
+    label: formatVehicleCatalogLabel(entry),
   }));
   const productOptions = products.map((product) => ({
     value: String(product.id),
@@ -321,7 +321,7 @@ function CompatibilityCheckTab({
             columns={[
               {
                 header: "ტრანსპორტი",
-                render: (vehicle: CompatibleVehicle) => formatVehicleCatalogLabel(vehicle, "ka"),
+                render: (vehicle: CompatibleVehicle) => formatVehicleCatalogLabel(vehicle),
               },
             ]}
             data={matchedVehicles}

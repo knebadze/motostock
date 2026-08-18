@@ -121,7 +121,7 @@ export function CompatibilityChecker({
     { value: "", label: tHome("searchGaragePlaceholder") },
     ...garageVehicles.map((vehicle) => ({
       value: String(vehicle.vehicleCatalog.id),
-      label: formatVehicleCatalogLabel(vehicle.vehicleCatalog, locale),
+      label: formatVehicleCatalogLabel(vehicle.vehicleCatalog),
     })),
   ];
 

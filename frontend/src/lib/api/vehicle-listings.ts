@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { NamedRef } from "./vehicle-catalog";
+import type { BrandModelRef, NamedRef } from "./vehicle-catalog";
 import type { LookupItem } from "./lookups";
 import type { VehicleListingDiscount } from "./vehicle-listing-discounts";
 import type { VehicleListingImage } from "./vehicle-listing-images";
@@ -13,8 +13,8 @@ export type VehicleListing = {
   vehicleCatalog: {
     id: number;
     category: NamedRef;
-    brand: NamedRef;
-    model: NamedRef;
+    brand: BrandModelRef;
+    model: BrandModelRef;
     variant: string;
     yearFrom: number | null;
     yearTo: number | null;

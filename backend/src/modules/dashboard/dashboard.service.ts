@@ -89,7 +89,7 @@ export async function getDashboardStats() {
         stockQuantity: true,
         year: true,
         vehicleCatalog: {
-          select: { brand: { select: { nameKa: true } }, model: { select: { nameKa: true } } },
+          select: { brand: { select: { name: true } }, model: { select: { name: true } } },
         },
       },
     }),
@@ -127,7 +127,7 @@ export async function getDashboardStats() {
       id: listing.id,
       rowKey: `vl-${listing.id}`,
       itemType: "VEHICLE_LISTING" as const,
-      label: `${listing.vehicleCatalog.brand.nameKa} ${listing.vehicleCatalog.model.nameKa}`,
+      label: `${listing.vehicleCatalog.brand.name} ${listing.vehicleCatalog.model.name}`,
       variantLabel: String(listing.year),
       stockQuantity: listing.stockQuantity,
     })),

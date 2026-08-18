@@ -1,7 +1,7 @@
 import { prisma } from "../../config/prisma.js";
 import type { Prisma } from "../../generated/prisma/index.js";
 
-const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
+const brandModelRefSelect = { id: true, name: true, slug: true } as const;
 const lookupSelect = { id: true, key: true, nameKa: true, nameEn: true, nameRu: true } as const;
 
 const candidateSelect = {
@@ -13,8 +13,8 @@ const candidateSelect = {
   vehicleCatalog: {
     select: {
       variant: true,
-      brand: { select: namedRefSelect },
-      model: { select: namedRefSelect },
+      brand: { select: brandModelRefSelect },
+      model: { select: brandModelRefSelect },
       fuelType: { select: lookupSelect },
       transmissionType: { select: lookupSelect },
       coolingType: { select: lookupSelect },
@@ -44,8 +44,8 @@ const discountHistorySelect = {
       vehicleCatalog: {
         select: {
           variant: true,
-          brand: { select: namedRefSelect },
-          model: { select: namedRefSelect },
+          brand: { select: brandModelRefSelect },
+          model: { select: brandModelRefSelect },
         },
       },
     },
@@ -80,12 +80,8 @@ export const bulkVehicleListingDiscountsRepository = {
     const searchWhere: Prisma.VehicleListingWhereInput | undefined = search
       ? {
           OR: [
-            { vehicleCatalog: { brand: { nameKa: { contains: search, mode: "insensitive" } } } },
-            { vehicleCatalog: { brand: { nameEn: { contains: search, mode: "insensitive" } } } },
-            { vehicleCatalog: { brand: { nameRu: { contains: search, mode: "insensitive" } } } },
-            { vehicleCatalog: { model: { nameKa: { contains: search, mode: "insensitive" } } } },
-            { vehicleCatalog: { model: { nameEn: { contains: search, mode: "insensitive" } } } },
-            { vehicleCatalog: { model: { nameRu: { contains: search, mode: "insensitive" } } } },
+            { vehicleCatalog: { brand: { name: { contains: search, mode: "insensitive" } } } },
+            { vehicleCatalog: { model: { name: { contains: search, mode: "insensitive" } } } },
           ],
         }
       : undefined;

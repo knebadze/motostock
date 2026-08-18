@@ -27,13 +27,13 @@ const LOOKUP_SPEC_FIELDS = (Object.keys(VEHICLE_SPEC_FIELDS) as VehicleSpecField
   (field) => VEHICLE_SPEC_FIELDS[field].kind === "LOOKUP",
 );
 
-type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
+type BrandModelRefRow = { id: number; name: string; slug: string };
 type LookupRow = { id: number; key: string; nameKa: string; nameEn: string; nameRu: string };
 
 type CandidateVehicleCatalogRow = {
   variant: string;
-  brand: NamedRefRow;
-  model: NamedRefRow;
+  brand: BrandModelRefRow;
+  model: BrandModelRefRow;
   fuelType: LookupRow | null;
   transmissionType: LookupRow | null;
   coolingType: LookupRow | null;
@@ -52,10 +52,6 @@ type CandidateListingRow = {
   vehicleCatalog: CandidateVehicleCatalogRow;
   discounts: { discountPercent: { toString(): string } | null; startDate: Date; endDate: Date }[];
 };
-
-function toNamedRef(row: NamedRefRow) {
-  return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
-}
 
 function findActiveDiscount(discounts: CandidateListingRow["discounts"]) {
   const now = new Date();
@@ -94,8 +90,8 @@ function toCandidateResponse(row: CandidateListingRow) {
   const activeDiscount = findActiveDiscount(row.discounts);
   return {
     vehicleListingId: row.id,
-    brand: toNamedRef(row.vehicleCatalog.brand),
-    model: toNamedRef(row.vehicleCatalog.model),
+    brand: row.vehicleCatalog.brand,
+    model: row.vehicleCatalog.model,
     variant: row.vehicleCatalog.variant,
     year: row.year,
     condition: row.condition,
@@ -174,7 +170,7 @@ type DiscountHistoryRow = {
     price: { toString(): string };
     condition: LookupRow;
     color: LookupRow;
-    vehicleCatalog: { variant: string; brand: NamedRefRow; model: NamedRefRow };
+    vehicleCatalog: { variant: string; brand: BrandModelRefRow; model: BrandModelRefRow };
   };
 };
 
@@ -189,8 +185,8 @@ function toDiscountHistoryRow(row: DiscountHistoryRow) {
   return {
     id: row.id,
     vehicleListingId: row.vehicleListing.id,
-    brand: toNamedRef(row.vehicleListing.vehicleCatalog.brand),
-    model: toNamedRef(row.vehicleListing.vehicleCatalog.model),
+    brand: row.vehicleListing.vehicleCatalog.brand,
+    model: row.vehicleListing.vehicleCatalog.model,
     variant: row.vehicleListing.vehicleCatalog.variant,
     year: row.vehicleListing.year,
     condition: row.vehicleListing.condition,

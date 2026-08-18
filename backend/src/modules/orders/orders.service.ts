@@ -137,9 +137,11 @@ function buildBreakdownItem(row: CartRow, unitPrice: number): BreakdownItem {
     itemType: row.itemType,
     productVariantId: null,
     vehicleListingId: listing.id,
-    itemNameKa: `${listing.vehicleCatalog.brand.nameKa} ${listing.vehicleCatalog.model.nameKa}`,
-    itemNameEn: `${listing.vehicleCatalog.brand.nameEn} ${listing.vehicleCatalog.model.nameEn}`,
-    itemNameRu: `${listing.vehicleCatalog.brand.nameRu} ${listing.vehicleCatalog.model.nameRu}`,
+    // Brand/Model names are locale-invariant (see [[vehicle_brand_model_naming]]) —
+    // the same string snapshots into all three OrderItem name columns.
+    itemNameKa: `${listing.vehicleCatalog.brand.name} ${listing.vehicleCatalog.model.name}`,
+    itemNameEn: `${listing.vehicleCatalog.brand.name} ${listing.vehicleCatalog.model.name}`,
+    itemNameRu: `${listing.vehicleCatalog.brand.name} ${listing.vehicleCatalog.model.name}`,
     imageUrl: listing.images[0]?.imageUrl ?? listing.vehicleCatalog.imageUrl ?? null,
     quantity: row.quantity,
     unitPrice,

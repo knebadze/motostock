@@ -280,7 +280,7 @@ export function CompareManager({ initialItems }: { initialItems: CompareItem[] }
                               {imageUrl ? (
                                 <Image
                                   src={imageUrl}
-                                  alt={listing.vehicleCatalog.model.name[locale]}
+                                  alt={listing.vehicleCatalog.model.name}
                                   fill
                                   sizes="80px"
                                   className="object-cover"
@@ -290,8 +290,8 @@ export function CompareManager({ initialItems }: { initialItems: CompareItem[] }
                               )}
                             </div>
                             <span className="line-clamp-2 font-semibold text-foreground">
-                              {listing.vehicleCatalog.brand.name[locale]}{" "}
-                              {listing.vehicleCatalog.model.name[locale]}
+                              {listing.vehicleCatalog.brand.name}{" "}
+                              {listing.vehicleCatalog.model.name}
                             </span>
                           </Link>
                         </div>

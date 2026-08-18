@@ -3,7 +3,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
-import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { createBrand, updateBrand, uploadBrandLogo, type Brand } from "@/lib/api/brands";
@@ -24,9 +23,7 @@ export function BrandFormModal({
   brand: Brand | null;
 }) {
   const isEditing = brand !== null;
-  const [nameKa, setNameKa] = useState(brand?.name.ka ?? "");
-  const [nameEn, setNameEn] = useState(brand?.name.en ?? "");
-  const [nameRu, setNameRu] = useState(brand?.name.ru ?? "");
+  const [name, setName] = useState(brand?.name ?? "");
   const [slug, setSlug] = useState(brand?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -55,7 +52,7 @@ export function BrandFormModal({
     event.preventDefault();
 
     const result = brandFormSchema.safeParse({
-      name: { ka: nameKa, en: nameEn, ru: nameRu },
+      name,
       slug,
     });
     if (!result.success) {
@@ -69,7 +66,7 @@ export function BrandFormModal({
 
     try {
       const input = {
-        name: { ka: nameKa.trim(), en: nameEn.trim(), ru: nameRu.trim() },
+        name: name.trim(),
         slug: slug.trim(),
       };
 
@@ -101,19 +98,22 @@ export function BrandFormModal({
   return (
     <Modal open={open} onClose={onClose} title={isEditing ? "მარკის რედაქტირება" : "ახალი მარკა"}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <LocalizedNameFields
-          idPrefix="brand-name"
-          value={{ ka: nameKa, en: nameEn, ru: nameRu }}
-          onChange={(next) => {
-            setNameKa(next.ka);
-            setNameEn(next.en);
-            setNameRu(next.ru);
-          }}
-          onEnglishChange={(value) => {
-            if (!slugTouched) setSlug(slugify(value));
-          }}
-          errors={{ ka: errors["name.ka"], en: errors["name.en"], ru: errors["name.ru"] }}
-        />
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="brand-name" className="text-sm font-medium">
+            დასახელება *
+          </label>
+          <input
+            id="brand-name"
+            value={name}
+            onChange={(event) => {
+              const value = event.target.value;
+              setName(value);
+              if (!slugTouched) setSlug(slugify(value));
+            }}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.name} />
+        </div>
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="brand-slug" className="text-sm font-medium">

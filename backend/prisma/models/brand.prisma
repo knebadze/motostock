@@ -1,8 +1,6 @@
 model Brand {
   id         Int              @id @default(autoincrement())
-  nameKa     String
-  nameEn     String
-  nameRu     String
+  name       String
   slug       String           @unique
   logoUrl    String?
   models     Model[]

@@ -54,7 +54,7 @@ export function VehicleListingCard({
         {imageUrl ? (
           <Image
             src={imageUrl}
-            alt={listing.vehicleCatalog.model.name[locale]}
+            alt={listing.vehicleCatalog.model.name}
             fill
             sizes={layout === "list" ? "96px" : "(min-width: 1024px) 22vw, (min-width: 640px) 45vw, 90vw"}
             className="object-cover"
@@ -95,10 +95,10 @@ export function VehicleListingCard({
       <div className="flex flex-1 flex-col justify-between gap-1">
         <div className="flex flex-col gap-1">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {listing.vehicleCatalog.brand.name[locale]} · {listing.year}
+            {listing.vehicleCatalog.brand.name} · {listing.year}
           </span>
           <span className="line-clamp-2 min-h-12 font-semibold text-foreground">
-            {listing.vehicleCatalog.model.name[locale]}
+            {listing.vehicleCatalog.model.name}
           </span>
           <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
             <span className="rounded-full border border-border px-2 py-0.5">

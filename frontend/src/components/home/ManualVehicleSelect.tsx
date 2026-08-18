@@ -37,7 +37,7 @@ export function ManualVehicleSelect({
       if (!byId.has(entry.brand.id)) byId.set(entry.brand.id, entry.brand);
     }
     return Array.from(byId.values())
-      .map((brand) => ({ value: String(brand.id), label: brand.name[locale] }))
+      .map((brand) => ({ value: String(brand.id), label: brand.name }))
       .sort((a, b) => a.label.localeCompare(b.label, locale));
   }, [vehicleCatalog, locale]);
 
@@ -48,7 +48,7 @@ export function ManualVehicleSelect({
       if (!byId.has(entry.model.id)) byId.set(entry.model.id, entry.model);
     }
     return Array.from(byId.values())
-      .map((model) => ({ value: String(model.id), label: model.name[locale] }))
+      .map((model) => ({ value: String(model.id), label: model.name }))
       .sort((a, b) => a.label.localeCompare(b.label, locale));
   }, [vehicleCatalog, brandId, locale]);
 

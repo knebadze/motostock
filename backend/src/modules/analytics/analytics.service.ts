@@ -138,7 +138,7 @@ export async function getAnalyticsOverview(dateFromInput?: string, dateToInput?:
       const sales = salesByListing.get(row.id);
       return {
         id: row.id,
-        label: `${row.vehicleCatalog.brand.nameKa} ${row.vehicleCatalog.model.nameKa}`,
+        label: `${row.vehicleCatalog.brand.name} ${row.vehicleCatalog.model.name}`,
         viewCount: row.viewCount,
         wishlistCount: wishlistByListing.get(row.id) ?? 0,
         cartCount: cartByListing.get(row.id) ?? 0,
