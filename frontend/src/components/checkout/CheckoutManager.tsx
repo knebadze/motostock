@@ -222,7 +222,11 @@ export function CheckoutManager({
     <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
       <div className="flex flex-col gap-6">
         {requiresAddress && (
-          <section className="rounded-2xl border border-border bg-card p-5">
+          <section
+            className={`rounded-2xl border bg-card p-5 ${
+              addressId == null ? "border-red-300" : "border-border"
+            }`}
+          >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-semibold text-foreground">{t("addressHeading")}</h2>
               <button
@@ -260,6 +264,14 @@ export function CheckoutManager({
                   </label>
                 ))}
               </div>
+            )}
+            {/* Ambient, not just on failed submit — shows the moment this
+                section is incomplete (e.g. switching to a delivery method
+                with no saved address yet), so the disabled Place Order
+                button below always has a nearby explanation instead of
+                only the toast handlePlaceOrder falls back to. */}
+            {requiresAddress && addressId == null && (
+              <p className="mt-2 text-sm font-medium text-red-600">{t("addressRequired")}</p>
             )}
           </section>
         )}
@@ -348,7 +360,11 @@ export function CheckoutManager({
         </section>
 
         {requiresBank && (
-          <section className="rounded-2xl border border-border bg-card p-5">
+          <section
+            className={`rounded-2xl border bg-card p-5 ${
+              bankId == null ? "border-red-300" : "border-border"
+            }`}
+          >
             <h2 className="font-semibold text-foreground">
               {banks.length > 1 ? t("bankHeading") : t("bankLabel")}
             </h2>
@@ -404,6 +420,14 @@ export function CheckoutManager({
                   );
                 })}
               </div>
+            )}
+            {/* Same ambient-inline reasoning as the address section above —
+                in practice bankId only ends up null when banks.length is 0
+                (already covered by the "noBanks" message), but this keeps
+                the two required-field sections consistent and covers any
+                future bank-selection path that doesn't auto-default it. */}
+            {requiresBank && bankId == null && (
+              <p className="mt-2 text-sm font-medium text-red-600">{t("bankRequired")}</p>
             )}
           </section>
         )}
