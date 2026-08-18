@@ -95,6 +95,16 @@ export async function exchangeFacebookCode(code: string): Promise<OAuthProfile> 
   }
   const profile = (await profileRes.json()) as { id: string; email?: string; name?: string };
 
+  // Unlike Google's userinfo endpoint (see exchangeGoogleCode above), the
+  // Graph API's `/me` response has no `email_verified`-equivalent field to
+  // check at all — Meta's platform only ever returns a confirmed email
+  // through this field in the first place (it never surfaces an
+  // unconfirmed one), so there's nothing for this code to inspect. This is
+  // a real, structural asymmetry between the two providers' APIs, not an
+  // oversight — the mitigation for the account-takeover risk this raises
+  // lives in oauth.service.ts's findOrCreateOAuthUser (refuses to
+  // auto-link either provider onto an existing password-protected
+  // account), not here.
   if (!profile.email) {
     throw new OAuthError("Facebook account has no email permission granted");
   }

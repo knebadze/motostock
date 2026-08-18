@@ -226,6 +226,7 @@
     "continueWithGoogle": "გაგრძელება Google-ით",
     "continueWithFacebook": "გაგრძელება Facebook-ით",
     "oauthError": "ავტორიზაცია ვერ მოხერხდა, სცადეთ ხელახლა",
+    "oauthEmailHasPassword": "ამ ელფოსტით უკვე არსებობს პაროლით დაცული ანგარიში — გთხოვთ, შეხვიდეთ პაროლით",
     "forgotPasswordLink": "დაგავიწყდათ პაროლი?",
     "forgotPasswordTitle": "პაროლის აღდგენა",
     "forgotPasswordDescription": "შეიყვანეთ თქვენი ანგარიშის ელფოსტა — გამოგზავნით აღდგენის ბმულს.",

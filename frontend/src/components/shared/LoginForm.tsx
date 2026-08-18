@@ -27,8 +27,17 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get("error") === "oauth_failed") {
+    const error = searchParams.get("error");
+    if (error === "oauth_failed") {
       toast.error(t("oauthError"));
+      router.replace(pathname);
+    } else if (error === "oauth_email_has_password") {
+      // Backend deliberately refused to auto-link this Google/Facebook
+      // account onto an existing password-protected one — see
+      // oauth.service.ts's findOrCreateOAuthUser. The fix here is just
+      // telling the user to use their password instead, not a client-side
+      // retry of anything.
+      toast.error(t("oauthEmailHasPassword"));
       router.replace(pathname);
     }
     // Only meant to run once, reacting to the initial query param — re-running

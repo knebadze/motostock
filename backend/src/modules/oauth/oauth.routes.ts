@@ -32,7 +32,10 @@ registry.registerPath({
   tags: ["Auth"],
   summary: "Google OAuth callback — completes login and redirects back to the site",
   responses: {
-    302: { description: "Redirect back to the site (logged in, or to /login on failure)" },
+    302: {
+      description:
+        "Redirect back to the site (logged in; or to /login?error=oauth_failed on failure, or /login?error=oauth_email_has_password when the email already has a password-protected account and won't be auto-linked)",
+    },
   },
 });
 
@@ -53,6 +56,9 @@ registry.registerPath({
   tags: ["Auth"],
   summary: "Facebook OAuth callback — completes login and redirects back to the site",
   responses: {
-    302: { description: "Redirect back to the site (logged in, or to /login on failure)" },
+    302: {
+      description:
+        "Redirect back to the site (logged in; or to /login?error=oauth_failed on failure, or /login?error=oauth_email_has_password when the email already has a password-protected account and won't be auto-linked)",
+    },
   },
 });

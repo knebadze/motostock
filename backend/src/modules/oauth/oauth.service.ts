@@ -36,6 +36,23 @@ async function findOrCreateOAuthUser(profile: OAuthProfile, provider: Provider) 
 
   const existingByEmail = await usersRepository.findByEmail(profile.email);
   if (existingByEmail) {
+    // Refuse to silently link this OAuth identity onto an existing
+    // password-protected account just because the email matches — without
+    // this, anyone who can obtain a Google/Facebook account under the
+    // victim's email address (the two providers don't verify email with
+    // equal rigor; see oauth-providers.ts's comment on Facebook) would gain
+    // a permanent, password-free way into an account the real owner
+    // believed was password-secured. Passwordless accounts (created by a
+    // *different* OAuth provider, no password ever set) are still linked
+    // automatically below — that account's trust model was already
+    // OAuth-based from creation, so this isn't a regression for it. There's
+    // no self-service "link my Google/Facebook" flow for the legitimate
+    // case yet — a user who legitimately owns both just logs in with their
+    // password instead (see oauth.controller.ts's distinct redirect for
+    // this case, and LoginForm.tsx's matching message).
+    if (existingByEmail.passwordHash) {
+      throw new ApiError(409, "OAUTH_EMAIL_HAS_PASSWORD");
+    }
     return provider === "google"
       ? usersRepository.linkGoogleId(existingByEmail.id, profile.providerId)
       : usersRepository.linkFacebookId(existingByEmail.id, profile.providerId);

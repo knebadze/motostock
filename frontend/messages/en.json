@@ -226,6 +226,7 @@
     "continueWithGoogle": "Continue with Google",
     "continueWithFacebook": "Continue with Facebook",
     "oauthError": "Sign-in failed, please try again",
+    "oauthEmailHasPassword": "This email already has a password-protected account — please log in with your password instead",
     "forgotPasswordLink": "Forgot password?",
     "forgotPasswordTitle": "Reset your password",
     "forgotPasswordDescription": "Enter your account's email — we'll send you a reset link.",

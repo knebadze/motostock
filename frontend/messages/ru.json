@@ -226,6 +226,7 @@
     "continueWithGoogle": "Продолжить через Google",
     "continueWithFacebook": "Продолжить через Facebook",
     "oauthError": "Не удалось войти, попробуйте ещё раз",
+    "oauthEmailHasPassword": "Для этого email уже существует аккаунт, защищённый паролем — пожалуйста, войдите с паролем",
     "forgotPasswordLink": "Забыли пароль?",
     "forgotPasswordTitle": "Восстановление пароля",
     "forgotPasswordDescription": "Введите email вашего аккаунта — вышлем ссылку для сброса пароля.",

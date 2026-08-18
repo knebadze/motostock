@@ -27,8 +27,15 @@ function setStateCookie(res: Response, state: string) {
   });
 }
 
-function failureRedirect(res: Response) {
-  res.redirect(`${env.FRONTEND_ORIGIN}/login?error=oauth_failed`);
+function failureRedirect(res: Response, error: unknown = null) {
+  // Distinguished from the generic failure so the frontend can show a
+  // specific, actionable message — see oauth.service.ts's
+  // findOrCreateOAuthUser and LoginForm.tsx's matching error-code handling.
+  const reason =
+    error instanceof ApiError && error.message === "OAUTH_EMAIL_HAS_PASSWORD"
+      ? "oauth_email_has_password"
+      : "oauth_failed";
+  res.redirect(`${env.FRONTEND_ORIGIN}/login?error=${reason}`);
 }
 
 // Hashing both sides to a fixed 32-byte digest first means
@@ -77,8 +84,8 @@ export async function handleGoogleCallback(req: Request, res: Response) {
     await mergeGuestDataIntoUser(req, res, user.id);
     await recordAuthEvent("LOGIN_SUCCESS", user.email, user.id, getClientIp(req));
     res.redirect(`${env.FRONTEND_ORIGIN}/account`);
-  } catch {
-    failureRedirect(res);
+  } catch (error) {
+    failureRedirect(res, error);
   }
 }
 
@@ -98,7 +105,7 @@ export async function handleFacebookCallback(req: Request, res: Response) {
     await mergeGuestDataIntoUser(req, res, user.id);
     await recordAuthEvent("LOGIN_SUCCESS", user.email, user.id, getClientIp(req));
     res.redirect(`${env.FRONTEND_ORIGIN}/account`);
-  } catch {
-    failureRedirect(res);
+  } catch (error) {
+    failureRedirect(res, error);
   }
 }
