@@ -1,10 +1,10 @@
 import { prisma } from "../../config/prisma.js";
+import { LOW_STOCK_THRESHOLD } from "../../lib/low-stock.js";
 
+const RECENT_ORDERS_LIMIT = 8;
 // A comparison table stops being actionable well past this many rows on a
 // glance-only dashboard — the full picture belongs on the future analytics
 // page, not here.
-const LOW_STOCK_THRESHOLD = 3;
-const RECENT_ORDERS_LIMIT = 8;
 const LOW_STOCK_LIMIT = 8;
 const REVENUE_WINDOW_DAYS = 30;
 

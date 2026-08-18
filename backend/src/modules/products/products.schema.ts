@@ -214,6 +214,10 @@ export const productResponseSchema = registry.register(
     variantCount: z.int().openapi({ example: 2 }),
     minPrice: z.number().nullable().openapi({ example: 199.99 }),
     totalStock: z.int().openapi({ example: 5 }),
+    // "Only N left" storefront urgency badge — null when the category has
+    // it disabled, the product is out of stock, or stock is above the
+    // low-stock threshold. See lib/low-stock.ts.
+    lowStockQuantity: z.int().nullable().openapi({ example: null }),
     // The regular/discount price pair of whichever variant currently has the
     // lowest active discount — null if no variant is on discount right now.
     activeDiscount: productCardDiscountSchema.nullable(),
@@ -231,6 +235,7 @@ const productVariantDetailResponseSchema = z.object({
   sku: z.string().nullable(),
   price: z.number().openapi({ example: 199.99 }),
   stockQuantity: z.int(),
+  lowStockQuantity: z.int().nullable().openapi({ example: null }),
   isActive: z.boolean(),
   size: lookupItemResponseSchema.nullable(),
   color: lookupItemResponseSchema.nullable(),

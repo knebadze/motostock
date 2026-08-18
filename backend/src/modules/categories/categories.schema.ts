@@ -21,6 +21,10 @@ export const createCategorySchema = registry.register(
     slug: slugField,
     parentId: z.int().positive().nullable().optional().openapi({ example: null }),
     sortOrder: z.int().optional().openapi({ example: 0 }),
+    // Storefront "only N left" badge on this category's products — see
+    // Category.lowStockBadgeEnabled. Optional/undefined leaves the DB
+    // default (true) on create, or the existing value on update.
+    lowStockBadgeEnabled: z.boolean().optional().openapi({ example: true }),
   }),
 );
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
@@ -50,6 +54,7 @@ export const categoryResponseSchema = registry.register(
     imageUrl: z.string().nullable().openapi({ example: "/uploads/categories/123.jpg" }),
     bannerImageUrl: z.string().nullable().openapi({ example: "/uploads/categories-banner/123.jpg" }),
     sortOrder: z.int().openapi({ example: 0 }),
+    lowStockBadgeEnabled: z.boolean().openapi({ example: true }),
     parentId: z.int().nullable(),
     parent: z
       .object({ id: z.int(), name: localizedStringSchema })

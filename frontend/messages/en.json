@@ -62,6 +62,7 @@
     "viewList": "List view",
     "resultCount": "{count} results",
     "outOfStock": "Out of stock",
+    "lowStock": "Only {count} left",
     "discountBadge": "Sale",
     "emptyState": "No results found",
     "loadProductsError": "Failed to load products",
@@ -89,6 +90,7 @@
     "selectSizeLabel": "Size",
     "selectColorLabel": "Color",
     "outOfStock": "Out of stock",
+    "lowStock": "Only {count} left",
     "yes": "Yes",
     "no": "No"
   },

@@ -62,6 +62,7 @@
     "viewList": "Список",
     "resultCount": "{count} результатов",
     "outOfStock": "Нет в наличии",
+    "lowStock": "Осталось всего {count} шт.",
     "discountBadge": "Скидка",
     "emptyState": "Ничего не найдено",
     "loadProductsError": "Не удалось загрузить товары",
@@ -89,6 +90,7 @@
     "selectSizeLabel": "Размер",
     "selectColorLabel": "Цвет",
     "outOfStock": "Нет в наличии",
+    "lowStock": "Осталось всего {count} шт.",
     "yes": "Да",
     "no": "Нет"
   },

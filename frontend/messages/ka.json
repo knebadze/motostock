@@ -62,6 +62,7 @@
     "viewList": "სიის ხედი",
     "resultCount": "{count} შედეგი",
     "outOfStock": "არ არის მარაგში",
+    "lowStock": "დარჩა მხოლოდ {count} ცალი",
     "discountBadge": "ფასდაკლება",
     "emptyState": "შედეგი ვერ მოიძებნა",
     "loadProductsError": "პროდუქტების ჩატვირთვა ვერ მოხერხდა",
@@ -89,6 +90,7 @@
     "selectSizeLabel": "ზომა",
     "selectColorLabel": "ფერი",
     "outOfStock": "არ არის მარაგში",
+    "lowStock": "დარჩა მხოლოდ {count} ცალი",
     "yes": "კი",
     "no": "არა"
   },

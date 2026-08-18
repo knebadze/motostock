@@ -18,6 +18,7 @@ type CategoryRow = {
   imageUrl: string | null;
   bannerImageUrl: string | null;
   sortOrder: number;
+  lowStockBadgeEnabled: boolean;
   parentId: number | null;
   createdAt: Date;
   updatedAt: Date;
@@ -32,6 +33,7 @@ function toResponse(category: CategoryRow) {
     imageUrl: category.imageUrl,
     bannerImageUrl: category.bannerImageUrl,
     sortOrder: category.sortOrder,
+    lowStockBadgeEnabled: category.lowStockBadgeEnabled,
     parentId: category.parentId,
     parent: category.parent
       ? {
@@ -127,6 +129,9 @@ export async function createCategory(input: CreateCategoryInput) {
     slug: input.slug,
     parentId: input.parentId ?? null,
     sortOrder: input.sortOrder ?? 0,
+    ...(input.lowStockBadgeEnabled !== undefined
+      ? { lowStockBadgeEnabled: input.lowStockBadgeEnabled }
+      : {}),
   });
 
   return toResponse(category);
@@ -157,6 +162,9 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
     ...(input.slug !== undefined ? { slug: input.slug } : {}),
     ...(input.parentId !== undefined ? { parentId: input.parentId } : {}),
     ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+    ...(input.lowStockBadgeEnabled !== undefined
+      ? { lowStockBadgeEnabled: input.lowStockBadgeEnabled }
+      : {}),
   });
 
   return toResponse(category);

@@ -10,6 +10,7 @@ type CategoryWriteData = {
   slug: string;
   parentId: number | null;
   sortOrder?: number;
+  lowStockBadgeEnabled?: boolean;
 };
 
 export const categoriesRepository = {

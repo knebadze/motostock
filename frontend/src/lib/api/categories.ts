@@ -14,6 +14,10 @@ export type Category = {
   imageUrl: string | null;
   bannerImageUrl: string | null;
   sortOrder: number;
+  // Storefront "only N left" urgency badge on this category's products —
+  // admin-controllable since it's meaningless noise on categories where
+  // stock is typically ~1 unit per item.
+  lowStockBadgeEnabled: boolean;
   parentId: number | null;
   parent: { id: number; name: LocalizedString } | null;
   createdAt: string;
@@ -25,6 +29,7 @@ export type CategoryInput = {
   slug: string;
   parentId: number | null;
   sortOrder: number;
+  lowStockBadgeEnabled?: boolean;
 };
 
 export async function listCategories(adminFilters?: AdminFilterEntry[]): Promise<Category[]> {

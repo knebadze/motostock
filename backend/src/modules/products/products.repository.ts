@@ -4,7 +4,19 @@ import { applyProductAdminFilters } from "../filters/product/product-admin-filte
 import type { FilterEntry } from "../filters/filter-request.schema.js";
 import type { AttributeFilterInput } from "./products.schema.js";
 
-const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
+// lowStockBadgeEnabled is only meaningful for a product's own category (used
+// by products.service.ts to gate the storefront urgency badge) — it's
+// harmless noise on the other two uses of this select (fitmentRules.category,
+// buyTogether's related-product category) but keeping one shared select
+// avoids a near-duplicate just for that.
+const namedRefSelect = {
+  id: true,
+  nameKa: true,
+  nameEn: true,
+  nameRu: true,
+  slug: true,
+  lowStockBadgeEnabled: true,
+} as const;
 const brandModelRefSelect = { id: true, name: true, slug: true } as const;
 const CANCELLED_KEY = "CANCELLED";
 

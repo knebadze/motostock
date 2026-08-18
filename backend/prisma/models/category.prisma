@@ -7,6 +7,11 @@ model Category {
   imageUrl             String?
   bannerImageUrl       String?
   sortOrder            Int                           @default(0)
+  // Storefront "only N left" urgency badge on this category's products —
+  // on by default; admin can turn it off per-category for ones where a
+  // typical stock level of ~1 unit makes the badge meaningless noise
+  // rather than a genuine urgency signal.
+  lowStockBadgeEnabled Boolean                       @default(true)
   parentId             Int?
   parent               Category?                     @relation("CategoryChildren", fields: [parentId], references: [id])
   children             Category[]                    @relation("CategoryChildren")

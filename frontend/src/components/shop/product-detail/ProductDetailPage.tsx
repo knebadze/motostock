@@ -136,24 +136,32 @@ export function ProductDetailPage({
           </h1>
 
           {selectedVariant && (
-            <div className="flex flex-wrap items-center gap-3">
-              {selectedVariant.activeDiscount ? (
-                <>
-                  <span className="text-lg text-muted-foreground line-through">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex flex-wrap items-center gap-3">
+                {selectedVariant.activeDiscount ? (
+                  <>
+                    <span className="text-lg text-muted-foreground line-through">
+                      {formatPrice(selectedVariant.price)}
+                    </span>
+                    <span className="text-2xl font-bold text-primary">
+                      {formatPrice(selectedVariant.activeDiscount.discountPrice)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-2xl font-bold text-primary">
                     {formatPrice(selectedVariant.price)}
                   </span>
-                  <span className="text-2xl font-bold text-primary">
-                    {formatPrice(selectedVariant.activeDiscount.discountPrice)}
+                )}
+                {outOfStock && (
+                  <span className="rounded-full bg-foreground/80 px-2.5 py-1 text-xs font-semibold text-background">
+                    {t("outOfStock")}
                   </span>
-                </>
-              ) : (
-                <span className="text-2xl font-bold text-primary">
-                  {formatPrice(selectedVariant.price)}
-                </span>
-              )}
-              {outOfStock && (
-                <span className="rounded-full bg-foreground/80 px-2.5 py-1 text-xs font-semibold text-background">
-                  {t("outOfStock")}
+                )}
+              </div>
+              {!outOfStock && selectedVariant.lowStockQuantity != null && (
+                <span className="flex items-center gap-1.5 text-sm font-medium text-primary">
+                  <span className="size-1.5 rounded-full bg-primary" />
+                  {t("lowStock", { count: selectedVariant.lowStockQuantity })}
                 </span>
               )}
             </div>

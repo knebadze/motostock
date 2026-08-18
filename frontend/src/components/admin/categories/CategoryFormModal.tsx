@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Select } from "@/components/shared/Select";
+import { Toggle } from "@/components/shared/Toggle";
 import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
@@ -42,6 +43,9 @@ export function CategoryFormModal({
     category?.parentId != null ? String(category.parentId) : "",
   );
   const [sortOrder, setSortOrder] = useState(category?.sortOrder ?? 0);
+  const [lowStockBadgeEnabled, setLowStockBadgeEnabled] = useState(
+    category?.lowStockBadgeEnabled ?? true,
+  );
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     resolveMediaUrl(category?.imageUrl ?? null),
@@ -110,6 +114,7 @@ export function CategoryFormModal({
         slug: slug.trim(),
         parentId: parentId ? Number(parentId) : null,
         sortOrder,
+        lowStockBadgeEnabled,
       };
 
       const savedCategory = isEditing
@@ -216,6 +221,20 @@ export function CategoryFormModal({
           <p className="text-xs text-muted-foreground">
             პატარა რიცხვი უფრო ადრე გამოჩნდება ჰეადერის მენიუში
           </p>
+        </div>
+
+        <div className="rounded-xl border border-border p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">„დარჩა მხოლოდ N ცალი&rdquo; ბეჯი</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                ჩართვის შემთხვევაში ამ კატეგორიის პროდუქტებზე გამოჩნდება მარაგის სიმცირის
+                გამაფრთხილებელი ბეჯი, თუ ნაშთი დაბალია. გამორთეთ კატეგორიებზე, სადაც ერთეულობითი
+                მარაგი ჩვეულებრივი მოვლენაა და ბეჯი აზრს დაკარგავს.
+              </p>
+            </div>
+            <Toggle checked={lowStockBadgeEnabled} onChange={setLowStockBadgeEnabled} />
+          </div>
         </div>
 
         <div className="flex flex-col gap-1.5">

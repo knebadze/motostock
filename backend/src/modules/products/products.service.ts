@@ -1,5 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
+import { computeLowStockQuantity } from "../../lib/low-stock.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { saveUploadedImage } from "../../lib/storage.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
@@ -26,7 +27,14 @@ import type {
 } from "./products.schema.js";
 import type { Prisma, VehicleSpecField } from "../../generated/prisma/index.js";
 
-type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
+type NamedRefRow = {
+  id: number;
+  nameKa: string;
+  nameEn: string;
+  nameRu: string;
+  slug: string;
+  lowStockBadgeEnabled: boolean;
+};
 
 type UnitRefRow = {
   id: number;
@@ -113,6 +121,7 @@ function toNamedRef(row: NamedRefRow) {
 // Product rows (fetched via productsRepository) through this same "product
 // card" response shape.
 export function toResponse(row: ProductRow) {
+  const totalStock = row.variants.reduce((sum, v) => sum + v.stockQuantity, 0);
   return {
     id: row.id,
     category: toNamedRef(row.category),
@@ -161,7 +170,8 @@ export function toResponse(row: ProductRow) {
     })),
     variantCount: row.variants.length,
     minPrice: row.variants.length > 0 ? Math.min(...row.variants.map((v) => Number(v.price))) : null,
-    totalStock: row.variants.reduce((sum, v) => sum + v.stockQuantity, 0),
+    totalStock,
+    lowStockQuantity: computeLowStockQuantity(totalStock, row.category.lowStockBadgeEnabled),
     activeDiscount: findCardActiveDiscount(row.variants),
     viewCount: row.viewCount,
     createdAt: row.createdAt,
@@ -211,7 +221,7 @@ type ProductDetailRow = Omit<ProductRow, "variants"> & {
   buyTogether: { relatedProduct: ProductRow }[];
 };
 
-function toVariantDetailResponse(row: VariantDetailRow) {
+function toVariantDetailResponse(row: VariantDetailRow, lowStockBadgeEnabled: boolean) {
   const activeDiscount = findActiveDiscount(row.discounts);
 
   return {
@@ -219,6 +229,10 @@ function toVariantDetailResponse(row: VariantDetailRow) {
     sku: row.sku,
     price: Number(row.price),
     stockQuantity: row.stockQuantity,
+    // Per-variant, not the product-level totalStock aggregate — the detail
+    // page's badge should reflect whichever variant the shopper currently
+    // has selected.
+    lowStockQuantity: computeLowStockQuantity(row.stockQuantity, lowStockBadgeEnabled),
     isActive: row.isActive,
     size: row.size,
     color: row.color,
@@ -263,7 +277,9 @@ async function toFitmentRuleResponse(rule: FitmentRuleRow) {
 export async function toDetailResponse(row: ProductDetailRow) {
   return {
     ...toResponse(row),
-    variants: row.variants.map(toVariantDetailResponse),
+    variants: row.variants.map((variant) =>
+      toVariantDetailResponse(variant, row.category.lowStockBadgeEnabled),
+    ),
     fitments: row.fitments.map((fitment) => ({
       id: fitment.vehicleCatalog.id,
       brand: fitment.vehicleCatalog.brand,

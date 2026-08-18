@@ -44,6 +44,9 @@ export type Product = {
   variantCount: number;
   minPrice: number | null;
   totalStock: number;
+  // "Only N left" storefront urgency badge — null when disabled for the
+  // category, out of stock, or stock is above the low-stock threshold.
+  lowStockQuantity: number | null;
   activeDiscount: { price: number; discountPrice: number } | null;
   // Detail-page view counter — an admin-facing interest signal, separate
   // from the Order-based "most sold" ranking used by the popular-products
@@ -71,6 +74,7 @@ export type ProductVariantDetail = {
   sku: string | null;
   price: number;
   stockQuantity: number;
+  lowStockQuantity: number | null;
   isActive: boolean;
   size: LookupItem | null;
   color: LookupItem | null;
