@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
+import { imageUpload } from "../../middleware/upload.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
 import { ROLES } from "../../lib/roles.js";
@@ -39,6 +40,12 @@ productBrandsRouter.delete(
   "/:id",
   validate(productBrandIdParamSchema, "params"),
   productBrandsController.remove,
+);
+productBrandsRouter.post(
+  "/:id/logo",
+  validate(productBrandIdParamSchema, "params"),
+  imageUpload().single("logo"),
+  productBrandsController.uploadLogo,
 );
 
 const security = [{ cookieAuth: [] }];
@@ -111,6 +118,29 @@ registry.registerPath({
   responses: {
     204: { description: "Deleted" },
     400: { description: "Brand in use", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/product-brands/{id}/logo",
+  tags: ["ProductBrands"],
+  summary: "Upload a product brand logo",
+  security,
+  request: {
+    params: productBrandIdParamSchema,
+    body: {
+      content: {
+        "multipart/form-data": {
+          schema: z.object({ logo: z.string().openapi({ format: "binary" }) }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: { description: "Uploaded", content: { "application/json": { schema: itemResponse } } },
+    400: { description: "Invalid file", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

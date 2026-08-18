@@ -4,6 +4,7 @@ model ProductBrand {
   category           Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   name               String
   slug               String      @unique
+  logoUrl            String?
   products           Product[]
   discountHeroSlides HeroSlide[]
   promoCodes         PromoCode[]

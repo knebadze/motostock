@@ -49,6 +49,7 @@ export const productBrandResponseSchema = registry.register(
     category: categoryRefSchema,
     name: nameField,
     slug: z.string().openapi({ example: "agv" }),
+    logoUrl: z.string().nullable(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
   }),

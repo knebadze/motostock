@@ -8,11 +8,25 @@ import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { deleteProductBrand, listProductBrands, type ProductBrand } from "@/lib/api/product-brands";
 import type { Category } from "@/lib/api/categories";
-import { ApiRequestError } from "@/lib/api/client";
+import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { flattenTree } from "@/lib/categories-tree";
 import { ProductBrandFormModal } from "./ProductBrandFormModal";
 
 const columns: DataTableColumn<ProductBrand>[] = [
+  {
+    header: "",
+    render: (productBrand) =>
+      resolveMediaUrl(productBrand.logoUrl) ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={resolveMediaUrl(productBrand.logoUrl) ?? undefined}
+          alt=""
+          className="size-10 rounded-lg border border-border object-cover"
+        />
+      ) : (
+        <div className="size-10 rounded-lg border border-dashed border-border" />
+      ),
+  },
   { header: "სახელი", render: (productBrand) => productBrand.name },
   {
     header: "კატეგორია",

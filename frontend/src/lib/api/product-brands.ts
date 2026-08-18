@@ -6,6 +6,7 @@ export type ProductBrand = {
   category: { id: number; name: LocalizedString; slug: string };
   name: string;
   slug: string;
+  logoUrl: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -38,4 +39,16 @@ export async function updateProductBrand(
 
 export async function deleteProductBrand(id: number): Promise<void> {
   await apiClient.delete(`/product-brands/${id}`);
+}
+
+export async function uploadProductBrandLogo(id: number, file: File): Promise<ProductBrand> {
+  const formData = new FormData();
+  formData.append("logo", file);
+
+  const { data } = await apiClient.post<{ item: ProductBrand }>(
+    `/product-brands/${id}/logo`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return data.item;
 }

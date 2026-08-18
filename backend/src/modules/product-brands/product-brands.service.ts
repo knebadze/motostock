@@ -1,5 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { saveUploadedImage } from "../../lib/storage.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
 import { productBrandsRepository } from "./product-brands.repository.js";
@@ -12,6 +13,7 @@ type ProductBrandRow = {
   category: CategoryRefRow;
   name: string;
   slug: string;
+  logoUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -26,6 +28,7 @@ function toResponse(row: ProductBrandRow) {
     category: toCategoryRef(row.category),
     name: row.name,
     slug: row.slug,
+    logoUrl: row.logoUrl,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -90,6 +93,17 @@ export async function updateProductBrand(id: number, input: UpdateProductBrandIn
     ...(input.name !== undefined ? { name: input.name } : {}),
     ...(input.slug !== undefined ? { slug: input.slug } : {}),
   });
+  return toResponse(row);
+}
+
+export async function setProductBrandLogo(id: number, file: Express.Multer.File) {
+  const existing = await productBrandsRepository.findById(id);
+  if (!existing) {
+    throw new ApiError(404, "ბრენდი ვერ მოიძებნა");
+  }
+
+  const logoUrl = await saveUploadedImage("product-brands", file);
+  const row = await productBrandsRepository.updateLogo(id, logoUrl);
   return toResponse(row);
 }
 

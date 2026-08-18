@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Select } from "@/components/shared/Select";
@@ -9,10 +9,11 @@ import { FormActions } from "@/components/shared/FormActions";
 import {
   createProductBrand,
   updateProductBrand,
+  uploadProductBrandLogo,
   type ProductBrand,
 } from "@/lib/api/product-brands";
 import type { Category } from "@/lib/api/categories";
-import { ApiRequestError } from "@/lib/api/client";
+import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { flattenTree, slugify } from "@/lib/categories-tree";
 import { productBrandFormSchema } from "@/lib/validation/product-brands";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
@@ -39,8 +40,27 @@ export function ProductBrandFormModal({
   const [name, setName] = useState(productBrand?.name ?? "");
   const [slug, setSlug] = useState(productBrand?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    resolveMediaUrl(productBrand?.logoUrl ?? null),
+  );
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
+
+  useEffect(() => {
+    return () => {
+      if (logoFile && previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewUrl]);
+
+  function handleLogoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    setLogoFile(file);
+    if (file) {
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  }
 
   const categoryOptions = flatCategories.map((category) => ({
     value: String(category.id),
@@ -71,10 +91,19 @@ export function ProductBrandFormModal({
         slug: slug.trim(),
       };
 
-      if (isEditing) {
-        await updateProductBrand(productBrand.id, input);
-      } else {
-        await createProductBrand(input);
+      const saved = isEditing
+        ? await updateProductBrand(productBrand.id, input)
+        : await createProductBrand(input);
+
+      if (logoFile) {
+        try {
+          await uploadProductBrandLogo(saved.id, logoFile);
+        } catch {
+          toast.error("ბრენდი შენახულია, მაგრამ ლოგოს ატვირთვა ვერ მოხერხდა");
+          onSaved();
+          onClose();
+          return;
+        }
       }
 
       toast.success(isEditing ? "ბრენდი განახლდა" : "ბრენდი დაემატა");
@@ -142,6 +171,30 @@ export function ProductBrandFormModal({
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
           />
           <FieldError message={errors.slug} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="product-brand-logo" className="text-sm font-medium">
+            ლოგო
+          </label>
+          {previewUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewUrl}
+              alt=""
+              className="h-24 w-24 rounded-lg border border-border object-cover"
+            />
+          )}
+          <input
+            id="product-brand-logo"
+            type="file"
+            accept="image/*"
+            onChange={handleLogoChange}
+            className="text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-border"
+          />
+          <p className="text-xs text-muted-foreground">
+            რეკომენდებული ზომა 300×300px (გამჭვირვალე PNG)
+          </p>
         </div>
 
         <FormActions onCancel={onClose} loading={loading} />

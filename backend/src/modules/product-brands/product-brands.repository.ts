@@ -34,6 +34,10 @@ export const productBrandsRepository = {
     return prisma.productBrand.update({ where: { id }, data, include });
   },
 
+  updateLogo(id: number, logoUrl: string) {
+    return prisma.productBrand.update({ where: { id }, data: { logoUrl }, include });
+  },
+
   delete(id: number) {
     return prisma.productBrand.delete({ where: { id } });
   },

@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { ApiError } from "../../lib/ApiError.js";
 import * as productBrandsService from "./product-brands.service.js";
 import type {
   CreateProductBrandInput,
@@ -38,4 +39,13 @@ export async function update(
 export async function remove(req: Request, res: Response) {
   await productBrandsService.deleteProductBrand(Number(req.params.id));
   res.status(204).send();
+}
+
+export async function uploadLogo(req: Request, res: Response) {
+  if (!req.file) {
+    throw new ApiError(400, "ლოგო არ არის მიბმული");
+  }
+
+  const item = await productBrandsService.setProductBrandLogo(Number(req.params.id), req.file);
+  res.status(200).json({ item });
 }
