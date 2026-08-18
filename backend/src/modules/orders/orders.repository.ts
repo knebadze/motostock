@@ -30,6 +30,13 @@ const orderItemsInclude = {
   riskFlags: { orderBy: { createdAt: "desc" } },
 } as const;
 
+// Advisory-lock namespace for the promo-code usage-limit recheck below —
+// paired with a promo code's own id as the second key, so locking one code
+// never blocks checkouts using a different one (or no code at all). Same
+// technique as fina-sync.service.ts's FINA_SYNC_LOCK_KEY, arbitrary/unique
+// to this lock's purpose.
+const PROMO_CODE_LOCK_NAMESPACE = 604710823;
+
 function buildAdminWhere(filters: {
   search?: string;
   statusIds?: number[];
@@ -177,6 +184,47 @@ export const ordersRepository = {
   // no extra read-back of the row is needed.
   async placeOrder(input: PlaceOrderInput) {
     return prisma.$transaction(async (tx) => {
+      // Re-checks the promo code's usage-limit/per-user-reuse rules against
+      // the DB's current state, inside this same transaction — the
+      // resolvePromoCodeForItems check the caller already did (see
+      // orders.service.ts's computeCheckoutTotals) ran well before this
+      // transaction even opened, so on its own it's a classic TOCTOU race:
+      // two concurrent checkouts near a promo's usage cap could both pass
+      // that earlier check and both redeem it. A blocking advisory lock,
+      // scoped to this one promo code, forces a second concurrent checkout
+      // using the same code to wait for the first to commit (or roll back)
+      // before it re-counts — so the recount below always sees the other
+      // transaction's result, not a stale pre-commit snapshot.
+      if (input.promoCodeId != null) {
+        // $executeRaw, not $queryRaw — pg_advisory_xact_lock (the blocking
+        // variant, unlike fina-sync.service.ts's pg_try_advisory_xact_lock)
+        // returns void, which the query engine can't deserialize as a
+        // result column; $executeRaw doesn't attempt to.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(${PROMO_CODE_LOCK_NAMESPACE}, ${input.promoCodeId})`;
+
+        const promo = await tx.promoCode.findUnique({
+          where: { id: input.promoCodeId },
+          select: { usageLimit: true },
+        });
+        if (!promo) {
+          throw new ApiError(400, "პრომო კოდი ვეღარ მოიძებნა");
+        }
+
+        const alreadyUsedByUser = await tx.order.count({
+          where: { promoCodeId: input.promoCodeId, userId: input.userId },
+        });
+        if (alreadyUsedByUser > 0) {
+          throw new ApiError(400, "თქვენ უკვე გამოიყენეთ ეს პრომო კოდი");
+        }
+
+        if (promo.usageLimit != null) {
+          const usageCount = await tx.order.count({ where: { promoCodeId: input.promoCodeId } });
+          if (usageCount >= promo.usageLimit) {
+            throw new ApiError(400, "პრომო კოდის გამოყენების ლიმიტი ამოწურულია");
+          }
+        }
+      }
+
       for (const item of input.items) {
         if (item.productVariantId != null) {
           const result = await tx.productVariant.updateMany({
