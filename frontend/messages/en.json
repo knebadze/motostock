@@ -97,6 +97,8 @@
     "subtotal": "Subtotal",
     "viewCart": "View cart",
     "remove": "Remove",
+    "deleteConfirmTitle": "Remove from cart",
+    "deleteConfirmMessage": "Are you sure you want to remove \"{name}\" from your cart?",
     "removeSuccess": "Removed from cart",
     "removeError": "Couldn't remove item",
     "loadError": "Couldn't load cart",

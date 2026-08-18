@@ -97,6 +97,8 @@
     "subtotal": "Итого",
     "viewCart": "Смотреть корзину",
     "remove": "Удалить",
+    "deleteConfirmTitle": "Удаление из корзины",
+    "deleteConfirmMessage": "Вы уверены, что хотите удалить «{name}» из корзины?",
     "removeSuccess": "Удалено из корзины",
     "removeError": "Не удалось удалить",
     "loadError": "Не удалось загрузить корзину",

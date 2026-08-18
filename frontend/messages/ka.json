@@ -97,6 +97,8 @@
     "subtotal": "ჯამი",
     "viewCart": "სრულად ნახვა",
     "remove": "წაშლა",
+    "deleteConfirmTitle": "კალათიდან წაშლა",
+    "deleteConfirmMessage": "დარწმუნებული ხართ, რომ გსურთ „{name}“-ის კალათიდან წაშლა?",
     "removeSuccess": "წაიშალა კალათიდან",
     "removeError": "წაშლა ვერ მოხერხდა",
     "loadError": "კალათის ჩატვირთვა ვერ მოხერხდა",

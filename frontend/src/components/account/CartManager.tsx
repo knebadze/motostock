@@ -9,6 +9,7 @@ import { ApiRequestError } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
 import { getCartItemDisplay, recomputeCart } from "@/lib/cart-item-display";
 import { removeFromCart, updateCartItemQuantity, type Cart, type CartItem } from "@/lib/api/cart";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 function CartLineRow({
   item,
@@ -86,8 +87,10 @@ function CartLineRow({
 export function CartManager({ initialCart }: { initialCart: Cart }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Cart");
+  const tCommon = useTranslations("Common");
   const [cart, setCart] = useState(initialCart);
   const [pendingId, setPendingId] = useState<number | null>(null);
+  const [removingItem, setRemovingItem] = useState<CartItem | null>(null);
 
   async function handleQuantityChange(item: CartItem, nextQuantity: number) {
     if (nextQuantity < 1) return;
@@ -104,14 +107,19 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
     }
   }
 
-  async function handleRemove(item: CartItem) {
-    setPendingId(item.id);
+  // ConfirmDialog shows its own success/error toast (via successMessage/
+  // errorFallback below) and manages its own button-loading state — this
+  // only needs to do the actual removal and drop the row from local state;
+  // pendingId still disables the row's quantity buttons while it's in
+  // flight, same as the quantity-change path above.
+  async function handleRemove() {
+    if (!removingItem) return;
+    setPendingId(removingItem.id);
     try {
-      await removeFromCart(item.id);
-      setCart((current) => recomputeCart(current.items.filter((existing) => existing.id !== item.id)));
-      toast.success(t("removeSuccess"));
-    } catch {
-      toast.error(t("removeError"));
+      await removeFromCart(removingItem.id);
+      setCart((current) =>
+        recomputeCart(current.items.filter((existing) => existing.id !== removingItem.id)),
+      );
     } finally {
       setPendingId(null);
     }
@@ -131,7 +139,7 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
             locale={locale}
             pending={pendingId === item.id}
             onQuantityChange={(quantity) => handleQuantityChange(item, quantity)}
-            onRemove={() => handleRemove(item)}
+            onRemove={() => setRemovingItem(item)}
           />
         ))}
       </ul>
@@ -149,6 +157,23 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
           {t("goToCheckout")}
         </Link>
       </div>
+
+      <ConfirmDialog
+        open={removingItem !== null}
+        onClose={() => setRemovingItem(null)}
+        title={t("deleteConfirmTitle")}
+        message={t("deleteConfirmMessage", {
+          name: removingItem ? getCartItemDisplay(removingItem, locale).title : "",
+        })}
+        confirmLabel={t("remove")}
+        successMessage={t("removeSuccess")}
+        onConfirm={handleRemove}
+        cancelLabel={tCommon("confirmDialog.cancel")}
+        processingLabel={tCommon("confirmDialog.processing")}
+        errorFallback={t("removeError")}
+        closeLabel={tCommon("modal.close")}
+        loaderLabel={tCommon("loader.loading")}
+      />
     </div>
   );
 }
