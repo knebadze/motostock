@@ -11,7 +11,14 @@
   --foreground: #0f172a;
   --card: #ffffff;
   --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  /* One step darker than the original #64748b (slate-500) — that one sat
+     right at the WCAG AA line against --background (4.55:1, the 4.5:1
+     minimum for normal text) and actually failed it against --muted itself
+     (4.34:1, text-muted-foreground on bg-muted, e.g. badges/pills). #475569
+     (slate-600) gives ~7:1+ against every real surface this text appears
+     on (background/card/muted) — comfortably past AA with margin, not
+     another borderline value. */
+  --muted-foreground: #475569;
   --border: #e2e8f0;
 
   --primary: #d97706;
