@@ -2,7 +2,10 @@
 // ProductView (see product-view.prisma for the full reasoning: this is an
 // upsert target bounded by (visitor x distinct listing), not an
 // append-only event log; `updatedAt` is the "recently viewed" sort key;
-// `viewCount` is a future ranking signal). Distinct from
+// `viewCount` is a future ranking signal; owner is the same dual-nullable
+// userId/guestId shape, exactly one of the two, backed by the same DB-level
+// CHECK constraint — see migration
+// 20260818093000_add_owner_xor_check_constraints). Distinct from
 // VehicleListing.viewCount, which is a single global counter with no
 // per-visitor breakdown.
 model VehicleListingView {

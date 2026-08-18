@@ -10,8 +10,10 @@ enum CompareItemType {
 // wishlist-item.prisma), and deliberately mirrors it closely: itemType picks
 // which of productId/vehicleListingId is populated, and owner is userId for
 // a logged-in account or guestId (the shared guest-id cookie, see
-// guest-identity.middleware.ts) for an anonymous visitor. Unlike wishlist,
-// guest access here is unconditional — no Settings toggle — since comparing
+// guest-identity.middleware.ts) for an anonymous visitor — exactly one of
+// the two, enforced by the same DB-level CHECK constraint as CartItem/
+// WishlistItem (see migration 20260818093000_add_owner_xor_check_constraints).
+// Unlike wishlist, guest access here is unconditional — no Settings toggle — since comparing
 // is a lightweight, no-commitment browsing aid. On login, guestId rows are
 // folded into the now-known userId (see compare.service.ts's
 // mergeGuestCompareIntoUser, called from guest-identity.middleware.ts

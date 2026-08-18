@@ -13,11 +13,13 @@ enum CartItemType {
 //
 // Owner is dual-nullable (userId for a logged-in account, guestId for an
 // anonymous visitor sharing the same guest-id cookie as wishlist — see
-// guest-identity.middleware.ts) — same shape and same tradeoff as
-// WishlistItem (exactly one of the two set per row, enforced in the
-// service layer). No separate "Cart" header row: nothing about a cart
-// beyond its owner and its items is ever needed, so a wrapper entity would
-// just be indirection.
+// guest-identity.middleware.ts) — same shape as WishlistItem. Exactly one of
+// the two is set per row, enforced both in the service layer AND (since
+// migration 20260818093000_add_owner_xor_check_constraints) by a DB-level
+// CHECK constraint — Prisma's schema language has no syntax to express that
+// here, so it only exists in the migration SQL, not visible in this file.
+// No separate "Cart" header row: nothing about a cart beyond its owner and
+// its items is ever needed, so a wrapper entity would just be indirection.
 model CartItem {
   id               Int             @id @default(autoincrement())
   userId           Int?

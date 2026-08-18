@@ -15,10 +15,12 @@ enum WishlistItemType {
 // Owner is ALSO dual-nullable: userId for a logged-in account, guestId (an
 // opaque cookie-backed id, see resolveWishlistOwner) for an anonymous
 // visitor when guest wishlist access is enabled in Settings. Exactly one of
-// the two is set per row — enforced in the service layer, not a DB
-// constraint, same tradeoff CategoryFilterConfig already accepts. On login,
-// any guestId rows for that browser are reassigned to the now-known userId
-// (see wishlist.service.ts mergeGuestWishlistIntoUser).
+// the two is set per row — enforced in the service layer AND, since
+// migration 20260818093000_add_owner_xor_check_constraints, by a DB-level
+// CHECK constraint (not expressible in Prisma's schema language, so it only
+// exists in that migration's SQL). On login, any guestId rows for that
+// browser are reassigned to the now-known userId (see wishlist.service.ts
+// mergeGuestWishlistIntoUser).
 model WishlistItem {
   id               Int              @id @default(autoincrement())
   userId           Int?
