@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -12,6 +12,11 @@ import { VehicleSearchForm } from "./VehicleSearchForm";
 import { CategorySearchForm } from "./CategorySearchForm";
 
 const AUTOPLAY_MS = 6000;
+// Minimum horizontal drag distance (px) before a touch gesture counts as a
+// swipe rather than a tap/scroll — low enough to feel responsive, high
+// enough that a slightly-diagonal vertical scroll on the page doesn't
+// accidentally trigger a slide change.
+const SWIPE_THRESHOLD_PX = 40;
 
 const TEXT_POSITION_CLASSES: Record<HeroSlideTextPosition, string> = {
   LEFT: "items-start text-left",
@@ -51,6 +56,35 @@ export function HeroSlider({
   const t = useTranslations("Common.heroSlider");
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  // Touch-swipe support — previously the only way to change slides on a
+  // touch device was the arrow buttons, which are hidden below the `sm`
+  // breakpoint (`hidden sm:flex`), and the 10px dots at the bottom, leaving
+  // mobile visitors with no real way to navigate the slider at all. Only
+  // the X coordinate is tracked (a horizontal swipe), not Y — a vertical
+  // page-scroll gesture that happens to start over the hero shouldn't be
+  // hijacked into a slide change.
+  const touchStartXRef = useRef<number | null>(null);
+
+  function handleTouchStart(event: React.TouchEvent) {
+    touchStartXRef.current = event.touches[0].clientX;
+    setPaused(true);
+  }
+
+  function handleTouchEnd(event: React.TouchEvent) {
+    const startX = touchStartXRef.current;
+    touchStartXRef.current = null;
+    setPaused(false);
+    if (startX == null || slides.length <= 1) return;
+
+    const deltaX = event.changedTouches[0].clientX - startX;
+    if (Math.abs(deltaX) < SWIPE_THRESHOLD_PX) return;
+
+    if (deltaX < 0) {
+      setIndex((current) => (current + 1) % slides.length);
+    } else {
+      setIndex((current) => (current - 1 + slides.length) % slides.length);
+    }
+  }
 
   useEffect(() => {
     if (slides.length <= 1 || paused) return;
@@ -67,6 +101,8 @@ export function HeroSlider({
     <section
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       className="relative aspect-4/3 w-full overflow-hidden border-b border-border sm:aspect-video lg:aspect-21/9 lg:max-h-130"
     >
       {imageUrl ? (
@@ -137,15 +173,23 @@ export function HeroSlider({
             </svg>
           </button>
 
-          <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
+          <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2">
             {slides.map((s, i) => (
               <button
                 key={s.id}
                 type="button"
                 aria-label={t("slideDot", { index: i + 1 })}
                 onClick={() => setIndex(i)}
-                className={`size-2.5 rounded-full transition-colors ${i === index ? "bg-white" : "bg-white/40"}`}
-              />
+                // Padding gives each dot a ~30px tap target instead of the
+                // visible dot's bare 10px — the visible size/spacing is
+                // unchanged (the inner span below still renders at the
+                // original size), only the actual hit area grew.
+                className="p-2.5"
+              >
+                <span
+                  className={`block size-2.5 rounded-full transition-colors ${i === index ? "bg-white" : "bg-white/40"}`}
+                />
+              </button>
             ))}
           </div>
         </>
