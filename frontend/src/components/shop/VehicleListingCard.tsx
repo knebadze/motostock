@@ -38,18 +38,28 @@ export function VehicleListingCard({
   const { activeDiscount } = listing;
 
   return (
-    <Link
-      href={`/${listing.vehicleCatalog.category.slug}/${listing.id}`}
-      className={`h-full rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg ${
+    // Not a <Link> itself — see ProductCard.tsx's matching comment. Same
+    // "stretched link" pattern: an absolutely-positioned, content-less Link
+    // sits as a sibling to the visible content instead of wrapping it, so
+    // WishlistButton/CompareButton's real <button>s are never nested inside
+    // an <a> (invalid HTML — interactive content inside interactive
+    // content).
+    <div
+      className={`group relative h-full rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg ${
         layout === "list" ? "flex items-center gap-4" : "flex flex-col gap-3"
       }`}
     >
+      <Link
+        href={`/${listing.vehicleCatalog.category.slug}/${listing.id}`}
+        aria-label={listing.vehicleCatalog.model.name}
+        className="absolute inset-0"
+      />
       <div
-        className={
+        className={`pointer-events-none ${
           layout === "list"
             ? "relative size-24 shrink-0 overflow-hidden rounded-xl bg-muted"
             : "relative aspect-square w-full overflow-hidden rounded-xl bg-muted"
-        }
+        }`}
       >
         {imageUrl ? (
           <Image
@@ -79,7 +89,7 @@ export function VehicleListingCard({
           onChange={onWishlistChange}
           labelSave={t("wishlistSaveLabel")}
           labelSaved={t("wishlistSavedLabel")}
-          className="absolute bottom-1.5 right-1.5"
+          className="pointer-events-auto absolute bottom-1.5 right-1.5"
         />
         <CompareButton
           itemType="VEHICLE_LISTING"
@@ -88,11 +98,11 @@ export function VehicleListingCard({
           onChange={onCompareChange}
           labelAdd={t("compareAddLabel")}
           labelAdded={t("compareAddedLabel")}
-          className="absolute bottom-1.5 left-1.5"
+          className="pointer-events-auto absolute bottom-1.5 left-1.5"
         />
       </div>
 
-      <div className="flex flex-1 flex-col justify-between gap-1">
+      <div className="pointer-events-none flex flex-1 flex-col justify-between gap-1">
         <div className="flex flex-col gap-1">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {listing.vehicleCatalog.brand.name} · {listing.year}
@@ -122,6 +132,6 @@ export function VehicleListingCard({
           <span className="text-lg font-bold text-primary">{formatPrice(listing.price)}</span>
         )}
       </div>
-    </Link>
+    </div>
   );
 }

@@ -36,18 +36,32 @@ export function ProductCard({
   const { activeDiscount } = product;
 
   return (
-    <Link
-      href={`/${product.category.slug}/${product.slug}`}
-      className={`h-full rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg ${
+    // Not a <Link> itself — WishlistButton/CompareButton render real
+    // <button>s, and a <button> nested inside an <a> is invalid HTML
+    // (interactive content inside interactive content), which browsers
+    // parse inconsistently and assistive tech announces incoherently. The
+    // "stretched link" pattern below keeps the whole-card-is-clickable
+    // behavior without nesting: an absolutely-positioned, content-less
+    // Link covers the card as a sibling, and the actual visible content
+    // sits on top with pointer-events-none so clicks fall through to the
+    // Link everywhere except the two buttons, which opt back in with
+    // pointer-events-auto and already stopPropagation their own clicks.
+    <div
+      className={`group relative h-full rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg ${
         layout === "list" ? "flex items-center gap-4" : "flex flex-col gap-3"
       }`}
     >
+      <Link
+        href={`/${product.category.slug}/${product.slug}`}
+        aria-label={product.name[locale]}
+        className="absolute inset-0"
+      />
       <div
-        className={
+        className={`pointer-events-none ${
           layout === "list"
             ? "relative size-24 shrink-0 overflow-hidden rounded-xl bg-muted"
             : "relative aspect-square w-full overflow-hidden rounded-xl bg-muted"
-        }
+        }`}
       >
         {imageUrl ? (
           <Image
@@ -77,7 +91,7 @@ export function ProductCard({
           onChange={onWishlistChange}
           labelSave={t("wishlistSaveLabel")}
           labelSaved={t("wishlistSavedLabel")}
-          className="absolute bottom-1.5 right-1.5"
+          className="pointer-events-auto absolute bottom-1.5 right-1.5"
         />
         <CompareButton
           itemType="PRODUCT"
@@ -86,11 +100,11 @@ export function ProductCard({
           onChange={onCompareChange}
           labelAdd={t("compareAddLabel")}
           labelAdded={t("compareAddedLabel")}
-          className="absolute bottom-1.5 left-1.5"
+          className="pointer-events-auto absolute bottom-1.5 left-1.5"
         />
       </div>
 
-      <div className="flex flex-1 flex-col justify-between gap-1">
+      <div className="pointer-events-none flex flex-1 flex-col justify-between gap-1">
         <div className="flex flex-col gap-1">
           {product.productBrand && (
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -116,6 +130,6 @@ export function ProductCard({
           </span>
         )}
       </div>
-    </Link>
+    </div>
   );
 }
