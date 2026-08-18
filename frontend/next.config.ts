@@ -32,6 +32,27 @@ const nextConfig: NextConfig = {
   // Docker's frontend runtime image ships that folder instead of the full
   // node_modules tree (see frontend/Dockerfile).
   output: "standalone",
+  // Clickjacking protection: without these, any external site could embed
+  // login/checkout/admin pages in a hidden <iframe> and hijack clicks from
+  // an already-authenticated visitor. The backend's helmet() only covers
+  // API responses, not these Next-rendered HTML pages, so this has to be
+  // set here. X-Frame-Options is the legacy header, frame-ancestors is its
+  // CSP-based replacement — set both for broad browser support. Scoped to
+  // just frame-ancestors/referrer, not a full CSP (script-src etc. would
+  // need auditing every inline script/external resource this app uses —
+  // OAuth redirects, Cloudinary, WhatsApp — a separate, larger project).
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none';" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
   images: {
     unoptimized: isLocalApiOrigin,
     remotePatterns: [
