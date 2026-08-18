@@ -5,18 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FormActions } from "@/components/shared/FormActions";
 import { Tabs } from "@/components/shared/Tabs";
-import {
-  createProduct,
-  updateProduct,
-  uploadProductImage,
-  type Product,
-  type ProductAttributeValueInput,
-} from "@/lib/api/products";
-import { createProductVariant } from "@/lib/api/product-variants";
+import type { Product } from "@/lib/api/products";
 import { siteConfig } from "@/config/site";
-import { uploadProductVariantImages } from "@/lib/api/product-variant-images";
-import { createProductVariantDiscount } from "@/lib/api/product-variant-discounts";
-import { createProductFitment } from "@/lib/api/product-fitment";
 import type { Attribute } from "@/lib/api/attributes";
 import type { Category } from "@/lib/api/categories";
 import { listProductBrands, type ProductBrand } from "@/lib/api/product-brands";
@@ -43,70 +33,16 @@ import { ProductDescriptionTab } from "./ProductDescriptionTab";
 import { ProductImageTab } from "./ProductImageTab";
 import { ProductSeoTab } from "./ProductSeoTab";
 import { ProductPricingTab, type DraftVariant } from "./ProductPricingTab";
+import {
+  toAttributeFieldValues,
+  withAttributeDefaults,
+  toAttributeValueInputs,
+} from "./product-form-attributes";
+import { saveProductForm, PRODUCT_FORM_SAVE_WARNING_MESSAGES } from "./product-form-save";
 
 function toNullableHtml(html: string): string | null {
   const isBlank = html.replace(/<[^>]*>/g, "").trim() === "";
   return isBlank ? null : html;
-}
-
-function toAttributeFieldValues(product: Product | null): Record<string, AttributeFieldValue> {
-  if (!product) return {};
-  const result: Record<string, AttributeFieldValue> = {};
-  for (const value of product.attributeValues) {
-    result[String(value.attributeId)] = {
-      text: value.valueText ?? "",
-      number: value.valueNumber != null ? String(value.valueNumber) : "",
-      boolean: value.valueBoolean ?? false,
-      optionId: value.option ? String(value.option.id) : "",
-    };
-  }
-  return result;
-}
-
-const EMPTY_ATTRIBUTE_FIELD_VALUE: AttributeFieldValue = {
-  text: "",
-  number: "",
-  boolean: false,
-  optionId: "",
-};
-
-// Attributes the admin hasn't touched yet have no entry in `attributeValues`
-// (ProductAttributeFields only writes an entry on change) — the validation
-// schema requires a full object per attribute id, so fill the gaps with the
-// same default used for rendering before parsing.
-function withAttributeDefaults(
-  values: Record<string, AttributeFieldValue>,
-  attributes: Attribute[],
-): Record<string, AttributeFieldValue> {
-  const filled: Record<string, AttributeFieldValue> = { ...values };
-  for (const attribute of attributes) {
-    filled[String(attribute.id)] ??= EMPTY_ATTRIBUTE_FIELD_VALUE;
-  }
-  return filled;
-}
-
-function toAttributeValueInputs(
-  values: Record<string, AttributeFieldValue>,
-  attributes: Attribute[],
-): ProductAttributeValueInput[] {
-  const inputs: ProductAttributeValueInput[] = [];
-
-  for (const attribute of attributes) {
-    const value = values[String(attribute.id)];
-    if (!value) continue;
-
-    if (attribute.valueType === "TEXT" && value.text.trim() !== "") {
-      inputs.push({ attributeId: attribute.id, valueText: value.text.trim() });
-    } else if (attribute.valueType === "NUMBER" && value.number.trim() !== "") {
-      inputs.push({ attributeId: attribute.id, valueNumber: Number(value.number) });
-    } else if (attribute.valueType === "BOOLEAN") {
-      inputs.push({ attributeId: attribute.id, valueBoolean: value.boolean });
-    } else if (attribute.valueType === "SELECT" && value.optionId.trim() !== "") {
-      inputs.push({ attributeId: attribute.id, optionId: Number(value.optionId) });
-    }
-  }
-
-  return inputs;
 }
 
 export function ProductForm({
@@ -394,7 +330,7 @@ export function ProductForm({
     setLoading(true);
 
     try {
-      const input = {
+      const productInput = {
         categoryId: Number(categoryId),
         productBrandId: productBrandId ? Number(productBrandId) : null,
         name: { ka: nameKa.trim(), en: nameEn.trim(), ru: nameRu.trim() },
@@ -407,74 +343,29 @@ export function ProductForm({
         attributeValues: toAttributeValueInputs(attributeValues, categoryAttributes),
       };
 
-      const saved = isEditing
-        ? await updateProduct(product.id, input)
-        : await createProduct(input);
-
-      if (imageFile) {
-        try {
-          await uploadProductImage(saved.id, imageFile);
-        } catch {
-          toast.error("პროდუქტი შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა");
-          router.push("/admin/products");
-          return;
-        }
-      }
-
-      if (!isEditing && draftVariants.length > 0) {
-        try {
-          let firstVariantId: number | null = null;
-          for (const draft of draftVariants) {
-            const variant = await createProductVariant({
-              productId: saved.id,
-              sizeId: draft.sizeId,
-              colorId: draft.colorId,
-              conditionId: draft.conditionId,
-              statusId: draft.statusId,
-              price: Number(draft.price),
-              stockQuantity: draft.stockQuantity ? Number(draft.stockQuantity) : undefined,
-              sku: draft.sku.trim() ? draft.sku.trim() : null,
-              isActive: draft.isActive,
-            });
-            if (firstVariantId === null) firstVariantId = variant.id;
-          }
-
-          if (firstVariantId !== null && pendingVariantImageFilesRef.current.length > 0) {
-            await uploadProductVariantImages(firstVariantId, pendingVariantImageFilesRef.current);
-          }
-
-          if (firstVariantId !== null && wantsInitialDiscount) {
-            await createProductVariantDiscount(firstVariantId, {
-              discountPrice: Number(initialDiscountPrice),
-              discountPercent: initialDiscountPercent ? Number(initialDiscountPercent) : null,
+      const result = await saveProductForm({
+        isEditing,
+        existingProductId: product?.id ?? null,
+        productInput,
+        imageFile,
+        draftVariants,
+        pendingVariantImageFiles: pendingVariantImageFilesRef.current,
+        initialDiscount: wantsInitialDiscount
+          ? {
+              price: initialDiscountPrice,
+              percent: initialDiscountPercent,
               startDate: initialDiscountStartDate,
               endDate: initialDiscountEndDate,
-            });
-          }
-        } catch {
-          toast.error(
-            "პროდუქტი შენახულია, მაგრამ ვარიანტების დამატება ვერ მოხერხდა — დაამატეთ რედაქტირებიდან",
-          );
-          router.push("/admin/products");
-          return;
-        }
-      }
+            }
+          : null,
+        draftFitments,
+      });
 
-      if (!isEditing && draftFitments.length > 0) {
-        try {
-          for (const fitment of draftFitments) {
-            await createProductFitment(saved.id, fitment.vehicleCatalogId);
-          }
-        } catch {
-          toast.error(
-            "პროდუქტი შენახულია, მაგრამ თავსებადობის დამატება ვერ მოხერხდა — დაამატეთ რედაქტირებიდან",
-          );
-          router.push("/admin/products");
-          return;
-        }
+      if (result.ok) {
+        toast.success(isEditing ? "პროდუქტი განახლდა" : "პროდუქტი დაემატა");
+      } else {
+        toast.error(PRODUCT_FORM_SAVE_WARNING_MESSAGES[result.warning]);
       }
-
-      toast.success(isEditing ? "პროდუქტი განახლდა" : "პროდუქტი დაემატა");
       router.push("/admin/products");
     } catch (error) {
       const message =

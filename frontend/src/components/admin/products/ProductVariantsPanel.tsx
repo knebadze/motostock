@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Select } from "@/components/shared/Select";
-import { Toggle } from "@/components/shared/Toggle";
-import { FieldError } from "@/components/shared/FieldError";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
   createProductVariant,
@@ -22,6 +20,7 @@ import { productVariantFormSchema } from "@/lib/validation/product-variants";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 import { ProductVariantImagesPanel } from "./ProductVariantImagesPanel";
 import { ProductVariantDiscountsPanel } from "./ProductVariantDiscountsPanel";
+import { VariantCommonFields } from "./VariantCommonFields";
 
 function lookupOptions(items: LookupItem[]) {
   return items.map((item) => ({ value: String(item.id), label: item.nameKa }));
@@ -318,77 +317,28 @@ export function ProductVariantsPanel({
                 placeholder="— არცერთი —"
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="variant-condition" className="text-xs text-muted-foreground">
-                მდგომარეობა
-              </label>
-              <Select
-                id="variant-condition"
-                options={lookupOptions(conditions)}
-                value={editForm.conditionId}
-                onChange={(value) => setEditForm((prev) => ({ ...prev, conditionId: value }))}
-                searchable
-                placeholder="— არცერთი —"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="variant-status" className="text-xs text-muted-foreground">
-                სტატუსი
-              </label>
-              <Select
-                id="variant-status"
-                options={lookupOptions(statuses)}
-                value={editForm.statusId}
-                onChange={(value) => setEditForm((prev) => ({ ...prev, statusId: value }))}
-                searchable
-                placeholder="— არცერთი —"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">SKU</label>
-              <input
-                type="text"
-                value={editForm.sku}
-                onChange={(event) => setEditForm((prev) => ({ ...prev, sku: event.target.value }))}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">FINA ID</label>
-              <input
-                type="number"
-                value={editForm.finaId}
-                onChange={(event) => setEditForm((prev) => ({ ...prev, finaId: event.target.value }))}
-                placeholder="მარაგის სინქრონიზაციისთვის"
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">ფასი *</label>
-              <input
-                type="number"
-                step="0.01"
-                value={editForm.price}
-                onChange={(event) => setEditForm((prev) => ({ ...prev, price: event.target.value }))}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-              <FieldError message={errors.price} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">მარაგში (ცალი)</label>
-              <input
-                type="number"
-                min={0}
-                value={editForm.stockQuantity}
-                onChange={(event) => setEditForm((prev) => ({ ...prev, stockQuantity: event.target.value }))}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-              <FieldError message={errors.stockQuantity} />
-            </div>
-            <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium">
-              <Toggle checked={editForm.isActive} onChange={(checked) => setEditForm((prev) => ({ ...prev, isActive: checked }))} />
-              აქტიურია
-            </label>
+            <VariantCommonFields
+              idPrefix="variant"
+              conditions={conditions}
+              statuses={statuses}
+              conditionId={editForm.conditionId}
+              onConditionIdChange={(value) => setEditForm((prev) => ({ ...prev, conditionId: value }))}
+              statusId={editForm.statusId}
+              onStatusIdChange={(value) => setEditForm((prev) => ({ ...prev, statusId: value }))}
+              sku={editForm.sku}
+              onSkuChange={(value) => setEditForm((prev) => ({ ...prev, sku: value }))}
+              finaId={editForm.finaId}
+              onFinaIdChange={(value) => setEditForm((prev) => ({ ...prev, finaId: value }))}
+              price={editForm.price}
+              onPriceChange={(value) => setEditForm((prev) => ({ ...prev, price: value }))}
+              priceError={errors.price}
+              stockQuantity={editForm.stockQuantity}
+              onStockQuantityChange={(value) => setEditForm((prev) => ({ ...prev, stockQuantity: value }))}
+              stockError={errors.stockQuantity}
+              stockMin={0}
+              isActive={editForm.isActive}
+              onIsActiveChange={(checked) => setEditForm((prev) => ({ ...prev, isActive: checked }))}
+            />
           </div>
           <div className="mt-3 flex gap-2">
             <button
@@ -444,68 +394,27 @@ export function ProductVariantsPanel({
                 placeholder="— არცერთი —"
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="variant-add-condition" className="text-xs text-muted-foreground">
-                მდგომარეობა
-              </label>
-              <Select
-                id="variant-add-condition"
-                options={lookupOptions(conditions)}
-                value={addForm.conditionId}
-                onChange={(value) => setAddForm((prev) => ({ ...prev, conditionId: value }))}
-                searchable
-                placeholder="— არცერთი —"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="variant-add-status" className="text-xs text-muted-foreground">
-                სტატუსი
-              </label>
-              <Select
-                id="variant-add-status"
-                options={lookupOptions(statuses)}
-                value={addForm.statusId}
-                onChange={(value) => setAddForm((prev) => ({ ...prev, statusId: value }))}
-                searchable
-                placeholder="— არცერთი —"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">SKU</label>
-              <input
-                type="text"
-                value={addForm.sku}
-                onChange={(event) => setAddForm((prev) => ({ ...prev, sku: event.target.value }))}
-                placeholder="საერთო ყველასთვის, ან ცარიელი"
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">ფასი *</label>
-              <input
-                type="number"
-                step="0.01"
-                value={addForm.price}
-                onChange={(event) => setAddForm((prev) => ({ ...prev, price: event.target.value }))}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-              <FieldError message={errors.price} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">მარაგში (ცალი)</label>
-              <input
-                type="number"
-                min={1}
-                value={addForm.stockQuantity}
-                onChange={(event) => setAddForm((prev) => ({ ...prev, stockQuantity: event.target.value }))}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-              <FieldError message={errors.stockQuantity} />
-            </div>
-            <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium">
-              <Toggle checked={addForm.isActive} onChange={(checked) => setAddForm((prev) => ({ ...prev, isActive: checked }))} />
-              აქტიურია
-            </label>
+            <VariantCommonFields
+              idPrefix="variant-add"
+              conditions={conditions}
+              statuses={statuses}
+              conditionId={addForm.conditionId}
+              onConditionIdChange={(value) => setAddForm((prev) => ({ ...prev, conditionId: value }))}
+              statusId={addForm.statusId}
+              onStatusIdChange={(value) => setAddForm((prev) => ({ ...prev, statusId: value }))}
+              sku={addForm.sku}
+              onSkuChange={(value) => setAddForm((prev) => ({ ...prev, sku: value }))}
+              skuPlaceholder="საერთო ყველასთვის, ან ცარიელი"
+              price={addForm.price}
+              onPriceChange={(value) => setAddForm((prev) => ({ ...prev, price: value }))}
+              priceError={errors.price}
+              stockQuantity={addForm.stockQuantity}
+              onStockQuantityChange={(value) => setAddForm((prev) => ({ ...prev, stockQuantity: value }))}
+              stockError={errors.stockQuantity}
+              stockMin={1}
+              isActive={addForm.isActive}
+              onIsActiveChange={(checked) => setAddForm((prev) => ({ ...prev, isActive: checked }))}
+            />
           </div>
           <button
             type="button"
