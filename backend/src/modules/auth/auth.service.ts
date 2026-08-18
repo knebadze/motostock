@@ -12,7 +12,7 @@ import { logger } from "../../lib/logger.js";
 import { ROLES, type RoleName } from "../../lib/roles.js";
 import { usersRepository } from "../users/users.repository.js";
 import { rolesRepository } from "../roles/roles.repository.js";
-import { recordAuthEvent } from "../fraud/fraud.service.js";
+import { assertAccountNotLockedOut, recordAuthEvent } from "../fraud/fraud.service.js";
 import { passwordResetTokenRepository } from "./password-reset-token.repository.js";
 import { emailVerificationTokenRepository } from "./email-verification-token.repository.js";
 import type { ForgotPasswordInput, LoginInput, RegisterInput, ResetPasswordInput } from "./auth.schema.js";
@@ -93,6 +93,12 @@ export async function registerUser(input: RegisterInput, ipAddress: string | nul
 }
 
 export async function loginUser(input: LoginInput, ipAddress: string | null) {
+  // Checked before anything else — IP-scoped authRateLimit (see
+  // rateLimit.middleware.ts) can't catch a guessing attack spread across
+  // many IPs against one account; this closes that gap regardless of which
+  // IP the current attempt comes from.
+  await assertAccountNotLockedOut(input.email);
+
   const user = await usersRepository.findByEmail(input.email);
   if (!user || !user.passwordHash) {
     // No such user, or an OAuth-only account with no password of its own —

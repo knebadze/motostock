@@ -98,6 +98,10 @@ registry.registerPath({
       description: "Invalid email or password",
       content: { "application/json": { schema: errorResponseSchema } },
     },
+    429: {
+      description: "Too many failed attempts for this account (account-level lockout, independent of the caller's IP)",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
   },
 });
 

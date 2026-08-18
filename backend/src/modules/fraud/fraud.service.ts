@@ -1,3 +1,4 @@
+import { ApiError } from "../../lib/ApiError.js";
 import { logger } from "../../lib/logger.js";
 import {
   getFraudFailedLoginThreshold,
@@ -23,6 +24,29 @@ export async function recordAuthEvent(
     await fraudRepository.createAuthEvent({ type, email, userId, ipAddress });
   } catch (err) {
     logger.error({ err, type, email }, "Failed to record auth event");
+  }
+}
+
+// Account-level brute-force lockout — unlike authRateLimit
+// (rateLimit.middleware.ts, scoped per-IP), this blocks based on the target
+// email itself, so a password-guessing attack spread across many IPs
+// against one account is still stopped once it crosses the threshold.
+// Reuses the exact same threshold/window Settings already exposes for the
+// admin "suspicious login activity" monitoring view below
+// (listSuspiciousLoginActivity) — an account that would surface there is
+// exactly the one this now actively blocks, rather than just flags for an
+// admin to notice after the fact. Called from auth.service.ts's loginUser
+// before the password is even checked, so a locked-out attempt never
+// reaches the bcrypt compare.
+export async function assertAccountNotLockedOut(email: string): Promise<void> {
+  const [threshold, windowMinutes] = await Promise.all([
+    getFraudFailedLoginThreshold(),
+    getFraudFailedLoginWindowMinutes(),
+  ]);
+  const since = new Date(Date.now() - windowMinutes * 60 * 1000);
+  const recentFailures = await fraudRepository.countFailedLoginsForEmailSince(email, since);
+  if (recentFailures >= threshold) {
+    throw new ApiError(429, "ძალიან ბევრი წარუმატებელი მცდელობა — სცადეთ მოგვიანებით");
   }
 }
 

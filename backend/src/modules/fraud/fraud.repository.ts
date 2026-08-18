@@ -55,6 +55,15 @@ export const fraudRepository = {
     return rows.map((row) => row.userId);
   },
 
+  // Per-account count, unlike countFailedLoginsByEmail below (which groups
+  // across every email for the admin monitoring view) — this is the one
+  // fraud.service.ts's assertAccountNotLockedOut checks on every login
+  // attempt, so it needs a single number for one specific email, not a
+  // groupBy over all of them.
+  countFailedLoginsForEmailSince(email: string, since: Date) {
+    return prisma.authEvent.count({ where: { type: "LOGIN_FAILURE", email, createdAt: { gte: since } } });
+  },
+
   async countFailedLoginsByEmail(since: Date): Promise<{ email: string; count: number }[]> {
     const grouped = await prisma.authEvent.groupBy({
       by: ["email"],
