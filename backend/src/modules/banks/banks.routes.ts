@@ -19,10 +19,10 @@ import {
 
 export const banksRouter = Router();
 
-// Public — active banks only, no credentials (see banks.service.ts's
-// toPublicResponse), for the checkout page's bank picker. Registered
-// before the admin gate below, same narrow-public-endpoint pattern as
-// /hero-slides/public.
+// Public — active banks only, admin-only fields stripped (see
+// banks.service.ts's toPublicResponse), for the checkout page's bank
+// picker. Registered before the admin gate below, same narrow-public-
+// endpoint pattern as /hero-slides/public.
 banksRouter.get("/public", banksController.listPublic);
 
 banksRouter.use(requireAuth, requireRole(ROLES.ADMIN));
@@ -54,7 +54,7 @@ registry.registerPath({
   method: "get",
   path: "/banks/public",
   tags: ["Banks"],
-  summary: "List active banks the customer can pay through at checkout (public, no credentials)",
+  summary: "List active banks the customer can pay through at checkout (public)",
   responses: {
     200: { description: "Active banks", content: { "application/json": { schema: publicListResponse } } },
   },

@@ -10,13 +10,12 @@ export type Bank = {
   sortOrder: number;
   supportsInstallment: boolean;
   supportsSplitPayment: boolean;
-  credentials: Record<string, string> | null;
   createdAt: string;
   updatedAt: string;
 };
 
-// The checkout page's shape — never carries credentials (see
-// banks.service.ts's toPublicResponse on the backend).
+// The checkout page's shape — display fields only (see banks.service.ts's
+// toPublicResponse on the backend).
 export type PublicBank = {
   id: number;
   key: string;
@@ -30,7 +29,6 @@ export type BankInput = {
   isActive?: boolean;
   supportsInstallment?: boolean;
   supportsSplitPayment?: boolean;
-  credentials?: Record<string, string> | null;
 };
 
 export async function listBanks(): Promise<Bank[]> {

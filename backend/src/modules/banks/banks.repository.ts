@@ -1,4 +1,3 @@
-import { Prisma } from "../../generated/prisma/index.js";
 import { prisma } from "../../config/prisma.js";
 
 type BankWriteData = {
@@ -9,17 +8,7 @@ type BankWriteData = {
   isActive?: boolean;
   supportsInstallment?: boolean;
   supportsSplitPayment?: boolean;
-  // Plain JS null, not Prisma's own JsonNull/DbNull — converted below.
-  // Prisma.JsonNull would store the JSON literal `null`; Prisma.DbNull
-  // (what null here maps to) sets a real SQL NULL, which is what "no
-  // credentials configured yet" should mean.
-  credentials?: Record<string, string> | null;
 };
-
-function toCredentialsInput(credentials: Record<string, string> | null | undefined) {
-  if (credentials === undefined) return undefined;
-  return credentials === null ? Prisma.DbNull : credentials;
-}
 
 export const banksRepository = {
   findMany(onlyActive?: boolean) {
@@ -37,18 +26,15 @@ export const banksRepository = {
     return prisma.bank.findUnique({ where: { key } });
   },
 
-  async create(data: Required<Omit<BankWriteData, "credentials">> & Pick<BankWriteData, "credentials">) {
+  async create(data: Required<BankWriteData>) {
     const { _max } = await prisma.bank.aggregate({ _max: { sortOrder: true } });
     return prisma.bank.create({
-      data: { ...data, credentials: toCredentialsInput(data.credentials), sortOrder: (_max.sortOrder ?? -1) + 1 },
+      data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 },
     });
   },
 
   update(id: number, data: BankWriteData) {
-    return prisma.bank.update({
-      where: { id },
-      data: { ...data, credentials: toCredentialsInput(data.credentials) },
-    });
+    return prisma.bank.update({ where: { id }, data });
   },
 
   updateLogo(id: number, logoUrl: string) {

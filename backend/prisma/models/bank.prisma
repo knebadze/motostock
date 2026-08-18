@@ -1,9 +1,16 @@
 // Admin-configurable list of banks a customer can pay through when
 // checking out with fulfillmentMethod=CARD. No real payment gateway is
 // integrated yet (see order.prisma's note) — this exists so the admin can
-// set up the bank list and (later) credentials ahead of that integration,
-// and so the checkout UI has something real to let the customer choose
-// between right now.
+// set up the bank list ahead of that integration, and so the checkout UI
+// has something real to let the customer choose between right now.
+//
+// Deliberately holds no credentials (merchant id, API key/secret, ...) —
+// an earlier version of this model had a free-form `credentials Json?`
+// column for that, removed because storing real payment-gateway secrets
+// in the DB (even admin-only, even masked on read) is the wrong shape for
+// them. When a real gateway integration is built, its credentials belong
+// in environment variables (see config/env.ts — same pattern already used
+// for FINA_*/SMTP_*/VINCARIO_* credentials), not here.
 model Bank {
   id        Int     @id @default(autoincrement())
   // Stable identifier (e.g. "TBC", "BOG", "LIBERTY") — independent of the
@@ -21,13 +28,6 @@ model Bank {
   // which payment type once that logic is built, without a schema change.
   supportsInstallment  Boolean @default(false)
   supportsSplitPayment Boolean @default(false)
-
-  // Free-form key/value pairs (merchant id, API key/secret, callback
-  // URL, ...) — each bank's real integration will need different fields,
-  // so a fixed column set would need a migration per bank added later.
-  // Admin-only: never returned by the public bank list (see
-  // banks.service.ts's toPublicResponse).
-  credentials Json?
 
   orders Order[]
 

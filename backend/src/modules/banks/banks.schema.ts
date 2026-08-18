@@ -2,11 +2,6 @@ import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
 
-// Free-form, since each bank's real integration will need different fields
-// (merchant id, API key/secret, callback URL, ...) — admin fills these in
-// once a real payment gateway is actually wired up (see bank.prisma).
-const credentialsSchema = z.record(z.string(), z.string()).nullable().optional();
-
 export const createBankSchema = registry.register(
   "CreateBankInput",
   z.object({
@@ -20,7 +15,6 @@ export const createBankSchema = registry.register(
     isActive: z.boolean().optional(),
     supportsInstallment: z.boolean().optional(),
     supportsSplitPayment: z.boolean().optional(),
-    credentials: credentialsSchema,
   }),
 );
 export type CreateBankInput = z.infer<typeof createBankSchema>;
@@ -43,8 +37,6 @@ export const reorderBanksSchema = registry.register(
 );
 export type ReorderBanksInput = z.infer<typeof reorderBanksSchema>;
 
-// Admin-only surface — includes credentials. Never reused for the public
-// list (see publicBankResponseSchema below).
 export const bankResponseSchema = registry.register(
   "Bank",
   z.object({
@@ -56,7 +48,6 @@ export const bankResponseSchema = registry.register(
     sortOrder: z.int(),
     supportsInstallment: z.boolean(),
     supportsSplitPayment: z.boolean(),
-    credentials: z.record(z.string(), z.string()).nullable(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
   }),

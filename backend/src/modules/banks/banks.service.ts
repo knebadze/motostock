@@ -14,55 +14,9 @@ type BankRow = {
   sortOrder: number;
   supportsInstallment: boolean;
   supportsSplitPayment: boolean;
-  credentials: unknown;
   createdAt: Date;
   updatedAt: Date;
 };
-
-// Never return a real credential value once saved — same "write-only
-// secret" convention as a password field. The admin form shows this mask
-// per configured key so it knows what's set without the value ever
-// leaving the DB again; updateBank below merges new values in by key
-// instead of a full replace, precisely so leaving a masked field alone
-// doesn't have to mean resubmitting (and thus overwriting with) the mask.
-const CREDENTIAL_MASK = "••••••••";
-
-function maskCredentials(credentials: Record<string, string> | null): Record<string, string> | null {
-  if (!credentials) return null;
-  return Object.fromEntries(Object.keys(credentials).map((key) => [key, CREDENTIAL_MASK]));
-}
-
-// Strips blank-value entries (the frontend never intentionally sends one,
-// but treating "" as "no value" defensively here too keeps createBank and
-// updateBank's merge logic sharing one meaning for an empty string).
-function cleanCredentials(credentials: Record<string, string> | null | undefined): Record<string, string> | null {
-  if (!credentials) return null;
-  const cleaned = Object.fromEntries(Object.entries(credentials).filter(([, value]) => value !== ""));
-  return Object.keys(cleaned).length > 0 ? cleaned : null;
-}
-
-// Merges incoming credential edits into the existing (unmasked, DB) values
-// by key, rather than replacing the whole object — an admin editing one
-// field, or leaving others untouched, never has to round-trip (and thus
-// risk resaving) a masked value it never actually received. A key mapped
-// to "" is an explicit delete-this-field signal from the form.
-function mergeCredentials(
-  existing: Record<string, string> | null,
-  incoming: Record<string, string> | null | undefined,
-): Record<string, string> | null | undefined {
-  if (incoming === undefined) return undefined;
-  if (incoming === null) return null;
-
-  const merged = { ...(existing ?? {}) };
-  for (const [key, value] of Object.entries(incoming)) {
-    if (value === "") {
-      delete merged[key];
-    } else {
-      merged[key] = value;
-    }
-  }
-  return Object.keys(merged).length > 0 ? merged : null;
-}
 
 function toResponse(row: BankRow) {
   return {
@@ -74,15 +28,15 @@ function toResponse(row: BankRow) {
     sortOrder: row.sortOrder,
     supportsInstallment: row.supportsInstallment,
     supportsSplitPayment: row.supportsSplitPayment,
-    credentials: maskCredentials((row.credentials as Record<string, string> | null) ?? null),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
 }
 
-// What the checkout page gets — never includes credentials. Exported for
-// orders.service.ts's resolveBank to reuse the same shape when embedding
-// the chosen bank on a placed order's response.
+// What the checkout page gets — display fields only, no admin-only ones
+// (sortOrder, isActive, timestamps). Exported for orders.service.ts's
+// resolveBank to reuse the same shape when embedding the chosen bank on a
+// placed order's response.
 export function toPublicResponse(row: BankRow) {
   return {
     id: row.id,
@@ -128,7 +82,6 @@ export async function createBank(input: CreateBankInput) {
     isActive: input.isActive ?? true,
     supportsInstallment: input.supportsInstallment ?? false,
     supportsSplitPayment: input.supportsSplitPayment ?? false,
-    credentials: cleanCredentials(input.credentials),
   });
   return toResponse(row);
 }
@@ -142,11 +95,6 @@ export async function updateBank(id: number, input: UpdateBankInput) {
     await assertKeyAvailable(input.key, id);
   }
 
-  const mergedCredentials = mergeCredentials(
-    (existing.credentials as Record<string, string> | null) ?? null,
-    input.credentials,
-  );
-
   const row = await banksRepository.update(id, {
     ...(input.key !== undefined ? { key: input.key } : {}),
     ...(input.name !== undefined
@@ -159,7 +107,6 @@ export async function updateBank(id: number, input: UpdateBankInput) {
     ...(input.supportsSplitPayment !== undefined
       ? { supportsSplitPayment: input.supportsSplitPayment }
       : {}),
-    ...(mergedCredentials !== undefined ? { credentials: mergedCredentials } : {}),
   });
   return toResponse(row);
 }
