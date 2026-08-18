@@ -22,11 +22,24 @@ export async function processImageForDisk(
     throw new ApiError(400, "ფაილი არ არის ვალიდური სურათი");
   }
 
-  // Animated GIFs would lose their animation through a naive resize/webp
-  // re-encode — out of scope for product photos, so pass them through as-is
-  // (already verified as a genuine GIF above, not just GIF-labeled).
+  // Animated GIFs would lose their animation through a naive webp
+  // re-encode, so they get their own branch instead of falling into the
+  // shared pipeline below — but they still go through it, unlike before.
+  // The format sniff above only reads enough of the file to identify it as
+  // a GIF; passing the original bytes straight to disk after that meant
+  // anything else the file contained past what metadata() bothered to
+  // parse — malformed structures, polyglot payloads — went unvalidated
+  // straight into public storage. Reading with `animated: true` decodes
+  // every frame instead of just the first; re-encoding via .gif() forces
+  // the output through libvips' own writer, which can only reproduce
+  // genuinely-decoded GIF pixel data, the same sanitization guarantee the
+  // webp branch below already gets.
   if (format === "gif") {
-    return { buffer, extension: ".gif" };
+    const reencoded = await sharp(buffer, { animated: true })
+      .resize({ width: MAX_DIMENSION, height: MAX_DIMENSION, fit: "inside", withoutEnlargement: true })
+      .gif()
+      .toBuffer();
+    return { buffer: reencoded, extension: ".gif" };
   }
 
   const processed = await sharp(buffer)
