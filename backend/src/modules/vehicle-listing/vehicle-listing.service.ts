@@ -198,9 +198,14 @@ async function assertRefsExist(input: {
 export async function listVehicleListings(query: VehicleListingListQuery) {
   const categoryIds =
     query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
+  const searchIds =
+    query.search != null
+      ? await vehicleListingRepository.findSearchRankedIds(query.search, query.limit)
+      : undefined;
+
   const rows = await vehicleListingRepository.findMany({
     categoryIds,
-    search: query.search,
+    searchIds,
     brandIds: query.brandIds,
     priceMin: query.priceMin,
     priceMax: query.priceMax,
@@ -211,7 +216,16 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     adminFilters: query.adminFilters,
     limit: query.limit,
   });
-  return rows.map(toVehicleListingResponse);
+
+  if (searchIds == null) {
+    return rows.map(toVehicleListingResponse);
+  }
+
+  // See products.service.ts's listProducts for why this re-sort/slice step
+  // is needed (findMany's `id: {in: [...]}` doesn't preserve rank order).
+  const rankById = new Map(searchIds.map((id, index) => [id, index]));
+  const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
+  return (query.limit != null ? ranked.slice(0, query.limit) : ranked).map(toVehicleListingResponse);
 }
 
 // Homepage "popular vehicles" slider — see

@@ -427,10 +427,18 @@ export async function listProducts(query: ProductListQuery) {
     query.vehicleCatalogId != null
       ? await buildVehicleCompatibilityWhere(query.vehicleCatalogId)
       : undefined;
+  // Resolved to a ranked id list first (see findSearchRankedIds) so
+  // buildWhere can AND it together with every other structured filter, the
+  // same way buildVehicleCompatibilityWhere's output is threaded through.
+  const searchIds =
+    query.search != null
+      ? await productsRepository.findSearchRankedIds(query.search, query.limit)
+      : undefined;
+
   const rows = await productsRepository.findMany({
     categoryIds,
     vehicleCompatibilityWhere,
-    search: query.search,
+    searchIds,
     brandIds: query.brandIds,
     priceMin: query.priceMin,
     priceMax: query.priceMax,
@@ -439,7 +447,17 @@ export async function listProducts(query: ProductListQuery) {
     adminFilters: query.adminFilters,
     limit: query.limit,
   });
-  return rows.map(toResponse);
+
+  if (searchIds == null) {
+    return rows.map(toResponse);
+  }
+
+  // findMany's `id: {in: searchIds}` doesn't preserve searchIds' relevance
+  // order — restore it, then apply the limit here (findMany skipped `take`
+  // for this case; see its comment).
+  const rankById = new Map(searchIds.map((id, index) => [id, index]));
+  const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
+  return (query.limit != null ? ranked.slice(0, query.limit) : ranked).map(toResponse);
 }
 
 // Homepage "popular products" slider — see

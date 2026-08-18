@@ -34,6 +34,12 @@ const CANCELLED_KEY = "CANCELLED";
 function candidatePoolSize(limit: number): number {
   return Math.min(1000, Math.max(limit * 20, 200));
 }
+
+// Bounds findSearchRankedIds below the same way candidatePoolSize bounds the
+// popularity queries above — without a cap, a very generic search term could
+// match a large fraction of the catalog, and no storefront view ever needs
+// more ranked results than this in one response.
+const SEARCH_RESULT_CAP = 500;
 const unitRefSelect = {
   id: true,
   nameKa: true,
@@ -150,7 +156,12 @@ async function buildWhere(filters: {
   // vehicleCatalogId into "explicit fitment OR a matching fitment rule") —
   // the repository just ANDs it in, same as adminWhere below.
   vehicleCompatibilityWhere?: Prisma.ProductWhereInput;
-  search?: string;
+  // Pre-ranked by findSearchRankedIds below (pg_trgm word-similarity, not a
+  // plain `contains`) — the repository just ANDs the id set in, same as
+  // vehicleCompatibilityWhere above. Relevance order is restored afterward
+  // by products.service.ts's listProducts, since `id: {in: [...]}` doesn't
+  // preserve array order.
+  searchIds?: number[];
   brandIds?: number[];
   priceMin?: number;
   priceMax?: number;
@@ -172,14 +183,8 @@ async function buildWhere(filters: {
     and.push(filters.vehicleCompatibilityWhere);
   }
 
-  if (filters.search) {
-    and.push({
-      OR: [
-        { nameKa: { contains: filters.search, mode: "insensitive" } },
-        { nameEn: { contains: filters.search, mode: "insensitive" } },
-        { nameRu: { contains: filters.search, mode: "insensitive" } },
-      ],
-    });
+  if (filters.searchIds) {
+    and.push({ id: { in: filters.searchIds } });
   }
 
   if (filters.brandIds && filters.brandIds.length > 0) {
@@ -241,7 +246,7 @@ export const productsRepository = {
     categoryIds?: number[];
     excludeProductId?: number;
     vehicleCompatibilityWhere?: Prisma.ProductWhereInput;
-    search?: string;
+    searchIds?: number[];
     brandIds?: number[];
     priceMin?: number;
     priceMax?: number;
@@ -254,8 +259,52 @@ export const productsRepository = {
       where: await buildWhere(filters),
       include: productSummaryInclude,
       orderBy: { createdAt: "desc" },
-      take: filters.limit,
+      // When search is active, truncating here (by createdAt) would defeat
+      // the relevance ranking findSearchRankedIds already computed —
+      // products.service.ts's listProducts re-sorts by that rank and slices
+      // to `limit` itself instead. Otherwise (no search) this is the only
+      // place truncation happens.
+      take: filters.searchIds ? undefined : filters.limit,
     });
+  },
+
+  // Typo-tolerant, relevance-ranked search — pg_trgm word_similarity instead
+  // of a plain `contains`. `%>` (word-similarity) is used rather than `%`
+  // (whole-string similarity) because whole-string similarity dilutes badly
+  // against longer product names (a short query matched inside a much
+  // longer name scores low even on an exact substring hit); word_similarity
+  // instead scores the best-matching word-boundary span within the name, so
+  // "ჩაფხუტი" scores 1.0 against "სპორტ-ტურინგ დახურული ჩაფხუტი" just as it
+  // does against "ჩაფხუტი" alone. Both operators are accelerated by the
+  // pg_trgm GIN indexes added in the search_and_popularity_scaling
+  // migration (same indexes that already sped up the old `contains`/ILIKE
+  // queries). Verified live against the dev DB — see conversation history.
+  // Returns ids only, ordered by relevance DESC; findMany's `id: {in: [...]}`
+  // doesn't preserve that order, so callers must re-apply it (same caveat as
+  // findPopularProductIds below).
+  async findSearchRankedIds(search: string, limit?: number): Promise<number[]> {
+    const cap = limit != null ? candidatePoolSize(limit) : SEARCH_RESULT_CAP;
+    const rows = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT id
+      FROM "dbo"."Product"
+      WHERE "nameKa" %> ${search} OR "nameEn" %> ${search} OR "nameRu" %> ${search}
+      ORDER BY
+        GREATEST(
+          word_similarity(${search}, "nameKa"),
+          word_similarity(${search}, "nameEn"),
+          word_similarity(${search}, "nameRu")
+        ) DESC,
+        -- Many results legitimately tie at the max score of 1.0 (word
+        -- similarity treats any whole-word substring match as a perfect
+        -- hit, regardless of how many other words surround it) — without a
+        -- tiebreaker, Postgres returns ties in an arbitrary scan order, so
+        -- an exact/short match like "ჩაფხუტი" isn't guaranteed to outrank a
+        -- longer name that merely contains it, e.g. "დახურული ჩაფხუტი".
+        -- Preferring the shorter name surfaces the closer match first.
+        LENGTH("nameKa") ASC
+      LIMIT ${cap}
+    `;
+    return rows.map((row) => row.id);
   },
 
   findByIds(ids: number[]) {

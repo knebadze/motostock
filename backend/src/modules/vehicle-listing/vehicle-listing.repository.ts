@@ -9,6 +9,14 @@ const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slu
 const brandModelRefSelect = { id: true, name: true, slug: true } as const;
 const CANCELLED_KEY = "CANCELLED";
 
+// Same reasoning as products.repository.ts's SEARCH_RESULT_CAP — bounds
+// findSearchRankedIds so an overly generic search term can't pull back an
+// unbounded number of ranked candidates.
+const SEARCH_RESULT_CAP = 500;
+function candidatePoolSize(limit: number): number {
+  return Math.min(1000, Math.max(limit * 20, 200));
+}
+
 export const vehicleListingInclude = {
   vehicleCatalog: {
     include: {
@@ -51,7 +59,9 @@ type VehicleListingWriteData = {
 
 function buildWhere(filters: {
   categoryIds?: number[];
-  search?: string;
+  // Pre-ranked by findSearchRankedIds below (pg_trgm word-similarity) — see
+  // products.repository.ts's identical pattern for the full rationale.
+  searchIds?: number[];
   brandIds?: number[];
   priceMin?: number;
   priceMax?: number;
@@ -67,13 +77,8 @@ function buildWhere(filters: {
     and.push({ vehicleCatalog: { model: { categoryId: { in: filters.categoryIds } } } });
   }
 
-  if (filters.search) {
-    and.push({
-      OR: [
-        { vehicleCatalog: { brand: { name: { contains: filters.search, mode: "insensitive" } } } },
-        { vehicleCatalog: { model: { name: { contains: filters.search, mode: "insensitive" } } } },
-      ],
-    });
+  if (filters.searchIds) {
+    and.push({ id: { in: filters.searchIds } });
   }
 
   if (filters.brandIds && filters.brandIds.length > 0) {
@@ -140,7 +145,7 @@ function buildWhere(filters: {
 export const vehicleListingRepository = {
   findMany(filters: {
     categoryIds?: number[];
-    search?: string;
+    searchIds?: number[];
     brandIds?: number[];
     priceMin?: number;
     priceMax?: number;
@@ -158,8 +163,35 @@ export const vehicleListingRepository = {
       // the garage module), createdAt as the tiebreaker for equally popular
       // (including brand-new, popularity 0) entries.
       orderBy: [{ vehicleCatalog: { popularity: "desc" } }, { createdAt: "desc" }],
-      take: filters.limit,
+      // When search is active, truncating here would defeat the relevance
+      // ranking findSearchRankedIds already computed — see
+      // products.repository.ts's identical findMany comment.
+      take: filters.searchIds ? undefined : filters.limit,
     });
+  },
+
+  // Typo-tolerant, relevance-ranked search across brand/model name — see
+  // products.repository.ts's findSearchRankedIds for the full pg_trgm
+  // word_similarity rationale (identical reasoning, applied here to the
+  // Brand/Model tables the listing joins through instead of Product's own
+  // name columns).
+  async findSearchRankedIds(search: string, limit?: number): Promise<number[]> {
+    const cap = limit != null ? candidatePoolSize(limit) : SEARCH_RESULT_CAP;
+    const rows = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT vl.id
+      FROM "dbo"."VehicleListing" vl
+      JOIN "dbo"."VehicleCatalog" vc ON vc.id = vl."vehicleCatalogId"
+      JOIN "cla"."Brand" b ON b.id = vc."brandId"
+      JOIN "cla"."Model" m ON m.id = vc."modelId"
+      WHERE b.name %> ${search} OR m.name %> ${search}
+      ORDER BY
+        GREATEST(word_similarity(${search}, b.name), word_similarity(${search}, m.name)) DESC,
+        -- Tiebreaker for ties at the max score — see products.repository.ts's
+        -- identical findSearchRankedIds comment for why this is needed.
+        LENGTH(b.name) + LENGTH(m.name) ASC
+      LIMIT ${cap}
+    `;
+    return rows.map((row) => row.id);
   },
 
   findByIds(ids: number[]) {
