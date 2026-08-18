@@ -37,7 +37,7 @@ export function buildProductFilterFields(data: {
       label: "ბრენდი",
       section: "ძირითადი",
       kind: "MULTI_SELECT",
-      options: data.productBrands.map((brand) => ({ value: String(brand.id), label: brand.name.ka })),
+      options: data.productBrands.map((brand) => ({ value: String(brand.id), label: brand.name })),
     },
     { key: "PRICE", label: "ფასი", section: "ვარიანტები", kind: "RANGE" },
     { key: "STOCK_QUANTITY", label: "მარაგი", section: "ვარიანტები", kind: "RANGE" },

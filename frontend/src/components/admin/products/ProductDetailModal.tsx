@@ -50,7 +50,7 @@ function MainTab({ product }: { product: ProductDetailAdmin }) {
       <SpecsList
         rows={[
           { label: "კატეგორია", value: product.category.name.ka },
-          { label: "ბრენდი", value: product.productBrand?.name.ka ?? "—" },
+          { label: "ბრენდი", value: product.productBrand?.name ?? "—" },
           { label: "სახელი (en)", value: product.name.en || "—" },
           { label: "სახელი (ru)", value: product.name.ru || "—" },
           { label: "დამატებულია", value: formatDateTime(product.createdAt) },

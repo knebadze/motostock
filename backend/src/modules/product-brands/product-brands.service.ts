@@ -5,28 +5,26 @@ import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.
 import { productBrandsRepository } from "./product-brands.repository.js";
 import type { CreateProductBrandInput, UpdateProductBrandInput } from "./product-brands.schema.js";
 
-type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
+type CategoryRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
 
 type ProductBrandRow = {
   id: number;
-  category: NamedRefRow;
-  nameKa: string;
-  nameEn: string;
-  nameRu: string;
+  category: CategoryRefRow;
+  name: string;
   slug: string;
   createdAt: Date;
   updatedAt: Date;
 };
 
-function toNamedRef(row: NamedRefRow) {
+function toCategoryRef(row: CategoryRefRow) {
   return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
 }
 
 function toResponse(row: ProductBrandRow) {
   return {
     id: row.id,
-    category: toNamedRef(row.category),
-    name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu },
+    category: toCategoryRef(row.category),
+    name: row.name,
     slug: row.slug,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -64,9 +62,7 @@ export async function createProductBrand(input: CreateProductBrandInput) {
 
   const row = await productBrandsRepository.create({
     categoryId: input.categoryId,
-    nameKa: input.name.ka,
-    nameEn: input.name.en,
-    nameRu: input.name.ru,
+    name: input.name,
     slug: input.slug,
   });
   return toResponse(row);
@@ -91,9 +87,7 @@ export async function updateProductBrand(id: number, input: UpdateProductBrandIn
 
   const row = await productBrandsRepository.update(id, {
     ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
-    ...(input.name !== undefined
-      ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
-      : {}),
+    ...(input.name !== undefined ? { name: input.name } : {}),
     ...(input.slug !== undefined ? { slug: input.slug } : {}),
   });
   return toResponse(row);

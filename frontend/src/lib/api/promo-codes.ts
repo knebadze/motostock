@@ -12,7 +12,7 @@ export type PromoCode = {
   code: string;
   domain: PromoCodeDomain;
   category: NamedRef | null;
-  productBrand: NamedRef | null;
+  productBrand: BrandModelRef | null;
   attribute: { id: number; name: LocalizedString } | null;
   attributeOption: { id: number; key: string; label: LocalizedString } | null;
   brand: BrandModelRef | null;

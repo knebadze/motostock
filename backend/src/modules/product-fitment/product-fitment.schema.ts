@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
-import { localizedStringSchema } from "../../lib/localized.js";
 
 export const productFitmentProductIdParamSchema = z.object({
   productId: z.coerce.number().int().positive(),
@@ -19,7 +18,7 @@ export const createProductFitmentSchema = registry.register(
 );
 export type CreateProductFitmentInput = z.infer<typeof createProductFitmentSchema>;
 
-const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
+const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
 
 export const productFitmentResponseSchema = registry.register(
   "ProductFitment",
@@ -28,8 +27,8 @@ export const productFitmentResponseSchema = registry.register(
     productId: z.int(),
     vehicleCatalog: z.object({
       id: z.int(),
-      brand: namedRefSchema,
-      model: namedRefSchema,
+      brand: brandModelRefSchema,
+      model: brandModelRefSchema,
       variant: z.string(),
       yearFrom: z.int().nullable(),
       yearTo: z.int().nullable(),

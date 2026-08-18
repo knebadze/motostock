@@ -193,7 +193,7 @@ export const promoCodeResponseSchema = registry.register(
     code: z.string().openapi({ example: "SUMMER15" }),
     domain: promoCodeDomainSchema,
     category: namedRefSchema.nullable(),
-    productBrand: namedRefSchema.nullable(),
+    productBrand: brandModelRefSchema.nullable(),
     attribute: z.object({ id: z.int(), name: localizedStringSchema }).nullable(),
     attributeOption: z.object({ id: z.int(), key: z.string(), label: localizedStringSchema }).nullable(),
     brand: brandModelRefSchema.nullable(),

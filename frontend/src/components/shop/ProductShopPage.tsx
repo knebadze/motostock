@@ -88,12 +88,12 @@ export function ProductShopPage({
       if (product.productBrand && !byId.has(product.productBrand.id)) {
         byId.set(product.productBrand.id, {
           id: product.productBrand.id,
-          label: product.productBrand.name[locale],
+          label: product.productBrand.name,
         });
       }
     }
     return Array.from(byId.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [products, locale]);
+  }, [products]);
 
   function updateAttributeState(attributeId: number, patch: Partial<AttributeFilterState>) {
     setAttributeFilterState((current) => ({

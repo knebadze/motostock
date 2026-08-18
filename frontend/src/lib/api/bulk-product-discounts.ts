@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 import type { LocalizedString } from "./categories";
-import type { NamedRef } from "./vehicle-catalog";
+import type { BrandModelRef } from "./vehicle-catalog";
 import type { AttributeValueType } from "./attributes";
 import type { LookupItem } from "./lookups";
 import type { ProductVariantDiscount } from "./product-variant-discounts";
@@ -20,7 +20,7 @@ export type BulkDiscountCandidate = {
   productId: number;
   productName: LocalizedString;
   productSlug: string;
-  brand: NamedRef | null;
+  brand: BrandModelRef | null;
   attributeValues: BulkDiscountCandidateAttributeValue[];
   sku: string | null;
   size: LookupItem | null;
@@ -44,7 +44,7 @@ export type ProductDiscountHistoryRow = {
   productId: number;
   productName: LocalizedString;
   productSlug: string;
-  brand: NamedRef | null;
+  brand: BrandModelRef | null;
   sku: string | null;
   size: LookupItem | null;
   color: LookupItem | null;

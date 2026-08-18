@@ -87,7 +87,7 @@ function findCardActiveDiscount(
 type ProductRow = {
   id: number;
   category: NamedRefRow;
-  productBrand: NamedRefRow | null;
+  productBrand: BrandModelRefRow | null;
   nameKa: string;
   nameEn: string;
   nameRu: string;
@@ -116,7 +116,7 @@ export function toResponse(row: ProductRow) {
   return {
     id: row.id,
     category: toNamedRef(row.category),
-    productBrand: row.productBrand ? toNamedRef(row.productBrand) : null,
+    productBrand: row.productBrand,
     name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu },
     slug: row.slug,
     metaTitle: row.metaTitle,
@@ -186,11 +186,13 @@ type VariantDetailRow = {
   discounts: DiscountRow[];
 };
 
+type BrandModelRefRow = { id: number; name: string; slug: string };
+
 type FitmentRow = {
   vehicleCatalog: {
     id: number;
-    brand: NamedRefRow;
-    model: NamedRefRow;
+    brand: BrandModelRefRow;
+    model: BrandModelRefRow;
   };
 };
 
@@ -271,8 +273,8 @@ export async function toDetailResponse(row: ProductDetailRow) {
     variants: row.variants.map(toVariantDetailResponse),
     fitments: row.fitments.map((fitment) => ({
       id: fitment.vehicleCatalog.id,
-      brand: toNamedRef(fitment.vehicleCatalog.brand),
-      model: toNamedRef(fitment.vehicleCatalog.model),
+      brand: fitment.vehicleCatalog.brand,
+      model: fitment.vehicleCatalog.model,
     })),
     fitmentRules: await Promise.all(row.fitmentRules.map(toFitmentRuleResponse)),
     buyTogether: row.buyTogether.map((link) => toResponse(link.relatedProduct)),

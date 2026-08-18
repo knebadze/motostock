@@ -4,7 +4,7 @@ import type { LocalizedString } from "./categories";
 export type ProductBrand = {
   id: number;
   category: { id: number; name: LocalizedString; slug: string };
-  name: LocalizedString;
+  name: string;
   slug: string;
   createdAt: string;
   updatedAt: string;
@@ -12,7 +12,7 @@ export type ProductBrand = {
 
 export type ProductBrandInput = {
   categoryId: number;
-  name: LocalizedString;
+  name: string;
   slug: string;
 };
 

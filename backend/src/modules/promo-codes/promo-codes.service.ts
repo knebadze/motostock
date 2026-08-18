@@ -36,7 +36,7 @@ type PromoCodeRow = {
   code: string;
   domain: PromoCodeDomain;
   category: NamedRefRow | null;
-  productBrand: NamedRefRow | null;
+  productBrand: BrandModelRefRow | null;
   attribute: AttributeRefRow | null;
   attributeOption: AttributeOptionRefRow | null;
   brand: BrandModelRefRow | null;
@@ -84,7 +84,7 @@ async function toResponse(row: PromoCodeRow) {
     code: row.code,
     domain: row.domain,
     category: row.category ? toNamedRef(row.category) : null,
-    productBrand: row.productBrand ? toNamedRef(row.productBrand) : null,
+    productBrand: row.productBrand,
     attribute: row.attribute
       ? { id: row.attribute.id, name: { ka: row.attribute.nameKa, en: row.attribute.nameEn, ru: row.attribute.nameRu } }
       : null,

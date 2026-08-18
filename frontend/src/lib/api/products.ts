@@ -31,7 +31,7 @@ export type ProductAttributeValueInput = {
 export type Product = {
   id: number;
   category: NamedRef;
-  productBrand: NamedRef | null;
+  productBrand: BrandModelRef | null;
   name: LocalizedString;
   slug: string;
   metaTitle: string | null;

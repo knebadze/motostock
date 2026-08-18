@@ -9,13 +9,13 @@ const slugField = z
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "მხოლოდ პატარა ლათინური ასოები, ციფრები და დეფისი")
   .openapi({ example: "agv" });
 
+const nameField = z.string().min(1).max(120).openapi({ example: "AGV" });
+
 export const createProductBrandSchema = registry.register(
   "CreateProductBrandInput",
   z.object({
     categoryId: z.int().positive(),
-    name: localizedStringSchema.openapi({
-      example: { ka: "AGV", en: "AGV", ru: "AGV" },
-    }),
+    name: nameField,
     slug: slugField,
   }),
 );
@@ -47,7 +47,7 @@ export const productBrandResponseSchema = registry.register(
   z.object({
     id: z.int().openapi({ example: 1 }),
     category: categoryRefSchema,
-    name: localizedStringSchema,
+    name: nameField,
     slug: z.string().openapi({ example: "agv" }),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),

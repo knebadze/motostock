@@ -46,7 +46,7 @@ function scopeSummary(promoCode: PromoCode): string {
   }
 
   const parts = [promoCode.category.name.ka];
-  if (promoCode.productBrand) parts.push(promoCode.productBrand.name.ka);
+  if (promoCode.productBrand) parts.push(promoCode.productBrand.name);
   if (promoCode.brand) parts.push(promoCode.brand.name);
   if (promoCode.model) parts.push(promoCode.model.name);
   if (promoCode.attribute && promoCode.attributeOption) {

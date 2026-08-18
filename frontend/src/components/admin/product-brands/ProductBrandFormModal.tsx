@@ -4,7 +4,6 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Select } from "@/components/shared/Select";
-import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import {
@@ -37,9 +36,7 @@ export function ProductBrandFormModal({
   const [categoryId, setCategoryId] = useState(
     productBrand ? String(productBrand.category.id) : "",
   );
-  const [nameKa, setNameKa] = useState(productBrand?.name.ka ?? "");
-  const [nameEn, setNameEn] = useState(productBrand?.name.en ?? "");
-  const [nameRu, setNameRu] = useState(productBrand?.name.ru ?? "");
+  const [name, setName] = useState(productBrand?.name ?? "");
   const [slug, setSlug] = useState(productBrand?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -55,7 +52,7 @@ export function ProductBrandFormModal({
 
     const result = productBrandFormSchema.safeParse({
       categoryId,
-      name: { ka: nameKa, en: nameEn, ru: nameRu },
+      name,
       slug,
     });
     if (!result.success) {
@@ -70,7 +67,7 @@ export function ProductBrandFormModal({
     try {
       const input = {
         categoryId: Number(categoryId),
-        name: { ka: nameKa.trim(), en: nameEn.trim(), ru: nameRu.trim() },
+        name: name.trim(),
         slug: slug.trim(),
       };
 
@@ -114,19 +111,22 @@ export function ProductBrandFormModal({
           </p>
         </div>
 
-        <LocalizedNameFields
-          idPrefix="product-brand-name"
-          value={{ ka: nameKa, en: nameEn, ru: nameRu }}
-          onChange={(next) => {
-            setNameKa(next.ka);
-            setNameEn(next.en);
-            setNameRu(next.ru);
-          }}
-          onEnglishChange={(value) => {
-            if (!slugTouched) setSlug(slugify(value));
-          }}
-          errors={{ ka: errors["name.ka"], en: errors["name.en"], ru: errors["name.ru"] }}
-        />
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="product-brand-name" className="text-sm font-medium">
+            დასახელება *
+          </label>
+          <input
+            id="product-brand-name"
+            value={name}
+            onChange={(event) => {
+              const value = event.target.value;
+              setName(value);
+              if (!slugTouched) setSlug(slugify(value));
+            }}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.name} />
+        </div>
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="product-brand-slug" className="text-sm font-medium">

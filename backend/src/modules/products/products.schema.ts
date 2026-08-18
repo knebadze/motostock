@@ -172,6 +172,7 @@ export const checkCompatibilityResponseSchema = registry.register(
 );
 
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
+const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
 
 const unitRefSchema = z.object({
   id: z.int(),
@@ -200,7 +201,7 @@ export const productResponseSchema = registry.register(
   z.object({
     id: z.int().openapi({ example: 1 }),
     category: namedRefSchema,
-    productBrand: namedRefSchema.nullable(),
+    productBrand: brandModelRefSchema.nullable(),
     name: localizedStringSchema,
     slug: z.string(),
     metaTitle: z.string().nullable(),
@@ -246,8 +247,8 @@ const productVariantDetailResponseSchema = z.object({
 
 const compatibleVehicleSchema = z.object({
   id: z.int(),
-  brand: namedRefSchema,
-  model: namedRefSchema,
+  brand: brandModelRefSchema,
+  model: brandModelRefSchema,
 });
 
 const vehicleSpecFieldSchema = z.enum([

@@ -645,9 +645,7 @@ async function seedAttributes(categoryIdBySlug: Map<string, number>, unitIdByNam
 
 type ProductBrandSeed = {
   categorySlug: string;
-  nameKa: string;
-  nameEn: string;
-  nameRu: string;
+  name: string;
   slug: string;
 };
 
@@ -657,22 +655,22 @@ type ProductBrandSeed = {
 // single-purpose brands (AGV for helmets, Motul for fluids) are attached
 // directly to their leaf category.
 const PRODUCT_BRAND_SEEDS: ProductBrandSeed[] = [
-  { categorySlug: "gear", nameKa: "Alpinestars", nameEn: "Alpinestars", nameRu: "Alpinestars", slug: "alpinestars" },
-  { categorySlug: "gear", nameKa: "Dainese", nameEn: "Dainese", nameRu: "Dainese", slug: "dainese" },
-  { categorySlug: "gear", nameKa: "REV'IT!", nameEn: "REV'IT!", nameRu: "REV'IT!", slug: "revit" },
-  { categorySlug: "helmets", nameKa: "AGV", nameEn: "AGV", nameRu: "AGV", slug: "agv" },
-  { categorySlug: "helmets", nameKa: "Shoei", nameEn: "Shoei", nameRu: "Shoei", slug: "shoei" },
-  { categorySlug: "helmets", nameKa: "Arai", nameEn: "Arai", nameRu: "Arai", slug: "arai" },
-  { categorySlug: "accessories", nameKa: "Givi", nameEn: "Givi", nameRu: "Givi", slug: "givi" },
-  { categorySlug: "accessories", nameKa: "SW-Motech", nameEn: "SW-Motech", nameRu: "SW-Motech", slug: "sw-motech" },
-  { categorySlug: "security", nameKa: "Xena", nameEn: "Xena", nameRu: "Xena", slug: "xena" },
-  { categorySlug: "tires", nameKa: "Michelin", nameEn: "Michelin", nameRu: "Michelin", slug: "michelin" },
-  { categorySlug: "tires", nameKa: "Pirelli", nameEn: "Pirelli", nameRu: "Pirelli", slug: "pirelli" },
-  { categorySlug: "tires", nameKa: "Dunlop", nameEn: "Dunlop", nameRu: "Dunlop", slug: "dunlop" },
-  { categorySlug: "fluids", nameKa: "Motul", nameEn: "Motul", nameRu: "Motul", slug: "motul" },
-  { categorySlug: "fluids", nameKa: "Castrol", nameEn: "Castrol", nameRu: "Castrol", slug: "castrol" },
-  { categorySlug: "brakes", nameKa: "Brembo", nameEn: "Brembo", nameRu: "Brembo", slug: "brembo" },
-  { categorySlug: "batteries", nameKa: "Yuasa", nameEn: "Yuasa", nameRu: "Yuasa", slug: "yuasa" },
+  { categorySlug: "gear", name: "Alpinestars", slug: "alpinestars" },
+  { categorySlug: "gear", name: "Dainese", slug: "dainese" },
+  { categorySlug: "gear", name: "REV'IT!", slug: "revit" },
+  { categorySlug: "helmets", name: "AGV", slug: "agv" },
+  { categorySlug: "helmets", name: "Shoei", slug: "shoei" },
+  { categorySlug: "helmets", name: "Arai", slug: "arai" },
+  { categorySlug: "accessories", name: "Givi", slug: "givi" },
+  { categorySlug: "accessories", name: "SW-Motech", slug: "sw-motech" },
+  { categorySlug: "security", name: "Xena", slug: "xena" },
+  { categorySlug: "tires", name: "Michelin", slug: "michelin" },
+  { categorySlug: "tires", name: "Pirelli", slug: "pirelli" },
+  { categorySlug: "tires", name: "Dunlop", slug: "dunlop" },
+  { categorySlug: "fluids", name: "Motul", slug: "motul" },
+  { categorySlug: "fluids", name: "Castrol", slug: "castrol" },
+  { categorySlug: "brakes", name: "Brembo", slug: "brembo" },
+  { categorySlug: "batteries", name: "Yuasa", slug: "yuasa" },
 ];
 
 async function seedProductBrands(categoryIdBySlug: Map<string, number>) {
@@ -687,9 +685,7 @@ async function seedProductBrands(categoryIdBySlug: Map<string, number>) {
       update: {},
       create: {
         categoryId,
-        nameKa: brandSeed.nameKa,
-        nameEn: brandSeed.nameEn,
-        nameRu: brandSeed.nameRu,
+        name: brandSeed.name,
         slug: brandSeed.slug,
       },
     });

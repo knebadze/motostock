@@ -275,7 +275,7 @@ export function ProductForm({
   }));
   const productBrandOptions = categoryProductBrands.map((productBrand) => ({
     value: String(productBrand.id),
-    label: productBrand.name.ka,
+    label: productBrand.name,
   }));
 
   function handleCategoryChange(nextCategoryId: string) {

@@ -40,7 +40,7 @@ function fromProductRow(row: ProductDiscountHistoryRow): UnifiedRow {
     key: `product-${row.id}`,
     type: "PRODUCT",
     label: row.productName.ka,
-    subLabel: [row.brand?.name.ka, row.size?.nameKa, row.color?.nameKa].filter(Boolean).join(" · ") || "—",
+    subLabel: [row.brand?.name, row.size?.nameKa, row.color?.nameKa].filter(Boolean).join(" · ") || "—",
     price: row.price,
     discountPrice: row.discountPrice,
     discountPercent: row.discountPercent,

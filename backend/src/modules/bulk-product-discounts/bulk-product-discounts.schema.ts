@@ -4,7 +4,7 @@ import { localizedStringSchema } from "../../lib/localized.js";
 import { attributeValueTypeSchema } from "../attributes/attributes.schema.js";
 import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
 
-const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
+const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
 
 export const bulkDiscountCandidatesQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive(),
@@ -57,7 +57,7 @@ export const productDiscountHistoryRowSchema = registry.register(
     productId: z.int(),
     productName: localizedStringSchema,
     productSlug: z.string(),
-    brand: namedRefSchema.nullable(),
+    brand: brandModelRefSchema.nullable(),
     sku: z.string().nullable(),
     size: lookupItemResponseSchema.nullable(),
     color: lookupItemResponseSchema.nullable(),
@@ -78,7 +78,7 @@ export const bulkDiscountCandidateResponseSchema = registry.register(
     productId: z.int(),
     productName: localizedStringSchema,
     productSlug: z.string(),
-    brand: namedRefSchema.nullable(),
+    brand: brandModelRefSchema.nullable(),
     attributeValues: z.array(candidateAttributeValueSchema),
     sku: z.string().nullable(),
     size: lookupItemResponseSchema.nullable(),

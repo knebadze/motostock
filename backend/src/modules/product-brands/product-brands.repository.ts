@@ -5,9 +5,7 @@ const include = { category: { select: categorySelect } } as const;
 
 type ProductBrandWriteData = {
   categoryId: number;
-  nameKa: string;
-  nameEn: string;
-  nameRu: string;
+  name: string;
   slug: string;
 };
 
@@ -16,7 +14,7 @@ export const productBrandsRepository = {
     return prisma.productBrand.findMany({
       where: categoryIds ? { categoryId: { in: categoryIds } } : undefined,
       include,
-      orderBy: { nameKa: "asc" },
+      orderBy: { name: "asc" },
     });
   },
 

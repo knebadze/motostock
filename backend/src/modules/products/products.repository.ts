@@ -5,6 +5,7 @@ import type { FilterEntry } from "../filters/filter-request.schema.js";
 import type { AttributeFilterInput } from "./products.schema.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
+const brandModelRefSelect = { id: true, name: true, slug: true } as const;
 const unitRefSelect = {
   id: true,
   nameKa: true,
@@ -27,7 +28,7 @@ const attributeWithUnitSelect = {
 // exact same "product card" shape for the related products it embeds.
 export const productSummaryInclude = {
   category: { select: namedRefSelect },
-  productBrand: { select: namedRefSelect },
+  productBrand: { select: brandModelRefSelect },
   attributeValues: {
     include: {
       attribute: { select: attributeWithUnitSelect },
@@ -51,7 +52,7 @@ const lookupSelect = { id: true, key: true, nameKa: true, nameEn: true, nameRu: 
 // separate query shape.
 const detailInclude = {
   category: { select: namedRefSelect },
-  productBrand: { select: namedRefSelect },
+  productBrand: { select: brandModelRefSelect },
   attributeValues: {
     include: {
       attribute: { select: attributeWithUnitSelect },
@@ -72,8 +73,8 @@ const detailInclude = {
     include: {
       vehicleCatalog: {
         include: {
-          brand: { select: namedRefSelect },
-          model: { select: namedRefSelect },
+          brand: { select: brandModelRefSelect },
+          model: { select: brandModelRefSelect },
         },
       },
     },

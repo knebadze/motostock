@@ -41,7 +41,7 @@ const columns: DataTableColumn<Product>[] = [
   },
   {
     header: "ბრენდი",
-    render: (product) => product.productBrand?.name.ka ?? "—",
+    render: (product) => product.productBrand?.name ?? "—",
     cellClassName: "text-muted-foreground",
   },
   {

@@ -3,7 +3,7 @@ import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
 import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
 
-const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
+const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
 
 export const bulkVehicleDiscountCandidatesQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive(),
@@ -57,8 +57,8 @@ export const vehicleDiscountHistoryRowSchema = registry.register(
   z.object({
     id: z.int(),
     vehicleListingId: z.int(),
-    brand: namedRefSchema,
-    model: namedRefSchema,
+    brand: brandModelRefSchema,
+    model: brandModelRefSchema,
     variant: z.string(),
     year: z.int(),
     condition: lookupItemResponseSchema,
@@ -77,8 +77,8 @@ export const bulkVehicleDiscountCandidateResponseSchema = registry.register(
   "BulkVehicleDiscountCandidate",
   z.object({
     vehicleListingId: z.int(),
-    brand: namedRefSchema,
-    model: namedRefSchema,
+    brand: brandModelRefSchema,
+    model: brandModelRefSchema,
     variant: z.string(),
     year: z.int(),
     condition: lookupItemResponseSchema,

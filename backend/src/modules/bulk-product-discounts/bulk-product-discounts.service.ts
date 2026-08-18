@@ -12,7 +12,7 @@ import type {
   ListProductDiscountHistoryQuery,
 } from "./bulk-product-discounts.schema.js";
 
-type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
+type BrandModelRefRow = { id: number; name: string; slug: string };
 type LookupRow = { id: number; key: string; nameKa: string; nameEn: string; nameRu: string };
 
 type CandidateAttributeValueRow = {
@@ -39,14 +39,10 @@ type CandidateProductRow = {
   nameEn: string;
   nameRu: string;
   slug: string;
-  productBrand: NamedRefRow | null;
+  productBrand: BrandModelRefRow | null;
   attributeValues: CandidateAttributeValueRow[];
   variants: CandidateVariantRow[];
 };
-
-function toNamedRef(row: NamedRefRow) {
-  return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
-}
 
 function findActiveDiscount(discounts: CandidateVariantRow["discounts"]) {
   const now = new Date();
@@ -81,7 +77,7 @@ function toCandidateRows(product: CandidateProductRow) {
       productId: product.id,
       productName: { ka: product.nameKa, en: product.nameEn, ru: product.nameRu },
       productSlug: product.slug,
-      brand: product.productBrand ? toNamedRef(product.productBrand) : null,
+      brand: product.productBrand,
       attributeValues,
       sku: variant.sku,
       size: variant.size,
@@ -153,7 +149,7 @@ type DiscountHistoryRow = {
       nameEn: string;
       nameRu: string;
       slug: string;
-      productBrand: NamedRefRow | null;
+      productBrand: BrandModelRefRow | null;
     };
   };
 };
@@ -176,7 +172,7 @@ function toDiscountHistoryRow(row: DiscountHistoryRow) {
       ru: row.productVariant.product.nameRu,
     },
     productSlug: row.productVariant.product.slug,
-    brand: row.productVariant.product.productBrand ? toNamedRef(row.productVariant.product.productBrand) : null,
+    brand: row.productVariant.product.productBrand,
     sku: row.productVariant.sku,
     size: row.productVariant.size,
     color: row.productVariant.color,

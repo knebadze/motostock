@@ -6,7 +6,7 @@ const brandModelRefSelect = { id: true, name: true, slug: true } as const;
 
 const include = {
   category: { select: namedRefSelect },
-  productBrand: { select: namedRefSelect },
+  productBrand: { select: brandModelRefSelect },
   attribute: { select: { id: true, nameKa: true, nameEn: true, nameRu: true } },
   attributeOption: { select: { id: true, key: true, labelKa: true, labelEn: true, labelRu: true } },
   brand: { select: brandModelRefSelect },

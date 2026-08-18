@@ -120,7 +120,7 @@ export function HeroSlideFormModal({
   ];
   const brandOptions = [
     { value: "", label: "ყველა ბრენდი" },
-    ...productBrands.map((brand) => ({ value: String(brand.id), label: brand.name.ka })),
+    ...productBrands.map((brand) => ({ value: String(brand.id), label: brand.name })),
   ];
 
   function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {

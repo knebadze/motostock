@@ -227,7 +227,7 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
         locale === "en" ? product.descriptionEn : locale === "ru" ? product.descriptionRu : product.descriptionKa;
       return raw ? stripHtml(raw) : undefined;
     })(),
-    brand: product.productBrand ? { "@type": "Brand", name: product.productBrand.name[locale] } : undefined,
+    brand: product.productBrand ? { "@type": "Brand", name: product.productBrand.name } : undefined,
     offers:
       effectivePrices.length > 0
         ? {

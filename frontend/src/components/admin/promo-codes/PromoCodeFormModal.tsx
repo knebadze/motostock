@@ -254,7 +254,7 @@ export function PromoCodeFormModal({
     }
   }
 
-  const productBrandOptions = categoryBrands.map((brand) => ({ value: String(brand.id), label: brand.name.ka }));
+  const productBrandOptions = categoryBrands.map((brand) => ({ value: String(brand.id), label: brand.name }));
   const attributeSelectOptions = categorySelectAttributes.map((attribute) => ({
     value: String(attribute.id),
     label: attribute.name.ka,

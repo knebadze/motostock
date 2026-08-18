@@ -13,7 +13,7 @@ import { flattenTree } from "@/lib/categories-tree";
 import { ProductBrandFormModal } from "./ProductBrandFormModal";
 
 const columns: DataTableColumn<ProductBrand>[] = [
-  { header: "სახელი", render: (productBrand) => productBrand.name.ka },
+  { header: "სახელი", render: (productBrand) => productBrand.name },
   {
     header: "კატეგორია",
     render: (productBrand) => productBrand.category.name.ka,
@@ -134,7 +134,7 @@ export function ProductBrandsManager({
         message={
           <>
             დარწმუნებული ხართ, რომ გსურთ წაშალოთ{" "}
-            <span className="font-semibold text-foreground">{deletingProductBrand?.name.ka}</span>?
+            <span className="font-semibold text-foreground">{deletingProductBrand?.name}</span>?
             ამ მოქმედების გაუქმება შეუძლებელია.
           </>
         }

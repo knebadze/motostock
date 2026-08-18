@@ -128,7 +128,7 @@ export function ProductDetailPage({
         <div className="flex flex-col gap-5">
           {product.productBrand && (
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {product.productBrand.name[locale]}
+              {product.productBrand.name}
             </span>
           )}
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">

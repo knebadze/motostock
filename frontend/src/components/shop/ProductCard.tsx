@@ -94,7 +94,7 @@ export function ProductCard({
         <div className="flex flex-col gap-1">
           {product.productBrand && (
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {product.productBrand.name[locale]}
+              {product.productBrand.name}
             </span>
           )}
           <span className="line-clamp-2 min-h-12 font-semibold text-foreground">

@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { localizedNameSchema, requiredSelectString, slugSchema } from "./common";
+import { nameSchema, requiredSelectString, slugSchema } from "./common";
 
 export const productBrandFormSchema = z.object({
   categoryId: requiredSelectString("აირჩიეთ კატეგორია"),
-  name: localizedNameSchema,
+  name: nameSchema,
   slug: slugSchema,
 });

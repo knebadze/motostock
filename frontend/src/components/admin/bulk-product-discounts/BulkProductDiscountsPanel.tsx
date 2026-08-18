@@ -86,7 +86,7 @@ export function BulkProductDiscountsPanel({ categories }: { categories: Category
   const brandOptions = useMemo(() => {
     const map = new Map<number, string>();
     for (const candidate of candidates) {
-      if (candidate.brand) map.set(candidate.brand.id, candidate.brand.name.ka);
+      if (candidate.brand) map.set(candidate.brand.id, candidate.brand.name);
     }
     return Array.from(map, ([id, label]) => ({ value: String(id), label }));
   }, [candidates]);
@@ -328,7 +328,7 @@ export function BulkProductDiscountsPanel({ categories }: { categories: Category
                       {candidate.productName.ka}
                       {candidate.sku && <span className="ml-1.5 text-xs text-muted-foreground">({candidate.sku})</span>}
                     </td>
-                    <td className="px-3 py-2 text-muted-foreground">{candidate.brand?.name.ka ?? "—"}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{candidate.brand?.name ?? "—"}</td>
                     <td className="px-3 py-2 text-muted-foreground">{candidateAttributeSummary(candidate) || "—"}</td>
                     <td className="px-3 py-2 text-muted-foreground">{candidate.size?.nameKa ?? "—"}</td>
                     <td className="px-3 py-2 text-muted-foreground">{candidate.color?.nameKa ?? "—"}</td>

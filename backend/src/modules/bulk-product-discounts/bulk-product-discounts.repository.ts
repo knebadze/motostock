@@ -1,6 +1,6 @@
 import { prisma } from "../../config/prisma.js";
 
-const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
+const brandModelRefSelect = { id: true, name: true, slug: true } as const;
 const lookupSelect = { id: true, key: true, nameKa: true, nameEn: true, nameRu: true } as const;
 const attributeSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, valueType: true } as const;
 const optionSelect = { id: true, key: true, labelKa: true, labelEn: true, labelRu: true } as const;
@@ -11,7 +11,7 @@ const candidateSelect = {
   nameEn: true,
   nameRu: true,
   slug: true,
-  productBrand: { select: namedRefSelect },
+  productBrand: { select: brandModelRefSelect },
   attributeValues: {
     include: {
       attribute: { select: attributeSelect },
@@ -51,7 +51,7 @@ const discountHistorySelect = {
           nameEn: true,
           nameRu: true,
           slug: true,
-          productBrand: { select: namedRefSelect },
+          productBrand: { select: brandModelRefSelect },
         },
       },
     },
