@@ -53,13 +53,12 @@ export async function listMyGarage(userId: number) {
 export async function createGarageVehicle(userId: number, input: CreateGarageVehicleInput) {
   await assertCatalogEntryFitsYear(input.vehicleCatalogId, input.year);
 
-  const row = await garageRepository.create({
+  const row = await garageRepository.createWithPopularityBump({
     userId,
     vehicleCatalogId: input.vehicleCatalogId,
     year: input.year,
     vin: input.vin ?? null,
   });
-  await vehicleCatalogRepository.incrementPopularity(input.vehicleCatalogId);
   return toResponse(row);
 }
 
@@ -75,15 +74,15 @@ export async function updateGarageVehicle(
 
   await assertCatalogEntryFitsYear(input.vehicleCatalogId, input.year);
 
-  const row = await garageRepository.update(id, {
-    vehicleCatalogId: input.vehicleCatalogId,
-    year: input.year,
-    vin: input.vin ?? null,
-  });
-  if (input.vehicleCatalogId !== existing.vehicleCatalogId) {
-    await vehicleCatalogRepository.decrementPopularity(existing.vehicleCatalogId);
-    await vehicleCatalogRepository.incrementPopularity(input.vehicleCatalogId);
-  }
+  const row = await garageRepository.updateWithPopularityBump(
+    id,
+    {
+      vehicleCatalogId: input.vehicleCatalogId,
+      year: input.year,
+      vin: input.vin ?? null,
+    },
+    input.vehicleCatalogId !== existing.vehicleCatalogId ? existing.vehicleCatalogId : undefined,
+  );
   return toResponse(row);
 }
 
@@ -93,6 +92,5 @@ export async function deleteGarageVehicle(userId: number, id: number) {
     throw new ApiError(404, "გარაჟის ჩანაწერი ვერ მოიძებნა");
   }
 
-  await garageRepository.delete(id);
-  await vehicleCatalogRepository.decrementPopularity(existing.vehicleCatalogId);
+  await garageRepository.deleteWithPopularityBump(id, existing.vehicleCatalogId);
 }

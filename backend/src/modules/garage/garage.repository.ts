@@ -23,15 +23,54 @@ export const garageRepository = {
     return prisma.garageVehicle.findUnique({ where: { id }, include });
   },
 
-  create(data: GarageVehicleWriteData) {
-    return prisma.garageVehicle.create({ data, include });
+  // Bundles the GarageVehicle write with the VehicleCatalog.popularity bump
+  // in one transaction — same convention as vehicle-catalog.repository.ts's
+  // createSubmission. Two separate top-level calls would let a mid-flight
+  // crash/connection drop leave popularity permanently out of sync with
+  // the real garage-row count, with no reconciliation job to self-heal it.
+  createWithPopularityBump(data: GarageVehicleWriteData) {
+    return prisma.$transaction(async (tx) => {
+      const row = await tx.garageVehicle.create({ data, include });
+      await tx.vehicleCatalog.update({
+        where: { id: data.vehicleCatalogId },
+        data: { popularity: { increment: 1 } },
+      });
+      return row;
+    });
   },
 
-  update(id: number, data: { vehicleCatalogId: number; year: number; vin?: string | null }) {
-    return prisma.garageVehicle.update({ where: { id }, data, include });
+  // `previousVehicleCatalogId` is only passed when the entry is being
+  // re-pointed at a different catalog row — the popularity move (decrement
+  // old, increment new) only happens then, still inside the same
+  // transaction as the GarageVehicle update itself.
+  updateWithPopularityBump(
+    id: number,
+    data: { vehicleCatalogId: number; year: number; vin?: string | null },
+    previousVehicleCatalogId?: number,
+  ) {
+    return prisma.$transaction(async (tx) => {
+      const row = await tx.garageVehicle.update({ where: { id }, data, include });
+      if (previousVehicleCatalogId !== undefined) {
+        await tx.vehicleCatalog.update({
+          where: { id: previousVehicleCatalogId },
+          data: { popularity: { decrement: 1 } },
+        });
+        await tx.vehicleCatalog.update({
+          where: { id: data.vehicleCatalogId },
+          data: { popularity: { increment: 1 } },
+        });
+      }
+      return row;
+    });
   },
 
-  delete(id: number) {
-    return prisma.garageVehicle.delete({ where: { id } });
+  deleteWithPopularityBump(id: number, vehicleCatalogId: number) {
+    return prisma.$transaction(async (tx) => {
+      await tx.garageVehicle.delete({ where: { id } });
+      await tx.vehicleCatalog.update({
+        where: { id: vehicleCatalogId },
+        data: { popularity: { decrement: 1 } },
+      });
+    });
   },
 };

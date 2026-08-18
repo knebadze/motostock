@@ -121,22 +121,6 @@ export const vehicleCatalogRepository = {
     return prisma.vehicleCatalog.update({ where: { id }, data: { imageUrl }, include });
   },
 
-  // Kept in sync by the garage module on add/remove/reassign — see
-  // garage.service.ts. No `include`/return value needed, callers don't use it.
-  incrementPopularity(id: number) {
-    return prisma.vehicleCatalog.update({
-      where: { id },
-      data: { popularity: { increment: 1 } },
-    });
-  },
-
-  decrementPopularity(id: number) {
-    return prisma.vehicleCatalog.update({
-      where: { id },
-      data: { popularity: { decrement: 1 } },
-    });
-  },
-
   delete(id: number) {
     return prisma.vehicleCatalog.delete({ where: { id } });
   },
