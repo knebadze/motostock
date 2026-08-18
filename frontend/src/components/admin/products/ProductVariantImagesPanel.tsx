@@ -10,6 +10,7 @@ import {
   type ProductVariantImage,
 } from "@/lib/api/product-variant-images";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 type LocalImage = { id: number; file: File; previewUrl: string };
 type DisplayItem = { key: string; previewUrl: string };
@@ -31,6 +32,9 @@ export function ProductVariantImagesPanel({
   const [uploading, setUploading] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [draggedKey, setDraggedKey] = useState<string | null>(null);
+  // Only used for the isAttached (persisted) case below — an unsaved local
+  // image is just removed from in-memory state, nothing to confirm.
+  const [deletingKey, setDeletingKey] = useState<string | null>(null);
   const nextLocalIdRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -115,16 +119,9 @@ export function ProductVariantImagesPanel({
     if (files.length > 0) handleFilesSelected(files);
   }
 
-  async function handleDelete(key: string) {
+  function handleDeleteClick(key: string) {
     if (isAttached) {
-      try {
-        await deleteProductVariantImage(variantId, Number(key));
-        setRemoteImages((current) => current.filter((image) => String(image.id) !== key));
-        toast.success("სურათი წაიშალა");
-      } catch (error) {
-        const message = error instanceof ApiRequestError ? error.message : "წაშლა ვერ მოხერხდა";
-        toast.error(message);
-      }
+      setDeletingKey(key);
       return;
     }
 
@@ -135,6 +132,12 @@ export function ProductVariantImagesPanel({
       onPendingFilesChange?.(next.map((image) => image.file));
       return next;
     });
+  }
+
+  async function handleConfirmDelete() {
+    if (!deletingKey || !isAttached) return;
+    await deleteProductVariantImage(variantId, Number(deletingKey));
+    setRemoteImages((current) => current.filter((image) => String(image.id) !== deletingKey));
   }
 
   async function handleThumbDrop(event: React.DragEvent, targetKey: string) {
@@ -218,7 +221,7 @@ export function ProductVariantImagesPanel({
             )}
             <button
               type="button"
-              onClick={() => handleDelete(item.key)}
+              onClick={() => handleDeleteClick(item.key)}
               aria-label="წაშლა"
               className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-red-600 text-white opacity-0 shadow transition-opacity group-hover:opacity-100"
             >
@@ -251,6 +254,15 @@ export function ProductVariantImagesPanel({
         multiple
         onChange={handleFileInputChange}
         className="hidden"
+      />
+
+      <ConfirmDialog
+        open={deletingKey !== null}
+        onClose={() => setDeletingKey(null)}
+        title="სურათის წაშლა"
+        message="დარწმუნებული ხართ, რომ გსურთ ამ სურათის წაშლა? ამ მოქმედების გაუქმება შეუძლებელია."
+        successMessage="სურათი წაიშალა"
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );

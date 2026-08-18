@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Select } from "@/components/shared/Select";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
   createProductFitment,
   deleteProductFitment,
@@ -32,18 +33,23 @@ function vehicleCatalogLabel(entry: VehicleCatalogEntry): string {
   return `${entry.brand.name} ${entry.model.name}${variant}${year}`;
 }
 
+// fitment.vehicleCatalog is a narrower shape than VehicleCatalogEntry (no
+// category/spec fields), so it can't just be passed to vehicleCatalogLabel
+// above — same formatting, kept as its own function instead of duplicating
+// the string-building inline a second time (once for the table column, once
+// for the delete-confirmation message below).
+function fitmentLabel(fitment: ProductFitment): string {
+  const { vehicleCatalog } = fitment;
+  const year =
+    vehicleCatalog.yearFrom || vehicleCatalog.yearTo
+      ? ` (${vehicleCatalog.yearFrom ?? "?"}–${vehicleCatalog.yearTo ?? "?"})`
+      : "";
+  const variant = vehicleCatalog.variant ? ` — ${vehicleCatalog.variant}` : "";
+  return `${vehicleCatalog.brand.name} ${vehicleCatalog.model.name}${variant}${year}`;
+}
+
 const columns: DataTableColumn<ProductFitment>[] = [
-  {
-    header: "ტექნიკა",
-    render: (fitment) => {
-      const year =
-        fitment.vehicleCatalog.yearFrom || fitment.vehicleCatalog.yearTo
-          ? ` (${fitment.vehicleCatalog.yearFrom ?? "?"}–${fitment.vehicleCatalog.yearTo ?? "?"})`
-          : "";
-      const variant = fitment.vehicleCatalog.variant ? ` — ${fitment.vehicleCatalog.variant}` : "";
-      return `${fitment.vehicleCatalog.brand.name} ${fitment.vehicleCatalog.model.name}${variant}${year}`;
-    },
-  },
+  { header: "ტექნიკა", render: fitmentLabel },
 ];
 
 // Field id/id-map keyed by VehicleSpecField, only for the LOOKUP-kind
@@ -85,6 +91,7 @@ function FitmentRulesEditor({
   const [newRuleSpecField, setNewRuleSpecField] = useState("");
   const [newRuleSpecValueId, setNewRuleSpecValueId] = useState("");
   const [adding, setAdding] = useState(false);
+  const [deletingRule, setDeletingRule] = useState<ProductFitmentRule | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -160,15 +167,10 @@ function FitmentRulesEditor({
     }
   }
 
-  async function handleDeleteRule(rule: ProductFitmentRule) {
-    try {
-      await deleteProductFitmentRule(productId, rule.id);
-      await refresh();
-      toast.success("წესი წაიშალა");
-    } catch (error) {
-      const message = error instanceof ApiRequestError ? error.message : "წაშლა ვერ მოხერხდა";
-      toast.error(message);
-    }
+  async function handleDeleteRule() {
+    if (!deletingRule) return;
+    await deleteProductFitmentRule(productId, deletingRule.id);
+    await refresh();
   }
 
   return (
@@ -189,7 +191,7 @@ function FitmentRulesEditor({
           actions={(rule) => (
             <button
               type="button"
-              onClick={() => handleDeleteRule(rule)}
+              onClick={() => setDeletingRule(rule)}
               className="rounded-full px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10"
             >
               წაშლა
@@ -197,6 +199,23 @@ function FitmentRulesEditor({
           )}
         />
       )}
+
+      <ConfirmDialog
+        open={deletingRule !== null}
+        onClose={() => setDeletingRule(null)}
+        title="თავსებადობის წესის წაშლა"
+        message={
+          <>
+            დარწმუნებული ხართ, რომ გსურთ წაშალოთ წესი{" "}
+            <span className="font-semibold text-foreground">
+              {deletingRule ? ruleLabel(deletingRule) : ""}
+            </span>
+            ? ამ მოქმედების გაუქმება შეუძლებელია.
+          </>
+        }
+        successMessage="წესი წაიშალა"
+        onConfirm={handleDeleteRule}
+      />
 
       <div className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-end">
         <div className="flex flex-1 flex-col gap-1.5">
@@ -280,6 +299,7 @@ export function ProductFitmentPanel({
   const [loaded, setLoaded] = useState(false);
   const [vehicleCatalogId, setVehicleCatalogId] = useState("");
   const [adding, setAdding] = useState(false);
+  const [deletingFitment, setDeletingFitment] = useState<ProductFitment | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -335,15 +355,10 @@ export function ProductFitmentPanel({
     }
   }
 
-  async function handleDelete(fitment: ProductFitment) {
-    try {
-      await deleteProductFitment(productId, fitment.id);
-      await refresh();
-      toast.success("თავსებადობა წაიშალა");
-    } catch (error) {
-      const message = error instanceof ApiRequestError ? error.message : "წაშლა ვერ მოხერხდა";
-      toast.error(message);
-    }
+  async function handleDelete() {
+    if (!deletingFitment) return;
+    await deleteProductFitment(productId, deletingFitment.id);
+    await refresh();
   }
 
   return (
@@ -370,7 +385,7 @@ export function ProductFitmentPanel({
             actions={(fitment) => (
               <button
                 type="button"
-                onClick={() => handleDelete(fitment)}
+                onClick={() => setDeletingFitment(fitment)}
                 className="rounded-full px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10"
               >
                 წაშლა
@@ -378,6 +393,23 @@ export function ProductFitmentPanel({
             )}
           />
         )}
+
+        <ConfirmDialog
+          open={deletingFitment !== null}
+          onClose={() => setDeletingFitment(null)}
+          title="თავსებადობის წაშლა"
+          message={
+            <>
+              დარწმუნებული ხართ, რომ გსურთ წაშალოთ თავსებადობა{" "}
+              <span className="font-semibold text-foreground">
+                {deletingFitment ? fitmentLabel(deletingFitment) : ""}
+              </span>
+              -თან? ამ მოქმედების გაუქმება შეუძლებელია.
+            </>
+          }
+          successMessage="თავსებადობა წაიშალა"
+          onConfirm={handleDelete}
+        />
 
         <div className="flex gap-3">
           <div className="flex-1">

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { FieldError } from "@/components/shared/FieldError";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
   createProductVariantDiscount,
   deleteProductVariantDiscount,
@@ -44,6 +45,7 @@ export function ProductVariantDiscountsPanel({
   const [endDate, setEndDate] = useState("");
   const [adding, setAdding] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [deletingDiscount, setDeletingDiscount] = useState<ProductVariantDiscount | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,15 +117,10 @@ export function ProductVariantDiscountsPanel({
     }
   }
 
-  async function handleDelete(discount: ProductVariantDiscount) {
-    try {
-      await deleteProductVariantDiscount(variantId, discount.id);
-      await refresh();
-      toast.success("ფასდაკლება წაიშალა");
-    } catch (error) {
-      const message = error instanceof ApiRequestError ? error.message : "წაშლა ვერ მოხერხდა";
-      toast.error(message);
-    }
+  async function handleDelete() {
+    if (!deletingDiscount) return;
+    await deleteProductVariantDiscount(variantId, deletingDiscount.id);
+    await refresh();
   }
 
   return (
@@ -139,7 +136,7 @@ export function ProductVariantDiscountsPanel({
           actions={(discount) => (
             <button
               type="button"
-              onClick={() => handleDelete(discount)}
+              onClick={() => setDeletingDiscount(discount)}
               className="rounded-full px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10"
             >
               წაშლა
@@ -147,6 +144,23 @@ export function ProductVariantDiscountsPanel({
           )}
         />
       )}
+
+      <ConfirmDialog
+        open={deletingDiscount !== null}
+        onClose={() => setDeletingDiscount(null)}
+        title="ფასდაკლების წაშლა"
+        message={
+          <>
+            დარწმუნებული ხართ, რომ გსურთ წაშალოთ ფასდაკლება{" "}
+            <span className="font-semibold text-foreground">
+              {deletingDiscount ? formatPrice(deletingDiscount.discountPrice) : ""}
+            </span>
+            ? ამ მოქმედების გაუქმება შეუძლებელია.
+          </>
+        }
+        successMessage="ფასდაკლება წაიშალა"
+        onConfirm={handleDelete}
+      />
 
       <div className="grid gap-3 sm:grid-cols-5">
         <div className="flex flex-col gap-1.5">
