@@ -23,8 +23,17 @@ enum OrderDeliverySpeed {
 // said they'd pay/receive; status starts PENDING (see orders.service.ts's
 // resolvePendingStatusId) and is confirmed/updated manually.
 model Order {
-  id                Int                    @id @default(autoincrement())
-  orderCode         String                 @unique
+  id        Int    @id @default(autoincrement())
+  orderCode String @unique
+
+  // Client-generated once per checkout session and resent unchanged on
+  // every retry (double-click, timeout-retry) — see orders.service.ts's
+  // placeOrder, which returns the existing order instead of creating a
+  // second one when this key is already used. Nullable because it's a
+  // recent addition (existing orders predate it) and admin-side code never
+  // creates orders directly.
+  idempotencyKey String? @unique
+
   userId            Int
   user              User                   @relation(fields: [userId], references: [id])
   fulfillmentMethod OrderFulfillmentMethod

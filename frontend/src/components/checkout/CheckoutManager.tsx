@@ -72,6 +72,12 @@ export function CheckoutManager({
   const [promoApplying, setPromoApplying] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
+  // Generated once for this checkout session and reused unchanged across
+  // every preview/place call, including retries — see orders.ts's
+  // CheckoutInput.idempotencyKey and orders.service.ts's placeOrder, which
+  // uses it to recognize a double-click or timeout-retry and return the
+  // original order instead of creating a second one.
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   const requiresAddress = fulfillmentMethod !== "PICKUP";
   const requiresBank = fulfillmentMethod === "CARD";
@@ -96,6 +102,7 @@ export function CheckoutManager({
         deliverySpeed: requiresAddress ? deliverySpeed : undefined,
         promoCode: appliedPromoCode ?? undefined,
         bankId: requiresBank ? (bankId ?? undefined) : undefined,
+        idempotencyKey,
       })
         .then((result) => {
           if (!cancelled) setPreview(result);
@@ -143,6 +150,7 @@ export function CheckoutManager({
         deliverySpeed: requiresAddress ? deliverySpeed : undefined,
         promoCode: code,
         bankId: requiresBank ? (bankId ?? undefined) : undefined,
+        idempotencyKey,
       });
       setPreview(result);
       setAppliedPromoCode(code);
@@ -182,6 +190,7 @@ export function CheckoutManager({
         deliverySpeed: requiresAddress ? deliverySpeed : undefined,
         promoCode: appliedPromoCode ?? undefined,
         bankId: requiresBank ? (bankId ?? undefined) : undefined,
+        idempotencyKey,
       });
       toast.success(t("placeSuccess"));
       // Clears the router cache for the shared (guest) layout so the

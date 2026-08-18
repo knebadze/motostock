@@ -77,12 +77,44 @@ async function resolveSoldStatusId(): Promise<number> {
   return status.id;
 }
 
-function isOrderCodeCollision(error: unknown): boolean {
+// This project's Prisma client runs on a driver adapter (@prisma/adapter-pg),
+// whose P2002 errors don't populate the classic `meta.target: string[]`
+// shape at all — the field name only shows up inside
+// `meta.driverAdapterError.cause.originalMessage`, quoting Postgres's own
+// constraint name (e.g. `"Order_idempotencyKey_key"`), which follows
+// Prisma's default `{Model}_{field}_key` naming. Checked live against a real
+// duplicate-key insert before relying on it here; the `target` branch stays
+// as a fallback in case this ever runs against a non-adapter Prisma client.
+function p2002ConstraintName(error: unknown): string | null {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
-    return false;
+    return null;
   }
-  const target = (error.meta as { target?: unknown } | undefined)?.target;
-  return Array.isArray(target) && target.includes("orderCode");
+  const meta = error.meta as
+    | { target?: unknown; driverAdapterError?: { cause?: { originalMessage?: unknown } } }
+    | undefined;
+
+  if (Array.isArray(meta?.target)) {
+    return meta.target.join(",");
+  }
+
+  const originalMessage = meta?.driverAdapterError?.cause?.originalMessage;
+  if (typeof originalMessage === "string") {
+    return originalMessage.match(/"([A-Za-z0-9_]+)"/)?.[1] ?? null;
+  }
+
+  return null;
+}
+
+function isOrderCodeCollision(error: unknown): boolean {
+  return p2002ConstraintName(error)?.includes("orderCode") ?? false;
+}
+
+// Two truly concurrent requests carrying the same idempotencyKey can both
+// pass placeOrder's early findByIdempotencyKey check (below) before either
+// has committed — this catches the DB-level unique-constraint collision that
+// results, the same safety-net role isOrderCodeCollision plays for orderCode.
+function isIdempotencyKeyCollision(error: unknown): boolean {
+  return p2002ConstraintName(error)?.includes("idempotencyKey") ?? false;
 }
 
 type DiscountRow = { startDate: Date; endDate: Date; discountPrice: { toString(): string } };
@@ -439,6 +471,22 @@ function toOrderResponse(order: OrderRow) {
 }
 
 export async function placeOrder(userId: number, input: CheckoutInput, ipAddress: string | null) {
+  // Double-click / timeout-retry protection: a retry of an already-placed
+  // order carries the exact same idempotencyKey (see CheckoutManager.tsx),
+  // so this returns the original order instead of re-running checkout — the
+  // retry's cart would already be empty from the first successful call
+  // (placeOrder below clears it), which would otherwise surface as a
+  // confusing "კალათა ცარიელია" error rather than the order the customer
+  // already placed.
+  // Scoped to this user — idempotencyKey is a random client-generated UUID
+  // (see CheckoutManager.tsx), so a genuine cross-user collision is not a
+  // realistic concern, but this keeps a lookup keyed off client-supplied
+  // input from ever returning another user's order.
+  const existingByKey = await ordersRepository.findByIdempotencyKey(input.idempotencyKey);
+  if (existingByKey && existingByKey.userId === userId) {
+    return toOrderResponse(existingByKey);
+  }
+
   const user = await assertEmailVerified(userId);
   const breakdown = await computeCheckoutTotals(userId, input.promoCode);
 
@@ -461,6 +509,7 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
     try {
       const order = await ordersRepository.placeOrder({
         orderCode: generateOrderCode(),
+        idempotencyKey: input.idempotencyKey,
         userId,
         fulfillmentMethod: input.fulfillmentMethod,
         statusId,
@@ -504,6 +553,16 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
     } catch (error) {
       if (isOrderCodeCollision(error) && attempt < MAX_ORDER_CODE_ATTEMPTS - 1) {
         continue;
+      }
+      // True-concurrency case: two requests carrying the same idempotencyKey
+      // both passed the early findByIdempotencyKey check above before either
+      // had committed. Not a retry — fetch and return the order the other
+      // request just created, instead of erroring or looping.
+      if (isIdempotencyKeyCollision(error)) {
+        const winner = await ordersRepository.findByIdempotencyKey(input.idempotencyKey);
+        if (winner && winner.userId === userId) {
+          return toOrderResponse(winner);
+        }
       }
       throw error;
     }

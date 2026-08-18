@@ -16,6 +16,11 @@ export const checkoutInputSchema = registry.register(
       deliverySpeed: orderDeliverySpeedSchema.optional(),
       promoCode: z.string().trim().min(1).max(30).optional(),
       bankId: z.int().positive().optional(),
+      // Client-generated once per checkout session (see orders.service.ts's
+      // placeOrder) and resent unchanged on every retry — required on both
+      // this and the preview route since they share one schema, but only
+      // placeOrder actually reads it.
+      idempotencyKey: z.string().trim().min(1).max(100),
     })
     .superRefine((data, ctx) => {
       if (data.fulfillmentMethod !== "PICKUP" && data.addressId == null) {

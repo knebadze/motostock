@@ -12,6 +12,11 @@ export type CheckoutInput = {
   deliverySpeed?: OrderDeliverySpeed;
   promoCode?: string;
   bankId?: number;
+  // Generated once per checkout session (see CheckoutManager.tsx) and resent
+  // unchanged on every retry — lets the backend recognize a double-click or
+  // timeout-retry and return the original order instead of creating a
+  // second one.
+  idempotencyKey: string;
 };
 
 export type OrderItem = {

@@ -97,6 +97,7 @@ export type PlaceOrderItemInput = {
 
 export type PlaceOrderInput = {
   orderCode: string;
+  idempotencyKey: string;
   userId: number;
   fulfillmentMethod: OrderFulfillmentMethod;
   statusId: number;
@@ -132,6 +133,12 @@ export const ordersRepository = {
 
   findById(id: number) {
     return prisma.order.findUnique({ where: { id }, include: orderItemsInclude });
+  },
+
+  // Idempotency-key lookup — see orders.service.ts's placeOrder, which
+  // returns this instead of creating a second order on a retried request.
+  findByIdempotencyKey(idempotencyKey: string) {
+    return prisma.order.findUnique({ where: { idempotencyKey }, include: orderItemsInclude });
   },
 
   async updateStatus(
