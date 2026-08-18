@@ -1,5 +1,6 @@
 import { randomInt } from "node:crypto";
 import { ApiError } from "../../lib/ApiError.js";
+import { findActiveDiscount } from "../../lib/discounts.js";
 import {
   Prisma,
   type CartItemType,
@@ -115,13 +116,6 @@ function isOrderCodeCollision(error: unknown): boolean {
 // results, the same safety-net role isOrderCodeCollision plays for orderCode.
 function isIdempotencyKeyCollision(error: unknown): boolean {
   return p2002ConstraintName(error)?.includes("idempotencyKey") ?? false;
-}
-
-type DiscountRow = { startDate: Date; endDate: Date; discountPrice: { toString(): string } };
-
-function findActiveDiscount<T extends DiscountRow>(discounts: T[]): T | null {
-  const now = new Date();
-  return discounts.find((discount) => discount.startDate <= now && now <= discount.endDate) ?? null;
 }
 
 type CartRow = Awaited<ReturnType<typeof cartRepository.findByOwner>>[number];

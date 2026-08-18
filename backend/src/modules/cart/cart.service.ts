@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { findActiveDiscount } from "../../lib/discounts.js";
 import { productVariantsRepository } from "../product-variants/product-variants.repository.js";
 import { vehicleListingRepository } from "../vehicle-listing/vehicle-listing.repository.js";
 import { toVehicleListingResponse } from "../vehicle-listing/vehicle-listing.service.js";
@@ -49,11 +50,6 @@ type CartItemRow = {
 
 function toNamedRef(row: NamedRefRow) {
   return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
-}
-
-function findActiveDiscount(discounts: DiscountRow[]) {
-  const now = new Date();
-  return discounts.find((discount) => discount.startDate <= now && now <= discount.endDate) ?? null;
 }
 
 function toProductVariantCartResponse(row: ProductVariantRow) {

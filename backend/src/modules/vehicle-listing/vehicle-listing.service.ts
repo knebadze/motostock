@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { findActiveDiscount } from "../../lib/discounts.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
@@ -79,13 +80,6 @@ type VehicleListingRow = {
 
 function toNamedRef(row: NamedRefRow) {
   return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
-}
-
-function findActiveDiscount(discounts: DiscountRow[]) {
-  const now = new Date();
-  return (
-    discounts.find((discount) => discount.startDate <= now && now <= discount.endDate) ?? null
-  );
 }
 
 export function toVehicleListingResponse(row: VehicleListingRow) {

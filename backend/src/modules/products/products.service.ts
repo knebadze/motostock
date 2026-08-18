@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { findActiveDiscount } from "../../lib/discounts.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { saveUploadedImage } from "../../lib/storage.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
@@ -61,8 +62,7 @@ type VariantSummaryRow = {
 };
 
 function findActiveDiscountPrice(discounts: DiscountSummaryRow[]): number | null {
-  const now = new Date();
-  const active = discounts.find((discount) => discount.startDate <= now && now <= discount.endDate);
+  const active = findActiveDiscount(discounts);
   return active ? Number(active.discountPrice) : null;
 }
 
@@ -210,13 +210,6 @@ type ProductDetailRow = Omit<ProductRow, "variants"> & {
   fitmentRules: FitmentRuleRow[];
   buyTogether: { relatedProduct: ProductRow }[];
 };
-
-function findActiveDiscount(discounts: DiscountRow[]) {
-  const now = new Date();
-  return (
-    discounts.find((discount) => discount.startDate <= now && now <= discount.endDate) ?? null
-  );
-}
 
 function toVariantDetailResponse(row: VariantDetailRow) {
   const activeDiscount = findActiveDiscount(row.discounts);

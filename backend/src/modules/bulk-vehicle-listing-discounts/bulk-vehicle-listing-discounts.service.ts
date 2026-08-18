@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { findActiveDiscount } from "../../lib/discounts.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
@@ -52,11 +53,6 @@ type CandidateListingRow = {
   vehicleCatalog: CandidateVehicleCatalogRow;
   discounts: { discountPercent: { toString(): string } | null; startDate: Date; endDate: Date }[];
 };
-
-function findActiveDiscount(discounts: CandidateListingRow["discounts"]) {
-  const now = new Date();
-  return discounts.find((discount) => discount.startDate <= now && now <= discount.endDate) ?? null;
-}
 
 function specValuesFor(catalog: CandidateVehicleCatalogRow) {
   const values: { field: VehicleSpecField; fieldLabel: { ka: string; en: string; ru: string }; value: LookupRow }[] = [];

@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { findActiveDiscount } from "../../lib/discounts.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { productsRepository } from "../products/products.repository.js";
 import { getLookupDelegate, type LookupType } from "../lookups/lookups.registry.js";
@@ -38,13 +39,6 @@ type ProductVariantRow = {
 
 function toProductRef(row: NamedRefRow) {
   return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu } };
-}
-
-function findActiveDiscount(discounts: DiscountRow[]) {
-  const now = new Date();
-  return (
-    discounts.find((discount) => discount.startDate <= now && now <= discount.endDate) ?? null
-  );
 }
 
 function toResponse(row: ProductVariantRow) {

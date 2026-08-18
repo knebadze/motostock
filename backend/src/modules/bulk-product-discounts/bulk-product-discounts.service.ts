@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { findActiveDiscount } from "../../lib/discounts.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
 import {
@@ -43,11 +44,6 @@ type CandidateProductRow = {
   attributeValues: CandidateAttributeValueRow[];
   variants: CandidateVariantRow[];
 };
-
-function findActiveDiscount(discounts: CandidateVariantRow["discounts"]) {
-  const now = new Date();
-  return discounts.find((discount) => discount.startDate <= now && now <= discount.endDate) ?? null;
-}
 
 // One row per variant, product info denormalized onto each — the bulk
 // discount table is variant-level (price/size/color live on the variant,
