@@ -6,6 +6,7 @@ import type { AttributeFilterInput } from "./products.schema.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
 const brandModelRefSelect = { id: true, name: true, slug: true } as const;
+const CANCELLED_KEY = "CANCELLED";
 const unitRefSelect = {
   id: true,
   nameKa: true,
@@ -272,6 +273,7 @@ export const productsRepository = {
       by: ["productVariantId"],
       where: {
         productVariantId: { not: null },
+        order: { status: { key: { not: CANCELLED_KEY } } },
         ...(options?.productWhere ? { productVariant: { product: options.productWhere } } : {}),
       },
       _sum: { quantity: true },

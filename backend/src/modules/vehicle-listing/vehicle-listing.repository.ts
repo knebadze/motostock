@@ -7,6 +7,7 @@ import type { SpecFilterInput } from "./vehicle-listing.schema.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
 const brandModelRefSelect = { id: true, name: true, slug: true } as const;
+const CANCELLED_KEY = "CANCELLED";
 
 export const vehicleListingInclude = {
   vehicleCatalog: {
@@ -173,7 +174,7 @@ export const vehicleListingRepository = {
   async findPopularListingIds(limit: number): Promise<number[]> {
     const grouped = await prisma.orderItem.groupBy({
       by: ["vehicleListingId"],
-      where: { vehicleListingId: { not: null } },
+      where: { vehicleListingId: { not: null }, order: { status: { key: { not: CANCELLED_KEY } } } },
       _sum: { quantity: true },
     });
     if (grouped.length === 0) return [];
