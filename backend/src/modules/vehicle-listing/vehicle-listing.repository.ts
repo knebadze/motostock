@@ -168,22 +168,20 @@ export const vehicleListingRepository = {
 
   // Ranks listings by total sold quantity (OrderItem.quantity, grouped by
   // vehicleListingId directly — unlike products there's no variant
-  // indirection) — powers the homepage "popular vehicles" slider. Returns
-  // just the ordered id list; callers fetch full rows via findByIds and
-  // must re-apply this order themselves (findByIds/`in` queries don't).
+  // indirection, so unlike products.repository.ts's findPopularProductIds
+  // this needs no JS-side rollup: the DB can sort and limit directly) —
+  // powers the homepage "popular vehicles" slider. Returns just the ordered
+  // id list; callers fetch full rows via findByIds and must re-apply this
+  // order themselves (findByIds/`in` queries don't).
   async findPopularListingIds(limit: number): Promise<number[]> {
     const grouped = await prisma.orderItem.groupBy({
       by: ["vehicleListingId"],
       where: { vehicleListingId: { not: null }, order: { status: { key: { not: CANCELLED_KEY } } } },
       _sum: { quantity: true },
+      orderBy: { _sum: { quantity: "desc" } },
+      take: limit,
     });
-    if (grouped.length === 0) return [];
-
-    return grouped
-      .map((group) => ({ id: group.vehicleListingId as number, total: group._sum.quantity ?? 0 }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, limit)
-      .map((entry) => entry.id);
+    return grouped.map((group) => group.vehicleListingId as number);
   },
 
   findById(id: number) {

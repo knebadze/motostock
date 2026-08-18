@@ -13,5 +13,7 @@ model Model {
 
   @@unique([brandId, slug])
   @@index([categoryId])
+  // pg_trgm GIN index — same reasoning as brand.prisma's.
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin)
   @@schema("cla")
 }

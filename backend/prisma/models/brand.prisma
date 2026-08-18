@@ -9,5 +9,10 @@ model Brand {
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
 
+  // pg_trgm GIN index — vehicle-listing.repository.ts's buildWhere searches
+  // this column with `ILIKE '%term%'` (leading wildcard); see
+  // migration 20260818100000_search_and_popularity_scaling and
+  // product.prisma's matching comment.
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin)
   @@schema("cla")
 }

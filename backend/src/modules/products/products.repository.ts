@@ -7,6 +7,21 @@ import type { AttributeFilterInput } from "./products.schema.js";
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
 const brandModelRefSelect = { id: true, name: true, slug: true } as const;
 const CANCELLED_KEY = "CANCELLED";
+
+// Bounds the variant-level groupBy candidate pool for findPopularProductIds/
+// findCoOccurringProductIds below — without this, groupBy has no `take` at
+// all and pulls every distinct productVariantId ever ordered/co-purchased
+// into memory before rolling up to product level in JS, which gets linearly
+// slower as order history grows. Ranking by DB-side ORDER BY + LIMIT at the
+// variant level first, THEN rolling up to product, is a size/accuracy
+// tradeoff: a product's true rank could theoretically be missed if its sales
+// are split across many variants that each individually fall outside this
+// pool. 200 (or limit*20, whichever is larger) is generous enough that this
+// is a non-issue for any realistically variant-count-per-product catalog,
+// while still turning an unbounded query into a fixed-size one.
+function candidatePoolSize(limit: number): number {
+  return Math.min(1000, Math.max(limit * 20, 200));
+}
 const unitRefSelect = {
   id: true,
   nameKa: true,
@@ -277,6 +292,8 @@ export const productsRepository = {
         ...(options?.productWhere ? { productVariant: { product: options.productWhere } } : {}),
       },
       _sum: { quantity: true },
+      orderBy: { _sum: { quantity: "desc" } },
+      take: candidatePoolSize(limit),
     });
     if (grouped.length === 0) return [];
 
@@ -330,6 +347,8 @@ export const productsRepository = {
         productVariantId: { notIn: anchorVariantIds },
       },
       _count: { orderId: true },
+      orderBy: { _count: { orderId: "desc" } },
+      take: candidatePoolSize(limit),
     });
     if (grouped.length === 0) return [];
 

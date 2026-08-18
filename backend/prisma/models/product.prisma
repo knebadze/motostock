@@ -33,5 +33,13 @@ model Product {
 
   @@index([categoryId])
   @@index([productBrandId])
+  // pg_trgm GIN indexes — products.repository.ts's buildWhere searches these
+  // three columns with `ILIKE '%term%'` (leading wildcard), which a plain
+  // btree index can't accelerate at all; without these, that search does a
+  // full table scan and gets slower as the catalog grows. See migration
+  // 20260818100000_search_and_popularity_scaling.
+  @@index([nameKa(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@index([nameEn(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@index([nameRu(ops: raw("gin_trgm_ops"))], type: Gin)
   @@schema("dbo")
 }
