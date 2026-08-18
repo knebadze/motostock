@@ -218,6 +218,7 @@ export function BulkVehicleListingDiscountsPanel({ categories }: { categories: C
           onChange={handleCategoryChange}
           searchable
           placeholder="აირჩიეთ ტრანსპორტის კატეგორია"
+          ariaLabel="ტრანსპორტის კატეგორია"
         />
       </div>
 
@@ -237,7 +238,15 @@ export function BulkVehicleListingDiscountsPanel({ categories }: { categories: C
               placeholder="ძებნა მარკით/მოდელით"
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
-            <Select multiple options={brandOptions} value={brandFilter} onChange={setBrandFilter} searchable placeholder="მარკა" />
+            <Select
+              multiple
+              options={brandOptions}
+              value={brandFilter}
+              onChange={setBrandFilter}
+              searchable
+              placeholder="მარკა"
+              ariaLabel="მარკის ფილტრი"
+            />
             <Select
               multiple
               options={conditionOptions}
@@ -245,8 +254,17 @@ export function BulkVehicleListingDiscountsPanel({ categories }: { categories: C
               onChange={setConditionFilter}
               searchable
               placeholder="მდგომარეობა"
+              ariaLabel="მდგომარეობის ფილტრი"
             />
-            <Select multiple options={colorOptions} value={colorFilter} onChange={setColorFilter} searchable placeholder="ფერი" />
+            <Select
+              multiple
+              options={colorOptions}
+              value={colorFilter}
+              onChange={setColorFilter}
+              searchable
+              placeholder="ფერი"
+              ariaLabel="ფერის ფილტრი"
+            />
             {specFilterDefs.map((definition) => (
               <Select
                 key={definition.field}
@@ -256,6 +274,7 @@ export function BulkVehicleListingDiscountsPanel({ categories }: { categories: C
                 onChange={(value) => setSpecFilters((current) => ({ ...current, [definition.field]: value }))}
                 searchable
                 placeholder={definition.label}
+                ariaLabel={definition.label}
               />
             ))}
           </div>

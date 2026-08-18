@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Select } from "@/components/shared/Select";
 import { Link } from "@/i18n/navigation";
@@ -56,6 +57,7 @@ export function ProductFilters({
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
   const tSelect = useTranslations("Common.select");
+  const myVehicleSelectId = useId();
 
   return (
     <div className="flex flex-col gap-6">
@@ -144,8 +146,11 @@ export function ProductFilters({
           ];
           return (
             <div key={filter.id} className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{t("myVehicleFilterLabel")}</span>
+              <label htmlFor={myVehicleSelectId} className="text-sm font-medium">
+                {t("myVehicleFilterLabel")}
+              </label>
               <Select
+                id={myVehicleSelectId}
                 options={vehicleOptions}
                 value={selectedVehicleCatalogId}
                 onChange={onVehicleChange}

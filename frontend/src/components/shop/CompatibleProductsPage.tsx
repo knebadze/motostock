@@ -188,6 +188,7 @@ export function CompatibleProductsPage({
             <div className="flex flex-col gap-6">
               <ShopToolbar
                 resultCountLabel={t("resultCount", { count: sorted.length })}
+                sortLabel={t("sortLabel")}
                 sortValue={sortBy}
                 sortOptions={sortOptions}
                 onSortChange={(value) => setSortBy(value as SortBy)}

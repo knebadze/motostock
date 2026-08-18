@@ -310,8 +310,11 @@ export function AttributeFormModal({
   const mainTabContent = (
     <>
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium">კატეგორია *</label>
+        <label htmlFor="attribute-category" className="text-sm font-medium">
+          კატეგორია *
+        </label>
         <Select
+          id="attribute-category"
           options={categoryOptions}
           value={categoryId}
           onChange={setCategoryId}
@@ -337,8 +340,11 @@ export function AttributeFormModal({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">ტიპი *</label>
+          <label htmlFor="attribute-value-type" className="text-sm font-medium">
+            ტიპი *
+          </label>
           <Select
+            id="attribute-value-type"
             options={VALUE_TYPE_OPTIONS}
             value={valueType}
             onChange={setValueType}
@@ -363,8 +369,17 @@ export function AttributeFormModal({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium">ერთეული</label>
-        <Select options={unitOptions} value={unitId} onChange={setUnitId} searchable placeholder="არცერთი" />
+        <label htmlFor="attribute-unit" className="text-sm font-medium">
+          ერთეული
+        </label>
+        <Select
+          id="attribute-unit"
+          options={unitOptions}
+          value={unitId}
+          onChange={setUnitId}
+          searchable
+          placeholder="არცერთი"
+        />
         <FieldError message={errors.unitId} />
         <p className="text-xs text-muted-foreground">
           არასავალდებულოა — მითითების შემთხვევაში გამოჩნდება პროდუქტების გვერდზეც.

@@ -135,6 +135,7 @@ export function ProductBuyTogetherPanel({
             onChange={setRelatedProductId}
             searchable
             placeholder="აირჩიეთ პროდუქტი"
+            ariaLabel="ერთად შესაძენი პროდუქტი"
           />
         </div>
         <button

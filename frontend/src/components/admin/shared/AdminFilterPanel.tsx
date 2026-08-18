@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Select } from "@/components/shared/Select";
 import { Loader } from "@/components/shared/Loader";
 import type { AdminFilterEntry } from "@/lib/api/admin-filters";
@@ -76,6 +76,7 @@ export function AdminFilterPanel({
   const [state, setState] = useState<Record<string, FieldState>>({});
   const [open, setOpen] = useState(false);
   const [applying, setApplying] = useState(false);
+  const baseId = useId();
 
   function updateField(key: string, patch: Partial<FieldState>) {
     setState((current) => ({ ...current, [key]: { ...(current[key] ?? EMPTY_STATE), ...patch } }));
@@ -197,10 +198,14 @@ export function AdminFilterPanel({
                     );
                   }
 
+                  const selectId = `${baseId}-${field.key}`;
                   return (
                     <div key={field.key} className="flex flex-col gap-1">
-                      <label className="text-xs text-muted-foreground">{field.label}</label>
+                      <label htmlFor={selectId} className="text-xs text-muted-foreground">
+                        {field.label}
+                      </label>
                       <Select
+                        id={selectId}
                         multiple
                         searchable
                         options={field.options ?? []}

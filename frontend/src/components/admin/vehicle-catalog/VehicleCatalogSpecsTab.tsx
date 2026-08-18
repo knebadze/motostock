@@ -160,8 +160,11 @@ export function VehicleCatalogSpecsTab({
     <>
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">ტიპი (ფილტრი)</label>
+          <label htmlFor="vc-category-filter" className="text-sm font-medium">
+            ტიპი (ფილტრი)
+          </label>
           <Select
+            id="vc-category-filter"
             options={categoryOptions}
             value={categoryFilter}
             onChange={onCategoryFilterChange}
@@ -170,8 +173,11 @@ export function VehicleCatalogSpecsTab({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">მარკა *</label>
+          <label htmlFor="vc-brand" className="text-sm font-medium">
+            მარკა *
+          </label>
           <Select
+            id="vc-brand"
             options={brandOptions}
             value={brandId}
             onChange={onBrandChange}
@@ -181,8 +187,11 @@ export function VehicleCatalogSpecsTab({
           <FieldError message={errors.brandId} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">მოდელი *</label>
+          <label htmlFor="vc-model" className="text-sm font-medium">
+            მოდელი *
+          </label>
           <Select
+            id="vc-model"
             options={modelOptions}
             value={modelId}
             onChange={onModelChange}
@@ -215,8 +224,11 @@ export function VehicleCatalogSpecsTab({
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">ძრავის ტიპი</label>
+          <label htmlFor="vc-powertrain-type" className="text-sm font-medium">
+            ძრავის ტიპი
+          </label>
           <Select
+            id="vc-powertrain-type"
             options={lookupOptions(powertrainTypes)}
             value={powertrainTypeId}
             onChange={onPowertrainTypeIdChange}
@@ -448,8 +460,11 @@ export function VehicleCatalogSpecsTab({
       <div className="grid gap-4 sm:grid-cols-3">
         {!isElectric && (
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">საწვავის ტიპი</label>
+            <label htmlFor="vc-fuel-type" className="text-sm font-medium">
+              საწვავის ტიპი
+            </label>
             <Select
+              id="vc-fuel-type"
               options={lookupOptions(fuelTypes)}
               value={fuelTypeId}
               onChange={onFuelTypeIdChange}
@@ -459,8 +474,11 @@ export function VehicleCatalogSpecsTab({
           </div>
         )}
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">გადაცემათა კოლოფი</label>
+          <label htmlFor="vc-transmission-type" className="text-sm font-medium">
+            გადაცემათა კოლოფი
+          </label>
           <Select
+            id="vc-transmission-type"
             options={lookupOptions(transmissionTypes)}
             value={transmissionTypeId}
             onChange={onTransmissionTypeIdChange}
@@ -469,8 +487,11 @@ export function VehicleCatalogSpecsTab({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">გაგრილება</label>
+          <label htmlFor="vc-cooling-type" className="text-sm font-medium">
+            გაგრილება
+          </label>
           <Select
+            id="vc-cooling-type"
             options={lookupOptions(coolingTypes)}
             value={coolingTypeId}
             onChange={onCoolingTypeIdChange}
@@ -479,8 +500,11 @@ export function VehicleCatalogSpecsTab({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">საბოლოო გადაცემა</label>
+          <label htmlFor="vc-final-drive-type" className="text-sm font-medium">
+            საბოლოო გადაცემა
+          </label>
           <Select
+            id="vc-final-drive-type"
             options={lookupOptions(finalDriveTypes)}
             value={finalDriveTypeId}
             onChange={onFinalDriveTypeIdChange}
@@ -489,8 +513,11 @@ export function VehicleCatalogSpecsTab({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">წამყვანი თვლები</label>
+          <label htmlFor="vc-drive-type" className="text-sm font-medium">
+            წამყვანი თვლები
+          </label>
           <Select
+            id="vc-drive-type"
             options={lookupOptions(driveTypes)}
             value={driveTypeId}
             onChange={onDriveTypeIdChange}
@@ -500,8 +527,11 @@ export function VehicleCatalogSpecsTab({
         </div>
         {!isElectric && (
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">გაშვების სისტემა</label>
+            <label htmlFor="vc-start-type" className="text-sm font-medium">
+              გაშვების სისტემა
+            </label>
             <Select
+              id="vc-start-type"
               options={lookupOptions(startTypes)}
               value={startTypeId}
               onChange={onStartTypeIdChange}

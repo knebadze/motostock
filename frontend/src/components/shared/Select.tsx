@@ -10,6 +10,17 @@ type BaseProps = {
   searchable?: boolean;
   placeholder?: string;
   disabled?: boolean;
+  // Forwarded to the trigger button — lets a caller's own <label htmlFor={id}>
+  // actually associate with this control (clicking/screen-reader-focusing
+  // the label then focuses the button, same as it would a native input).
+  // Without this, the button had no stable id a caller could ever target.
+  id?: string;
+  // For the cases with no visible <label> element at all (e.g. an inline
+  // toolbar "sort by" control where the placeholder text is the only visual
+  // cue) — gives the button an accessible name some other way. Prefer
+  // id/htmlFor when a visible label exists; this is the fallback when one
+  // doesn't.
+  ariaLabel?: string;
   // Georgian defaults below match the admin panel's (deliberately
   // untranslated) copy — storefront callers pass next-intl-translated
   // overrides so EN/RU visitors don't see Georgian leak through.
@@ -32,7 +43,17 @@ type MultiSelectProps = BaseProps & {
 
 export type SelectProps = SingleSelectProps | MultiSelectProps;
 
-type PanelPosition = { top: number; left: number; width: number; maxHeight: number };
+type PanelPosition = { left: number; width: number; maxHeight: number } & (
+  | { direction: "down"; top: number }
+  | { direction: "up"; bottom: number }
+);
+
+// Below this much room, downward is considered too cramped to bother with —
+// flips upward instead, provided there's actually more room up there. A
+// laptop screen or a Select opened near the bottom of a Modal both commonly
+// leave less than this below the trigger.
+const MIN_DOWNWARD_SPACE_PX = 150;
+const MAX_PANEL_HEIGHT_PX = 288;
 
 // How long a run of typed characters counts as one typeahead search before
 // resetting — same idea (and roughly the same window) as a native <select>.
@@ -50,6 +71,8 @@ export function Select(props: SelectProps) {
     searchable = false,
     placeholder = "აირჩიეთ",
     disabled,
+    id,
+    ariaLabel,
     clearLabel = "გაწმენდა",
     searchPlaceholder = "ძებნა...",
     emptyLabel = "არაფერი მოიძებნა",
@@ -93,9 +116,18 @@ export function Select(props: SelectProps) {
   // instead of nesting it inside the trigger — otherwise it gets clipped by
   // any scrollable ancestor with overflow set (e.g. a Modal's content area),
   // which made it unreachable/unscrollable when opened near the bottom.
-  // Always opens downward (even past the modal's own edge, since the portal
-  // already floats above it) — flipping upward left a gap whenever the list
-  // was shorter than the reserved space, landing far above the trigger.
+  //
+  // Flips upward when there isn't enough room below (a laptop-height
+  // viewport, or a Select opened near a Modal's bottom edge) and there's
+  // more room above than below — same direction-choosing heuristic a native
+  // <select> uses. When flipping up, position is anchored via CSS `bottom`
+  // (distance from the viewport's bottom edge up to just above the
+  // trigger) rather than computing a `top` from an assumed height: `bottom`
+  // anchoring lets the box grow upward to fit its actual content with no
+  // measurement needed, which is what an earlier `top`-based attempt at
+  // this got wrong — sizing from a fixed reserved height that didn't match
+  // the real (often shorter) content height left a visible gap between the
+  // panel and the trigger.
   useLayoutEffect(() => {
     // No need to clear position here — the portal render below already
     // gates on `open && position`, so a stale leftover value from the
@@ -112,20 +144,31 @@ export function Select(props: SelectProps) {
       const viewportWidth = window.innerWidth;
       const gap = 4;
       const spaceBelow = viewportHeight - rect.bottom - gap;
-      // Never exceed the real space left below the trigger — a taller
-      // panel would extend past the viewport, where it's unreachable (a
-      // position:fixed element doesn't scroll with the page). The list
-      // itself scrolls internally (see the <ul> below) once it's taller
-      // than whatever height actually fits.
-      const maxHeight = Math.max(24, Math.min(288, spaceBelow));
+      const spaceAbove = rect.top - gap;
       const left = Math.min(rect.left, Math.max(8, viewportWidth - rect.width - 8));
 
-      setPosition({
-        top: rect.bottom + gap,
-        left,
-        width: rect.width,
-        maxHeight,
-      });
+      const openUpward = spaceBelow < MIN_DOWNWARD_SPACE_PX && spaceAbove > spaceBelow;
+
+      if (openUpward) {
+        setPosition({
+          direction: "up",
+          bottom: viewportHeight - rect.top + gap,
+          left,
+          width: rect.width,
+          // Never exceed the real space left above the trigger — same
+          // "let the internal list scroll past this" reasoning as the
+          // downward case (see the <ul> below).
+          maxHeight: Math.max(24, Math.min(MAX_PANEL_HEIGHT_PX, spaceAbove)),
+        });
+      } else {
+        setPosition({
+          direction: "down",
+          top: rect.bottom + gap,
+          left,
+          width: rect.width,
+          maxHeight: Math.max(24, Math.min(MAX_PANEL_HEIGHT_PX, spaceBelow)),
+        });
+      }
     }
 
     updatePosition();
@@ -300,11 +343,13 @@ export function Select(props: SelectProps) {
     <div ref={containerRef} className="relative">
       <button
         ref={triggerRef}
+        id={id}
         type="button"
         disabled={disabled}
         onClick={togglePanel}
         onKeyDown={handleTriggerKeyDown}
         aria-haspopup="listbox"
+        aria-label={ariaLabel}
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
         aria-activedescendant={open && !searchable ? activeOptionId : undefined}
@@ -340,7 +385,7 @@ export function Select(props: SelectProps) {
             ref={panelRef}
             style={{
               position: "fixed",
-              top: position.top,
+              ...(position.direction === "up" ? { bottom: position.bottom } : { top: position.top }),
               left: position.left,
               width: position.width,
               maxHeight: position.maxHeight,

@@ -101,6 +101,7 @@ export function ModelsManager({
           onChange={handleFilterChange}
           searchable
           placeholder="ყველა მარკა"
+          ariaLabel="მარკის ფილტრი"
         />
       </div>
 

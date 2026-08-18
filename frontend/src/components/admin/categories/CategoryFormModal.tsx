@@ -189,8 +189,11 @@ export function CategoryFormModal({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">მშობელი კატეგორია</label>
+          <label htmlFor="category-parent" className="text-sm font-medium">
+            მშობელი კატეგორია
+          </label>
           <Select
+            id="category-parent"
             options={parentOptions}
             value={parentId}
             onChange={setParentId}

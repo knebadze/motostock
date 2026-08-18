@@ -104,14 +104,19 @@ export function ModelFormModal({
     <Modal open={open} onClose={onClose} title={isEditing ? "მოდელის რედაქტირება" : "ახალი მოდელი"}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">მარკა *</label>
-          <Select options={brandOptions} value={brandId} onChange={setBrandId} searchable />
+          <label htmlFor="model-brand" className="text-sm font-medium">
+            მარკა *
+          </label>
+          <Select id="model-brand" options={brandOptions} value={brandId} onChange={setBrandId} searchable />
           <FieldError message={errors.brandId} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">ტიპი (კატეგორია) *</label>
+          <label htmlFor="model-category" className="text-sm font-medium">
+            ტიპი (კატეგორია) *
+          </label>
           <Select
+            id="model-category"
             options={categoryOptions}
             value={categoryId}
             onChange={setCategoryId}

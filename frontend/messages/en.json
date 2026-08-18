@@ -53,6 +53,7 @@
     "yearMinPlaceholder": "From",
     "yearMaxPlaceholder": "To",
     "sortLabel": "Sort",
+    "sortLabel": "Sort by",
     "sortNewest": "Newest",
     "sortPriceAsc": "Price: low to high",
     "sortPriceDesc": "Price: high to low",

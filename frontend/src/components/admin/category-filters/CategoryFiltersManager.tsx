@@ -193,6 +193,7 @@ export function CategoryFiltersManager({ categories }: { categories: Category[] 
           onChange={handleCategoryChange}
           searchable
           placeholder="აირჩიეთ კატეგორია"
+          ariaLabel="კატეგორია"
         />
       </div>
 
@@ -218,8 +219,11 @@ export function CategoryFiltersManager({ categories }: { categories: Category[] 
 
           <div className="mt-6 flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-end">
             <div className="flex flex-1 flex-col gap-1.5">
-              <label className="text-sm font-medium">ტიპი</label>
+              <label htmlFor="category-filter-new-type" className="text-sm font-medium">
+                ტიპი
+              </label>
               <Select
+                id="category-filter-new-type"
                 options={filterTypeOptions}
                 value={newFilterType}
                 onChange={(value) => {
@@ -231,8 +235,11 @@ export function CategoryFiltersManager({ categories }: { categories: Category[] 
             </div>
             {newFilterType === "ATTRIBUTE" && (
               <div className="flex flex-1 flex-col gap-1.5">
-                <label className="text-sm font-medium">მახასიათებელი</label>
+                <label htmlFor="category-filter-new-attribute" className="text-sm font-medium">
+                  მახასიათებელი
+                </label>
                 <Select
+                  id="category-filter-new-attribute"
                   options={attributeOptions}
                   value={newAttributeId}
                   onChange={setNewAttributeId}

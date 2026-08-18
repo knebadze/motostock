@@ -224,12 +224,24 @@ export function OrdersManager({
           />
         </div>
         <div className="flex w-48 flex-col gap-1.5">
-          <label className="text-xs font-medium text-muted-foreground">სტატუსი</label>
-          <Select multiple options={statusOptions} value={statusIds} onChange={setStatusIds} placeholder="ყველა" />
+          <label htmlFor="orders-filter-status" className="text-xs font-medium text-muted-foreground">
+            სტატუსი
+          </label>
+          <Select
+            id="orders-filter-status"
+            multiple
+            options={statusOptions}
+            value={statusIds}
+            onChange={setStatusIds}
+            placeholder="ყველა"
+          />
         </div>
         <div className="flex w-48 flex-col gap-1.5">
-          <label className="text-xs font-medium text-muted-foreground">მიწოდება</label>
+          <label htmlFor="orders-filter-fulfillment" className="text-xs font-medium text-muted-foreground">
+            მიწოდება
+          </label>
           <Select
+            id="orders-filter-fulfillment"
             multiple
             options={FULFILLMENT_OPTIONS}
             value={fulfillmentMethods}

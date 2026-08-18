@@ -199,6 +199,7 @@ export function DiscountHistoryPanel() {
           value={typeFilter}
           onChange={(value) => setTypeFilter(value as "" | "PRODUCT" | "VEHICLE")}
           placeholder="ტიპი"
+          ariaLabel="ტიპის ფილტრი"
         />
         <Select
           options={[
@@ -212,6 +213,7 @@ export function DiscountHistoryPanel() {
             void refresh({ status: value as "" | "active" | "history" });
           }}
           placeholder="სტატუსი"
+          ariaLabel="სტატუსის ფილტრი"
         />
       </div>
 

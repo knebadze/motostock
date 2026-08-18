@@ -302,8 +302,11 @@ export function GarageVehicleFormModal({
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">{t("categoryLabel")}</label>
+          <label htmlFor="garage-category" className="text-sm font-medium">
+            {t("categoryLabel")}
+          </label>
           <Select
+            id="garage-category"
             options={categoryOptions}
             value={categoryId}
             onChange={handleCategoryChange}
@@ -345,8 +348,11 @@ export function GarageVehicleFormModal({
         {mode === "pick" ? (
           <>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">{t("catalogLabel")}</label>
+              <label htmlFor="garage-catalog" className="text-sm font-medium">
+                {t("catalogLabel")}
+              </label>
               <Select
+                id="garage-catalog"
                 options={vehicleCatalogOptions}
                 value={vehicleCatalogId}
                 onChange={setVehicleCatalogId}
@@ -385,8 +391,11 @@ export function GarageVehicleFormModal({
           <>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">{t("brandLabel")}</label>
+                <label htmlFor="garage-brand" className="text-sm font-medium">
+                  {t("brandLabel")}
+                </label>
                 <Select
+                  id="garage-brand"
                   options={brandOptions}
                   value={brandId}
                   onChange={handleBrandChange}
@@ -399,8 +408,11 @@ export function GarageVehicleFormModal({
                 <FieldError message={errors.brandId} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">{t("modelLabel")}</label>
+                <label htmlFor="garage-model" className="text-sm font-medium">
+                  {t("modelLabel")}
+                </label>
                 <Select
+                  id="garage-model"
                   options={modelOptions}
                   value={modelId}
                   onChange={setModelId}
@@ -520,8 +532,11 @@ export function GarageVehicleFormModal({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">{t("fuelTypeLabel")}</label>
+                <label htmlFor="garage-fuel-type" className="text-sm font-medium">
+                  {t("fuelTypeLabel")}
+                </label>
                 <Select
+                  id="garage-fuel-type"
                   options={fuelTypeOptions}
                   value={fuelTypeId}
                   onChange={setFuelTypeId}
@@ -530,8 +545,11 @@ export function GarageVehicleFormModal({
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">{t("transmissionTypeLabel")}</label>
+                <label htmlFor="garage-transmission-type" className="text-sm font-medium">
+                  {t("transmissionTypeLabel")}
+                </label>
                 <Select
+                  id="garage-transmission-type"
                   options={transmissionTypeOptions}
                   value={transmissionTypeId}
                   onChange={setTransmissionTypeId}

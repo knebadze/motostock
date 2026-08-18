@@ -192,8 +192,11 @@ export function ProductPricingTab({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">ზომები</label>
+          <label htmlFor="product-pricing-sizes" className="text-xs text-muted-foreground">
+            ზომები
+          </label>
           <Select
+            id="product-pricing-sizes"
             multiple
             options={lookupOptions(sizes)}
             value={initialSizeIds}
@@ -203,8 +206,11 @@ export function ProductPricingTab({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">ფერები</label>
+          <label htmlFor="product-pricing-colors" className="text-xs text-muted-foreground">
+            ფერები
+          </label>
           <Select
+            id="product-pricing-colors"
             multiple
             options={lookupOptions(colors)}
             value={initialColorIds}
@@ -214,8 +220,11 @@ export function ProductPricingTab({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">მდგომარეობა</label>
+          <label htmlFor="product-pricing-condition" className="text-xs text-muted-foreground">
+            მდგომარეობა
+          </label>
           <Select
+            id="product-pricing-condition"
             options={lookupOptions(conditions)}
             value={initialConditionId}
             onChange={onInitialConditionIdChange}
@@ -224,8 +233,11 @@ export function ProductPricingTab({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground">სტატუსი</label>
+          <label htmlFor="product-pricing-status" className="text-xs text-muted-foreground">
+            სტატუსი
+          </label>
           <Select
+            id="product-pricing-status"
             options={lookupOptions(statuses)}
             value={initialStatusId}
             onChange={onInitialStatusIdChange}

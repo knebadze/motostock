@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Select } from "@/components/shared/Select";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
@@ -92,6 +92,10 @@ function FitmentRulesEditor({
   const [newRuleSpecValueId, setNewRuleSpecValueId] = useState("");
   const [adding, setAdding] = useState(false);
   const [deletingRule, setDeletingRule] = useState<ProductFitmentRule | null>(null);
+  const ruleTypeSelectId = useId();
+  const ruleCategorySelectId = useId();
+  const ruleSpecFieldSelectId = useId();
+  const ruleSpecValueSelectId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -219,8 +223,11 @@ function FitmentRulesEditor({
 
       <div className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-end">
         <div className="flex flex-1 flex-col gap-1.5">
-          <label className="text-sm font-medium">ტიპი</label>
+          <label htmlFor={ruleTypeSelectId} className="text-sm font-medium">
+            ტიპი
+          </label>
           <Select
+            id={ruleTypeSelectId}
             options={RULE_TYPE_OPTIONS}
             value={newRuleType}
             onChange={(value) => {
@@ -232,8 +239,11 @@ function FitmentRulesEditor({
 
         {newRuleType === "CATEGORY" && (
           <div className="flex flex-1 flex-col gap-1.5">
-            <label className="text-sm font-medium">კატეგორია</label>
+            <label htmlFor={ruleCategorySelectId} className="text-sm font-medium">
+              კატეგორია
+            </label>
             <Select
+              id={ruleCategorySelectId}
               options={vehicleCategoryOptions}
               value={newRuleCategoryId}
               onChange={setNewRuleCategoryId}
@@ -246,8 +256,11 @@ function FitmentRulesEditor({
         {newRuleType === "SPEC" && (
           <>
             <div className="flex flex-1 flex-col gap-1.5">
-              <label className="text-sm font-medium">მახასიათებელი</label>
+              <label htmlFor={ruleSpecFieldSelectId} className="text-sm font-medium">
+                მახასიათებელი
+              </label>
               <Select
+                id={ruleSpecFieldSelectId}
                 options={specFieldOptions}
                 value={newRuleSpecField}
                 onChange={(value) => {
@@ -258,8 +271,11 @@ function FitmentRulesEditor({
               />
             </div>
             <div className="flex flex-1 flex-col gap-1.5">
-              <label className="text-sm font-medium">მნიშვნელობა</label>
+              <label htmlFor={ruleSpecValueSelectId} className="text-sm font-medium">
+                მნიშვნელობა
+              </label>
               <Select
+                id={ruleSpecValueSelectId}
                 options={specValueOptions}
                 value={newRuleSpecValueId}
                 onChange={setNewRuleSpecValueId}
@@ -419,6 +435,7 @@ export function ProductFitmentPanel({
               onChange={setVehicleCatalogId}
               searchable
               placeholder="აირჩიეთ ტექნიკა კატალოგიდან"
+              ariaLabel="ტექნიკა კატალოგიდან"
             />
           </div>
           <button
@@ -515,6 +532,7 @@ export function DraftFitmentEditor({
             onChange={setVehicleCatalogId}
             searchable
             placeholder="აირჩიეთ ტექნიკა კატალოგიდან"
+            ariaLabel="ტექნიკა კატალოგიდან"
           />
         </div>
         <button

@@ -186,6 +186,7 @@ export function VehicleCategoryFiltersManager({ categories }: { categories: Cate
           onChange={handleCategoryChange}
           searchable
           placeholder="აირჩიეთ კატეგორია"
+          ariaLabel="ტრანსპორტის კატეგორია"
         />
       </div>
 
@@ -211,8 +212,11 @@ export function VehicleCategoryFiltersManager({ categories }: { categories: Cate
 
           <div className="mt-6 flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-end">
             <div className="flex flex-1 flex-col gap-1.5">
-              <label className="text-sm font-medium">ტიპი</label>
+              <label htmlFor="vehicle-category-filter-new-type" className="text-sm font-medium">
+                ტიპი
+              </label>
               <Select
+                id="vehicle-category-filter-new-type"
                 options={filterTypeOptions}
                 value={newFilterType}
                 onChange={(value) => {
@@ -224,8 +228,11 @@ export function VehicleCategoryFiltersManager({ categories }: { categories: Cate
             </div>
             {newFilterType === "SPEC" && (
               <div className="flex flex-1 flex-col gap-1.5">
-                <label className="text-sm font-medium">მახასიათებელი</label>
+                <label htmlFor="vehicle-category-filter-new-spec" className="text-sm font-medium">
+                  მახასიათებელი
+                </label>
                 <Select
+                  id="vehicle-category-filter-new-spec"
                   options={specFieldOptions}
                   value={newSpecField}
                   onChange={setNewSpecField}

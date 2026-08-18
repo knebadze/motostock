@@ -230,6 +230,7 @@ export function BulkProductDiscountsPanel({ categories }: { categories: Category
           onChange={handleCategoryChange}
           searchable
           placeholder="აირჩიეთ კატეგორია"
+          ariaLabel="კატეგორია"
         />
       </div>
 
@@ -249,9 +250,33 @@ export function BulkProductDiscountsPanel({ categories }: { categories: Category
               placeholder="ძებნა სახელით"
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
-            <Select multiple options={brandOptions} value={brandFilter} onChange={setBrandFilter} searchable placeholder="ბრენდი" />
-            <Select multiple options={sizeOptions} value={sizeFilter} onChange={setSizeFilter} searchable placeholder="ზომა" />
-            <Select multiple options={colorOptions} value={colorFilter} onChange={setColorFilter} searchable placeholder="ფერი" />
+            <Select
+              multiple
+              options={brandOptions}
+              value={brandFilter}
+              onChange={setBrandFilter}
+              searchable
+              placeholder="ბრენდი"
+              ariaLabel="ბრენდის ფილტრი"
+            />
+            <Select
+              multiple
+              options={sizeOptions}
+              value={sizeFilter}
+              onChange={setSizeFilter}
+              searchable
+              placeholder="ზომა"
+              ariaLabel="ზომის ფილტრი"
+            />
+            <Select
+              multiple
+              options={colorOptions}
+              value={colorFilter}
+              onChange={setColorFilter}
+              searchable
+              placeholder="ფერი"
+              ariaLabel="ფერის ფილტრი"
+            />
             {attributeFilterDefs.map((definition) => (
               <Select
                 key={definition.attributeId}
@@ -263,6 +288,7 @@ export function BulkProductDiscountsPanel({ categories }: { categories: Category
                 }
                 searchable
                 placeholder={definition.label}
+                ariaLabel={definition.label}
               />
             ))}
           </div>

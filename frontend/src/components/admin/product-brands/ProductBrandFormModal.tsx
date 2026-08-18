@@ -126,8 +126,11 @@ export function ProductBrandFormModal({
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">კატეგორია *</label>
+          <label htmlFor="product-brand-category" className="text-sm font-medium">
+            კატეგორია *
+          </label>
           <Select
+            id="product-brand-category"
             options={categoryOptions}
             value={categoryId}
             onChange={setCategoryId}

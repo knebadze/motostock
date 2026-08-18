@@ -103,8 +103,17 @@ export function BuyTogetherManager({
           />
         </div>
         <div className="flex w-48 flex-col gap-1.5">
-          <label className="text-xs font-medium text-muted-foreground">კატეგორია</label>
-          <Select options={categoryOptions} value={categoryId} onChange={setCategoryId} searchable placeholder="ყველა" />
+          <label htmlFor="buy-together-category" className="text-xs font-medium text-muted-foreground">
+            კატეგორია
+          </label>
+          <Select
+            id="buy-together-category"
+            options={categoryOptions}
+            value={categoryId}
+            onChange={setCategoryId}
+            searchable
+            placeholder="ყველა"
+          />
         </div>
         <button
           type="button"

@@ -167,8 +167,11 @@ export function CompanyInfoManager({
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">ქალაქი</label>
+                <label htmlFor="company-city" className="text-sm font-medium">
+                  ქალაქი
+                </label>
                 <Select
+                  id="company-city"
                   options={cityOptions}
                   value={cityId}
                   onChange={setCityId}

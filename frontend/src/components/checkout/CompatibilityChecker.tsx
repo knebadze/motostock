@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Select } from "@/components/shared/Select";
@@ -31,6 +31,7 @@ export function CompatibilityChecker({
   const tHome = useTranslations("Home");
   const tSelect = useTranslations("Common.select");
 
+  const garageSelectId = useId();
   const [garageVehicleId, setGarageVehicleId] = useState("");
   const [brandId, setBrandId] = useState("");
   const [modelId, setModelId] = useState("");
@@ -134,10 +135,14 @@ export function CompatibilityChecker({
         {hasGarage && (
           <>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <label
+                htmlFor={garageSelectId}
+                className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+              >
                 {tHome("searchGarageLabel")}
               </label>
               <Select
+                id={garageSelectId}
                 options={garageOptions}
                 value={garageVehicleId}
                 onChange={handleGarageChange}

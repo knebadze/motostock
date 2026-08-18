@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Pagination, usePagination } from "@/components/shared/Pagination";
@@ -47,6 +47,7 @@ export function ShopAllProductsPage({
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
   const tCommon = useTranslations("Common");
+  const myVehicleSelectId = useId();
   const [baseProducts, setBaseProducts] = useState(products);
   const [vehicleCatalogId, setVehicleCatalogId] = useState("");
   const [vehicleLoading, setVehicleLoading] = useState(false);
@@ -193,8 +194,11 @@ export function ShopAllProductsPage({
 
       {garageVehicles.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium">{t("myVehicleFilterLabel")}</span>
+          <label htmlFor={myVehicleSelectId} className="text-sm font-medium">
+            {t("myVehicleFilterLabel")}
+          </label>
           <Select
+            id={myVehicleSelectId}
             options={vehicleOptions}
             value={vehicleCatalogId}
             onChange={(value) => {
@@ -266,6 +270,7 @@ export function ShopAllProductsPage({
             <div className="flex flex-col gap-6">
               <ShopToolbar
                 resultCountLabel={t("resultCount", { count: sorted.length })}
+                sortLabel={t("sortLabel")}
                 sortValue={sortBy}
                 sortOptions={sortOptions}
                 onSortChange={(value) => setSortBy(value as SortBy)}

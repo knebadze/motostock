@@ -203,8 +203,15 @@ export function HeroSlideFormModal({
     <Modal open={open} onClose={onClose} title={isEditing ? "სლაიდის რედაქტირება" : "ახალი სლაიდი"} size="2xl">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">ტიპი *</label>
-          <Select options={TYPE_OPTIONS} value={type} onChange={(value) => setType(value as HeroSlideType)} />
+          <label htmlFor="hero-type" className="text-sm font-medium">
+            ტიპი *
+          </label>
+          <Select
+            id="hero-type"
+            options={TYPE_OPTIONS}
+            value={type}
+            onChange={(value) => setType(value as HeroSlideType)}
+          />
           <p className="text-xs text-muted-foreground">{TYPE_DESCRIPTIONS[type]}</p>
         </div>
 
@@ -259,16 +266,22 @@ export function HeroSlideFormModal({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">ტექსტის ჰორიზონტალური პოზიცია</label>
+            <label htmlFor="hero-text-position" className="text-sm font-medium">
+              ტექსტის ჰორიზონტალური პოზიცია
+            </label>
             <Select
+              id="hero-text-position"
               options={TEXT_POSITION_OPTIONS}
               value={textPosition}
               onChange={(value) => setTextPosition(value as HeroSlideTextPosition)}
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">ტექსტის ვერტიკალური პოზიცია</label>
+            <label htmlFor="hero-vertical-position" className="text-sm font-medium">
+              ტექსტის ვერტიკალური პოზიცია
+            </label>
             <Select
+              id="hero-vertical-position"
               options={VERTICAL_POSITION_OPTIONS}
               value={verticalPosition}
               onChange={(value) => setVerticalPosition(value as HeroSlideVerticalPosition)}
@@ -395,8 +408,11 @@ export function HeroSlideFormModal({
               {type === "DISCOUNT" && (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium">კატეგორია (არასავალდებულო)</label>
+                    <label htmlFor="hero-discount-category" className="text-sm font-medium">
+                      კატეგორია (არასავალდებულო)
+                    </label>
                     <Select
+                      id="hero-discount-category"
                       options={categoryOptions}
                       value={discountCategoryId}
                       onChange={setDiscountCategoryId}
@@ -405,8 +421,11 @@ export function HeroSlideFormModal({
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium">ბრენდი (არასავალდებულო)</label>
+                    <label htmlFor="hero-discount-brand" className="text-sm font-medium">
+                      ბრენდი (არასავალდებულო)
+                    </label>
                     <Select
+                      id="hero-discount-brand"
                       options={brandOptions}
                       value={discountProductBrandId}
                       onChange={setDiscountProductBrandId}

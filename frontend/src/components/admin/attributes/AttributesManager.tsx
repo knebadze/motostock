@@ -120,6 +120,7 @@ export function AttributesManager({
           onChange={handleFilterChange}
           searchable
           placeholder="ყველა კატეგორია"
+          ariaLabel="კატეგორიის ფილტრი"
         />
       </div>
 

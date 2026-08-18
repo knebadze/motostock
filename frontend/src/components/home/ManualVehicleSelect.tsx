@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Select } from "@/components/shared/Select";
 import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
@@ -30,6 +30,9 @@ export function ManualVehicleSelect({
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Home");
   const tSelect = useTranslations("Common.select");
+  const brandSelectId = useId();
+  const modelSelectId = useId();
+  const yearSelectId = useId();
 
   const brandOptions = useMemo(() => {
     const byId = new Map<number, VehicleCatalogEntry["brand"]>();
@@ -72,10 +75,14 @@ export function ManualVehicleSelect({
   return (
     <>
       <div className="flex-1">
-        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <label
+          htmlFor={brandSelectId}
+          className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           {t("searchBrandLabel")}
         </label>
         <Select
+          id={brandSelectId}
           options={brandOptions}
           value={brandId}
           onChange={onBrandChange}
@@ -87,10 +94,14 @@ export function ManualVehicleSelect({
         />
       </div>
       <div className="flex-1">
-        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <label
+          htmlFor={modelSelectId}
+          className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           {t("searchModelLabel")}
         </label>
         <Select
+          id={modelSelectId}
           options={modelOptions}
           value={modelId}
           onChange={onModelChange}
@@ -102,10 +113,14 @@ export function ManualVehicleSelect({
         />
       </div>
       <div className="flex-1">
-        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <label
+          htmlFor={yearSelectId}
+          className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           {t("searchYearLabel")}
         </label>
         <Select
+          id={yearSelectId}
           options={yearOptions}
           value={year}
           onChange={onYearChange}

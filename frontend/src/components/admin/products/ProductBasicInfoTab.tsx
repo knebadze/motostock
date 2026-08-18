@@ -33,8 +33,11 @@ export function ProductBasicInfoTab({
     <>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">კატეგორია *</label>
+          <label htmlFor="product-category" className="text-sm font-medium">
+            კატეგორია *
+          </label>
           <Select
+            id="product-category"
             options={categoryOptions}
             value={categoryId}
             onChange={onCategoryChange}
@@ -44,8 +47,11 @@ export function ProductBasicInfoTab({
           <FieldError message={categoryError} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">ბრენდი</label>
+          <label htmlFor="product-brand" className="text-sm font-medium">
+            ბრენდი
+          </label>
           <Select
+            id="product-brand"
             options={productBrandOptions}
             value={productBrandId}
             onChange={onProductBrandChange}

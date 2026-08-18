@@ -5,6 +5,7 @@ import { ViewModeToggle, type ViewMode } from "./ViewModeToggle";
 
 export function ShopToolbar({
   resultCountLabel,
+  sortLabel,
   sortValue,
   sortOptions,
   onSortChange,
@@ -16,6 +17,10 @@ export function ShopToolbar({
   onFilterClick,
 }: {
   resultCountLabel: string;
+  // No visible <label> element here (the sort control sits inline in the
+  // toolbar, identified only by its selected value) — used as an aria-label
+  // instead, since there's nothing for htmlFor to point at.
+  sortLabel: string;
   sortValue: string;
   sortOptions: SelectOption[];
   onSortChange: (value: string) => void;
@@ -58,7 +63,7 @@ export function ShopToolbar({
           {filterButtonLabel}
         </button>
         <div className="w-48">
-          <Select options={sortOptions} value={sortValue} onChange={onSortChange} />
+          <Select options={sortOptions} value={sortValue} onChange={onSortChange} ariaLabel={sortLabel} />
         </div>
         <ViewModeToggle
           value={viewMode}

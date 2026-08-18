@@ -114,6 +114,7 @@ export function ProductBrandsManager({
           onChange={handleFilterChange}
           searchable
           placeholder="ყველა კატეგორია"
+          ariaLabel="კატეგორიის ფილტრი"
         />
       </div>
 

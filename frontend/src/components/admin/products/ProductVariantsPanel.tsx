@@ -293,8 +293,11 @@ export function ProductVariantsPanel({
           <h3 className="text-sm font-semibold">ვარიანტის რედაქტირება</h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">ზომა</label>
+              <label htmlFor="variant-size" className="text-xs text-muted-foreground">
+                ზომა
+              </label>
               <Select
+                id="variant-size"
                 options={lookupOptions(sizes)}
                 value={editForm.sizeId}
                 onChange={(value) => setEditForm((prev) => ({ ...prev, sizeId: value }))}
@@ -303,8 +306,11 @@ export function ProductVariantsPanel({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">ფერი</label>
+              <label htmlFor="variant-color" className="text-xs text-muted-foreground">
+                ფერი
+              </label>
               <Select
+                id="variant-color"
                 options={lookupOptions(colors)}
                 value={editForm.colorId}
                 onChange={(value) => setEditForm((prev) => ({ ...prev, colorId: value }))}
@@ -313,8 +319,11 @@ export function ProductVariantsPanel({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">მდგომარეობა</label>
+              <label htmlFor="variant-condition" className="text-xs text-muted-foreground">
+                მდგომარეობა
+              </label>
               <Select
+                id="variant-condition"
                 options={lookupOptions(conditions)}
                 value={editForm.conditionId}
                 onChange={(value) => setEditForm((prev) => ({ ...prev, conditionId: value }))}
@@ -323,8 +332,11 @@ export function ProductVariantsPanel({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">სტატუსი</label>
+              <label htmlFor="variant-status" className="text-xs text-muted-foreground">
+                სტატუსი
+              </label>
               <Select
+                id="variant-status"
                 options={lookupOptions(statuses)}
                 value={editForm.statusId}
                 onChange={(value) => setEditForm((prev) => ({ ...prev, statusId: value }))}
@@ -405,8 +417,11 @@ export function ProductVariantsPanel({
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">ზომები</label>
+              <label htmlFor="variant-add-sizes" className="text-xs text-muted-foreground">
+                ზომები
+              </label>
               <Select
+                id="variant-add-sizes"
                 multiple
                 options={lookupOptions(sizes)}
                 value={addForm.sizeIds}
@@ -416,8 +431,11 @@ export function ProductVariantsPanel({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">ფერები</label>
+              <label htmlFor="variant-add-colors" className="text-xs text-muted-foreground">
+                ფერები
+              </label>
               <Select
+                id="variant-add-colors"
                 multiple
                 options={lookupOptions(colors)}
                 value={addForm.colorIds}
@@ -427,8 +445,11 @@ export function ProductVariantsPanel({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">მდგომარეობა</label>
+              <label htmlFor="variant-add-condition" className="text-xs text-muted-foreground">
+                მდგომარეობა
+              </label>
               <Select
+                id="variant-add-condition"
                 options={lookupOptions(conditions)}
                 value={addForm.conditionId}
                 onChange={(value) => setAddForm((prev) => ({ ...prev, conditionId: value }))}
@@ -437,8 +458,11 @@ export function ProductVariantsPanel({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">სტატუსი</label>
+              <label htmlFor="variant-add-status" className="text-xs text-muted-foreground">
+                სტატუსი
+              </label>
               <Select
+                id="variant-add-status"
                 options={lookupOptions(statuses)}
                 value={addForm.statusId}
                 onChange={(value) => setAddForm((prev) => ({ ...prev, statusId: value }))}

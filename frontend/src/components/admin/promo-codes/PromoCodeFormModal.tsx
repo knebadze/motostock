@@ -295,8 +295,11 @@ export function PromoCodeFormModal({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">კატეგორია</label>
+          <label htmlFor="promo-category" className="text-sm font-medium">
+            კატეგორია
+          </label>
           <Select
+            id="promo-category"
             options={categoryOptions}
             value={categoryId}
             onChange={handleCategoryChange}
@@ -310,8 +313,11 @@ export function PromoCodeFormModal({
           <>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">ბრენდი</label>
+                <label htmlFor="promo-product-brand" className="text-sm font-medium">
+                  ბრენდი
+                </label>
                 <Select
+                  id="promo-product-brand"
                   options={productBrandOptions}
                   value={productBrandId}
                   onChange={setProductBrandId}
@@ -321,8 +327,11 @@ export function PromoCodeFormModal({
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">მახასიათებელი</label>
+                <label htmlFor="promo-attribute" className="text-sm font-medium">
+                  მახასიათებელი
+                </label>
                 <Select
+                  id="promo-attribute"
                   options={attributeSelectOptions}
                   value={attributeId}
                   onChange={handleAttributeChange}
@@ -335,8 +344,11 @@ export function PromoCodeFormModal({
 
             {attributeId && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">მახასიათებლის მნიშვნელობა *</label>
+                <label htmlFor="promo-attribute-value" className="text-sm font-medium">
+                  მახასიათებლის მნიშვნელობა *
+                </label>
                 <Select
+                  id="promo-attribute-value"
                   options={attributeValueOptions}
                   value={attributeOptionId}
                   onChange={setAttributeOptionId}
@@ -351,8 +363,11 @@ export function PromoCodeFormModal({
           <>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">მარკა</label>
+                <label htmlFor="promo-vehicle-brand" className="text-sm font-medium">
+                  მარკა
+                </label>
                 <Select
+                  id="promo-vehicle-brand"
                   options={brandOptions}
                   value={brandId}
                   onChange={handleBrandChange}
@@ -361,8 +376,11 @@ export function PromoCodeFormModal({
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">მოდელი</label>
+                <label htmlFor="promo-vehicle-model" className="text-sm font-medium">
+                  მოდელი
+                </label>
                 <Select
+                  id="promo-vehicle-model"
                   options={modelOptions}
                   value={modelId}
                   onChange={setModelId}
@@ -375,8 +393,11 @@ export function PromoCodeFormModal({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">მახასიათებელი</label>
+                <label htmlFor="promo-spec-field" className="text-sm font-medium">
+                  მახასიათებელი
+                </label>
                 <Select
+                  id="promo-spec-field"
                   options={specFieldOptions}
                   value={specField}
                   onChange={handleSpecFieldChange}
@@ -385,8 +406,11 @@ export function PromoCodeFormModal({
               </div>
               {specField && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium">მნიშვნელობა *</label>
+                  <label htmlFor="promo-spec-value" className="text-sm font-medium">
+                    მნიშვნელობა *
+                  </label>
                   <Select
+                    id="promo-spec-value"
                     options={specValueSelectOptions}
                     value={specLookupItemId}
                     onChange={setSpecLookupItemId}

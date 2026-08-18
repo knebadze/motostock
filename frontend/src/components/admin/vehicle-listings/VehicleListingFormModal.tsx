@@ -179,8 +179,11 @@ export function VehicleListingFormModal({
   const mainTabContent = (
     <>
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium">ტექნიკა *</label>
+        <label htmlFor="vl-vehicle-catalog" className="text-sm font-medium">
+          ტექნიკა *
+        </label>
         <Select
+          id="vl-vehicle-catalog"
           options={vehicleCatalogOptions}
           value={vehicleCatalogId}
           onChange={setVehicleCatalogId}
@@ -192,18 +195,24 @@ export function VehicleListingFormModal({
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">მდგომარეობა *</label>
-          <Select options={conditionOptions} value={conditionId} onChange={setConditionId} />
+          <label htmlFor="vl-condition" className="text-sm font-medium">
+            მდგომარეობა *
+          </label>
+          <Select id="vl-condition" options={conditionOptions} value={conditionId} onChange={setConditionId} />
           <FieldError message={errors.conditionId} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">სტატუსი *</label>
-          <Select options={statusOptions} value={statusId} onChange={setStatusId} />
+          <label htmlFor="vl-status" className="text-sm font-medium">
+            სტატუსი *
+          </label>
+          <Select id="vl-status" options={statusOptions} value={statusId} onChange={setStatusId} />
           <FieldError message={errors.statusId} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">ფერი *</label>
-          <Select options={colorOptions} value={colorId} onChange={setColorId} searchable />
+          <label htmlFor="vl-color" className="text-sm font-medium">
+            ფერი *
+          </label>
+          <Select id="vl-color" options={colorOptions} value={colorId} onChange={setColorId} searchable />
           <FieldError message={errors.colorId} />
         </div>
       </div>
@@ -283,8 +292,10 @@ export function VehicleListingFormModal({
           <FieldError message={errors.warrantyValue} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">გარანტიის ერთეული</label>
-          <Select options={warrantyUnitOptions} value={warrantyUnit} onChange={setWarrantyUnit} />
+          <label htmlFor="vl-warranty-unit" className="text-sm font-medium">
+            გარანტიის ერთეული
+          </label>
+          <Select id="vl-warranty-unit" options={warrantyUnitOptions} value={warrantyUnit} onChange={setWarrantyUnit} />
           <FieldError message={errors.warrantyUnit} />
         </div>
       </div>

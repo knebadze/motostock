@@ -158,7 +158,12 @@ export function OrderDetailModal({
             </div>
             <div className="flex items-center gap-2">
               <div className="w-44">
-                <Select options={statusOptions} value={statusId} onChange={setStatusId} />
+                <Select
+                  options={statusOptions}
+                  value={statusId}
+                  onChange={setStatusId}
+                  ariaLabel="შეკვეთის სტატუსი"
+                />
               </div>
               <button
                 type="button"
@@ -174,8 +179,11 @@ export function OrderDetailModal({
           {isCancellingTo && statusId !== String(order.status.id) && (
             <div className="flex flex-col gap-3 rounded-xl border border-border p-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">გაუქმების მიზეზი *</label>
+                <label htmlFor="order-cancellation-reason" className="text-sm font-medium">
+                  გაუქმების მიზეზი *
+                </label>
                 <Select
+                  id="order-cancellation-reason"
                   options={cancellationReasonOptions}
                   value={cancellationReasonId}
                   onChange={setCancellationReasonId}

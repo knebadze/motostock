@@ -182,6 +182,7 @@ export function PromoCodesManager({
           }}
           searchable
           placeholder="ყველა კატეგორია"
+          ariaLabel="კატეგორიის ფილტრი"
         />
         <Select
           options={statusFilterOptions}
@@ -191,6 +192,7 @@ export function PromoCodesManager({
             void refresh({ status: value as "" | "active" | "history" });
           }}
           placeholder="ყველა სტატუსი"
+          ariaLabel="სტატუსის ფილტრი"
         />
       </div>
 

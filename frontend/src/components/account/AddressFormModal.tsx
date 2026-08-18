@@ -101,8 +101,11 @@ export function AddressFormModal({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">{t("cityLabel")}</label>
+          <label htmlFor="address-city" className="text-sm font-medium">
+            {t("cityLabel")}
+          </label>
           <Select
+            id="address-city"
             options={cityOptions}
             value={cityId}
             onChange={setCityId}

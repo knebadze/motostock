@@ -135,12 +135,23 @@ function AllCompatibilityTab({
           />
         </div>
         <div className="flex w-48 flex-col gap-1.5">
-          <label className="text-xs font-medium text-muted-foreground">კატეგორია</label>
-          <Select options={categoryOptions} value={categoryId} onChange={setCategoryId} searchable placeholder="ყველა" />
+          <label htmlFor="compatibility-category" className="text-xs font-medium text-muted-foreground">
+            კატეგორია
+          </label>
+          <Select
+            id="compatibility-category"
+            options={categoryOptions}
+            value={categoryId}
+            onChange={setCategoryId}
+            searchable
+            placeholder="ყველა"
+          />
         </div>
         <div className="flex w-48 flex-col gap-1.5">
-          <label className="text-xs font-medium text-muted-foreground">ტიპი</label>
-          <Select options={kindOptions} value={kind} onChange={setKind} placeholder="ყველა" />
+          <label htmlFor="compatibility-kind" className="text-xs font-medium text-muted-foreground">
+            ტიპი
+          </label>
+          <Select id="compatibility-kind" options={kindOptions} value={kind} onChange={setKind} placeholder="ყველა" />
         </div>
         <button
           type="button"
@@ -281,6 +292,7 @@ function CompatibilityCheckTab({
             onChange={handleVehicleChange}
             searchable
             placeholder="აირჩიეთ ტრანსპორტი"
+            ariaLabel="ტრანსპორტი"
           />
         ) : (
           <Select
@@ -289,6 +301,7 @@ function CompatibilityCheckTab({
             onChange={handleProductChange}
             searchable
             placeholder="აირჩიეთ პროდუქტი"
+            ariaLabel="პროდუქტი"
           />
         )}
       </div>

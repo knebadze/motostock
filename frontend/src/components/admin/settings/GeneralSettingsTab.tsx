@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { Toggle } from "@/components/shared/Toggle";
 import { Select } from "@/components/shared/Select";
 import type { Settings, VinDecodeProvider } from "@/lib/api/settings";
@@ -18,6 +19,8 @@ export function GeneralSettingsTab({
   saving: boolean;
   onSave: (next: Settings) => Promise<void>;
 }) {
+  const vinProviderSelectId = useId();
+
   return (
     <>
       <div className="rounded-2xl border border-border p-5">
@@ -58,8 +61,11 @@ export function GeneralSettingsTab({
         </div>
 
         <div className="mt-4 flex flex-col gap-1.5">
-          <label className="text-sm font-medium">API პროვაიდერი</label>
+          <label htmlFor={vinProviderSelectId} className="text-sm font-medium">
+            API პროვაიდერი
+          </label>
           <Select
+            id={vinProviderSelectId}
             options={VIN_DECODE_PROVIDER_OPTIONS}
             value={settings.vinDecodeProvider}
             onChange={(next) =>

@@ -9,10 +9,12 @@ import type { AttributeFieldValue } from "@/lib/validation/products";
 import type { FieldErrors } from "@/lib/validation/common";
 
 function AttributeSelectField({
+  id,
   attributeId,
   value,
   onChange,
 }: {
+  id: string;
   attributeId: number;
   value: string;
   onChange: (optionId: string) => void;
@@ -31,6 +33,7 @@ function AttributeSelectField({
 
   return (
     <Select
+      id={id}
       options={options.map((option) => ({ value: String(option.id), label: option.label.ka }))}
       value={value}
       onChange={onChange}
@@ -98,10 +101,17 @@ export function ProductAttributeFields({
           optionId: "",
         };
         const fieldError = errors[String(attribute.id)];
+        const fieldId = `product-attribute-${attribute.id}`;
+
+        // BOOLEAN's own checkbox <label> below already wraps it directly (a
+        // simpler, equally valid association than id/htmlFor) — htmlFor
+        // here would just be redundant for that one case, not harmful, but
+        // there's nothing to point it at until the checkbox below.
+        const headingHtmlFor = attribute.valueType === "BOOLEAN" ? undefined : fieldId;
 
         return (
           <div key={attribute.id} className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">
+            <label htmlFor={headingHtmlFor} className="text-sm font-medium">
               {attribute.name.ka}
               {attribute.unit ? ` (${attribute.unit.abbreviation.ka})` : ""}
               {attribute.required ? " *" : ""}
@@ -109,6 +119,7 @@ export function ProductAttributeFields({
 
             {attribute.valueType === "TEXT" && (
               <input
+                id={fieldId}
                 type="text"
                 value={value.text}
                 onChange={(event) => onChange(attribute.id, { ...value, text: event.target.value })}
@@ -118,6 +129,7 @@ export function ProductAttributeFields({
 
             {attribute.valueType === "NUMBER" && (
               <input
+                id={fieldId}
                 type="number"
                 value={value.number}
                 onChange={(event) =>
@@ -143,6 +155,7 @@ export function ProductAttributeFields({
 
             {attribute.valueType === "SELECT" && (
               <AttributeSelectField
+                id={fieldId}
                 attributeId={attribute.id}
                 value={value.optionId}
                 onChange={(optionId) => onChange(attribute.id, { ...value, optionId })}

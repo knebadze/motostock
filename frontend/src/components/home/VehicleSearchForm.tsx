@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Select } from "@/components/shared/Select";
@@ -22,6 +22,7 @@ export function VehicleSearchForm({
   const t = useTranslations("Home");
   const tSelect = useTranslations("Common.select");
   const router = useRouter();
+  const garageSelectId = useId();
 
   const [garageVehicleId, setGarageVehicleId] = useState("");
   const [brandId, setBrandId] = useState("");
@@ -100,10 +101,14 @@ export function VehicleSearchForm({
       {hasGarage && (
         <>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <label
+              htmlFor={garageSelectId}
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            >
               {t("searchGarageLabel")}
             </label>
             <Select
+              id={garageSelectId}
               options={garageOptions}
               value={garageVehicleId}
               onChange={handleGarageChange}

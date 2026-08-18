@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Select } from "@/components/shared/Select";
@@ -14,6 +14,7 @@ export function CategorySearchForm({ categories }: { categories: Category[] }) {
   const router = useRouter();
 
   const [categorySlug, setCategorySlug] = useState("");
+  const categorySelectId = useId();
 
   const categoryOptions = useMemo(
     () =>
@@ -32,10 +33,14 @@ export function CategorySearchForm({ categories }: { categories: Category[] }) {
   return (
     <div className="flex w-full max-w-lg flex-col gap-3 rounded-2xl bg-background/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-end sm:p-5">
       <div className="flex-1">
-        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <label
+          htmlFor={categorySelectId}
+          className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           {t("searchCategoryLabel")}
         </label>
         <Select
+          id={categorySelectId}
           options={categoryOptions}
           value={categorySlug}
           onChange={setCategorySlug}
