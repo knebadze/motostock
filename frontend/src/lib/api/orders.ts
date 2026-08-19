@@ -154,10 +154,17 @@ export type OrderRiskFlag = {
   createdAt: string;
 };
 
+// See backend's FinaOrderSyncStatus — whether this order's current state (a
+// placed sale, or its return once cancelled) is actually reflected in FINA.
+// NOT_APPLICABLE means nothing to retry (no FINA-linked items, or FINA/its
+// Settings aren't configured yet) — never shown as an error.
+export type FinaOrderSyncStatus = "NOT_APPLICABLE" | "SYNCED" | "FAILED";
+
 export type AdminOrderSummary = OrderSummary & {
   fulfillmentMethod: OrderFulfillmentMethod;
   buyer: OrderBuyer;
   hasRiskFlags: boolean;
+  finaSyncStatus: FinaOrderSyncStatus;
 };
 
 export type AdminOrder = Order & {
@@ -165,6 +172,8 @@ export type AdminOrder = Order & {
   riskFlags: OrderRiskFlag[];
   cancellationReason: LookupItem | null;
   cancellationNote: string | null;
+  finaSyncStatus: FinaOrderSyncStatus;
+  finaOutOperationId: number | null;
 };
 
 export type ListOrdersFilters = {
@@ -201,5 +210,15 @@ export async function updateOrderStatus(
     cancellationReasonId,
     cancellationNote,
   });
+  return data.order;
+}
+
+// Manually retries pushing this order to FINA after a prior failure (see
+// backend's retryOrderFinaSync) — pushes the sale if the order isn't
+// cancelled, or the return if it is. Throws (ApiRequestError) if there's
+// genuinely nothing to retry (FINA not configured, Settings empty, no
+// FINA-linked items) or if the FINA call itself fails again.
+export async function retryOrderFinaSync(id: number): Promise<AdminOrder> {
+  const { data } = await apiClient.post<{ order: AdminOrder }>(`/orders/${id}/fina-sync`);
   return data.order;
 }

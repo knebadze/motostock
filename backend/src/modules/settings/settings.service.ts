@@ -23,6 +23,8 @@ export const FRAUD_NEW_ACCOUNT_WINDOW_HOURS_KEY = "fraud_new_account_window_hour
 export const FRAUD_HIGH_VALUE_THRESHOLD_KEY = "fraud_high_value_threshold";
 export const FRAUD_FAILED_LOGIN_THRESHOLD_KEY = "fraud_failed_login_threshold";
 export const FRAUD_FAILED_LOGIN_WINDOW_MINUTES_KEY = "fraud_failed_login_window_minutes";
+export const FINA_WEB_CUSTOMER_ID_KEY = "fina_web_customer_id";
+export const FINA_WEB_USER_ID_KEY = "fina_web_user_id";
 
 const ALL_SETTING_KEYS = [
   USE_CLOUD_STORAGE_KEY,
@@ -43,6 +45,8 @@ const ALL_SETTING_KEYS = [
   FRAUD_HIGH_VALUE_THRESHOLD_KEY,
   FRAUD_FAILED_LOGIN_THRESHOLD_KEY,
   FRAUD_FAILED_LOGIN_WINDOW_MINUTES_KEY,
+  FINA_WEB_CUSTOMER_ID_KEY,
+  FINA_WEB_USER_ID_KEY,
 ];
 
 const FRAUD_DEFAULTS = {
@@ -207,6 +211,24 @@ export async function getFraudFailedLoginWindowMinutes(): Promise<number> {
   });
 }
 
+// Nullable settings — unlike every other setting, these have no sane
+// built-in default (a wrong FINA contragent/user id would silently write
+// sales to the wrong account), so they stay null until an admin sets them,
+// same "dormant until configured" spirit as isFinaConfigured() itself.
+export async function getFinaWebCustomerId(): Promise<number | null> {
+  return cached(FINA_WEB_CUSTOMER_ID_KEY, async () => {
+    const setting = await settingsRepository.findByKey(FINA_WEB_CUSTOMER_ID_KEY);
+    return setting?.value ? Number(setting.value) : null;
+  });
+}
+
+export async function getFinaWebUserId(): Promise<number | null> {
+  return cached(FINA_WEB_USER_ID_KEY, async () => {
+    const setting = await settingsRepository.findByKey(FINA_WEB_USER_ID_KEY);
+    return setting?.value ? Number(setting.value) : null;
+  });
+}
+
 export async function getSettings() {
   return {
     useCloudStorage: await isCloudStorageEnabled(),
@@ -227,6 +249,8 @@ export async function getSettings() {
     fraudHighValueThreshold: await getFraudHighValueThreshold(),
     fraudFailedLoginThreshold: await getFraudFailedLoginThreshold(),
     fraudFailedLoginWindowMinutes: await getFraudFailedLoginWindowMinutes(),
+    finaWebCustomerId: await getFinaWebCustomerId(),
+    finaWebUserId: await getFinaWebUserId(),
   };
 }
 
@@ -238,6 +262,14 @@ export async function getVinDecodeStatus() {
     enabled: await isVinDecodeEnabled(),
     provider: await getVinDecodeProvider(),
   };
+}
+
+async function upsertNullable(key: string, value: number | null) {
+  if (value == null) {
+    await settingsRepository.delete(key);
+  } else {
+    await settingsRepository.upsert(key, String(value));
+  }
 }
 
 export async function updateSettings(input: UpdateSettingsInput) {
@@ -291,6 +323,8 @@ export async function updateSettings(input: UpdateSettingsInput) {
     FRAUD_FAILED_LOGIN_WINDOW_MINUTES_KEY,
     String(input.fraudFailedLoginWindowMinutes),
   );
+  await upsertNullable(FINA_WEB_CUSTOMER_ID_KEY, input.finaWebCustomerId);
+  await upsertNullable(FINA_WEB_USER_ID_KEY, input.finaWebUserId);
 
   for (const key of ALL_SETTING_KEYS) cache.del(cacheKey(key));
   return getSettings();

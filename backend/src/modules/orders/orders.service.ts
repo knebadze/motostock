@@ -13,7 +13,12 @@ import { addCartItem } from "../cart/cart.service.js";
 import { addressesRepository } from "../addresses/addresses.repository.js";
 import { banksRepository } from "../banks/banks.repository.js";
 import { usersRepository } from "../users/users.repository.js";
-import { syncVariantStockByIds } from "../fina-sync/fina-sync.service.js";
+import {
+  syncVariantStockByIds,
+  pushOrderSale,
+  pushOrderReturn,
+  retryOrderFinaPush,
+} from "../fina-sync/fina-sync.service.js";
 import { sendEmailTemplate } from "../email-templates/email-templates.service.js";
 import { evaluateOrderRisk } from "../fraud/fraud.service.js";
 import { resolvePromoCodeForItems, promoCodeItemKey } from "../promo-codes/promo-codes.service.js";
@@ -74,6 +79,16 @@ async function resolveSoldStatusId(): Promise<number> {
   const status = await lookupsRepository.findByKey(getLookupDelegate("listing-statuses"), "SOLD");
   if (!status) {
     throw new ApiError(500, "„გაყიდულია“ სტატუსი ვერ მოიძებნა — გაუშვით prisma/seed.ts");
+  }
+  return status.id;
+}
+
+// Same pattern, used by updateOrderStatus below to flip a variant/listing
+// back off SOLD when a cancellation restores the stock that drove it there.
+async function resolveAvailableStatusId(): Promise<number> {
+  const status = await lookupsRepository.findByKey(getLookupDelegate("listing-statuses"), "AVAILABLE");
+  if (!status) {
+    throw new ApiError(500, "„ხელმისაწვდომია“ სტატუსი ვერ მოიძებნა — გაუშვით prisma/seed.ts");
   }
   return status.id;
 }
@@ -543,6 +558,18 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
         user.createdAt,
       );
 
+      // Never throws (see fina-sync.service.ts) — best-effort, same as
+      // evaluateOrderRisk above.
+      await pushOrderSale({
+        id: order.id,
+        orderCode: order.orderCode,
+        items: order.items.map((item) => ({
+          productVariantId: item.productVariantId,
+          quantity: item.quantity,
+          unitPrice: Number(item.unitPrice),
+        })),
+      });
+
       return toOrderResponse(order);
     } catch (error) {
       if (isOrderCodeCollision(error) && attempt < MAX_ORDER_CODE_ATTEMPTS - 1) {
@@ -731,6 +758,7 @@ export async function listAllOrders(filters: ListOrdersQuery) {
     createdAt: row.createdAt,
     buyer: row.user,
     hasRiskFlags: row._count.riskFlags > 0,
+    finaSyncStatus: row.finaSyncStatus,
     estimatedDeliveryDate: computeEstimatedDeliveryDate(
       row.createdAt,
       row.deliverySpeed,
@@ -754,6 +782,8 @@ export async function getAnyOrder(id: number) {
       detail: flag.detail,
       createdAt: flag.createdAt,
     })),
+    finaSyncStatus: row.finaSyncStatus,
+    finaOutOperationId: row.finaOutOperationId,
   };
 }
 
@@ -798,10 +828,59 @@ export async function updateOrderStatus(
     throw new ApiError(404, "შეკვეთა ვერ მოიძებნა");
   }
 
-  const order = await ordersRepository.updateStatus(id, statusId, {
-    cancellationReasonId: isCancelling ? cancellationReasonId! : null,
-    cancellationNote: isCancelling ? (cancellationNote ?? null) : null,
-  });
+  const wasCancelled = existing.status.key === "CANCELLED";
+
+  // Cancelling restores the stock placeOrder originally decremented;
+  // un-cancelling (an admin moving a CANCELLED order to any other status)
+  // has to take it back the same way placeOrder did — otherwise toggling an
+  // order's status back and forth would inflate stock for free. Any other
+  // transition (e.g. CONFIRMED -> SHIPPED) never touched stock, so it's left
+  // alone here too.
+  let stockAdjustment: Parameters<typeof ordersRepository.updateStatus>[3];
+  if (isCancelling !== wasCancelled) {
+    const [soldStatusId, availableStatusId] = await Promise.all([
+      resolveSoldStatusId(),
+      resolveAvailableStatusId(),
+    ]);
+    stockAdjustment = {
+      direction: isCancelling ? "RESTORE" : "DECREMENT",
+      items: existing.items.map((item) => ({
+        productVariantId: item.productVariantId,
+        vehicleListingId: item.vehicleListingId,
+        quantity: item.quantity,
+        itemNameKa: item.itemNameKa,
+      })),
+      soldStatusId,
+      availableStatusId,
+    };
+  }
+
+  const order = await ordersRepository.updateStatus(
+    id,
+    statusId,
+    {
+      cancellationReasonId: isCancelling ? cancellationReasonId! : null,
+      cancellationNote: isCancelling ? (cancellationNote ?? null) : null,
+    },
+    stockAdjustment,
+  );
+
+  // Only the RESTORE direction (a fresh cancel) mirrors into FINA — un-cancel
+  // (DECREMENT) re-takes the local stock but deliberately doesn't re-push a
+  // second FINA sale, which is out of scope here (see fina_sync_integration
+  // memory). Never throws — same best-effort contract as pushOrderSale.
+  if (stockAdjustment?.direction === "RESTORE") {
+    await pushOrderReturn({
+      id: existing.id,
+      orderCode: existing.orderCode,
+      finaOutOperationId: existing.finaOutOperationId,
+      items: existing.items.map((item) => ({
+        productVariantId: item.productVariantId,
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPrice),
+      })),
+    });
+  }
 
   const templateKey = STATUS_KEY_TO_EMAIL_TEMPLATE[status.key];
   if (templateKey) {
@@ -830,5 +909,35 @@ export async function updateOrderStatus(
         }
       : null,
     cancellationNote: order.cancellationNote,
+    finaSyncStatus: order.finaSyncStatus,
+    finaOutOperationId: order.finaOutOperationId,
   };
+}
+
+// Admin-triggered manual retry of pushOrderSale/pushOrderReturn (see
+// fina-sync.service.ts's retryOrderFinaPush) — for an order whose
+// finaSyncStatus is FAILED (or, in principle, any order, though retrying a
+// NOT_APPLICABLE/SYNCED one just re-confirms there's nothing to do or
+// re-pushes redundantly). Direction (sale vs. return) is derived from the
+// order's current status, not tracked separately, so this always retries
+// whatever the automatic paths would have attempted for this order right now.
+export async function retryOrderFinaSync(orderId: number) {
+  const order = await ordersRepository.findById(orderId);
+  if (!order) {
+    throw new ApiError(404, "შეკვეთა ვერ მოიძებნა");
+  }
+
+  await retryOrderFinaPush({
+    id: order.id,
+    orderCode: order.orderCode,
+    isCancelled: order.status.key === "CANCELLED",
+    finaOutOperationId: order.finaOutOperationId,
+    items: order.items.map((item) => ({
+      productVariantId: item.productVariantId,
+      quantity: item.quantity,
+      unitPrice: Number(item.unitPrice),
+    })),
+  });
+
+  return getAnyOrder(orderId);
 }

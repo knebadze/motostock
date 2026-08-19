@@ -115,6 +115,8 @@ const SETTINGS_FALLBACK: Settings = {
   fraudHighValueThreshold: 1000,
   fraudFailedLoginThreshold: 5,
   fraudFailedLoginWindowMinutes: 15,
+  finaWebCustomerId: null,
+  finaWebUserId: null,
 };
 
 export async function getSettingsFromServer(): Promise<Settings> {

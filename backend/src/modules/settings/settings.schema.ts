@@ -25,6 +25,8 @@ export const updateSettingsSchema = registry.register(
     fraudHighValueThreshold: z.number().nonnegative().openapi({ example: 1000 }),
     fraudFailedLoginThreshold: z.int().positive().openapi({ example: 5 }),
     fraudFailedLoginWindowMinutes: z.int().positive().openapi({ example: 15 }),
+    finaWebCustomerId: z.int().positive().nullable().openapi({ example: null }),
+    finaWebUserId: z.int().positive().nullable().openapi({ example: null }),
   }),
 );
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
@@ -50,6 +52,8 @@ export const settingsResponseSchema = registry.register(
     fraudHighValueThreshold: z.number().nonnegative().openapi({ example: 1000 }),
     fraudFailedLoginThreshold: z.int().positive().openapi({ example: 5 }),
     fraudFailedLoginWindowMinutes: z.int().positive().openapi({ example: 15 }),
+    finaWebCustomerId: z.int().positive().nullable().openapi({ example: null }),
+    finaWebUserId: z.int().positive().nullable().openapi({ example: null }),
   }),
 );
 

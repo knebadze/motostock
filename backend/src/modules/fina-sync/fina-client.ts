@@ -19,6 +19,45 @@ interface FinaProductRest {
   reserve: number;
 }
 
+// Line-item shape shared by saveDocProductOut/saveDocCustomerReturn's
+// `products` array — sub_id is FINA's product-sub-code concept (this
+// codebase has no equivalent, always 0).
+export interface FinaSaleLine {
+  id: number;
+  quantity: number;
+  price: number;
+}
+
+export interface SaveDocProductOutInput {
+  date: string;
+  purpose: string;
+  amount: number;
+  store: number;
+  customer: number;
+  user: number;
+  payType: number;
+  products: FinaSaleLine[];
+}
+
+export interface SaveDocCustomerReturnLine extends FinaSaleLine {
+  outId: number;
+}
+
+export interface SaveDocCustomerReturnInput {
+  date: string;
+  purpose: string;
+  amount: number;
+  store: number;
+  customer: number;
+  user: number;
+  payType: number;
+  products: SaveDocCustomerReturnLine[];
+}
+
+interface FinaSaveDocResponse {
+  id: number;
+}
+
 let cachedToken: string | null = null;
 let cachedTokenExpiresAt = 0;
 
@@ -112,4 +151,104 @@ export function getProductsRestByStore(store: string): Promise<FinaProductRest[]
 // would be wasteful.
 export function getProductsRestArray(prods: number[]): Promise<FinaProductRest[]> {
   return finaPost<FinaProductRest[]>("/api/operation/getProductsRestArray", { prods });
+}
+
+// Records a sale in FINA (saveDocProductOut) — decrements FINA stock for the
+// given products and returns the new operation's id, which must be kept so a
+// later cancellation can reference it via saveDocCustomerReturn's out_id.
+// w_type=3 (no transport) and overlap_type=0 since a web order has no
+// waybill/driver/advance-overlap data to report; num=0/num_pfx="" let FINA
+// assign the document number itself.
+export async function saveDocProductOut(input: SaveDocProductOutInput): Promise<number> {
+  const body = {
+    id: 0,
+    date: input.date,
+    num_pfx: "",
+    num: 0,
+    purpose: input.purpose,
+    amount: input.amount,
+    currency: "GEL",
+    rate: 1,
+    store: input.store,
+    user: input.user,
+    staff: 0,
+    project: 0,
+    customer: input.customer,
+    is_vat: true,
+    make_entry: true,
+    pay_type: input.payType,
+    price_type: 3,
+    w_type: 3,
+    t_type: 1,
+    t_payer: 1,
+    w_cost: 0,
+    foreign: false,
+    drv_name: "",
+    tr_start: "",
+    tr_end: "",
+    driver_id: "",
+    car_num: "",
+    tr_text: "",
+    sender: "",
+    reciever: "",
+    comment: "",
+    overlap_type: 0,
+    overlap_amount: 0,
+    products: input.products.map((line) => ({
+      id: line.id,
+      sub_id: 0,
+      quantity: line.quantity,
+      price: line.price,
+    })),
+    services: [],
+  };
+  const response = await finaPost<FinaSaveDocResponse>("/api/operation/saveDocProductOut", body);
+  return response.id;
+}
+
+// Records a return-from-customer in FINA (saveDocCustomerReturn) —
+// increments FINA stock back. Each product line's out_id must point at the
+// saveDocProductOut operation id the original sale was recorded under, or
+// FINA has nothing to "return" against.
+export async function saveDocCustomerReturn(input: SaveDocCustomerReturnInput): Promise<number> {
+  const body = {
+    id: 0,
+    date: input.date,
+    num_pfx: "",
+    num: 0,
+    purpose: input.purpose,
+    amount: input.amount,
+    currency: "GEL",
+    rate: 1,
+    store: input.store,
+    user: input.user,
+    staff: 0,
+    project: 0,
+    customer: input.customer,
+    is_vat: true,
+    make_entry: true,
+    pay_type: input.payType,
+    t_type: 1,
+    t_payer: 1,
+    w_cost: 0,
+    foreign: false,
+    drv_name: "",
+    tr_start: "",
+    tr_end: "",
+    driver_id: "",
+    car_num: "",
+    tr_text: "",
+    products: input.products.map((line) => ({
+      id: line.id,
+      sub_id: 0,
+      quantity: line.quantity,
+      price: line.price,
+      out_id: line.outId,
+    })),
+  };
+  const response = await finaPost<FinaSaveDocResponse>(
+    "/api/operation/saveDocCustomerReturn",
+    body,
+  );
+  return response.id;
 }

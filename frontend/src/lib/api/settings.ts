@@ -21,6 +21,8 @@ export type Settings = {
   fraudHighValueThreshold: number;
   fraudFailedLoginThreshold: number;
   fraudFailedLoginWindowMinutes: number;
+  finaWebCustomerId: number | null;
+  finaWebUserId: number | null;
 };
 
 export async function getSettings(): Promise<Settings> {

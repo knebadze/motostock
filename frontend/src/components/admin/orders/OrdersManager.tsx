@@ -16,6 +16,7 @@ import {
 import type { LookupItem } from "@/lib/api/lookups";
 import { OrderDetailModal } from "./OrderDetailModal";
 import { OrderStatusBadge } from "./OrderStatusBadge";
+import { FinaSyncBadge } from "./FinaSyncBadge";
 
 const FULFILLMENT_LABELS: Record<OrderFulfillmentMethod, string> = {
   CARD: "ბარათით გადახდა",
@@ -98,6 +99,7 @@ const columns: DataTableColumn<AdminOrderSummary>[] = [
     ),
   },
   { header: "სტატუსი", render: (order) => <OrderStatusBadge status={order.status} /> },
+  { header: "FINA", render: (order) => <FinaSyncBadge status={order.finaSyncStatus} /> },
   { header: "მიწოდება", render: (order) => FULFILLMENT_LABELS[order.fulfillmentMethod] },
   {
     header: "თანხა",

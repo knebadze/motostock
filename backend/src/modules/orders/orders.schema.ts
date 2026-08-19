@@ -246,12 +246,20 @@ export const orderRiskFlagResponseSchema = registry.register(
   }),
 );
 
+// See order.prisma's FinaOrderSyncStatus — whether this order's current
+// state (a placed sale, or its return once cancelled) is actually reflected
+// in FINA. NOT_APPLICABLE means nothing to retry (no FINA-linked items, or
+// FINA/its Settings aren't configured); FAILED is what the admin order list
+// flags with the manual retry button.
+export const finaOrderSyncStatusSchema = z.enum(["NOT_APPLICABLE", "SYNCED", "FAILED"]);
+
 export const adminOrderSummaryResponseSchema = registry.register(
   "AdminOrderSummary",
   orderSummaryResponseSchema.extend({
     fulfillmentMethod: orderFulfillmentMethodSchema,
     buyer: buyerSummarySchema,
     hasRiskFlags: z.boolean(),
+    finaSyncStatus: finaOrderSyncStatusSchema,
   }),
 );
 
@@ -262,5 +270,7 @@ export const adminOrderResponseSchema = registry.register(
     riskFlags: z.array(orderRiskFlagResponseSchema),
     cancellationReason: lookupItemResponseSchema.nullable(),
     cancellationNote: z.string().nullable(),
+    finaSyncStatus: finaOrderSyncStatusSchema,
+    finaOutOperationId: z.int().nullable(),
   }),
 );

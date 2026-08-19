@@ -74,6 +74,12 @@ ordersRouter.patch(
   validate(updateOrderStatusSchema),
   ordersController.updateStatus,
 );
+ordersRouter.post(
+  "/:id/fina-sync",
+  requireRole(ROLES.ADMIN),
+  validate(orderIdParamSchema, "params"),
+  ordersController.retryFinaSync,
+);
 
 const security = [{ cookieAuth: [] }];
 const listResponse = z.object({ orders: z.array(orderSummaryResponseSchema) });
@@ -198,5 +204,22 @@ registry.registerPath({
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
     403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/orders/{id}/fina-sync",
+  tags: ["Orders"],
+  summary: "Manually retry pushing this order's sale (or, if cancelled, its return) to FINA after a prior failure (admin only)",
+  security,
+  request: { params: orderIdParamSchema },
+  responses: {
+    200: { description: "Retried — see the order's finaSyncStatus for the result", content: { "application/json": { schema: adminOrderResponse } } },
+    400: { description: "Nothing to retry (FINA not configured, Settings not filled in, or no FINA-linked items)", content: { "application/json": { schema: errorResponseSchema } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+    502: { description: "FINA API call failed", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

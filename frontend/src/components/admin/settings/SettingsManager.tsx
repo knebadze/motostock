@@ -8,6 +8,7 @@ import { Tabs } from "@/components/shared/Tabs";
 import { GeneralSettingsTab } from "./GeneralSettingsTab";
 import { DeliverySettingsTab } from "./DeliverySettingsTab";
 import { FraudSettingsTab } from "./FraudSettingsTab";
+import { FinaSettingsTab } from "./FinaSettingsTab";
 import { CacheTab } from "./CacheTab";
 
 export function SettingsManager({ initialSettings }: { initialSettings: Settings }) {
@@ -50,6 +51,11 @@ export function SettingsManager({ initialSettings }: { initialSettings: Settings
               key: "fraud",
               label: "თაღლითობის ბარიერები",
               content: <FraudSettingsTab settings={settings} saving={saving} onSave={save} />,
+            },
+            {
+              key: "fina",
+              label: "FINA",
+              content: <FinaSettingsTab settings={settings} saving={saving} onSave={save} />,
             },
             {
               key: "cache",

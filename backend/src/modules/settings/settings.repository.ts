@@ -12,4 +12,8 @@ export const settingsRepository = {
       update: { value },
     });
   },
+
+  delete(key: string) {
+    return prisma.setting.deleteMany({ where: { key } });
+  },
 };

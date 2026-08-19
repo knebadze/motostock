@@ -11,6 +11,7 @@ import { formatDateTime, formatPrice } from "@/lib/format";
 import {
   getAnyOrder,
   updateOrderStatus,
+  retryOrderFinaSync,
   type AdminOrder,
   type OrderDeliverySpeed,
   type OrderFulfillmentMethod,
@@ -18,6 +19,7 @@ import {
 } from "@/lib/api/orders";
 import { syncOrderStock, type OrderStockSyncItem } from "@/lib/api/fina-sync";
 import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
+import { FinaSyncBadge } from "./FinaSyncBadge";
 
 const FULFILLMENT_LABELS: Record<OrderFulfillmentMethod, string> = {
   CARD: "ბარათით გადახდა",
@@ -53,6 +55,7 @@ export function OrderDetailModal({
   const [statusId, setStatusId] = useState("");
   const [savingStatus, setSavingStatus] = useState(false);
   const [syncingStock, setSyncingStock] = useState(false);
+  const [retryingFina, setRetryingFina] = useState(false);
   const [stockByVariantId, setStockByVariantId] = useState<Map<number, OrderStockSyncItem>>(new Map());
   const [cancellationReasons, setCancellationReasons] = useState<LookupItem[]>([]);
   const [cancellationReasonId, setCancellationReasonId] = useState("");
@@ -137,6 +140,23 @@ export function OrderDetailModal({
     }
   }
 
+  async function handleRetryFinaSync() {
+    if (!order) return;
+
+    setRetryingFina(true);
+    try {
+      const updated = await retryOrderFinaSync(order.id);
+      setOrder(updated);
+      onStatusChanged();
+      toast.success("FINA-ში წარმატებით გაიგზავნა");
+    } catch (error) {
+      const message = error instanceof ApiRequestError ? error.message : "FINA-ში გაგზავნა ვერ მოხერხდა";
+      toast.error(message);
+    } finally {
+      setRetryingFina(false);
+    }
+  }
+
   const statusOptions = statuses.map((status) => ({ value: String(status.id), label: status.nameKa }));
   const cancellationReasonOptions = cancellationReasons.map((reason) => ({
     value: String(reason.id),
@@ -175,6 +195,25 @@ export function OrderDetailModal({
               </button>
             </div>
           </div>
+
+          {order.finaSyncStatus !== "NOT_APPLICABLE" && (
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-border p-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-foreground">FINA სინქრონიზაცია:</span>
+                <FinaSyncBadge status={order.finaSyncStatus} />
+              </div>
+              {order.finaSyncStatus === "FAILED" && (
+                <button
+                  type="button"
+                  onClick={handleRetryFinaSync}
+                  disabled={retryingFina}
+                  className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {retryingFina ? "იგზავნება..." : "ხელით გაშვება FINA-ში"}
+                </button>
+              )}
+            </div>
+          )}
 
           {isCancellingTo && statusId !== String(order.status.id) && (
             <div className="flex flex-col gap-3 rounded-xl border border-border p-4">

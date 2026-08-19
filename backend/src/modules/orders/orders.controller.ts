@@ -68,3 +68,8 @@ export async function updateStatus(
   );
   res.status(200).json({ order });
 }
+
+export async function retryFinaSync(req: Request, res: Response) {
+  const order = await ordersService.retryOrderFinaSync(Number(req.params.id));
+  res.status(200).json({ order });
+}

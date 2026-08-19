@@ -95,6 +95,13 @@ export type PlaceOrderItemInput = {
   lineTotal: number;
 };
 
+export type StockAdjustmentItem = {
+  productVariantId: number | null;
+  vehicleListingId: number | null;
+  quantity: number;
+  itemNameKa: string;
+};
+
 export type PlaceOrderInput = {
   orderCode: string;
   idempotencyKey: string;
@@ -141,15 +148,97 @@ export const ordersRepository = {
     return prisma.order.findUnique({ where: { idempotencyKey }, include: orderItemsInclude });
   },
 
+  // `stockAdjustment` mirrors placeOrder's own decrement logic below, in
+  // whichever direction the transition needs (see orders.service.ts's
+  // updateOrderStatus): RESTORE gives stock back when an order newly becomes
+  // CANCELLED; DECREMENT takes it away again if an admin moves a CANCELLED
+  // order to any other status (the symmetric case — without it, toggling an
+  // order's status back and forth would inflate stock for free). Everything
+  // runs in one transaction so the status change and the stock move commit
+  // or roll back together.
   async updateStatus(
     id: number,
     statusId: number,
-    cancellation?: { cancellationReasonId: number | null; cancellationNote: string | null },
+    cancellation: { cancellationReasonId: number | null; cancellationNote: string | null },
+    stockAdjustment?: {
+      direction: "RESTORE" | "DECREMENT";
+      items: StockAdjustmentItem[];
+      soldStatusId: number;
+      availableStatusId: number;
+    },
   ) {
-    await prisma.order.update({
-      where: { id },
-      data: { statusId, ...cancellation },
+    await prisma.$transaction(async (tx) => {
+      await tx.order.update({ where: { id }, data: { statusId, ...cancellation } });
+
+      if (!stockAdjustment) return;
+
+      for (const item of stockAdjustment.items) {
+        if (stockAdjustment.direction === "RESTORE") {
+          if (item.productVariantId != null) {
+            await tx.productVariant.update({
+              where: { id: item.productVariantId },
+              data: { stockQuantity: { increment: item.quantity } },
+            });
+            // Only undoes the specific SOLD auto-flip placeOrder made — never
+            // overwrites a status an admin set independently (e.g. RESERVED).
+            await tx.productVariant.updateMany({
+              where: {
+                id: item.productVariantId,
+                statusId: stockAdjustment.soldStatusId,
+                stockQuantity: { gt: 0 },
+              },
+              data: { statusId: stockAdjustment.availableStatusId },
+            });
+          } else if (item.vehicleListingId != null) {
+            await tx.vehicleListing.update({
+              where: { id: item.vehicleListingId },
+              data: { stockQuantity: { increment: item.quantity } },
+            });
+            await tx.vehicleListing.updateMany({
+              where: {
+                id: item.vehicleListingId,
+                statusId: stockAdjustment.soldStatusId,
+                stockQuantity: { gt: 0 },
+              },
+              data: { statusId: stockAdjustment.availableStatusId },
+            });
+          }
+        } else {
+          if (item.productVariantId != null) {
+            const result = await tx.productVariant.updateMany({
+              where: { id: item.productVariantId, stockQuantity: { gte: item.quantity } },
+              data: { stockQuantity: { decrement: item.quantity } },
+            });
+            if (result.count === 0) {
+              throw new ApiError(
+                409,
+                `"${item.itemNameKa}" — მარაგში საკმარისი რაოდენობა აღარ არის, გაუქმების დაბრუნება ვერ მოხერხდება`,
+              );
+            }
+            await tx.productVariant.updateMany({
+              where: { id: item.productVariantId, stockQuantity: { lte: 0 } },
+              data: { statusId: stockAdjustment.soldStatusId },
+            });
+          } else if (item.vehicleListingId != null) {
+            const result = await tx.vehicleListing.updateMany({
+              where: { id: item.vehicleListingId, stockQuantity: { gte: item.quantity } },
+              data: { stockQuantity: { decrement: item.quantity } },
+            });
+            if (result.count === 0) {
+              throw new ApiError(
+                409,
+                `"${item.itemNameKa}" — აღარ არის ხელმისაწვდომი, გაუქმების დაბრუნება ვერ მოხერხდება`,
+              );
+            }
+            await tx.vehicleListing.updateMany({
+              where: { id: item.vehicleListingId, stockQuantity: { lte: 0 } },
+              data: { statusId: stockAdjustment.soldStatusId },
+            });
+          }
+        }
+      }
     });
+
     return prisma.order.findUniqueOrThrow({ where: { id }, include: orderItemsInclude });
   },
 

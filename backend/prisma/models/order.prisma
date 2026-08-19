@@ -13,6 +13,26 @@ enum OrderDeliverySpeed {
   @@schema("dbo")
 }
 
+// Tracks whether this order's current state (a placed sale, or — once
+// cancelled — that sale's return) is actually reflected in FINA, separately
+// from whether FINA sync applies to this order at all. See
+// fina-sync.service.ts's pushOrderSale/pushOrderReturn/retryOrderFinaPush.
+enum FinaOrderSyncStatus {
+  // Default — no FINA-linked items on this order, FINA isn't configured, or
+  // the FINA web-customer/user Settings aren't filled in yet. Nothing to
+  // retry; this is a fact about the order/config, not a failure.
+  NOT_APPLICABLE
+  // The last push attempt (sale on placement, or return on cancellation)
+  // succeeded and FINA reflects this order's current state.
+  SYNCED
+  // A push was attempted (order has FINA-linked items, FINA is configured)
+  // but the FINA API call itself failed — admin can retry via
+  // retryOrderFinaPush.
+  FAILED
+
+  @@schema("dbo")
+}
+
 // A placed order — the historical record of a checkout. Unlike CartItem,
 // everything that could later change (address, promo code, product name)
 // is snapshotted at creation time (see shippingSnapshot/promoCodeSnapshot/
@@ -92,6 +112,15 @@ model Order {
   // and multi-accounting; never shown to the customer.
   ipAddress String?
   riskFlags OrderRiskFlag[]
+
+  // Set once placeOrder successfully records this order as a sale in FINA
+  // (see fina-client.ts's saveDocProductOut) — the returned FINA operation
+  // id, needed so a later cancellation can reference it via
+  // saveDocCustomerReturn's out_id. Null when FINA isn't configured, the
+  // order has no FINA-linked items, or the push itself failed (best-effort,
+  // never blocks checkout — see orders.service.ts).
+  finaOutOperationId Int?
+  finaSyncStatus     FinaOrderSyncStatus @default(NOT_APPLICABLE)
 
   items     OrderItem[]
   createdAt DateTime    @default(now())

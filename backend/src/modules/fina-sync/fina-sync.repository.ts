@@ -1,5 +1,5 @@
 import { prisma } from "../../config/prisma.js";
-import type { FinaSyncStatus, FinaSyncTrigger } from "../../generated/prisma/index.js";
+import type { FinaOrderSyncStatus, FinaSyncStatus, FinaSyncTrigger } from "../../generated/prisma/index.js";
 
 export const finaSyncRepository = {
   findLinkedVariants() {
@@ -25,6 +25,17 @@ export const finaSyncRepository = {
 
   updateStock(id: number, stockQuantity: number) {
     return prisma.productVariant.update({ where: { id }, data: { stockQuantity } });
+  },
+
+  // finaOutOperationId is only ever passed on a successful sale push (SYNCED
+  // from attemptOrderSalePush) — a return push or a FAILED transition never
+  // touches it, so a prior successful sale's id survives a later failed
+  // return-push attempt (still needed for the next retry's out_id).
+  setOrderFinaSyncStatus(orderId: number, status: FinaOrderSyncStatus, finaOutOperationId?: number) {
+    return prisma.order.update({
+      where: { id: orderId },
+      data: { finaSyncStatus: status, ...(finaOutOperationId != null ? { finaOutOperationId } : {}) },
+    });
   },
 
   createRun(data: {
