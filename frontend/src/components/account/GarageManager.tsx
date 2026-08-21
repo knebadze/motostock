@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { GarageVehicleFormModal } from "./GarageVehicleFormModal";
+import { ServiceHistoryModal } from "./ServiceHistoryModal";
 import { deleteGarageVehicle } from "@/lib/api/garage";
 import type { GarageVehicle, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 import type { Model } from "@/lib/api/models";
@@ -32,6 +33,7 @@ export function GarageManager({
   const [catalog, setCatalog] = useState(vehicleCatalog);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<GarageVehicle | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<GarageVehicle | null>(null);
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -67,13 +69,20 @@ export function GarageManager({
                   {t("vinLabel")}: {vehicle.vin}
                 </p>
               )}
-              <div className="mt-3 flex gap-3">
+              <div className="mt-3 flex flex-wrap gap-3">
                 <Link
                   href={`/compatible-products/${vehicle.vehicleCatalog.id}`}
                   className="text-sm font-medium text-primary hover:underline"
                 >
                   {t("searchButton")}
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => setHistoryTarget(vehicle)}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  {t("serviceHistoryButton")}
+                </button>
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(vehicle)}
@@ -120,6 +129,14 @@ export function GarageManager({
         closeLabel={tCommon("modal.close")}
         loaderLabel={tCommon("loader.loading")}
       />
+
+      {historyTarget && (
+        <ServiceHistoryModal
+          garageVehicleId={historyTarget.id}
+          vehicleLabel={formatVehicleCatalogLabel(historyTarget.vehicleCatalog)}
+          onClose={() => setHistoryTarget(null)}
+        />
+      )}
     </div>
   );
 }
