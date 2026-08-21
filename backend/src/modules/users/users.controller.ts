@@ -17,8 +17,8 @@ export async function me(req: Request, res: Response) {
   res.status(200).json({ user });
 }
 
-export async function list(_req: Request, res: Response) {
-  const users = await listUsers();
+export async function list(req: Request<unknown, unknown, unknown, { q?: string }>, res: Response) {
+  const users = await listUsers(req.query.q);
   res.status(200).json({ users });
 }
 

@@ -69,6 +69,8 @@ import { teamMembersRouter } from "./modules/team-members/team-members.routes.js
 import { banksRouter } from "./modules/banks/banks.routes.js";
 import { mediaRouter } from "./modules/media/media.routes.js";
 import { faqRouter } from "./modules/faq/faq.routes.js";
+import { serviceTypesRouter } from "./modules/service-types/service-types.routes.js";
+import { serviceRecordsRouter } from "./modules/service-records/service-records.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
 import { globalRateLimit } from "./middleware/rateLimit.middleware.js";
@@ -161,6 +163,8 @@ app.use("/api/team-members", teamMembersRouter);
 app.use("/api/banks", banksRouter);
 app.use("/api/media", mediaRouter);
 app.use("/api/faq", faqRouter);
+app.use("/api/service-types", serviceTypesRouter);
+app.use("/api/service-records", serviceRecordsRouter);
 
 // registerPath() calls above already ran as a side effect of importing the
 // routers, so the registry is fully populated by the time this generates.

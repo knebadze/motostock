@@ -23,6 +23,7 @@ import type { AdminUser } from "./users";
 import type { HeroSlide } from "./hero-slides";
 import type { TeamMember } from "./team-members";
 import type { Bank, PublicBank } from "./banks";
+import type { ServiceType } from "./service-types";
 import type { HomepageSection } from "./homepage-sections";
 import type { PromoCode, PromoCodeDomain } from "./promo-codes";
 import type { WishlistItem } from "./wishlist";
@@ -739,6 +740,14 @@ export async function getPublicTeamMembersFromServer(): Promise<TeamMember[]> {
 
 export async function getBanksFromServer(): Promise<Bank[]> {
   return fetchFromServer<{ items: Bank[] }, Bank[]>("/banks", {
+    fallback: [],
+    extract: (data) => data.items,
+    requireAuth: true,
+  });
+}
+
+export async function getServiceTypesFromServer(): Promise<ServiceType[]> {
+  return fetchFromServer<{ items: ServiceType[] }, ServiceType[]>("/service-types", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,

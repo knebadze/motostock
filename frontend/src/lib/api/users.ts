@@ -22,8 +22,10 @@ export type AdminUserDetail = AdminUser & {
   cart: CartItem[];
 };
 
-export async function listUsers(): Promise<AdminUser[]> {
-  const { data } = await apiClient.get<{ users: AdminUser[] }>("/users");
+export async function listUsers(search?: string): Promise<AdminUser[]> {
+  const { data } = await apiClient.get<{ users: AdminUser[] }>("/users", {
+    params: { q: search || undefined },
+  });
   return data.users;
 }
 

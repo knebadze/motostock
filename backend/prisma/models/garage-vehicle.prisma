@@ -15,6 +15,7 @@ model GarageVehicle {
   // individual unit). Not enforced unique: typos, resales, or a user
   // re-adding the same vehicle shouldn't hard-fail.
   vin              String?
+  serviceRecords   ServiceRecord[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 

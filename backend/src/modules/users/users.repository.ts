@@ -32,8 +32,17 @@ export const usersRepository = {
     });
   },
 
-  findMany() {
+  findMany(search?: string) {
     return prisma.user.findMany({
+      where: search
+        ? {
+            OR: [
+              { firstName: { contains: search, mode: "insensitive" } },
+              { lastName: { contains: search, mode: "insensitive" } },
+              { email: { contains: search, mode: "insensitive" } },
+            ],
+          }
+        : undefined,
       include: { role: true },
       orderBy: { createdAt: "desc" },
     });

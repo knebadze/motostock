@@ -1,0 +1,33 @@
+enum ServicePosition {
+  FRONT
+  REAR
+  BOTH
+
+  @@schema("dbo")
+}
+
+// One workshop service actually performed on a customer's garage vehicle.
+// Either serviceTypeId (a templated ServiceType) or customServiceName (a
+// one-off typed in by the admin) is set, never both/neither — enforced by
+// a DB CHECK constraint added by hand in this feature's migration (same
+// "owner xor" pattern as CartItem/WishlistItem's userId/guestId).
+model ServiceRecord {
+  id                Int              @id @default(autoincrement())
+  garageVehicleId   Int
+  garageVehicle     GarageVehicle    @relation(fields: [garageVehicleId], references: [id], onDelete: Cascade)
+  serviceTypeId     Int?
+  serviceType       ServiceType?     @relation(fields: [serviceTypeId], references: [id], onDelete: Restrict)
+  customServiceName String?
+  mileageKm         Int
+  performedAt       DateTime
+  position          ServicePosition?
+  filterChanged     Boolean?
+  notes             String?
+  recordedByUserId  Int?
+  recordedBy        User?            @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([garageVehicleId])
+  @@schema("dbo")
+}

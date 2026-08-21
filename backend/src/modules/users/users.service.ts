@@ -72,8 +72,8 @@ export async function getUserDetail(id: number) {
   };
 }
 
-export async function listUsers() {
-  const users = await usersRepository.findMany();
+export async function listUsers(search?: string) {
+  const users = await usersRepository.findMany(search);
 
   return users.map((user) => ({
     id: user.id,

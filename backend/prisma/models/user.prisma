@@ -29,6 +29,10 @@ model User {
   productViews            ProductView[]
   vehicleListingViews     VehicleListingView[]
   orders                  Order[]
+  // Service history rows this admin logged in the workshop (not this
+  // user's own vehicles' history — see GarageVehicle.serviceRecords for
+  // that side).
+  recordedServiceRecords  ServiceRecord[]
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
 

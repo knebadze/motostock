@@ -10,7 +10,7 @@ import { wishlistItemResponseSchema } from "../wishlist/wishlist.schema.js";
 import { cartItemResponseSchema } from "../cart/cart.schema.js";
 import { ROLES } from "../../lib/roles.js";
 import { changePassword, getOne, list, me } from "./users.controller.js";
-import { changePasswordSchema, userIdParamSchema } from "./users.schema.js";
+import { changePasswordSchema, listUsersQuerySchema, userIdParamSchema } from "./users.schema.js";
 
 export const usersRouter = Router();
 
@@ -21,7 +21,13 @@ usersRouter.patch(
   validate(changePasswordSchema),
   changePassword,
 );
-usersRouter.get("/", requireAuth, requireRole(ROLES.ADMIN), list);
+usersRouter.get(
+  "/",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  validate(listUsersQuerySchema, "query"),
+  list,
+);
 usersRouter.get(
   "/:id",
   requireAuth,
@@ -86,8 +92,9 @@ registry.registerPath({
   method: "get",
   path: "/users",
   tags: ["Users"],
-  summary: "List all registered users (admin only)",
+  summary: "List all registered users, optionally searched by name/email (admin only)",
   security: [{ cookieAuth: [] }],
+  request: { query: listUsersQuerySchema },
   responses: {
     200: {
       description: "Users",

@@ -1,0 +1,22 @@
+// A templated workshop service (e.g. "Oil change", "Brake pad replacement")
+// that the admin can attach to a customer's garage vehicle as a
+// ServiceRecord. hasPositionOption/hasFilterOption are the only two
+// "extra detail" shapes real motorcycle service history needs beyond
+// mileage+date (see the plan doc for the reasoning) — front/rear/both
+// covers brake pads, discs, brake fluid, tires, wheel bearings; the filter
+// toggle covers oil changes. Anything else stays in ServiceRecord.notes.
+model ServiceType {
+  id                Int             @id @default(autoincrement())
+  nameKa            String
+  nameEn            String
+  nameRu            String
+  hasPositionOption Boolean         @default(false)
+  hasFilterOption   Boolean         @default(false)
+  isActive          Boolean         @default(true)
+  sortOrder         Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  records           ServiceRecord[]
+
+  @@schema("dbo")
+}

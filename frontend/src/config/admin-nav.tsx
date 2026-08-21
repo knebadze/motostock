@@ -23,6 +23,8 @@ import {
   ordersIcon,
   productsIcon,
   promoCodesIcon,
+  serviceHistoryIcon,
+  serviceTypesIcon,
   settingsIcon,
   statusesIcon,
   teamIcon,
@@ -99,6 +101,13 @@ export const adminNav: AdminNavSection[] = [
   {
     label: "გადახდები",
     items: [{ label: "ბანკები", href: "/admin/banks", icon: banksIcon }],
+  },
+  {
+    label: "სახელოსნო",
+    items: [
+      { label: "სერვისების ტიპები", href: "/admin/service-types", icon: serviceTypesIcon },
+      { label: "სერვისის ისტორია", href: "/admin/service-history", icon: serviceHistoryIcon },
+    ],
   },
   {
     label: "უსაფრთხოება",
