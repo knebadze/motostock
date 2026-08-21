@@ -1,7 +1,7 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { comparePassword, hashPassword } from "../../lib/password.js";
 import { toAddressResponse } from "../addresses/addresses.service.js";
-import { toVehicleCatalogResponse } from "../vehicle-catalog/vehicle-catalog.service.js";
+import { toResponse as toGarageVehicleResponse } from "../garage/garage.service.js";
 import { toResponse as toWishlistItemResponse } from "../wishlist/wishlist.service.js";
 import { toResponse as toCartItemResponse } from "../cart/cart.service.js";
 import { usersRepository } from "./users.repository.js";
@@ -60,13 +60,7 @@ export async function getUserDetail(id: number) {
     hasFacebook: user.facebookId != null,
     createdAt: user.createdAt,
     addresses: user.addresses.map(toAddressResponse),
-    garage: user.garageVehicles.map((vehicle) => ({
-      id: vehicle.id,
-      year: vehicle.year,
-      vehicleCatalog: toVehicleCatalogResponse(vehicle.vehicleCatalog),
-      createdAt: vehicle.createdAt,
-      updatedAt: vehicle.updatedAt,
-    })),
+    garage: user.garageVehicles.map(toGarageVehicleResponse),
     wishlist: user.wishlistItems.map(toWishlistItemResponse),
     cart: user.cartItems.map(toCartItemResponse),
   };

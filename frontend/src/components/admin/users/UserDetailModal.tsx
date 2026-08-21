@@ -1,14 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Loader } from "@/components/shared/Loader";
 import { getUser, type AdminUserDetail } from "@/lib/api/users";
 import type { WishlistItem } from "@/lib/api/wishlist";
-import { ApiRequestError } from "@/lib/api/client";
+import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { formatDateTime, formatVehicleCatalogLabel } from "@/lib/format";
 import { getCartItemDisplay } from "@/lib/cart-item-display";
+
+const cameraIcon = (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-5"
+  >
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z" />
+    <circle cx="12" cy="13" r="4" />
+  </svg>
+);
 
 function wishlistItemLabel(item: WishlistItem): string {
   if (item.product) return item.product.name.ka;
@@ -136,19 +152,36 @@ export function UserDetailModal({ userId, onClose }: { userId: number; onClose: 
               <p className="mt-2 text-sm text-muted-foreground">გარაჟი ცარიელია</p>
             ) : (
               <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                {detail.garage.map((vehicle) => (
-                  <div key={vehicle.id} className="rounded-xl border border-border bg-card p-4">
-                    <p className="text-sm font-semibold">
-                      {formatVehicleCatalogLabel(vehicle.vehicleCatalog)}
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">წელი: {vehicle.year}</p>
-                    {vehicle.vehicleCatalog.submittedBy && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        დამატებულია იუზერის მიერ
-                      </p>
-                    )}
-                  </div>
-                ))}
+                {detail.garage.map((vehicle) => {
+                  const photoUrl = resolveMediaUrl(vehicle.imageUrl);
+                  return (
+                    <div
+                      key={vehicle.id}
+                      className="flex gap-3 rounded-xl border border-border bg-card p-4"
+                    >
+                      <div className="relative size-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+                        {photoUrl ? (
+                          <Image src={photoUrl} alt="" fill sizes="56px" className="object-cover" />
+                        ) : (
+                          <div className="flex size-full items-center justify-center text-muted-foreground">
+                            {cameraIcon}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">
+                          {formatVehicleCatalogLabel(vehicle.vehicleCatalog)}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">წელი: {vehicle.year}</p>
+                        {vehicle.vehicleCatalog.submittedBy && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            დამატებულია იუზერის მიერ
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

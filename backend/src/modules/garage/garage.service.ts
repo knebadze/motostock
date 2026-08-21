@@ -28,7 +28,7 @@ async function assertCatalogEntryFitsYear(vehicleCatalogId: number, year: number
   }
 }
 
-function toResponse(row: {
+export function toResponse(row: {
   id: number;
   year: number;
   vin: string | null;

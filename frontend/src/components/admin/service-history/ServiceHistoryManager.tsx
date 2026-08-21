@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
@@ -13,11 +14,26 @@ import {
   type ServiceRecord,
 } from "@/lib/api/service-records";
 import type { ServiceType } from "@/lib/api/service-types";
-import { ApiRequestError } from "@/lib/api/client";
+import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { formatDate, formatVehicleCatalogLabel } from "@/lib/format";
 import { ServiceRecordFormModal } from "./ServiceRecordFormModal";
 
 const SEARCH_DEBOUNCE_MS = 350;
+
+const cameraIcon = (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-5"
+  >
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z" />
+    <circle cx="12" cy="13" r="4" />
+  </svg>
+);
 
 const POSITION_LABELS: Record<string, string> = {
   FRONT: "წინა",
@@ -216,21 +232,37 @@ export function ServiceHistoryManager({ initialServiceTypes }: { initialServiceT
             <div className="mt-6">
               <h2 className="text-sm font-semibold">ტრანსპორტი</h2>
               <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                {garageVehicles.map((vehicle) => (
-                  <button
-                    key={vehicle.id}
-                    type="button"
-                    onClick={() => selectVehicle(vehicle)}
-                    className={`rounded-xl border p-4 text-left transition-colors ${
-                      selectedVehicle?.id === vehicle.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border bg-card hover:border-primary"
-                    }`}
-                  >
-                    <p className="text-sm font-semibold">{formatVehicleCatalogLabel(vehicle.vehicleCatalog)}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">წელი: {vehicle.year}</p>
-                  </button>
-                ))}
+                {garageVehicles.map((vehicle) => {
+                  const photoUrl = resolveMediaUrl(vehicle.imageUrl);
+                  return (
+                    <button
+                      key={vehicle.id}
+                      type="button"
+                      onClick={() => selectVehicle(vehicle)}
+                      className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
+                        selectedVehicle?.id === vehicle.id
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-card hover:border-primary"
+                      }`}
+                    >
+                      <div className="relative size-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+                        {photoUrl ? (
+                          <Image src={photoUrl} alt="" fill sizes="56px" className="object-cover" />
+                        ) : (
+                          <div className="flex size-full items-center justify-center text-muted-foreground">
+                            {cameraIcon}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">
+                          {formatVehicleCatalogLabel(vehicle.vehicleCatalog)}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">წელი: {vehicle.year}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
