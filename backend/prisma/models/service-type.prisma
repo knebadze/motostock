@@ -12,6 +12,10 @@ model ServiceType {
   nameRu            String
   hasPositionOption Boolean         @default(false)
   hasFilterOption   Boolean         @default(false)
+  // Pre-fills ServiceRecord.price when this template is picked while
+  // logging a service — a starting point, not a lock: the admin can still
+  // change it per-record (actual cost varies job to job).
+  defaultPrice      Decimal?        @db.Decimal(10, 2)
   isActive          Boolean         @default(true)
   sortOrder         Int             @default(0)
   createdAt         DateTime        @default(now())

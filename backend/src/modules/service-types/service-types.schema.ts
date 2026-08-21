@@ -8,6 +8,7 @@ export const createServiceTypeSchema = registry.register(
     name: localizedStringSchema,
     hasPositionOption: z.boolean().optional(),
     hasFilterOption: z.boolean().optional(),
+    defaultPrice: z.coerce.number().nonnegative().nullable().optional().openapi({ example: 45 }),
     isActive: z.boolean().optional(),
   }),
 );
@@ -38,6 +39,7 @@ export const serviceTypeResponseSchema = registry.register(
     name: localizedStringSchema,
     hasPositionOption: z.boolean(),
     hasFilterOption: z.boolean(),
+    defaultPrice: z.number().nullable(),
     isActive: z.boolean(),
     sortOrder: z.int(),
     createdAt: z.iso.datetime(),

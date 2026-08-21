@@ -14,8 +14,9 @@ import {
   type ServiceRecord,
 } from "@/lib/api/service-records";
 import type { ServiceType } from "@/lib/api/service-types";
+import type { TeamMember } from "@/lib/api/team-members";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
-import { formatDate, formatVehicleCatalogLabel } from "@/lib/format";
+import { formatDate, formatPrice, formatVehicleCatalogLabel } from "@/lib/format";
 import { ServiceRecordFormModal } from "./ServiceRecordFormModal";
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -52,7 +53,13 @@ function serviceRecordDetail(record: ServiceRecord): string | null {
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
-export function ServiceHistoryManager({ initialServiceTypes }: { initialServiceTypes: ServiceType[] }) {
+export function ServiceHistoryManager({
+  initialServiceTypes,
+  teamMembers,
+}: {
+  initialServiceTypes: ServiceType[];
+  teamMembers: TeamMember[];
+}) {
   const [serviceTypes] = useState(initialServiceTypes);
 
   const [userQuery, setUserQuery] = useState("");
@@ -143,6 +150,16 @@ export function ServiceHistoryManager({ initialServiceTypes }: { initialServiceT
     { header: "თარიღი", render: (record) => formatDate(record.performedAt) },
     { header: "სერვისი", render: (record) => serviceRecordName(record) },
     { header: "კილომეტრაჟი", render: (record) => `${record.mileageKm} კმ` },
+    {
+      header: "ხელოსანი",
+      render: (record) => record.mechanicName?.ka ?? "—",
+      cellClassName: "text-muted-foreground",
+    },
+    {
+      header: "ფასი",
+      render: (record) => (record.price != null ? formatPrice(record.price) : "—"),
+      cellClassName: "text-muted-foreground",
+    },
     {
       header: "დეტალი",
       render: (record) => serviceRecordDetail(record) ?? "—",
@@ -327,6 +344,7 @@ export function ServiceHistoryManager({ initialServiceTypes }: { initialServiceT
           onSaved={() => refreshRecords(selectedVehicle.id)}
           garageVehicleId={selectedVehicle.id}
           serviceTypes={serviceTypes}
+          teamMembers={teamMembers}
           record={editingRecord}
         />
       )}

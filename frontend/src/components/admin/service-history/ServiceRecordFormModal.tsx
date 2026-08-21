@@ -12,6 +12,7 @@ import {
   type ServiceRecord,
 } from "@/lib/api/service-records";
 import type { ServiceType } from "@/lib/api/service-types";
+import type { TeamMember } from "@/lib/api/team-members";
 import { ApiRequestError } from "@/lib/api/client";
 
 const OTHER_VALUE = "__other__";
@@ -32,6 +33,7 @@ export function ServiceRecordFormModal({
   onSaved,
   garageVehicleId,
   serviceTypes,
+  teamMembers,
   record,
 }: {
   open: boolean;
@@ -39,6 +41,7 @@ export function ServiceRecordFormModal({
   onSaved: () => void;
   garageVehicleId: number;
   serviceTypes: ServiceType[];
+  teamMembers: TeamMember[];
   record: ServiceRecord | null;
 }) {
   const isEditing = record !== null;
@@ -51,6 +54,8 @@ export function ServiceRecordFormModal({
   const [performedAt, setPerformedAt] = useState(record?.performedAt ?? todayDateString());
   const [position, setPosition] = useState<ServicePosition | "">(record?.position ?? "");
   const [filterChanged, setFilterChanged] = useState(record?.filterChanged ?? false);
+  const [price, setPrice] = useState(record?.price != null ? String(record.price) : "");
+  const [mechanicId, setMechanicId] = useState(record?.mechanicId ? String(record.mechanicId) : "");
   const [notes, setNotes] = useState(record?.notes ?? "");
   const [loading, setLoading] = useState(false);
 
@@ -59,6 +64,11 @@ export function ServiceRecordFormModal({
     ...activeServiceTypes.map((type) => ({ value: String(type.id), label: type.name.ka })),
     { value: OTHER_VALUE, label: "სხვა (ხელით)" },
   ];
+  const activeTeamMembers = teamMembers.filter((member) => member.isActive);
+  const mechanicOptions = activeTeamMembers.map((member) => ({
+    value: String(member.id),
+    label: `${member.name.ka} (${member.role.ka})`,
+  }));
 
   const selectedServiceType =
     serviceTypeChoice && serviceTypeChoice !== OTHER_VALUE
@@ -86,6 +96,11 @@ export function ServiceRecordFormModal({
       toast.error("აირჩიეთ თარიღი");
       return;
     }
+    const priceValue = price.trim() === "" ? null : Number(price);
+    if (priceValue != null && (Number.isNaN(priceValue) || priceValue < 0)) {
+      toast.error("შეიყვანეთ სწორი ფასი");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -95,6 +110,8 @@ export function ServiceRecordFormModal({
           performedAt,
           position: selectedTypeHasPosition() ? position || null : null,
           filterChanged: selectedTypeHasFilter() ? filterChanged : null,
+          price: priceValue,
+          mechanicId: mechanicId ? Number(mechanicId) : null,
           notes: notes.trim() || null,
         });
         toast.success("ჩანაწერი განახლდა");
@@ -108,6 +125,8 @@ export function ServiceRecordFormModal({
           performedAt,
           position: selectedServiceType?.hasPositionOption && position ? position : undefined,
           filterChanged: selectedServiceType?.hasFilterOption ? filterChanged : undefined,
+          price: priceValue ?? undefined,
+          mechanicId: mechanicId ? Number(mechanicId) : undefined,
           notes: notes.trim() || undefined,
         });
         toast.success("სერვისი ჩაიწერა");
@@ -169,6 +188,8 @@ export function ServiceRecordFormModal({
                 setServiceTypeChoice(value);
                 setPosition("");
                 setFilterChanged(false);
+                const nextType = serviceTypes.find((type) => String(type.id) === value);
+                setPrice(nextType?.defaultPrice != null ? String(nextType.defaultPrice) : "");
               }}
               searchable
               placeholder="აირჩიეთ სერვისის ტიპი"
@@ -214,6 +235,37 @@ export function ServiceRecordFormModal({
               value={performedAt}
               onChange={(event) => setPerformedAt(event.target.value)}
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="service-record-price" className="text-sm font-medium">
+              ფასი (₾)
+            </label>
+            <input
+              id="service-record-price"
+              type="number"
+              min={0}
+              step="0.01"
+              value={price}
+              onChange={(event) => setPrice(event.target.value)}
+              placeholder="არჩევითი"
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="service-record-mechanic" className="text-sm font-medium">
+              ხელოსანი
+            </label>
+            <Select
+              id="service-record-mechanic"
+              options={mechanicOptions}
+              value={mechanicId}
+              onChange={setMechanicId}
+              searchable
+              placeholder="აირჩიეთ ხელოსანი"
             />
           </div>
         </div>

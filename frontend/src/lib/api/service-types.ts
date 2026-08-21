@@ -6,6 +6,9 @@ export type ServiceType = {
   name: LocalizedString;
   hasPositionOption: boolean;
   hasFilterOption: boolean;
+  // Pre-fills a new ServiceRecord's price when this template is picked —
+  // a starting point, still editable per record.
+  defaultPrice: number | null;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
@@ -16,6 +19,7 @@ export type ServiceTypeInput = {
   name: LocalizedString;
   hasPositionOption?: boolean;
   hasFilterOption?: boolean;
+  defaultPrice?: number | null;
   isActive?: boolean;
 };
 

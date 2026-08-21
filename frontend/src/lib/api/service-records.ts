@@ -13,6 +13,11 @@ export type ServiceRecord = {
   performedAt: string;
   position: ServicePosition | null;
   filterChanged: boolean | null;
+  price: number | null;
+  mechanicId: number | null;
+  // Denormalized from the linked TeamMember, same reasoning as
+  // serviceTypeName above.
+  mechanicName: LocalizedString | null;
   notes: string | null;
   recordedByUserId: number | null;
   createdAt: string;
@@ -29,6 +34,8 @@ export type CreateServiceRecordInput = {
   performedAt: string;
   position?: ServicePosition;
   filterChanged?: boolean;
+  price?: number;
+  mechanicId?: number;
   notes?: string;
 };
 
@@ -37,6 +44,8 @@ export type UpdateServiceRecordInput = {
   performedAt?: string;
   position?: ServicePosition | null;
   filterChanged?: boolean | null;
+  price?: number | null;
+  mechanicId?: number | null;
   notes?: string | null;
 };
 

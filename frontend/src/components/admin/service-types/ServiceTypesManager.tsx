@@ -12,6 +12,7 @@ import {
   type ServiceType,
 } from "@/lib/api/service-types";
 import { ApiRequestError } from "@/lib/api/client";
+import { formatPrice } from "@/lib/format";
 import { ServiceTypeFormModal } from "./ServiceTypeFormModal";
 
 export function ServiceTypesManager({ initialServiceTypes }: { initialServiceTypes: ServiceType[] }) {
@@ -120,7 +121,14 @@ export function ServiceTypesManager({ initialServiceTypes }: { initialServiceTyp
             className="flex cursor-grab items-center gap-4 rounded-xl border border-border bg-card p-3 shadow-sm active:cursor-grabbing"
           >
             <div className="flex-1">
-              <p className="font-semibold text-foreground">{serviceType.name.ka}</p>
+              <p className="font-semibold text-foreground">
+                {serviceType.name.ka}
+                {serviceType.defaultPrice != null && (
+                  <span className="ml-2 font-normal text-muted-foreground">
+                    {formatPrice(serviceType.defaultPrice)}
+                  </span>
+                )}
+              </p>
               {(serviceType.hasPositionOption || serviceType.hasFilterOption) && (
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   {[

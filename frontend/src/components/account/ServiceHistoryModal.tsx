@@ -7,7 +7,7 @@ import { Modal } from "@/components/shared/Modal";
 import { Loader } from "@/components/shared/Loader";
 import { listServiceRecordsForVehicle, type ServiceRecord } from "@/lib/api/service-records";
 import { ApiRequestError } from "@/lib/api/client";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatPrice } from "@/lib/format";
 
 export function ServiceHistoryModal({
   garageVehicleId,
@@ -83,6 +83,7 @@ export function ServiceHistoryModal({
                 <p className="mt-1 text-sm text-muted-foreground">
                   {record.mileageKm} {t("serviceHistoryMileageUnit")}
                   {detailParts.length > 0 ? ` · ${detailParts.join(" · ")}` : ""}
+                  {record.price != null ? ` · ${formatPrice(record.price)}` : ""}
                 </p>
                 {record.notes && <p className="mt-2 text-sm text-muted-foreground">{record.notes}</p>}
               </div>

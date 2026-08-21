@@ -2,6 +2,7 @@ import { ApiError } from "../../lib/ApiError.js";
 import type { ServicePosition } from "../../generated/prisma/index.js";
 import { garageRepository } from "../garage/garage.repository.js";
 import { serviceTypesRepository } from "../service-types/service-types.repository.js";
+import { teamMembersRepository } from "../team-members/team-members.repository.js";
 import { serviceRecordsRepository } from "./service-records.repository.js";
 import type { CreateServiceRecordInput, UpdateServiceRecordInput } from "./service-records.schema.js";
 
@@ -15,6 +16,9 @@ type ServiceRecordRow = {
   performedAt: Date;
   position: ServicePosition | null;
   filterChanged: boolean | null;
+  price: { toString(): string } | null;
+  mechanicId: number | null;
+  mechanic: { nameKa: string; nameEn: string; nameRu: string } | null;
   notes: string | null;
   recordedByUserId: number | null;
   createdAt: Date;
@@ -38,11 +42,23 @@ function toResponse(row: ServiceRecordRow) {
     performedAt: toDateOnly(row.performedAt),
     position: row.position,
     filterChanged: row.filterChanged,
+    price: row.price != null ? Number(row.price) : null,
+    mechanicId: row.mechanicId,
+    mechanicName: row.mechanic
+      ? { ka: row.mechanic.nameKa, en: row.mechanic.nameEn, ru: row.mechanic.nameRu }
+      : null,
     notes: row.notes,
     recordedByUserId: row.recordedByUserId,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
+}
+
+async function assertMechanicExists(mechanicId: number) {
+  const mechanic = await teamMembersRepository.findById(mechanicId);
+  if (!mechanic) {
+    throw new ApiError(404, "გუნდის წევრი ვერ მოიძებნა");
+  }
 }
 
 // requestingUserId/isAdmin: an admin can pull any vehicle's history; a
@@ -78,6 +94,9 @@ export async function createServiceRecord(input: CreateServiceRecordInput, recor
       throw new ApiError(404, "სერვისის ტიპი ვერ მოიძებნა");
     }
   }
+  if (input.mechanicId != null) {
+    await assertMechanicExists(input.mechanicId);
+  }
 
   const row = await serviceRecordsRepository.create({
     garageVehicleId: input.garageVehicleId,
@@ -87,6 +106,8 @@ export async function createServiceRecord(input: CreateServiceRecordInput, recor
     performedAt: new Date(input.performedAt),
     position: input.position ?? null,
     filterChanged: input.filterChanged ?? null,
+    price: input.price ?? null,
+    mechanicId: input.mechanicId ?? null,
     notes: input.notes ?? null,
     recordedByUserId,
   });
@@ -98,12 +119,17 @@ export async function updateServiceRecord(id: number, input: UpdateServiceRecord
   if (!existing) {
     throw new ApiError(404, "ჩანაწერი ვერ მოიძებნა");
   }
+  if (input.mechanicId != null) {
+    await assertMechanicExists(input.mechanicId);
+  }
 
   const row = await serviceRecordsRepository.update(id, {
     ...(input.mileageKm !== undefined ? { mileageKm: input.mileageKm } : {}),
     ...(input.performedAt !== undefined ? { performedAt: new Date(input.performedAt) } : {}),
     ...(input.position !== undefined ? { position: input.position } : {}),
     ...(input.filterChanged !== undefined ? { filterChanged: input.filterChanged } : {}),
+    ...(input.price !== undefined ? { price: input.price } : {}),
+    ...(input.mechanicId !== undefined ? { mechanicId: input.mechanicId } : {}),
     ...(input.notes !== undefined ? { notes: input.notes } : {}),
   });
   return toResponse(row);

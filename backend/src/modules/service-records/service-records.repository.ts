@@ -1,7 +1,7 @@
 import { prisma } from "../../config/prisma.js";
-import type { ServicePosition } from "../../generated/prisma/index.js";
+import type { Prisma, ServicePosition } from "../../generated/prisma/index.js";
 
-const include = { serviceType: true } as const;
+const include = { serviceType: true, mechanic: true } as const;
 
 type ServiceRecordWriteData = {
   garageVehicleId: number;
@@ -11,6 +11,8 @@ type ServiceRecordWriteData = {
   performedAt: Date;
   position?: ServicePosition | null;
   filterChanged?: boolean | null;
+  price?: Prisma.Decimal | number | null;
+  mechanicId?: number | null;
   notes?: string | null;
   recordedByUserId?: number | null;
 };

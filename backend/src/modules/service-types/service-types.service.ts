@@ -14,6 +14,7 @@ type ServiceTypeRow = {
   nameRu: string;
   hasPositionOption: boolean;
   hasFilterOption: boolean;
+  defaultPrice: { toString(): string } | null;
   isActive: boolean;
   sortOrder: number;
   createdAt: Date;
@@ -26,6 +27,7 @@ function toResponse(row: ServiceTypeRow) {
     name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu },
     hasPositionOption: row.hasPositionOption,
     hasFilterOption: row.hasFilterOption,
+    defaultPrice: row.defaultPrice != null ? Number(row.defaultPrice) : null,
     isActive: row.isActive,
     sortOrder: row.sortOrder,
     createdAt: row.createdAt,
@@ -53,6 +55,7 @@ export async function createServiceType(input: CreateServiceTypeInput) {
     nameRu: input.name.ru,
     hasPositionOption: input.hasPositionOption ?? false,
     hasFilterOption: input.hasFilterOption ?? false,
+    defaultPrice: input.defaultPrice ?? null,
     isActive: input.isActive ?? true,
   });
   return toResponse(row);
@@ -70,6 +73,7 @@ export async function updateServiceType(id: number, input: UpdateServiceTypeInpu
       : {}),
     ...(input.hasPositionOption !== undefined ? { hasPositionOption: input.hasPositionOption } : {}),
     ...(input.hasFilterOption !== undefined ? { hasFilterOption: input.hasFilterOption } : {}),
+    ...(input.defaultPrice !== undefined ? { defaultPrice: input.defaultPrice } : {}),
     ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
   });
   return toResponse(row);

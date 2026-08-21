@@ -14,6 +14,9 @@ model TeamMember {
   imageUrl   String?
   isActive   Boolean  @default(true)
   sortOrder  Int      @default(0)
+  // Service history rows where this member is recorded as the mechanic who
+  // performed the work — see ServiceRecord.mechanicId.
+  serviceRecordsAsMechanic ServiceRecord[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

@@ -18,6 +18,8 @@ export const createServiceRecordSchema = registry.register(
       performedAt: z.iso.date(),
       position: servicePositionSchema.optional(),
       filterChanged: z.boolean().optional(),
+      price: z.coerce.number().nonnegative().optional().openapi({ example: 45 }),
+      mechanicId: z.coerce.number().int().positive().optional(),
       notes: z.string().trim().max(2000).optional(),
     })
     .refine((data) => Boolean(data.serviceTypeId) !== Boolean(data.customServiceName), {
@@ -37,6 +39,8 @@ export const updateServiceRecordSchema = registry.register(
     performedAt: z.iso.date().optional(),
     position: servicePositionSchema.nullable().optional(),
     filterChanged: z.boolean().nullable().optional(),
+    price: z.coerce.number().nonnegative().nullable().optional(),
+    mechanicId: z.coerce.number().int().positive().nullable().optional(),
     notes: z.string().trim().max(2000).nullable().optional(),
   }),
 );
@@ -66,6 +70,11 @@ export const serviceRecordResponseSchema = registry.register(
     performedAt: z.iso.date(),
     position: servicePositionSchema.nullable(),
     filterChanged: z.boolean().nullable(),
+    price: z.number().nullable(),
+    mechanicId: z.int().nullable(),
+    // Denormalized from the linked TeamMember, same reasoning as
+    // serviceTypeName above.
+    mechanicName: localizedStringSchema.nullable(),
     notes: z.string().nullable(),
     recordedByUserId: z.int().nullable(),
     createdAt: z.iso.datetime(),
