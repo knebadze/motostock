@@ -1,0 +1,14 @@
+// Plain admin-editable classifier (no sortOrder, unlike OrderStatus) — same
+// shape as Condition/CancellationReason, registered into the generic
+// lookups system (see lookups.registry.ts) so /admin/general-classifiers
+// manages it with zero new UI. Referenced by TeamMember.positionId.
+model Position {
+  id          Int          @id @default(autoincrement())
+  key         String       @unique
+  nameKa      String
+  nameEn      String
+  nameRu      String
+  teamMembers TeamMember[]
+
+  @@schema("cla")
+}

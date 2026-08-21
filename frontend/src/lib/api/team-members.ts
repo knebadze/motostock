@@ -4,6 +4,9 @@ import type { LocalizedString } from "./categories";
 export type TeamMember = {
   id: number;
   name: LocalizedString;
+  positionId: number;
+  // Denormalized from the linked Position classifier (see @/lib/api/lookups
+  // "positions" type) — for display without a second lookup.
   role: LocalizedString;
   imageUrl: string | null;
   isActive: boolean;
@@ -14,7 +17,7 @@ export type TeamMember = {
 
 export type TeamMemberInput = {
   name: LocalizedString;
-  role: LocalizedString;
+  positionId: number;
   isActive?: boolean;
 };
 

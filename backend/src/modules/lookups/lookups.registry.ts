@@ -17,6 +17,7 @@ export const LOOKUP_TYPES = [
   "sizes",
   "cities",
   "cancellation-reasons",
+  "positions",
 ] as const;
 
 export type LookupType = (typeof LOOKUP_TYPES)[number];
@@ -71,6 +72,7 @@ const registry: Record<LookupType, LookupDelegate> = {
   sizes: asLookupDelegate(prisma.size),
   cities: asLookupDelegate(prisma.city),
   "cancellation-reasons": asLookupDelegate(prisma.cancellationReason),
+  positions: asLookupDelegate(prisma.position),
 };
 
 export function getLookupDelegate(type: LookupType): LookupDelegate {

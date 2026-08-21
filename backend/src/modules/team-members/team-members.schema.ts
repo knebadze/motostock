@@ -7,17 +7,12 @@ const nameFieldSchema = z.object({
   en: z.string().trim().min(1).max(60),
   ru: z.string().trim().min(1).max(60),
 });
-const roleFieldSchema = z.object({
-  ka: z.string().trim().min(1).max(60),
-  en: z.string().trim().min(1).max(60),
-  ru: z.string().trim().min(1).max(60),
-});
 
 export const createTeamMemberSchema = registry.register(
   "CreateTeamMemberInput",
   z.object({
     name: nameFieldSchema.openapi({ example: { ka: "გიორგი მელაძე", en: "Giorgi Meladze", ru: "Гиорги Меладзе" } }),
-    role: roleFieldSchema.openapi({ example: { ka: "დამფუძნებელი", en: "Founder", ru: "Основатель" } }),
+    positionId: z.int().positive(),
     isActive: z.boolean().optional(),
   }),
 );
@@ -46,6 +41,9 @@ export const teamMemberResponseSchema = registry.register(
   z.object({
     id: z.int().openapi({ example: 1 }),
     name: localizedStringSchema,
+    positionId: z.int(),
+    // Denormalized from the linked Position for display (e.g. the public
+    // /about page) without a second lookup fetch.
     role: localizedStringSchema,
     imageUrl: z.string().nullable(),
     isActive: z.boolean(),

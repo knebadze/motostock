@@ -144,6 +144,18 @@ const CANCELLATION_REASONS: LookupEntry[] = [
   { key: "OTHER", nameKa: "სხვა", nameEn: "Other", nameRu: "Другое" },
 ];
 
+// Job titles for the "our team" /about page (TeamMember.positionId) —
+// covers the two customer-facing sides of the business: the retail shop
+// and the service workshop.
+const POSITIONS: LookupEntry[] = [
+  { key: "STORE_MANAGER", nameKa: "მაღაზიის მენეჯერი", nameEn: "Store Manager", nameRu: "Менеджер магазина" },
+  { key: "SALES_CONSULTANT", nameKa: "გაყიდვების კონსულტანტი", nameEn: "Sales Consultant", nameRu: "Консультант по продажам" },
+  { key: "CASHIER", nameKa: "მოლარე", nameEn: "Cashier", nameRu: "Кассир" },
+  { key: "WORKSHOP_MANAGER", nameKa: "სახელოსნოს ხელმძღვანელი", nameEn: "Workshop Manager", nameRu: "Руководитель мастерской" },
+  { key: "MECHANIC", nameKa: "ხელოსანი", nameEn: "Mechanic", nameRu: "Механик" },
+  { key: "DIAGNOSTICS_TECHNICIAN", nameKa: "დიაგნოსტიკოსი", nameEn: "Diagnostics Technician", nameRu: "Специалист по диагностике" },
+];
+
 const COLORS: LookupEntry[] = [
   { key: "BLACK", nameKa: "შავი", nameEn: "Black", nameRu: "Черный" },
   { key: "WHITE", nameKa: "თეთრი", nameEn: "White", nameRu: "Белый" },
@@ -953,6 +965,7 @@ async function main() {
   await seedLookup("Conditions", prisma.condition, CONDITIONS);
   await seedLookup("Listing statuses", prisma.listingStatus, LISTING_STATUSES);
   await seedLookup("Cancellation reasons", prisma.cancellationReason, CANCELLATION_REASONS);
+  await seedLookup("Positions", prisma.position, POSITIONS);
 
   // Not seedLookup — OrderStatus has its own dedicated module now (see
   // order-statuses.*) with an admin-controlled sortOrder, so this seeds

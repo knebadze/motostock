@@ -1,12 +1,12 @@
 import { prisma } from "../../config/prisma.js";
 
+const include = { position: true } as const;
+
 type TeamMemberWriteData = {
   nameKa?: string;
   nameEn?: string;
   nameRu?: string;
-  roleKa?: string;
-  roleEn?: string;
-  roleRu?: string;
+  positionId?: number;
   isActive?: boolean;
 };
 
@@ -14,25 +14,29 @@ export const teamMembersRepository = {
   findMany(onlyActive?: boolean) {
     return prisma.teamMember.findMany({
       where: onlyActive ? { isActive: true } : undefined,
+      include,
       orderBy: { sortOrder: "asc" },
     });
   },
 
   findById(id: number) {
-    return prisma.teamMember.findUnique({ where: { id } });
+    return prisma.teamMember.findUnique({ where: { id }, include });
   },
 
   async create(data: Required<TeamMemberWriteData>) {
     const { _max } = await prisma.teamMember.aggregate({ _max: { sortOrder: true } });
-    return prisma.teamMember.create({ data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 } });
+    return prisma.teamMember.create({
+      data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 },
+      include,
+    });
   },
 
   update(id: number, data: TeamMemberWriteData) {
-    return prisma.teamMember.update({ where: { id }, data });
+    return prisma.teamMember.update({ where: { id }, data, include });
   },
 
   updateImage(id: number, imageUrl: string) {
-    return prisma.teamMember.update({ where: { id }, data: { imageUrl } });
+    return prisma.teamMember.update({ where: { id }, data: { imageUrl }, include });
   },
 
   async reorder(ids: number[]) {

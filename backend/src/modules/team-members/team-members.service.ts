@@ -1,5 +1,7 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { saveUploadedImage } from "../../lib/storage.js";
+import { lookupsRepository } from "../lookups/lookups.repository.js";
+import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { teamMembersRepository } from "./team-members.repository.js";
 import type {
   CreateTeamMemberInput,
@@ -12,9 +14,8 @@ type TeamMemberRow = {
   nameKa: string;
   nameEn: string;
   nameRu: string;
-  roleKa: string;
-  roleEn: string;
-  roleRu: string;
+  positionId: number;
+  position: { nameKa: string; nameEn: string; nameRu: string };
   imageUrl: string | null;
   isActive: boolean;
   sortOrder: number;
@@ -26,13 +27,21 @@ function toResponse(row: TeamMemberRow) {
   return {
     id: row.id,
     name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu },
-    role: { ka: row.roleKa, en: row.roleEn, ru: row.roleRu },
+    positionId: row.positionId,
+    role: { ka: row.position.nameKa, en: row.position.nameEn, ru: row.position.nameRu },
     imageUrl: row.imageUrl,
     isActive: row.isActive,
     sortOrder: row.sortOrder,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
+}
+
+async function assertPositionExists(positionId: number) {
+  const position = await lookupsRepository.findById(getLookupDelegate("positions"), positionId);
+  if (!position) {
+    throw new ApiError(400, "მითითებული თანამდებობა არ არსებობს");
+  }
 }
 
 export async function listTeamMembers(onlyActive?: boolean) {
@@ -49,13 +58,13 @@ export async function getTeamMember(id: number) {
 }
 
 export async function createTeamMember(input: CreateTeamMemberInput) {
+  await assertPositionExists(input.positionId);
+
   const row = await teamMembersRepository.create({
     nameKa: input.name.ka,
     nameEn: input.name.en,
     nameRu: input.name.ru,
-    roleKa: input.role.ka,
-    roleEn: input.role.en,
-    roleRu: input.role.ru,
+    positionId: input.positionId,
     isActive: input.isActive ?? true,
   });
   return toResponse(row);
@@ -67,13 +76,15 @@ export async function updateTeamMember(id: number, input: UpdateTeamMemberInput)
     throw new ApiError(404, "გუნდის წევრი ვერ მოიძებნა");
   }
 
+  if (input.positionId !== undefined) {
+    await assertPositionExists(input.positionId);
+  }
+
   const row = await teamMembersRepository.update(id, {
     ...(input.name !== undefined
       ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
       : {}),
-    ...(input.role !== undefined
-      ? { roleKa: input.role.ka, roleEn: input.role.en, roleRu: input.role.ru }
-      : {}),
+    ...(input.positionId !== undefined ? { positionId: input.positionId } : {}),
     ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
   });
   return toResponse(row);

@@ -16,6 +16,7 @@ export const LOOKUP_TYPES = [
   { slug: "sizes", label: "ზომები" },
   { slug: "cities", label: "ქალაქები" },
   { slug: "cancellation-reasons", label: "გაუქმების მიზეზები" },
+  { slug: "positions", label: "თანამდებობები" },
 ] as const;
 
 export type LookupTypeSlug = (typeof LOOKUP_TYPES)[number]["slug"];

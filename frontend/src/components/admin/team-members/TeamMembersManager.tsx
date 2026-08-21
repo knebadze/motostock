@@ -11,10 +11,17 @@ import {
   updateTeamMember,
   type TeamMember,
 } from "@/lib/api/team-members";
+import type { LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { TeamMemberFormModal } from "./TeamMemberFormModal";
 
-export function TeamMembersManager({ initialMembers }: { initialMembers: TeamMember[] }) {
+export function TeamMembersManager({
+  initialMembers,
+  positions,
+}: {
+  initialMembers: TeamMember[];
+  positions: LookupItem[];
+}) {
   const [members, setMembers] = useState(initialMembers);
   const [formOpen, setFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
@@ -156,6 +163,7 @@ export function TeamMembersManager({ initialMembers }: { initialMembers: TeamMem
         onClose={() => setFormOpen(false)}
         onSaved={() => refresh()}
         member={editingMember}
+        positions={positions}
       />
 
       <ConfirmDialog
