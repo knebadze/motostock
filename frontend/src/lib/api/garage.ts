@@ -30,6 +30,18 @@ export async function updateGarageVehicle(
   return data.item;
 }
 
+export async function uploadGarageVehicleImage(id: number, file: File): Promise<GarageVehicle> {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const { data } = await apiClient.post<{ item: GarageVehicle }>(
+    `/users/me/garage/${id}/image`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return data.item;
+}
+
 export async function deleteGarageVehicle(id: number): Promise<void> {
   await apiClient.delete(`/users/me/garage/${id}`);
 }

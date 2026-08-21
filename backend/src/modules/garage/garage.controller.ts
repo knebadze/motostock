@@ -40,6 +40,22 @@ export async function update(
   res.status(200).json({ item });
 }
 
+export async function uploadImage(req: Request<{ id: string }>, res: Response) {
+  if (!req.user) {
+    throw new ApiError(401, "Not authenticated");
+  }
+  if (!req.file) {
+    throw new ApiError(400, "სურათი არ არის ატვირთული");
+  }
+
+  const item = await garageService.setGarageVehicleImage(
+    req.user.sub,
+    Number(req.params.id),
+    req.file,
+  );
+  res.status(200).json({ item });
+}
+
 export async function remove(req: Request, res: Response) {
   if (!req.user) {
     throw new ApiError(401, "Not authenticated");

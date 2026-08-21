@@ -23,6 +23,10 @@ export const garageRepository = {
     return prisma.garageVehicle.findUnique({ where: { id }, include });
   },
 
+  updateImage(id: number, imageUrl: string) {
+    return prisma.garageVehicle.update({ where: { id }, data: { imageUrl }, include });
+  },
+
   // Bundles the GarageVehicle write with the VehicleCatalog.popularity bump
   // in one transaction — same convention as vehicle-catalog.repository.ts's
   // createSubmission. Two separate top-level calls would let a mid-flight

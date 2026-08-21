@@ -15,6 +15,10 @@ model GarageVehicle {
   // individual unit). Not enforced unique: typos, resales, or a user
   // re-adding the same vehicle shouldn't hard-fail.
   vin              String?
+  // The customer's own photo of their actual physical vehicle — distinct
+  // from VehicleCatalog.imageUrl, which is a shared stock photo for the
+  // whole model. Self-uploaded via POST /users/me/garage/:id/image.
+  imageUrl         String?
   serviceRecords   ServiceRecord[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt

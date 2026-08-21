@@ -2,6 +2,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
+import { uploadRateLimit } from "../../middleware/rateLimit.middleware.js";
+import { imageUpload } from "../../middleware/upload.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
 import * as garageController from "./garage.controller.js";
@@ -29,6 +31,13 @@ garageRouter.patch(
   validate(garageVehicleIdParamSchema, "params"),
   validate(updateGarageVehicleSchema),
   garageController.update,
+);
+garageRouter.post(
+  "/me/garage/:id/image",
+  uploadRateLimit,
+  validate(garageVehicleIdParamSchema, "params"),
+  imageUpload().single("image"),
+  garageController.uploadImage,
 );
 garageRouter.delete(
   "/me/garage/:id",
@@ -79,6 +88,21 @@ registry.registerPath({
   responses: {
     200: { description: "Updated", content: { "application/json": { schema: itemResponse } } },
     400: { description: "Invalid references", content: { "application/json": { schema: errorResponseSchema } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/users/me/garage/{id}/image",
+  tags: ["Garage"],
+  summary: "Upload a photo of one of the caller's own garage vehicles",
+  security,
+  request: { params: garageVehicleIdParamSchema },
+  responses: {
+    200: { description: "Updated", content: { "application/json": { schema: itemResponse } } },
+    400: { description: "Missing or invalid image", content: { "application/json": { schema: errorResponseSchema } } },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
   },

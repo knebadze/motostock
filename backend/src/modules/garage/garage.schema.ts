@@ -25,6 +25,7 @@ export const garageVehicleResponseSchema = registry.register(
     id: z.int().openapi({ example: 1 }),
     year: z.int(),
     vin: z.string().nullable(),
+    imageUrl: z.string().nullable(),
     vehicleCatalog: vehicleCatalogResponseSchema,
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),

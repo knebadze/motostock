@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { saveUploadedImage } from "../../lib/storage.js";
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
 import { toVehicleCatalogResponse } from "../vehicle-catalog/vehicle-catalog.service.js";
 import { garageRepository } from "./garage.repository.js";
@@ -31,6 +32,7 @@ function toResponse(row: {
   id: number;
   year: number;
   vin: string | null;
+  imageUrl: string | null;
   vehicleCatalog: Parameters<typeof toVehicleCatalogResponse>[0];
   createdAt: Date;
   updatedAt: Date;
@@ -39,6 +41,7 @@ function toResponse(row: {
     id: row.id,
     year: row.year,
     vin: row.vin,
+    imageUrl: row.imageUrl,
     vehicleCatalog: toVehicleCatalogResponse(row.vehicleCatalog),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -83,6 +86,21 @@ export async function updateGarageVehicle(
     },
     input.vehicleCatalogId !== existing.vehicleCatalogId ? existing.vehicleCatalogId : undefined,
   );
+  return toResponse(row);
+}
+
+export async function setGarageVehicleImage(
+  userId: number,
+  id: number,
+  file: Express.Multer.File,
+) {
+  const existing = await garageRepository.findById(id);
+  if (!existing || existing.userId !== userId) {
+    throw new ApiError(404, "გარაჟის ჩანაწერი ვერ მოიძებნა");
+  }
+
+  const imageUrl = await saveUploadedImage("garage-vehicles", file);
+  const row = await garageRepository.updateImage(id, imageUrl);
   return toResponse(row);
 }
 

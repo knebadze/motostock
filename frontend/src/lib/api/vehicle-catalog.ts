@@ -108,6 +108,9 @@ export type GarageVehicle = {
   id: number;
   year: number;
   vin: string | null;
+  // The customer's own photo of their actual vehicle — distinct from
+  // vehicleCatalog.imageUrl, which is a shared stock photo for the model.
+  imageUrl: string | null;
   vehicleCatalog: VehicleCatalogEntry;
   createdAt: string;
   updatedAt: string;
