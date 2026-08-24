@@ -54,11 +54,27 @@ NEXT_PUBLIC_SITE_URL=http://<VPS_IP>
 docker compose build
 docker compose up -d db
 docker compose run --rm migrate
+docker compose run --rm migrate npx prisma db seed
 docker compose up -d
 ```
 
 `migrate` სერვისი ერთჯერადია — უშვებს `prisma migrate deploy`-ს ბაზაზე, სანამ backend/frontend
 ამუშავდება. ყოველ ახალ deploy-ზე, თუ ახალი მიგრაცია დაემატა, იგივე ბრძანება ხელახლა გაუშვით.
+
+`prisma db seed` (იგივე `migrate` კონტეინერით, command override-ით) ავსებს საბაზისო მონაცემებს —
+როლები, ადმინის ანგარიში, კლასიფიკატორები (საწვავის ტიპები, ფერები, ზომები, ქალაქები,
+თანამდებობები და ა.შ.), კატეგორიების ხე, მახასიათებლები, ერთეულები, homepage სექციები. Idempotent
+არის (`upsert`-ზეა აწყობილი) — ხელახლა გაშვება უსაფრთხოა. **დემო პროდუქტები/ტრანსპორტი ცალკეა და
+ამ ბრძანებაში არ შედის** — თუ საჭიროა სატესტოდ, ცალკე გაუშვით:
+
+```bash
+docker compose run --rm migrate npx tsx prisma/seed-products.ts
+docker compose run --rm migrate npx tsx prisma/seed-vehicles.ts
+```
+
+⚠️ **ადმინის ანგარიშის default პაროლი** (`admin@gmail.com` / `admin123`, იხ. `prisma/seed.ts`)
+საჯარო/ცნობილია — პირველივე შესვლისთანავე აუცილებლად შეცვალეთ ადმინის პანელიდან
+(ანგარიშის პარამეტრები → პაროლის შეცვლა).
 
 ## 5. შემოწმება
 
@@ -75,7 +91,8 @@ docker compose logs -f backend
 ```bash
 git pull
 docker compose build
-docker compose run --rm migrate    # თუ ახალი მიგრაცია დაემატა
+docker compose run --rm migrate                          # თუ ახალი მიგრაცია დაემატა
+docker compose run --rm migrate npx prisma db seed        # თუ prisma/seed.ts შეიცვალა
 docker compose up -d
 ```
 

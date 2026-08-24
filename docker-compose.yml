@@ -36,7 +36,11 @@ services:
   # One-off — not part of the normal `up`, run explicitly after each deploy
   # that adds migrations: `docker compose run --rm migrate`. Reuses the
   # `builder` stage (has the prisma CLI + full source) instead of shipping
-  # a separate image just for this.
+  # a separate image just for this. Also doubles as the seed runner
+  # (`docker compose run --rm migrate npx prisma db seed`) — mounts the same
+  # backend_uploads volume as the backend service so seed-processed images
+  # (category/hero-slide/team photos) land in the persistent volume instead
+  # of the throwaway container filesystem.
   migrate:
     build:
       context: ./backend
@@ -47,6 +51,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - backend_uploads:/app/uploads
     command: ["npx", "prisma", "migrate", "deploy"]
     profiles: ["tools"]
 
