@@ -36,10 +36,20 @@ export function isSessionExpiredByAbsoluteCap(loginAt: number): boolean {
   return Date.now() - loginAt > SESSION_ABSOLUTE_TTL_MS;
 }
 
+// `Secure` cookies are silently dropped by the browser on a plain-HTTP
+// origin — keying this off NODE_ENV alone breaks login on a production
+// deploy that's still on IP+HTTP (no domain/TLS yet, see DEPLOY.md's
+// two-phase rollout): the login request succeeds, but nothing ever gets
+// stored, so every subsequent page looks unauthenticated. Deriving it from
+// BACKEND_PUBLIC_URL instead means it tracks the real protocol — off during
+// the HTTP test phase, on automatically once that's updated to `https://`
+// for the real domain (already a required edit at that point regardless).
+const COOKIE_SECURE = (env.BACKEND_PUBLIC_URL ?? "").startsWith("https://");
+
 export function setAuthCookie(res: Response, token: string) {
   res.cookie(AUTH_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
+    secure: COOKIE_SECURE,
     sameSite: "lax",
     maxAge: SESSION_IDLE_TTL_SECONDS * 1000,
   });
