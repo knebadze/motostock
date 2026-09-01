@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import { useLocale, useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getFaqListFromServer } from "@/lib/api/server";
 import { sanitizeRichText } from "@/lib/sanitize-html";
-import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
+import { buildCanonicalUrl, getAlternateLanguages, jsonLdScriptProps } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 import type { Faq } from "@/lib/api/faq";
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
 
 export async function generateMetadata({
   params,
@@ -30,8 +34,33 @@ export async function generateMetadata({
 }
 
 export default async function FaqPage() {
+  const locale = (await getLocale()) as "ka" | "en" | "ru";
   const faqs = await getFaqListFromServer();
-  return <FaqPageView faqs={faqs} />;
+
+  const faqJsonLd =
+    faqs.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: faqs.map((faq) => ({
+            "@type": "Question",
+            name: faq.question[locale] || faq.question.ka,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: stripHtml(faq.answer[locale] || faq.answer.ka),
+            },
+          })),
+        }
+      : null;
+
+  return (
+    <>
+      {faqJsonLd && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScriptProps(faqJsonLd)} />
+      )}
+      <FaqPageView faqs={faqs} />
+    </>
+  );
 }
 
 // Split out so useTranslations (a hook) isn't called inside the async
