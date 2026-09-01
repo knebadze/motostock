@@ -156,19 +156,36 @@ export const ordersRepository = {
   // order's status back and forth would inflate stock for free). Everything
   // runs in one transaction so the status change and the stock move commit
   // or roll back together.
+  //
+  // `expectedCurrentStatusId` guards against two concurrent calls (double
+  // click, two admins) both reading the same pre-transition status and both
+  // applying `stockAdjustment` — the status update below is a compare-and-
+  // swap on statusId, same technique as the stock updates' `stockQuantity:
+  // { gte }` guard. Whichever request loses the race sees `count === 0` and
+  // throws, instead of silently double-restoring/double-decrementing stock.
   async updateStatus(
     id: number,
     statusId: number,
     cancellation: { cancellationReasonId: number | null; cancellationNote: string | null },
-    stockAdjustment?: {
+    stockAdjustment: {
       direction: "RESTORE" | "DECREMENT";
       items: StockAdjustmentItem[];
       soldStatusId: number;
       availableStatusId: number;
-    },
+    } | undefined,
+    expectedCurrentStatusId: number,
   ) {
     await prisma.$transaction(async (tx) => {
-      await tx.order.update({ where: { id }, data: { statusId, ...cancellation } });
+      const result = await tx.order.updateMany({
+        where: { id, statusId: expectedCurrentStatusId },
+        data: { statusId, ...cancellation },
+      });
+      if (result.count === 0) {
+        throw new ApiError(
+          409,
+          "შეკვეთის სტატუსი უკვე შეიცვალა სხვა მოქმედებით — გვერდი განაახლეთ და სცადეთ თავიდან",
+        );
+      }
 
       if (!stockAdjustment) return;
 

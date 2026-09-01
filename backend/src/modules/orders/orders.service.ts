@@ -863,6 +863,7 @@ export async function updateOrderStatus(
       cancellationNote: isCancelling ? (cancellationNote ?? null) : null,
     },
     stockAdjustment,
+    existing.statusId,
   );
 
   // Only the RESTORE direction (a fresh cancel) mirrors into FINA — un-cancel
