@@ -52,15 +52,19 @@ export const cache = {
   // used by any read-through cache logic, just lets the settings page's
   // cache tab show what's currently stored. Skips (and evicts) anything
   // that's already expired rather than showing a stale ghost entry.
-  list(): { key: string; valuePreview: string }[] {
+  // `expiresAt` (epoch ms, null for a permanent/explicit-invalidation entry)
+  // is returned as-is rather than a pre-computed "remaining time" string —
+  // the admin UI ticks its own countdown from it instead of needing to
+  // re-fetch this list every second just to keep a duration display fresh.
+  list(): { key: string; valuePreview: string; expiresAt: number | null }[] {
     const now = Date.now();
-    const entries: { key: string; valuePreview: string }[] = [];
+    const entries: { key: string; valuePreview: string; expiresAt: number | null }[] = [];
     for (const [key, entry] of store) {
       if (entry.expiresAt != null && now > entry.expiresAt) {
         store.delete(key);
         continue;
       }
-      entries.push({ key, valuePreview: previewValue(entry.value) });
+      entries.push({ key, valuePreview: previewValue(entry.value), expiresAt: entry.expiresAt });
     }
     return entries;
   },

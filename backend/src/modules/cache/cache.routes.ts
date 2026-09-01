@@ -14,7 +14,13 @@ cacheRouter.post("/clear", cacheController.clear);
 
 const security = [{ cookieAuth: [] }];
 const clearResponse = z.object({ message: z.string() });
-const cacheEntrySchema = z.object({ key: z.string(), valuePreview: z.string() });
+const cacheEntrySchema = z.object({
+  key: z.string(),
+  valuePreview: z.string(),
+  // Epoch ms this entry expires at, or null for a permanent entry (cleared
+  // only explicitly, on a write or the admin "clear cache" action).
+  expiresAt: z.int().nullable(),
+});
 const listResponse = z.object({ entries: z.array(cacheEntrySchema), count: z.int() });
 
 registry.registerPath({

@@ -5,15 +5,32 @@ import { toast } from "sonner";
 import { listCache, type CacheEntry } from "@/lib/api/cache";
 import { ApiRequestError } from "@/lib/api/client";
 
+// `now` only ever drives the countdown text below, recomputed from each
+// entry's already-fetched `expiresAt` — a permanent entry needs no
+// server round-trip just to keep its remaining-time column live.
+function formatRemaining(expiresAt: number | null, now: number): string {
+  if (expiresAt == null) return "სამუდამო";
+
+  const remainingMs = expiresAt - now;
+  if (remainingMs <= 0) return "ვადა გავიდა";
+
+  const totalSeconds = Math.ceil(remainingMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes > 0 ? `${minutes}წთ ${seconds}წმ` : `${seconds}წმ`;
+}
+
 export function CacheTab() {
   const [entries, setEntries] = useState<CacheEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(() => Date.now());
 
   async function load() {
     setLoading(true);
     try {
       const result = await listCache();
       setEntries(result.entries);
+      setNow(Date.now());
     } catch (error) {
       toast.error(error instanceof ApiRequestError ? error.message : "ქეშის სია ვერ ჩაიტვირთა");
     } finally {
@@ -32,14 +49,26 @@ export function CacheTab() {
     return () => clearTimeout(timeoutId);
   }, []);
 
+  useEffect(() => {
+    // Ticks the "ვადა" column's countdown once a second — purely a local
+    // re-render (recomputes formatRemaining against each entry's already-
+    // fetched expiresAt), no extra request. An entry that actually expires
+    // server-side just needs the "განახლება" button (or the next mount) to
+    // disappear from the list — this timer only keeps the displayed
+    // countdown honest in between.
+    const intervalId = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(intervalId);
+  }, []);
+
   return (
     <div className="rounded-2xl border border-border p-5">
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="font-medium text-foreground">ქეშის შემცველობა</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            სერვერის მეხსიერებაში ამჟამად შენახული key-ები (კლასიფიკატორები, პარამეტრები და
-            ა.შ.) — {entries.length} ჩანაწერი.
+            სერვერის მეხსიერებაში ამჟამად შენახული key-ები — კლასიფიკატორები/პარამეტრები (ხელით
+            იწმინდება ცვლილებაზე) და მთავარი გვერდის/რეკომენდაციების გამოთვლილი სიები (თავისით
+            ვადაგასული, 5 წუთში) — სულ {entries.length} ჩანაწერი.
           </p>
         </div>
         <button
@@ -60,6 +89,7 @@ export function CacheTab() {
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="py-2 pr-4 font-medium">Key</th>
+                <th className="py-2 pr-4 font-medium">ვადა</th>
                 <th className="py-2 font-medium">მნიშვნელობა</th>
               </tr>
             </thead>
@@ -67,6 +97,21 @@ export function CacheTab() {
               {entries.map((entry) => (
                 <tr key={entry.key} className="border-b border-border/50 last:border-0">
                   <td className="py-2 pr-4 align-top font-mono text-xs whitespace-nowrap">{entry.key}</td>
+                  <td className="py-2 pr-4 align-top text-xs whitespace-nowrap">
+                    {entry.expiresAt == null ? (
+                      <span className="text-muted-foreground">სამუდამო</span>
+                    ) : (
+                      <span
+                        className={
+                          entry.expiresAt - now <= 0
+                            ? "text-muted-foreground"
+                            : "font-medium text-primary"
+                        }
+                      >
+                        {formatRemaining(entry.expiresAt, now)}
+                      </span>
+                    )}
+                  </td>
                   <td className="py-2 align-top text-xs break-all text-muted-foreground">
                     {entry.valuePreview}
                   </td>

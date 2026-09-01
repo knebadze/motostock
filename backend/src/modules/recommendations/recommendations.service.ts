@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { cache } from "../../lib/cache.js";
 import { productsRepository } from "../products/products.repository.js";
 import { toResponse as toProductResponse, buildVehicleCompatibilityWhere } from "../products/products.service.js";
 import { productFitmentRepository } from "../product-fitment/product-fitment.repository.js";
@@ -7,6 +8,16 @@ import { recommendationsRepository } from "./recommendations.repository.js";
 import type { Prisma } from "../../generated/prisma/index.js";
 
 const DEFAULT_LIMIT = 10;
+
+// Same TTL and reasoning as products.service.ts's HOMEPAGE_CACHE_TTL_MS —
+// none of these rankings are personalized in a way that changing
+// second-to-second matters, and this is a low-traffic regional storefront
+// where a longer window actually gets reused instead of mostly expiring
+// between visits. listRecommendedForUser's cache is keyed by userId (see
+// below), so caching it is still safe even though its content is
+// personalized — no cross-user leakage, just less recomputation for the
+// same visitor's repeat page loads.
+const RECOMMENDATIONS_CACHE_TTL_MS = 5 * 60_000;
 
 // Re-orders a findByIds/findManyRaw result (which doesn't preserve `in`
 // array order) back into a ranked id list's order — same pattern
@@ -72,13 +83,11 @@ export async function listSimilarProducts(
 // ProductBuyTogether table (see BuyTogether.tsx on the frontend); this is
 // meant as a fallback shown when the admin hasn't curated anything for a
 // given product.
-export async function listFrequentlyBoughtTogether(
+async function computeFrequentlyBoughtTogether(
   productId: number,
-  options: { vehicleCatalogId?: number; limit?: number },
+  options: { vehicleCatalogId?: number; limit: number },
 ) {
-  await assertProductExists(productId);
-  const limit = options.limit ?? DEFAULT_LIMIT;
-  const poolSize = Math.min(100, limit * 5);
+  const poolSize = Math.min(100, options.limit * 5);
 
   const coOccurringIds = await productsRepository.findCoOccurringProductIds(productId, poolSize);
   if (coOccurringIds.length === 0) return [];
@@ -91,11 +100,33 @@ export async function listFrequentlyBoughtTogether(
     rankedIds = coOccurringIds.filter((id) => allowedIds.has(id));
   }
 
-  const finalIds = rankedIds.slice(0, limit);
+  const finalIds = rankedIds.slice(0, options.limit);
   if (finalIds.length === 0) return [];
 
   const rows = await productsRepository.findByIds(finalIds);
   return reorderByIds(rows, finalIds).map(toProductResponse);
+}
+
+// Not personalized — same result for every visitor looking at this product
+// (optionally narrowed to the same selected vehicle), so it's cached
+// globally by (productId, vehicleCatalogId, limit) rather than per-visitor.
+export async function listFrequentlyBoughtTogether(
+  productId: number,
+  options: { vehicleCatalogId?: number; limit?: number },
+) {
+  await assertProductExists(productId);
+  const limit = options.limit ?? DEFAULT_LIMIT;
+  const cacheKey = `recommendations:boughtTogether:${productId}:${options.vehicleCatalogId ?? "all"}:${limit}`;
+
+  const cached = cache.get<ReturnType<typeof toProductResponse>[]>(cacheKey);
+  if (cached) return cached;
+
+  const result = await computeFrequentlyBoughtTogether(productId, {
+    vehicleCatalogId: options.vehicleCatalogId,
+    limit,
+  });
+  cache.set(cacheKey, result, RECOMMENDATIONS_CACHE_TTL_MS);
+  return result;
 }
 
 // "Customers who viewed this also viewed" — view-based co-occurrence
@@ -103,13 +134,8 @@ export async function listFrequentlyBoughtTogether(
 // listFrequentlyBoughtTogether but from browsing behavior instead of
 // completed purchases. A much higher-volume signal (views vastly outnumber
 // orders), so it's useful even early on when order history is thin.
-export async function listViewedTogether(
-  productId: number,
-  options: { vehicleCatalogId?: number; limit?: number },
-) {
-  await assertProductExists(productId);
-  const limit = options.limit ?? DEFAULT_LIMIT;
-  const poolSize = Math.min(100, limit * 5);
+async function computeViewedTogether(productId: number, options: { vehicleCatalogId?: number; limit: number }) {
+  const poolSize = Math.min(100, options.limit * 5);
 
   const coViewedIds = await productViewsRepository.findCoViewedProductIds(productId, poolSize);
   if (coViewedIds.length === 0) return [];
@@ -122,23 +148,58 @@ export async function listViewedTogether(
     rankedIds = coViewedIds.filter((id) => allowedIds.has(id));
   }
 
-  const finalIds = rankedIds.slice(0, limit);
+  const finalIds = rankedIds.slice(0, options.limit);
   if (finalIds.length === 0) return [];
 
   const rows = await productsRepository.findByIds(finalIds);
   return reorderByIds(rows, finalIds).map(toProductResponse);
 }
 
+// Not personalized, cached the same way and for the same reason as
+// listFrequentlyBoughtTogether above.
+export async function listViewedTogether(
+  productId: number,
+  options: { vehicleCatalogId?: number; limit?: number },
+) {
+  await assertProductExists(productId);
+  const limit = options.limit ?? DEFAULT_LIMIT;
+  const cacheKey = `recommendations:viewedTogether:${productId}:${options.vehicleCatalogId ?? "all"}:${limit}`;
+
+  const cached = cache.get<ReturnType<typeof toProductResponse>[]>(cacheKey);
+  if (cached) return cached;
+
+  const result = await computeViewedTogether(productId, {
+    vehicleCatalogId: options.vehicleCatalogId,
+    limit,
+  });
+  cache.set(cacheKey, result, RECOMMENDATIONS_CACHE_TTL_MS);
+  return result;
+}
+
 // "Popular for your vehicle" — same order-quantity ranking as the homepage
 // POPULAR_PRODUCTS section, restricted to products compatible with one
 // vehicle (the shopper's SELECTED_VEHICLE_COOKIE pick).
-export async function listPopularForVehicle(vehicleCatalogId: number, limit = DEFAULT_LIMIT) {
+async function computePopularForVehicle(vehicleCatalogId: number, limit: number) {
   const vehicleWhere = await buildVehicleCompatibilityWhere(vehicleCatalogId);
   const rankedIds = await productsRepository.findPopularProductIds(limit, { productWhere: vehicleWhere });
   if (rankedIds.length === 0) return [];
 
   const rows = await productsRepository.findByIds(rankedIds);
   return reorderByIds(rows, rankedIds).map(toProductResponse);
+}
+
+// Not personalized (same result for every visitor with this vehicle
+// selected), cached globally by (vehicleCatalogId, limit) — same reasoning
+// as listFrequentlyBoughtTogether above.
+export async function listPopularForVehicle(vehicleCatalogId: number, limit = DEFAULT_LIMIT) {
+  const cacheKey = `recommendations:popularForVehicle:${vehicleCatalogId}:${limit}`;
+
+  const cached = cache.get<ReturnType<typeof toProductResponse>[]>(cacheKey);
+  if (cached) return cached;
+
+  const result = await computePopularForVehicle(vehicleCatalogId, limit);
+  cache.set(cacheKey, result, RECOMMENDATIONS_CACHE_TTL_MS);
+  return result;
 }
 
 const ORDER_AFFINITY_WEIGHT = 2;
@@ -173,6 +234,16 @@ const VIEW_AFFINITY_WEIGHT = 0.5;
 //   3. neither -> empty list (the caller/frontend hides the section rather
 //      than showing a misleadingly-labeled generic list).
 export async function listRecommendedForUser(userId: number, limit = DEFAULT_LIMIT) {
+  const cacheKey = `recommendations:forUser:${userId}:${limit}`;
+  const cached = cache.get<ReturnType<typeof toProductResponse>[]>(cacheKey);
+  if (cached) return cached;
+
+  const result = await computeRecommendedForUser(userId, limit);
+  cache.set(cacheKey, result, RECOMMENDATIONS_CACHE_TTL_MS);
+  return result;
+}
+
+async function computeRecommendedForUser(userId: number, limit: number) {
   const [orderRows, wishlistRows, viewRows, garageRows] = await Promise.all([
     recommendationsRepository.findOrderAffinity(userId),
     recommendationsRepository.findWishlistAffinity(userId),
