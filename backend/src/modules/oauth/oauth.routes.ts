@@ -2,13 +2,19 @@ import { Router } from "express";
 import { authRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { registry } from "../../docs/registry.js";
 import {
+  getOAuthStatus,
   handleFacebookCallback,
   handleGoogleCallback,
   redirectToFacebook,
   redirectToGoogle,
 } from "./oauth.controller.js";
+import { oauthStatusResponseSchema } from "./oauth.schema.js";
 
 export const oauthRouter = Router();
+
+// Public — lets the frontend hide a provider's button instead of showing
+// one that's guaranteed to fail (see OAuthButtons.tsx).
+oauthRouter.get("/oauth-status", getOAuthStatus);
 
 oauthRouter.get("/google", authRateLimit, redirectToGoogle);
 oauthRouter.get("/google/callback", handleGoogleCallback);
@@ -17,12 +23,27 @@ oauthRouter.get("/facebook/callback", handleFacebookCallback);
 
 registry.registerPath({
   method: "get",
+  path: "/auth/oauth-status",
+  tags: ["Auth"],
+  summary: "Get whether Google/Facebook OAuth login is configured (public)",
+  responses: {
+    200: {
+      description: "OAuth configuration status",
+      content: { "application/json": { schema: oauthStatusResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
   path: "/auth/google",
   tags: ["Auth"],
   summary: "Start Google OAuth login (redirects to Google's consent screen)",
   responses: {
-    302: { description: "Redirect to Google" },
-    400: { description: "Google OAuth not configured" },
+    302: {
+      description:
+        "Redirect to Google, or to /login?error=oauth_failed if Google OAuth isn't configured",
+    },
   },
 });
 
@@ -45,8 +66,10 @@ registry.registerPath({
   tags: ["Auth"],
   summary: "Start Facebook OAuth login (redirects to Facebook's consent screen)",
   responses: {
-    302: { description: "Redirect to Facebook" },
-    400: { description: "Facebook OAuth not configured" },
+    302: {
+      description:
+        "Redirect to Facebook, or to /login?error=oauth_failed if Facebook OAuth isn't configured",
+    },
   },
 });
 

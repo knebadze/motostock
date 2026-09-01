@@ -8,7 +8,7 @@ import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { loginUser } from "@/lib/api/auth";
 import { ApiRequestError } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
-import { OAuthButtons } from "@/components/shared/OAuthButtons";
+import { OAuthButtons, type OAuthStatus } from "@/components/shared/OAuthButtons";
 
 // The ?redirect= param is attacker-controlled (a crafted /login?redirect=...
 // link) — only accept a same-site relative path (single leading slash, not
@@ -18,7 +18,7 @@ function resolveRedirectTarget(value: string | null): string {
   return value && /^\/(?!\/)/.test(value) ? value : "/account";
 }
 
-export function LoginForm() {
+export function LoginForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
   const t = useTranslations("Auth");
   const tErrors = useTranslations("ApiErrors");
   const router = useRouter();
@@ -121,7 +121,7 @@ export function LoginForm() {
           {loading ? t("loginSubmitting") : t("loginSubmit")}
         </button>
 
-        <OAuthButtons />
+        <OAuthButtons status={oauthStatus} />
 
         <p className="text-center text-sm text-muted-foreground">
           {t("noAccount")}{" "}

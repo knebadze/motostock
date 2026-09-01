@@ -7,14 +7,14 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { registerUser } from "@/lib/api/auth";
 import { ApiRequestError } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
-import { OAuthButtons } from "@/components/shared/OAuthButtons";
+import { OAuthButtons, type OAuthStatus } from "@/components/shared/OAuthButtons";
 import { PasswordInput } from "@/components/shared/PasswordInput";
 import { FieldError } from "@/components/shared/FieldError";
 import { TermsModal } from "@/components/shared/TermsModal";
 import { createRegisterFormSchema } from "@/lib/validation/auth";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
-export function RegisterForm() {
+export function RegisterForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
   const t = useTranslations("Auth");
   const tErrors = useTranslations("ApiErrors");
   const router = useRouter();
@@ -185,7 +185,7 @@ export function RegisterForm() {
           {loading ? t("registerSubmitting") : t("registerSubmit")}
         </button>
 
-        <OAuthButtons />
+        <OAuthButtons status={oauthStatus} />
 
         <p className="text-center text-sm text-muted-foreground">
           {t("haveAccount")}{" "}

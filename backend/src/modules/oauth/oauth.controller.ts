@@ -50,9 +50,24 @@ function statesMatch(received: string | undefined, expected: string | undefined)
   return crypto.timingSafeEqual(receivedHash, expectedHash);
 }
 
+export function getOAuthStatus(req: Request, res: Response) {
+  res.status(200).json({ google: isGoogleConfigured(), facebook: isFacebookConfigured() });
+}
+
+// Both throw-sites below used to `throw new ApiError(400, ...)` — fine for
+// most of this codebase's JSON-API routes, but these two are reached by a
+// full browser navigation (the "Continue with Google/Facebook" link), not
+// an SPA fetch call. A throw here renders as raw, untranslated JSON in the
+// browser instead of going through the frontend's error UI at all — see
+// failureRedirect below, which every other failure path in this module
+// already goes through. Redirecting here instead closes that gap; the
+// frontend also hides these buttons entirely when misconfigured (see
+// getOAuthStatus / OAuthButtons.tsx) so this is a defense-in-depth
+// fallback, not the primary guard.
 export function redirectToGoogle(req: Request, res: Response) {
   if (!isGoogleConfigured()) {
-    throw new ApiError(400, "Google-ით ავტორიზაცია არ არის კონფიგურირებული");
+    failureRedirect(res);
+    return;
   }
   const state = crypto.randomBytes(24).toString("hex");
   setStateCookie(res, state);
@@ -61,7 +76,8 @@ export function redirectToGoogle(req: Request, res: Response) {
 
 export function redirectToFacebook(req: Request, res: Response) {
   if (!isFacebookConfigured()) {
-    throw new ApiError(400, "Facebook-ით ავტორიზაცია არ არის კონფიგურირებული");
+    failureRedirect(res);
+    return;
   }
   const state = crypto.randomBytes(24).toString("hex");
   setStateCookie(res, state);

@@ -88,6 +88,17 @@ export async function getCurrentUserFromServer(): Promise<User | null> {
   });
 }
 
+export async function getOAuthStatusFromServer(): Promise<{ google: boolean; facebook: boolean }> {
+  // Public endpoint (the login/register pages read this for every guest) —
+  // lets OAuthButtons hide a provider's button instead of showing one
+  // that's guaranteed to fail. Fails closed: a failed fetch hides both
+  // buttons rather than risk showing a broken one.
+  return fetchFromServer<{ google: boolean; facebook: boolean }, { google: boolean; facebook: boolean }>(
+    "/auth/oauth-status",
+    { fallback: { google: false, facebook: false }, extract: (data) => data },
+  );
+}
+
 export async function getCategoriesFromServer(): Promise<Category[]> {
   // Public endpoint (guest storefront navigation reads this too) — unlike
   // the admin-only getXFromServer helpers below, this must not bail out just
