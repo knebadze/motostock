@@ -65,13 +65,21 @@ export const promoCodesRepository = {
   },
 
   // Derived from Order.promoCodeId rather than a separate counter column —
-  // see promo-code.prisma's usageLimit comment.
+  // see promo-code.prisma's usageLimit comment. Excludes CANCELLED orders:
+  // a cancelled order never actually consumed its discount (same "restore
+  // what was consumed" reasoning as stock restoration on cancel — see
+  // orders.service.ts's updateOrderStatus), so it shouldn't count against
+  // the limit or block the same user from reusing the code.
   countUsage(promoCodeId: number) {
-    return prisma.order.count({ where: { promoCodeId } });
+    return prisma.order.count({
+      where: { promoCodeId, status: { key: { not: "CANCELLED" } } },
+    });
   },
 
   async hasUserUsed(promoCodeId: number, userId: number) {
-    const count = await prisma.order.count({ where: { promoCodeId, userId } });
+    const count = await prisma.order.count({
+      where: { promoCodeId, userId, status: { key: { not: "CANCELLED" } } },
+    });
     return count > 0;
   },
 };

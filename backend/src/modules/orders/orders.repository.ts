@@ -323,15 +323,23 @@ export const ordersRepository = {
           throw new ApiError(400, "პრომო კოდი ვეღარ მოიძებნა");
         }
 
+        // Excludes CANCELLED orders — same reasoning as promo-codes.repository.ts's
+        // countUsage/hasUserUsed, which this re-check must stay consistent with.
         const alreadyUsedByUser = await tx.order.count({
-          where: { promoCodeId: input.promoCodeId, userId: input.userId },
+          where: {
+            promoCodeId: input.promoCodeId,
+            userId: input.userId,
+            status: { key: { not: "CANCELLED" } },
+          },
         });
         if (alreadyUsedByUser > 0) {
           throw new ApiError(400, "თქვენ უკვე გამოიყენეთ ეს პრომო კოდი");
         }
 
         if (promo.usageLimit != null) {
-          const usageCount = await tx.order.count({ where: { promoCodeId: input.promoCodeId } });
+          const usageCount = await tx.order.count({
+            where: { promoCodeId: input.promoCodeId, status: { key: { not: "CANCELLED" } } },
+          });
           if (usageCount >= promo.usageLimit) {
             throw new ApiError(400, "პრომო კოდის გამოყენების ლიმიტი ამოწურულია");
           }
