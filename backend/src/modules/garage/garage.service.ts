@@ -14,16 +14,23 @@ function formatYearRange(yearFrom: number | null, yearTo: number | null) {
 async function assertCatalogEntryFitsYear(vehicleCatalogId: number, year: number) {
   const catalogEntry = await vehicleCatalogRepository.findById(vehicleCatalogId);
   if (!catalogEntry) {
-    throw new ApiError(400, "მითითებული ტექნიკის კატალოგის ჩანაწერი არ არსებობს");
+    throw new ApiError(
+      400,
+      "მითითებული ტექნიკის კატალოგის ჩანაწერი არ არსებობს",
+      "VEHICLE_CATALOG_ENTRY_NOT_FOUND",
+    );
   }
 
   const outOfRange =
     (catalogEntry.yearFrom != null && year < catalogEntry.yearFrom) ||
     (catalogEntry.yearTo != null && year > catalogEntry.yearTo);
   if (outOfRange) {
+    const range = formatYearRange(catalogEntry.yearFrom, catalogEntry.yearTo);
     throw new ApiError(
       400,
-      `წელი (${year}) არ ჯდება კატალოგის ჩანაწერის დასაშვებ დიაპაზონში (${formatYearRange(catalogEntry.yearFrom, catalogEntry.yearTo)})`,
+      `წელი (${year}) არ ჯდება კატალოგის ჩანაწერის დასაშვებ დიაპაზონში (${range})`,
+      "VEHICLE_YEAR_OUT_OF_RANGE",
+      { year, range },
     );
   }
 }
@@ -72,7 +79,7 @@ export async function updateGarageVehicle(
 ) {
   const existing = await garageRepository.findById(id);
   if (!existing || existing.userId !== userId) {
-    throw new ApiError(404, "გარაჟის ჩანაწერი ვერ მოიძებნა");
+    throw new ApiError(404, "გარაჟის ჩანაწერი ვერ მოიძებნა", "GARAGE_VEHICLE_NOT_FOUND");
   }
 
   await assertCatalogEntryFitsYear(input.vehicleCatalogId, input.year);
@@ -96,7 +103,7 @@ export async function setGarageVehicleImage(
 ) {
   const existing = await garageRepository.findById(id);
   if (!existing || existing.userId !== userId) {
-    throw new ApiError(404, "გარაჟის ჩანაწერი ვერ მოიძებნა");
+    throw new ApiError(404, "გარაჟის ჩანაწერი ვერ მოიძებნა", "GARAGE_VEHICLE_NOT_FOUND");
   }
 
   const imageUrl = await saveUploadedImage("garage-vehicles", file);
@@ -107,7 +114,7 @@ export async function setGarageVehicleImage(
 export async function deleteGarageVehicle(userId: number, id: number) {
   const existing = await garageRepository.findById(id);
   if (!existing || existing.userId !== userId) {
-    throw new ApiError(404, "გარაჟის ჩანაწერი ვერ მოიძებნა");
+    throw new ApiError(404, "გარაჟის ჩანაწერი ვერ მოიძებნა", "GARAGE_VEHICLE_NOT_FOUND");
   }
 
   await garageRepository.deleteWithPopularityBump(id, existing.vehicleCatalogId);

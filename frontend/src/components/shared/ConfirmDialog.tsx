@@ -17,6 +17,7 @@ export function ConfirmDialog({
   cancelLabel = "გაუქმება",
   processingLabel = "მუშავდება...",
   errorFallback = "მოქმედება ვერ შესრულდა",
+  resolveErrorMessage,
   closeLabel = "დახურვა",
   loaderLabel = "იტვირთება",
 }: {
@@ -32,6 +33,15 @@ export function ConfirmDialog({
   cancelLabel?: string;
   processingLabel?: string;
   errorFallback?: string;
+  // Storefront callers pass `(error) => resolveApiErrorMessage(error, tErrors,
+  // errorFallback)` (see lib/api-errors.ts) to show a translated message for
+  // a backend error instead of its raw (always-Georgian) text — a prop, not
+  // a `useTranslations` call in here, since this component is also used
+  // under /admin, which sits outside next-intl's provider tree entirely
+  // (calling the hook there would throw). Omitted, admin callers keep
+  // today's behavior unchanged: ApiRequestError shows verbatim, anything
+  // else falls back to `errorFallback`.
+  resolveErrorMessage?: (error: unknown) => string;
   closeLabel?: string;
   loaderLabel?: string;
 }) {
@@ -44,7 +54,11 @@ export function ConfirmDialog({
       if (successMessage) toast.success(successMessage);
       onClose();
     } catch (error) {
-      const message = error instanceof ApiRequestError ? error.message : errorFallback;
+      const message = resolveErrorMessage
+        ? resolveErrorMessage(error)
+        : error instanceof ApiRequestError
+          ? error.message
+          : errorFallback;
       toast.error(message);
     } finally {
       setLoading(false);

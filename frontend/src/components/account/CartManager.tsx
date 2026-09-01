@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
-import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import { getCartItemDisplay, recomputeCart } from "@/lib/cart-item-display";
 import { removeFromCart, updateCartItemQuantity, type Cart, type CartItem } from "@/lib/api/cart";
@@ -88,6 +88,7 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Cart");
   const tCommon = useTranslations("Common");
+  const tErrors = useTranslations("ApiErrors");
   const [cart, setCart] = useState(initialCart);
   const [pendingId, setPendingId] = useState<number | null>(null);
   const [removingItem, setRemovingItem] = useState<CartItem | null>(null);
@@ -101,7 +102,7 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
         recomputeCart(current.items.map((existing) => (existing.id === item.id ? updated : existing))),
       );
     } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : t("updateError"));
+      toast.error(resolveApiErrorMessage(error, tErrors, t("updateError")));
     } finally {
       setPendingId(null);
     }
@@ -171,6 +172,7 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
         cancelLabel={tCommon("confirmDialog.cancel")}
         processingLabel={tCommon("confirmDialog.processing")}
         errorFallback={t("removeError")}
+        resolveErrorMessage={(error) => resolveApiErrorMessage(error, tErrors, t("removeError"))}
         closeLabel={tCommon("modal.close")}
         loaderLabel={tCommon("loader.loading")}
       />

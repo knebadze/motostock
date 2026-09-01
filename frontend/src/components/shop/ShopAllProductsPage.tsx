@@ -14,7 +14,7 @@ import { ProductCard } from "./ProductCard";
 import type { ViewMode } from "./ViewModeToggle";
 import { listProducts, type Product } from "@/lib/api/products";
 import type { GarageVehicle } from "@/lib/api/vehicle-catalog";
-import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 
 type SortBy = "newest" | "price-asc" | "price-desc";
@@ -47,6 +47,7 @@ export function ShopAllProductsPage({
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
   const tCommon = useTranslations("Common");
+  const tErrors = useTranslations("ApiErrors");
   const myVehicleSelectId = useId();
   const [baseProducts, setBaseProducts] = useState(products);
   const [vehicleCatalogId, setVehicleCatalogId] = useState("");
@@ -70,9 +71,7 @@ export function ShopAllProductsPage({
       });
       setBaseProducts(next);
     } catch (error) {
-      const message =
-        error instanceof ApiRequestError ? error.message : t("loadProductsError");
-      toast.error(message);
+      toast.error(resolveApiErrorMessage(error, tErrors, t("loadProductsError")));
     } finally {
       setVehicleLoading(false);
     }

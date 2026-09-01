@@ -46,7 +46,7 @@ export async function assertAccountNotLockedOut(email: string): Promise<void> {
   const since = new Date(Date.now() - windowMinutes * 60 * 1000);
   const recentFailures = await fraudRepository.countFailedLoginsForEmailSince(email, since);
   if (recentFailures >= threshold) {
-    throw new ApiError(429, "ძალიან ბევრი წარუმატებელი მცდელობა — სცადეთ მოგვიანებით");
+    throw new ApiError(429, "ძალიან ბევრი წარუმატებელი მცდელობა — სცადეთ მოგვიანებით", "ACCOUNT_LOCKED");
   }
 }
 

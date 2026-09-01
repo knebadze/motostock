@@ -18,7 +18,7 @@ export async function resolveWishlistOwner(req: Request, res: Response, next: Ne
   }
 
   if (!(await isGuestWishlistEnabled())) {
-    next(new ApiError(401, "Not authenticated"));
+    next(new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED"));
     return;
   }
 

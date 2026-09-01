@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Loader } from "@/components/shared/Loader";
 import { listServiceRecordsForVehicle, type ServiceRecord } from "@/lib/api/service-records";
-import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatDate, formatPrice } from "@/lib/format";
 
 export function ServiceHistoryModal({
@@ -21,6 +21,7 @@ export function ServiceHistoryModal({
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Account.garage");
   const tCommon = useTranslations("Common");
+  const tErrors = useTranslations("ApiErrors");
   const [records, setRecords] = useState<ServiceRecord[] | null>(null);
 
   useEffect(() => {
@@ -32,16 +33,14 @@ export function ServiceHistoryModal({
       })
       .catch((error) => {
         if (cancelled) return;
-        const message =
-          error instanceof ApiRequestError ? error.message : t("serviceHistoryLoadError");
-        toast.error(message);
+        toast.error(resolveApiErrorMessage(error, tErrors, t("serviceHistoryLoadError")));
         onClose();
       });
 
     return () => {
       cancelled = true;
     };
-  }, [garageVehicleId, onClose, t]);
+  }, [garageVehicleId, onClose, t, tErrors]);
 
   const positionLabels: Record<string, string> = {
     FRONT: t("serviceHistoryPositionFront"),

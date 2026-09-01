@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import type { SelectOption } from "@/components/shared/Select";
 import { Pagination, usePagination } from "@/components/shared/Pagination";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
-import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import type { Category } from "@/lib/api/categories";
 import {
   listVehicleListings,
@@ -64,6 +64,7 @@ export function VehicleShopPage({
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
   const tCommon = useTranslations("Common");
+  const tErrors = useTranslations("ApiErrors");
   const pathname = usePathname();
   const router = useRouter();
 
@@ -163,15 +164,24 @@ export function VehicleShopPage({
       })
         .then(setDisplayedListings)
         .catch((error) => {
-          const message =
-            error instanceof ApiRequestError ? error.message : t("loadVehiclesError");
-          toast.error(message);
+          toast.error(resolveApiErrorMessage(error, tErrors, t("loadVehiclesError")));
         })
         .finally(() => setLoading(false));
     }, FILTER_DEBOUNCE_MS);
 
     return () => clearTimeout(timeoutId);
-  }, [category.id, search, selectedBrandIds, yearMin, yearMax, priceMin, priceMax, specFilters, t]);
+  }, [
+    category.id,
+    search,
+    selectedBrandIds,
+    yearMin,
+    yearMax,
+    priceMin,
+    priceMax,
+    specFilters,
+    t,
+    tErrors,
+  ]);
 
   const sorted = useMemo(() => {
     const result = [...displayedListings];

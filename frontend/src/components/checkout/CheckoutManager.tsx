@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import { EmailVerificationBanner } from "@/components/shared/EmailVerificationBanner";
 import {
@@ -41,6 +42,7 @@ export function CheckoutManager({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Checkout");
+  const tErrors = useTranslations("ApiErrors");
   const router = useRouter();
   const cityLabelKey = locale === "ka" ? "nameKa" : locale === "ru" ? "nameRu" : "nameEn";
 
@@ -112,7 +114,7 @@ export function CheckoutManager({
             if (error instanceof ApiRequestError && error.status === 403) {
               setEmailVerificationRequired(true);
             } else {
-              toast.error(error instanceof ApiRequestError ? error.message : t("previewError"));
+              toast.error(resolveApiErrorMessage(error, tErrors, t("previewError")));
             }
             setPreview(null);
           }
@@ -156,7 +158,7 @@ export function CheckoutManager({
       setAppliedPromoCode(code);
       toast.success(t("promoApplied"));
     } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : t("promoError"));
+      toast.error(resolveApiErrorMessage(error, tErrors, t("promoError")));
     } finally {
       setPromoApplying(false);
     }
@@ -204,7 +206,7 @@ export function CheckoutManager({
       if (error instanceof ApiRequestError && error.status === 403) {
         setEmailVerificationRequired(true);
       } else {
-        toast.error(error instanceof ApiRequestError ? error.message : t("placeError"));
+        toast.error(resolveApiErrorMessage(error, tErrors, t("placeError")));
       }
     } finally {
       setPlacing(false);

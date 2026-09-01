@@ -569,7 +569,7 @@ export async function checkProductsCompatibility(productIds: number[], vehicleCa
 export async function getProduct(id: number) {
   const row = await productsRepository.findById(id);
   if (!row) {
-    throw new ApiError(404, "პროდუქტი ვერ მოიძებნა");
+    throw new ApiError(404, "პროდუქტი ვერ მოიძებნა", "PRODUCT_NOT_FOUND");
   }
   return toResponse(row);
 }
@@ -577,7 +577,7 @@ export async function getProduct(id: number) {
 export async function getProductDetail(slug: string, vehicleCatalogId?: number) {
   const row = await productsRepository.findDetailBySlug(slug);
   if (!row) {
-    throw new ApiError(404, "პროდუქტი ვერ მოიძებნა");
+    throw new ApiError(404, "პროდუქტი ვერ მოიძებნა", "PRODUCT_NOT_FOUND");
   }
 
   await productsRepository.incrementViewCount(row.id);

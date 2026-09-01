@@ -35,7 +35,7 @@ export function toAddressResponse(row: AddressRow) {
 async function assertCityExists(cityId: number) {
   const city = await lookupsRepository.findById(getLookupDelegate("cities"), cityId);
   if (!city) {
-    throw new ApiError(400, "მითითებული ქალაქი არ არსებობს");
+    throw new ApiError(400, "მითითებული ქალაქი არ არსებობს", "CITY_NOT_FOUND");
   }
 }
 
@@ -61,7 +61,7 @@ export async function createMyAddress(userId: number, input: AddressInput) {
 export async function updateMyAddress(userId: number, id: number, input: AddressInput) {
   const existing = await addressesRepository.findById(id);
   if (!existing || existing.userId !== userId) {
-    throw new ApiError(404, "მისამართი ვერ მოიძებნა");
+    throw new ApiError(404, "მისამართი ვერ მოიძებნა", "ADDRESS_NOT_FOUND");
   }
 
   await assertCityExists(input.cityId);
@@ -80,7 +80,7 @@ export async function updateMyAddress(userId: number, id: number, input: Address
 export async function deleteMyAddress(userId: number, id: number) {
   const existing = await addressesRepository.findById(id);
   if (!existing || existing.userId !== userId) {
-    throw new ApiError(404, "მისამართი ვერ მოიძებნა");
+    throw new ApiError(404, "მისამართი ვერ მოიძებნა", "ADDRESS_NOT_FOUND");
   }
 
   await addressesRepository.delete(id);

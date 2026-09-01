@@ -10,7 +10,8 @@ import { Loader } from "@/components/shared/Loader";
 import { GarageVehicleFormModal } from "./GarageVehicleFormModal";
 import { ServiceHistoryModal } from "./ServiceHistoryModal";
 import { deleteGarageVehicle, uploadGarageVehicleImage } from "@/lib/api/garage";
-import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
+import { resolveMediaUrl } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import type { GarageVehicle, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 import type { Model } from "@/lib/api/models";
 import type { LookupItem } from "@/lib/api/lookups";
@@ -124,6 +125,7 @@ export function GarageManager({
 }) {
   const t = useTranslations("Account.garage");
   const tCommon = useTranslations("Common");
+  const tErrors = useTranslations("ApiErrors");
   const [garage, setGarage] = useState(initialGarage);
   const [catalog, setCatalog] = useState(vehicleCatalog);
   const [modalOpen, setModalOpen] = useState(false);
@@ -147,8 +149,7 @@ export function GarageManager({
       const updated = await uploadGarageVehicleImage(vehicleId, file);
       setGarage((current) => current.map((item) => (item.id === vehicleId ? updated : item)));
     } catch (error) {
-      const message = error instanceof ApiRequestError ? error.message : t("photoUploadError");
-      toast.error(message);
+      toast.error(resolveApiErrorMessage(error, tErrors, t("photoUploadError")));
     } finally {
       setUploadingId(null);
     }
@@ -293,6 +294,9 @@ export function GarageManager({
         cancelLabel={tCommon("confirmDialog.cancel")}
         processingLabel={tCommon("confirmDialog.processing")}
         errorFallback={tCommon("confirmDialog.genericError")}
+        resolveErrorMessage={(error) =>
+          resolveApiErrorMessage(error, tErrors, tCommon("confirmDialog.genericError"))
+        }
         closeLabel={tCommon("modal.close")}
         loaderLabel={tCommon("loader.loading")}
       />

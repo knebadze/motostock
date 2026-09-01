@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import { registerUser } from "@/lib/api/auth";
 import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { OAuthButtons } from "@/components/shared/OAuthButtons";
 import { PasswordInput } from "@/components/shared/PasswordInput";
 import { FieldError } from "@/components/shared/FieldError";
@@ -15,6 +16,7 @@ import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
 export function RegisterForm() {
   const t = useTranslations("Auth");
+  const tErrors = useTranslations("ApiErrors");
   const router = useRouter();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -54,11 +56,9 @@ export function RegisterForm() {
       // i18n for this yet) — map the one status code we know about to a
       // localized message instead of surfacing raw backend text.
       const message =
-        error instanceof ApiRequestError
-          ? error.status === 409
-            ? t("emailInUse")
-            : error.message
-          : t("registerError");
+        error instanceof ApiRequestError && error.status === 409
+          ? t("emailInUse")
+          : resolveApiErrorMessage(error, tErrors, t("registerError"));
       toast.error(message);
     } finally {
       setLoading(false);

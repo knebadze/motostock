@@ -11,7 +11,7 @@ export async function getUserById(id: number) {
   const user = await usersRepository.findById(id);
 
   if (!user) {
-    throw new ApiError(404, "User not found");
+    throw new ApiError(404, "User not found", "USER_NOT_FOUND");
   }
 
   return {
@@ -27,16 +27,16 @@ export async function getUserById(id: number) {
 export async function changePassword(userId: number, input: ChangePasswordInput) {
   const user = await usersRepository.findById(userId);
   if (!user) {
-    throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა");
+    throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა", "USER_NOT_FOUND");
   }
 
   if (user.passwordHash) {
     if (!input.currentPassword) {
-      throw new ApiError(400, "მიმდინარე პაროლი სავალდებულოა");
+      throw new ApiError(400, "მიმდინარე პაროლი სავალდებულოა", "CURRENT_PASSWORD_REQUIRED");
     }
     const valid = await comparePassword(input.currentPassword, user.passwordHash);
     if (!valid) {
-      throw new ApiError(400, "მიმდინარე პაროლი არასწორია");
+      throw new ApiError(400, "მიმდინარე პაროლი არასწორია", "CURRENT_PASSWORD_INCORRECT");
     }
   }
 

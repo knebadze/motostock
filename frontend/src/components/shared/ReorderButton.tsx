@@ -5,10 +5,11 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { reorderOrder } from "@/lib/api/orders";
-import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 
 export function ReorderButton({ orderId }: { orderId: number }) {
   const t = useTranslations("Account.orders");
+  const tErrors = useTranslations("ApiErrors");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +30,7 @@ export function ReorderButton({ orderId }: { orderId: number }) {
 
       if (added > 0) router.refresh();
     } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : t("reorderError"));
+      toast.error(resolveApiErrorMessage(error, tErrors, t("reorderError")));
     } finally {
       setLoading(false);
     }

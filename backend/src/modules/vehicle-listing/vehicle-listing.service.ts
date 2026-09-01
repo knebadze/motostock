@@ -332,7 +332,7 @@ export async function listPopularVehicleListings(limit: number) {
 export async function getVehicleListing(id: number) {
   const row = await vehicleListingRepository.findById(id);
   if (!row) {
-    throw new ApiError(404, "განცხადება ვერ მოიძებნა");
+    throw new ApiError(404, "განცხადება ვერ მოიძებნა", "VEHICLE_LISTING_NOT_FOUND");
   }
   await vehicleListingRepository.incrementViewCount(id);
   return toVehicleListingResponse(row);
@@ -343,7 +343,7 @@ export async function getVehicleListing(id: number) {
 export async function getVehicleListingDetailAdmin(id: number) {
   const row = await vehicleListingRepository.findById(id);
   if (!row) {
-    throw new ApiError(404, "განცხადება ვერ მოიძებნა");
+    throw new ApiError(404, "განცხადება ვერ მოიძებნა", "VEHICLE_LISTING_NOT_FOUND");
   }
 
   const sales = await vehicleListingRepository.findSalesSummary(id);

@@ -18,6 +18,7 @@ import { decodeVin } from "@/lib/api/vin-decode";
 import type { Model } from "@/lib/api/models";
 import type { LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 import {
   createGarageCatalogPickFormSchema,
@@ -49,6 +50,7 @@ export function GarageVehicleFormModal({
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Account.garage");
   const tCommon = useTranslations("Common");
+  const tErrors = useTranslations("ApiErrors");
   const [mode, setMode] = useState<Mode>("pick");
 
   // Shared across both modes — deciding "what kind of vehicle" comes first
@@ -109,8 +111,7 @@ export function GarageVehicleFormModal({
       }
       toast.success(t("vinDecodeSuccess"));
     } catch (error) {
-      const message = error instanceof ApiRequestError ? error.message : t("vinDecodeError");
-      toast.error(message);
+      toast.error(resolveApiErrorMessage(error, tErrors, t("vinDecodeError")));
     } finally {
       setDecodingVin(false);
     }
@@ -202,8 +203,7 @@ export function GarageVehicleFormModal({
         onSaved(vehicle);
         onClose();
       } catch (error) {
-        const message = error instanceof ApiRequestError ? error.message : t("addError");
-        toast.error(message);
+        toast.error(resolveApiErrorMessage(error, tErrors, t("addError")));
       } finally {
         setLoading(false);
       }
@@ -279,13 +279,10 @@ export function GarageVehicleFormModal({
           onSaved(vehicle);
           onClose();
         } catch (fallbackError) {
-          const message =
-            fallbackError instanceof ApiRequestError ? fallbackError.message : t("addError");
-          toast.error(message);
+          toast.error(resolveApiErrorMessage(fallbackError, tErrors, t("addError")));
         }
       } else {
-        const message = error instanceof ApiRequestError ? error.message : t("addError");
-        toast.error(message);
+        toast.error(resolveApiErrorMessage(error, tErrors, t("addError")));
       }
     } finally {
       setLoading(false);

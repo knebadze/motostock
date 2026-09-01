@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import {
   addToCart,
   getCartStatus,
@@ -39,6 +40,7 @@ export function AddToCartButton({
   const router = useRouter();
   const pathname = usePathname();
   const tCart = useTranslations("Cart");
+  const tErrors = useTranslations("ApiErrors");
   const [status, setStatus] = useState<"idle" | "loading" | "added">("idle");
   // The cart row's own id + current quantity (not just a boolean) — once
   // set, the button turns into a −/qty/+ stepper instead of "add" — same
@@ -99,7 +101,7 @@ export function AddToCartButton({
         router.push({ pathname: "/login", query: { redirect: pathname } });
         return;
       }
-      toast.error(error instanceof ApiRequestError ? error.message : errorMessage);
+      toast.error(resolveApiErrorMessage(error, tErrors, errorMessage));
     }
   }
 
@@ -117,7 +119,7 @@ export function AddToCartButton({
       }
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : errorMessage);
+      toast.error(resolveApiErrorMessage(error, tErrors, errorMessage));
     } finally {
       setStatus("idle");
     }

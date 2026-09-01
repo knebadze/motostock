@@ -57,7 +57,7 @@ export async function getForMe(
   res: Response,
 ) {
   if (!req.user) {
-    throw new ApiError(401, "Not authenticated");
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
   }
 
   const items = await recommendationsService.listRecommendedForUser(req.user.sub, req.query.limit);

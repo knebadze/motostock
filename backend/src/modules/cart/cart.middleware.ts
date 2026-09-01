@@ -18,7 +18,7 @@ export async function resolveCartOwner(req: Request, res: Response, next: NextFu
   }
 
   if (!(await isGuestCartEnabled())) {
-    next(new ApiError(401, "Not authenticated"));
+    next(new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED"));
     return;
   }
 

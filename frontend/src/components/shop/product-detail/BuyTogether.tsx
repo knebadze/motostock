@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { resolveMediaUrl, ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import { addToCart } from "@/lib/api/cart";
 import { getProductBySlug } from "@/lib/api/products";
@@ -53,6 +54,7 @@ function BuyTogetherCard({ product }: { product: Product }) {
 export function BuyTogether({ product }: { product: ProductDetail }) {
   const t = useTranslations("ProductDetail");
   const tCart = useTranslations("Cart");
+  const tErrors = useTranslations("ApiErrors");
   const router = useRouter();
   const pathname = usePathname();
   const [status, setStatus] = useState<"idle" | "loading" | "added">("idle");
@@ -111,7 +113,7 @@ export function BuyTogether({ product }: { product: ProductDetail }) {
         router.push({ pathname: "/login", query: { redirect: pathname } });
         return;
       }
-      toast.error(error instanceof ApiRequestError ? error.message : tCart("addError"));
+      toast.error(resolveApiErrorMessage(error, tErrors, tCart("addError")));
     }
   }
 

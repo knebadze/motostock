@@ -5,10 +5,11 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import { requestPasswordReset } from "@/lib/api/auth";
-import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 
 export function ForgotPasswordForm() {
   const t = useTranslations("Auth");
+  const tErrors = useTranslations("ApiErrors");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -21,8 +22,7 @@ export function ForgotPasswordForm() {
       await requestPasswordReset(email);
       setSent(true);
     } catch (error) {
-      const message = error instanceof ApiRequestError ? error.message : t("forgotPasswordError");
-      toast.error(message);
+      toast.error(resolveApiErrorMessage(error, tErrors, t("forgotPasswordError")));
     } finally {
       setLoading(false);
     }

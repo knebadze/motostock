@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import type { SelectOption } from "@/components/shared/Select";
 import { Pagination, usePagination } from "@/components/shared/Pagination";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
-import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { listProducts, type Product, type ProductAttributeFilters } from "@/lib/api/products";
 import type { Category } from "@/lib/api/categories";
 import type { CategoryFilter, CategoryFilterAttribute } from "@/lib/api/category-filters";
@@ -60,6 +60,7 @@ export function ProductShopPage({
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
   const tCommon = useTranslations("Common");
+  const tErrors = useTranslations("ApiErrors");
   const pathname = usePathname();
   const router = useRouter();
 
@@ -160,9 +161,7 @@ export function ProductShopPage({
       })
         .then(setDisplayedProducts)
         .catch((error) => {
-          const message =
-            error instanceof ApiRequestError ? error.message : t("loadProductsError");
-          toast.error(message);
+          toast.error(resolveApiErrorMessage(error, tErrors, t("loadProductsError")));
         })
         .finally(() => setLoading(false));
     }, FILTER_DEBOUNCE_MS);
@@ -177,6 +176,7 @@ export function ProductShopPage({
     attributeFilters,
     selectedVehicleCatalogId,
     t,
+    tErrors,
   ]);
 
   const sorted = useMemo(() => {

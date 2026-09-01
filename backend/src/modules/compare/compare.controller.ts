@@ -10,7 +10,7 @@ import type { CreateCompareItemInput, CompareStatusQuery } from "./compare.schem
 function getOwner(req: Pick<Request, "user" | "guestId">): CompareOwner {
   if (req.user) return { userId: req.user.sub };
   if (req.guestId) return { guestId: req.guestId };
-  throw new ApiError(401, "Not authenticated");
+  throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
 }
 
 export async function list(req: Request, res: Response) {

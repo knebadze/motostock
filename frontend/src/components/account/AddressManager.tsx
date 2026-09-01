@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { AddressFormModal } from "./AddressFormModal";
 import { deleteMyAddress, type Address } from "@/lib/api/addresses";
 import type { LookupItem } from "@/lib/api/lookups";
@@ -17,6 +18,7 @@ export function AddressManager({
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Account.address");
   const tCommon = useTranslations("Common");
+  const tErrors = useTranslations("ApiErrors");
   const [addresses, setAddresses] = useState(initialAddresses);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -119,6 +121,9 @@ export function AddressManager({
         cancelLabel={tCommon("confirmDialog.cancel")}
         processingLabel={tCommon("confirmDialog.processing")}
         errorFallback={tCommon("confirmDialog.genericError")}
+        resolveErrorMessage={(error) =>
+          resolveApiErrorMessage(error, tErrors, tCommon("confirmDialog.genericError"))
+        }
         closeLabel={tCommon("modal.close")}
         loaderLabel={tCommon("loader.loading")}
       />

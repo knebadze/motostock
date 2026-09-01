@@ -60,12 +60,12 @@ async function issueVerificationEmail(userId: number, email: string): Promise<vo
 export async function registerUser(input: RegisterInput, ipAddress: string | null) {
   const existing = await usersRepository.findByEmail(input.email);
   if (existing) {
-    throw new ApiError(409, "Email already in use");
+    throw new ApiError(409, "Email already in use", "EMAIL_ALREADY_IN_USE");
   }
 
   const userRole = await rolesRepository.findByName(ROLES.USER);
   if (!userRole) {
-    throw new ApiError(500, "Default role is not configured");
+    throw new ApiError(500, "Default role is not configured", "INTERNAL_CONFIG_ERROR");
   }
 
   const passwordHash = await hashPassword(input.password);
@@ -104,13 +104,13 @@ export async function loginUser(input: LoginInput, ipAddress: string | null) {
     // No such user, or an OAuth-only account with no password of its own —
     // same generic error either way, so we don't leak which case it is.
     await recordAuthEvent("LOGIN_FAILURE", input.email, user?.id ?? null, ipAddress);
-    throw new ApiError(401, "Invalid email or password");
+    throw new ApiError(401, "Invalid email or password", "INVALID_CREDENTIALS");
   }
 
   const valid = await comparePassword(input.password, user.passwordHash);
   if (!valid) {
     await recordAuthEvent("LOGIN_FAILURE", input.email, user.id, ipAddress);
-    throw new ApiError(401, "Invalid email or password");
+    throw new ApiError(401, "Invalid email or password", "INVALID_CREDENTIALS");
   }
 
   await recordAuthEvent("LOGIN_SUCCESS", user.email, user.id, ipAddress);
@@ -124,7 +124,7 @@ export async function verifyEmail(token: string) {
   const verificationToken = await emailVerificationTokenRepository.findByTokenHash(tokenHash);
 
   if (!verificationToken || verificationToken.usedAt || verificationToken.expiresAt < new Date()) {
-    throw new ApiError(400, "დადასტურების ბმული არასწორია ან ვადაგასულია");
+    throw new ApiError(400, "დადასტურების ბმული არასწორია ან ვადაგასულია", "VERIFICATION_LINK_INVALID");
   }
 
   await usersRepository.markEmailVerified(verificationToken.userId);
@@ -133,15 +133,15 @@ export async function verifyEmail(token: string) {
 
 export async function resendVerificationEmail(userId: number) {
   if (!isMailerConfigured()) {
-    throw new ApiError(400, "ელფოსტის გაგზავნა არ არის კონფიგურირებული");
+    throw new ApiError(400, "ელფოსტის გაგზავნა არ არის კონფიგურირებული", "MAIL_NOT_CONFIGURED");
   }
 
   const user = await usersRepository.findById(userId);
   if (!user) {
-    throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა");
+    throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა", "USER_NOT_FOUND");
   }
   if (user.emailVerifiedAt) {
-    throw new ApiError(400, "ელფოსტა უკვე დადასტურებულია");
+    throw new ApiError(400, "ელფოსტა უკვე დადასტურებულია", "EMAIL_ALREADY_VERIFIED");
   }
 
   await issueVerificationEmail(user.id, user.email);
@@ -149,7 +149,7 @@ export async function resendVerificationEmail(userId: number) {
 
 export async function requestPasswordReset(input: ForgotPasswordInput) {
   if (!isMailerConfigured()) {
-    throw new ApiError(400, "ელფოსტის გაგზავნა არ არის კონფიგურირებული");
+    throw new ApiError(400, "ელფოსტის გაგზავნა არ არის კონფიგურირებული", "MAIL_NOT_CONFIGURED");
   }
 
   const user = await usersRepository.findByEmail(input.email);
@@ -183,7 +183,7 @@ export async function resetPassword(input: ResetPasswordInput) {
   const resetToken = await passwordResetTokenRepository.findByTokenHash(tokenHash);
 
   if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
-    throw new ApiError(400, "აღდგენის ბმული არასწორია ან ვადაგასულია");
+    throw new ApiError(400, "აღდგენის ბმული არასწორია ან ვადაგასულია", "RESET_LINK_INVALID");
   }
 
   const passwordHash = await hashPassword(input.password);

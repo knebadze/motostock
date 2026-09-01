@@ -36,7 +36,7 @@ export async function submit(
   res: Response,
 ) {
   if (!req.user) {
-    throw new ApiError(401, "Not authenticated");
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
   }
 
   const item = await vehicleCatalogService.submitVehicleCatalogEntry(req.user.sub, req.body);

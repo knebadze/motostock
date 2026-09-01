@@ -5,7 +5,8 @@ import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
-import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
+import { resolveMediaUrl } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import { listMyCompare, removeFromCompare, type CompareItem } from "@/lib/api/compare";
 
@@ -41,6 +42,7 @@ export function CompareDropdown({ initialCount }: { initialCount: number }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const tHeader = useTranslations("Header");
   const t = useTranslations("Account.compare");
+  const tErrors = useTranslations("ApiErrors");
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<CompareItem[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -66,7 +68,7 @@ export function CompareDropdown({ initialCount }: { initialCount: number }) {
     try {
       setItems(await listMyCompare());
     } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : t("loadError"));
+      toast.error(resolveApiErrorMessage(error, tErrors, t("loadError")));
     } finally {
       setLoading(false);
     }
@@ -82,7 +84,7 @@ export function CompareDropdown({ initialCount }: { initialCount: number }) {
       // the next add/remove of the same item — but still worth telling the
       // user, since otherwise a removal that silently didn't take effect
       // looks identical to one that did.
-      toast.error(error instanceof ApiRequestError ? error.message : t("removeError"));
+      toast.error(resolveApiErrorMessage(error, tErrors, t("removeError")));
     }
   }
 

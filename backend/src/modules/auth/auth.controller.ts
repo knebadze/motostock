@@ -74,7 +74,7 @@ export async function verifyEmailHandler(
 
 export async function resendVerification(req: Request, res: Response) {
   if (!req.user) {
-    throw new ApiError(401, "Not authenticated");
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
   }
   await resendVerificationEmail(req.user.sub);
   res.status(200).json({ ok: true });

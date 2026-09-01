@@ -379,22 +379,22 @@ export async function resolvePromoCodeForItems(
 ): Promise<PromoCodeMatch> {
   const promo = await promoCodesRepository.findByCode(code.trim().toUpperCase());
   if (!promo || !promo.isActive) {
-    throw new ApiError(400, "პრომო კოდი არასწორია ან არააქტიურია");
+    throw new ApiError(400, "პრომო კოდი არასწორია ან არააქტიურია", "PROMO_CODE_INVALID");
   }
 
   const now = new Date();
   if (now < promo.startDate || now > promo.endDate) {
-    throw new ApiError(400, "პრომო კოდის მოქმედების ვადა ამოწურულია");
+    throw new ApiError(400, "პრომო კოდის მოქმედების ვადა ამოწურულია", "PROMO_CODE_EXPIRED");
   }
 
   if (await promoCodesRepository.hasUserUsed(promo.id, userId)) {
-    throw new ApiError(400, "თქვენ უკვე გამოიყენეთ ეს პრომო კოდი");
+    throw new ApiError(400, "თქვენ უკვე გამოიყენეთ ეს პრომო კოდი", "PROMO_CODE_ALREADY_USED");
   }
 
   if (promo.usageLimit != null) {
     const usageCount = await promoCodesRepository.countUsage(promo.id);
     if (usageCount >= promo.usageLimit) {
-      throw new ApiError(400, "პრომო კოდის გამოყენების ლიმიტი ამოწურულია");
+      throw new ApiError(400, "პრომო კოდის გამოყენების ლიმიტი ამოწურულია", "PROMO_CODE_USAGE_LIMIT_REACHED");
     }
   }
 
@@ -443,7 +443,7 @@ export async function resolvePromoCodeForItems(
   }
 
   if (matchedKeys.size === 0) {
-    throw new ApiError(400, "პრომო კოდი ამ კალათის არცერთ ნივთს არ ეხება");
+    throw new ApiError(400, "პრომო კოდი ამ კალათის არცერთ ნივთს არ ეხება", "PROMO_CODE_NOT_APPLICABLE");
   }
 
   return {

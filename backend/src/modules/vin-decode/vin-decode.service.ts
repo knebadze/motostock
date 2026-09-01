@@ -5,7 +5,7 @@ import type { DecodeVinInput } from "./vin-decode.schema.js";
 
 export async function decodeVin(input: DecodeVinInput) {
   if (!(await isVinDecodeEnabled())) {
-    throw new ApiError(400, "VIN კოდით შევსების ფუნქცია გამორთულია");
+    throw new ApiError(400, "VIN კოდით შევსების ფუნქცია გამორთულია", "VIN_DECODE_DISABLED");
   }
 
   const provider = await getVinDecodeProvider();
@@ -16,7 +16,12 @@ export async function decodeVin(input: DecodeVinInput) {
       : await decodeViaNhtsa(input.vin);
   } catch (error) {
     if (error instanceof VinDecodeApiError) {
-      throw new ApiError(502, error.message);
+      // The underlying provider's own message is dynamic/unpredictable (and
+      // often English or a raw upstream string) — not worth threading
+      // through as a translation param, so this always maps to one generic
+      // Errors.VIN_DECODE_FAILED message regardless of what the provider
+      // actually said (still logged/kept in `message` for debugging).
+      throw new ApiError(502, error.message, "VIN_DECODE_FAILED");
     }
     throw error;
   }

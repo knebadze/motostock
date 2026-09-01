@@ -10,7 +10,7 @@ import type { ChangePasswordInput } from "./users.schema.js";
 
 export async function me(req: Request, res: Response) {
   if (!req.user) {
-    throw new ApiError(401, "Not authenticated");
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
   }
 
   const user = await getUserById(req.user.sub);
@@ -32,7 +32,7 @@ export async function changePassword(
   res: Response,
 ) {
   if (!req.user) {
-    throw new ApiError(401, "Not authenticated");
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
   }
 
   await changePasswordService(req.user.sub, req.body);

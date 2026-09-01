@@ -4,13 +4,14 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { resendVerificationEmail } from "@/lib/api/auth";
-import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 
 // Shared between the checkout flow (blocks placing an order) and the
 // account dashboard (a passive reminder) — same message-plus-resend shape,
 // just a different `message` and trigger.
 export function EmailVerificationBanner({ message }: { message: string }) {
   const t = useTranslations("Auth");
+  const tErrors = useTranslations("ApiErrors");
   const [resending, setResending] = useState(false);
 
   async function handleResend() {
@@ -19,7 +20,7 @@ export function EmailVerificationBanner({ message }: { message: string }) {
       await resendVerificationEmail();
       toast.success(t("verificationResent"));
     } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : t("verificationResendError"));
+      toast.error(resolveApiErrorMessage(error, tErrors, t("verificationResendError")));
     } finally {
       setResending(false);
     }

@@ -144,10 +144,10 @@ async function addToExistingCartItem(
 async function addProductVariantToCart(owner: CartOwner, productVariantId: number, quantity: number) {
   const variant = await productVariantsRepository.findById(productVariantId);
   if (!variant) {
-    throw new ApiError(400, "მითითებული ვარიანტი არ არსებობს");
+    throw new ApiError(400, "მითითებული ვარიანტი არ არსებობს", "PRODUCT_VARIANT_NOT_FOUND");
   }
   if (variant.stockQuantity <= 0) {
-    throw new ApiError(400, "პროდუქტი არ არის მარაგში");
+    throw new ApiError(400, "პროდუქტი არ არის მარაგში", "OUT_OF_STOCK");
   }
 
   const existing = await cartRepository.findByOwnerAndProductVariant(owner, productVariantId);
@@ -182,10 +182,10 @@ async function addProductVariantToCart(owner: CartOwner, productVariantId: numbe
 async function addVehicleListingToCart(owner: CartOwner, vehicleListingId: number, quantity: number) {
   const listing = await vehicleListingRepository.findById(vehicleListingId);
   if (!listing) {
-    throw new ApiError(400, "მითითებული განცხადება არ არსებობს");
+    throw new ApiError(400, "მითითებული განცხადება არ არსებობს", "VEHICLE_LISTING_NOT_FOUND");
   }
   if (listing.stockQuantity <= 0) {
-    throw new ApiError(400, "ეს ერთეული ხელმისაწვდომი აღარ არის");
+    throw new ApiError(400, "ეს ერთეული ხელმისაწვდომი აღარ არის", "VEHICLE_LISTING_UNAVAILABLE");
   }
 
   const existing = await cartRepository.findByOwnerAndVehicleListing(owner, vehicleListingId);
@@ -216,13 +216,13 @@ export async function addCartItem(owner: CartOwner, input: CreateCartItemInput) 
 
   if (input.itemType === "PRODUCT_VARIANT") {
     if (!input.productVariantId) {
-      throw new ApiError(400, "მითითებული უნდა იყოს productVariantId");
+      throw new ApiError(400, "მითითებული უნდა იყოს productVariantId", "MISSING_REQUIRED_FIELD");
     }
     return addProductVariantToCart(owner, input.productVariantId, quantity);
   }
 
   if (!input.vehicleListingId) {
-    throw new ApiError(400, "მითითებული უნდა იყოს vehicleListingId");
+    throw new ApiError(400, "მითითებული უნდა იყოს vehicleListingId", "MISSING_REQUIRED_FIELD");
   }
   return addVehicleListingToCart(owner, input.vehicleListingId, quantity);
 }
@@ -230,14 +230,14 @@ export async function addCartItem(owner: CartOwner, input: CreateCartItemInput) 
 export async function updateCartItemQuantity(owner: CartOwner, id: number, quantity: number) {
   const existing = await cartRepository.findById(id);
   if (!existing || !ownerMatches(existing, owner)) {
-    throw new ApiError(404, "ჩანაწერი ვერ მოიძებნა");
+    throw new ApiError(404, "ჩანაწერი ვერ მოიძებნა", "CART_ITEM_NOT_FOUND");
   }
 
   const stockQuantity =
     existing.productVariant?.stockQuantity ?? existing.vehicleListing?.stockQuantity ?? 0;
   const cappedQuantity = Math.min(quantity, stockQuantity, MAX_QUANTITY);
   if (cappedQuantity <= 0) {
-    throw new ApiError(400, "მარაგში საკმარისი რაოდენობა აღარ არის");
+    throw new ApiError(400, "მარაგში საკმარისი რაოდენობა აღარ არის", "INSUFFICIENT_STOCK");
   }
 
   const row = await cartRepository.updateQuantity(id, cappedQuantity);
@@ -247,7 +247,7 @@ export async function updateCartItemQuantity(owner: CartOwner, id: number, quant
 export async function removeCartItem(owner: CartOwner, id: number) {
   const existing = await cartRepository.findById(id);
   if (!existing || !ownerMatches(existing, owner)) {
-    throw new ApiError(404, "ჩანაწერი ვერ მოიძებნა");
+    throw new ApiError(404, "ჩანაწერი ვერ მოიძებნა", "CART_ITEM_NOT_FOUND");
   }
 
   await cartRepository.delete(id);

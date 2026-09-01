@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import {
   addToCompare,
   getCompareStatus,
@@ -43,6 +43,7 @@ export function CompareButton({
   onChange?: (compared: boolean) => void;
 }) {
   const t = useTranslations("Common.compareButton");
+  const tErrors = useTranslations("ApiErrors");
   const resolvedLabelAdd = labelAdd ?? t("add");
   const resolvedLabelAdded = labelAdded ?? t("added");
   // The compare row's own id (needed for DELETE) — not just a boolean —
@@ -101,11 +102,7 @@ export function CompareButton({
         onChange?.(true);
       }
     } catch (error) {
-      if (error instanceof ApiRequestError && error.status === 400) {
-        toast.error(error.message);
-        return;
-      }
-      toast.error(t("error"));
+      toast.error(resolveApiErrorMessage(error, tErrors, t("error")));
     } finally {
       setLoading(false);
     }

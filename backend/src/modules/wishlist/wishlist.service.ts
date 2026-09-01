@@ -40,7 +40,7 @@ export async function listMyWishlist(owner: WishlistOwner) {
 async function addProductToWishlist(owner: WishlistOwner, productId: number) {
   const product = await productsRepository.findById(productId);
   if (!product) {
-    throw new ApiError(400, "მითითებული პროდუქტი არ არსებობს");
+    throw new ApiError(400, "მითითებული პროდუქტი არ არსებობს", "PRODUCT_NOT_FOUND");
   }
 
   const existing = await wishlistRepository.findByOwnerAndProduct(owner, productId);
@@ -67,7 +67,7 @@ async function addProductToWishlist(owner: WishlistOwner, productId: number) {
 async function addVehicleListingToWishlist(owner: WishlistOwner, vehicleListingId: number) {
   const listing = await vehicleListingRepository.findById(vehicleListingId);
   if (!listing) {
-    throw new ApiError(400, "მითითებული განცხადება არ არსებობს");
+    throw new ApiError(400, "მითითებული განცხადება არ არსებობს", "VEHICLE_LISTING_NOT_FOUND");
   }
 
   const existing = await wishlistRepository.findByOwnerAndVehicleListing(owner, vehicleListingId);
@@ -94,13 +94,13 @@ async function addVehicleListingToWishlist(owner: WishlistOwner, vehicleListingI
 export async function addWishlistItem(owner: WishlistOwner, input: CreateWishlistItemInput) {
   if (input.itemType === "PRODUCT") {
     if (!input.productId) {
-      throw new ApiError(400, "მითითებული უნდა იყოს productId");
+      throw new ApiError(400, "მითითებული უნდა იყოს productId", "MISSING_REQUIRED_FIELD");
     }
     return addProductToWishlist(owner, input.productId);
   }
 
   if (!input.vehicleListingId) {
-    throw new ApiError(400, "მითითებული უნდა იყოს vehicleListingId");
+    throw new ApiError(400, "მითითებული უნდა იყოს vehicleListingId", "MISSING_REQUIRED_FIELD");
   }
   return addVehicleListingToWishlist(owner, input.vehicleListingId);
 }
@@ -108,7 +108,7 @@ export async function addWishlistItem(owner: WishlistOwner, input: CreateWishlis
 export async function removeWishlistItem(owner: WishlistOwner, id: number) {
   const existing = await wishlistRepository.findById(id);
   if (!existing || !ownerMatches(existing, owner)) {
-    throw new ApiError(404, "ჩანაწერი ვერ მოიძებნა");
+    throw new ApiError(404, "ჩანაწერი ვერ მოიძებნა", "WISHLIST_ITEM_NOT_FOUND");
   }
 
   await wishlistRepository.delete(id);

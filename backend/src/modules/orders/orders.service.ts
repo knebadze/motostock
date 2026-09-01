@@ -68,7 +68,11 @@ async function resolveInitialOrderStatusId(finaConfirmed: boolean): Promise<numb
   const key = finaConfirmed ? "CONFIRMED" : "PENDING";
   const status = await orderStatusesRepository.findByKey(key);
   if (!status) {
-    throw new ApiError(500, `შეკვეთის საწყისი სტატუსი ("${key}") ვერ მოიძებნა — გაუშვით prisma/seed.ts`);
+    throw new ApiError(
+      500,
+      `შეკვეთის საწყისი სტატუსი ("${key}") ვერ მოიძებნა — გაუშვით prisma/seed.ts`,
+      "INTERNAL_CONFIG_ERROR",
+    );
   }
   return status.id;
 }
@@ -79,7 +83,7 @@ async function resolveInitialOrderStatusId(finaConfirmed: boolean): Promise<numb
 async function resolveSoldStatusId(): Promise<number> {
   const status = await lookupsRepository.findByKey(getLookupDelegate("listing-statuses"), "SOLD");
   if (!status) {
-    throw new ApiError(500, "„გაყიდულია“ სტატუსი ვერ მოიძებნა — გაუშვით prisma/seed.ts");
+    throw new ApiError(500, "„გაყიდულია“ სტატუსი ვერ მოიძებნა — გაუშვით prisma/seed.ts", "INTERNAL_CONFIG_ERROR");
   }
   return status.id;
 }
@@ -89,7 +93,7 @@ async function resolveSoldStatusId(): Promise<number> {
 async function resolveAvailableStatusId(): Promise<number> {
   const status = await lookupsRepository.findByKey(getLookupDelegate("listing-statuses"), "AVAILABLE");
   if (!status) {
-    throw new ApiError(500, "„ხელმისაწვდომია“ სტატუსი ვერ მოიძებნა — გაუშვით prisma/seed.ts");
+    throw new ApiError(500, "„ხელმისაწვდომია“ სტატუსი ვერ მოიძებნა — გაუშვით prisma/seed.ts", "INTERNAL_CONFIG_ERROR");
   }
   return status.id;
 }
@@ -174,7 +178,7 @@ function buildBreakdownItem(row: CartRow, unitPrice: number): BreakdownItem {
 export async function computeCheckoutTotals(userId: number, promoCodeInput?: string): Promise<CheckoutBreakdown> {
   const initialRows = await cartRepository.findByOwner({ userId });
   if (initialRows.length === 0) {
-    throw new ApiError(400, "კალათა ცარიელია");
+    throw new ApiError(400, "კალათა ცარიელია", "CART_EMPTY");
   }
 
   // Live stock refresh, scoped to exactly what's in this cart — pulls fresh
@@ -288,7 +292,7 @@ async function resolveDelivery(
 
   const address = addressId ? await addressesRepository.findById(addressId) : null;
   if (!address || address.userId !== userId) {
-    throw new ApiError(404, "მისამართი ვერ მოიძებნა");
+    throw new ApiError(404, "მისამართი ვერ მოიძებნა", "ADDRESS_NOT_FOUND");
   }
 
   const speed: OrderDeliverySpeed = deliverySpeed === "EXPRESS" ? "EXPRESS" : "STANDARD";
@@ -334,7 +338,7 @@ async function resolveBank(
 
   const bank = bankId ? await banksRepository.findById(bankId) : null;
   if (!bank || !bank.isActive) {
-    throw new ApiError(400, "მითითებული ბანკი ვერ მოიძებნა ან აღარ არის აქტიური");
+    throw new ApiError(400, "მითითებული ბანკი ვერ მოიძებნა ან აღარ არის აქტიური", "BANK_NOT_FOUND");
   }
   return bank.id;
 }
@@ -385,10 +389,10 @@ function toBreakdownResponse(breakdown: CheckoutBreakdown, delivery: DeliveryRes
 async function assertEmailVerified(userId: number) {
   const user = await usersRepository.findById(userId);
   if (!user) {
-    throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა");
+    throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა", "USER_NOT_FOUND");
   }
   if (!user.emailVerifiedAt) {
-    throw new ApiError(403, "შეკვეთის გასაფორმებლად საჭიროა ელფოსტის დადასტურება");
+    throw new ApiError(403, "შეკვეთის გასაფორმებლად საჭიროა ელფოსტის დადასტურება", "EMAIL_VERIFICATION_REQUIRED");
   }
   return user;
 }
@@ -474,7 +478,17 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
 
   for (const item of breakdown.items) {
     if (item.quantity > item.stockQuantity) {
-      throw new ApiError(409, `"${item.itemNameKa}" — მარაგში საკმარისი რაოდენობა აღარ არის`);
+      // All three name snapshots passed as params (not just itemNameKa) —
+      // the backend has no request-locale awareness (see ApiError.ts), so
+      // it can't pick the "right" one itself; each Errors.*.json locale's
+      // INSUFFICIENT_STOCK_ITEM template references whichever of
+      // itemNameKa/itemNameEn/itemNameRu matches its own language instead.
+      throw new ApiError(
+        409,
+        `"${item.itemNameKa}" — მარაგში საკმარისი რაოდენობა აღარ არის`,
+        "INSUFFICIENT_STOCK_ITEM",
+        { itemNameKa: item.itemNameKa, itemNameEn: item.itemNameEn, itemNameRu: item.itemNameRu },
+      );
     }
   }
 
@@ -562,7 +576,7 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
     }
   }
 
-  throw new ApiError(500, "შეკვეთის კოდის გენერაცია ვერ მოხერხდა");
+  throw new ApiError(500, "შეკვეთის კოდის გენერაცია ვერ მოხერხდა", "INTERNAL_CONFIG_ERROR");
 }
 
 const MS_PER_HOUR = 60 * 60 * 1000;
@@ -614,7 +628,7 @@ export async function listMyOrders(userId: number) {
 export async function getMyOrder(userId: number, id: number) {
   const row = await ordersRepository.findById(id);
   if (!row || row.userId !== userId) {
-    throw new ApiError(404, "შეკვეთა ვერ მოიძებნა");
+    throw new ApiError(404, "შეკვეთა ვერ მოიძებნა", "ORDER_NOT_FOUND");
   }
   return toOrderResponse(row);
 }
@@ -669,7 +683,7 @@ async function reorderAddedQuantity(
 export async function reorderOrder(userId: number, id: number) {
   const order = await ordersRepository.findById(id);
   if (!order || order.userId !== userId) {
-    throw new ApiError(404, "შეკვეთა ვერ მოიძებნა");
+    throw new ApiError(404, "შეკვეთა ვერ მოიძებნა", "ORDER_NOT_FOUND");
   }
 
   const owner: CartOwner = { userId };

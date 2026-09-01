@@ -57,7 +57,7 @@ function toResponse(row: ServiceRecordRow) {
 async function assertMechanicExists(mechanicId: number) {
   const mechanic = await teamMembersRepository.findById(mechanicId);
   if (!mechanic) {
-    throw new ApiError(404, "გუნდის წევრი ვერ მოიძებნა");
+    throw new ApiError(404, "გუნდის წევრი ვერ მოიძებნა", "MECHANIC_NOT_FOUND");
   }
 }
 
@@ -72,10 +72,10 @@ export async function listServiceRecordsForVehicle(
 ) {
   const garageVehicle = await garageRepository.findById(garageVehicleId);
   if (!garageVehicle) {
-    throw new ApiError(404, "ტრანსპორტი ვერ მოიძებნა");
+    throw new ApiError(404, "ტრანსპორტი ვერ მოიძებნა", "GARAGE_VEHICLE_NOT_FOUND");
   }
   if (!isAdmin && garageVehicle.userId !== requestingUserId) {
-    throw new ApiError(403, "წვდომა აკრძალულია");
+    throw new ApiError(403, "წვდომა აკრძალულია", "ACCESS_FORBIDDEN");
   }
 
   const rows = await serviceRecordsRepository.findByGarageVehicleId(garageVehicleId);
@@ -85,13 +85,13 @@ export async function listServiceRecordsForVehicle(
 export async function createServiceRecord(input: CreateServiceRecordInput, recordedByUserId: number) {
   const garageVehicle = await garageRepository.findById(input.garageVehicleId);
   if (!garageVehicle) {
-    throw new ApiError(404, "ტრანსპორტი ვერ მოიძებნა");
+    throw new ApiError(404, "ტრანსპორტი ვერ მოიძებნა", "GARAGE_VEHICLE_NOT_FOUND");
   }
 
   if (input.serviceTypeId != null) {
     const serviceType = await serviceTypesRepository.findById(input.serviceTypeId);
     if (!serviceType) {
-      throw new ApiError(404, "სერვისის ტიპი ვერ მოიძებნა");
+      throw new ApiError(404, "სერვისის ტიპი ვერ მოიძებნა", "SERVICE_TYPE_NOT_FOUND");
     }
   }
   if (input.mechanicId != null) {

@@ -42,7 +42,7 @@ export async function listMyCompare(owner: CompareOwner) {
 async function addProductToCompare(owner: CompareOwner, productId: number) {
   const product = await productsRepository.findById(productId);
   if (!product) {
-    throw new ApiError(400, "მითითებული პროდუქტი არ არსებობს");
+    throw new ApiError(400, "მითითებული პროდუქტი არ არსებობს", "PRODUCT_NOT_FOUND");
   }
 
   const existing = await compareRepository.findByOwnerAndProduct(owner, productId);
@@ -70,7 +70,7 @@ async function addProductToCompare(owner: CompareOwner, productId: number) {
 async function addVehicleListingToCompare(owner: CompareOwner, vehicleListingId: number) {
   const listing = await vehicleListingRepository.findById(vehicleListingId);
   if (!listing) {
-    throw new ApiError(400, "მითითებული განცხადება არ არსებობს");
+    throw new ApiError(400, "მითითებული განცხადება არ არსებობს", "VEHICLE_LISTING_NOT_FOUND");
   }
 
   const existing = await compareRepository.findByOwnerAndVehicleListing(owner, vehicleListingId);
@@ -98,20 +98,25 @@ async function addVehicleListingToCompare(owner: CompareOwner, vehicleListingId:
 async function assertUnderLimit(owner: CompareOwner) {
   const count = await compareRepository.countByOwner(owner);
   if (count >= MAX_COMPARE_ITEMS) {
-    throw new ApiError(400, `შედარებაში ერთდროულად მაქსიმუმ ${MAX_COMPARE_ITEMS} ერთეულის დამატებაა შესაძლებელი`);
+    throw new ApiError(
+      400,
+      `შედარებაში ერთდროულად მაქსიმუმ ${MAX_COMPARE_ITEMS} ერთეულის დამატებაა შესაძლებელი`,
+      "COMPARE_LIMIT_REACHED",
+      { limit: MAX_COMPARE_ITEMS },
+    );
   }
 }
 
 export async function addCompareItem(owner: CompareOwner, input: CreateCompareItemInput) {
   if (input.itemType === "PRODUCT") {
     if (!input.productId) {
-      throw new ApiError(400, "მითითებული უნდა იყოს productId");
+      throw new ApiError(400, "მითითებული უნდა იყოს productId", "MISSING_REQUIRED_FIELD");
     }
     return addProductToCompare(owner, input.productId);
   }
 
   if (!input.vehicleListingId) {
-    throw new ApiError(400, "მითითებული უნდა იყოს vehicleListingId");
+    throw new ApiError(400, "მითითებული უნდა იყოს vehicleListingId", "MISSING_REQUIRED_FIELD");
   }
   return addVehicleListingToCompare(owner, input.vehicleListingId);
 }
@@ -119,7 +124,7 @@ export async function addCompareItem(owner: CompareOwner, input: CreateCompareIt
 export async function removeCompareItem(owner: CompareOwner, id: number) {
   const existing = await compareRepository.findById(id);
   if (!existing || !ownerMatches(existing, owner)) {
-    throw new ApiError(404, "ჩანაწერი ვერ მოიძებნა");
+    throw new ApiError(404, "ჩანაწერი ვერ მოიძებნა", "COMPARE_ITEM_NOT_FOUND");
   }
 
   await compareRepository.delete(id);

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { loginUser } from "@/lib/api/auth";
 import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { OAuthButtons } from "@/components/shared/OAuthButtons";
 
 // The ?redirect= param is attacker-controlled (a crafted /login?redirect=...
@@ -19,6 +20,7 @@ function resolveRedirectTarget(value: string | null): string {
 
 export function LoginForm() {
   const t = useTranslations("Auth");
+  const tErrors = useTranslations("ApiErrors");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -58,11 +60,9 @@ export function LoginForm() {
       // i18n for this yet) — map the one status code we know about to a
       // localized message instead of surfacing raw backend text.
       const message =
-        error instanceof ApiRequestError
-          ? error.status === 401
-            ? t("invalidCredentials")
-            : error.message
-          : t("loginError");
+        error instanceof ApiRequestError && error.status === 401
+          ? t("invalidCredentials")
+          : resolveApiErrorMessage(error, tErrors, t("loginError"));
       toast.error(message);
     } finally {
       setLoading(false);

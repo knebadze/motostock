@@ -4,10 +4,11 @@ import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { subscribeToNewsletter } from "@/lib/api/newsletter";
-import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 
 export function NewsletterSignupForm() {
   const t = useTranslations("Newsletter");
+  const tErrors = useTranslations("ApiErrors");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
@@ -19,7 +20,7 @@ export function NewsletterSignupForm() {
       await subscribeToNewsletter(email);
       setSubscribed(true);
     } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : t("subscribeError"));
+      toast.error(resolveApiErrorMessage(error, tErrors, t("subscribeError")));
     } finally {
       setLoading(false);
     }

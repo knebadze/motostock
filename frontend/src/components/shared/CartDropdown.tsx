@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
-import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import { getCartItemDisplay, recomputeCart } from "@/lib/cart-item-display";
 import { getMyCart, removeFromCart, updateCartItemQuantity, type Cart, type CartItem } from "@/lib/api/cart";
@@ -17,6 +17,7 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const tHeader = useTranslations("Header");
   const tCart = useTranslations("Cart");
+  const tErrors = useTranslations("ApiErrors");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [cart, setCart] = useState<Cart | null>(null);
@@ -44,7 +45,7 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
     try {
       setCart(await getMyCart());
     } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : tCart("loadError"));
+      toast.error(resolveApiErrorMessage(error, tErrors, tCart("loadError")));
     } finally {
       setLoading(false);
     }
@@ -68,7 +69,7 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
       }
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : tCart("updateError"));
+      toast.error(resolveApiErrorMessage(error, tErrors, tCart("updateError")));
     } finally {
       setPendingId(null);
     }

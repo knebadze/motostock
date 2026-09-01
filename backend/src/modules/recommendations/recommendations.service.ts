@@ -30,7 +30,7 @@ function reorderByIds<T extends { id: number }>(rows: T[], ids: number[]): T[] {
 async function assertProductExists(productId: number) {
   const product = await productsRepository.findById(productId);
   if (!product) {
-    throw new ApiError(404, "პროდუქტი ვერ მოიძებნა");
+    throw new ApiError(404, "პროდუქტი ვერ მოიძებნა", "PRODUCT_NOT_FOUND");
   }
   return product;
 }

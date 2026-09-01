@@ -9,7 +9,7 @@ import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { createMyAddress, updateMyAddress, type Address } from "@/lib/api/addresses";
 import type { LookupItem } from "@/lib/api/lookups";
-import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { createAddressFormSchema } from "@/lib/validation/address";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
@@ -29,6 +29,7 @@ export function AddressFormModal({
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Account.address");
   const tCommon = useTranslations("Common");
+  const tErrors = useTranslations("ApiErrors");
   const isEditing = initialAddress !== null;
   const [phone, setPhone] = useState(initialAddress?.phone ?? "");
   const [cityId, setCityId] = useState(initialAddress ? String(initialAddress.city.id) : "");
@@ -70,8 +71,7 @@ export function AddressFormModal({
       onSaved(saved);
       onClose();
     } catch (error) {
-      const message = error instanceof ApiRequestError ? error.message : t("error");
-      toast.error(message);
+      toast.error(resolveApiErrorMessage(error, tErrors, t("error")));
     } finally {
       setLoading(false);
     }

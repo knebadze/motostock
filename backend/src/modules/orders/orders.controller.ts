@@ -8,7 +8,7 @@ import type { CheckoutInput, ListOrdersQuery, UpdateOrderStatusInput } from "./o
 // handler here runs — this is just the narrow structural read of it.
 function requireUserId(req: Pick<Request, "user">): number {
   if (!req.user) {
-    throw new ApiError(401, "Not authenticated");
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
   }
   return req.user.sub;
 }

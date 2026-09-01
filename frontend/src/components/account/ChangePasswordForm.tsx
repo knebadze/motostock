@@ -4,10 +4,11 @@ import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { changePassword } from "@/lib/api/auth";
-import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 
 export function ChangePasswordForm() {
   const t = useTranslations("Account.changePassword");
+  const tErrors = useTranslations("ApiErrors");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -29,8 +30,7 @@ export function ChangePasswordForm() {
       setNewPassword("");
       setConfirmPassword("");
     } catch (error) {
-      const message = error instanceof ApiRequestError ? error.message : t("error");
-      toast.error(message);
+      toast.error(resolveApiErrorMessage(error, tErrors, t("error")));
     } finally {
       setLoading(false);
     }

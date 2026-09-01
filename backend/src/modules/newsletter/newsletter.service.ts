@@ -57,7 +57,7 @@ async function sendConfirmationEmail(email: string, rawToken: string) {
 //   - CONFIRMED -> no-op
 export async function subscribe(email: string): Promise<void> {
   if (!isMailerConfigured()) {
-    throw new ApiError(400, "ელფოსტის გაგზავნა არ არის კონფიგურირებული");
+    throw new ApiError(400, "ელფოსტის გაგზავნა არ არის კონფიგურირებული", "MAIL_NOT_CONFIGURED");
   }
 
   const existing = await newsletterRepository.findByEmail(email);
@@ -84,7 +84,7 @@ export async function subscribe(email: string): Promise<void> {
 export async function confirmSubscription(token: string): Promise<void> {
   const subscriber = await newsletterRepository.findByConfirmTokenHash(hashToken(token));
   if (!subscriber) {
-    throw new ApiError(400, "დადასტურების ბმული არასწორია ან უკვე გამოყენებულია");
+    throw new ApiError(400, "დადასტურების ბმული არასწორია ან უკვე გამოყენებულია", "NEWSLETTER_CONFIRM_LINK_INVALID");
   }
 
   await newsletterRepository.confirm(subscriber.id);
@@ -96,7 +96,7 @@ export async function confirmSubscription(token: string): Promise<void> {
 export async function unsubscribe(token: string): Promise<void> {
   const subscriber = await newsletterRepository.findByUnsubscribeToken(token);
   if (!subscriber) {
-    throw new ApiError(400, "გამოწერის გაუქმების ბმული არასწორია");
+    throw new ApiError(400, "გამოწერის გაუქმების ბმული არასწორია", "NEWSLETTER_UNSUBSCRIBE_LINK_INVALID");
   }
 
   if (subscriber.status !== "UNSUBSCRIBED") {

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Select } from "@/components/shared/Select";
 import { ManualVehicleSelect } from "@/components/home/ManualVehicleSelect";
 import { checkProductsCompatibility } from "@/lib/api/products";
-import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 import type { GarageVehicle, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 import type { LocalizedString } from "@/lib/api/categories";
@@ -30,6 +30,7 @@ export function CompatibilityChecker({
   const t = useTranslations("Checkout");
   const tHome = useTranslations("Home");
   const tSelect = useTranslations("Common.select");
+  const tErrors = useTranslations("ApiErrors");
 
   const garageSelectId = useId();
   const [garageVehicleId, setGarageVehicleId] = useState("");
@@ -108,7 +109,7 @@ export function CompatibilityChecker({
       );
       setCompatibleIds(new Set(ids));
     } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : t("compatibilityError"));
+      toast.error(resolveApiErrorMessage(error, tErrors, t("compatibilityError")));
     } finally {
       setChecking(false);
     }

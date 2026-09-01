@@ -7,9 +7,11 @@ import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import { resetPassword } from "@/lib/api/auth";
 import { ApiRequestError } from "@/lib/api/client";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 
 export function ResetPasswordForm() {
   const t = useTranslations("Auth");
+  const tErrors = useTranslations("ApiErrors");
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -47,11 +49,9 @@ export function ResetPasswordForm() {
       router.refresh();
     } catch (error) {
       const message =
-        error instanceof ApiRequestError
-          ? error.status === 400
-            ? t("resetPasswordInvalidToken")
-            : error.message
-          : t("forgotPasswordError");
+        error instanceof ApiRequestError && error.status === 400
+          ? t("resetPasswordInvalidToken")
+          : resolveApiErrorMessage(error, tErrors, t("forgotPasswordError"));
       toast.error(message);
     } finally {
       setLoading(false);

@@ -5,7 +5,7 @@ import type { CreateGarageVehicleInput, UpdateGarageVehicleInput } from "./garag
 
 export async function list(req: Request, res: Response) {
   if (!req.user) {
-    throw new ApiError(401, "Not authenticated");
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
   }
 
   const items = await garageService.listMyGarage(req.user.sub);
@@ -17,7 +17,7 @@ export async function create(
   res: Response,
 ) {
   if (!req.user) {
-    throw new ApiError(401, "Not authenticated");
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
   }
 
   const item = await garageService.createGarageVehicle(req.user.sub, req.body);
@@ -29,7 +29,7 @@ export async function update(
   res: Response,
 ) {
   if (!req.user) {
-    throw new ApiError(401, "Not authenticated");
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
   }
 
   const item = await garageService.updateGarageVehicle(
@@ -42,10 +42,10 @@ export async function update(
 
 export async function uploadImage(req: Request<{ id: string }>, res: Response) {
   if (!req.user) {
-    throw new ApiError(401, "Not authenticated");
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
   }
   if (!req.file) {
-    throw new ApiError(400, "სურათი არ არის ატვირთული");
+    throw new ApiError(400, "სურათი არ არის ატვირთული", "IMAGE_NOT_UPLOADED");
   }
 
   const item = await garageService.setGarageVehicleImage(
@@ -58,7 +58,7 @@ export async function uploadImage(req: Request<{ id: string }>, res: Response) {
 
 export async function remove(req: Request, res: Response) {
   if (!req.user) {
-    throw new ApiError(401, "Not authenticated");
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
   }
 
   await garageService.deleteGarageVehicle(req.user.sub, Number(req.params.id));

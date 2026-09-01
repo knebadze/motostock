@@ -24,23 +24,39 @@ export function resolveMediaUrl(path: string | null): string | null {
 type ApiErrorPayload = {
   error: {
     message: string;
+    code?: string;
+    params?: Record<string, string | number>;
     details?: { path: string; message: string }[];
   };
 };
 
 export class ApiRequestError extends Error {
   status?: number;
+  // Stable identifier (e.g. "OUT_OF_STOCK") the backend attaches to
+  // customer-facing errors — see lib/api-errors.ts's
+  // resolveApiErrorMessage, which maps this to a translated message instead
+  // of `message` (always Georgian, backend has no locale awareness).
+  // Undefined for network/parse failures that never reached the backend,
+  // and for older/admin-only errors that don't set one yet.
+  code?: string;
+  // ICU placeholder values for the translated message (e.g. { limit: 4 }) —
+  // only meaningful alongside `code`.
+  params?: Record<string, string | number>;
   details?: { path: string; message: string }[];
 
   constructor(
     message: string,
     status?: number,
     details?: { path: string; message: string }[],
+    code?: string,
+    params?: Record<string, string | number>,
   ) {
     super(message);
     this.name = "ApiRequestError";
     this.status = status;
     this.details = details;
+    this.code = code;
+    this.params = params;
   }
 }
 
@@ -50,6 +66,10 @@ apiClient.interceptors.response.use(
     const message =
       error.response?.data?.error?.message ?? error.message ?? "Unexpected error";
     const details = error.response?.data?.error?.details;
-    return Promise.reject(new ApiRequestError(message, error.response?.status, details));
+    const code = error.response?.data?.error?.code;
+    const params = error.response?.data?.error?.params;
+    return Promise.reject(
+      new ApiRequestError(message, error.response?.status, details, code, params),
+    );
   },
 );
