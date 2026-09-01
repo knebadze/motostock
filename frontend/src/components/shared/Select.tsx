@@ -24,6 +24,12 @@ type BaseProps = {
   // Georgian defaults below match the admin panel's (deliberately
   // untranslated) copy — storefront callers pass next-intl-translated
   // overrides so EN/RU visitors don't see Georgian leak through.
+  // clearLabel only ever renders when `multiple` is true (see the "×" button
+  // below) — no storefront caller uses `multiple` yet, so this default is
+  // currently unreachable there. The first storefront multi-select MUST
+  // pass a translated clearLabel (e.g. tCommon("select.clear")), the same
+  // way every other storefront Select call already overrides placeholder/
+  // searchPlaceholder/emptyLabel.
   clearLabel?: string;
   searchPlaceholder?: string;
   emptyLabel?: string;

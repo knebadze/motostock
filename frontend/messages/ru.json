@@ -619,6 +619,7 @@
   },
   "Common": {
     "genericError": "Произошла ошибка, попробуйте снова",
+    "breadcrumbLabel": "Хлебные крошки",
     "select": {
       "placeholder": "Выбрать",
       "clear": "Очистить",

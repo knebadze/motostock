@@ -20,6 +20,7 @@ export function Breadcrumb({
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const tNav = useTranslations("Nav");
+  const tCommon = useTranslations("Common");
   const onDarkBackground = variant === "dark";
 
   const linkClassName = onDarkBackground
@@ -29,7 +30,7 @@ export function Breadcrumb({
   const separatorClassName = onDarkBackground ? "text-white/50" : "text-muted-foreground/60";
 
   return (
-    <nav aria-label="Breadcrumb">
+    <nav aria-label={tCommon("breadcrumbLabel")}>
       <ol className="flex flex-wrap items-center justify-center gap-1.5 text-sm">
         <li>
           <Link href="/" className={linkClassName}>

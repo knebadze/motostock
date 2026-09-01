@@ -619,6 +619,7 @@
   },
   "Common": {
     "genericError": "Something went wrong, please try again",
+    "breadcrumbLabel": "Breadcrumb",
     "select": {
       "placeholder": "Select",
       "clear": "Clear",

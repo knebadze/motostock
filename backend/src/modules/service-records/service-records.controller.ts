@@ -10,7 +10,7 @@ import type {
 
 export async function list(req: Request, res: Response) {
   if (!req.user) {
-    throw new ApiError(401, "ავტორიზაცია საჭიროა");
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
   }
   // Cast, not a generic on the handler signature — a query schema whose
   // only field is required (not optional) isn't structurally assignable
@@ -30,7 +30,7 @@ export async function create(
   res: Response,
 ) {
   if (!req.user) {
-    throw new ApiError(401, "ავტორიზაცია საჭიროა");
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
   }
   const item = await serviceRecordsService.createServiceRecord(req.body, req.user.sub);
   res.status(201).json({ item });

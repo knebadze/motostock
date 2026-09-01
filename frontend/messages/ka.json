@@ -619,6 +619,7 @@
   },
   "Common": {
     "genericError": "დაფიქსირდა შეცდომა, სცადეთ თავიდან",
+    "breadcrumbLabel": "სანავიგაციო ჯაჭვი",
     "select": {
       "placeholder": "აირჩიეთ",
       "clear": "გაწმენდა",
