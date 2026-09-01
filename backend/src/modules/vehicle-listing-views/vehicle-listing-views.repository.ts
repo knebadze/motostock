@@ -7,10 +7,6 @@ import type { ProductViewOwner } from "../product-views/product-views.repository
 // byte-identical duplicate type here.
 export type VehicleListingViewOwner = ProductViewOwner;
 
-function ownerWhere(owner: VehicleListingViewOwner) {
-  return "userId" in owner ? { userId: owner.userId } : { guestId: owner.guestId };
-}
-
 export const vehicleListingViewsRepository = {
   // Upsert, not insert — one row per (owner, listing), see
   // vehicle-listing-view.prisma.
@@ -29,25 +25,29 @@ export const vehicleListingViewsRepository = {
     });
   },
 
-  findByOwnerAndVehicleListing(owner: VehicleListingViewOwner, vehicleListingId: number) {
-    return prisma.vehicleListingView.findFirst({ where: { ...ownerWhere(owner), vehicleListingId } });
-  },
-
   // Merge-on-login support (see vehicle-listing-views.service.ts
   // mergeGuestVehicleListingViewsIntoUser).
   findByGuestId(guestId: string) {
     return prisma.vehicleListingView.findMany({ where: { guestId } });
   },
 
-  reassignToUser(id: number, userId: number) {
-    return prisma.vehicleListingView.update({ where: { id }, data: { userId, guestId: null } });
-  },
+  // Atomically folds one guest view row into `userId`'s views — same
+  // claim-then-upsert reasoning as product-views.repository.ts's
+  // mergeGuestItem (see there for the full explanation).
+  async mergeGuestItem(
+    view: { id: number; vehicleListingId: number; viewCount: number },
+    guestId: string,
+    userId: number,
+  ) {
+    await prisma.$transaction(async (tx) => {
+      const claimed = await tx.vehicleListingView.deleteMany({ where: { id: view.id, guestId } });
+      if (claimed.count === 0) return;
 
-  incrementViewCount(id: number, by: number) {
-    return prisma.vehicleListingView.update({ where: { id }, data: { viewCount: { increment: by } } });
-  },
-
-  delete(id: number) {
-    return prisma.vehicleListingView.delete({ where: { id } });
+      await tx.vehicleListingView.upsert({
+        where: { userId_vehicleListingId: { userId, vehicleListingId: view.vehicleListingId } },
+        create: { userId, vehicleListingId: view.vehicleListingId, viewCount: view.viewCount },
+        update: { viewCount: { increment: view.viewCount } },
+      });
+    });
   },
 };

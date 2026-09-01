@@ -95,10 +95,6 @@ export const cartRepository = {
     return prisma.cartItem.update({ where: { id }, data: { quantity }, include: cartItemInclude });
   },
 
-  incrementQuantity(id: number, by: number) {
-    return prisma.cartItem.update({ where: { id }, data: { quantity: { increment: by } } });
-  },
-
   delete(id: number) {
     return prisma.cartItem.delete({ where: { id } });
   },
@@ -113,7 +109,57 @@ export const cartRepository = {
     return prisma.cartItem.findMany({ where: { guestId } });
   },
 
-  reassignToUser(id: number, userId: number) {
-    return prisma.cartItem.update({ where: { id }, data: { userId, guestId: null } });
+  // Atomically folds one guest cart row into `userId`'s cart. `deleteMany`
+  // "claims" the guest row — it only deletes (and returns count 1) if the
+  // row still exists with this exact id+guestId — so a concurrent merge of
+  // the same guest cookie (e.g. a double-tab login racing the same request
+  // twice) that already claimed this row sees count 0 and no-ops, instead
+  // of both callers incrementing the user's cart or the second one crashing
+  // on an already-deleted row (P2025). Whichever caller wins the claim then
+  // upserts into the user's cart — Postgres executes this as a native
+  // INSERT ... ON CONFLICT DO UPDATE, so it's also safe against a
+  // *different* concurrent write (e.g. the user adding the same item from
+  // another tab) landing on the same target row. Wrapped in one transaction
+  // so a crash between the claim and the upsert can't silently drop the
+  // item — either both happen or neither does.
+  async mergeGuestItem(
+    item: {
+      id: number;
+      itemType: CartItemType;
+      productVariantId: number | null;
+      vehicleListingId: number | null;
+      quantity: number;
+    },
+    guestId: string,
+    userId: number,
+  ) {
+    await prisma.$transaction(async (tx) => {
+      const claimed = await tx.cartItem.deleteMany({ where: { id: item.id, guestId } });
+      if (claimed.count === 0) return;
+
+      if (item.productVariantId != null) {
+        await tx.cartItem.upsert({
+          where: { userId_productVariantId: { userId, productVariantId: item.productVariantId } },
+          create: {
+            itemType: item.itemType,
+            userId,
+            productVariantId: item.productVariantId,
+            quantity: item.quantity,
+          },
+          update: { quantity: { increment: item.quantity } },
+        });
+      } else if (item.vehicleListingId != null) {
+        await tx.cartItem.upsert({
+          where: { userId_vehicleListingId: { userId, vehicleListingId: item.vehicleListingId } },
+          create: {
+            itemType: item.itemType,
+            userId,
+            vehicleListingId: item.vehicleListingId,
+            quantity: item.quantity,
+          },
+          update: { quantity: { increment: item.quantity } },
+        });
+      }
+    });
   },
 };

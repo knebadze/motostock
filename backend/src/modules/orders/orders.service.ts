@@ -1,6 +1,7 @@
 import { randomInt } from "node:crypto";
 import { ApiError } from "../../lib/ApiError.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
+import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import {
   Prisma,
   type CartItemType,
@@ -93,36 +94,8 @@ async function resolveAvailableStatusId(): Promise<number> {
   return status.id;
 }
 
-// This project's Prisma client runs on a driver adapter (@prisma/adapter-pg),
-// whose P2002 errors don't populate the classic `meta.target: string[]`
-// shape at all — the field name only shows up inside
-// `meta.driverAdapterError.cause.originalMessage`, quoting Postgres's own
-// constraint name (e.g. `"Order_idempotencyKey_key"`), which follows
-// Prisma's default `{Model}_{field}_key` naming. Checked live against a real
-// duplicate-key insert before relying on it here; the `target` branch stays
-// as a fallback in case this ever runs against a non-adapter Prisma client.
-function p2002ConstraintName(error: unknown): string | null {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
-    return null;
-  }
-  const meta = error.meta as
-    | { target?: unknown; driverAdapterError?: { cause?: { originalMessage?: unknown } } }
-    | undefined;
-
-  if (Array.isArray(meta?.target)) {
-    return meta.target.join(",");
-  }
-
-  const originalMessage = meta?.driverAdapterError?.cause?.originalMessage;
-  if (typeof originalMessage === "string") {
-    return originalMessage.match(/"([A-Za-z0-9_]+)"/)?.[1] ?? null;
-  }
-
-  return null;
-}
-
 function isOrderCodeCollision(error: unknown): boolean {
-  return p2002ConstraintName(error)?.includes("orderCode") ?? false;
+  return isUniqueConstraintViolation(error, "orderCode");
 }
 
 // Two truly concurrent requests carrying the same idempotencyKey can both
@@ -130,7 +103,7 @@ function isOrderCodeCollision(error: unknown): boolean {
 // has committed — this catches the DB-level unique-constraint collision that
 // results, the same safety-net role isOrderCodeCollision plays for orderCode.
 function isIdempotencyKeyCollision(error: unknown): boolean {
-  return p2002ConstraintName(error)?.includes("idempotencyKey") ?? false;
+  return isUniqueConstraintViolation(error, "idempotencyKey");
 }
 
 type CartRow = Awaited<ReturnType<typeof cartRepository.findByOwner>>[number];

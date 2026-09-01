@@ -1,5 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
+import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { productVariantsRepository } from "../product-variants/product-variants.repository.js";
 import { vehicleListingRepository } from "../vehicle-listing/vehicle-listing.repository.js";
 import { toVehicleListingResponse } from "../vehicle-listing/vehicle-listing.service.js";
@@ -130,6 +131,16 @@ export async function getCartStatus(
   };
 }
 
+async function addToExistingCartItem(
+  existing: { id: number; quantity: number },
+  quantity: number,
+  stockQuantity: number,
+) {
+  const nextQuantity = Math.min(existing.quantity + quantity, stockQuantity, MAX_QUANTITY);
+  const row = await cartRepository.updateQuantity(existing.id, nextQuantity);
+  return toResponse(row);
+}
+
 async function addProductVariantToCart(owner: CartOwner, productVariantId: number, quantity: number) {
   const variant = await productVariantsRepository.findById(productVariantId);
   if (!variant) {
@@ -141,19 +152,31 @@ async function addProductVariantToCart(owner: CartOwner, productVariantId: numbe
 
   const existing = await cartRepository.findByOwnerAndProductVariant(owner, productVariantId);
   if (existing) {
-    const nextQuantity = Math.min(existing.quantity + quantity, variant.stockQuantity, MAX_QUANTITY);
-    const row = await cartRepository.updateQuantity(existing.id, nextQuantity);
-    return toResponse(row);
+    return addToExistingCartItem(existing, quantity, variant.stockQuantity);
   }
 
   const cappedQuantity = Math.min(quantity, variant.stockQuantity, MAX_QUANTITY);
-  const row = await cartRepository.create({
-    ...owner,
-    itemType: "PRODUCT_VARIANT",
-    productVariantId,
-    quantity: cappedQuantity,
-  });
-  return toResponse(row);
+  try {
+    const row = await cartRepository.create({
+      ...owner,
+      itemType: "PRODUCT_VARIANT",
+      productVariantId,
+      quantity: cappedQuantity,
+    });
+    return toResponse(row);
+  } catch (err) {
+    // Two simultaneous "add to cart" clicks for the same not-yet-in-cart
+    // item can both pass the findByOwnerAndProductVariant check above
+    // before either commits — this catches the DB-level unique-constraint
+    // collision that results (same safety-net role orders.service.ts's
+    // isOrderCodeCollision plays) and folds into the row the other request
+    // just created, instead of surfacing a raw 500 to whichever request
+    // loses the race.
+    if (!isUniqueConstraintViolation(err, "productVariantId")) throw err;
+    const winner = await cartRepository.findByOwnerAndProductVariant(owner, productVariantId);
+    if (!winner) throw err;
+    return addToExistingCartItem(winner, quantity, variant.stockQuantity);
+  }
 }
 
 async function addVehicleListingToCart(owner: CartOwner, vehicleListingId: number, quantity: number) {
@@ -167,19 +190,25 @@ async function addVehicleListingToCart(owner: CartOwner, vehicleListingId: numbe
 
   const existing = await cartRepository.findByOwnerAndVehicleListing(owner, vehicleListingId);
   if (existing) {
-    const nextQuantity = Math.min(existing.quantity + quantity, listing.stockQuantity, MAX_QUANTITY);
-    const row = await cartRepository.updateQuantity(existing.id, nextQuantity);
-    return toResponse(row);
+    return addToExistingCartItem(existing, quantity, listing.stockQuantity);
   }
 
   const cappedQuantity = Math.min(quantity, listing.stockQuantity, MAX_QUANTITY);
-  const row = await cartRepository.create({
-    ...owner,
-    itemType: "VEHICLE_LISTING",
-    vehicleListingId,
-    quantity: cappedQuantity,
-  });
-  return toResponse(row);
+  try {
+    const row = await cartRepository.create({
+      ...owner,
+      itemType: "VEHICLE_LISTING",
+      vehicleListingId,
+      quantity: cappedQuantity,
+    });
+    return toResponse(row);
+  } catch (err) {
+    // Same double-click safety net as addProductVariantToCart above.
+    if (!isUniqueConstraintViolation(err, "vehicleListingId")) throw err;
+    const winner = await cartRepository.findByOwnerAndVehicleListing(owner, vehicleListingId);
+    if (!winner) throw err;
+    return addToExistingCartItem(winner, quantity, listing.stockQuantity);
+  }
 }
 
 export async function addCartItem(owner: CartOwner, input: CreateCartItemInput) {
@@ -229,23 +258,15 @@ export async function removeCartItem(owner: CartOwner, id: number) {
 // account. Unlike wishlist, a conflicting item doesn't just get dropped:
 // quantities add together (2 in the guest cart + 1 already in the
 // account's own cart = 3), since a cart quantity is meaningful in a way a
-// wishlist membership isn't.
+// wishlist membership isn't. Each item is merged via its own atomic
+// claim-then-upsert (see cart.repository.ts's mergeGuestItem) so two
+// concurrent logins on the same guest cookie (double-tab, a retried
+// request) can't double-credit a quantity or crash on a row the other one
+// already claimed.
 export async function mergeGuestCartIntoUser(guestId: string, userId: number) {
   const guestItems = await cartRepository.findByGuestId(guestId);
 
   for (const item of guestItems) {
-    const existing =
-      item.productVariantId != null
-        ? await cartRepository.findByOwnerAndProductVariant({ userId }, item.productVariantId)
-        : item.vehicleListingId != null
-          ? await cartRepository.findByOwnerAndVehicleListing({ userId }, item.vehicleListingId)
-          : null;
-
-    if (existing) {
-      await cartRepository.incrementQuantity(existing.id, item.quantity);
-      await cartRepository.delete(item.id);
-    } else {
-      await cartRepository.reassignToUser(item.id, userId);
-    }
+    await cartRepository.mergeGuestItem(item, guestId, userId);
   }
 }

@@ -13,20 +13,14 @@ export async function recordVehicleListingView(
 // Called from guest-identity.middleware.ts's mergeGuestDataIntoUser, right
 // alongside mergeGuestProductViewsIntoUser — same collision-sums-viewCount
 // reasoning as that function (both rows represent genuine interest in the
-// same listing, worth preserving rather than discarding).
+// same listing, worth preserving rather than discarding), and the same
+// atomic claim-then-upsert per item (see vehicle-listing-views.repository.ts's
+// mergeGuestItem) so two concurrent logins on the same guest cookie can't
+// double-sum a viewCount or crash on a row the other one already claimed.
 export async function mergeGuestVehicleListingViewsIntoUser(guestId: string, userId: number) {
   const guestViews = await vehicleListingViewsRepository.findByGuestId(guestId);
 
   for (const view of guestViews) {
-    const existing = await vehicleListingViewsRepository.findByOwnerAndVehicleListing(
-      { userId },
-      view.vehicleListingId,
-    );
-    if (existing) {
-      await vehicleListingViewsRepository.incrementViewCount(existing.id, view.viewCount);
-      await vehicleListingViewsRepository.delete(view.id);
-    } else {
-      await vehicleListingViewsRepository.reassignToUser(view.id, userId);
-    }
+    await vehicleListingViewsRepository.mergeGuestItem(view, guestId, userId);
   }
 }

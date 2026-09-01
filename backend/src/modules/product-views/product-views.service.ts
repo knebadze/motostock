@@ -15,19 +15,16 @@ export async function listRecentlyViewed(owner: ProductViewOwner, limit = DEFAUL
 // Called from guest-identity.middleware.ts's mergeGuestDataIntoUser, right
 // alongside the wishlist/cart/compare merges. Unlike those (which just drop
 // a colliding guest row), a collision here sums the two viewCounts into the
-// user's row before deleting the guest one — both rows represent genuine
-// interest in the same product, so the signal is worth preserving rather
-// than discarding.
+// user's row instead of discarding one — both rows represent genuine
+// interest in the same product, so the signal is worth preserving. Each
+// view is merged via its own atomic claim-then-upsert (see
+// product-views.repository.ts's mergeGuestItem) so two concurrent logins on
+// the same guest cookie can't double-sum a viewCount or crash on a row the
+// other one already claimed.
 export async function mergeGuestProductViewsIntoUser(guestId: string, userId: number) {
   const guestViews = await productViewsRepository.findByGuestId(guestId);
 
   for (const view of guestViews) {
-    const existing = await productViewsRepository.findByOwnerAndProduct({ userId }, view.productId);
-    if (existing) {
-      await productViewsRepository.incrementViewCount(existing.id, view.viewCount);
-      await productViewsRepository.delete(view.id);
-    } else {
-      await productViewsRepository.reassignToUser(view.id, userId);
-    }
+    await productViewsRepository.mergeGuestItem(view, guestId, userId);
   }
 }

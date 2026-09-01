@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
 import { env } from "../config/env.js";
+import { logger } from "../lib/logger.js";
 import { mergeGuestWishlistIntoUser } from "../modules/wishlist/wishlist.service.js";
 import { mergeGuestCartIntoUser } from "../modules/cart/cart.service.js";
 import { mergeGuestCompareIntoUser } from "../modules/compare/compare.service.js";
@@ -37,6 +38,14 @@ export function resolveGuestId(req: Request, res: Response): string {
 // items, product/vehicle-listing views) into the now-known account, then
 // clears the cookie. A no-op when there was no guest cookie (the common
 // case — most logins aren't a guest converting).
+//
+// Best-effort — never throws. Every call site sets the auth cookie before
+// calling this, so the login/register/reset has already succeeded from the
+// user's point of view; a failure folding in guest data should cost them
+// their guest cart/wishlist/compare/view-history at worst, not surface as a
+// failed login (a thrown error here would otherwise reach the client as a
+// 500 while the auth cookie is already staged on the response — logged in,
+// but told login failed).
 export async function mergeGuestDataIntoUser(
   req: Pick<Request, "cookies">,
   res: Response,
@@ -45,10 +54,15 @@ export async function mergeGuestDataIntoUser(
   const guestId = req.cookies?.[GUEST_ID_COOKIE_NAME] as string | undefined;
   if (!guestId) return;
 
-  await mergeGuestWishlistIntoUser(guestId, userId);
-  await mergeGuestCartIntoUser(guestId, userId);
-  await mergeGuestCompareIntoUser(guestId, userId);
-  await mergeGuestProductViewsIntoUser(guestId, userId);
-  await mergeGuestVehicleListingViewsIntoUser(guestId, userId);
+  try {
+    await mergeGuestWishlistIntoUser(guestId, userId);
+    await mergeGuestCartIntoUser(guestId, userId);
+    await mergeGuestCompareIntoUser(guestId, userId);
+    await mergeGuestProductViewsIntoUser(guestId, userId);
+    await mergeGuestVehicleListingViewsIntoUser(guestId, userId);
+  } catch (err) {
+    logger.error({ err, userId }, "Failed to merge guest data into user account");
+  }
+
   res.clearCookie(GUEST_ID_COOKIE_NAME);
 }

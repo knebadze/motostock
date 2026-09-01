@@ -33,26 +33,37 @@ export const productViewsRepository = {
     });
   },
 
-  findByOwnerAndProduct(owner: ProductViewOwner, productId: number) {
-    return prisma.productView.findFirst({ where: { ...ownerWhere(owner), productId } });
-  },
-
   // Merge-on-login support (see product-views.service.ts
   // mergeGuestProductViewsIntoUser).
   findByGuestId(guestId: string) {
     return prisma.productView.findMany({ where: { guestId } });
   },
 
-  reassignToUser(id: number, userId: number) {
-    return prisma.productView.update({ where: { id }, data: { userId, guestId: null } });
-  },
+  // Atomically folds one guest view row into `userId`'s views. `deleteMany`
+  // "claims" the guest row — only deletes (count 1) if it's still there
+  // with this exact id+guestId — so a concurrent merge of the same guest
+  // cookie (double-tab login) that already claimed it sees count 0 and
+  // no-ops, instead of both callers double-summing the viewCount or one
+  // crashing on an already-deleted row (P2025). `upsert` on conflict is
+  // Postgres's native INSERT ... ON CONFLICT DO UPDATE — same
+  // "sum the two viewCounts" behavior as before, but atomic even against a
+  // *different* concurrent write (e.g. upsertView recording a fresh visit
+  // to the same product right as this merge runs).
+  async mergeGuestItem(
+    view: { id: number; productId: number; viewCount: number },
+    guestId: string,
+    userId: number,
+  ) {
+    await prisma.$transaction(async (tx) => {
+      const claimed = await tx.productView.deleteMany({ where: { id: view.id, guestId } });
+      if (claimed.count === 0) return;
 
-  incrementViewCount(id: number, by: number) {
-    return prisma.productView.update({ where: { id }, data: { viewCount: { increment: by } } });
-  },
-
-  delete(id: number) {
-    return prisma.productView.delete({ where: { id } });
+      await tx.productView.upsert({
+        where: { userId_productId: { userId, productId: view.productId } },
+        create: { userId, productId: view.productId, viewCount: view.viewCount },
+        update: { viewCount: { increment: view.viewCount } },
+      });
+    });
   },
 
   // View-based "customers who viewed this also viewed" — every other

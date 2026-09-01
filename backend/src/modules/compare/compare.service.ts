@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { productsRepository } from "../products/products.repository.js";
 import { toResponse as toProductResponse } from "../products/products.service.js";
 import { vehicleListingRepository } from "../vehicle-listing/vehicle-listing.repository.js";
@@ -50,8 +51,20 @@ async function addProductToCompare(owner: CompareOwner, productId: number) {
   }
 
   await assertUnderLimit(owner);
-  const row = await compareRepository.create({ ...owner, itemType: "PRODUCT", productId });
-  return toResponse(row);
+  try {
+    const row = await compareRepository.create({ ...owner, itemType: "PRODUCT", productId });
+    return toResponse(row);
+  } catch (err) {
+    // Two simultaneous compare-button clicks for the same not-yet-listed
+    // product can both pass the findByOwnerAndProduct check above before
+    // either commits — this catches the resulting unique-constraint
+    // collision and returns the row the other request just created,
+    // instead of surfacing a raw 500 to whichever request loses the race.
+    if (!isUniqueConstraintViolation(err, "productId")) throw err;
+    const winner = await compareRepository.findByOwnerAndProduct(owner, productId);
+    if (!winner) throw err;
+    return toResponse((await compareRepository.findById(winner.id))!);
+  }
 }
 
 async function addVehicleListingToCompare(owner: CompareOwner, vehicleListingId: number) {
@@ -66,12 +79,20 @@ async function addVehicleListingToCompare(owner: CompareOwner, vehicleListingId:
   }
 
   await assertUnderLimit(owner);
-  const row = await compareRepository.create({
-    ...owner,
-    itemType: "VEHICLE_LISTING",
-    vehicleListingId,
-  });
-  return toResponse(row);
+  try {
+    const row = await compareRepository.create({
+      ...owner,
+      itemType: "VEHICLE_LISTING",
+      vehicleListingId,
+    });
+    return toResponse(row);
+  } catch (err) {
+    // Same double-click safety net as addProductToCompare above.
+    if (!isUniqueConstraintViolation(err, "vehicleListingId")) throw err;
+    const winner = await compareRepository.findByOwnerAndVehicleListing(owner, vehicleListingId);
+    if (!winner) throw err;
+    return toResponse((await compareRepository.findById(winner.id))!);
+  }
 }
 
 async function assertUnderLimit(owner: CompareOwner) {
@@ -129,22 +150,14 @@ export async function getCompareStatus(
 // those rows into the now-known account. A guest item that duplicates
 // something the user already has is just dropped instead of reassigned,
 // since reassigning would collide with the user's own unique constraint —
-// same tradeoff mergeGuestWishlistIntoUser makes.
+// same tradeoff mergeGuestWishlistIntoUser makes. Each item is merged via
+// its own atomic claim-then-insert (see compare.repository.ts's
+// mergeGuestItem) so two concurrent logins on the same guest cookie can't
+// crash on a row the other one already claimed.
 export async function mergeGuestCompareIntoUser(guestId: string, userId: number) {
   const guestItems = await compareRepository.findByGuestId(guestId);
 
   for (const item of guestItems) {
-    const existing =
-      item.productId != null
-        ? await compareRepository.findByOwnerAndProduct({ userId }, item.productId)
-        : item.vehicleListingId != null
-          ? await compareRepository.findByOwnerAndVehicleListing({ userId }, item.vehicleListingId)
-          : null;
-
-    if (existing) {
-      await compareRepository.delete(item.id);
-    } else {
-      await compareRepository.reassignToUser(item.id, userId);
-    }
+    await compareRepository.mergeGuestItem(item, guestId, userId);
   }
 }

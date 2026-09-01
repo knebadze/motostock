@@ -68,7 +68,38 @@ export const compareRepository = {
     return prisma.compareItem.findMany({ where: { guestId } });
   },
 
-  reassignToUser(id: number, userId: number) {
-    return prisma.compareItem.update({ where: { id }, data: { userId, guestId: null } });
+  // Atomically folds one guest compare row into `userId`'s compare list —
+  // same claim-then-insert reasoning as wishlist.repository.ts's
+  // mergeGuestItem (see there for the full explanation). `deleteMany`
+  // claims the guest row so a concurrent merge of the same guest cookie
+  // can't double-process it or crash on an already-deleted one;
+  // `createMany` with `skipDuplicates` (native ON CONFLICT DO NOTHING)
+  // drops it if the user already has the same item, atomically.
+  async mergeGuestItem(
+    item: {
+      id: number;
+      itemType: CompareItemType;
+      productId: number | null;
+      vehicleListingId: number | null;
+    },
+    guestId: string,
+    userId: number,
+  ) {
+    await prisma.$transaction(async (tx) => {
+      const claimed = await tx.compareItem.deleteMany({ where: { id: item.id, guestId } });
+      if (claimed.count === 0) return;
+
+      await tx.compareItem.createMany({
+        data: [
+          {
+            itemType: item.itemType,
+            userId,
+            productId: item.productId,
+            vehicleListingId: item.vehicleListingId,
+          },
+        ],
+        skipDuplicates: true,
+      });
+    });
   },
 };
