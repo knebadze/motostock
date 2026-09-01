@@ -3,7 +3,7 @@ import { promoCodesRepository } from "./promo-codes.repository.js";
 import { productVariantsRepository } from "../product-variants/product-variants.repository.js";
 import { productsRepository } from "../products/products.repository.js";
 import { vehicleListingRepository } from "../vehicle-listing/vehicle-listing.repository.js";
-import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
+import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
 import { resolvePromoCodeForItems, promoCodeItemKey } from "./promo-codes.service.js";
 
 vi.mock("./promo-codes.repository.js", () => ({
@@ -26,9 +26,9 @@ vi.mock("../vehicle-listing/vehicle-listing.repository.js", () => ({
   vehicleListingRepository: { findById: vi.fn() },
 }));
 
-vi.mock("../attributes/attributes.service.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../attributes/attributes.service.js")>();
-  return { ...actual, resolveCategoryAndAncestorIds: vi.fn() };
+vi.mock("../categories/categories.service.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../categories/categories.service.js")>();
+  return { ...actual, resolveCategoryAndDescendantIds: vi.fn() };
 });
 
 const NOW = Date.now();
@@ -82,7 +82,7 @@ describe("resolvePromoCodeForItems", () => {
     vi.mocked(productVariantsRepository.findById).mockReset();
     vi.mocked(productsRepository.findById).mockReset();
     vi.mocked(vehicleListingRepository.findById).mockReset();
-    vi.mocked(resolveCategoryAndAncestorIds).mockReset();
+    vi.mocked(resolveCategoryAndDescendantIds).mockReset();
   });
 
   it("rejects an unknown code", async () => {
@@ -161,7 +161,7 @@ describe("resolvePromoCodeForItems", () => {
 
   it("matches a PRODUCT item within the promo's category scope", async () => {
     vi.mocked(promoCodesRepository.findByCode).mockResolvedValue(basePromoCode({ categoryId: 10 }));
-    vi.mocked(resolveCategoryAndAncestorIds).mockResolvedValue([10]);
+    vi.mocked(resolveCategoryAndDescendantIds).mockResolvedValue([10]);
     vi.mocked(productVariantsRepository.findById).mockResolvedValue({ product: { id: 7 } } as never);
     vi.mocked(productsRepository.findById).mockResolvedValue({
       categoryId: 10,
@@ -176,7 +176,7 @@ describe("resolvePromoCodeForItems", () => {
 
   it("rejects a PRODUCT item outside the promo's category scope", async () => {
     vi.mocked(promoCodesRepository.findByCode).mockResolvedValue(basePromoCode({ categoryId: 10 }));
-    vi.mocked(resolveCategoryAndAncestorIds).mockResolvedValue([10]);
+    vi.mocked(resolveCategoryAndDescendantIds).mockResolvedValue([10]);
     vi.mocked(productVariantsRepository.findById).mockResolvedValue({ product: { id: 7 } } as never);
     vi.mocked(productsRepository.findById).mockResolvedValue({
       categoryId: 999,
@@ -188,6 +188,44 @@ describe("resolvePromoCodeForItems", () => {
       statusCode: 400,
       message: "პრომო კოდი ამ კალათის არცერთ ნივთს არ ეხება",
     });
+  });
+
+  // Regression test for a bug where the category-scope check walked
+  // ancestors instead of descendants — a promo scoped to a mid-level
+  // category (e.g. "Engine Parts") silently matched nothing, since
+  // products/listings only ever live on leaf categories underneath it.
+  it("matches a PRODUCT item on a leaf category nested under the promo's mid-level category scope", async () => {
+    vi.mocked(promoCodesRepository.findByCode).mockResolvedValue(basePromoCode({ categoryId: 10 }));
+    vi.mocked(resolveCategoryAndDescendantIds).mockResolvedValue([10, 11, 12]);
+    vi.mocked(productVariantsRepository.findById).mockResolvedValue({ product: { id: 7 } } as never);
+    vi.mocked(productsRepository.findById).mockResolvedValue({
+      categoryId: 11,
+      productBrandId: null,
+      attributeValues: [],
+    } as never);
+
+    const result = await resolvePromoCodeForItems("SAVE10", [PRODUCT_ITEM], 1);
+
+    expect(result.matchedKeys.has(promoCodeItemKey(PRODUCT_ITEM))).toBe(true);
+  });
+
+  it("matches a VEHICLE item on a leaf category nested under the promo's mid-level category scope", async () => {
+    vi.mocked(promoCodesRepository.findByCode).mockResolvedValue(
+      basePromoCode({ domain: "VEHICLE", categoryId: 10 }),
+    );
+    vi.mocked(resolveCategoryAndDescendantIds).mockResolvedValue([10, 11, 12]);
+    vi.mocked(vehicleListingRepository.findById).mockResolvedValue({
+      vehicleCatalog: {
+        brandId: null,
+        modelId: null,
+        model: { category: { id: 11 } },
+        fuelTypeId: null,
+      },
+    } as never);
+
+    const result = await resolvePromoCodeForItems("SAVE10", [VEHICLE_ITEM], 1);
+
+    expect(result.matchedKeys.has(promoCodeItemKey(VEHICLE_ITEM))).toBe(true);
   });
 
   it("requires a matching attribute option when the promo is scoped to one", async () => {

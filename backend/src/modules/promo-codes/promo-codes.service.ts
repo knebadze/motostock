@@ -6,6 +6,7 @@ import { attributeOptionsRepository } from "../attribute-options/attribute-optio
 import { brandsRepository } from "../brands/brands.repository.js";
 import { modelsRepository } from "../models/models.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
+import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getSpecFieldDefinition } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
@@ -398,7 +399,11 @@ export async function resolvePromoCodeForItems(
     }
   }
 
-  const categoryIds = promo.categoryId != null ? await resolveCategoryAndAncestorIds(promo.categoryId) : null;
+  // Descendants, not ancestors — products/listings only ever live on leaf
+  // categories (see resolveCategoryAndDescendantIds), so a promo scoped to a
+  // mid-level category (e.g. "Engine Parts") must match everything under it,
+  // not just an exact categoryId hit.
+  const categoryIds = promo.categoryId != null ? await resolveCategoryAndDescendantIds(promo.categoryId) : null;
   const matchedKeys = new Set<string>();
 
   if (promo.domain === "PRODUCT") {
