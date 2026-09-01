@@ -1,5 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { isMailerConfigured, sendTemplatedEmail } from "../../lib/mailer.js";
+import { escapeHtml } from "../../lib/email-shell.js";
 import { logger } from "../../lib/logger.js";
 import { emailTemplatesRepository } from "./email-templates.repository.js";
 import type { UpdateEmailTemplateInput } from "./email-templates.schema.js";
@@ -125,8 +126,20 @@ export async function updateEmailTemplate(id: number, input: UpdateEmailTemplate
   return toResponse(row);
 }
 
-function renderText(text: string, vars: Record<string, string>): string {
-  return text.replace(/\{\{(\w+)\}\}/g, (match, name: string) => vars[name] ?? match);
+// `escape` must be true for the HTML body — vars can include user-controlled
+// text (customerName, taken straight from the order's firstName/lastName,
+// which has no character restriction beyond a length range — see
+// auth.schema.ts) substituted directly into an HTML template, so an
+// unescaped value would let a customer inject markup into their own
+// order-status emails. The subject is a plain-text mail header, never
+// HTML-rendered, so it's left as-is (escaping it would show literal
+// "&amp;" etc. to the recipient for no security benefit).
+function renderText(text: string, vars: Record<string, string>, escape: boolean): string {
+  return text.replace(/\{\{(\w+)\}\}/g, (match, name: string) => {
+    const value = vars[name];
+    if (value === undefined) return match;
+    return escape ? escapeHtml(value) : value;
+  });
 }
 
 // Sends one of the fixed EmailTemplate rows to `to`, with {{placeholder}}
@@ -151,7 +164,11 @@ export async function sendEmailTemplate(
     const row = await emailTemplatesRepository.findByKey(key);
     if (!row) return;
 
-    await sendTemplatedEmail(to, renderText(row.subjectKa, vars), renderText(row.bodyKa, vars));
+    await sendTemplatedEmail(
+      to,
+      renderText(row.subjectKa, vars, false),
+      renderText(row.bodyKa, vars, true),
+    );
   } catch (err) {
     logger.error({ err, key }, "Failed to send templated email");
   }

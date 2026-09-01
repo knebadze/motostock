@@ -6,7 +6,10 @@ import { getCompanyInfo } from "../modules/company-info/company-info.service.js"
 
 const ACCENT_COLOR = "#d97706"; // light-mode --primary (globals.css) — email has no dark-mode handling
 
-function escapeHtml(value: string): string {
+// Exported for email-templates.service.ts's renderText, which needs the
+// same escaping for {{placeholder}} values (e.g. a customer's name) it
+// substitutes into an HTML email body.
+export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
