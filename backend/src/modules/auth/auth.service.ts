@@ -167,7 +167,15 @@ export async function requestPasswordReset(input: ForgotPasswordInput) {
   });
 
   const resetUrl = `${env.FRONTEND_ORIGIN}/reset-password?token=${rawToken}`;
-  await sendPasswordResetEmail(user.email, resetUrl);
+  // Fire-and-forget, same as registerUser's issueVerificationEmail — the
+  // controller's response is identical whether or not the email is
+  // registered (anti-enumeration), so it never depended on this send
+  // actually completing, and a slow/unreachable SMTP host (mailer.ts's
+  // timeouts now bound it, but needn't hold up this request even for that
+  // long) shouldn't hang the forgot-password request either.
+  sendPasswordResetEmail(user.email, resetUrl).catch((err) => {
+    logger.error({ err, userId: user.id }, "Failed to send password reset email");
+  });
 }
 
 export async function resetPassword(input: ResetPasswordInput) {

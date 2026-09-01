@@ -7,12 +7,23 @@ export function isMailerConfigured(): boolean {
   return Boolean(env.SMTP_HOST && env.SMTP_PORT && env.SMTP_USER && env.SMTP_PASSWORD && env.SMTP_FROM);
 }
 
+// Nodemailer's own defaults are minutes long (2min connect, 10min socket) —
+// with no override here, a slow/unreachable SMTP host could hang whatever
+// request-path caller awaited it (see requestPasswordReset below) for that
+// long before failing. These bound every send to a few seconds worst case.
+const SMTP_CONNECTION_TIMEOUT_MS = 10_000;
+const SMTP_GREETING_TIMEOUT_MS = 10_000;
+const SMTP_SOCKET_TIMEOUT_MS = 15_000;
+
 function getTransport() {
   return nodemailer.createTransport({
     host: env.SMTP_HOST,
     port: env.SMTP_PORT,
     secure: env.SMTP_SECURE === "true",
     auth: { user: env.SMTP_USER, pass: env.SMTP_PASSWORD },
+    connectionTimeout: SMTP_CONNECTION_TIMEOUT_MS,
+    greetingTimeout: SMTP_GREETING_TIMEOUT_MS,
+    socketTimeout: SMTP_SOCKET_TIMEOUT_MS,
   });
 }
 
