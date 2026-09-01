@@ -9,12 +9,7 @@ import { resolveMediaUrl } from "@/lib/api/client";
 // Swap these in once the real photos are dropped into public/about/ — each
 // slot renders a placeholder box until then (see ImageCarousel.tsx).
 const INTRO_IMAGE_SRC = "";
-const GALLERY_IMAGES: CarouselImage[] = [
-  { src: "", alt: "სამუშაო სივრცე 1" },
-  { src: "", alt: "სამუშაო სივრცე 2" },
-  { src: "", alt: "სამუშაო სივრცე 3" },
-  { src: "", alt: "სამუშაო სივრცე 4" },
-];
+const GALLERY_IMAGE_COUNT = 4;
 
 const whyUsIcons = {
   quality: (
@@ -59,6 +54,11 @@ export default async function AboutPage() {
     { icon: whyUsIcons.support, title: t("whyUs4Title"), description: t("whyUs4Description") },
   ];
 
+  const galleryImages: CarouselImage[] = Array.from({ length: GALLERY_IMAGE_COUNT }, (_, index) => ({
+    src: "",
+    alt: t("galleryImageAlt", { number: index + 1 }),
+  }));
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
@@ -80,7 +80,7 @@ export default async function AboutPage() {
 
       <div className="mt-16">
         <h2 className="mb-5 text-xl font-bold tracking-tight">{t("galleryHeading")}</h2>
-        <ImageCarousel images={GALLERY_IMAGES} />
+        <ImageCarousel images={galleryImages} />
       </div>
 
       <div className="mt-16">
