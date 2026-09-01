@@ -42,6 +42,7 @@ import type { OrderStatusItem } from "./order-statuses";
 import type { NewsletterSubscriber, NewsletterSubscriberCounts } from "./newsletter";
 import type { NewsletterCampaign } from "./newsletter-campaigns";
 import type { SuspiciousLoginActivity } from "./fraud";
+import type { ErrorLogsPage } from "./error-logs";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -244,6 +245,15 @@ export async function getFinaSyncRunsFromServer(): Promise<FinaSyncRun[]> {
   return fetchFromServer<{ runs: FinaSyncRun[] }, FinaSyncRun[]>("/fina-sync/runs", {
     fallback: [],
     extract: (data) => data.runs,
+    requireAuth: true,
+  });
+}
+
+export async function getErrorLogsFromServer(): Promise<ErrorLogsPage> {
+  return fetchFromServer<ErrorLogsPage, ErrorLogsPage>("/error-logs", {
+    params: { page: 1, pageSize: 25 },
+    fallback: { logs: [], total: 0, page: 1, pageSize: 25 },
+    extract: (data) => data,
     requireAuth: true,
   });
 }

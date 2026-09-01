@@ -12,6 +12,7 @@ import {
   dashboardIcon,
   discountRulesIcon,
   emailTemplatesIcon,
+  errorLogIcon,
   faqIcon,
   filtersIcon,
   finaSyncIcon,
@@ -111,7 +112,10 @@ export const adminNav: AdminNavSection[] = [
   },
   {
     label: "უსაფრთხოება",
-    items: [{ label: "თაღლითობის მონიტორინგი", href: "/admin/fraud", icon: fraudIcon }],
+    items: [
+      { label: "თაღლითობის მონიტორინგი", href: "/admin/fraud", icon: fraudIcon },
+      { label: "შეცდომების ჟურნალი", href: "/admin/error-logs", icon: errorLogIcon },
+    ],
   },
   // One-time setup content — filled in once and rarely touched again, so
   // it belongs at the bottom, out of the way of daily-use sections above.

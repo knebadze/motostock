@@ -1,0 +1,22 @@
+// Captures every logger.error(...) call across the backend (see
+// lib/logger.ts's pino hook) — not just the ones that reach
+// error.middleware.ts as a 500, but background/best-effort failures too
+// (a failed FINA push, a swallowed guest-cart-merge error, a mail send
+// timing out) that would otherwise only ever exist in stdout/
+// `docker compose logs`. Admin-only, viewed at /admin/error-logs; no
+// automatic retention/pruning — an admin clears it manually (see
+// error-logs.routes.ts's clear) when it's served its purpose.
+model ErrorLog {
+  id        Int      @id @default(autoincrement())
+  message   String
+  // Error#stack, when the logged value was (or carried) an Error instance.
+  stack     String?
+  // Whatever else was passed alongside the error (see lib/logger.ts) —
+  // e.g. { orderId, userId } — arbitrary per call site, so Json rather than
+  // a fixed set of columns.
+  context   Json?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@schema("dbo")
+}
