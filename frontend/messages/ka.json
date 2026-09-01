@@ -4,7 +4,17 @@
     "description": "აქსესუარები, ჩასაცმელი, ჩაფხუტები და ნაწილები მოტოტექნიკისთვის.",
     "categoryTitle": "{category} — {siteName}",
     "categoryTitleWithPage": "{category} — გვერდი {page} — {siteName}",
-    "categoryDescription": "{category} — საუკეთესო არჩევანი და ფასები {siteName}-ში."
+    "categoryDescription": "{category} — საუკეთესო არჩევანი და ფასები {siteName}-ში.",
+    "aboutTitle": "ჩვენ შესახებ — {siteName}",
+    "aboutDescription": "გაიცანით {siteName} — მოტოტექნიკის აქსესუარების, ეკიპირებისა და ნაწილების სანდო მაღაზია საქართველოში.",
+    "faqTitle": "ხშირად დასმული კითხვები — {siteName}",
+    "faqDescription": "პასუხები ხშირად დასმულ კითხვებზე შეკვეთის, მიწოდებისა და გადახდის შესახებ {siteName}-ში.",
+    "contactTitle": "კონტაქტი — {siteName}",
+    "contactDescription": "დაგვიკავშირდით — მისამართი, ტელეფონი, ელფოსტა და სამუშაო საათები {siteName}-ში.",
+    "termsTitle": "წესები და პირობები — {siteName}",
+    "termsDescription": "{siteName}-ის მომსახურების გამოყენების წესები და პირობები.",
+    "catalogTitle": "კატალოგი — {siteName}",
+    "catalogDescription": "დაათვალიერეთ {siteName}-ის სრული კატალოგი კატეგორიების მიხედვით."
   },
   "Nav": {
     "home": "მთავარი",

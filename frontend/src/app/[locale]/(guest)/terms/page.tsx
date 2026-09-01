@@ -1,7 +1,33 @@
+import type { Metadata } from "next";
 import { useLocale, useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { getTermsFromServer } from "@/lib/api/server";
 import { sanitizeRichText } from "@/lib/sanitize-html";
+import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
+import { siteConfig } from "@/config/site";
 import type { Terms } from "@/lib/api/terms";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Metadata" });
+  const title = t("termsTitle", { siteName: siteConfig.name });
+  const description = t("termsDescription", { siteName: siteConfig.name });
+  const pathname = "/terms";
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: buildCanonicalUrl(pathname, locale),
+      languages: getAlternateLanguages(pathname),
+    },
+    openGraph: { title, description },
+  };
+}
 
 export default async function TermsPage() {
   const terms = await getTermsFromServer();

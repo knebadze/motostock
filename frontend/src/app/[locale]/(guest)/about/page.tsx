@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ImageCarousel, type CarouselImage } from "@/components/shared/ImageCarousel";
 import { getPublicTeamMembersFromServer } from "@/lib/api/server";
 import { resolveMediaUrl } from "@/lib/api/client";
+import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
+import { siteConfig } from "@/config/site";
 
 // Static, hand-authored page (not admin/DB-driven) — heavy on images/text/
 // a slider, unlike the single admin-edited rich-text block Terms uses.
@@ -41,6 +44,28 @@ const whyUsIcons = {
     </svg>
   ),
 };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Metadata" });
+  const title = t("aboutTitle", { siteName: siteConfig.name });
+  const description = t("aboutDescription", { siteName: siteConfig.name });
+  const pathname = "/about";
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: buildCanonicalUrl(pathname, locale),
+      languages: getAlternateLanguages(pathname),
+    },
+    openGraph: { title, description },
+  };
+}
 
 export default async function AboutPage() {
   const t = await getTranslations("About");

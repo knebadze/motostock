@@ -4,7 +4,17 @@
     "description": "Accessories, clothing, helmets, and parts for motorcycles.",
     "categoryTitle": "{category} — {siteName}",
     "categoryTitleWithPage": "{category} — Page {page} — {siteName}",
-    "categoryDescription": "{category} — best selection and prices at {siteName}."
+    "categoryDescription": "{category} — best selection and prices at {siteName}.",
+    "aboutTitle": "About Us — {siteName}",
+    "aboutDescription": "Learn about {siteName} — your trusted store for motorcycle gear, apparel, and parts in Georgia.",
+    "faqTitle": "Frequently Asked Questions — {siteName}",
+    "faqDescription": "Answers to common questions about ordering, delivery, and payment at {siteName}.",
+    "contactTitle": "Contact Us — {siteName}",
+    "contactDescription": "Get in touch — address, phone, email, and working hours for {siteName}.",
+    "termsTitle": "Terms & Conditions — {siteName}",
+    "termsDescription": "The terms and conditions for using {siteName}'s services.",
+    "catalogTitle": "Catalog — {siteName}",
+    "catalogDescription": "Browse the full {siteName} catalog by category."
   },
   "Nav": {
     "home": "Home",

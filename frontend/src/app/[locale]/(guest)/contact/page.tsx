@@ -1,10 +1,36 @@
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { getCompanyInfoFromServer } from "@/lib/api/server";
 import { facebookIcon, instagramIcon, tiktokIcon, youtubeIcon } from "@/components/shared/social-icons";
 import { resolveMediaUrl } from "@/lib/api/client";
+import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
+import { siteConfig } from "@/config/site";
 import type { CompanyInfo, WeekDay } from "@/lib/api/company-info";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Metadata" });
+  const title = t("contactTitle", { siteName: siteConfig.name });
+  const description = t("contactDescription", { siteName: siteConfig.name });
+  const pathname = "/contact";
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: buildCanonicalUrl(pathname, locale),
+      languages: getAlternateLanguages(pathname),
+    },
+    openGraph: { title, description },
+  };
+}
 
 export default async function ContactPage() {
   const companyInfo = await getCompanyInfoFromServer();

@@ -4,7 +4,17 @@
     "description": "Аксессуары, экипировка, шлемы и запчасти для мототехники.",
     "categoryTitle": "{category} — {siteName}",
     "categoryTitleWithPage": "{category} — Страница {page} — {siteName}",
-    "categoryDescription": "{category} — лучший выбор и цены в {siteName}."
+    "categoryDescription": "{category} — лучший выбор и цены в {siteName}.",
+    "aboutTitle": "О нас — {siteName}",
+    "aboutDescription": "Узнайте больше о {siteName} — надёжном магазине мотоэкипировки, аксессуаров и запчастей в Грузии.",
+    "faqTitle": "Часто задаваемые вопросы — {siteName}",
+    "faqDescription": "Ответы на часто задаваемые вопросы о заказе, доставке и оплате в {siteName}.",
+    "contactTitle": "Контакты — {siteName}",
+    "contactDescription": "Свяжитесь с нами — адрес, телефон, эл. почта и часы работы {siteName}.",
+    "termsTitle": "Условия использования — {siteName}",
+    "termsDescription": "Условия использования сервисов {siteName}.",
+    "catalogTitle": "Каталог — {siteName}",
+    "catalogDescription": "Просмотрите полный каталог {siteName} по категориям."
   },
   "Nav": {
     "home": "Главная",

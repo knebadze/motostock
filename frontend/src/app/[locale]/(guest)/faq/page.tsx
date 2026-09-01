@@ -1,7 +1,33 @@
+import type { Metadata } from "next";
 import { useLocale, useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { getFaqListFromServer } from "@/lib/api/server";
 import { sanitizeRichText } from "@/lib/sanitize-html";
+import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
+import { siteConfig } from "@/config/site";
 import type { Faq } from "@/lib/api/faq";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Metadata" });
+  const title = t("faqTitle", { siteName: siteConfig.name });
+  const description = t("faqDescription", { siteName: siteConfig.name });
+  const pathname = "/faq";
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: buildCanonicalUrl(pathname, locale),
+      languages: getAlternateLanguages(pathname),
+    },
+    openGraph: { title, description },
+  };
+}
 
 export default async function FaqPage() {
   const faqs = await getFaqListFromServer();

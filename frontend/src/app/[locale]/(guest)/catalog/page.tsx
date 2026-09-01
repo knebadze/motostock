@@ -1,9 +1,35 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getCategoriesFromServer } from "@/lib/api/server";
 import { resolveMediaUrl } from "@/lib/api/client";
+import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
+import { siteConfig } from "@/config/site";
 import type { Category } from "@/lib/api/categories";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Metadata" });
+  const title = t("catalogTitle", { siteName: siteConfig.name });
+  const description = t("catalogDescription", { siteName: siteConfig.name });
+  const pathname = "/catalog";
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: buildCanonicalUrl(pathname, locale),
+      languages: getAlternateLanguages(pathname),
+    },
+    openGraph: { title, description },
+  };
+}
 
 export default async function CatalogPage() {
   const categories = await getCategoriesFromServer();
