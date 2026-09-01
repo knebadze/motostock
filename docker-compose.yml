@@ -77,6 +77,15 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
     restart: unless-stopped
+    environment:
+      # Next's standalone server.js only binds every interface when HOSTNAME
+      # is explicitly set — left unset, it binds to a single resolution of
+      # "localhost" (whichever of ::1/127.0.0.1 it picks), which can differ
+      # from what a separate client's own "localhost" DNS lookup resolves to.
+      # That mismatch is exactly what makes the container's own healthcheck
+      # below (and Caddy's reverse_proxy) see ECONNREFUSED even though the
+      # server logs "Ready".
+      HOSTNAME: "0.0.0.0"
     depends_on:
       backend:
         condition: service_healthy
