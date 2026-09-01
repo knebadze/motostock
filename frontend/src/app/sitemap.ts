@@ -22,6 +22,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entries.push({ url: homeLanguages[locale], alternates: { languages: homeLanguages } });
   }
 
+  // Static nav pages — no DB-backed updatedAt to source lastModified from
+  // (unlike categories/products/listings below), so left unset, same as home.
+  const staticPages = ["/catalog", "/about", "/faq", "/contact", "/terms"];
+  for (const pathname of staticPages) {
+    const languages = getAlternateLanguages(pathname);
+    for (const locale of routing.locales) {
+      entries.push({ url: languages[locale], alternates: { languages } });
+    }
+  }
+
   for (const category of categories) {
     const languages = getAlternateLanguages(`/${category.slug}`);
     for (const locale of routing.locales) {
