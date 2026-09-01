@@ -36,15 +36,50 @@ export async function runSync(trigger: FinaSyncTrigger, triggeredById: number | 
     throw new ApiError(400, message);
   }
 
+  const variants = await finaSyncRepository.findLinkedVariants();
+  const variantsChecked = variants.length;
+
+  // Fetched before the transaction/lock below, not inside it — an external
+  // network call (even timeout-bounded, see fina-client.ts's
+  // FINA_REQUEST_TIMEOUT_MS) has no reason to extend how long the advisory
+  // lock, and the one pool connection backing it, stay held once the actual
+  // DB work starts. A failure here never touches the lock at all — there's
+  // nothing to protect yet, so it's logged and returned directly.
+  let rests: Awaited<ReturnType<typeof getProductsRestByStore>>;
+  try {
+    rests = await getProductsRestByStore(env.FINA_STORE!);
+  } catch (err) {
+    const message = err instanceof FinaApiError ? err.message : "მოულოდნელი შეცდომა FINA სინქრონიზაციისას";
+    logger.error({ err }, "FINA sync failed");
+    return finaSyncRepository.createRun({
+      trigger,
+      status: "FAILED",
+      finishedAt: new Date(),
+      variantsChecked,
+      variantsUpdated: 0,
+      errorMessage: message,
+      triggeredById,
+    });
+  }
+
+  const restByFinaId = new Map(rests.map((r) => [r.id, r.rest]));
+  const updates = variants
+    .filter((variant) => restByFinaId.has(variant.finaId!))
+    .map((variant) => ({
+      id: variant.id,
+      stockQuantity: Math.max(0, Math.floor(restByFinaId.get(variant.finaId!)!)),
+    }));
+
   // A Postgres transaction-scoped advisory lock (not the old in-memory
   // `isRunning` boolean) so two concurrent runs can't overlap even if the
   // backend is ever scaled to more than one process/container — the lock
   // is held by Postgres, not by this process's memory, and releases
   // automatically when the transaction below commits or throws, regardless
-  // of which pooled connection Prisma happens to use for it. The FINA API
-  // call and per-variant writes run inside the same callback (and so under
-  // the lock) even though most of them go through finaSyncRepository's own
-  // connection, since only one process can hold this lock key at a time.
+  // of which pooled connection Prisma happens to use for it. The actual
+  // stock write (updateStockBatch) runs inside this callback but, like the
+  // old per-variant loop it replaced, goes through finaSyncRepository's own
+  // connection rather than `tx` — the lock is what matters for serializing
+  // concurrent runs, not which connection the write itself commits on.
   return prisma.$transaction(
     async (tx) => {
       const [{ locked }] = await tx.$queryRaw<{ locked: boolean }[]>`
@@ -54,20 +89,11 @@ export async function runSync(trigger: FinaSyncTrigger, triggeredById: number | 
         throw new ApiError(409, "სინქრონიზაცია უკვე მიმდინარეობს");
       }
 
-      const variants = await finaSyncRepository.findLinkedVariants();
-      const variantsChecked = variants.length;
-      let variantsUpdated = 0;
-
       try {
-        const rests = await getProductsRestByStore(env.FINA_STORE!);
-        const restByFinaId = new Map(rests.map((r) => [r.id, r.rest]));
-
-        for (const variant of variants) {
-          const rest = restByFinaId.get(variant.finaId!);
-          if (rest === undefined) continue;
-          await finaSyncRepository.updateStock(variant.id, Math.max(0, Math.floor(rest)));
-          variantsUpdated += 1;
-        }
+        // One round trip for every linked variant instead of one UPDATE per
+        // variant — see finaSyncRepository.updateStockBatch.
+        await finaSyncRepository.updateStockBatch(updates);
+        const variantsUpdated = updates.length;
 
         const status = variantsChecked === 0 || variantsUpdated === variantsChecked ? "SUCCESS" : "PARTIAL";
         return await finaSyncRepository.createRun({
@@ -87,15 +113,16 @@ export async function runSync(trigger: FinaSyncTrigger, triggeredById: number | 
           status: "FAILED",
           finishedAt: new Date(),
           variantsChecked,
-          variantsUpdated,
+          variantsUpdated: 0,
           errorMessage: message,
           triggeredById,
         });
       }
     },
-    // Generous timeout — a full-catalog sync makes an external FINA API
-    // call plus one DB write per linked variant, which can run well past
-    // Prisma's 5s interactive-transaction default.
+    // Still generous, though the transaction itself now only needs to cover
+    // the lock check + one batch UPDATE + one log write, not N sequential
+    // per-variant round trips — kept wide as a safety margin, not because
+    // this path is expected to need it.
     { timeout: 5 * 60 * 1000, maxWait: 10_000 },
   );
 }
