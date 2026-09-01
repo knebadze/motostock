@@ -71,10 +71,27 @@ export const productViewsRepository = {
   // ranked by how many of those viewers overlap. Unlike the order-based
   // co-occurrence in products.repository.ts, ProductView.productId is
   // already the product id (no variant indirection), so this is one groupBy.
+  //
+  // Both steps are bounded, unlike the original version of this query
+  // (which pulled every viewer this product has ever had, then ran an
+  // unbounded IN-list groupBy over all of them) — for a popular part with
+  // years of accumulated distinct visitors, that was an unbounded fetch and
+  // an unbounded IN clause on every single visit to its product page, not
+  // just the rare admin action other unbounded queries in this codebase
+  // tend to be. Sampling the RECENT_VIEWER_SAMPLE_SIZE most recent viewers
+  // (not literally every viewer ever) is also arguably a better "still
+  // relevant" signal for a co-viewed recommendation anyway. The final
+  // sort+limit is now done DB-side (orderBy + take on the groupBy) instead
+  // of fetching every candidate and slicing in JS — same pattern as
+  // products.repository.ts's popularity ranking.
   async findCoViewedProductIds(productId: number, limit: number): Promise<number[]> {
+    const RECENT_VIEWER_SAMPLE_SIZE = 500;
+
     const viewers = await prisma.productView.findMany({
       where: { productId },
       select: { userId: true, guestId: true },
+      orderBy: { updatedAt: "desc" },
+      take: RECENT_VIEWER_SAMPLE_SIZE,
     });
     if (viewers.length === 0) return [];
 
@@ -96,12 +113,11 @@ export const productViewsRepository = {
         ],
       },
       _count: { productId: true },
+      orderBy: { _count: { productId: "desc" } },
+      take: limit,
     });
 
-    return grouped
-      .sort((a, b) => b._count.productId - a._count.productId)
-      .slice(0, limit)
-      .map((group) => group.productId);
+    return grouped.map((group) => group.productId);
   },
 
   // Category/brand affinity signal for recommendations.service.ts's

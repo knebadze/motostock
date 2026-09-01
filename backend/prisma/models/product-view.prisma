@@ -34,6 +34,12 @@ model ProductView {
   @@unique([guestId, productId])
   @@index([userId])
   @@index([guestId])
-  @@index([productId])
+  // Composite, not a plain @@index([productId]) — covers both "filter by
+  // productId alone" (Postgres B-tree leftmost-prefix) and
+  // product-views.repository.ts's findCoViewedProductIds, which filters by
+  // productId *and* orders by updatedAt DESC (recent-viewers sample) in one
+  // query. A separate single-column productId index would just be
+  // redundant write overhead once this one exists.
+  @@index([productId, updatedAt])
   @@schema("dbo")
 }
