@@ -942,3 +942,20 @@ export async function retryOrderFinaSync(orderId: number) {
 
   return getAnyOrder(orderId);
 }
+
+// Closes the loop left open when computeCheckoutTotals's live FINA check
+// couldn't confirm this order at placeOrder time (see
+// resolveInitialOrderStatusId above) and it started life as PENDING: called
+// after an admin's on-demand FINA stock re-check (see
+// fina-sync.controller.ts's syncOrder) succeeds in reaching FINA for every
+// one of this order's linked items. Returns null — a no-op — for any order
+// that isn't currently PENDING, so re-checking an already-confirmed order
+// never re-fires its ORDER_CONFIRMED email or overwrites a status an admin
+// set by hand since.
+export async function confirmOrderAfterFinaCheck(orderId: number) {
+  const order = await ordersRepository.findById(orderId);
+  if (!order || order.status.key !== "PENDING") return null;
+
+  const confirmedStatusId = await resolveInitialOrderStatusId(true);
+  return updateOrderStatus(orderId, confirmedStatusId);
+}

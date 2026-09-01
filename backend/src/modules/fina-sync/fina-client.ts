@@ -61,6 +61,12 @@ interface FinaSaveDocResponse {
 let cachedToken: string | null = null;
 let cachedTokenExpiresAt = 0;
 
+// Bounds every FINA call so a slow/hanging FINA never blocks its caller
+// indefinitely — bare `fetch` has no default timeout (undici's is minutes
+// long), and the checkout path (syncVariantStockByIds) awaits this
+// synchronously before a customer's order can be placed.
+const FINA_REQUEST_TIMEOUT_MS = 8_000;
+
 export function isFinaConfigured(): boolean {
   return Boolean(env.FINA_BASE_URL && env.FINA_LOGIN && env.FINA_PASSWORD && env.FINA_STORE);
 }
@@ -76,6 +82,7 @@ async function authenticate(): Promise<string> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ login: env.FINA_LOGIN, password: env.FINA_PASSWORD }),
+    signal: AbortSignal.timeout(FINA_REQUEST_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -122,7 +129,10 @@ function parseFinaEnvelope<T>(path: string, status: number, ok: boolean, body: F
 async function finaGet<T>(path: string): Promise<T> {
   assertConfigured();
   const headers = await authHeaders();
-  const res = await fetch(`${env.FINA_BASE_URL}${path}`, { headers });
+  const res = await fetch(`${env.FINA_BASE_URL}${path}`, {
+    headers,
+    signal: AbortSignal.timeout(FINA_REQUEST_TIMEOUT_MS),
+  });
   const body = (await res.json()) as FinaEnvelope<T>;
   return parseFinaEnvelope(path, res.status, res.ok, body);
 }
@@ -134,6 +144,7 @@ async function finaPost<T>(path: string, payload: unknown): Promise<T> {
     method: "POST",
     headers: { ...headers, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(FINA_REQUEST_TIMEOUT_MS),
   });
   const body = (await res.json()) as FinaEnvelope<T>;
   return parseFinaEnvelope(path, res.status, res.ok, body);

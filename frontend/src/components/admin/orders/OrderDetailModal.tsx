@@ -127,7 +127,14 @@ export function OrderDetailModal({
     try {
       const result = await syncOrderStock(order.id);
       setStockByVariantId(new Map(result.items.map((item) => [item.productVariantId, item])));
-      if (result.checked === 0) {
+      if (result.order) {
+        // Every linked item was confirmed and the order was still PENDING —
+        // the backend auto-confirmed it (see confirmOrderAfterFinaCheck).
+        setOrder(result.order);
+        setStatusId(String(result.order.status.id));
+        onStatusChanged();
+        toast.success(`FINA-ში დადასტურდა — შეკვეთა ავტომატურად გადავიდა სტატუსზე „${result.order.status.nameKa}“`);
+      } else if (result.checked === 0) {
         toast.info("ამ შეკვეთაში FINA-სთან დაკავშირებული პროდუქტი არ არის");
       } else {
         toast.success(`შემოწმდა ${result.checked} პროდუქტი, განახლდა ${result.updated}`);
@@ -300,6 +307,14 @@ export function OrderDetailModal({
               )}
             </div>
           </div>
+
+          {order.status.key === "PENDING" && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-400">
+              შეკვეთის განთავსებისას მარაგი ვერ დადასტურდა FINA-ში (მაგ. FINA დროებით მიუწვდომელი იყო) —
+              შეკვეთა „მუშავდება“ სტატუსშია, სანამ ხელით არ გადაამოწმებთ. დააჭირეთ „FINA მარაგის შემოწმებას“
+              ქვემოთ — თუ ყველა ნივთი დადასტურდება, შეკვეთა ავტომატურად გადავა „დადასტურებულია“ სტატუსზე.
+            </div>
+          )}
 
           <div>
             <div className="flex items-center justify-between gap-3">

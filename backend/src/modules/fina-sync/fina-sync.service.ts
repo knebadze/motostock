@@ -160,6 +160,25 @@ export async function syncVariantStockByIds(variantIds: number[]): Promise<boole
   } catch (err) {
     logger.error({ err }, "FINA checkout stock refresh failed");
     recentSyncConfirmed.set(key, false);
+
+    // Recorded in the same sync history the scheduled/manual admin jobs use
+    // (see runSync above) so a run of checkout-time failures — FINA down,
+    // slow, misconfigured — is visible somewhere other than the server log,
+    // without logging every *successful* shopper visit (the throttle window
+    // above already caps how often this fires for the same cart contents).
+    await finaSyncRepository
+      .createRun({
+        trigger: "CHECKOUT",
+        status: "FAILED",
+        finishedAt: new Date(),
+        variantsChecked: 0,
+        variantsUpdated: 0,
+        errorMessage:
+          err instanceof FinaApiError ? err.message : "მოულოდნელი შეცდომა FINA-სთან დაკავშირებისას",
+        triggeredById: null,
+      })
+      .catch((logErr) => logger.error({ err: logErr }, "Failed to record FINA checkout sync-run"));
+
     return false;
   }
 }

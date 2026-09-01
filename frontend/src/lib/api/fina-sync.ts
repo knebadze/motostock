@@ -1,8 +1,13 @@
 import { apiClient } from "./client";
+import type { AdminOrder } from "./orders";
 
 export type FinaSyncRun = {
   id: number;
-  trigger: "SCHEDULED" | "MANUAL";
+  // CHECKOUT is only ever FAILED — a live per-item stock check during
+  // checkout that couldn't reach FINA (see backend's syncVariantStockByIds).
+  // A successful checkout-time check isn't logged here at all, to avoid a
+  // row per shopper visit.
+  trigger: "SCHEDULED" | "MANUAL" | "CHECKOUT";
   status: "SUCCESS" | "FAILED" | "PARTIAL";
   startedAt: string;
   finishedAt: string | null;
@@ -34,6 +39,11 @@ export type OrderStockSyncResult = {
   checked: number;
   updated: number;
   items: OrderStockSyncItem[];
+  // Non-null when every linked item was confirmed and the order was PENDING
+  // (so this check just auto-confirmed it — see backend's
+  // confirmOrderAfterFinaCheck) — the caller should replace its order state
+  // with this instead of just the stock items above.
+  order: AdminOrder | null;
 };
 
 // Admin order-detail action — re-checks live FINA stock for just this

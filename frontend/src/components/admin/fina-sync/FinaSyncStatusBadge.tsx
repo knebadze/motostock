@@ -5,6 +5,7 @@ import type { FinaSyncRun } from "@/lib/api/fina-sync";
 export const FINA_SYNC_TRIGGER_LABEL: Record<FinaSyncRun["trigger"], string> = {
   SCHEDULED: "ავტომატური",
   MANUAL: "ხელით",
+  CHECKOUT: "შეკვეთისას",
 };
 
 const FINA_SYNC_STATUS_STYLE: Record<FinaSyncRun["status"], string> = {

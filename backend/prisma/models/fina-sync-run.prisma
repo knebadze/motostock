@@ -1,6 +1,13 @@
 enum FinaSyncTrigger {
   SCHEDULED
   MANUAL
+  // A live per-item stock check during checkout (see fina-sync.service.ts's
+  // syncVariantStockByIds) that failed to reach FINA — recorded here (unlike
+  // a successful checkout-time check, which isn't logged, to avoid a row per
+  // shopper visit) so admins can see in the same history as the
+  // scheduled/manual jobs that live confirmation is failing, not just that
+  // an order landed on PENDING.
+  CHECKOUT
 
   @@schema("dbo")
 }
