@@ -36,6 +36,9 @@ export function VehicleListingCard({
   const imageUrl = resolveMediaUrl(listing.images[0]?.imageUrl ?? listing.vehicleCatalog.imageUrl);
   const outOfStock = listing.stockQuantity === 0;
   const { activeDiscount } = listing;
+  // Brand + model, not model alone — matches the detail page's JSON-LD and
+  // gives image search / screen readers the full identifying label.
+  const vehicleLabel = `${listing.vehicleCatalog.brand.name} ${listing.vehicleCatalog.model.name}`;
 
   return (
     // Not a <Link> itself — see ProductCard.tsx's matching comment. Same
@@ -51,7 +54,7 @@ export function VehicleListingCard({
     >
       <Link
         href={`/${listing.vehicleCatalog.category.slug}/${listing.id}`}
-        aria-label={listing.vehicleCatalog.model.name}
+        aria-label={vehicleLabel}
         className="absolute inset-0"
       />
       <div
@@ -64,7 +67,7 @@ export function VehicleListingCard({
         {imageUrl ? (
           <Image
             src={imageUrl}
-            alt={listing.vehicleCatalog.model.name}
+            alt={vehicleLabel}
             fill
             sizes={layout === "list" ? "96px" : "(min-width: 1024px) 22vw, (min-width: 640px) 45vw, 90vw"}
             className="object-cover"
