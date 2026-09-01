@@ -1,15 +1,15 @@
 import {
+  getAdminProductsFromServer,
   getCategoriesFromServer,
   getLookupItemsFromServer,
   getProductBrandsFromServer,
-  getProductsFromServer,
 } from "@/lib/api/server";
 import { ProductsManager } from "@/components/admin/products/ProductsManager";
 
 export default async function ProductsPage() {
   const [products, categories, productBrands, sizes, colors, conditions, statuses] =
     await Promise.all([
-      getProductsFromServer(),
+      getAdminProductsFromServer(),
       getCategoriesFromServer(),
       getProductBrandsFromServer(),
       getLookupItemsFromServer("sizes"),

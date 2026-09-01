@@ -133,7 +133,12 @@ export async function listVehicleListings(
         filters.specFilters && !isEmptySpecFilters(filters.specFilters)
           ? JSON.stringify(filters.specFilters)
           : undefined,
-      adminFilters: filters.adminFilters?.length ? JSON.stringify(filters.adminFilters) : undefined,
+      // Must distinguish "not an admin call" (key omitted — storefront
+      // callers never pass this) from "admin call, no filters picked" (an
+      // empty array) — see products.ts's listProducts for the full
+      // reasoning (identical signal, same backend lean-projection pattern
+      // in vehicle-listing.service.ts's listVehicleListings).
+      adminFilters: filters.adminFilters !== undefined ? JSON.stringify(filters.adminFilters) : undefined,
     },
   });
   return data.items;

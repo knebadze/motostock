@@ -189,7 +189,14 @@ export async function listProducts(filters: ProductListFilters = {}): Promise<Pr
         filters.attributeFilters && !isEmptyAttributeFilters(filters.attributeFilters)
           ? JSON.stringify(filters.attributeFilters)
           : undefined,
-      adminFilters: filters.adminFilters?.length ? JSON.stringify(filters.adminFilters) : undefined,
+      // Must distinguish "not an admin call" (key omitted — storefront
+      // callers never pass this) from "admin call, no filters picked" (an
+      // empty array) — the backend uses the same signal to serve a lean
+      // admin-list projection instead of the storefront's heavier
+      // card-rendering one (see products.service.ts's listProducts), so an
+      // admin call with zero filters selected must still send `[]`, not
+      // omit the param entirely the way `.length ? ... : undefined` would.
+      adminFilters: filters.adminFilters !== undefined ? JSON.stringify(filters.adminFilters) : undefined,
       limit: filters.limit,
     },
   });

@@ -473,18 +473,48 @@ export async function listProducts(query: ProductListQuery) {
       ? await productsRepository.findSearchRankedIds(query.search, query.limit)
       : undefined;
 
-  const rows = await productsRepository.findMany({
-    categoryIds,
-    vehicleCompatibilityWhere,
-    searchIds,
-    brandIds: query.brandIds,
-    priceMin: query.priceMin,
-    priceMax: query.priceMax,
-    onSale: query.onSale,
-    attributeFilters: query.attributeFilters,
-    adminFilters: query.adminFilters,
-    limit: query.limit,
-  });
+  // The admin panel (AdminFilterPanel, which always sends adminFilters)
+  // fetches the whole filtered result set with no limit and paginates
+  // client-side — see productsRepository.findManyForAdmin's comment for why
+  // that path uses a lean projection instead of the storefront card
+  // include. attributeValues/each variant's discounts are backfilled as
+  // empty right after the fetch purely to satisfy toResponse's shape —
+  // nothing reads those two fields off an admin-list row (the admin detail
+  // modal fetches full per-product data separately), so activeDiscount
+  // ending up null and attributeValues empty here is harmless.
+  const isAdminList = query.adminFilters != null;
+
+  const rows = isAdminList
+    ? (
+        await productsRepository.findManyForAdmin({
+          categoryIds,
+          brandIds: query.brandIds,
+          priceMin: query.priceMin,
+          priceMax: query.priceMax,
+          onSale: query.onSale,
+          attributeFilters: query.attributeFilters,
+          adminFilters: query.adminFilters,
+        })
+      ).map((row) => ({
+        ...row,
+        attributeValues: [] as AttributeValueRow[],
+        variants: row.variants.map((variant) => ({
+          ...variant,
+          discounts: [] as DiscountSummaryRow[],
+        })),
+      }))
+    : await productsRepository.findMany({
+        categoryIds,
+        vehicleCompatibilityWhere,
+        searchIds,
+        brandIds: query.brandIds,
+        priceMin: query.priceMin,
+        priceMax: query.priceMax,
+        onSale: query.onSale,
+        attributeFilters: query.attributeFilters,
+        adminFilters: query.adminFilters,
+        limit: query.limit,
+      });
 
   let result: ReturnType<typeof toResponse>[];
   if (searchIds == null) {

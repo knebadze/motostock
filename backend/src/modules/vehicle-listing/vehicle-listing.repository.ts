@@ -40,6 +40,32 @@ export const vehicleListingInclude = {
 
 const include = vehicleListingInclude;
 
+// Lean admin-list projection — see products.repository.ts's
+// adminListInclude for the identical reasoning (the admin list has no
+// limit/pagination on the backend — fetch-everything-filtered,
+// paginate-client-side — unlike storefront browsing, which is always
+// limit-bounded). VehicleListingsManager.tsx's table only ever renders
+// brand/model name, year, condition/color/status name, price +
+// activeDiscount, one thumbnail, and stock/isActive — never the 7
+// VehicleCatalog spec-lookup joins (fuelType/transmissionType/coolingType/
+// finalDriveType/driveType/startType/powertrainType, each a separate join
+// vehicle-listing.service.ts's toVehicleListingResponse null-fills below
+// for this path), the full images gallery, or a listing's whole discount
+// history.
+const adminListInclude = {
+  vehicleCatalog: {
+    include: {
+      brand: { select: brandModelRefSelect },
+      model: { select: { ...brandModelRefSelect, category: { select: namedRefSelect } } },
+    },
+  },
+  condition: true,
+  status: true,
+  color: true,
+  discounts: { orderBy: { startDate: "desc" }, take: 5 },
+  images: { orderBy: { position: "asc" }, take: 1 },
+} as const;
+
 type VehicleListingWriteData = {
   vehicleCatalogId: number;
   conditionId: number;
@@ -167,6 +193,28 @@ export const vehicleListingRepository = {
       // ranking findSearchRankedIds already computed — see
       // products.repository.ts's identical findMany comment.
       take: filters.searchIds ? undefined : filters.limit,
+    });
+  },
+
+  // See adminListInclude above for why this is a separate method rather
+  // than findMany with a different include — no `limit`/`searchIds`, since
+  // the admin panel always fetches the whole filtered set unranked (same
+  // ordering as findMany's default).
+  findManyForAdmin(filters: {
+    categoryIds?: number[];
+    brandIds?: number[];
+    priceMin?: number;
+    priceMax?: number;
+    yearMin?: number;
+    yearMax?: number;
+    onSale?: boolean;
+    specFilters?: SpecFilterInput;
+    adminFilters?: FilterEntry[];
+  }) {
+    return prisma.vehicleListing.findMany({
+      where: buildWhere(filters),
+      include: adminListInclude,
+      orderBy: [{ vehicleCatalog: { popularity: "desc" } }, { createdAt: "desc" }],
     });
   },
 

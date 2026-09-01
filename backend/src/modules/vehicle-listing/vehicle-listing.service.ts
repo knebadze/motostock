@@ -232,19 +232,56 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       ? await vehicleListingRepository.findSearchRankedIds(query.search, query.limit)
       : undefined;
 
-  const rows = await vehicleListingRepository.findMany({
-    categoryIds,
-    searchIds,
-    brandIds: query.brandIds,
-    priceMin: query.priceMin,
-    priceMax: query.priceMax,
-    yearMin: query.yearMin,
-    yearMax: query.yearMax,
-    onSale: query.onSale,
-    specFilters: query.specFilters,
-    adminFilters: query.adminFilters,
-    limit: query.limit,
-  });
+  // The admin panel (AdminFilterPanel, which always sends adminFilters)
+  // fetches the whole filtered result set with no limit and paginates
+  // client-side — see vehicleListingRepository.findManyForAdmin's comment
+  // for why that path drops the 7 VehicleCatalog spec-lookup joins and caps
+  // images/discounts instead of using the storefront's full include. The 7
+  // dropped lookups are null-filled right after the fetch purely to satisfy
+  // toVehicleListingResponse's shape — nothing reads them off an admin-list
+  // row (VehicleListingsManager.tsx's table never renders engine specs; the
+  // admin detail view fetches full per-listing data separately).
+  const isAdminList = query.adminFilters != null;
+
+  const rows = isAdminList
+    ? (
+        await vehicleListingRepository.findManyForAdmin({
+          categoryIds,
+          brandIds: query.brandIds,
+          priceMin: query.priceMin,
+          priceMax: query.priceMax,
+          yearMin: query.yearMin,
+          yearMax: query.yearMax,
+          onSale: query.onSale,
+          specFilters: query.specFilters,
+          adminFilters: query.adminFilters,
+        })
+      ).map((row) => ({
+        ...row,
+        vehicleCatalog: {
+          ...row.vehicleCatalog,
+          fuelType: null,
+          transmissionType: null,
+          coolingType: null,
+          finalDriveType: null,
+          driveType: null,
+          startType: null,
+          powertrainType: null,
+        },
+      }))
+    : await vehicleListingRepository.findMany({
+        categoryIds,
+        searchIds,
+        brandIds: query.brandIds,
+        priceMin: query.priceMin,
+        priceMax: query.priceMax,
+        yearMin: query.yearMin,
+        yearMax: query.yearMax,
+        onSale: query.onSale,
+        specFilters: query.specFilters,
+        adminFilters: query.adminFilters,
+        limit: query.limit,
+      });
 
   let result: ReturnType<typeof toVehicleListingResponse>[];
   if (searchIds == null) {

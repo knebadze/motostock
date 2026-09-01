@@ -316,6 +316,19 @@ export async function getVehicleListingsFromServer(categoryId?: number): Promise
   });
 }
 
+// Admin vehicle-listings list's initial (server-rendered) load specifically
+// — see getAdminProductsFromServer's identical reasoning: an explicit
+// `adminFilters=[]`, not an omitted param, is what gets the backend's lean
+// admin-list projection from the very first render.
+export async function getAdminVehicleListingsFromServer(): Promise<VehicleListing[]> {
+  return fetchFromServer<{ items: VehicleListing[] }, VehicleListing[]>("/vehicle-listings", {
+    params: { adminFilters: "[]" },
+    fallback: [],
+    extract: (data) => data.items,
+    requireAuth: true,
+  });
+}
+
 export async function getVehicleListingFromServer(id: number): Promise<VehicleListing | null> {
   // Public endpoint (guest vehicle detail page) — must not bail out just
   // because there's no admin session cookie, same fix as getCategoriesFromServer.
@@ -556,6 +569,23 @@ export async function getProductsFromServer(
     params: { categoryId: categoryId || undefined, vehicleCatalogId: vehicleCatalogId || undefined },
     fallback: [],
     extract: (data) => data.items,
+  });
+}
+
+// Admin products list's initial (server-rendered) load specifically —
+// unlike getProductsFromServer above (shared with the storefront/sitemap/
+// admin pickers, which need the full card-rendering shape), this always
+// sends `adminFilters=[]` explicitly so the backend takes the lean
+// admin-list projection from the very first render, not just once the admin
+// panel's client-side refresh() kicks in after picking a filter (see
+// products.service.ts's listProducts and lib/api/products.ts's listProducts
+// for why an explicit `[]`, not an omitted param, is what signals this).
+export async function getAdminProductsFromServer(): Promise<Product[]> {
+  return fetchFromServer<{ items: Product[] }, Product[]>("/products", {
+    params: { adminFilters: "[]" },
+    fallback: [],
+    extract: (data) => data.items,
+    requireAuth: true,
   });
 }
 
