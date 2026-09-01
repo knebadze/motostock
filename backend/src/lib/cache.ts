@@ -1,8 +1,17 @@
 // Process-local in-memory cache — the API runs as a single Node process (no
 // Redis/multi-instance setup in this project), so a plain Map is enough.
-// Callers are responsible for invalidating their own keys on writes; `clear`
-// wipes everything, used by the admin "clear cache" action.
-const store = new Map<string, unknown>();
+// Two invalidation styles share this one store: most callers (settings,
+// lookups, ...) invalidate their own keys explicitly on writes and never
+// pass `ttlMs`, so `expiresAt` stays null and the entry lives until deleted
+// or `clear`ed. Callers with no natural "on write" invalidation hook (e.g.
+// the homepage's popular/on-sale product rankings, which shift with every
+// order/discount change across several unrelated modules) pass `ttlMs`
+// instead and just let entries go stale and expire on their own — simpler
+// and safer than trying to wire explicit invalidation into every place that
+// could affect the ranking. `clear` wipes everything, used by the admin
+// "clear cache" action.
+type Entry = { value: unknown; expiresAt: number | null };
+const store = new Map<string, Entry>();
 
 const PREVIEW_LENGTH = 150;
 
@@ -18,11 +27,17 @@ function previewValue(value: unknown): string {
 
 export const cache = {
   get<T>(key: string): T | undefined {
-    return store.get(key) as T | undefined;
+    const entry = store.get(key);
+    if (!entry) return undefined;
+    if (entry.expiresAt != null && Date.now() > entry.expiresAt) {
+      store.delete(key);
+      return undefined;
+    }
+    return entry.value as T;
   },
 
-  set<T>(key: string, value: T): void {
-    store.set(key, value);
+  set<T>(key: string, value: T, ttlMs?: number): void {
+    store.set(key, { value, expiresAt: ttlMs != null ? Date.now() + ttlMs : null });
   },
 
   del(key: string): void {
@@ -35,11 +50,18 @@ export const cache = {
 
   // Admin-only introspection (see cache.controller.ts's list handler) — not
   // used by any read-through cache logic, just lets the settings page's
-  // cache tab show what's currently stored.
+  // cache tab show what's currently stored. Skips (and evicts) anything
+  // that's already expired rather than showing a stale ghost entry.
   list(): { key: string; valuePreview: string }[] {
-    return Array.from(store.entries()).map(([key, value]) => ({
-      key,
-      valuePreview: previewValue(value),
-    }));
+    const now = Date.now();
+    const entries: { key: string; valuePreview: string }[] = [];
+    for (const [key, entry] of store) {
+      if (entry.expiresAt != null && now > entry.expiresAt) {
+        store.delete(key);
+        continue;
+      }
+      entries.push({ key, valuePreview: previewValue(entry.value) });
+    }
+    return entries;
   },
 };

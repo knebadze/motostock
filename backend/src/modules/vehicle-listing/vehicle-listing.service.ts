@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { cache } from "../../lib/cache.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
@@ -195,7 +196,35 @@ async function assertRefsExist(input: {
   }
 }
 
+// Same reasoning and TTL as products.service.ts's listProducts/
+// listPopularProducts — the homepage's on-sale/popular vehicle sliders hit
+// these with an identical query shape on essentially every guest visit.
+const HOMEPAGE_CACHE_TTL_MS = 5 * 60_000;
+
+function isCacheableOnSaleQuery(query: VehicleListingListQuery): boolean {
+  return (
+    query.onSale === true &&
+    query.categoryId == null &&
+    query.search == null &&
+    query.brandIds == null &&
+    query.priceMin == null &&
+    query.priceMax == null &&
+    query.yearMin == null &&
+    query.yearMax == null &&
+    query.specFilters == null &&
+    query.adminFilters == null
+  );
+}
+
 export async function listVehicleListings(query: VehicleListingListQuery) {
+  const cacheKey = isCacheableOnSaleQuery(query)
+    ? `vehicleListings:onSale:${query.limit ?? "all"}`
+    : null;
+  if (cacheKey) {
+    const cached = cache.get<ReturnType<typeof toVehicleListingResponse>[]>(cacheKey);
+    if (cached) return cached;
+  }
+
   const categoryIds =
     query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
   const searchIds =
@@ -217,31 +246,46 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     limit: query.limit,
   });
 
+  let result: ReturnType<typeof toVehicleListingResponse>[];
   if (searchIds == null) {
-    return rows.map(toVehicleListingResponse);
+    result = rows.map(toVehicleListingResponse);
+  } else {
+    // See products.service.ts's listProducts for why this re-sort/slice
+    // step is needed (findMany's `id: {in: [...]}` doesn't preserve rank
+    // order).
+    const rankById = new Map(searchIds.map((id, index) => [id, index]));
+    const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
+    result = (query.limit != null ? ranked.slice(0, query.limit) : ranked).map(
+      toVehicleListingResponse,
+    );
   }
 
-  // See products.service.ts's listProducts for why this re-sort/slice step
-  // is needed (findMany's `id: {in: [...]}` doesn't preserve rank order).
-  const rankById = new Map(searchIds.map((id, index) => [id, index]));
-  const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
-  return (query.limit != null ? ranked.slice(0, query.limit) : ranked).map(toVehicleListingResponse);
+  if (cacheKey) cache.set(cacheKey, result, HOMEPAGE_CACHE_TTL_MS);
+  return result;
 }
 
 // Homepage "popular vehicles" slider — see
 // vehicleListingRepository.findPopularListingIds for the ranking logic;
 // this just re-fetches full rows for the ranked ids and preserves their
-// order (findByIds/`in` queries don't).
+// order (findByIds/`in` queries don't). Cached the same way and for the
+// same reason as listVehicleListings' on-sale path above.
 export async function listPopularVehicleListings(limit: number) {
+  const cacheKey = `vehicleListings:popular:${limit}`;
+  const cached = cache.get<ReturnType<typeof toVehicleListingResponse>[]>(cacheKey);
+  if (cached) return cached;
+
   const rankedIds = await vehicleListingRepository.findPopularListingIds(limit);
   if (rankedIds.length === 0) return [];
 
   const rows = await vehicleListingRepository.findByIds(rankedIds);
   const rowById = new Map(rows.map((row) => [row.id, row]));
-  return rankedIds
+  const result = rankedIds
     .map((id) => rowById.get(id))
     .filter((row): row is NonNullable<typeof row> => row != null)
     .map((row) => toVehicleListingResponse(row));
+
+  cache.set(cacheKey, result, HOMEPAGE_CACHE_TTL_MS);
+  return result;
 }
 
 // The only caller of this is the guest listing-detail page (see

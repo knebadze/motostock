@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { cache } from "../../lib/cache.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { computeLowStockQuantity } from "../../lib/low-stock.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
@@ -420,7 +421,44 @@ export async function buildVehicleCompatibilityWhere(
   };
 }
 
+// Homepage sliders (on-sale/popular) hit these with the exact same
+// {onSale, limit} or {limit} shape on essentially every guest visit — the
+// ranking barely changes minute-to-minute, so a TTL cache (see lib/cache.ts)
+// avoids re-running the ranking query and its follow-up findByIds on every
+// single homepage load. 5 minutes, not a few seconds: this is a
+// low-traffic, regional (Georgian motorcycle-market) storefront, so a short
+// TTL would mostly just expire between visits and rarely get reused — a
+// longer window actually gets hit, at the cost of a new discount/order
+// taking up to 5 minutes to show up on the homepage (product/cart/checkout
+// pages are unaffected — they never read from this cache).
+const HOMEPAGE_CACHE_TTL_MS = 5 * 60_000;
+
+// True only for the homepage's specific "on-sale, nothing else" access
+// pattern (see getOnSaleProductsFromServer on the frontend) — every other
+// filter combination (category browsing, search, admin panel) still goes
+// straight to the DB, since caching a near-infinite combination of filters
+// wouldn't pay for itself.
+function isCacheableOnSaleQuery(query: ProductListQuery): boolean {
+  return (
+    query.onSale === true &&
+    query.categoryId == null &&
+    query.vehicleCatalogId == null &&
+    query.search == null &&
+    query.brandIds == null &&
+    query.priceMin == null &&
+    query.priceMax == null &&
+    query.attributeFilters == null &&
+    query.adminFilters == null
+  );
+}
+
 export async function listProducts(query: ProductListQuery) {
+  const cacheKey = isCacheableOnSaleQuery(query) ? `products:onSale:${query.limit ?? "all"}` : null;
+  if (cacheKey) {
+    const cached = cache.get<ReturnType<typeof toResponse>[]>(cacheKey);
+    if (cached) return cached;
+  }
+
   const categoryIds =
     query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
   const vehicleCompatibilityWhere =
@@ -448,32 +486,44 @@ export async function listProducts(query: ProductListQuery) {
     limit: query.limit,
   });
 
+  let result: ReturnType<typeof toResponse>[];
   if (searchIds == null) {
-    return rows.map(toResponse);
+    result = rows.map(toResponse);
+  } else {
+    // findMany's `id: {in: searchIds}` doesn't preserve searchIds' relevance
+    // order — restore it, then apply the limit here (findMany skipped `take`
+    // for this case; see its comment).
+    const rankById = new Map(searchIds.map((id, index) => [id, index]));
+    const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
+    result = (query.limit != null ? ranked.slice(0, query.limit) : ranked).map(toResponse);
   }
 
-  // findMany's `id: {in: searchIds}` doesn't preserve searchIds' relevance
-  // order — restore it, then apply the limit here (findMany skipped `take`
-  // for this case; see its comment).
-  const rankById = new Map(searchIds.map((id, index) => [id, index]));
-  const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
-  return (query.limit != null ? ranked.slice(0, query.limit) : ranked).map(toResponse);
+  if (cacheKey) cache.set(cacheKey, result, HOMEPAGE_CACHE_TTL_MS);
+  return result;
 }
 
 // Homepage "popular products" slider — see
 // productsRepository.findPopularProductIds for the ranking logic; this just
 // re-fetches full card rows for the ranked ids and preserves their order
-// (findByIds/`in` queries don't).
+// (findByIds/`in` queries don't). Cached the same way and for the same
+// reason as listProducts' on-sale path above.
 export async function listPopularProducts(limit: number) {
+  const cacheKey = `products:popular:${limit}`;
+  const cached = cache.get<ReturnType<typeof toResponse>[]>(cacheKey);
+  if (cached) return cached;
+
   const rankedIds = await productsRepository.findPopularProductIds(limit);
   if (rankedIds.length === 0) return [];
 
   const rows = await productsRepository.findByIds(rankedIds);
   const rowById = new Map(rows.map((row) => [row.id, row]));
-  return rankedIds
+  const result = rankedIds
     .map((id) => rowById.get(id))
     .filter((row): row is NonNullable<typeof row> => row != null)
     .map((row) => toResponse(row));
+
+  cache.set(cacheKey, result, HOMEPAGE_CACHE_TTL_MS);
+  return result;
 }
 
 // Checkout's "check compatibility" widget — same buildVehicleCompatibilityWhere
