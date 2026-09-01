@@ -132,5 +132,11 @@ model Order {
   @@index([bankId])
   @@index([statusId])
   @@index([cancellationReasonId])
+  // Admin order list defaults to orderBy: { createdAt: "desc" } and filters
+  // by createdFrom/createdTo (orders.repository.ts), and analytics'
+  // revenue-series/order-count-by-status queries filter by a createdAt
+  // range (analytics.repository.ts) — none of that was indexed before,
+  // meaning a sequential scan + sort as Order grows into the thousands.
+  @@index([createdAt])
   @@schema("dbo")
 }
