@@ -6,7 +6,13 @@ const RECENT_ORDERS_LIMIT = 8;
 // glance-only dashboard — the full picture belongs on the future analytics
 // page, not here.
 const LOW_STOCK_LIMIT = 8;
-const REVENUE_WINDOW_DAYS = 30;
+// Shared by the revenue sum and the status breakdown below — both are
+// "recent activity" snapshots for a glance dashboard, not lifetime totals
+// (that's what totalOrders/the future analytics page are for). A lifetime
+// per-status count would mean the query's cost grows forever with total
+// order history, unlike everything else in this Promise.all batch, which
+// stays bounded by either a `take` or a real filter.
+const RECENT_ACTIVITY_WINDOW_DAYS = 30;
 
 type StatusRow = { id: number; key: string; nameKa: string; nameEn: string; nameRu: string };
 
@@ -19,8 +25,8 @@ function toStatusLookup(status: StatusRow) {
 // dashboard is a single round trip instead of a waterfall of small requests.
 export async function getDashboardStats() {
   const now = new Date();
-  const revenueWindowStart = new Date(now);
-  revenueWindowStart.setDate(revenueWindowStart.getDate() - REVENUE_WINDOW_DAYS);
+  const recentActivityWindowStart = new Date(now);
+  recentActivityWindowStart.setDate(recentActivityWindowStart.getDate() - RECENT_ACTIVITY_WINDOW_DAYS);
 
   const lowStockWhere = { stockQuantity: { lte: LOW_STOCK_THRESHOLD }, isActive: true };
 
@@ -50,9 +56,19 @@ export async function getDashboardStats() {
     // admin-editable rows, not a fixed enum) rather than a hardcoded id.
     prisma.order.aggregate({
       _sum: { total: true },
-      where: { createdAt: { gte: revenueWindowStart }, status: { key: { not: "CANCELLED" } } },
+      where: { createdAt: { gte: recentActivityWindowStart }, status: { key: { not: "CANCELLED" } } },
     }),
-    prisma.order.groupBy({ by: ["statusId"], _count: { _all: true } }),
+    // Windowed like the revenue aggregate above (see
+    // RECENT_ACTIVITY_WINDOW_DAYS) rather than an all-time breakdown — keeps
+    // this query's cost bounded by the window instead of growing forever
+    // with total lifetime order count, and a "what's active right now"
+    // dashboard has more use for recent activity than an ever-growing
+    // DELIVERED/CANCELLED tally anyway. Uses the new Order.createdAt index.
+    prisma.order.groupBy({
+      by: ["statusId"],
+      _count: { _all: true },
+      where: { createdAt: { gte: recentActivityWindowStart } },
+    }),
     prisma.orderStatus.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.order.findMany({
       take: RECENT_ORDERS_LIMIT,

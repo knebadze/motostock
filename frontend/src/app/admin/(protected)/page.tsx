@@ -51,7 +51,7 @@ export default async function DashboardPage() {
         </div>
         <div>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            შეკვეთები სტატუსების მიხედვით
+            შეკვეთები სტატუსების მიხედვით (30 დღე)
           </h2>
           <OrderStatusChart data={stats.ordersByStatus} />
         </div>
