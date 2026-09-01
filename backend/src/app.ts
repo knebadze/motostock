@@ -5,7 +5,7 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
 import { pinoHttp } from "pino-http";
-import { env } from "./config/env.js";
+import { corsAllowedOrigins } from "./config/env.js";
 import { logger } from "./lib/logger.js";
 import { generateOpenApiDocument } from "./docs/openapi.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
@@ -86,7 +86,22 @@ export const app = express();
 app.set("trust proxy", 1);
 
 app.use(helmet());
-app.use(cors({ origin: env.FRONTEND_ORIGIN, credentials: true }));
+app.use(
+  cors({
+    origin(origin, callback) {
+      // No Origin header (server-to-server calls, curl, same-origin
+      // requests) — nothing to check against, let it through same as
+      // before. Otherwise it must be one of the configured allow-listed
+      // origins (see config/env.ts's corsAllowedOrigins).
+      if (!origin || corsAllowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  }),
+);
 app.use(cookieParser());
 app.use(express.json());
 app.use(pinoHttp({ logger }));

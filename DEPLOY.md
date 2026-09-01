@@ -135,8 +135,14 @@ credentials-ს არაფერი ეხება:
    ```
    ```
    FRONTEND_ORIGIN=https://example.com
+   FRONTEND_ORIGIN_ALTERNATES=https://www.example.com
    BACKEND_PUBLIC_URL=https://api.example.com
    ```
+
+   `FRONTEND_ORIGIN_ALTERNATES` საჭიროა მხოლოდ თუ Caddyfile-ში `www.example.com`-საც
+   უშვებთ (ნაბიჯი 2-ში) — ბრაუზერისთვის `example.com` და `www.example.com` სხვადასხვა
+   origin-ია, ასე რომ CORS-მა ორივე ცალკე უნდა იცოდეს დაშვებულად. თუ მხოლოდ apex
+   დომენს იყენებთ, ცარიელი დატოვეთ.
 
 შემდეგ: `docker compose build && docker compose up -d` (frontend-ს ხელახლა აწყობა სჭირდება, რადგან
 `NEXT_PUBLIC_*` ბილდის დროს იკერება ბანდლში). Google/Facebook OAuth-ს იყენებთ თუ არა — redirect
