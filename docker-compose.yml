@@ -32,6 +32,20 @@ services:
         condition: service_healthy
     volumes:
       - backend_uploads:/app/uploads
+    healthcheck:
+      # No curl/wget in the slim runner image — Node's own http client avoids
+      # adding one just for this. Hits the app's existing GET /api/health.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:4000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # One-off — not part of the normal `up`, run explicitly after each deploy
   # that adds migrations: `docker compose run --rm migrate`. Reuses the
@@ -64,7 +78,20 @@ services:
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   caddy:
     image: caddy:2-alpine
@@ -77,8 +104,10 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - frontend
-      - backend
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
 
 volumes:
   pgdata:
