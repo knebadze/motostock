@@ -13,7 +13,7 @@ import {
 import type { Category } from "@/lib/api/categories";
 import { ApiRequestError } from "@/lib/api/client";
 import { flattenTree, isVehicleCategory } from "@/lib/categories-tree";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, toTbilisiDateOnly } from "@/lib/format";
 import { bulkProductDiscountFormSchema } from "@/lib/validation/bulk-product-discounts";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
@@ -346,7 +346,7 @@ export function BulkVehicleListingDiscountsPanel({ categories }: { categories: C
                           {candidate.activeDiscount.discountPercent != null
                             ? `${candidate.activeDiscount.discountPercent}%`
                             : "აქტიური"}{" "}
-                          → {candidate.activeDiscount.endDate.slice(0, 10)}
+                          → {toTbilisiDateOnly(candidate.activeDiscount.endDate)}
                         </span>
                       ) : (
                         "—"

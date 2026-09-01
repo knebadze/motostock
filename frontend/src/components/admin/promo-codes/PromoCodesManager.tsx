@@ -15,6 +15,7 @@ import {
 } from "@/lib/api/promo-codes";
 import type { Category } from "@/lib/api/categories";
 import { ApiRequestError } from "@/lib/api/client";
+import { toTbilisiDateOnly } from "@/lib/format";
 import { flattenTree, isVehicleCategory } from "@/lib/categories-tree";
 import { PromoCodeFormModal } from "./PromoCodeFormModal";
 
@@ -106,7 +107,7 @@ export function PromoCodesManager({
     },
     {
       header: "პერიოდი",
-      render: (item) => `${item.startDate.slice(0, 10)} – ${item.endDate.slice(0, 10)}`,
+      render: (item) => `${toTbilisiDateOnly(item.startDate)} – ${toTbilisiDateOnly(item.endDate)}`,
       cellClassName: "text-muted-foreground",
     },
     { header: "სტატუსი", render: (item) => <StatusBadge status={item.computedStatus} /> },

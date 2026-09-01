@@ -7,6 +7,7 @@ import { brandsRepository } from "../brands/brands.repository.js";
 import { modelsRepository } from "../models/models.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
+import { startOfDayTbilisi, endOfDayTbilisi } from "../../lib/tbilisi-dates.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getSpecFieldDefinition } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
@@ -257,8 +258,8 @@ export async function createPromoCode(input: CreatePromoCodeInput) {
     specLookupItemId: input.domain === "VEHICLE" ? (input.specLookupItemId ?? null) : null,
     discountPercent: input.discountPercent,
     usageLimit: input.usageLimit ?? null,
-    startDate: new Date(input.startDate),
-    endDate: new Date(input.endDate),
+    startDate: startOfDayTbilisi(input.startDate),
+    endDate: endOfDayTbilisi(input.endDate),
     isActive: input.isActive ?? true,
   });
   return toResponse(row);
@@ -314,8 +315,8 @@ export async function updatePromoCode(id: number, input: UpdatePromoCodeInput) {
     }
   }
 
-  const effectiveStart = input.startDate ? new Date(input.startDate) : existing.startDate;
-  const effectiveEnd = input.endDate ? new Date(input.endDate) : existing.endDate;
+  const effectiveStart = input.startDate ? startOfDayTbilisi(input.startDate) : existing.startDate;
+  const effectiveEnd = input.endDate ? endOfDayTbilisi(input.endDate) : existing.endDate;
   if (effectiveStart >= effectiveEnd) {
     throw new ApiError(400, "დაწყების თარიღი დასრულების თარიღზე ადრე უნდა იყოს");
   }
@@ -332,8 +333,8 @@ export async function updatePromoCode(id: number, input: UpdatePromoCodeInput) {
     ...(input.specLookupItemId !== undefined ? { specLookupItemId: input.specLookupItemId } : {}),
     ...(input.discountPercent !== undefined ? { discountPercent: input.discountPercent } : {}),
     ...(input.usageLimit !== undefined ? { usageLimit: input.usageLimit } : {}),
-    ...(input.startDate !== undefined ? { startDate: new Date(input.startDate) } : {}),
-    ...(input.endDate !== undefined ? { endDate: new Date(input.endDate) } : {}),
+    ...(input.startDate !== undefined ? { startDate: startOfDayTbilisi(input.startDate) } : {}),
+    ...(input.endDate !== undefined ? { endDate: endOfDayTbilisi(input.endDate) } : {}),
     ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
   });
   return toResponse(row);

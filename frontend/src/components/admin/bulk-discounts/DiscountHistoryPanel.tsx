@@ -17,7 +17,7 @@ import {
 import { deleteProductVariantDiscount } from "@/lib/api/product-variant-discounts";
 import { deleteVehicleListingDiscount } from "@/lib/api/vehicle-listing-discounts";
 import { ApiRequestError } from "@/lib/api/client";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, toTbilisiDateOnly } from "@/lib/format";
 
 type UnifiedRow = {
   key: string;
@@ -157,7 +157,7 @@ export function DiscountHistoryPanel() {
     },
     {
       header: "პერიოდი",
-      render: (row) => `${row.startDate.slice(0, 10)} – ${row.endDate.slice(0, 10)}`,
+      render: (row) => `${toTbilisiDateOnly(row.startDate)} – ${toTbilisiDateOnly(row.endDate)}`,
       cellClassName: "text-muted-foreground",
     },
     {

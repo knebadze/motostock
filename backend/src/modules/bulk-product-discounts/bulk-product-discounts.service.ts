@@ -2,6 +2,7 @@ import { ApiError } from "../../lib/ApiError.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
+import { startOfDayTbilisi, endOfDayTbilisi } from "../../lib/tbilisi-dates.js";
 import {
   toDiscountResponse,
   type DiscountRow,
@@ -111,8 +112,8 @@ export async function applyBulkProductDiscounts(input: BulkApplyProductDiscounts
     throw new ApiError(400, "მითითებული ვარიანტები ვერ მოიძებნა");
   }
 
-  const startDate = new Date(input.startDate);
-  const endDate = new Date(input.endDate);
+  const startDate = startOfDayTbilisi(input.startDate);
+  const endDate = endOfDayTbilisi(input.endDate);
 
   const rows = variants.map((variant) => ({
     productVariantId: variant.id,

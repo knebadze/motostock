@@ -3,6 +3,7 @@ import { findActiveDiscount } from "../../lib/discounts.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
+import { startOfDayTbilisi, endOfDayTbilisi } from "../../lib/tbilisi-dates.js";
 import { VEHICLE_SPEC_FIELDS } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
 import {
   toDiscountResponse,
@@ -138,8 +139,8 @@ export async function applyBulkVehicleListingDiscounts(input: BulkApplyVehicleLi
     throw new ApiError(400, "მითითებული განცხადებები ვერ მოიძებნა");
   }
 
-  const startDate = new Date(input.startDate);
-  const endDate = new Date(input.endDate);
+  const startDate = startOfDayTbilisi(input.startDate);
+  const endDate = endOfDayTbilisi(input.endDate);
 
   const rows = listings.map((listing) => ({
     vehicleListingId: listing.id,

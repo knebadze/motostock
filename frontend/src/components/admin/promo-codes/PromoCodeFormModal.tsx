@@ -22,6 +22,7 @@ import { listModels, type Model } from "@/lib/api/models";
 import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
 import type { VehicleSpecField } from "@/lib/api/vehicle-category-filters";
 import { ApiRequestError } from "@/lib/api/client";
+import { toTbilisiDateOnly } from "@/lib/format";
 import { flattenTree, isVehicleCategory } from "@/lib/categories-tree";
 import { VEHICLE_SPEC_FIELDS } from "@/config/vehicle-spec-fields";
 import { productPromoCodeFormSchema, vehiclePromoCodeFormSchema } from "@/lib/validation/promo-codes";
@@ -79,8 +80,10 @@ export function PromoCodeFormModal({
   const [usageLimit, setUsageLimit] = useState(
     promoCode?.usageLimit != null ? String(promoCode.usageLimit) : "",
   );
-  const [startDate, setStartDate] = useState(promoCode?.startDate.slice(0, 10) ?? "");
-  const [endDate, setEndDate] = useState(promoCode?.endDate.slice(0, 10) ?? "");
+  const [startDate, setStartDate] = useState(
+    promoCode ? toTbilisiDateOnly(promoCode.startDate) : "",
+  );
+  const [endDate, setEndDate] = useState(promoCode ? toTbilisiDateOnly(promoCode.endDate) : "");
   const [isActive, setIsActive] = useState(promoCode?.isActive ?? true);
 
   const [categoryBrands, setCategoryBrands] = useState<ProductBrand[]>([]);

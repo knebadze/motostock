@@ -1,6 +1,7 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { productVariantsRepository } from "../product-variants/product-variants.repository.js";
 import { productVariantDiscountsRepository } from "./product-variant-discounts.repository.js";
+import { startOfDayTbilisi, endOfDayTbilisi, toTbilisiDateOnly } from "../../lib/tbilisi-dates.js";
 import type {
   CreateProductVariantDiscountInput,
   UpdateProductVariantDiscountInput,
@@ -17,18 +18,14 @@ export type DiscountRow = {
   updatedAt: Date;
 };
 
-function toDateOnly(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
 export function toDiscountResponse(row: DiscountRow) {
   return {
     id: row.id,
     productVariantId: row.productVariantId,
     discountPrice: Number(row.discountPrice),
     discountPercent: row.discountPercent == null ? null : Number(row.discountPercent),
-    startDate: toDateOnly(row.startDate),
-    endDate: toDateOnly(row.endDate),
+    startDate: toTbilisiDateOnly(row.startDate),
+    endDate: toTbilisiDateOnly(row.endDate),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -53,18 +50,18 @@ export async function createDiscount(
 ) {
   await assertVariantExists(productVariantId);
 
-  const startDate = new Date(input.startDate);
-  const endDate = new Date(input.endDate);
+  const startDate = startOfDayTbilisi(input.startDate);
+  const endDate = endOfDayTbilisi(input.endDate);
   if (endDate <= startDate) {
     throw new ApiError(400, "დასრულების თარიღი უნდა იყოს დაწყების თარიღის შემდეგ");
   }
   // Catches an obvious typo (e.g. a wrong year) rather than silently
   // accepting an already-expired discount — endDate is a calendar day, so
   // "today" still passes (the active-window check elsewhere treats it as
-  // valid through 23:59:59 today, not just up to the current instant).
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  if (endDate < today) {
+  // valid through 23:59:59 today Tbilisi time, not just up to the current
+  // instant).
+  const todayStart = startOfDayTbilisi(toTbilisiDateOnly(new Date()));
+  if (endDate < todayStart) {
     throw new ApiError(400, "დასრულების თარიღი არ უნდა იყოს წარსულში");
   }
 
@@ -88,8 +85,8 @@ export async function updateDiscount(
     throw new ApiError(404, "ფასდაკლება ვერ მოიძებნა");
   }
 
-  const startDate = input.startDate ? new Date(input.startDate) : existing.startDate;
-  const endDate = input.endDate ? new Date(input.endDate) : existing.endDate;
+  const startDate = input.startDate ? startOfDayTbilisi(input.startDate) : existing.startDate;
+  const endDate = input.endDate ? endOfDayTbilisi(input.endDate) : existing.endDate;
   if (endDate <= startDate) {
     throw new ApiError(400, "დასრულების თარიღი უნდა იყოს დაწყების თარიღის შემდეგ");
   }

@@ -26,6 +26,19 @@ export function formatDate(iso: string): string {
   return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
 }
 
+// Mirrors backend/src/lib/tbilisi-dates.ts's toTbilisiDateOnly — admin
+// discount/promo-code dates are stored as the start/end instant of a
+// Tbilisi (UTC+4, no DST) calendar day, not UTC midnight. A plain
+// `iso.slice(0, 10)` on the returned instant reads the *UTC* calendar date
+// instead, which is a day early for anything stored as Tbilisi midnight
+// (e.g. a discount's startDate) — this reads back the Tbilisi date the
+// backend actually meant instead.
+const TBILISI_OFFSET_MS = 4 * 60 * 60 * 1000;
+
+export function toTbilisiDateOnly(iso: string): string {
+  return new Date(new Date(iso).getTime() + TBILISI_OFFSET_MS).toISOString().slice(0, 10);
+}
+
 // Lookup rows (Size/Color/Condition/ListingStatus/etc.) store one flat name
 // per locale instead of a nested LocalizedString — this picks the right one.
 export function pickLookupName(
