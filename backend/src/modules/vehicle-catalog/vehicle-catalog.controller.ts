@@ -14,8 +14,8 @@ export async function list(
   req: Request<unknown, unknown, unknown, VehicleCatalogListQuery>,
   res: Response,
 ) {
-  const items = await vehicleCatalogService.listVehicleCatalog(req.query);
-  res.status(200).json({ items });
+  const result = await vehicleCatalogService.listVehicleCatalog(req.query);
+  res.status(200).json(result);
 }
 
 export async function getOne(req: Request, res: Response) {

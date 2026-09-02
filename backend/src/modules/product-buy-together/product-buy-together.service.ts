@@ -125,11 +125,20 @@ export async function listProductBuyTogether(productId: number) {
   return Promise.all(rows.map(toResponse));
 }
 
-// Admin-only — unified cross-product overview (see /admin/buy-together),
-// mirrors compatibility.service.ts's listAllCompatibility.
+// Admin-only — unified cross-product overview (see /admin/buy-together).
+// Real server-side pagination (skip/take), mirroring error-logs.service's
+// approach — unlike listAllCompatibility, this list has no natural cap.
 export async function listAllProductBuyTogether(filters: ListProductBuyTogetherAdminQuery) {
-  const rows = await productBuyTogetherRepository.findAll(buildAdminWhere(filters));
-  return rows.map(toAdminResponse);
+  const page = filters.page ?? 1;
+  const pageSize = filters.pageSize ?? 20;
+  const where = buildAdminWhere(filters);
+
+  const [rows, total] = await Promise.all([
+    productBuyTogetherRepository.findAll(where, (page - 1) * pageSize, pageSize),
+    productBuyTogetherRepository.count(where),
+  ]);
+
+  return { items: rows.map(toAdminResponse), total, page, pageSize };
 }
 
 export async function createProductBuyTogether(

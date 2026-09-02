@@ -29,15 +29,26 @@ export type ListCompatibilityFilters = {
   search?: string;
   categoryId?: number;
   kind?: "FITMENT" | "RULE";
+  page?: number;
+  pageSize?: number;
 };
 
+export type CompatibilityPage = {
+  items: CompatibilityItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+// Real server-side pagination (skip/take on the merged, sorted rows), not
+// client-side slicing — mirrors error-logs.ts's getErrorLogs.
 export async function listCompatibility(
   filters: ListCompatibilityFilters = {},
-): Promise<CompatibilityItem[]> {
-  const { data } = await apiClient.get<{ items: CompatibilityItem[] }>("/compatibility", {
+): Promise<CompatibilityPage> {
+  const { data } = await apiClient.get<CompatibilityPage>("/compatibility", {
     params: filters,
   });
-  return data.items;
+  return data;
 }
 
 export async function getCompatibleVehiclesForProduct(productId: number): Promise<CompatibleVehicle[]> {

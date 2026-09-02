@@ -216,13 +216,16 @@ function isCacheableOnSaleQuery(query: VehicleListingListQuery): boolean {
   );
 }
 
+// total/page/pageSize are only meaningful for the admin-list path
+// (query.adminFilters present) — every other caller (storefront browse,
+// on-sale/homepage) gets total = items.length, page = 1.
 export async function listVehicleListings(query: VehicleListingListQuery) {
   const cacheKey = isCacheableOnSaleQuery(query)
     ? `vehicleListings:onSale:${query.limit ?? "all"}`
     : null;
   if (cacheKey) {
     const cached = cache.get<ReturnType<typeof toVehicleListingResponse>[]>(cacheKey);
-    if (cached) return cached;
+    if (cached) return { items: cached, total: cached.length, page: 1, pageSize: cached.length || 1 };
   }
 
   const categoryIds =
@@ -233,8 +236,8 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       : undefined;
 
   // The admin panel (AdminFilterPanel, which always sends adminFilters)
-  // fetches the whole filtered result set with no limit and paginates
-  // client-side — see vehicleListingRepository.findManyForAdmin's comment
+  // fetches one server-paginated page (page/pageSize below) of the filtered
+  // result set — see vehicleListingRepository.findManyForAdmin's comment
   // for why that path drops the 7 VehicleCatalog spec-lookup joins and caps
   // images/discounts instead of using the storefront's full include. The 7
   // dropped lookups are null-filled right after the fetch purely to satisfy
@@ -242,21 +245,33 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
   // row (VehicleListingsManager.tsx's table never renders engine specs; the
   // admin detail view fetches full per-listing data separately).
   const isAdminList = query.adminFilters != null;
+  const page = query.page ?? 1;
+  const pageSize = query.pageSize ?? 20;
+  const adminCountFilters = {
+    categoryIds,
+    brandIds: query.brandIds,
+    priceMin: query.priceMin,
+    priceMax: query.priceMax,
+    yearMin: query.yearMin,
+    yearMax: query.yearMax,
+    onSale: query.onSale,
+    specFilters: query.specFilters,
+    adminFilters: query.adminFilters,
+  };
+
+  const [adminRows, adminTotal] = isAdminList
+    ? await Promise.all([
+        vehicleListingRepository.findManyForAdmin({
+          ...adminCountFilters,
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        vehicleListingRepository.countForAdmin(adminCountFilters),
+      ])
+    : [undefined, undefined];
 
   const rows = isAdminList
-    ? (
-        await vehicleListingRepository.findManyForAdmin({
-          categoryIds,
-          brandIds: query.brandIds,
-          priceMin: query.priceMin,
-          priceMax: query.priceMax,
-          yearMin: query.yearMin,
-          yearMax: query.yearMax,
-          onSale: query.onSale,
-          specFilters: query.specFilters,
-          adminFilters: query.adminFilters,
-        })
-      ).map((row) => ({
+    ? adminRows!.map((row) => ({
         ...row,
         vehicleCatalog: {
           ...row.vehicleCatalog,
@@ -298,7 +313,11 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
   }
 
   if (cacheKey) cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
-  return result;
+
+  if (isAdminList) {
+    return { items: result, total: adminTotal ?? result.length, page, pageSize };
+  }
+  return { items: result, total: result.length, page: 1, pageSize: result.length || 1 };
 }
 
 // Homepage "popular vehicles" slider — see

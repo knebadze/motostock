@@ -61,7 +61,15 @@ vehicleListingRouter.delete(
   vehicleListingController.remove,
 );
 const security = [{ cookieAuth: [] }];
-const listResponse = z.object({ items: z.array(vehicleListingResponseSchema) });
+// total/page/pageSize are only populated for the admin-list path (adminFilters
+// present) — the storefront/popular paths never send page/pageSize and their
+// responses omit these three fields, so they stay optional here.
+const listResponse = z.object({
+  items: z.array(vehicleListingResponseSchema),
+  total: z.number().int().nonnegative().optional(),
+  page: z.number().int().positive().optional(),
+  pageSize: z.number().int().positive().optional(),
+});
 const itemResponse = z.object({ item: vehicleListingResponseSchema });
 
 registry.registerPath({

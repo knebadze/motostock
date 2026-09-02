@@ -33,6 +33,6 @@ export async function listAll(
   req: Request<unknown, unknown, unknown, ListProductBuyTogetherAdminQuery>,
   res: Response,
 ) {
-  const items = await productBuyTogetherService.listAllProductBuyTogether(req.query);
-  res.status(200).json({ items });
+  const result = await productBuyTogetherService.listAllProductBuyTogether(req.query);
+  res.status(200).json(result);
 }

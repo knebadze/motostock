@@ -165,10 +165,32 @@ export async function assertRefsExist(input: {
   );
 }
 
+const DEFAULT_PAGE_SIZE = 20;
+
+// GET /vehicle-catalog is shared by two very different kinds of caller: the
+// admin catalog list screen (which now paginates), and a long list of
+// full-list consumers — fitment pickers, the garage "add vehicle" flow, the
+// homepage, the compatibility admin page, vehicle-listings/product admin
+// forms — that need every matching row in one response with no limit.
+// Pagination only activates when the caller explicitly sends page and/or
+// pageSize; every other caller is unaffected and keeps getting the full,
+// unbounded array.
 export async function listVehicleCatalog(query: VehicleCatalogListQuery = {}) {
   const where = applyVehicleCatalogAdminFilters(query.adminFilters);
-  const rows = await vehicleCatalogRepository.findMany(where);
-  return rows.map(toVehicleCatalogResponse);
+
+  if (query.page == null && query.pageSize == null) {
+    const rows = await vehicleCatalogRepository.findMany(where);
+    const items = rows.map(toVehicleCatalogResponse);
+    return { items, total: items.length, page: 1, pageSize: items.length || DEFAULT_PAGE_SIZE };
+  }
+
+  const page = query.page ?? 1;
+  const pageSize = query.pageSize ?? DEFAULT_PAGE_SIZE;
+  const [rows, total] = await Promise.all([
+    vehicleCatalogRepository.findMany(where, (page - 1) * pageSize, pageSize),
+    vehicleCatalogRepository.count(where),
+  ]);
+  return { items: rows.map(toVehicleCatalogResponse), total, page, pageSize };
 }
 
 export async function getVehicleCatalogEntry(id: number) {

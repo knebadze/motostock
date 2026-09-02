@@ -183,13 +183,25 @@ export type ListOrdersFilters = {
   createdFrom?: string;
   createdTo?: string;
   flaggedOnly?: boolean;
+  page?: number;
+  pageSize?: number;
 };
 
-export async function listAllOrders(filters: ListOrdersFilters = {}): Promise<AdminOrderSummary[]> {
-  const { data } = await apiClient.get<{ orders: AdminOrderSummary[] }>("/orders", {
+export type AdminOrdersPage = {
+  orders: AdminOrderSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+// Real server-side pagination (skip/take), not the client-side slicing most
+// other admin lists use — the order table has no natural cap the way a
+// category or brand list does, so fetching it all up front doesn't scale.
+export async function listAllOrders(filters: ListOrdersFilters = {}): Promise<AdminOrdersPage> {
+  const { data } = await apiClient.get<AdminOrdersPage>("/orders", {
     params: filters,
   });
-  return data.orders;
+  return data;
 }
 
 export async function getAnyOrder(id: number): Promise<AdminOrder> {

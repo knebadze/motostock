@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import { Pagination, usePagination } from "@/components/shared/Pagination";
-import type { AdminUser } from "@/lib/api/users";
+import { Pagination } from "@/components/shared/Pagination";
+import { Loader } from "@/components/shared/Loader";
+import { listUsers, type AdminUser, type AdminUsersPage } from "@/lib/api/users";
+import { ApiRequestError } from "@/lib/api/client";
 import { formatDateTime } from "@/lib/format";
 import { UserDetailModal } from "./UserDetailModal";
 
@@ -50,21 +53,42 @@ const columns: DataTableColumn<AdminUser>[] = [
   },
 ];
 
-export function UsersManager({ initialUsers }: { initialUsers: AdminUser[] }) {
-  const { page, setPage, pageItems, totalPages } = usePagination(initialUsers);
+export function UsersManager({ initialData }: { initialData: AdminUsersPage }) {
+  const [data, setData] = useState(initialData);
+  const [loading, setLoading] = useState(false);
   const [viewingUserId, setViewingUserId] = useState<number | null>(null);
+
+  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
+
+  async function loadPage(page: number) {
+    setLoading(true);
+    try {
+      setData(await listUsers(undefined, page, data.pageSize));
+    } catch (error) {
+      const message =
+        error instanceof ApiRequestError ? error.message : "მომხმარებლების ჩატვირთვა ვერ მოხერხდა";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight">მომხმარებლები</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        საიტზე დარეგისტრირებული მომხმარებლების სია — სულ {initialUsers.length}.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">მომხმარებლები</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            საიტზე დარეგისტრირებული მომხმარებლების სია — სულ {data.total}.
+          </p>
+        </div>
+        {loading && <Loader size="sm" label="იტვირთება" />}
+      </div>
 
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={pageItems}
+          data={data.users}
           getRowKey={(user) => user.id}
           emptyMessage="მომხმარებელი არ არსებობს"
           actions={(user) => (
@@ -93,7 +117,7 @@ export function UsersManager({ initialUsers }: { initialUsers: AdminUser[] }) {
             </div>
           )}
         />
-        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination currentPage={data.page} totalPages={totalPages} onPageChange={loadPage} />
       </div>
 
       {viewingUserId != null && (

@@ -24,15 +24,27 @@ export type AdminProductBuyTogether = {
 export type ListProductBuyTogetherFilters = {
   search?: string;
   categoryId?: number;
+  page?: number;
+  pageSize?: number;
 };
 
+export type ProductBuyTogetherPage = {
+  items: AdminProductBuyTogether[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+// Real server-side pagination (skip/take), not the client-side slicing most
+// other admin lists use — this table spans every product pair project-wide
+// and has no natural cap.
 export async function listAllProductBuyTogether(
   filters: ListProductBuyTogetherFilters = {},
-): Promise<AdminProductBuyTogether[]> {
-  const { data } = await apiClient.get<{ items: AdminProductBuyTogether[] }>("/product-buy-together", {
+): Promise<ProductBuyTogetherPage> {
+  const { data } = await apiClient.get<ProductBuyTogetherPage>("/product-buy-together", {
     params: filters,
   });
-  return data.items;
+  return data;
 }
 
 export async function listProductBuyTogether(productId: number): Promise<ProductBuyTogether[]> {

@@ -8,7 +8,7 @@ import type { Brand } from "./brands";
 import type { Model } from "./models";
 import type { LookupItem } from "./lookups";
 import type { LookupTypeSlug } from "@/config/lookup-types";
-import type { VehicleCatalogEntry } from "./vehicle-catalog";
+import type { VehicleCatalogEntry, VehicleCatalogPage } from "./vehicle-catalog";
 import type { VehicleListing } from "./vehicle-listings";
 import type { Attribute } from "./attributes";
 import type { CategoryFilter } from "./category-filters";
@@ -19,7 +19,7 @@ import type { ProductBrand } from "./product-brands";
 import type { Unit } from "./units";
 import type { Product, ProductDetail } from "./products";
 import type { FinaSyncRun } from "./fina-sync";
-import type { AdminUser } from "./users";
+import type { AdminUsersPage } from "./users";
 import type { HeroSlide } from "./hero-slides";
 import type { TeamMember } from "./team-members";
 import type { Bank, PublicBank } from "./banks";
@@ -29,11 +29,11 @@ import type { PromoCode, PromoCodeDomain } from "./promo-codes";
 import type { WishlistItem } from "./wishlist";
 import type { CompareItem } from "./compare";
 import type { Cart } from "./cart";
-import type { AdminOrderSummary, Order, OrderSummary } from "./orders";
+import type { AdminOrdersPage, Order, OrderSummary } from "./orders";
 import type { DashboardStats } from "./dashboard";
 import type { AnalyticsFilters, AnalyticsOverview } from "./analytics";
-import type { CompatibilityItem } from "./compatibility";
-import type { AdminProductBuyTogether } from "./product-buy-together";
+import type { CompatibilityPage } from "./compatibility";
+import type { ProductBuyTogetherPage } from "./product-buy-together";
 import type { CompanyInfo, WeekDay } from "./company-info";
 import type { Terms } from "./terms";
 import type { Faq } from "./faq";
@@ -179,10 +179,11 @@ export async function getVinDecodeStatusFromServer(): Promise<{
   });
 }
 
-export async function getUsersFromServer(): Promise<AdminUser[]> {
-  return fetchFromServer<{ users: AdminUser[] }, AdminUser[]>("/users", {
-    fallback: [],
-    extract: (data) => data.users,
+export async function getUsersFromServer(): Promise<AdminUsersPage> {
+  return fetchFromServer<AdminUsersPage, AdminUsersPage>("/users", {
+    params: { page: 1, pageSize: 20 },
+    fallback: { users: [], total: 0, page: 1, pageSize: 20 },
+    extract: (data) => data,
     requireAuth: true,
   });
 }
@@ -331,6 +332,21 @@ export async function getVehicleCatalogFromServer(): Promise<VehicleCatalogEntry
   });
 }
 
+// Paginated variant for the admin catalog list screen's initial load —
+// distinct from getVehicleCatalogFromServer above, which every other page
+// (fitment pickers, garage, homepage, ...) still uses to fetch every row.
+export async function getVehicleCatalogPageFromServer(
+  page = 1,
+  pageSize = 20,
+): Promise<VehicleCatalogPage> {
+  return fetchFromServer<VehicleCatalogPage, VehicleCatalogPage>("/vehicle-catalog", {
+    params: { page, pageSize },
+    fallback: { items: [], total: 0, page, pageSize },
+    extract: (data) => data,
+    requireAuth: true,
+  });
+}
+
 export async function getVehicleCatalogEntryFromServer(
   id: number,
 ): Promise<VehicleCatalogEntry | null> {
@@ -353,17 +369,26 @@ export async function getVehicleListingsFromServer(categoryId?: number): Promise
   });
 }
 
+export type AdminListPage<T> = { items: T[]; total: number; page: number; pageSize: number };
+
+const ADMIN_LIST_INITIAL_PAGE_SIZE = 20;
+const EMPTY_ADMIN_LIST_PAGE = { items: [], total: 0, page: 1, pageSize: ADMIN_LIST_INITIAL_PAGE_SIZE };
+
 // Admin vehicle-listings list's initial (server-rendered) load specifically
 // — see getAdminProductsFromServer's identical reasoning: an explicit
 // `adminFilters=[]`, not an omitted param, is what gets the backend's lean
-// admin-list projection from the very first render.
-export async function getAdminVehicleListingsFromServer(): Promise<VehicleListing[]> {
-  return fetchFromServer<{ items: VehicleListing[] }, VehicleListing[]>("/vehicle-listings", {
-    params: { adminFilters: "[]" },
-    fallback: [],
-    extract: (data) => data.items,
-    requireAuth: true,
-  });
+// admin-list projection from the very first render. Fetches only page 1 —
+// VehicleListingsManager.tsx re-fetches subsequent pages itself.
+export async function getAdminVehicleListingsFromServer(): Promise<AdminListPage<VehicleListing>> {
+  return fetchFromServer<AdminListPage<VehicleListing>, AdminListPage<VehicleListing>>(
+    "/vehicle-listings",
+    {
+      params: { adminFilters: "[]", page: 1, pageSize: ADMIN_LIST_INITIAL_PAGE_SIZE },
+      fallback: EMPTY_ADMIN_LIST_PAGE,
+      extract: (data) => data,
+      requireAuth: true,
+    },
+  );
 }
 
 export async function getVehicleListingFromServer(id: number): Promise<VehicleListing | null> {
@@ -507,10 +532,11 @@ export async function getMyOrderFromServer(id: number): Promise<Order | null> {
   });
 }
 
-export async function getOrdersFromServer(): Promise<AdminOrderSummary[]> {
-  return fetchFromServer<{ orders: AdminOrderSummary[] }, AdminOrderSummary[]>("/orders", {
-    fallback: [],
-    extract: (data) => data.orders,
+export async function getOrdersFromServer(): Promise<AdminOrdersPage> {
+  return fetchFromServer<AdminOrdersPage, AdminOrdersPage>("/orders", {
+    params: { page: 1, pageSize: 20 },
+    fallback: { orders: [], total: 0, page: 1, pageSize: 20 },
+    extract: (data) => data,
     requireAuth: true,
   });
 }
@@ -557,19 +583,22 @@ export async function getAnalyticsFromServer(filters: AnalyticsFilters = {}): Pr
   });
 }
 
-export async function getCompatibilityFromServer(): Promise<CompatibilityItem[]> {
-  return fetchFromServer<{ items: CompatibilityItem[] }, CompatibilityItem[]>("/compatibility", {
-    fallback: [],
-    extract: (data) => data.items,
+export async function getCompatibilityFromServer(): Promise<CompatibilityPage> {
+  return fetchFromServer<CompatibilityPage, CompatibilityPage>("/compatibility", {
+    params: { page: 1, pageSize: 20 },
+    fallback: { items: [], total: 0, page: 1, pageSize: 20 },
+    extract: (data) => data,
     requireAuth: true,
   });
 }
 
-export async function getProductBuyTogetherFromServer(): Promise<AdminProductBuyTogether[]> {
-  return fetchFromServer<{ items: AdminProductBuyTogether[] }, AdminProductBuyTogether[]>(
-    "/product-buy-together",
-    { fallback: [], extract: (data) => data.items, requireAuth: true },
-  );
+export async function getProductBuyTogetherFromServer(): Promise<ProductBuyTogetherPage> {
+  return fetchFromServer<ProductBuyTogetherPage, ProductBuyTogetherPage>("/product-buy-together", {
+    params: { page: 1, pageSize: 20 },
+    fallback: { items: [], total: 0, page: 1, pageSize: 20 },
+    extract: (data) => data,
+    requireAuth: true,
+  });
 }
 
 export async function getAttributesFromServer(): Promise<Attribute[]> {
@@ -617,11 +646,12 @@ export async function getProductsFromServer(
 // panel's client-side refresh() kicks in after picking a filter (see
 // products.service.ts's listProducts and lib/api/products.ts's listProducts
 // for why an explicit `[]`, not an omitted param, is what signals this).
-export async function getAdminProductsFromServer(): Promise<Product[]> {
-  return fetchFromServer<{ items: Product[] }, Product[]>("/products", {
-    params: { adminFilters: "[]" },
-    fallback: [],
-    extract: (data) => data.items,
+// Fetches only page 1 — ProductsManager.tsx re-fetches subsequent pages.
+export async function getAdminProductsFromServer(): Promise<AdminListPage<Product>> {
+  return fetchFromServer<AdminListPage<Product>, AdminListPage<Product>>("/products", {
+    params: { adminFilters: "[]", page: 1, pageSize: ADMIN_LIST_INITIAL_PAGE_SIZE },
+    fallback: EMPTY_ADMIN_LIST_PAGE,
+    extract: (data) => data,
     requireAuth: true,
   });
 }

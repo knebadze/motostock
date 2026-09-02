@@ -22,11 +22,25 @@ export type AdminUserDetail = AdminUser & {
   cart: CartItem[];
 };
 
-export async function listUsers(search?: string): Promise<AdminUser[]> {
-  const { data } = await apiClient.get<{ users: AdminUser[] }>("/users", {
-    params: { q: search || undefined },
+export type AdminUsersPage = {
+  users: AdminUser[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+// Real server-side pagination (skip/take), like error-logs — the user base
+// only grows, so fetching everyone up front and slicing client-side doesn't
+// scale (see users.repository.ts's findMany).
+export async function listUsers(
+  search?: string,
+  page = 1,
+  pageSize = 20,
+): Promise<AdminUsersPage> {
+  const { data } = await apiClient.get<AdminUsersPage>("/users", {
+    params: { q: search || undefined, page, pageSize },
   });
-  return data.users;
+  return data;
 }
 
 export async function getUser(id: number): Promise<AdminUserDetail> {

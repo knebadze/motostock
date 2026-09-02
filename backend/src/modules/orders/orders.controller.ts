@@ -47,8 +47,8 @@ export async function listAll(
   req: Request<unknown, unknown, unknown, ListOrdersQuery>,
   res: Response,
 ) {
-  const orders = await ordersService.listAllOrders(req.query);
-  res.status(200).json({ orders });
+  const { orders, total, page, pageSize } = await ordersService.listAllOrders(req.query);
+  res.status(200).json({ orders, total, page, pageSize });
 }
 
 export async function getAny(req: Request, res: Response) {

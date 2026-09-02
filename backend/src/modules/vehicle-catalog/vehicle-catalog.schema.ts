@@ -74,8 +74,18 @@ export const vehicleCatalogIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+// page/pageSize are both optional and, unlike error-logs' always-on
+// pagination, only trigger true server-side pagination when at least one is
+// present (see listVehicleCatalog) — this endpoint is also read unbounded by
+// many full-list callers (fitment pickers, garage, homepage, compatibility,
+// vehicle-listings/product admin forms), which must keep getting every row.
+// No `.default()` for the same reason as error-logs.schema.ts: an
+// output key zod infers as required-but-defaulted breaks Express's route
+// handler overload resolution against the default ParsedQs query type.
 export const vehicleCatalogListQuerySchema = z.object({
   adminFilters: adminFiltersQuerySchema,
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
 export type VehicleCatalogListQuery = z.infer<typeof vehicleCatalogListQuerySchema>;
 

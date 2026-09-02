@@ -84,7 +84,12 @@ ordersRouter.post(
 const security = [{ cookieAuth: [] }];
 const listResponse = z.object({ orders: z.array(orderSummaryResponseSchema) });
 const orderResponse = z.object({ order: orderResponseSchema });
-const adminListResponse = z.object({ orders: z.array(adminOrderSummaryResponseSchema) });
+const adminListResponse = z.object({
+  orders: z.array(adminOrderSummaryResponseSchema),
+  total: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+});
 const adminOrderResponse = z.object({ order: adminOrderResponseSchema });
 
 registry.registerPath({

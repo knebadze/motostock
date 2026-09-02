@@ -13,8 +13,8 @@ export async function list(
   req: Request<unknown, unknown, unknown, VehicleListingListQuery>,
   res: Response,
 ) {
-  const items = await vehicleListingService.listVehicleListings(req.query);
-  res.status(200).json({ items });
+  const result = await vehicleListingService.listVehicleListings(req.query);
+  res.status(200).json(result);
 }
 
 export async function getPopular(

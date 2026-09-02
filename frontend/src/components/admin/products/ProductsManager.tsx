@@ -6,9 +6,10 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { Pagination } from "@/components/shared/Pagination";
 import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
-import { deleteProduct, listProducts, type Product } from "@/lib/api/products";
+import { deleteProduct, listProductsAdmin, type Product } from "@/lib/api/products";
+import type { AdminListPage } from "@/lib/api/server";
 import { resolveMediaUrl, ApiRequestError } from "@/lib/api/client";
 import type { AdminFilterEntry } from "@/lib/api/admin-filters";
 import type { Category } from "@/lib/api/categories";
@@ -74,7 +75,7 @@ const columns: DataTableColumn<Product>[] = [
 ];
 
 export function ProductsManager({
-  initialProducts,
+  initialData,
   categories,
   productBrands,
   sizes,
@@ -82,7 +83,7 @@ export function ProductsManager({
   conditions,
   statuses,
 }: {
-  initialProducts: Product[];
+  initialData: AdminListPage<Product>;
   categories: Category[];
   productBrands: ProductBrand[];
   sizes: LookupItem[];
@@ -91,11 +92,11 @@ export function ProductsManager({
   statuses: LookupItem[];
 }) {
   const router = useRouter();
-  const [products, setProducts] = useState(initialProducts);
+  const [data, setData] = useState(initialData);
   const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [viewingProductId, setViewingProductId] = useState<number | null>(null);
-  const { page, setPage, pageItems, totalPages } = usePagination(products);
+  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   const canCreate = categories.length > 0;
 
@@ -108,9 +109,9 @@ export function ProductsManager({
     statuses,
   });
 
-  async function refresh(filters: AdminFilterEntry[] = adminFilters) {
+  async function loadPage(page: number, filters: AdminFilterEntry[] = adminFilters) {
     try {
-      setProducts(await listProducts({ adminFilters: filters }));
+      setData(await listProductsAdmin({ adminFilters: filters, page, pageSize: data.pageSize }));
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
@@ -122,8 +123,7 @@ export function ProductsManager({
   // request, never on every keystroke.
   async function handleFilterApply(filters: AdminFilterEntry[]) {
     setAdminFilters(filters);
-    await refresh(filters);
-    setPage(1);
+    await loadPage(1, filters);
   }
 
   return (
@@ -153,7 +153,7 @@ export function ProductsManager({
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={pageItems}
+          data={data.items}
           getRowKey={(product) => product.id}
           emptyMessage="პროდუქტი არ არსებობს"
           actions={(product) => (
@@ -164,7 +164,7 @@ export function ProductsManager({
             />
           )}
         />
-        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination currentPage={data.page} totalPages={totalPages} onPageChange={(page) => loadPage(page)} />
       </div>
 
       {viewingProductId != null && (
@@ -196,7 +196,7 @@ export function ProductsManager({
         onConfirm={async () => {
           if (!deletingProduct) return;
           await deleteProduct(deletingProduct.id);
-          await refresh();
+          await loadPage(data.page);
         }}
       />
     </div>

@@ -260,18 +260,24 @@ export const ordersRepository = {
     return prisma.order.findUniqueOrThrow({ where: { id }, include: orderItemsInclude });
   },
 
-  // Admin-only: every user's orders, not scoped to a single owner. No
-  // skip/take anywhere in this codebase's admin list endpoints — every one
-  // returns its full filtered result set and pagination happens client-side
-  // (see usePagination on the frontend), so this follows the same shape.
-  findManyAdmin(filters: {
-    search?: string;
-    statusIds?: number[];
-    fulfillmentMethods?: OrderFulfillmentMethod[];
-    createdFrom?: string;
-    createdTo?: string;
-    flaggedOnly?: boolean;
-  }) {
+  // Admin-only: every user's orders, not scoped to a single owner. Real
+  // server-side pagination (skip/take), same pattern as
+  // error-logs.repository.ts's list() — the order table has no natural cap
+  // the way most other admin list endpoints' data does, so it can grow far
+  // larger than those (which still fetch everything and paginate
+  // client-side via usePagination on the frontend).
+  findManyAdmin(
+    filters: {
+      search?: string;
+      statusIds?: number[];
+      fulfillmentMethods?: OrderFulfillmentMethod[];
+      createdFrom?: string;
+      createdTo?: string;
+      flaggedOnly?: boolean;
+    },
+    skip: number,
+    take: number,
+  ) {
     return prisma.order.findMany({
       where: buildAdminWhere(filters),
       include: {
@@ -281,7 +287,22 @@ export const ordersRepository = {
         _count: { select: { riskFlags: true } },
       },
       orderBy: { createdAt: "desc" },
+      skip,
+      take,
     });
+  },
+
+  // Sibling to findManyAdmin above — reuses the same buildAdminWhere so the
+  // two never drift on what counts as "matching the current filters".
+  count(filters: {
+    search?: string;
+    statusIds?: number[];
+    fulfillmentMethods?: OrderFulfillmentMethod[];
+    createdFrom?: string;
+    createdTo?: string;
+    flaggedOnly?: boolean;
+  }) {
+    return prisma.order.count({ where: buildAdminWhere(filters) });
   },
 
   // Atomically re-checks + decrements stock for every line, creates the

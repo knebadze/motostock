@@ -69,14 +69,23 @@ vehicleCatalogRouter.post(
 );
 
 const security = [{ cookieAuth: [] }];
-const listResponse = z.object({ items: z.array(vehicleCatalogResponseSchema) });
+// total/page/pageSize are only populated when the caller requests
+// pagination (page and/or pageSize query params) — see
+// listVehicleCatalog's comment in vehicle-catalog.service.ts. Every
+// full-list caller omits them and gets every matching row back in `items`.
+const listResponse = z.object({
+  items: z.array(vehicleCatalogResponseSchema),
+  total: z.int(),
+  page: z.int(),
+  pageSize: z.int(),
+});
 const itemResponse = z.object({ item: vehicleCatalogResponseSchema });
 
 registry.registerPath({
   method: "get",
   path: "/vehicle-catalog",
   tags: ["VehicleCatalog"],
-  summary: "List all vehicle catalog entries",
+  summary: "List all vehicle catalog entries (paginated when page/pageSize are given)",
   request: { query: vehicleCatalogListQuerySchema },
   responses: {
     200: { description: "Vehicle catalog list", content: { "application/json": { schema: listResponse } } },

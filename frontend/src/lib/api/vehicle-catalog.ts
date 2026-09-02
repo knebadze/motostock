@@ -126,15 +126,31 @@ export async function submitVehicleCatalogEntry(
   return data.item;
 }
 
+export type VehicleCatalogPage = {
+  items: VehicleCatalogEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+// Real server-side pagination (skip/take), unlike most other admin lists —
+// only used by the admin catalog list screen, which always sends page and
+// pageSize; the many full-list consumers of GET /vehicle-catalog (fitment
+// pickers, garage, homepage, ...) go through getVehicleCatalogFromServer
+// instead and never send these, so they keep getting every row.
 export async function listVehicleCatalog(
-  adminFilters?: AdminFilterEntry[],
-): Promise<VehicleCatalogEntry[]> {
-  const { data } = await apiClient.get<{ items: VehicleCatalogEntry[] }>("/vehicle-catalog", {
+  adminFilters: AdminFilterEntry[] = [],
+  page = 1,
+  pageSize = 20,
+): Promise<VehicleCatalogPage> {
+  const { data } = await apiClient.get<VehicleCatalogPage>("/vehicle-catalog", {
     params: {
-      adminFilters: adminFilters?.length ? JSON.stringify(adminFilters) : undefined,
+      adminFilters: adminFilters.length ? JSON.stringify(adminFilters) : undefined,
+      page,
+      pageSize,
     },
   });
-  return data.items;
+  return data;
 }
 
 export async function createVehicleCatalogEntry(

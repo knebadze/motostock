@@ -29,14 +29,19 @@ compatibilityRouter.get(
 );
 
 const security = [{ cookieAuth: [] }];
-const listResponse = z.object({ items: z.array(compatibilityItemResponseSchema) });
+const listResponse = z.object({
+  items: z.array(compatibilityItemResponseSchema),
+  total: z.int(),
+  page: z.int(),
+  pageSize: z.int(),
+});
 const vehiclesResponse = z.object({ items: z.array(compatibleVehicleResponseSchema) });
 
 registry.registerPath({
   method: "get",
   path: "/compatibility",
   tags: ["Compatibility"],
-  summary: "List every ProductFitment + ProductFitmentRule across every product as one flat, filterable list (admin only)",
+  summary: "List every ProductFitment + ProductFitmentRule across every product as one flat, filterable, paginated list (admin only)",
   security,
   request: { query: listCompatibilityQuerySchema },
   responses: {

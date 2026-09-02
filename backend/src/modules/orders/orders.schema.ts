@@ -227,6 +227,13 @@ export const listOrdersQuerySchema = z.object({
   // fraud.service.ts's evaluateOrderRisk (admin-only, flag-for-review, never
   // an automatic block).
   flaggedOnly: z.coerce.boolean().optional(),
+  // Real server-side pagination (skip/take), same pattern as
+  // error-logs.schema.ts — both optional, no `.default()` (defaults are
+  // applied in the controller instead, see that file's comment for why: an
+  // output key zod infers as required-but-defaulted breaks Express's route
+  // handler overload resolution against the default ParsedQs query type).
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
 export type ListOrdersQuery = z.infer<typeof listOrdersQuerySchema>;
 

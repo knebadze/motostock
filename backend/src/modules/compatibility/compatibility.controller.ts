@@ -6,8 +6,8 @@ export async function list(
   req: Request<unknown, unknown, unknown, ListCompatibilityQuery>,
   res: Response,
 ) {
-  const items = await compatibilityService.listAllCompatibility(req.query);
-  res.status(200).json({ items });
+  const result = await compatibilityService.listAllCompatibility(req.query);
+  res.status(200).json(result);
 }
 
 export async function listVehiclesForProduct(req: Request, res: Response) {

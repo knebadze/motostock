@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { Pagination } from "@/components/shared/Pagination";
 import { Select } from "@/components/shared/Select";
 import { formatDateTime } from "@/lib/format";
 import { ApiRequestError } from "@/lib/api/client";
@@ -12,6 +12,7 @@ import {
   listAllProductBuyTogether,
   type AdminProductBuyTogether,
   type ListProductBuyTogetherFilters,
+  type ProductBuyTogetherPage,
 } from "@/lib/api/product-buy-together";
 import type { Category } from "@/lib/api/categories";
 
@@ -42,17 +43,18 @@ const columns: DataTableColumn<AdminProductBuyTogether>[] = [
 ];
 
 export function BuyTogetherManager({
-  initialItems,
+  initialData,
   categories,
 }: {
-  initialItems: AdminProductBuyTogether[];
+  initialData: ProductBuyTogetherPage;
   categories: Category[];
 }) {
-  const [items, setItems] = useState(initialItems);
+  const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const { page, setPage, pageItems, totalPages } = usePagination(items);
+
+  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   const categoryOptions = categories.map((category) => ({
     value: String(category.id),
@@ -60,11 +62,12 @@ export function BuyTogetherManager({
   }));
   const hasActiveFilters = search.trim() !== "" || categoryId !== "";
 
+  // Extended to carry page rather than a separate refetch path — a new
+  // filter resets to page 1, while loadPage keeps the current filters.
   async function fetchItems(filters: ListProductBuyTogetherFilters) {
     setLoading(true);
     try {
-      setItems(await listAllProductBuyTogether(filters));
-      setPage(1);
+      setData(await listAllProductBuyTogether(filters));
     } catch (error) {
       toast.error(error instanceof ApiRequestError ? error.message : "სიის ჩატვირთვა ვერ მოხერხდა");
     } finally {
@@ -72,17 +75,28 @@ export function BuyTogetherManager({
     }
   }
 
+  function loadPage(page: number) {
+    fetchItems({
+      search: search.trim() || undefined,
+      categoryId: categoryId ? Number(categoryId) : undefined,
+      page,
+      pageSize: data.pageSize,
+    });
+  }
+
   function handleApplyFilters() {
     fetchItems({
       search: search.trim() || undefined,
       categoryId: categoryId ? Number(categoryId) : undefined,
+      page: 1,
+      pageSize: data.pageSize,
     });
   }
 
   function handleClearFilters() {
     setSearch("");
     setCategoryId("");
-    fetchItems({});
+    fetchItems({ page: 1, pageSize: data.pageSize });
   }
 
   return (
@@ -138,7 +152,7 @@ export function BuyTogetherManager({
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={pageItems}
+          data={data.items}
           getRowKey={(item) => item.id}
           emptyMessage="კავშირი არ მოიძებნა"
           actions={(item) => (
@@ -152,7 +166,7 @@ export function BuyTogetherManager({
             </div>
           )}
         />
-        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination currentPage={data.page} totalPages={totalPages} onPageChange={loadPage} />
       </div>
     </div>
   );

@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { Pagination } from "@/components/shared/Pagination";
 import { Select } from "@/components/shared/Select";
 import { formatDate, formatDateTime, formatPrice, toTbilisiDateOnly } from "@/lib/format";
 import { ApiRequestError } from "@/lib/api/client";
 import {
   listAllOrders,
   type AdminOrderSummary,
+  type AdminOrdersPage,
   type ListOrdersFilters,
   type OrderFulfillmentMethod,
 } from "@/lib/api/orders";
@@ -47,8 +48,8 @@ function getDeliveryUrgency(order: AdminOrderSummary): "green" | "yellow" | "red
 
   // Compares Tbilisi calendar-day strings, not `new Date(y, m, d)` (which
   // reads the runtime's own local timezone — UTC on this app's server,
-  // Tbilisi in a real admin's browser) — this table's `initialOrders` are
-  // server-fetched props, so this function's first run is server-side; a
+  // Tbilisi in a real admin's browser) — this table's `initialData` is a
+  // server-fetched prop, so this function's first run is server-side; a
   // local-getter comparison would disagree with the client's post-hydration
   // re-run for part of every day (whenever it's already tomorrow in Tbilisi
   // but still today in UTC), flashing the wrong badge color before React's
@@ -142,13 +143,13 @@ const columns: DataTableColumn<AdminOrderSummary>[] = [
 ];
 
 export function OrdersManager({
-  initialOrders,
+  initialData,
   statuses,
 }: {
-  initialOrders: AdminOrderSummary[];
+  initialData: AdminOrdersPage;
   statuses: LookupItem[];
 }) {
-  const [orders, setOrders] = useState(initialOrders);
+  const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [statusIds, setStatusIds] = useState<string[]>([]);
@@ -157,7 +158,8 @@ export function OrdersManager({
   const [createdTo, setCreatedTo] = useState("");
   const [flaggedOnly, setFlaggedOnly] = useState(false);
   const [viewingOrderId, setViewingOrderId] = useState<number | null>(null);
-  const { page, setPage, pageItems, totalPages } = usePagination(orders);
+
+  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   const statusOptions = statuses.map((status) => ({ value: String(status.id), label: status.nameKa }));
   const hasActiveFilters =
@@ -180,11 +182,13 @@ export function OrdersManager({
     };
   }
 
-  async function fetchOrders(filters: ListOrdersFilters) {
+  // Real server-side pagination — every filter change (via handleApplyFilters/
+  // handleClearFilters below) resets to page 1, while loadPage re-fetches the
+  // same filters under a different page.
+  async function fetchOrders(filters: ListOrdersFilters, page: number) {
     setLoading(true);
     try {
-      setOrders(await listAllOrders(filters));
-      setPage(1);
+      setData(await listAllOrders({ ...filters, page, pageSize: data.pageSize }));
     } catch (error) {
       toast.error(error instanceof ApiRequestError ? error.message : "შეკვეთების ჩატვირთვა ვერ მოხერხდა");
     } finally {
@@ -193,7 +197,7 @@ export function OrdersManager({
   }
 
   function handleApplyFilters() {
-    fetchOrders(currentFilters());
+    fetchOrders(currentFilters(), 1);
   }
 
   function handleClearFilters() {
@@ -203,16 +207,20 @@ export function OrdersManager({
     setCreatedFrom("");
     setCreatedTo("");
     setFlaggedOnly(false);
-    fetchOrders({});
+    fetchOrders({}, 1);
   }
 
-  // Re-reads the list under the same filters after a status edit inside the
-  // modal, without resetting pagination the way fetchOrders does — the
-  // admin is still looking at the same page, just with one row's badge
+  function loadPage(page: number) {
+    fetchOrders(currentFilters(), page);
+  }
+
+  // Re-reads the list under the same filters and page after a status edit
+  // inside the modal, without resetting pagination the way fetchOrders does
+  // — the admin is still looking at the same page, just with one row's badge
   // possibly now stale.
   async function handleOrderStatusChanged() {
     try {
-      setOrders(await listAllOrders(currentFilters()));
+      setData(await listAllOrders({ ...currentFilters(), page: data.page, pageSize: data.pageSize }));
     } catch (error) {
       toast.error(error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა");
     }
@@ -221,7 +229,7 @@ export function OrdersManager({
   return (
     <div>
       <h1 className="text-2xl font-bold tracking-tight">შეკვეთები</h1>
-      <p className="mt-1 text-sm text-muted-foreground">სულ {orders.length}.</p>
+      <p className="mt-1 text-sm text-muted-foreground">სულ {data.total}.</p>
 
       <div className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4">
         <div className="flex min-w-48 flex-1 flex-col gap-1.5">
@@ -309,7 +317,7 @@ export function OrdersManager({
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={pageItems}
+          data={data.orders}
           getRowKey={(order) => order.id}
           emptyMessage="შეკვეთა არ მოიძებნა"
           actions={(order) => (
@@ -338,7 +346,7 @@ export function OrdersManager({
             </div>
           )}
         />
-        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination currentPage={data.page} totalPages={totalPages} onPageChange={loadPage} />
       </div>
 
       {viewingOrderId != null && (

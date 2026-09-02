@@ -747,9 +747,21 @@ export async function reorderOrder(userId: number, id: number) {
 // requireRole(ROLES.ADMIN) in orders.routes.ts, so unlike listMyOrders/
 // getMyOrder above these never scope by owner.
 
+// Real server-side pagination (skip/take), same pattern as error-logs.
+// Default pageSize (20) matches the client-side page size everyone is used
+// to — see frontend's shared Pagination.tsx's DEFAULT_PAGE_SIZE.
+const DEFAULT_ADMIN_ORDERS_PAGE_SIZE = 20;
+
 export async function listAllOrders(filters: ListOrdersQuery) {
-  const rows = await ordersRepository.findManyAdmin(filters);
-  return rows.map((row) => ({
+  const page = filters.page ?? 1;
+  const pageSize = filters.pageSize ?? DEFAULT_ADMIN_ORDERS_PAGE_SIZE;
+
+  const [rows, total] = await Promise.all([
+    ordersRepository.findManyAdmin(filters, (page - 1) * pageSize, pageSize),
+    ordersRepository.count(filters),
+  ]);
+
+  const orders = rows.map((row) => ({
     id: row.id,
     orderCode: row.orderCode,
     status: row.status,
@@ -766,6 +778,8 @@ export async function listAllOrders(filters: ListOrdersQuery) {
       row.deliveryTimeSnapshot,
     ),
   }));
+
+  return { orders, total, page, pageSize };
 }
 
 export async function getAnyOrder(id: number) {

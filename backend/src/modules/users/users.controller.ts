@@ -6,7 +6,7 @@ import {
   getUserDetail,
   listUsers,
 } from "./users.service.js";
-import type { ChangePasswordInput } from "./users.schema.js";
+import type { ChangePasswordInput, ListUsersQuery } from "./users.schema.js";
 
 export async function me(req: Request, res: Response) {
   if (!req.user) {
@@ -17,9 +17,14 @@ export async function me(req: Request, res: Response) {
   res.status(200).json({ user });
 }
 
-export async function list(req: Request<unknown, unknown, unknown, { q?: string }>, res: Response) {
-  const users = await listUsers(req.query.q);
-  res.status(200).json({ users });
+export async function list(
+  req: Request<unknown, unknown, unknown, ListUsersQuery>,
+  res: Response,
+) {
+  const page = req.query.page ?? 1;
+  const pageSize = req.query.pageSize ?? 20;
+  const result = await listUsers(req.query.q, page, pageSize);
+  res.status(200).json(result);
 }
 
 export async function getOne(req: Request, res: Response) {

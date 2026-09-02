@@ -1,8 +1,24 @@
+import type { Prisma } from "../../generated/prisma/index.js";
 import { prisma } from "../../config/prisma.js";
 import { addressInclude } from "../addresses/addresses.repository.js";
 import { vehicleCatalogInclude } from "../vehicle-catalog/vehicle-catalog.repository.js";
 import { wishlistItemInclude } from "../wishlist/wishlist.repository.js";
 import { cartItemInclude } from "../cart/cart.repository.js";
+
+// Shared between findMany and count so the two never drift apart — the
+// admin user list's total (for pagination) must match exactly what the
+// paged query would return.
+function searchWhere(search?: string): Prisma.UserWhereInput | undefined {
+  return search
+    ? {
+        OR: [
+          { firstName: { contains: search, mode: "insensitive" } },
+          { lastName: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+        ],
+      }
+    : undefined;
+}
 
 export const usersRepository = {
   findByEmail(email: string) {
@@ -32,20 +48,18 @@ export const usersRepository = {
     });
   },
 
-  findMany(search?: string) {
+  findMany(search: string | undefined, skip: number, take: number) {
     return prisma.user.findMany({
-      where: search
-        ? {
-            OR: [
-              { firstName: { contains: search, mode: "insensitive" } },
-              { lastName: { contains: search, mode: "insensitive" } },
-              { email: { contains: search, mode: "insensitive" } },
-            ],
-          }
-        : undefined,
+      where: searchWhere(search),
       include: { role: true },
       orderBy: { createdAt: "desc" },
+      skip,
+      take,
     });
+  },
+
+  count(search?: string) {
+    return prisma.user.count({ where: searchWhere(search) });
   },
 
   findByGoogleId(googleId: string) {

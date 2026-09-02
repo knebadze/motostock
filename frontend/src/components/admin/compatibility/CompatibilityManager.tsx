@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { Pagination } from "@/components/shared/Pagination";
 import { Select } from "@/components/shared/Select";
 import { Tabs } from "@/components/shared/Tabs";
 import { formatPrice, formatVehicleCatalogLabel } from "@/lib/format";
@@ -13,6 +13,7 @@ import {
   listCompatibility,
   getCompatibleVehiclesForProduct,
   type CompatibilityItem,
+  type CompatibilityPage,
   type CompatibleVehicle,
   type ListCompatibilityFilters,
 } from "@/lib/api/compatibility";
@@ -72,18 +73,19 @@ const columns: DataTableColumn<CompatibilityItem>[] = [
 ];
 
 function AllCompatibilityTab({
-  initialItems,
+  initialData,
   categories,
 }: {
-  initialItems: CompatibilityItem[];
+  initialData: CompatibilityPage;
   categories: Category[];
 }) {
-  const [items, setItems] = useState(initialItems);
+  const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [kind, setKind] = useState("");
-  const { page, setPage, pageItems, totalPages } = usePagination(items);
+
+  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   const categoryOptions = categories.map((category) => ({
     value: String(category.id),
@@ -95,11 +97,21 @@ function AllCompatibilityTab({
   ];
   const hasActiveFilters = search.trim() !== "" || categoryId !== "" || kind !== "";
 
-  async function fetchItems(filters: ListCompatibilityFilters) {
+  function currentFilters(): ListCompatibilityFilters {
+    return {
+      search: search.trim() || undefined,
+      categoryId: categoryId ? Number(categoryId) : undefined,
+      kind: kind === "FITMENT" || kind === "RULE" ? kind : undefined,
+    };
+  }
+
+  // Real server-side pagination: re-fetches the requested page from the API
+  // (carrying the currently-applied filters) instead of slicing an
+  // already-fetched array — mirrors ErrorLogsManager.tsx's loadPage.
+  async function loadPage(page: number, filters: ListCompatibilityFilters = currentFilters()) {
     setLoading(true);
     try {
-      setItems(await listCompatibility(filters));
-      setPage(1);
+      setData(await listCompatibility({ ...filters, page, pageSize: data.pageSize }));
     } catch (error) {
       toast.error(error instanceof ApiRequestError ? error.message : "სიის ჩატვირთვა ვერ მოხერხდა");
     } finally {
@@ -108,18 +120,14 @@ function AllCompatibilityTab({
   }
 
   function handleApplyFilters() {
-    fetchItems({
-      search: search.trim() || undefined,
-      categoryId: categoryId ? Number(categoryId) : undefined,
-      kind: kind === "FITMENT" || kind === "RULE" ? kind : undefined,
-    });
+    loadPage(1);
   }
 
   function handleClearFilters() {
     setSearch("");
     setCategoryId("");
     setKind("");
-    fetchItems({});
+    loadPage(1, {});
   }
 
   return (
@@ -176,7 +184,7 @@ function AllCompatibilityTab({
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={pageItems}
+          data={data.items}
           getRowKey={(item) => item.id}
           emptyMessage="თავსებადობა არ მოიძებნა"
           actions={(item) => (
@@ -190,7 +198,7 @@ function AllCompatibilityTab({
             </div>
           )}
         />
-        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination currentPage={data.page} totalPages={totalPages} onPageChange={(page) => loadPage(page)} />
       </div>
     </div>
   );
@@ -348,12 +356,12 @@ function CompatibilityCheckTab({
 }
 
 export function CompatibilityManager({
-  initialItems,
+  initialData,
   categories,
   products,
   vehicleCatalog,
 }: {
-  initialItems: CompatibilityItem[];
+  initialData: CompatibilityPage;
   categories: Category[];
   products: Product[];
   vehicleCatalog: VehicleCatalogEntry[];
@@ -371,7 +379,7 @@ export function CompatibilityManager({
             {
               key: "all",
               label: "ყველა კავშირი",
-              content: <AllCompatibilityTab initialItems={initialItems} categories={categories} />,
+              content: <AllCompatibilityTab initialData={initialData} categories={categories} />,
             },
             {
               key: "check",

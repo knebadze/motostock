@@ -165,6 +165,10 @@ export type ProductListFilters = {
   adminFilters?: AdminFilterEntry[];
   // Homepage product sliders cap how many products they pull.
   limit?: number;
+  // Admin-list server-side pagination (see listProductsAdmin) — meaningless
+  // without adminFilters, ignored by the backend otherwise.
+  page?: number;
+  pageSize?: number;
 };
 
 function isEmptyAttributeFilters(filters: ProductAttributeFilters): boolean {
@@ -175,8 +179,10 @@ function isEmptyAttributeFilters(filters: ProductAttributeFilters): boolean {
   );
 }
 
-export async function listProducts(filters: ProductListFilters = {}): Promise<Product[]> {
-  const { data } = await apiClient.get<{ items: Product[] }>("/products", {
+type ProductListResponse = { items: Product[]; total: number; page: number; pageSize: number };
+
+async function fetchProductsList(filters: ProductListFilters): Promise<ProductListResponse> {
+  const { data } = await apiClient.get<ProductListResponse>("/products", {
     params: {
       categoryId: filters.categoryId,
       vehicleCatalogId: filters.vehicleCatalogId,
@@ -198,9 +204,27 @@ export async function listProducts(filters: ProductListFilters = {}): Promise<Pr
       // omit the param entirely the way `.length ? ... : undefined` would.
       adminFilters: filters.adminFilters !== undefined ? JSON.stringify(filters.adminFilters) : undefined,
       limit: filters.limit,
+      page: filters.page,
+      pageSize: filters.pageSize,
     },
   });
-  return data.items;
+  return data;
+}
+
+export async function listProducts(filters: ProductListFilters = {}): Promise<Product[]> {
+  const { items } = await fetchProductsList(filters);
+  return items;
+}
+
+// Admin-list variant of listProducts — same endpoint/filters, but returns the
+// full server-pagination envelope (total/page/pageSize) instead of a bare
+// array. Only ProductsManager.tsx should call this; every storefront caller
+// keeps using listProducts above, which is unaffected (page/pageSize are
+// simply omitted, so the backend returns page 1 of everything as before).
+export async function listProductsAdmin(
+  filters: ProductListFilters = {},
+): Promise<ProductListResponse> {
+  return fetchProductsList(filters);
 }
 
 // Homepage "popular products" slider — ranked by total sold quantity

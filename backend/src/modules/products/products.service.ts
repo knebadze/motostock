@@ -455,11 +455,15 @@ function isCacheableOnSaleQuery(query: ProductListQuery): boolean {
   );
 }
 
+// total/page/pageSize are only meaningful for the admin-list path
+// (query.adminFilters present) — every other caller (storefront browse,
+// on-sale/homepage) gets total = items.length, page = 1, so the shape is
+// uniform without the extra fields carrying any real pagination info there.
 export async function listProducts(query: ProductListQuery) {
   const cacheKey = isCacheableOnSaleQuery(query) ? `products:onSale:${query.limit ?? "all"}` : null;
   if (cacheKey) {
     const cached = cache.get<Awaited<ReturnType<typeof toResponse>>[]>(cacheKey);
-    if (cached) return cached;
+    if (cached) return { items: cached, total: cached.length, page: 1, pageSize: cached.length || 1 };
   }
 
   const categoryIds =
@@ -477,8 +481,8 @@ export async function listProducts(query: ProductListQuery) {
       : undefined;
 
   // The admin panel (AdminFilterPanel, which always sends adminFilters)
-  // fetches the whole filtered result set with no limit and paginates
-  // client-side — see productsRepository.findManyForAdmin's comment for why
+  // fetches one server-paginated page (page/pageSize below) of the filtered
+  // result set — see productsRepository.findManyForAdmin's comment for why
   // that path uses a lean projection instead of the storefront card
   // include. attributeValues/each variant's discounts are backfilled as
   // empty right after the fetch purely to satisfy toResponse's shape —
@@ -486,19 +490,31 @@ export async function listProducts(query: ProductListQuery) {
   // modal fetches full per-product data separately), so activeDiscount
   // ending up null and attributeValues empty here is harmless.
   const isAdminList = query.adminFilters != null;
+  const page = query.page ?? 1;
+  const pageSize = query.pageSize ?? 20;
+  const adminCountFilters = {
+    categoryIds,
+    brandIds: query.brandIds,
+    priceMin: query.priceMin,
+    priceMax: query.priceMax,
+    onSale: query.onSale,
+    attributeFilters: query.attributeFilters,
+    adminFilters: query.adminFilters,
+  };
+
+  const [adminRows, adminTotal] = isAdminList
+    ? await Promise.all([
+        productsRepository.findManyForAdmin({
+          ...adminCountFilters,
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        productsRepository.countForAdmin(adminCountFilters),
+      ])
+    : [undefined, undefined];
 
   const rows = isAdminList
-    ? (
-        await productsRepository.findManyForAdmin({
-          categoryIds,
-          brandIds: query.brandIds,
-          priceMin: query.priceMin,
-          priceMax: query.priceMax,
-          onSale: query.onSale,
-          attributeFilters: query.attributeFilters,
-          adminFilters: query.adminFilters,
-        })
-      ).map((row) => ({
+    ? adminRows!.map((row) => ({
         ...row,
         attributeValues: [] as AttributeValueRow[],
         variants: row.variants.map((variant) => ({
@@ -534,7 +550,11 @@ export async function listProducts(query: ProductListQuery) {
   }
 
   if (cacheKey) cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
-  return result;
+
+  if (isAdminList) {
+    return { items: result, total: adminTotal ?? result.length, page, pageSize };
+  }
+  return { items: result, total: result.length, page: 1, pageSize: result.length || 1 };
 }
 
 // Homepage "popular products" slider — see

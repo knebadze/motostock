@@ -126,6 +126,12 @@ export const vehicleListingListQuerySchema = z.object({
   // params above, additive, never required. See
   // filters/vehicle-listing/vehicle-listing-admin-filter-registry.ts.
   adminFilters: adminFiltersQuerySchema,
+  // Admin-list server-side pagination (only meaningful alongside
+  // adminFilters — the storefront path uses `limit` above instead). Both
+  // optional, no `.default()` — same reasoning as specFilters' trailing
+  // `.optional()` above (Express route handler overload resolution).
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
 export type VehicleListingListQuery = z.infer<typeof vehicleListingListQuerySchema>;
 

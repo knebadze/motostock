@@ -20,7 +20,7 @@ export default async function ProductsPage() {
 
   return (
     <ProductsManager
-      initialProducts={products}
+      initialData={products}
       categories={categories}
       productBrands={productBrands}
       sizes={sizes}

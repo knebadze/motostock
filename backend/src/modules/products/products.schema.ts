@@ -128,6 +128,14 @@ export const productListQuerySchema = z.object({
   // params above, additive, never required. See
   // filters/product/product-admin-filter-registry.ts.
   adminFilters: adminFiltersQuerySchema,
+  // Admin-list server-side pagination (only meaningful alongside
+  // adminFilters — the storefront path uses `limit` above instead). Both
+  // optional, no `.default()` — an output key zod infers as
+  // required-but-defaulted breaks Express's route handler overload
+  // resolution against the default ParsedQs query type (see
+  // attributeFilters' comment above for the same reasoning).
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
 export type ProductListQuery = z.infer<typeof productListQuerySchema>;
 

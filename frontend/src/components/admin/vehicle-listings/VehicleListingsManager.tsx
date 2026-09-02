@@ -5,13 +5,14 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { Pagination } from "@/components/shared/Pagination";
 import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
 import {
   deleteVehicleListing,
-  listVehicleListings,
+  listVehicleListingsAdmin,
   type VehicleListing,
 } from "@/lib/api/vehicle-listings";
+import type { AdminListPage } from "@/lib/api/server";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import type { AdminFilterEntry } from "@/lib/api/admin-filters";
 import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
@@ -94,33 +95,33 @@ const columns: DataTableColumn<VehicleListing>[] = [
 ];
 
 export function VehicleListingsManager({
-  initialListings,
+  initialData,
   vehicleCatalog,
   conditions,
   statuses,
   colors,
 }: {
-  initialListings: VehicleListing[];
+  initialData: AdminListPage<VehicleListing>;
   vehicleCatalog: VehicleCatalogEntry[];
   conditions: LookupItem[];
   statuses: LookupItem[];
   colors: LookupItem[];
 }) {
-  const [listings, setListings] = useState(initialListings);
+  const [data, setData] = useState(initialData);
   const [formOpen, setFormOpen] = useState(false);
   const [editingListing, setEditingListing] = useState<VehicleListing | null>(null);
   const [deletingListing, setDeletingListing] = useState<VehicleListing | null>(null);
   const [viewingListingId, setViewingListingId] = useState<number | null>(null);
   const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
-  const { page, setPage, pageItems, totalPages } = usePagination(listings);
+  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   const canCreate = vehicleCatalog.length > 0;
 
   const filterFields = buildVehicleListingFilterFields({ vehicleCatalog, conditions, statuses, colors });
 
-  async function refresh(filters: AdminFilterEntry[] = adminFilters) {
+  async function loadPage(page: number, filters: AdminFilterEntry[] = adminFilters) {
     try {
-      setListings(await listVehicleListings({ adminFilters: filters }));
+      setData(await listVehicleListingsAdmin({ adminFilters: filters, page, pageSize: data.pageSize }));
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
@@ -132,8 +133,13 @@ export function VehicleListingsManager({
   // request, never on every keystroke.
   async function handleFilterApply(filters: AdminFilterEntry[]) {
     setAdminFilters(filters);
-    await refresh(filters);
-    setPage(1);
+    await loadPage(1, filters);
+  }
+
+  // VehicleListingFormModal's onSaved just needs a no-arg refresh of the
+  // current page — same current filters, same page number.
+  function refresh() {
+    return loadPage(data.page);
   }
 
   function openCreateModal() {
@@ -173,7 +179,7 @@ export function VehicleListingsManager({
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={pageItems}
+          data={data.items}
           getRowKey={(listing) => listing.id}
           emptyMessage="განცხადება არ არსებობს"
           actions={(listing) => (
@@ -184,7 +190,7 @@ export function VehicleListingsManager({
             />
           )}
         />
-        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination currentPage={data.page} totalPages={totalPages} onPageChange={(page) => loadPage(page)} />
       </div>
 
       <VehicleListingFormModal

@@ -7,7 +7,7 @@ import {
 import { CompatibilityManager } from "@/components/admin/compatibility/CompatibilityManager";
 
 export default async function CompatibilityPage() {
-  const [items, categories, products, vehicleCatalog] = await Promise.all([
+  const [initialData, categories, products, vehicleCatalog] = await Promise.all([
     getCompatibilityFromServer(),
     getCategoriesFromServer(),
     getProductsFromServer(),
@@ -16,7 +16,7 @@ export default async function CompatibilityPage() {
 
   return (
     <CompatibilityManager
-      initialItems={items}
+      initialData={initialData}
       categories={categories}
       products={products}
       vehicleCatalog={vehicleCatalog}

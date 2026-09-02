@@ -70,12 +70,33 @@ function buildProductWhere(filters: { search?: string; categoryId?: number }): P
   return and.length > 0 ? { AND: and } : undefined;
 }
 
+type FitmentRow = Awaited<ReturnType<typeof compatibilityRepository.findAllFitments>>[number];
+type RuleRow = Awaited<ReturnType<typeof compatibilityRepository.findAllRules>>[number];
+type RawEntry =
+  | { source: "fitment"; createdAt: Date; row: FitmentRow }
+  | { source: "rule"; createdAt: Date; row: RuleRow };
+
+const DEFAULT_PAGE_SIZE = 20;
+
 // Merges ProductFitment (explicit product<->vehicle pairs) and
 // ProductFitmentRule (CATEGORY/SPEC/ALL declarative rules) into one flat,
-// filterable, sorted list — the two source tables are queried in parallel
-// (and one is skipped entirely when `kind` narrows to the other) since
-// there's no single query that spans both underlying Prisma models.
+// filterable, sorted, PAGINATED list.
+//
+// Pagination note: the two source tables are queried in parallel in full
+// (and one is skipped entirely when `kind` narrows to the other) — there's
+// no single query/UNION that cheaply spans both underlying Prisma models
+// (different columns, different includes, and the rule side needs an extra
+// per-row lookup fetch for its spec value). Both source sets are expected to
+// stay small relative to e.g. orders/users, so fetching each in full from
+// the DB is acceptable; what this fixes is the unbounded HTTP response. The
+// raw rows are merged and sorted BEFORE the expensive async per-rule spec
+// lookup, and only the current page's slice is then mapped to its response
+// shape — so lookup queries are only issued for rows actually being
+// returned, not the whole filtered set.
 export async function listAllCompatibility(filters: ListCompatibilityQuery) {
+  const page = filters.page ?? 1;
+  const pageSize = filters.pageSize ?? DEFAULT_PAGE_SIZE;
+
   const productWhere = buildProductWhere(filters);
   const fitmentWhere = productWhere ? { product: productWhere } : undefined;
   const ruleWhere = productWhere ? { product: productWhere } : undefined;
@@ -85,19 +106,32 @@ export async function listAllCompatibility(filters: ListCompatibilityQuery) {
     filters.kind === "FITMENT" ? [] : compatibilityRepository.findAllRules(ruleWhere),
   ]);
 
-  const fitmentItems = fitmentRows.map((row) => ({
-    id: `fitment-${row.id}`,
-    kind: "FITMENT" as const,
-    product: toProductRef(row.product),
-    vehicle: toVehicleRef(row.vehicleCatalog),
-    category: null,
-    specFieldLabel: null,
-    specValue: null,
-    createdAt: row.createdAt,
-  }));
+  const raw: RawEntry[] = [
+    ...fitmentRows.map((row): RawEntry => ({ source: "fitment", createdAt: row.createdAt, row })),
+    ...ruleRows.map((row): RawEntry => ({ source: "rule", createdAt: row.createdAt, row })),
+  ];
+  raw.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-  const ruleItems = await Promise.all(
-    ruleRows.map(async (row) => {
+  const total = raw.length;
+  const pageRaw = raw.slice((page - 1) * pageSize, page * pageSize);
+
+  const items = await Promise.all(
+    pageRaw.map(async (entry) => {
+      if (entry.source === "fitment") {
+        const row = entry.row;
+        return {
+          id: `fitment-${row.id}`,
+          kind: "FITMENT" as const,
+          product: toProductRef(row.product),
+          vehicle: toVehicleRef(row.vehicleCatalog),
+          category: null,
+          specFieldLabel: null,
+          specValue: null,
+          createdAt: row.createdAt,
+        };
+      }
+
+      const row = entry.row;
       let specFieldLabel = null;
       let specValue = null;
       if (row.specField && row.specLookupItemId != null) {
@@ -124,7 +158,7 @@ export async function listAllCompatibility(filters: ListCompatibilityQuery) {
     }),
   );
 
-  return [...fitmentItems, ...ruleItems].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  return { items, total, page, pageSize };
 }
 
 async function assertProductExists(productId: number) {

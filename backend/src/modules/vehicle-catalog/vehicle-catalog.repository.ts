@@ -57,12 +57,22 @@ type VehicleCatalogWriteData = {
 };
 
 export const vehicleCatalogRepository = {
-  findMany(where?: Prisma.VehicleCatalogWhereInput) {
+  // skip/take are optional and only passed by the admin catalog list's
+  // paginated path — compatibility.service.ts's fitment-matching calls (and
+  // any other full-list caller) pass neither, so they keep getting every
+  // matching row, same as before.
+  findMany(where?: Prisma.VehicleCatalogWhereInput, skip?: number, take?: number) {
     return prisma.vehicleCatalog.findMany({
       where,
       include,
       orderBy: { createdAt: "desc" },
+      skip,
+      take,
     });
+  },
+
+  count(where?: Prisma.VehicleCatalogWhereInput) {
+    return prisma.vehicleCatalog.count({ where });
   },
 
   findById(id: number) {

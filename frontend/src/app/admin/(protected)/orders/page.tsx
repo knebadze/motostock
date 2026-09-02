@@ -2,10 +2,10 @@ import { getOrderStatusesFromServer, getOrdersFromServer } from "@/lib/api/serve
 import { OrdersManager } from "@/components/admin/orders/OrdersManager";
 
 export default async function OrdersPage() {
-  const [orders, statuses] = await Promise.all([
+  const [initialData, statuses] = await Promise.all([
     getOrdersFromServer(),
     getOrderStatusesFromServer(),
   ]);
 
-  return <OrdersManager initialOrders={orders} statuses={statuses} />;
+  return <OrdersManager initialData={initialData} statuses={statuses} />;
 }

@@ -21,13 +21,20 @@ export const productBuyTogetherRepository = {
   },
 
   // Admin-only: every pair across every anchor product, not scoped to one
-  // productId — powers the /admin/buy-together unified overview.
-  findAll(where?: Prisma.ProductBuyTogetherWhereInput) {
+  // productId — powers the /admin/buy-together unified overview. Real
+  // server-side pagination (skip/take), mirroring error-logs.repository.ts.
+  findAll(where: Prisma.ProductBuyTogetherWhereInput | undefined, skip: number, take: number) {
     return prisma.productBuyTogether.findMany({
       where,
       include: adminInclude,
       orderBy: { createdAt: "desc" },
+      skip,
+      take,
     });
+  },
+
+  count(where?: Prisma.ProductBuyTogetherWhereInput) {
+    return prisma.productBuyTogether.count({ where });
   },
 
   findById(id: number) {

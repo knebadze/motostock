@@ -328,10 +328,11 @@ export const productsRepository = {
   },
 
   // See adminListInclude above for why this is a separate method rather
-  // than just findMany with a different include — no `limit`/`searchIds`
-  // params, since the admin panel never sends either (it always fetches the
-  // whole filtered set unranked, sorted by createdAt like findMany's
-  // default).
+  // than just findMany with a different include — no `searchIds` param,
+  // since the admin panel never sends one (it always fetches the filtered
+  // set unranked, sorted by createdAt like findMany's default; skip/take
+  // below give it real server-side pagination instead of findMany's
+  // relevance-ranking-driven `limit`).
   async findManyForAdmin(filters: {
     categoryIds?: number[];
     brandIds?: number[];
@@ -340,12 +341,30 @@ export const productsRepository = {
     onSale?: boolean;
     attributeFilters?: AttributeFilterInput;
     adminFilters?: FilterEntry[];
+    skip?: number;
+    take?: number;
   }) {
     return prisma.product.findMany({
       where: await buildWhere(filters),
       include: adminListInclude,
       orderBy: { createdAt: "desc" },
+      skip: filters.skip,
+      take: filters.take,
     });
+  },
+
+  // Paired with findManyForAdmin above — same buildWhere call, so the count
+  // always matches what that query would return unpaginated.
+  async countForAdmin(filters: {
+    categoryIds?: number[];
+    brandIds?: number[];
+    priceMin?: number;
+    priceMax?: number;
+    onSale?: boolean;
+    attributeFilters?: AttributeFilterInput;
+    adminFilters?: FilterEntry[];
+  }) {
+    return prisma.product.count({ where: await buildWhere(filters) });
   },
 
   // Typo-tolerant, relevance-ranked search — pg_trgm word_similarity instead

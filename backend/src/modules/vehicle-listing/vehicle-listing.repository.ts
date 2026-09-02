@@ -198,9 +198,11 @@ export const vehicleListingRepository = {
   },
 
   // See adminListInclude above for why this is a separate method rather
-  // than findMany with a different include — no `limit`/`searchIds`, since
-  // the admin panel always fetches the whole filtered set unranked (same
-  // ordering as findMany's default).
+  // than findMany with a different include — no `searchIds`, since the
+  // admin panel never sends one (it always fetches the filtered set
+  // unranked, same ordering as findMany's default); skip/take below give it
+  // real server-side pagination instead of findMany's relevance-driven
+  // `limit`.
   findManyForAdmin(filters: {
     categoryIds?: number[];
     brandIds?: number[];
@@ -211,12 +213,32 @@ export const vehicleListingRepository = {
     onSale?: boolean;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
+    skip?: number;
+    take?: number;
   }) {
     return prisma.vehicleListing.findMany({
       where: buildWhere(filters),
       include: adminListInclude,
       orderBy: [{ vehicleCatalog: { popularity: "desc" } }, { createdAt: "desc" }],
+      skip: filters.skip,
+      take: filters.take,
     });
+  },
+
+  // Paired with findManyForAdmin above — same buildWhere call, so the count
+  // always matches what that query would return unpaginated.
+  countForAdmin(filters: {
+    categoryIds?: number[];
+    brandIds?: number[];
+    priceMin?: number;
+    priceMax?: number;
+    yearMin?: number;
+    yearMax?: number;
+    onSale?: boolean;
+    specFilters?: SpecFilterInput;
+    adminFilters?: FilterEntry[];
+  }) {
+    return prisma.vehicleListing.count({ where: buildWhere(filters) });
   },
 
   // Typo-tolerant, relevance-ranked search across brand/model name — see

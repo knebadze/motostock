@@ -5,12 +5,13 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { Pagination } from "@/components/shared/Pagination";
 import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
 import {
   deleteVehicleCatalogEntry,
   listVehicleCatalog,
   type VehicleCatalogEntry,
+  type VehicleCatalogPage,
 } from "@/lib/api/vehicle-catalog";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import type { AdminFilterEntry } from "@/lib/api/admin-filters";
@@ -80,7 +81,7 @@ const columns: DataTableColumn<VehicleCatalogEntry>[] = [
 ];
 
 export function VehicleCatalogManager({
-  initialEntries,
+  initialData,
   categories,
   brands,
   models,
@@ -92,7 +93,7 @@ export function VehicleCatalogManager({
   startTypes,
   powertrainTypes,
 }: {
-  initialEntries: VehicleCatalogEntry[];
+  initialData: VehicleCatalogPage;
   categories: Category[];
   brands: Brand[];
   models: Model[];
@@ -104,13 +105,13 @@ export function VehicleCatalogManager({
   startTypes: LookupItem[];
   powertrainTypes: LookupItem[];
 }) {
-  const [entries, setEntries] = useState(initialEntries);
+  const [data, setData] = useState(initialData);
   const [formOpen, setFormOpen] = useState(false);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<VehicleCatalogEntry | null>(null);
   const [deletingEntry, setDeletingEntry] = useState<VehicleCatalogEntry | null>(null);
   const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
-  const { page, setPage, pageItems, totalPages } = usePagination(entries);
+  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   const canCreate = categories.length > 0 && brands.length > 0 && models.length > 0;
 
@@ -127,9 +128,9 @@ export function VehicleCatalogManager({
     powertrainTypes,
   });
 
-  async function refresh(filters: AdminFilterEntry[] = adminFilters) {
+  async function loadPage(page: number, filters: AdminFilterEntry[] = adminFilters) {
     try {
-      setEntries(await listVehicleCatalog(filters));
+      setData(await listVehicleCatalog(filters, page, data.pageSize));
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
@@ -137,12 +138,17 @@ export function VehicleCatalogManager({
     }
   }
 
+  // refresh() re-fetches the current page under the current filters — used
+  // after create/edit/delete/bulk-import, where the page shouldn't change.
+  async function refresh() {
+    await loadPage(data.page);
+  }
+
   // AdminFilterPanel only calls this once, on "გაფილტვრა" — one click, one
-  // request, never on every keystroke.
+  // request, never on every keystroke. A new filter always resets to page 1.
   async function handleFilterApply(filters: AdminFilterEntry[]) {
     setAdminFilters(filters);
-    await refresh(filters);
-    setPage(1);
+    await loadPage(1, filters);
   }
 
   function openCreateModal() {
@@ -192,7 +198,7 @@ export function VehicleCatalogManager({
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={pageItems}
+          data={data.items}
           getRowKey={(entry) => entry.id}
           emptyMessage="ტექნიკა არ არსებობს"
           actions={(entry) => (
@@ -202,7 +208,7 @@ export function VehicleCatalogManager({
             />
           )}
         />
-        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination currentPage={data.page} totalPages={totalPages} onPageChange={loadPage} />
       </div>
 
       <VehicleCatalogFormModal

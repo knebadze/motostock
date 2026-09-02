@@ -3,13 +3,13 @@ import {
   getCategoriesFromServer,
   getLookupItemsFromServer,
   getModelsFromServer,
-  getVehicleCatalogFromServer,
+  getVehicleCatalogPageFromServer,
 } from "@/lib/api/server";
 import { VehicleCatalogManager } from "@/components/admin/vehicle-catalog/VehicleCatalogManager";
 
 export default async function VehicleCatalogPage() {
   const [
-    entries,
+    initialData,
     categories,
     brands,
     models,
@@ -21,7 +21,7 @@ export default async function VehicleCatalogPage() {
     startTypes,
     powertrainTypes,
   ] = await Promise.all([
-    getVehicleCatalogFromServer(),
+    getVehicleCatalogPageFromServer(),
     getCategoriesFromServer(),
     getBrandsFromServer(),
     getModelsFromServer(),
@@ -36,7 +36,7 @@ export default async function VehicleCatalogPage() {
 
   return (
     <VehicleCatalogManager
-      initialEntries={entries}
+      initialData={initialData}
       categories={categories}
       brands={brands}
       models={models}

@@ -105,6 +105,10 @@ export type VehicleListingFilters = {
   limit?: number;
   specFilters?: VehicleSpecFilters;
   adminFilters?: AdminFilterEntry[];
+  // Admin-list server-side pagination (see listVehicleListingsAdmin) —
+  // meaningless without adminFilters, ignored by the backend otherwise.
+  page?: number;
+  pageSize?: number;
 };
 
 function isEmptySpecFilters(filters: VehicleSpecFilters): boolean {
@@ -115,10 +119,17 @@ function isEmptySpecFilters(filters: VehicleSpecFilters): boolean {
   );
 }
 
-export async function listVehicleListings(
-  filters: VehicleListingFilters = {},
-): Promise<VehicleListing[]> {
-  const { data } = await apiClient.get<{ items: VehicleListing[] }>("/vehicle-listings", {
+type VehicleListingListResponse = {
+  items: VehicleListing[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+async function fetchVehicleListingsList(
+  filters: VehicleListingFilters,
+): Promise<VehicleListingListResponse> {
+  const { data } = await apiClient.get<VehicleListingListResponse>("/vehicle-listings", {
     params: {
       categoryId: filters.categoryId,
       search: filters.search || undefined,
@@ -139,9 +150,28 @@ export async function listVehicleListings(
       // reasoning (identical signal, same backend lean-projection pattern
       // in vehicle-listing.service.ts's listVehicleListings).
       adminFilters: filters.adminFilters !== undefined ? JSON.stringify(filters.adminFilters) : undefined,
+      page: filters.page,
+      pageSize: filters.pageSize,
     },
   });
-  return data.items;
+  return data;
+}
+
+export async function listVehicleListings(
+  filters: VehicleListingFilters = {},
+): Promise<VehicleListing[]> {
+  const { items } = await fetchVehicleListingsList(filters);
+  return items;
+}
+
+// Admin-list variant of listVehicleListings — same endpoint/filters, but
+// returns the full server-pagination envelope (total/page/pageSize) instead
+// of a bare array. Only VehicleListingsManager.tsx should call this; every
+// storefront caller keeps using listVehicleListings above, unaffected.
+export async function listVehicleListingsAdmin(
+  filters: VehicleListingFilters = {},
+): Promise<VehicleListingListResponse> {
+  return fetchVehicleListingsList(filters);
 }
 
 export async function listPopularVehicleListings(limit?: number): Promise<VehicleListing[]> {

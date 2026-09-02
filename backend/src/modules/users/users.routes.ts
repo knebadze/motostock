@@ -98,7 +98,16 @@ registry.registerPath({
   responses: {
     200: {
       description: "Users",
-      content: { "application/json": { schema: z.object({ users: z.array(adminUserResponseSchema) }) } },
+      content: {
+        "application/json": {
+          schema: z.object({
+            users: z.array(adminUserResponseSchema),
+            total: z.int().openapi({ example: 42 }),
+            page: z.int().openapi({ example: 1 }),
+            pageSize: z.int().openapi({ example: 20 }),
+          }),
+        },
+      },
     },
     401: {
       description: "Not authenticated",

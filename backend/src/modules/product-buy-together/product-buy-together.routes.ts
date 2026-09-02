@@ -52,7 +52,12 @@ productBuyTogetherAdminRouter.get(
 const security = [{ cookieAuth: [] }];
 const listResponse = z.object({ items: z.array(productBuyTogetherResponseSchema) });
 const itemResponse = z.object({ item: productBuyTogetherResponseSchema });
-const adminListResponse = z.object({ items: z.array(adminProductBuyTogetherResponseSchema) });
+const adminListResponse = z.object({
+  items: z.array(adminProductBuyTogetherResponseSchema),
+  total: z.int(),
+  page: z.int(),
+  pageSize: z.int(),
+});
 
 registry.registerPath({
   method: "get",
@@ -102,7 +107,8 @@ registry.registerPath({
   method: "get",
   path: "/product-buy-together",
   tags: ["ProductBuyTogether"],
-  summary: "List every 'buy together' pair across every product, with search/category filters (admin only)",
+  summary:
+    "List every 'buy together' pair across every product, paginated, with search/category filters (admin only)",
   security,
   request: { query: listProductBuyTogetherAdminQuerySchema },
   responses: {

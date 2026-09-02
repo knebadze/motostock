@@ -16,7 +16,7 @@ export default async function VehicleListingsPage() {
 
   return (
     <VehicleListingsManager
-      initialListings={listings}
+      initialData={listings}
       vehicleCatalog={vehicleCatalog}
       conditions={conditions}
       statuses={statuses}

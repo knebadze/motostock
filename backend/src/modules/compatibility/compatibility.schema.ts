@@ -5,10 +5,16 @@ import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
 
 export const compatibilityKindFilterSchema = z.enum(["FITMENT", "RULE"]);
 
+// page/pageSize both optional (defaults applied in the controller, not via
+// zod's `.default()`) — an output key zod infers as required-but-defaulted
+// breaks Express's route handler overload resolution against the default
+// ParsedQs query type, same reasoning as error-logs.schema.ts.
 export const listCompatibilityQuerySchema = z.object({
   search: z.string().trim().min(1).max(100).optional(),
   categoryId: z.coerce.number().int().positive().optional(),
   kind: compatibilityKindFilterSchema.optional(),
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
 export type ListCompatibilityQuery = z.infer<typeof listCompatibilityQuerySchema>;
 

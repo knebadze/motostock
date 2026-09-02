@@ -32,9 +32,18 @@ export const productBuyTogetherResponseSchema = registry.register(
 
 // Admin-only unified overview (see /admin/buy-together) — lighter than the
 // full Product shape above, only what the cross-product table needs.
+// page/pageSize are real server-side pagination (skip/take), not the
+// client-side slicing most other admin lists use — this table spans every
+// product pair project-wide and has no natural cap. Both optional
+// (defaults applied in the controller, not via zod's `.default()`) — an
+// output key zod infers as required-but-defaulted breaks Express's route
+// handler overload resolution against the default ParsedQs query type
+// (same reasoning as error-logs.schema.ts).
 export const listProductBuyTogetherAdminQuerySchema = z.object({
   search: z.string().trim().min(1).max(100).optional(),
   categoryId: z.coerce.number().int().positive().optional(),
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
 export type ListProductBuyTogetherAdminQuery = z.infer<typeof listProductBuyTogetherAdminQuerySchema>;
 

@@ -66,17 +66,28 @@ export async function getUserDetail(id: number) {
   };
 }
 
-export async function listUsers(search?: string) {
-  const users = await usersRepository.findMany(search);
+// Matches frontend/src/components/shared/Pagination.tsx's DEFAULT_PAGE_SIZE.
+const DEFAULT_PAGE_SIZE = 20;
 
-  return users.map((user) => ({
-    id: user.id,
-    email: user.email,
-    name: `${user.firstName} ${user.lastName}`,
-    role: user.role.name,
-    hasPassword: user.passwordHash != null,
-    hasGoogle: user.googleId != null,
-    hasFacebook: user.facebookId != null,
-    createdAt: user.createdAt,
-  }));
+export async function listUsers(search?: string, page = 1, pageSize = DEFAULT_PAGE_SIZE) {
+  const [users, total] = await Promise.all([
+    usersRepository.findMany(search, (page - 1) * pageSize, pageSize),
+    usersRepository.count(search),
+  ]);
+
+  return {
+    users: users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      name: `${user.firstName} ${user.lastName}`,
+      role: user.role.name,
+      hasPassword: user.passwordHash != null,
+      hasGoogle: user.googleId != null,
+      hasFacebook: user.facebookId != null,
+      createdAt: user.createdAt,
+    })),
+    total,
+    page,
+    pageSize,
+  };
 }

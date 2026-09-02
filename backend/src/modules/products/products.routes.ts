@@ -76,7 +76,15 @@ productsRouter.post(
 );
 
 const security = [{ cookieAuth: [] }];
-const listResponse = z.object({ items: z.array(productResponseSchema) });
+// total/page/pageSize are only populated for the admin-list path (adminFilters
+// present) — the storefront/popular paths never send page/pageSize and their
+// responses omit these three fields, so they stay optional here.
+const listResponse = z.object({
+  items: z.array(productResponseSchema),
+  total: z.number().int().nonnegative().optional(),
+  page: z.number().int().positive().optional(),
+  pageSize: z.number().int().positive().optional(),
+});
 const itemResponse = z.object({ item: productResponseSchema });
 
 registry.registerPath({
