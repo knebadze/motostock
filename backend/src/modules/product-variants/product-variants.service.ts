@@ -129,6 +129,24 @@ export async function updateProductVariant(id: number, input: UpdateProductVaria
     throw new ApiError(404, "ვარიანტი ვერ მოიძებნა");
   }
 
+  // Mirrors product-variant-discounts.service.ts's
+  // assertDiscountPriceBelowListPrice, in the opposite direction —
+  // that guard only checks a discount against the variant's price *at the
+  // moment the discount is created/edited*; without this, lowering the
+  // variant's own price afterward could leave an active discount priced
+  // *above* the new list price, and findActiveDiscount/checkout would
+  // charge that stale, now-higher "discount" price without ever
+  // questioning it (a real overcharge, not just a display glitch).
+  if (input.price !== undefined) {
+    const activeDiscount = findActiveDiscount(existing.discounts);
+    if (activeDiscount && Number(input.price) <= Number(activeDiscount.discountPrice)) {
+      throw new ApiError(
+        400,
+        "ახალი ფასი ვერ იქნება აქტიური ფასდაკლების ფასზე დაბალი ან ტოლი — ჯერ შეცვალეთ ან გააუქმეთ ფასდაკლება",
+      );
+    }
+  }
+
   if (input.finaId !== undefined) {
     await assertFinaIdAvailable(input.finaId, id);
   }

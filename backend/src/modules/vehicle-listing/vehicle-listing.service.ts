@@ -436,6 +436,23 @@ export async function updateVehicleListing(id: number, input: UpdateVehicleListi
     throw new ApiError(404, "განცხადება ვერ მოიძებნა");
   }
 
+  // Mirrors vehicle-listing-discounts.service.ts's own discountPrice-below-
+  // price guard, in the opposite direction — that one only checks a
+  // discount against the listing's price at the moment the discount is
+  // created/edited; without this, lowering the listing's own price
+  // afterward could leave an active discount priced *above* the new price,
+  // and findActiveDiscount/checkout would charge that stale, now-higher
+  // "discount" price without ever questioning it.
+  if (input.price !== undefined) {
+    const activeDiscount = findActiveDiscount(existing.discounts);
+    if (activeDiscount && Number(input.price) <= Number(activeDiscount.discountPrice)) {
+      throw new ApiError(
+        400,
+        "ახალი ფასი ვერ იქნება აქტიური ფასდაკლების ფასზე დაბალი ან ტოლი — ჯერ შეცვალეთ ან გააუქმეთ ფასდაკლება",
+      );
+    }
+  }
+
   await assertRefsExist({
     vehicleCatalogId: input.vehicleCatalogId ?? existing.vehicleCatalog.id,
     conditionId: input.conditionId ?? existing.condition.id,
