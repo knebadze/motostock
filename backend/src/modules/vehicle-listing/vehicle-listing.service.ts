@@ -2,6 +2,7 @@ import { ApiError } from "../../lib/ApiError.js";
 import { cache } from "../../lib/cache.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { resolvePage } from "../../lib/pagination.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
@@ -216,9 +217,10 @@ function isCacheableOnSaleQuery(query: VehicleListingListQuery): boolean {
   );
 }
 
-// total/page/pageSize are only meaningful for the admin-list path
-// (query.adminFilters present) — every other caller (storefront browse,
-// on-sale/homepage) gets total = items.length, page = 1.
+// total/page/pageSize are real (DB-backed) whenever the caller is paginated
+// — the admin list (always) or a storefront browse/search that explicitly
+// sent page/pageSize. Every other caller (homepage sliders, any `limit`-only
+// request) gets total = items.length, page = 1.
 export async function listVehicleListings(query: VehicleListingListQuery) {
   const cacheKey = isCacheableOnSaleQuery(query)
     ? `vehicleListings:onSale:${query.limit ?? "all"}`
@@ -245,10 +247,102 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
   // row (VehicleListingsManager.tsx's table never renders engine specs; the
   // admin detail view fetches full per-listing data separately).
   const isAdminList = query.adminFilters != null;
-  const page = query.page ?? 1;
-  const pageSize = query.pageSize ?? 20;
-  const adminCountFilters = {
+  // Same opt-in signal as products.service.ts's listProducts — the
+  // storefront shop page sends page/pageSize to get real pagination;
+  // every other storefront caller keeps its old `limit`-only behavior.
+  const isCustomerPaginated = !isAdminList && (query.page != null || query.pageSize != null);
+  const { page, pageSize, skip, take } = resolvePage(query);
+
+  if (isAdminList) {
+    const adminCountFilters = {
+      categoryIds,
+      brandIds: query.brandIds,
+      priceMin: query.priceMin,
+      priceMax: query.priceMax,
+      yearMin: query.yearMin,
+      yearMax: query.yearMax,
+      onSale: query.onSale,
+      specFilters: query.specFilters,
+      adminFilters: query.adminFilters,
+    };
+    const [adminRows, adminTotal] = await Promise.all([
+      vehicleListingRepository.findManyForAdmin({ ...adminCountFilters, skip, take }),
+      vehicleListingRepository.countForAdmin(adminCountFilters),
+    ]);
+    const rows = adminRows.map((row) => ({
+      ...row,
+      vehicleCatalog: {
+        ...row.vehicleCatalog,
+        fuelType: null,
+        transmissionType: null,
+        coolingType: null,
+        finalDriveType: null,
+        driveType: null,
+        startType: null,
+        powertrainType: null,
+      },
+    }));
+    const result = rows.map(toVehicleListingResponse);
+    return { items: result, total: adminTotal, page, pageSize };
+  }
+
+  if (isCustomerPaginated) {
+    const filters = {
+      categoryIds,
+      searchIds,
+      brandIds: query.brandIds,
+      priceMin: query.priceMin,
+      priceMax: query.priceMax,
+      yearMin: query.yearMin,
+      yearMax: query.yearMax,
+      onSale: query.onSale,
+      specFilters: query.specFilters,
+    };
+
+    // Effective (discount-aware) price isn't a plain column — same
+    // fetch-all-matching + JS-sort + slice tradeoff as
+    // products.service.ts's listProducts price branch, for the same
+    // reason (see its comment).
+    if (query.sortBy === "price-asc" || query.sortBy === "price-desc") {
+      const rows = await vehicleListingRepository.findMany(filters);
+      const effectivePrice = (row: (typeof rows)[number]) => {
+        const activeDiscount = findActiveDiscount(row.discounts);
+        return activeDiscount ? Number(activeDiscount.discountPrice) : Number(row.price);
+      };
+      const sorted = [...rows].sort((a, b) =>
+        query.sortBy === "price-asc"
+          ? effectivePrice(a) - effectivePrice(b)
+          : effectivePrice(b) - effectivePrice(a),
+      );
+      const pageRows = sorted.slice(skip, skip + take);
+      const result = pageRows.map(toVehicleListingResponse);
+      return { items: result, total: rows.length, page, pageSize };
+    }
+
+    // Default ("newest") / year-desc sort: both plain DB-orderable columns —
+    // a normal skip/take + a matching count(), both honoring searchIds (an
+    // id-in filter, not a relevance re-sort). `paginate: true` overrides
+    // findMany's legacy "suppress skip/take whenever searchIds is set"
+    // behavior.
+    const [rows, total] = await Promise.all([
+      vehicleListingRepository.findMany({
+        ...filters,
+        skip,
+        limit: take,
+        sortBy: query.sortBy,
+        paginate: true,
+      }),
+      vehicleListingRepository.count(filters),
+    ]);
+    const result = rows.map(toVehicleListingResponse);
+    return { items: result, total, page, pageSize };
+  }
+
+  // Legacy, non-paginated customer path (homepage sliders, any caller that
+  // only ever sent `limit`) — unchanged behavior.
+  const rows = await vehicleListingRepository.findMany({
     categoryIds,
+    searchIds,
     brandIds: query.brandIds,
     priceMin: query.priceMin,
     priceMax: query.priceMax,
@@ -256,47 +350,8 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     yearMax: query.yearMax,
     onSale: query.onSale,
     specFilters: query.specFilters,
-    adminFilters: query.adminFilters,
-  };
-
-  const [adminRows, adminTotal] = isAdminList
-    ? await Promise.all([
-        vehicleListingRepository.findManyForAdmin({
-          ...adminCountFilters,
-          skip: (page - 1) * pageSize,
-          take: pageSize,
-        }),
-        vehicleListingRepository.countForAdmin(adminCountFilters),
-      ])
-    : [undefined, undefined];
-
-  const rows = isAdminList
-    ? adminRows!.map((row) => ({
-        ...row,
-        vehicleCatalog: {
-          ...row.vehicleCatalog,
-          fuelType: null,
-          transmissionType: null,
-          coolingType: null,
-          finalDriveType: null,
-          driveType: null,
-          startType: null,
-          powertrainType: null,
-        },
-      }))
-    : await vehicleListingRepository.findMany({
-        categoryIds,
-        searchIds,
-        brandIds: query.brandIds,
-        priceMin: query.priceMin,
-        priceMax: query.priceMax,
-        yearMin: query.yearMin,
-        yearMax: query.yearMax,
-        onSale: query.onSale,
-        specFilters: query.specFilters,
-        adminFilters: query.adminFilters,
-        limit: query.limit,
-      });
+    limit: query.limit,
+  });
 
   let result: ReturnType<typeof toVehicleListingResponse>[];
   if (searchIds == null) {
@@ -313,10 +368,6 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
   }
 
   if (cacheKey) cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
-
-  if (isAdminList) {
-    return { items: result, total: adminTotal ?? result.length, page, pageSize };
-  }
   return { items: result, total: result.length, page: 1, pageSize: result.length || 1 };
 }
 

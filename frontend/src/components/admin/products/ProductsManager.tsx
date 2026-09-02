@@ -8,7 +8,7 @@ import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination } from "@/components/shared/Pagination";
 import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
-import { deleteProduct, listProductsAdmin, type Product } from "@/lib/api/products";
+import { deleteProduct, listProductsPage, type Product } from "@/lib/api/products";
 import type { AdminListPage } from "@/lib/api/server";
 import { resolveMediaUrl, ApiRequestError } from "@/lib/api/client";
 import type { AdminFilterEntry } from "@/lib/api/admin-filters";
@@ -111,7 +111,7 @@ export function ProductsManager({
 
   async function loadPage(page: number, filters: AdminFilterEntry[] = adminFilters) {
     try {
-      setData(await listProductsAdmin({ adminFilters: filters, page, pageSize: data.pageSize }));
+      setData(await listProductsPage({ adminFilters: filters, page, pageSize: data.pageSize }));
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";

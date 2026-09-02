@@ -2,6 +2,37 @@
 
 import { useState } from "react";
 
+// Server-side pagination companion to usePagination above — use this one
+// when the backend does the skip/take (see backend/src/lib/pagination.ts's
+// resolvePage) and responds with {items,total,page,pageSize}; use
+// usePagination instead when the full array is already in memory and
+// slicing happens in the browser. Centralizes the
+// state+totalPages+loading/error boilerplate that was previously
+// copy-pasted into every admin Manager (and would otherwise be copy-pasted
+// into every storefront list too) — callers still write their own fetcher
+// (each module's filters differ) but hand it to `load` instead of
+// reimplementing the try/finally/setData dance themselves.
+export type PagedResult<T> = { items: T[]; total: number; page: number; pageSize: number };
+
+export function useServerPagination<T>(initialData: PagedResult<T>) {
+  const [data, setData] = useState(initialData);
+  const [loading, setLoading] = useState(false);
+  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
+
+  async function load(fetcher: () => Promise<PagedResult<T>>, onError?: (error: unknown) => void) {
+    setLoading(true);
+    try {
+      setData(await fetcher());
+    } catch (error) {
+      onError?.(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return { data, setData, totalPages, loading, load };
+}
+
 const DEFAULT_PAGE_SIZE = 20;
 
 // Shared client-side pagination: slices an already-fetched array, clamping

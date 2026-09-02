@@ -105,10 +105,13 @@ export type VehicleListingFilters = {
   limit?: number;
   specFilters?: VehicleSpecFilters;
   adminFilters?: AdminFilterEntry[];
-  // Admin-list server-side pagination (see listVehicleListingsAdmin) —
-  // meaningless without adminFilters, ignored by the backend otherwise.
+  // Server-side pagination (see listVehicleListingsPage) — used by
+  // VehicleListingsManager (with adminFilters) and the storefront shop page
+  // (with sortBy).
   page?: number;
   pageSize?: number;
+  // Storefront shop page sort — only meaningful alongside page/pageSize.
+  sortBy?: "newest" | "year-desc" | "price-asc" | "price-desc";
 };
 
 function isEmptySpecFilters(filters: VehicleSpecFilters): boolean {
@@ -152,6 +155,7 @@ async function fetchVehicleListingsList(
       adminFilters: filters.adminFilters !== undefined ? JSON.stringify(filters.adminFilters) : undefined,
       page: filters.page,
       pageSize: filters.pageSize,
+      sortBy: filters.sortBy,
     },
   });
   return data;
@@ -164,11 +168,12 @@ export async function listVehicleListings(
   return items;
 }
 
-// Admin-list variant of listVehicleListings — same endpoint/filters, but
+// Paginated variant of listVehicleListings — same endpoint/filters, but
 // returns the full server-pagination envelope (total/page/pageSize) instead
-// of a bare array. Only VehicleListingsManager.tsx should call this; every
-// storefront caller keeps using listVehicleListings above, unaffected.
-export async function listVehicleListingsAdmin(
+// of a bare array. Used by VehicleListingsManager.tsx (admin, via
+// adminFilters) and by the storefront shop page (via page/pageSize) — every
+// OTHER caller keeps using listVehicleListings above, unaffected.
+export async function listVehicleListingsPage(
   filters: VehicleListingFilters = {},
 ): Promise<VehicleListingListResponse> {
   return fetchVehicleListingsList(filters);

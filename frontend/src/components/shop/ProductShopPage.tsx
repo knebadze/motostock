@@ -5,10 +5,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import type { SelectOption } from "@/components/shared/Select";
-import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
-import { listProducts, type Product, type ProductAttributeFilters } from "@/lib/api/products";
+import { listProductsPage, type Product, type ProductAttributeFilters } from "@/lib/api/products";
 import type { Category } from "@/lib/api/categories";
 import type { CategoryFilter, CategoryFilterAttribute } from "@/lib/api/category-filters";
 import type { GarageVehicle } from "@/lib/api/vehicle-catalog";
@@ -43,18 +43,21 @@ export function ProductShopPage({
   breadcrumbChain,
   subcategories,
   products,
+  initialData,
   filters,
   garageVehicles,
-  initialPage = 1,
   initialSort = "newest",
 }: {
   category: Category;
   breadcrumbChain: Category[];
   subcategories: Category[];
+  // Unbounded — feeds the brand-checkbox facet list, which needs to see
+  // every brand present in the category, not just the current page's.
   products: Product[];
+  // Real server pagination — feeds the actual grid.
+  initialData: PagedResult<Product>;
   filters: CategoryFilter[];
   garageVehicles: GarageVehicle[];
-  initialPage?: number;
   initialSort?: string;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
@@ -76,8 +79,7 @@ export function ProductShopPage({
   );
   const [sortBy, setSortBy] = useState<SortBy>(() => parseSortBy(initialSort));
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [displayedProducts, setDisplayedProducts] = useState(products);
-  const [loading, setLoading] = useState(false);
+  const { data, totalPages, loading, load } = useServerPagination(initialData);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   // Brand checkboxes always reflect the category's full, unfiltered catalog
@@ -103,28 +105,21 @@ export function ProductShopPage({
     }));
   }
 
-  function resetToFirstPage() {
-    setPage(1);
-  }
-
   function toggleOption(attributeId: number, optionId: number) {
     const existing = attributeFilterState[attributeId] ?? EMPTY_ATTRIBUTE_STATE;
     const optionIds = existing.optionIds.includes(optionId)
       ? existing.optionIds.filter((id) => id !== optionId)
       : [...existing.optionIds, optionId];
     updateAttributeState(attributeId, { optionIds });
-    resetToFirstPage();
   }
 
   function toggleBoolean(attributeId: number) {
     const existing = attributeFilterState[attributeId] ?? EMPTY_ATTRIBUTE_STATE;
     updateAttributeState(attributeId, { booleanEnabled: !existing.booleanEnabled });
-    resetToFirstPage();
   }
 
   function handleNumberRangeChange(attributeId: number, field: "min" | "max", value: string) {
     updateAttributeState(attributeId, field === "min" ? { numberMin: value } : { numberMax: value });
-    resetToFirstPage();
   }
 
   const attributeFilters: ProductAttributeFilters = useMemo(() => {
@@ -144,29 +139,33 @@ export function ProductShopPage({
     return { selectFilters, booleanAttributeIds, numberRanges };
   }, [attributeFilterState]);
 
-  // Search/brand/price/attribute filters all move server-side together —
-  // any change here refetches (debounced) instead of re-filtering the
-  // already-fetched array in memory.
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setLoading(true);
-      listProducts({
-        categoryId: category.id,
-        vehicleCatalogId: selectedVehicleCatalogId ? Number(selectedVehicleCatalogId) : undefined,
-        search: search.trim() || undefined,
-        brandIds: selectedBrandIds.length > 0 ? selectedBrandIds : undefined,
-        priceMin: priceMin.trim() ? Number(priceMin) : undefined,
-        priceMax: priceMax.trim() ? Number(priceMax) : undefined,
-        attributeFilters,
-      })
-        .then(setDisplayedProducts)
-        .catch((error) => {
-          toast.error(resolveApiErrorMessage(error, tErrors, t("loadProductsError")));
-        })
-        .finally(() => setLoading(false));
-    }, FILTER_DEBOUNCE_MS);
+  function fetchPage(page: number) {
+    return load(
+      () =>
+        listProductsPage({
+          categoryId: category.id,
+          vehicleCatalogId: selectedVehicleCatalogId ? Number(selectedVehicleCatalogId) : undefined,
+          search: search.trim() || undefined,
+          brandIds: selectedBrandIds.length > 0 ? selectedBrandIds : undefined,
+          priceMin: priceMin.trim() ? Number(priceMin) : undefined,
+          priceMax: priceMax.trim() ? Number(priceMax) : undefined,
+          attributeFilters,
+          page,
+          pageSize: data.pageSize,
+          sortBy,
+        }),
+      (error) => toast.error(resolveApiErrorMessage(error, tErrors, t("loadProductsError"))),
+    );
+  }
 
+  // Search/brand/price/attribute/sort filters all move server-side together
+  // (page/sort/pagination too — see listProductsPage) — any change here
+  // refetches (debounced) page 1 instead of re-filtering/re-sorting an
+  // already-fetched array in the browser.
+  useEffect(() => {
+    const timeoutId = setTimeout(() => fetchPage(1), FILTER_DEBOUNCE_MS);
     return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     category.id,
     search,
@@ -175,23 +174,8 @@ export function ProductShopPage({
     priceMax,
     attributeFilters,
     selectedVehicleCatalogId,
-    t,
-    tErrors,
+    sortBy,
   ]);
-
-  const sorted = useMemo(() => {
-    const result = [...displayedProducts];
-    if (sortBy === "price-asc") {
-      result.sort((a, b) => (a.minPrice ?? 0) - (b.minPrice ?? 0));
-    } else if (sortBy === "price-desc") {
-      result.sort((a, b) => (b.minPrice ?? 0) - (a.minPrice ?? 0));
-    } else {
-      result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }
-    return result;
-  }, [displayedProducts, sortBy]);
-
-  const { page, setPage, pageItems, totalPages } = usePagination(sorted, 20, initialPage);
 
   // Keep page/sort in the URL — they change WHICH content is visible, so each
   // combination must be its own crawlable, shareable, bookmarkable address.
@@ -200,11 +184,11 @@ export function ProductShopPage({
   // individually indexed).
   useEffect(() => {
     const query: Record<string, string> = {};
-    if (page > 1) query.page = String(page);
+    if (data.page > 1) query.page = String(data.page);
     if (sortBy !== "newest") query.sort = sortBy;
     router.replace({ pathname, query }, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, sortBy]);
+  }, [data.page, sortBy]);
 
   const sortOptions: SelectOption[] = [
     { value: "newest", label: t("sortNewest") },
@@ -235,7 +219,6 @@ export function ProductShopPage({
           label: brand.label,
           onRemove: () => {
             setSelectedBrandIds((current) => current.filter((id) => id !== brandId));
-            resetToFirstPage();
           },
         });
       }
@@ -248,7 +231,6 @@ export function ProductShopPage({
         onRemove: () => {
           setPriceMin("");
           setPriceMax("");
-          resetToFirstPage();
         },
       });
     }
@@ -264,7 +246,6 @@ export function ProductShopPage({
           onRemove: () => {
             setSelectedVehicleCatalogId("");
             persistSelectedVehicleCookie("");
-            resetToFirstPage();
           },
         });
       }
@@ -299,7 +280,6 @@ export function ProductShopPage({
           label: `${attribute.name[locale]}: ${state.numberMin || "?"}–${state.numberMax || "?"}`,
           onRemove: () => {
             updateAttributeState(attributeId, { numberMin: "", numberMax: "" });
-            resetToFirstPage();
           },
         });
       }
@@ -328,7 +308,6 @@ export function ProductShopPage({
     setSelectedVehicleCatalogId("");
     persistSelectedVehicleCookie("");
     setAttributeFilterState({});
-    resetToFirstPage();
   }
 
   // Rendered twice below (desktop <aside>, mobile FilterDrawer) — kept as
@@ -344,7 +323,6 @@ export function ProductShopPage({
         search={search}
         onSearchChange={(value) => {
           setSearch(value);
-          resetToFirstPage();
         }}
         filters={filters}
         brandOptions={brandOptions}
@@ -353,17 +331,14 @@ export function ProductShopPage({
           setSelectedBrandIds((current) =>
             current.includes(brandId) ? current.filter((id) => id !== brandId) : [...current, brandId],
           );
-          resetToFirstPage();
         }}
         priceMin={priceMin}
         priceMax={priceMax}
         onPriceMinChange={(value) => {
           setPriceMin(value);
-          resetToFirstPage();
         }}
         onPriceMaxChange={(value) => {
           setPriceMax(value);
-          resetToFirstPage();
         }}
         attributeFilterState={attributeFilterState}
         onToggleOption={toggleOption}
@@ -374,7 +349,6 @@ export function ProductShopPage({
         onVehicleChange={(value) => {
           setSelectedVehicleCatalogId(value);
           persistSelectedVehicleCookie(value);
-          resetToFirstPage();
         }}
       />
     </div>
@@ -396,7 +370,7 @@ export function ProductShopPage({
 
             <div className="flex flex-col gap-6">
               <ShopToolbar
-                resultCountLabel={t("resultCount", { count: sorted.length })}
+                resultCountLabel={t("resultCount", { count: data.total })}
                 sortLabel={t("sortLabel")}
                 sortValue={sortBy}
                 sortOptions={sortOptions}
@@ -410,7 +384,7 @@ export function ProductShopPage({
               />
 
               <ShopItemGrid
-                items={pageItems}
+                items={data.items}
                 layout={viewMode}
                 getKey={(product) => product.id}
                 emptyMessage={t("emptyState")}
@@ -419,9 +393,9 @@ export function ProductShopPage({
               />
 
               <Pagination
-                currentPage={page}
+                currentPage={data.page}
                 totalPages={totalPages}
-                onPageChange={setPage}
+                onPageChange={fetchPage}
                 navLabel={tCommon("pagination.nav")}
                 prevLabel={tCommon("pagination.prev")}
                 nextLabel={tCommon("pagination.next")}

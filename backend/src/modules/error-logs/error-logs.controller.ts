@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { resolvePage } from "../../lib/pagination.js";
 import { errorLogsRepository } from "./error-logs.repository.js";
 import type { ErrorLogsQuery } from "./error-logs.schema.js";
 
@@ -6,10 +7,9 @@ export async function list(
   req: Request<unknown, unknown, unknown, ErrorLogsQuery>,
   res: Response,
 ) {
-  const page = req.query.page ?? 1;
-  const pageSize = req.query.pageSize ?? 25;
+  const { page, pageSize, skip, take } = resolvePage(req.query, 25);
   const [logs, total] = await Promise.all([
-    errorLogsRepository.list((page - 1) * pageSize, pageSize),
+    errorLogsRepository.list(skip, take),
     errorLogsRepository.count(),
   ]);
   res.status(200).json({ logs, total, page, pageSize });

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import { Pagination } from "@/components/shared/Pagination";
+import { Pagination, useServerPagination } from "@/components/shared/Pagination";
 import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
 import {
   deleteVehicleCatalogEntry,
@@ -105,13 +105,12 @@ export function VehicleCatalogManager({
   startTypes: LookupItem[];
   powertrainTypes: LookupItem[];
 }) {
-  const [data, setData] = useState(initialData);
+  const { data, totalPages, load } = useServerPagination(initialData);
   const [formOpen, setFormOpen] = useState(false);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<VehicleCatalogEntry | null>(null);
   const [deletingEntry, setDeletingEntry] = useState<VehicleCatalogEntry | null>(null);
   const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
-  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   const canCreate = categories.length > 0 && brands.length > 0 && models.length > 0;
 
@@ -129,13 +128,14 @@ export function VehicleCatalogManager({
   });
 
   async function loadPage(page: number, filters: AdminFilterEntry[] = adminFilters) {
-    try {
-      setData(await listVehicleCatalog(filters, page, data.pageSize));
-    } catch (error) {
-      const message =
-        error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
-      toast.error(message);
-    }
+    await load(
+      () => listVehicleCatalog(filters, page, data.pageSize),
+      (error) => {
+        const message =
+          error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
+        toast.error(message);
+      },
+    );
   }
 
   // refresh() re-fetches the current page under the current filters — used

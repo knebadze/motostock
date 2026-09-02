@@ -5,31 +5,35 @@ import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Modal } from "@/components/shared/Modal";
-import { Pagination } from "@/components/shared/Pagination";
+import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { Loader } from "@/components/shared/Loader";
 import { getErrorLogs, clearErrorLogs, type ErrorLog, type ErrorLogsPage } from "@/lib/api/error-logs";
 import { ApiRequestError } from "@/lib/api/client";
 import { formatDateTime } from "@/lib/format";
 
+// ErrorLogsPage's field is `logs` (matching the backend response shape),
+// while useServerPagination is keyed on the generic `items` field —
+// adapted here rather than renaming the wire shape.
+function toPagedResult(page: ErrorLogsPage): PagedResult<ErrorLog> {
+  return { items: page.logs, total: page.total, page: page.page, pageSize: page.pageSize };
+}
+
 export function ErrorLogsManager({ initialData }: { initialData: ErrorLogsPage }) {
-  const [data, setData] = useState(initialData);
-  const [loading, setLoading] = useState(false);
+  const { data, setData, totalPages, loading, load } = useServerPagination(
+    toPagedResult(initialData),
+  );
   const [confirmingClear, setConfirmingClear] = useState(false);
   const [viewing, setViewing] = useState<ErrorLog | null>(null);
 
-  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
-
   async function loadPage(page: number) {
-    setLoading(true);
-    try {
-      setData(await getErrorLogs(page, data.pageSize));
-    } catch (error) {
-      const message =
-        error instanceof ApiRequestError ? error.message : "ჟურნალის ჩატვირთვა ვერ მოხერხდა";
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
+    await load(
+      () => getErrorLogs(page, data.pageSize).then(toPagedResult),
+      (error) => {
+        const message =
+          error instanceof ApiRequestError ? error.message : "ჟურნალის ჩატვირთვა ვერ მოხერხდა";
+        toast.error(message);
+      },
+    );
   }
 
   const columns: DataTableColumn<ErrorLog>[] = [
@@ -68,7 +72,7 @@ export function ErrorLogsManager({ initialData }: { initialData: ErrorLogsPage }
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={data.logs}
+          data={data.items}
           getRowKey={(log) => log.id}
           emptyMessage="შეცდომები არ დაფიქსირებულა"
           actions={(log) => (
@@ -136,7 +140,7 @@ export function ErrorLogsManager({ initialData }: { initialData: ErrorLogsPage }
         successMessage="ჟურნალი გასუფთავდა"
         onConfirm={async () => {
           await clearErrorLogs();
-          setData({ logs: [], total: 0, page: 1, pageSize: data.pageSize });
+          setData({ items: [], total: 0, page: 1, pageSize: data.pageSize });
         }}
       />
     </div>

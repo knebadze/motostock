@@ -84,6 +84,12 @@ const brandIdsQuerySchema = z
 
 export const productListQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
+  // Cross-category "browse everything" page's category-checkbox facet
+  // (ShopAllProductsPage) — an arbitrary, exact-match set of leaf category
+  // ids, unlike categoryId above (which resolves to itself + descendants for
+  // one dedicated category page). Mutually exclusive with categoryId in
+  // practice: send one or the other, not both.
+  categoryIds: brandIdsQuerySchema,
   // "My vehicle" filter (shop-facing MY_VEHICLE category filter, and the
   // garage's cross-category "compatible products" page) — narrows to
   // products with a ProductFitment row for this catalog entry.
@@ -136,6 +142,9 @@ export const productListQuerySchema = z.object({
   // attributeFilters' comment above for the same reasoning).
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(100).optional(),
+  // Storefront shop page sort — only meaningful alongside page/pageSize (see
+  // products.service.ts's listProducts); defaults to newest-first.
+  sortBy: z.enum(["newest", "price-asc", "price-desc"]).optional(),
 });
 export type ProductListQuery = z.infer<typeof productListQuerySchema>;
 

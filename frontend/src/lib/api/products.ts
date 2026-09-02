@@ -150,6 +150,11 @@ export type ProductAttributeFilters = {
 
 export type ProductListFilters = {
   categoryId?: number;
+  // Cross-category "browse everything" page's category-checkbox facet (see
+  // ShopAllProductsPage.tsx) — an arbitrary exact-match set, unlike
+  // categoryId above (which also matches its descendants). Send one or the
+  // other, not both.
+  categoryIds?: number[];
   // "My vehicle" filter — narrows to products with a fitment for this
   // catalog entry, used both by the shop's MY_VEHICLE category filter and
   // the garage's cross-category "compatible products" page.
@@ -165,10 +170,12 @@ export type ProductListFilters = {
   adminFilters?: AdminFilterEntry[];
   // Homepage product sliders cap how many products they pull.
   limit?: number;
-  // Admin-list server-side pagination (see listProductsAdmin) — meaningless
-  // without adminFilters, ignored by the backend otherwise.
+  // Server-side pagination (see listProductsPage) — used by ProductsManager
+  // (with adminFilters) and by the storefront shop pages (with sortBy).
   page?: number;
   pageSize?: number;
+  // Storefront shop page sort — only meaningful alongside page/pageSize.
+  sortBy?: "newest" | "price-asc" | "price-desc";
 };
 
 function isEmptyAttributeFilters(filters: ProductAttributeFilters): boolean {
@@ -185,6 +192,7 @@ async function fetchProductsList(filters: ProductListFilters): Promise<ProductLi
   const { data } = await apiClient.get<ProductListResponse>("/products", {
     params: {
       categoryId: filters.categoryId,
+      categoryIds: filters.categoryIds?.length ? filters.categoryIds : undefined,
       vehicleCatalogId: filters.vehicleCatalogId,
       search: filters.search || undefined,
       brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
@@ -206,6 +214,7 @@ async function fetchProductsList(filters: ProductListFilters): Promise<ProductLi
       limit: filters.limit,
       page: filters.page,
       pageSize: filters.pageSize,
+      sortBy: filters.sortBy,
     },
   });
   return data;
@@ -216,12 +225,13 @@ export async function listProducts(filters: ProductListFilters = {}): Promise<Pr
   return items;
 }
 
-// Admin-list variant of listProducts — same endpoint/filters, but returns the
+// Paginated variant of listProducts — same endpoint/filters, but returns the
 // full server-pagination envelope (total/page/pageSize) instead of a bare
-// array. Only ProductsManager.tsx should call this; every storefront caller
-// keeps using listProducts above, which is unaffected (page/pageSize are
-// simply omitted, so the backend returns page 1 of everything as before).
-export async function listProductsAdmin(
+// array. Used by ProductsManager.tsx (admin, via adminFilters) and by the
+// storefront shop pages (via page/pageSize) — every OTHER caller keeps using
+// listProducts above, unaffected (page/pageSize simply omitted, so the
+// backend returns its old unbounded/`limit`-only shape).
+export async function listProductsPage(
   filters: ProductListFilters = {},
 ): Promise<ProductListResponse> {
   return fetchProductsList(filters);

@@ -6,6 +6,7 @@ import { modelsRepository } from "../models/models.repository.js";
 import { getLookupDelegate, type LookupType } from "../lookups/lookups.registry.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { applyVehicleCatalogAdminFilters } from "../filters/vehicle-catalog/vehicle-catalog-filter-registry.js";
+import { resolvePage } from "../../lib/pagination.js";
 import { vehicleCatalogRepository } from "./vehicle-catalog.repository.js";
 import type {
   CreateVehicleCatalogInput,
@@ -184,10 +185,9 @@ export async function listVehicleCatalog(query: VehicleCatalogListQuery = {}) {
     return { items, total: items.length, page: 1, pageSize: items.length || DEFAULT_PAGE_SIZE };
   }
 
-  const page = query.page ?? 1;
-  const pageSize = query.pageSize ?? DEFAULT_PAGE_SIZE;
+  const { page, pageSize, skip, take } = resolvePage(query, DEFAULT_PAGE_SIZE);
   const [rows, total] = await Promise.all([
-    vehicleCatalogRepository.findMany(where, (page - 1) * pageSize, pageSize),
+    vehicleCatalogRepository.findMany(where, skip, take),
     vehicleCatalogRepository.count(where),
   ]);
   return { items: rows.map(toVehicleCatalogResponse), total, page, pageSize };

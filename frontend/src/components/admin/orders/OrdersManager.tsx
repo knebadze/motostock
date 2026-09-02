@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import { Pagination } from "@/components/shared/Pagination";
+import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { Select } from "@/components/shared/Select";
 import { formatDate, formatDateTime, formatPrice, toTbilisiDateOnly } from "@/lib/format";
 import { ApiRequestError } from "@/lib/api/client";
@@ -149,8 +149,12 @@ export function OrdersManager({
   initialData: AdminOrdersPage;
   statuses: LookupItem[];
 }) {
-  const [data, setData] = useState(initialData);
-  const [loading, setLoading] = useState(false);
+  const { data, totalPages, loading, load } = useServerPagination<AdminOrderSummary>({
+    items: initialData.orders,
+    total: initialData.total,
+    page: initialData.page,
+    pageSize: initialData.pageSize,
+  });
   const [search, setSearch] = useState("");
   const [statusIds, setStatusIds] = useState<string[]>([]);
   const [fulfillmentMethods, setFulfillmentMethods] = useState<string[]>([]);
@@ -158,8 +162,6 @@ export function OrdersManager({
   const [createdTo, setCreatedTo] = useState("");
   const [flaggedOnly, setFlaggedOnly] = useState(false);
   const [viewingOrderId, setViewingOrderId] = useState<number | null>(null);
-
-  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   const statusOptions = statuses.map((status) => ({ value: String(status.id), label: status.nameKa }));
   const hasActiveFilters =
@@ -184,20 +186,23 @@ export function OrdersManager({
 
   // Real server-side pagination — every filter change (via handleApplyFilters/
   // handleClearFilters below) resets to page 1, while loadPage re-fetches the
-  // same filters under a different page.
-  async function fetchOrders(filters: ListOrdersFilters, page: number) {
-    setLoading(true);
-    try {
-      setData(await listAllOrders({ ...filters, page, pageSize: data.pageSize }));
-    } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : "შეკვეთების ჩატვირთვა ვერ მოხერხდა");
-    } finally {
-      setLoading(false);
-    }
+  // same filters under a different page. listAllOrders' {orders,...} envelope
+  // is remapped into useServerPagination's {items,...} shape here — the API
+  // response shape itself is unchanged.
+  async function fetchOrdersPage(
+    filters: ListOrdersFilters,
+    page: number,
+  ): Promise<PagedResult<AdminOrderSummary>> {
+    const result = await listAllOrders({ ...filters, page, pageSize: data.pageSize });
+    return { items: result.orders, total: result.total, page: result.page, pageSize: result.pageSize };
+  }
+
+  function onLoadError(error: unknown) {
+    toast.error(error instanceof ApiRequestError ? error.message : "შეკვეთების ჩატვირთვა ვერ მოხერხდა");
   }
 
   function handleApplyFilters() {
-    fetchOrders(currentFilters(), 1);
+    load(() => fetchOrdersPage(currentFilters(), 1), onLoadError);
   }
 
   function handleClearFilters() {
@@ -207,23 +212,22 @@ export function OrdersManager({
     setCreatedFrom("");
     setCreatedTo("");
     setFlaggedOnly(false);
-    fetchOrders({}, 1);
+    load(() => fetchOrdersPage({}, 1), onLoadError);
   }
 
   function loadPage(page: number) {
-    fetchOrders(currentFilters(), page);
+    load(() => fetchOrdersPage(currentFilters(), page), onLoadError);
   }
 
   // Re-reads the list under the same filters and page after a status edit
-  // inside the modal, without resetting pagination the way fetchOrders does
-  // — the admin is still looking at the same page, just with one row's badge
-  // possibly now stale.
-  async function handleOrderStatusChanged() {
-    try {
-      setData(await listAllOrders({ ...currentFilters(), page: data.page, pageSize: data.pageSize }));
-    } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა");
-    }
+  // inside the modal, without resetting pagination the way fetchOrdersPage's
+  // callers above do — the admin is still looking at the same page, just
+  // with one row's badge possibly now stale.
+  function handleOrderStatusChanged() {
+    load(
+      () => fetchOrdersPage(currentFilters(), data.page),
+      (error) => toast.error(error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა"),
+    );
   }
 
   return (
@@ -317,7 +321,7 @@ export function OrdersManager({
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={data.orders}
+          data={data.items}
           getRowKey={(order) => order.id}
           emptyMessage="შეკვეთა არ მოიძებნა"
           actions={(order) => (

@@ -36,6 +36,8 @@ function candidatePoolSize(limit: number): number {
   return Math.min(1000, Math.max(limit * 20, 200));
 }
 
+export type ProductSortBy = "newest" | "price-asc" | "price-desc";
+
 const unitRefSelect = {
   id: true,
   nameKa: true,
@@ -302,8 +304,20 @@ export const productsRepository = {
     attributeFilters?: AttributeFilterInput;
     adminFilters?: FilterEntry[];
     limit?: number;
+    // Real offset pagination (see products.service.ts's listProducts) — only
+    // ever set together with `limit` acting as the page size.
+    skip?: number;
+    // True for a real "newest"-sorted paginated storefront request
+    // (page/pageSize sent) — applies skip/take even when searchIds is set.
+    // False/absent (every legacy caller, and the price-sorted storefront
+    // path — see listProducts) preserves the old behavior: skip/take are
+    // suppressed whenever searchIds is present, so the caller can fetch
+    // every matching candidate itself (to rank by relevance, or by price,
+    // in JS) and slice to `limit` itself.
+    paginate?: boolean;
   }) {
     const structuredWhere = await buildWhere(filters);
+    const suppressPagination = !filters.paginate && filters.searchIds != null;
     return prisma.product.findMany({
       // Customer-facing path only (findManyForAdmin below is the admin
       // equivalent) — a product left with zero active variants has nothing
@@ -318,12 +332,33 @@ export const productsRepository = {
       },
       include: productSummaryInclude,
       orderBy: { createdAt: "desc" },
-      // When search is active, truncating here (by createdAt) would defeat
-      // the relevance ranking findSearchRankedIds already computed —
-      // products.service.ts's listProducts re-sorts by that rank and slices
-      // to `limit` itself instead. Otherwise (no search) this is the only
-      // place truncation happens.
-      take: filters.searchIds ? undefined : filters.limit,
+      skip: suppressPagination ? undefined : filters.skip,
+      take: suppressPagination ? undefined : filters.limit,
+    });
+  },
+
+  // Paired with findMany above — same where-shape (including the
+  // active-variant exclusion and searchIds, when present), for real "how
+  // many pages" totals on the customer browse/search path.
+  async count(filters: {
+    categoryIds?: number[];
+    excludeProductId?: number;
+    vehicleCompatibilityWhere?: Prisma.ProductWhereInput;
+    searchIds?: number[];
+    brandIds?: number[];
+    priceMin?: number;
+    priceMax?: number;
+    onSale?: boolean;
+    attributeFilters?: AttributeFilterInput;
+  }) {
+    const structuredWhere = await buildWhere(filters);
+    return prisma.product.count({
+      where: {
+        AND: [
+          ...(structuredWhere ? [structuredWhere] : []),
+          { variants: { some: { isActive: true } } },
+        ],
+      },
     });
   },
 

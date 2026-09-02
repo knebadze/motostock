@@ -7,6 +7,7 @@ import { resolveCategoryAndDescendantIds } from "../categories/categories.servic
 import { getSpecFieldDefinition } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
+import { resolvePage } from "../../lib/pagination.js";
 import { compatibilityRepository } from "./compatibility.repository.js";
 import type { ListCompatibilityQuery } from "./compatibility.schema.js";
 import type { Prisma } from "../../generated/prisma/index.js";
@@ -94,8 +95,7 @@ const DEFAULT_PAGE_SIZE = 20;
 // shape — so lookup queries are only issued for rows actually being
 // returned, not the whole filtered set.
 export async function listAllCompatibility(filters: ListCompatibilityQuery) {
-  const page = filters.page ?? 1;
-  const pageSize = filters.pageSize ?? DEFAULT_PAGE_SIZE;
+  const { page, pageSize, skip, take } = resolvePage(filters, DEFAULT_PAGE_SIZE);
 
   const productWhere = buildProductWhere(filters);
   const fitmentWhere = productWhere ? { product: productWhere } : undefined;
@@ -113,7 +113,7 @@ export async function listAllCompatibility(filters: ListCompatibilityQuery) {
   raw.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   const total = raw.length;
-  const pageRaw = raw.slice((page - 1) * pageSize, page * pageSize);
+  const pageRaw = raw.slice(skip, skip + take);
 
   const items = await Promise.all(
     pageRaw.map(async (entry) => {

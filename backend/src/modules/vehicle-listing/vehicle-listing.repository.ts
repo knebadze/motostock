@@ -165,6 +165,21 @@ function buildWhere(filters: {
   return and.length > 0 ? { AND: and } : undefined;
 }
 
+export type VehicleListingSortBy = "newest" | "year-desc" | "price-asc" | "price-desc";
+
+// Only the DB-orderable sorts — price-asc/price-desc depend on each
+// listing's *effective* (discount-aware) price, which isn't a plain column
+// (the active discount is a separate, time-windowed table row), so those two
+// are computed in JS by the service instead (fetch-all-matching, sort, slice
+// — see vehicle-listing.service.ts's listVehicleListings).
+function resolveOrderBy(sortBy: VehicleListingSortBy | undefined): Prisma.VehicleListingOrderByWithRelationInput[] {
+  if (sortBy === "year-desc") return [{ year: "desc" }];
+  // Most-garaged vehicles first (VehicleCatalog.popularity, kept live by the
+  // garage module), createdAt as the tiebreaker for equally popular
+  // (including brand-new, popularity 0) entries.
+  return [{ vehicleCatalog: { popularity: "desc" } }, { createdAt: "desc" }];
+}
+
 export const vehicleListingRepository = {
   findMany(filters: {
     categoryIds?: number[];
@@ -178,22 +193,50 @@ export const vehicleListingRepository = {
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
     limit?: number;
+    // Real offset pagination (see vehicle-listing.service.ts's
+    // listVehicleListings) — only ever set together with `limit` acting as
+    // the page size.
+    skip?: number;
+    sortBy?: VehicleListingSortBy;
+    // True for a real paginated storefront request (page/pageSize sent) —
+    // applies skip/take even when searchIds is set. False/absent (every
+    // legacy caller, and the effective-price-sorted storefront path — see
+    // listVehicleListings) preserves the old behavior: skip/take are
+    // suppressed whenever searchIds is present, so the caller can fetch
+    // every matching candidate itself and slice to `limit` itself.
+    paginate?: boolean;
   }) {
     const structuredWhere = buildWhere(filters);
+    const suppressPagination = !filters.paginate && filters.searchIds != null;
     return prisma.vehicleListing.findMany({
       // Customer-facing path only (findManyForAdmin below is the admin
       // equivalent) — a listing an admin has pulled from sale must not
       // appear in storefront browsing/search.
       where: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] },
       include,
-      // Most-garaged vehicles first (VehicleCatalog.popularity, kept live by
-      // the garage module), createdAt as the tiebreaker for equally popular
-      // (including brand-new, popularity 0) entries.
-      orderBy: [{ vehicleCatalog: { popularity: "desc" } }, { createdAt: "desc" }],
-      // When search is active, truncating here would defeat the relevance
-      // ranking findSearchRankedIds already computed — see
-      // products.repository.ts's identical findMany comment.
-      take: filters.searchIds ? undefined : filters.limit,
+      orderBy: resolveOrderBy(filters.sortBy),
+      skip: suppressPagination ? undefined : filters.skip,
+      take: suppressPagination ? undefined : filters.limit,
+    });
+  },
+
+  // Paired with findMany above — same where-shape (including the isActive
+  // exclusion and searchIds, when present), for real "how many pages"
+  // totals on the customer browse/search path.
+  count(filters: {
+    categoryIds?: number[];
+    searchIds?: number[];
+    brandIds?: number[];
+    priceMin?: number;
+    priceMax?: number;
+    yearMin?: number;
+    yearMax?: number;
+    onSale?: boolean;
+    specFilters?: SpecFilterInput;
+  }) {
+    const structuredWhere = buildWhere(filters);
+    return prisma.vehicleListing.count({
+      where: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] },
     });
   },
 

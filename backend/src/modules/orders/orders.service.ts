@@ -2,6 +2,7 @@ import { randomInt } from "node:crypto";
 import { ApiError } from "../../lib/ApiError.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
+import { resolvePage } from "../../lib/pagination.js";
 import {
   Prisma,
   type CartItemType,
@@ -750,14 +751,11 @@ export async function reorderOrder(userId: number, id: number) {
 // Real server-side pagination (skip/take), same pattern as error-logs.
 // Default pageSize (20) matches the client-side page size everyone is used
 // to — see frontend's shared Pagination.tsx's DEFAULT_PAGE_SIZE.
-const DEFAULT_ADMIN_ORDERS_PAGE_SIZE = 20;
-
 export async function listAllOrders(filters: ListOrdersQuery) {
-  const page = filters.page ?? 1;
-  const pageSize = filters.pageSize ?? DEFAULT_ADMIN_ORDERS_PAGE_SIZE;
+  const { page, pageSize, skip, take } = resolvePage(filters);
 
   const [rows, total] = await Promise.all([
-    ordersRepository.findManyAdmin(filters, (page - 1) * pageSize, pageSize),
+    ordersRepository.findManyAdmin(filters, skip, take),
     ordersRepository.count(filters),
   ]);
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import { Pagination } from "@/components/shared/Pagination";
+import { Pagination, useServerPagination } from "@/components/shared/Pagination";
 import { Select } from "@/components/shared/Select";
 import { Tabs } from "@/components/shared/Tabs";
 import { formatPrice, formatVehicleCatalogLabel } from "@/lib/format";
@@ -79,13 +79,10 @@ function AllCompatibilityTab({
   initialData: CompatibilityPage;
   categories: Category[];
 }) {
-  const [data, setData] = useState(initialData);
-  const [loading, setLoading] = useState(false);
+  const { data, totalPages, loading, load } = useServerPagination(initialData);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [kind, setKind] = useState("");
-
-  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   const categoryOptions = categories.map((category) => ({
     value: String(category.id),
@@ -109,14 +106,12 @@ function AllCompatibilityTab({
   // (carrying the currently-applied filters) instead of slicing an
   // already-fetched array — mirrors ErrorLogsManager.tsx's loadPage.
   async function loadPage(page: number, filters: ListCompatibilityFilters = currentFilters()) {
-    setLoading(true);
-    try {
-      setData(await listCompatibility({ ...filters, page, pageSize: data.pageSize }));
-    } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : "სიის ჩატვირთვა ვერ მოხერხდა");
-    } finally {
-      setLoading(false);
-    }
+    await load(
+      () => listCompatibility({ ...filters, page, pageSize: data.pageSize }),
+      (error) => {
+        toast.error(error instanceof ApiRequestError ? error.message : "სიის ჩატვირთვა ვერ მოხერხდა");
+      },
+    );
   }
 
   function handleApplyFilters() {

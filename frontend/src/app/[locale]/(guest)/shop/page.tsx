@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { getMyGarageFromServer, getShopProductsFromServer } from "@/lib/api/server";
+import {
+  getMyGarageFromServer,
+  getShopProductsFromServer,
+  getShopProductsPageFromServer,
+} from "@/lib/api/server";
 import { ShopAllProductsPage } from "@/components/shop/ShopAllProductsPage";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -19,8 +23,13 @@ export default async function ShopRoutePage({
         .filter((id) => Number.isInteger(id) && id > 0)
     : undefined;
 
-  const [products, garageVehicles] = await Promise.all([
+  const [products, productsPage, garageVehicles] = await Promise.all([
     getShopProductsFromServer({
+      categoryId: parsedCategoryId,
+      brandIds: parsedBrandIds,
+      onSale: initialOnSale,
+    }),
+    getShopProductsPageFromServer({
       categoryId: parsedCategoryId,
       brandIds: parsedBrandIds,
       onSale: initialOnSale,
@@ -31,6 +40,7 @@ export default async function ShopRoutePage({
   return (
     <ShopAllProductsPage
       products={products}
+      initialData={productsPage}
       garageVehicles={garageVehicles}
       initialOnSale={initialOnSale}
       initialCategoryId={parsedCategoryId}

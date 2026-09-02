@@ -132,6 +132,10 @@ export const vehicleListingListQuerySchema = z.object({
   // `.optional()` above (Express route handler overload resolution).
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(100).optional(),
+  // Storefront shop page sort — only meaningful alongside page/pageSize (see
+  // vehicle-listing.service.ts's listVehicleListings); defaults to
+  // newest-first.
+  sortBy: z.enum(["newest", "year-desc", "price-asc", "price-desc"]).optional(),
 });
 export type VehicleListingListQuery = z.infer<typeof vehicleListingListQuerySchema>;
 

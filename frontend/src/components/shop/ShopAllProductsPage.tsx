@@ -1,9 +1,9 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { Select, type SelectOption } from "@/components/shared/Select";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
 import { Link } from "@/i18n/navigation";
@@ -12,13 +12,14 @@ import { ShopToolbar } from "./ShopToolbar";
 import { ShopItemGrid } from "./ShopItemGrid";
 import { ProductCard } from "./ProductCard";
 import type { ViewMode } from "./ViewModeToggle";
-import { listProducts, type Product } from "@/lib/api/products";
+import { listProductsPage, type Product } from "@/lib/api/products";
 import type { GarageVehicle } from "@/lib/api/vehicle-catalog";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 
 type SortBy = "newest" | "price-asc" | "price-desc";
 const SORT_VALUES: SortBy[] = ["newest", "price-asc", "price-desc"];
+const FILTER_DEBOUNCE_MS = 350;
 
 function parseSortBy(value: string): SortBy {
   return (SORT_VALUES as string[]).includes(value) ? (value as SortBy) : "newest";
@@ -27,18 +28,22 @@ function parseSortBy(value: string): SortBy {
 // One general "browse everything" page (not tied to a single category, which
 // keeps its own dedicated /{categorySlug} route+URL for SEO) — used for
 // cross-category discovery: sale (?onSale=true), search, or just "see
-// everything". Cloned from the same search+category-checkboxes+sort+grid
-// structure as CompatibleProductsPage.tsx; the "my vehicle" filter is the
-// one exception that needs a live server refetch (fitment resolution is
-// backend-only), everything else stays client-side over the fetched set.
+// everything". Search/category-checkbox/vehicle/sort filters all move
+// server-side together (see listProductsPage) — any change refetches
+// (debounced) page 1, same pattern as ProductShopPage.tsx.
 export function ShopAllProductsPage({
   products,
+  initialData,
   garageVehicles,
   initialOnSale,
   initialCategoryId,
   initialBrandIds,
 }: {
+  // Unbounded — feeds the category-checkbox facet list, which needs to see
+  // every category present, not just the current page's.
   products: Product[];
+  // Real server pagination — feeds the actual grid.
+  initialData: PagedResult<Product>;
   garageVehicles: GarageVehicle[];
   initialOnSale: boolean;
   initialCategoryId?: number;
@@ -49,32 +54,44 @@ export function ShopAllProductsPage({
   const tCommon = useTranslations("Common");
   const tErrors = useTranslations("ApiErrors");
   const myVehicleSelectId = useId();
-  const [baseProducts, setBaseProducts] = useState(products);
   const [vehicleCatalogId, setVehicleCatalogId] = useState("");
-  const [vehicleLoading, setVehicleLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [sortBy, setSortBy] = useState<SortBy>(() => parseSortBy("newest"));
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const { data, totalPages, loading, load } = useServerPagination(initialData);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
-  async function handleVehicleChange(value: string) {
+  function fetchPage(page: number) {
+    return load(
+      () =>
+        listProductsPage({
+          // Once a category checkbox is picked, it takes over from the
+          // fixed initialCategoryId entirely (see categoryIds' schema
+          // comment — the two are mutually exclusive server-side).
+          categoryId: selectedCategoryIds.length === 0 ? initialCategoryId : undefined,
+          categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+          vehicleCatalogId: vehicleCatalogId ? Number(vehicleCatalogId) : undefined,
+          brandIds: initialBrandIds,
+          onSale: initialOnSale || undefined,
+          search: search.trim() || undefined,
+          page,
+          pageSize: data.pageSize,
+          sortBy,
+        }),
+      (error) => toast.error(resolveApiErrorMessage(error, tErrors, t("loadProductsError"))),
+    );
+  }
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => fetchPage(1), FILTER_DEBOUNCE_MS);
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, selectedCategoryIds, vehicleCatalogId, sortBy]);
+
+  function handleVehicleChange(value: string) {
     setVehicleCatalogId(value);
     setSelectedCategoryIds([]);
-    setVehicleLoading(true);
-    try {
-      const next = await listProducts({
-        vehicleCatalogId: value ? Number(value) : undefined,
-        categoryId: initialCategoryId,
-        brandIds: initialBrandIds,
-        onSale: initialOnSale || undefined,
-      });
-      setBaseProducts(next);
-    } catch (error) {
-      toast.error(resolveApiErrorMessage(error, tErrors, t("loadProductsError")));
-    } finally {
-      setVehicleLoading(false);
-    }
   }
 
   const vehicleOptions: SelectOption[] = [
@@ -87,13 +104,13 @@ export function ShopAllProductsPage({
 
   const categoryOptions = useMemo(() => {
     const byId = new Map<number, Product["category"]>();
-    for (const product of baseProducts) {
+    for (const product of products) {
       if (!byId.has(product.category.id)) byId.set(product.category.id, product.category);
     }
     return Array.from(byId.values()).sort((a, b) =>
       a.name[locale].localeCompare(b.name[locale]),
     );
-  }, [baseProducts, locale]);
+  }, [products, locale]);
 
   function toggleCategory(categoryId: number) {
     setSelectedCategoryIds((current) =>
@@ -102,31 +119,6 @@ export function ShopAllProductsPage({
         : [...current, categoryId],
     );
   }
-
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return baseProducts.filter((product) => {
-      if (selectedCategoryIds.length > 0 && !selectedCategoryIds.includes(product.category.id)) {
-        return false;
-      }
-      if (query && !product.name[locale].toLowerCase().includes(query)) return false;
-      return true;
-    });
-  }, [baseProducts, selectedCategoryIds, search, locale]);
-
-  const sorted = useMemo(() => {
-    const result = [...filtered];
-    if (sortBy === "price-asc") {
-      result.sort((a, b) => (a.minPrice ?? 0) - (b.minPrice ?? 0));
-    } else if (sortBy === "price-desc") {
-      result.sort((a, b) => (b.minPrice ?? 0) - (a.minPrice ?? 0));
-    } else {
-      result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }
-    return result;
-  }, [filtered, sortBy]);
-
-  const { page, setPage, pageItems, totalPages } = usePagination(sorted);
 
   const sortOptions: SelectOption[] = [
     { value: "newest", label: t("sortNewest") },
@@ -157,22 +149,17 @@ export function ShopAllProductsPage({
         tags.push({
           key: `category-${categoryId}`,
           label: category.name[locale],
-          onRemove: () => {
-            toggleCategory(categoryId);
-            setPage(1);
-          },
+          onRemove: () => toggleCategory(categoryId),
         });
       }
     }
     return tags;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, vehicleCatalogId, garageVehicles, locale, selectedCategoryIds, categoryOptions]);
 
   function handleClearAllFilters() {
     setSearch("");
     setSelectedCategoryIds([]);
-    if (vehicleCatalogId) handleVehicleChange("");
-    setPage(1);
+    setVehicleCatalogId("");
   }
 
   // Rendered twice below (desktop <aside>, mobile FilterDrawer) — kept as
@@ -183,10 +170,7 @@ export function ShopAllProductsPage({
 
       <input
         value={search}
-        onChange={(event) => {
-          setSearch(event.target.value);
-          setPage(1);
-        }}
+        onChange={(event) => setSearch(event.target.value)}
         placeholder={t("searchPlaceholder")}
         className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
       />
@@ -200,10 +184,7 @@ export function ShopAllProductsPage({
             id={myVehicleSelectId}
             options={vehicleOptions}
             value={vehicleCatalogId}
-            onChange={(value) => {
-              handleVehicleChange(value);
-              setPage(1);
-            }}
+            onChange={handleVehicleChange}
             searchable
             placeholder={t("myVehiclePlaceholder")}
             searchPlaceholder={tCommon("select.search")}
@@ -235,10 +216,7 @@ export function ShopAllProductsPage({
                 <input
                   type="checkbox"
                   checked={selectedCategoryIds.includes(category.id)}
-                  onChange={() => {
-                    toggleCategory(category.id);
-                    setPage(1);
-                  }}
+                  onChange={() => toggleCategory(category.id)}
                   className="size-4 rounded border-border accent-primary"
                 />
                 {category.name[locale]}
@@ -268,7 +246,7 @@ export function ShopAllProductsPage({
 
             <div className="flex flex-col gap-6">
               <ShopToolbar
-                resultCountLabel={t("resultCount", { count: sorted.length })}
+                resultCountLabel={t("resultCount", { count: data.total })}
                 sortLabel={t("sortLabel")}
                 sortValue={sortBy}
                 sortOptions={sortOptions}
@@ -282,18 +260,18 @@ export function ShopAllProductsPage({
               />
 
               <ShopItemGrid
-                items={pageItems}
+                items={data.items}
                 layout={viewMode}
                 getKey={(product) => product.id}
                 emptyMessage={t("emptyState")}
                 renderItem={(product, layout) => <ProductCard product={product} layout={layout} />}
-                loading={vehicleLoading}
+                loading={loading}
               />
 
               <Pagination
-                currentPage={page}
+                currentPage={data.page}
                 totalPages={totalPages}
-                onPageChange={setPage}
+                onPageChange={fetchPage}
                 navLabel={tCommon("pagination.nav")}
                 prevLabel={tCommon("pagination.prev")}
                 nextLabel={tCommon("pagination.next")}

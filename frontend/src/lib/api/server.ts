@@ -371,6 +371,27 @@ export async function getVehicleListingsFromServer(categoryId?: number): Promise
 
 export type AdminListPage<T> = { items: T[]; total: number; page: number; pageSize: number };
 
+// Vehicle category shop page's initial (server-rendered) load specifically —
+// same reasoning as getProductsPageFromServer above (unlike
+// getVehicleListingsFromServer, this sends page/pageSize/sortBy for real
+// server-side pagination/sorting instead of an unbounded fetch).
+// VehicleShopPage.tsx re-fetches subsequent pages/sorts itself via
+// listVehicleListingsPage.
+export async function getVehicleListingsPageFromServer(
+  categoryId: number,
+  page: number,
+  sortBy: "newest" | "year-desc" | "price-asc" | "price-desc",
+): Promise<AdminListPage<VehicleListing>> {
+  return fetchFromServer<AdminListPage<VehicleListing>, AdminListPage<VehicleListing>>(
+    "/vehicle-listings",
+    {
+      params: { categoryId, page, pageSize: SHOP_PAGE_SIZE, sortBy },
+      fallback: { items: [], total: 0, page: 1, pageSize: SHOP_PAGE_SIZE },
+      extract: (data) => data,
+    },
+  );
+}
+
 const ADMIN_LIST_INITIAL_PAGE_SIZE = 20;
 const EMPTY_ADMIN_LIST_PAGE = { items: [], total: 0, page: 1, pageSize: ADMIN_LIST_INITIAL_PAGE_SIZE };
 
@@ -638,6 +659,29 @@ export async function getProductsFromServer(
   });
 }
 
+const SHOP_PAGE_SIZE = 20;
+
+// Category shop page's initial (server-rendered) load specifically — unlike
+// getProductsFromServer above (shared with sitemap/admin pickers/etc., which
+// need the full unbounded list), this sends page/pageSize/sortBy so the
+// backend does real server-side pagination and sorting (see
+// products.service.ts's listProducts) instead of the page shipping the
+// whole category's catalog to the browser to sort/paginate itself.
+// ProductShopPage.tsx re-fetches subsequent pages/sorts itself via
+// listProductsPage.
+export async function getProductsPageFromServer(
+  categoryId: number,
+  page: number,
+  sortBy: "newest" | "price-asc" | "price-desc",
+  vehicleCatalogId?: number,
+): Promise<AdminListPage<Product>> {
+  return fetchFromServer<AdminListPage<Product>, AdminListPage<Product>>("/products", {
+    params: { categoryId, vehicleCatalogId, page, pageSize: SHOP_PAGE_SIZE, sortBy },
+    fallback: { items: [], total: 0, page: 1, pageSize: SHOP_PAGE_SIZE },
+    extract: (data) => data,
+  });
+}
+
 // Admin products list's initial (server-rendered) load specifically —
 // unlike getProductsFromServer above (shared with the storefront/sitemap/
 // admin pickers, which need the full card-rendering shape), this always
@@ -790,7 +834,11 @@ export async function getShopProductsFromServer(filters: {
   onSale?: boolean;
 }): Promise<Product[]> {
   // Public endpoint (the /shop page) — must not bail out just because there
-  // is no admin session cookie, same fix as getCategoriesFromServer.
+  // is no admin session cookie, same fix as getCategoriesFromServer. Kept
+  // unbounded — ShopAllProductsPage.tsx uses this only to derive its
+  // category-checkbox facet list (needs to see every category present, not
+  // just the current page's); getShopProductsPageFromServer below feeds the
+  // actual grid.
   return fetchFromServer<{ items: Product[] }, Product[]>("/products", {
     params: {
       categoryId: filters.categoryId,
@@ -799,6 +847,29 @@ export async function getShopProductsFromServer(filters: {
     },
     fallback: [],
     extract: (data) => data.items,
+  });
+}
+
+// /shop page's initial (server-rendered) grid load specifically — real
+// server-side pagination/sorting (see products.service.ts's listProducts),
+// unlike getShopProductsFromServer above. ShopAllProductsPage.tsx re-fetches
+// subsequent pages/filters/sorts itself via listProductsPage.
+export async function getShopProductsPageFromServer(filters: {
+  categoryId?: number;
+  brandIds?: number[];
+  onSale?: boolean;
+}): Promise<AdminListPage<Product>> {
+  return fetchFromServer<AdminListPage<Product>, AdminListPage<Product>>("/products", {
+    params: {
+      categoryId: filters.categoryId,
+      brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
+      onSale: filters.onSale || undefined,
+      page: 1,
+      pageSize: SHOP_PAGE_SIZE,
+      sortBy: "newest",
+    },
+    fallback: { items: [], total: 0, page: 1, pageSize: SHOP_PAGE_SIZE },
+    extract: (data) => data,
   });
 }
 

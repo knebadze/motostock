@@ -6,8 +6,10 @@ import {
   getCategoryFiltersFromServer,
   getMyGarageFromServer,
   getProductsFromServer,
+  getProductsPageFromServer,
   getVehicleCategoryFiltersFromServer,
   getVehicleListingsFromServer,
+  getVehicleListingsPageFromServer,
 } from "@/lib/api/server";
 import { isVehicleCategory, getAncestorChain } from "@/lib/categories-tree";
 import { buildCanonicalUrl, getAlternateLanguages, jsonLdScriptProps } from "@/lib/seo";
@@ -19,6 +21,18 @@ import { VehicleShopPage } from "@/components/shop/VehicleShopPage";
 type Locale = "ka" | "en" | "ru";
 type PageParams = { locale: Locale; categorySlug: string };
 type PageSearchParams = { page?: string; sort?: string };
+
+type ProductSortBy = "newest" | "price-asc" | "price-desc";
+const PRODUCT_SORT_VALUES: ProductSortBy[] = ["newest", "price-asc", "price-desc"];
+function parseProductSortBy(value: string): ProductSortBy {
+  return (PRODUCT_SORT_VALUES as string[]).includes(value) ? (value as ProductSortBy) : "newest";
+}
+
+type VehicleSortBy = "newest" | "year-desc" | "price-asc" | "price-desc";
+const VEHICLE_SORT_VALUES: VehicleSortBy[] = ["newest", "year-desc", "price-asc", "price-desc"];
+function parseVehicleSortBy(value: string): VehicleSortBy {
+  return (VEHICLE_SORT_VALUES as string[]).includes(value) ? (value as VehicleSortBy) : "newest";
+}
 
 export async function generateMetadata({
   params,
@@ -114,8 +128,13 @@ export default async function CategoryShopPage({
   );
 
   if (isVehicle) {
-    const [listings, vehicleFilters] = await Promise.all([
+    const vehicleSortBy = parseVehicleSortBy(initialSort);
+    // `listings` (unbounded) feeds the brand-checkbox facet list, which needs
+    // to see every brand present in the category, not just the current
+    // page's — `listingsPage` (real server pagination) feeds the actual grid.
+    const [listings, listingsPage, vehicleFilters] = await Promise.all([
       getVehicleListingsFromServer(category.id),
+      getVehicleListingsPageFromServer(category.id, initialPage, vehicleSortBy),
       getVehicleCategoryFiltersFromServer(category.id),
     ]);
     return (
@@ -126,9 +145,9 @@ export default async function CategoryShopPage({
           breadcrumbChain={ancestorChain}
           subcategories={subcategories}
           listings={listings}
+          initialData={listingsPage}
           filters={vehicleFilters}
-          initialPage={initialPage}
-          initialSort={initialSort}
+          initialSort={vehicleSortBy}
         />
       </>
     );
@@ -137,8 +156,12 @@ export default async function CategoryShopPage({
   // The garage/session vehicle is deliberately never used to pre-filter this
   // list — it only takes effect once the shopper explicitly picks it from
   // the MY_VEHICLE filter on this page (see ProductFilters/ProductShopPage).
-  const [products, filters, garageVehicles] = await Promise.all([
+  // `products` (unbounded) feeds the brand-checkbox facet list, same
+  // reasoning as `listings` above; `productsPage` feeds the actual grid.
+  const productSortBy = parseProductSortBy(initialSort);
+  const [products, productsPage, filters, garageVehicles] = await Promise.all([
     getProductsFromServer(category.id),
+    getProductsPageFromServer(category.id, initialPage, productSortBy),
     getCategoryFiltersFromServer(category.id),
     getMyGarageFromServer(),
   ]);
@@ -150,10 +173,10 @@ export default async function CategoryShopPage({
         breadcrumbChain={ancestorChain}
         subcategories={subcategories}
         products={products}
+        initialData={productsPage}
         filters={filters}
         garageVehicles={garageVehicles}
-        initialPage={initialPage}
-        initialSort={initialSort}
+        initialSort={productSortBy}
       />
     </>
   );

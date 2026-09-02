@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import { Pagination } from "@/components/shared/Pagination";
+import { Pagination, useServerPagination } from "@/components/shared/Pagination";
 import { Select } from "@/components/shared/Select";
 import { formatDateTime } from "@/lib/format";
 import { ApiRequestError } from "@/lib/api/client";
@@ -49,12 +49,9 @@ export function BuyTogetherManager({
   initialData: ProductBuyTogetherPage;
   categories: Category[];
 }) {
-  const [data, setData] = useState(initialData);
-  const [loading, setLoading] = useState(false);
+  const { data, totalPages, loading, load } = useServerPagination(initialData);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
-
-  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   const categoryOptions = categories.map((category) => ({
     value: String(category.id),
@@ -65,14 +62,12 @@ export function BuyTogetherManager({
   // Extended to carry page rather than a separate refetch path — a new
   // filter resets to page 1, while loadPage keeps the current filters.
   async function fetchItems(filters: ListProductBuyTogetherFilters) {
-    setLoading(true);
-    try {
-      setData(await listAllProductBuyTogether(filters));
-    } catch (error) {
-      toast.error(error instanceof ApiRequestError ? error.message : "სიის ჩატვირთვა ვერ მოხერხდა");
-    } finally {
-      setLoading(false);
-    }
+    await load(
+      () => listAllProductBuyTogether(filters),
+      (error) => {
+        toast.error(error instanceof ApiRequestError ? error.message : "სიის ჩატვირთვა ვერ მოხერხდა");
+      },
+    );
   }
 
   function loadPage(page: number) {

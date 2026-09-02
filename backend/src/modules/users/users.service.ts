@@ -1,11 +1,12 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { comparePassword, hashPassword } from "../../lib/password.js";
+import { resolvePage } from "../../lib/pagination.js";
 import { toAddressResponse } from "../addresses/addresses.service.js";
 import { toResponse as toGarageVehicleResponse } from "../garage/garage.service.js";
 import { toResponse as toWishlistItemResponse } from "../wishlist/wishlist.service.js";
 import { toResponse as toCartItemResponse } from "../cart/cart.service.js";
 import { usersRepository } from "./users.repository.js";
-import type { ChangePasswordInput } from "./users.schema.js";
+import type { ChangePasswordInput, ListUsersQuery } from "./users.schema.js";
 
 export async function getUserById(id: number) {
   const user = await usersRepository.findById(id);
@@ -66,13 +67,12 @@ export async function getUserDetail(id: number) {
   };
 }
 
-// Matches frontend/src/components/shared/Pagination.tsx's DEFAULT_PAGE_SIZE.
-const DEFAULT_PAGE_SIZE = 20;
+export async function listUsers(query: ListUsersQuery) {
+  const { page, pageSize, skip, take } = resolvePage(query);
 
-export async function listUsers(search?: string, page = 1, pageSize = DEFAULT_PAGE_SIZE) {
   const [users, total] = await Promise.all([
-    usersRepository.findMany(search, (page - 1) * pageSize, pageSize),
-    usersRepository.count(search),
+    usersRepository.findMany(query.q, skip, take),
+    usersRepository.count(query.q),
   ]);
 
   return {

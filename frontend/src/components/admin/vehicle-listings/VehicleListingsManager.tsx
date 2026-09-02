@@ -9,7 +9,7 @@ import { Pagination } from "@/components/shared/Pagination";
 import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
 import {
   deleteVehicleListing,
-  listVehicleListingsAdmin,
+  listVehicleListingsPage,
   type VehicleListing,
 } from "@/lib/api/vehicle-listings";
 import type { AdminListPage } from "@/lib/api/server";
@@ -121,7 +121,7 @@ export function VehicleListingsManager({
 
   async function loadPage(page: number, filters: AdminFilterEntry[] = adminFilters) {
     try {
-      setData(await listVehicleListingsAdmin({ adminFilters: filters, page, pageSize: data.pageSize }));
+      setData(await listVehicleListingsPage({ adminFilters: filters, page, pageSize: data.pageSize }));
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";

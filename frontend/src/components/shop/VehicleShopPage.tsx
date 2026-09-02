@@ -5,12 +5,12 @@ import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import type { SelectOption } from "@/components/shared/Select";
-import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import type { Category } from "@/lib/api/categories";
 import {
-  listVehicleListings,
+  listVehicleListingsPage,
   type VehicleListing,
   type VehicleSpecFilters,
 } from "@/lib/api/vehicle-listings";
@@ -33,10 +33,6 @@ function parseSortBy(value: string): SortBy {
   return (SORT_VALUES as string[]).includes(value) ? (value as SortBy) : "newest";
 }
 
-function effectivePrice(listing: VehicleListing): number {
-  return listing.activeDiscount?.discountPrice ?? listing.price;
-}
-
 const EMPTY_SPEC_STATE: SpecFilterState = {
   optionIds: [],
   booleanEnabled: false,
@@ -49,16 +45,19 @@ export function VehicleShopPage({
   breadcrumbChain,
   subcategories,
   listings,
+  initialData,
   filters,
-  initialPage = 1,
   initialSort = "newest",
 }: {
   category: Category;
   breadcrumbChain: Category[];
   subcategories: Category[];
+  // Unbounded — feeds the brand-checkbox facet list, which needs to see
+  // every brand present in the category, not just the current page's.
   listings: VehicleListing[];
+  // Real server pagination — feeds the actual grid.
+  initialData: PagedResult<VehicleListing>;
   filters: VehicleCategoryFilter[];
-  initialPage?: number;
   initialSort?: string;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
@@ -79,8 +78,7 @@ export function VehicleShopPage({
   >({});
   const [sortBy, setSortBy] = useState<SortBy>(() => parseSortBy(initialSort));
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [displayedListings, setDisplayedListings] = useState(listings);
-  const [loading, setLoading] = useState(false);
+  const { data, totalPages, loading, load } = useServerPagination(initialData);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   // Brand checkboxes always reflect the category's full, unfiltered catalog
@@ -97,10 +95,6 @@ export function VehicleShopPage({
     return Array.from(byId.values()).sort((a, b) => a.label.localeCompare(b.label));
   }, [listings]);
 
-  function resetToFirstPage() {
-    setPage(1);
-  }
-
   function updateSpecState(field: VehicleSpecField, patch: Partial<SpecFilterState>) {
     setSpecFilterState((current) => ({
       ...current,
@@ -114,18 +108,15 @@ export function VehicleShopPage({
       ? existing.optionIds.filter((id) => id !== optionId)
       : [...existing.optionIds, optionId];
     updateSpecState(field, { optionIds });
-    resetToFirstPage();
   }
 
   function toggleSpecBoolean(field: VehicleSpecField) {
     const existing = specFilterState[field] ?? EMPTY_SPEC_STATE;
     updateSpecState(field, { booleanEnabled: !existing.booleanEnabled });
-    resetToFirstPage();
   }
 
   function handleSpecNumberRangeChange(field: VehicleSpecField, part: "min" | "max", value: string) {
     updateSpecState(field, part === "min" ? { numberMin: value } : { numberMax: value });
-    resetToFirstPage();
   }
 
   const specFilters: VehicleSpecFilters = useMemo(() => {
@@ -145,31 +136,34 @@ export function VehicleShopPage({
     return { lookupFilters, numberRanges, booleanFields };
   }, [specFilterState]);
 
-  // Search/brand/year/price/spec filters all move server-side together —
-  // any change here refetches (debounced) instead of re-filtering the
-  // already-fetched array in memory (the category can hold far more rows
-  // than the 20 shown per page).
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setLoading(true);
-      listVehicleListings({
-        categoryId: category.id,
-        search: search.trim() || undefined,
-        brandIds: selectedBrandIds.length > 0 ? selectedBrandIds : undefined,
-        yearMin: yearMin.trim() ? Number(yearMin) : undefined,
-        yearMax: yearMax.trim() ? Number(yearMax) : undefined,
-        priceMin: priceMin.trim() ? Number(priceMin) : undefined,
-        priceMax: priceMax.trim() ? Number(priceMax) : undefined,
-        specFilters,
-      })
-        .then(setDisplayedListings)
-        .catch((error) => {
-          toast.error(resolveApiErrorMessage(error, tErrors, t("loadVehiclesError")));
-        })
-        .finally(() => setLoading(false));
-    }, FILTER_DEBOUNCE_MS);
+  function fetchPage(page: number) {
+    return load(
+      () =>
+        listVehicleListingsPage({
+          categoryId: category.id,
+          search: search.trim() || undefined,
+          brandIds: selectedBrandIds.length > 0 ? selectedBrandIds : undefined,
+          yearMin: yearMin.trim() ? Number(yearMin) : undefined,
+          yearMax: yearMax.trim() ? Number(yearMax) : undefined,
+          priceMin: priceMin.trim() ? Number(priceMin) : undefined,
+          priceMax: priceMax.trim() ? Number(priceMax) : undefined,
+          specFilters,
+          page,
+          pageSize: data.pageSize,
+          sortBy,
+        }),
+      (error) => toast.error(resolveApiErrorMessage(error, tErrors, t("loadVehiclesError"))),
+    );
+  }
 
+  // Search/brand/year/price/spec/sort filters all move server-side together
+  // (page/sort/pagination too — see listVehicleListingsPage) — any change
+  // here refetches (debounced) page 1 instead of re-filtering/re-sorting an
+  // already-fetched array in the browser.
+  useEffect(() => {
+    const timeoutId = setTimeout(() => fetchPage(1), FILTER_DEBOUNCE_MS);
     return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     category.id,
     search,
@@ -179,25 +173,8 @@ export function VehicleShopPage({
     priceMin,
     priceMax,
     specFilters,
-    t,
-    tErrors,
+    sortBy,
   ]);
-
-  const sorted = useMemo(() => {
-    const result = [...displayedListings];
-    if (sortBy === "price-asc") {
-      result.sort((a, b) => effectivePrice(a) - effectivePrice(b));
-    } else if (sortBy === "price-desc") {
-      result.sort((a, b) => effectivePrice(b) - effectivePrice(a));
-    } else if (sortBy === "year-desc") {
-      result.sort((a, b) => b.year - a.year);
-    } else {
-      result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }
-    return result;
-  }, [displayedListings, sortBy]);
-
-  const { page, setPage, pageItems, totalPages } = usePagination(sorted, 20, initialPage);
 
   // Keep page/sort in the URL — they change WHICH content is visible, so each
   // combination must be its own crawlable, shareable, bookmarkable address.
@@ -206,11 +183,11 @@ export function VehicleShopPage({
   // indexed).
   useEffect(() => {
     const query: Record<string, string> = {};
-    if (page > 1) query.page = String(page);
+    if (data.page > 1) query.page = String(data.page);
     if (sortBy !== "newest") query.sort = sortBy;
     router.replace({ pathname, query }, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, sortBy]);
+  }, [data.page, sortBy]);
 
   const sortOptions: SelectOption[] = [
     { value: "newest", label: t("sortNewest") },
@@ -242,7 +219,6 @@ export function VehicleShopPage({
           label: brand.label,
           onRemove: () => {
             setSelectedBrandIds((current) => current.filter((id) => id !== brandId));
-            resetToFirstPage();
           },
         });
       }
@@ -255,7 +231,6 @@ export function VehicleShopPage({
         onRemove: () => {
           setYearMin("");
           setYearMax("");
-          resetToFirstPage();
         },
       });
     }
@@ -267,7 +242,6 @@ export function VehicleShopPage({
         onRemove: () => {
           setPriceMin("");
           setPriceMax("");
-          resetToFirstPage();
         },
       });
     }
@@ -301,7 +275,6 @@ export function VehicleShopPage({
           label: `${filter.specFieldLabel?.[locale] ?? field}: ${state.numberMin || "?"}–${state.numberMax || "?"}`,
           onRemove: () => {
             updateSpecState(field, { numberMin: "", numberMax: "" });
-            resetToFirstPage();
           },
         });
       }
@@ -330,7 +303,6 @@ export function VehicleShopPage({
     setPriceMin("");
     setPriceMax("");
     setSpecFilterState({});
-    resetToFirstPage();
   }
 
   // Rendered twice below (desktop <aside>, mobile FilterDrawer) — kept as
@@ -346,7 +318,6 @@ export function VehicleShopPage({
         search={search}
         onSearchChange={(value) => {
           setSearch(value);
-          resetToFirstPage();
         }}
         filters={filters}
         brandOptions={brandOptions}
@@ -355,27 +326,22 @@ export function VehicleShopPage({
           setSelectedBrandIds((current) =>
             current.includes(brandId) ? current.filter((id) => id !== brandId) : [...current, brandId],
           );
-          resetToFirstPage();
         }}
         yearMin={yearMin}
         yearMax={yearMax}
         onYearMinChange={(value) => {
           setYearMin(value);
-          resetToFirstPage();
         }}
         onYearMaxChange={(value) => {
           setYearMax(value);
-          resetToFirstPage();
         }}
         priceMin={priceMin}
         priceMax={priceMax}
         onPriceMinChange={(value) => {
           setPriceMin(value);
-          resetToFirstPage();
         }}
         onPriceMaxChange={(value) => {
           setPriceMax(value);
-          resetToFirstPage();
         }}
         specFilterState={specFilterState}
         onToggleSpecOption={toggleSpecOption}
@@ -401,7 +367,7 @@ export function VehicleShopPage({
 
             <div className="flex flex-col gap-6">
               <ShopToolbar
-                resultCountLabel={t("resultCount", { count: sorted.length })}
+                resultCountLabel={t("resultCount", { count: data.total })}
                 sortLabel={t("sortLabel")}
                 sortValue={sortBy}
                 sortOptions={sortOptions}
@@ -415,7 +381,7 @@ export function VehicleShopPage({
               />
 
               <ShopItemGrid
-                items={pageItems}
+                items={data.items}
                 layout={viewMode}
                 getKey={(listing) => listing.id}
                 emptyMessage={t("emptyState")}
@@ -426,9 +392,9 @@ export function VehicleShopPage({
               />
 
               <Pagination
-                currentPage={page}
+                currentPage={data.page}
                 totalPages={totalPages}
-                onPageChange={setPage}
+                onPageChange={fetchPage}
                 navLabel={tCommon("pagination.nav")}
                 prevLabel={tCommon("pagination.prev")}
                 nextLabel={tCommon("pagination.next")}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import { Pagination } from "@/components/shared/Pagination";
+import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { Loader } from "@/components/shared/Loader";
 import { listUsers, type AdminUser, type AdminUsersPage } from "@/lib/api/users";
 import { ApiRequestError } from "@/lib/api/client";
@@ -54,23 +54,27 @@ const columns: DataTableColumn<AdminUser>[] = [
 ];
 
 export function UsersManager({ initialData }: { initialData: AdminUsersPage }) {
-  const [data, setData] = useState(initialData);
-  const [loading, setLoading] = useState(false);
+  const { data, totalPages, loading, load } = useServerPagination<AdminUser>({
+    items: initialData.users,
+    total: initialData.total,
+    page: initialData.page,
+    pageSize: initialData.pageSize,
+  });
   const [viewingUserId, setViewingUserId] = useState<number | null>(null);
 
-  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
+  // listUsers' {users,...} envelope is remapped into useServerPagination's
+  // {items,...} shape here — the API response shape itself is unchanged.
+  async function fetchUsersPage(page: number): Promise<PagedResult<AdminUser>> {
+    const result = await listUsers(undefined, page, data.pageSize);
+    return { items: result.users, total: result.total, page: result.page, pageSize: result.pageSize };
+  }
 
-  async function loadPage(page: number) {
-    setLoading(true);
-    try {
-      setData(await listUsers(undefined, page, data.pageSize));
-    } catch (error) {
+  function loadPage(page: number) {
+    load(() => fetchUsersPage(page), (error) => {
       const message =
         error instanceof ApiRequestError ? error.message : "მომხმარებლების ჩატვირთვა ვერ მოხერხდა";
       toast.error(message);
-    } finally {
-      setLoading(false);
-    }
+    });
   }
 
   return (
@@ -88,7 +92,7 @@ export function UsersManager({ initialData }: { initialData: AdminUsersPage }) {
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={data.users}
+          data={data.items}
           getRowKey={(user) => user.id}
           emptyMessage="მომხმარებელი არ არსებობს"
           actions={(user) => (

@@ -4,6 +4,7 @@ import { toResponse as toProductResponse } from "../products/products.service.js
 import { productFitmentRepository } from "../product-fitment/product-fitment.repository.js";
 import { productFitmentRulesRepository } from "../product-fitment-rules/product-fitment-rules.repository.js";
 import { getCompatibleVehiclesForProduct } from "../compatibility/compatibility.service.js";
+import { resolvePage } from "../../lib/pagination.js";
 import { productBuyTogetherRepository } from "./product-buy-together.repository.js";
 import type { CreateProductBuyTogetherInput, ListProductBuyTogetherAdminQuery } from "./product-buy-together.schema.js";
 import type { Prisma } from "../../generated/prisma/index.js";
@@ -129,12 +130,11 @@ export async function listProductBuyTogether(productId: number) {
 // Real server-side pagination (skip/take), mirroring error-logs.service's
 // approach — unlike listAllCompatibility, this list has no natural cap.
 export async function listAllProductBuyTogether(filters: ListProductBuyTogetherAdminQuery) {
-  const page = filters.page ?? 1;
-  const pageSize = filters.pageSize ?? 20;
+  const { page, pageSize, skip, take } = resolvePage(filters);
   const where = buildAdminWhere(filters);
 
   const [rows, total] = await Promise.all([
-    productBuyTogetherRepository.findAll(where, (page - 1) * pageSize, pageSize),
+    productBuyTogetherRepository.findAll(where, skip, take),
     productBuyTogetherRepository.count(where),
   ]);
 

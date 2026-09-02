@@ -3,6 +3,7 @@ import { cache } from "../../lib/cache.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { computeLowStockQuantity } from "../../lib/low-stock.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { resolvePage } from "../../lib/pagination.js";
 import { saveUploadedImage } from "../../lib/storage.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { productBrandsRepository } from "../product-brands/product-brands.repository.js";
@@ -455,10 +456,11 @@ function isCacheableOnSaleQuery(query: ProductListQuery): boolean {
   );
 }
 
-// total/page/pageSize are only meaningful for the admin-list path
-// (query.adminFilters present) — every other caller (storefront browse,
-// on-sale/homepage) gets total = items.length, page = 1, so the shape is
-// uniform without the extra fields carrying any real pagination info there.
+// total/page/pageSize are real (DB-backed) whenever the caller is paginated
+// — the admin list (always) or a storefront browse/search that explicitly
+// sent page/pageSize. Every other caller (homepage sliders, recommendations,
+// any `limit`-only request) gets total = items.length, page = 1, so the
+// shape stays uniform without carrying real pagination info there.
 export async function listProducts(query: ProductListQuery) {
   const cacheKey = isCacheableOnSaleQuery(query) ? `products:onSale:${query.limit ?? "all"}` : null;
   if (cacheKey) {
@@ -466,8 +468,14 @@ export async function listProducts(query: ProductListQuery) {
     if (cached) return { items: cached, total: cached.length, page: 1, pageSize: cached.length || 1 };
   }
 
+  // categoryId (one category + its descendants) and categoryIds (an
+  // arbitrary exact-match set — ShopAllProductsPage's checkbox facet) are
+  // mutually exclusive filters; categoryId wins if a caller somehow sent
+  // both.
   const categoryIds =
-    query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
+    query.categoryId != null
+      ? await resolveCategoryAndDescendantIds(query.categoryId)
+      : query.categoryIds;
   const vehicleCompatibilityWhere =
     query.vehicleCatalogId != null
       ? await buildVehicleCompatibilityWhere(query.vehicleCatalogId)
@@ -490,50 +498,101 @@ export async function listProducts(query: ProductListQuery) {
   // modal fetches full per-product data separately), so activeDiscount
   // ending up null and attributeValues empty here is harmless.
   const isAdminList = query.adminFilters != null;
-  const page = query.page ?? 1;
-  const pageSize = query.pageSize ?? 20;
-  const adminCountFilters = {
+  // The storefront shop pages (see frontend's useServerPagination callers)
+  // opt into real pagination by sending page/pageSize; every other
+  // storefront caller (homepage sliders, recommendations, "on sale" pages)
+  // never sends either, so this stays false for them and their pre-existing
+  // `limit`-only, no-skip behavior is untouched below.
+  const isCustomerPaginated = !isAdminList && (query.page != null || query.pageSize != null);
+  const { page, pageSize, skip, take } = resolvePage(query);
+
+  if (isAdminList) {
+    const adminCountFilters = {
+      categoryIds,
+      brandIds: query.brandIds,
+      priceMin: query.priceMin,
+      priceMax: query.priceMax,
+      onSale: query.onSale,
+      attributeFilters: query.attributeFilters,
+      adminFilters: query.adminFilters,
+    };
+    const [adminRows, adminTotal] = await Promise.all([
+      productsRepository.findManyForAdmin({ ...adminCountFilters, skip, take }),
+      productsRepository.countForAdmin(adminCountFilters),
+    ]);
+    const rows = adminRows.map((row) => ({
+      ...row,
+      attributeValues: [] as AttributeValueRow[],
+      variants: row.variants.map((variant) => ({
+        ...variant,
+        discounts: [] as DiscountSummaryRow[],
+      })),
+    }));
+    const result = await Promise.all(rows.map(toResponse));
+    return { items: result, total: adminTotal, page, pageSize };
+  }
+
+  if (isCustomerPaginated) {
+    const filters = {
+      categoryIds,
+      vehicleCompatibilityWhere,
+      searchIds,
+      brandIds: query.brandIds,
+      priceMin: query.priceMin,
+      priceMax: query.priceMax,
+      onSale: query.onSale,
+      attributeFilters: query.attributeFilters,
+    };
+
+    // Price sort orders by each product's cheapest ACTIVE variant — not a
+    // plain column, so there's no Postgres ORDER BY for it (Prisma's
+    // relation-aggregate orderBy only supports `_count`, not `_min`/`_max`).
+    // Fetching every filtered match and sorting in JS is the pragmatic
+    // tradeoff here: this store's per-category (or even whole, on-sale)
+    // catalog is realistically small enough that this doesn't cost what an
+    // unbounded query against a huge table would — a true fix would need
+    // either a raw SQL query duplicating buildWhere, or a denormalized
+    // "cheapest active variant price" column kept in sync on every variant
+    // write, both bigger changes than this shop-page sort control warrants
+    // today. `total` is exact (the full matched set, not an estimate).
+    if (query.sortBy === "price-asc" || query.sortBy === "price-desc") {
+      const rows = await productsRepository.findMany(filters);
+      const priceOf = (row: (typeof rows)[number]) =>
+        row.variants.length > 0 ? Math.min(...row.variants.map((v) => Number(v.price))) : Infinity;
+      const sorted = [...rows].sort((a, b) =>
+        query.sortBy === "price-asc" ? priceOf(a) - priceOf(b) : priceOf(b) - priceOf(a),
+      );
+      const pageRows = sorted.slice(skip, skip + take);
+      const result = await Promise.all(pageRows.map(toResponse));
+      return { items: result, total: rows.length, page, pageSize };
+    }
+
+    // Default ("newest") sort: a plain DB skip/take + a matching count(),
+    // both honoring searchIds (an id-in filter, not a relevance re-sort —
+    // see the module comment above on why relevance is never actually
+    // surfaced to the shopper today). `paginate: true` overrides findMany's
+    // legacy "suppress skip/take whenever searchIds is set" behavior.
+    const [rows, total] = await Promise.all([
+      productsRepository.findMany({ ...filters, skip, limit: take, paginate: true }),
+      productsRepository.count(filters),
+    ]);
+    const result = await Promise.all(rows.map(toResponse));
+    return { items: result, total, page, pageSize };
+  }
+
+  // Legacy, non-paginated customer path (homepage sliders, recommendations,
+  // any caller that only ever sent `limit`) — unchanged behavior.
+  const rows = await productsRepository.findMany({
     categoryIds,
+    vehicleCompatibilityWhere,
+    searchIds,
     brandIds: query.brandIds,
     priceMin: query.priceMin,
     priceMax: query.priceMax,
     onSale: query.onSale,
     attributeFilters: query.attributeFilters,
-    adminFilters: query.adminFilters,
-  };
-
-  const [adminRows, adminTotal] = isAdminList
-    ? await Promise.all([
-        productsRepository.findManyForAdmin({
-          ...adminCountFilters,
-          skip: (page - 1) * pageSize,
-          take: pageSize,
-        }),
-        productsRepository.countForAdmin(adminCountFilters),
-      ])
-    : [undefined, undefined];
-
-  const rows = isAdminList
-    ? adminRows!.map((row) => ({
-        ...row,
-        attributeValues: [] as AttributeValueRow[],
-        variants: row.variants.map((variant) => ({
-          ...variant,
-          discounts: [] as DiscountSummaryRow[],
-        })),
-      }))
-    : await productsRepository.findMany({
-        categoryIds,
-        vehicleCompatibilityWhere,
-        searchIds,
-        brandIds: query.brandIds,
-        priceMin: query.priceMin,
-        priceMax: query.priceMax,
-        onSale: query.onSale,
-        attributeFilters: query.attributeFilters,
-        adminFilters: query.adminFilters,
-        limit: query.limit,
-      });
+    limit: query.limit,
+  });
 
   let result: Awaited<ReturnType<typeof toResponse>>[];
   if (searchIds == null) {
@@ -550,10 +609,6 @@ export async function listProducts(query: ProductListQuery) {
   }
 
   if (cacheKey) cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
-
-  if (isAdminList) {
-    return { items: result, total: adminTotal ?? result.length, page, pageSize };
-  }
   return { items: result, total: result.length, page: 1, pageSize: result.length || 1 };
 }
 

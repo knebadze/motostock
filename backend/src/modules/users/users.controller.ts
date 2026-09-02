@@ -21,9 +21,7 @@ export async function list(
   req: Request<unknown, unknown, unknown, ListUsersQuery>,
   res: Response,
 ) {
-  const page = req.query.page ?? 1;
-  const pageSize = req.query.pageSize ?? 20;
-  const result = await listUsers(req.query.q, page, pageSize);
+  const result = await listUsers(req.query);
   res.status(200).json(result);
 }
 
