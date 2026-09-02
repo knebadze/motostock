@@ -96,6 +96,29 @@ export const cartRepository = {
     return prisma.cartItem.update({ where: { id }, data: { quantity }, include: cartItemInclude });
   },
 
+  // Atomic increment-with-cap — unlike updateQuantity above (which sets an
+  // absolute value the caller already decided on), this is for "add N more
+  // to whatever's already there" call sites (cart.service.ts's
+  // addToExistingCartItem). Reading the current quantity in application
+  // code, adding to it, and writing the computed absolute value back (the
+  // old approach) is a classic lost-update race: two concurrent callers for
+  // the same row (e.g. a live "add to cart" click racing a guest-cart merge
+  // on login for the same item) can both read the same starting quantity
+  // and each write their own computed total, so whichever commits last
+  // silently discards the other's increment. Prisma's `increment` operator
+  // is atomic at the DB row-lock level — concurrent increments to the same
+  // row serialize instead of racing, so this always starts from the row's
+  // true current value. The cap is enforced as a second, equally atomic
+  // step (its WHERE is evaluated against live data at execution time, not a
+  // value read earlier), not computed in JS beforehand.
+  async incrementQuantityCapped(id: number, incrementBy: number, cap: number) {
+    await prisma.$transaction(async (tx) => {
+      await tx.cartItem.update({ where: { id }, data: { quantity: { increment: incrementBy } } });
+      await tx.cartItem.updateMany({ where: { id, quantity: { gt: cap } }, data: { quantity: cap } });
+    });
+    return prisma.cartItem.findUniqueOrThrow({ where: { id }, include: cartItemInclude });
+  },
+
   delete(id: number) {
     return prisma.cartItem.delete({ where: { id } });
   },
@@ -123,6 +146,18 @@ export const cartRepository = {
   // another tab) landing on the same target row. Wrapped in one transaction
   // so a crash between the claim and the upsert can't silently drop the
   // item — either both happen or neither does.
+  // The upsert's `update` uses an atomic `increment`, not a JS-computed
+  // absolute value — reading the existing quantity first and writing
+  // `existing + item.quantity` back (the old approach) is a lost-update
+  // race: this merge landing at the same moment as a live "add to cart"
+  // click for the same item could read the same starting quantity as that
+  // click and then overwrite its increment (or vice versa) when whichever
+  // one commits last wins. `increment` instead always adds to the row's
+  // true current value, however many concurrent writers there are. The cap
+  // is enforced as a second, separately-atomic updateMany clamp right
+  // after, for the same reason (its WHERE reads live data, not a stale
+  // application-level snapshot) — same pattern as
+  // cart.repository.ts's incrementQuantityCapped.
   // Same cap as cart.service.ts's own MAX_QUANTITY use sites, read fresh
   // here rather than passed in from cart.service.ts (which already imports
   // cartRepository from this file, so importing it back would be circular)
@@ -154,36 +189,34 @@ export const cartRepository = {
       if (claimed.count === 0) return;
 
       if (item.productVariantId != null) {
-        const existing = await tx.cartItem.findUnique({
-          where: { userId_productVariantId: { userId, productVariantId: item.productVariantId } },
-          select: { quantity: true },
-        });
-        const quantity = Math.min((existing?.quantity ?? 0) + item.quantity, MAX_QUANTITY);
         await tx.cartItem.upsert({
           where: { userId_productVariantId: { userId, productVariantId: item.productVariantId } },
           create: {
             itemType: item.itemType,
             userId,
             productVariantId: item.productVariantId,
-            quantity,
+            quantity: Math.min(item.quantity, MAX_QUANTITY),
           },
-          update: { quantity },
+          update: { quantity: { increment: item.quantity } },
+        });
+        await tx.cartItem.updateMany({
+          where: { userId, productVariantId: item.productVariantId, quantity: { gt: MAX_QUANTITY } },
+          data: { quantity: MAX_QUANTITY },
         });
       } else if (item.vehicleListingId != null) {
-        const existing = await tx.cartItem.findUnique({
-          where: { userId_vehicleListingId: { userId, vehicleListingId: item.vehicleListingId } },
-          select: { quantity: true },
-        });
-        const quantity = Math.min((existing?.quantity ?? 0) + item.quantity, MAX_QUANTITY);
         await tx.cartItem.upsert({
           where: { userId_vehicleListingId: { userId, vehicleListingId: item.vehicleListingId } },
           create: {
             itemType: item.itemType,
             userId,
             vehicleListingId: item.vehicleListingId,
-            quantity,
+            quantity: Math.min(item.quantity, MAX_QUANTITY),
           },
-          update: { quantity },
+          update: { quantity: { increment: item.quantity } },
+        });
+        await tx.cartItem.updateMany({
+          where: { userId, vehicleListingId: item.vehicleListingId, quantity: { gt: MAX_QUANTITY } },
+          data: { quantity: MAX_QUANTITY },
         });
       }
     });

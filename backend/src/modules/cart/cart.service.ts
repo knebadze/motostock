@@ -132,13 +132,18 @@ export async function getCartStatus(
   };
 }
 
+// Atomic increment (see cart.repository.ts's incrementQuantityCapped) —
+// reading existing.quantity and writing a JS-computed absolute value back
+// was a lost-update race: a live "add to cart" click landing at the same
+// moment as a guest-cart merge for the same item could each read the same
+// starting quantity and overwrite the other's increment.
 async function addToExistingCartItem(
-  existing: { id: number; quantity: number },
+  existing: { id: number },
   quantity: number,
   stockQuantity: number,
 ) {
-  const nextQuantity = Math.min(existing.quantity + quantity, stockQuantity, await getCartMaxQuantity());
-  const row = await cartRepository.updateQuantity(existing.id, nextQuantity);
+  const cap = Math.min(stockQuantity, await getCartMaxQuantity());
+  const row = await cartRepository.incrementQuantityCapped(existing.id, quantity, cap);
   return toResponse(row);
 }
 
