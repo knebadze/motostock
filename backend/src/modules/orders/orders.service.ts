@@ -950,11 +950,12 @@ export async function updateOrderStatus(
 
 // Admin-triggered manual retry of pushOrderSale/pushOrderReturn (see
 // fina-sync.service.ts's retryOrderFinaPush) — for an order whose
-// finaSyncStatus is FAILED (or, in principle, any order, though retrying a
-// NOT_APPLICABLE/SYNCED one just re-confirms there's nothing to do or
-// re-pushes redundantly). Direction (sale vs. return) is derived from the
+// finaSyncStatus is FAILED. Direction (sale vs. return) is derived from the
 // order's current status, not tracked separately, so this always retries
 // whatever the automatic paths would have attempted for this order right now.
+// retryOrderFinaPush itself refuses (400) a SYNCED order, so a repeat click
+// after a prior retry already succeeded can't write a second real FINA
+// document.
 export async function retryOrderFinaSync(orderId: number) {
   const order = await ordersRepository.findById(orderId);
   if (!order) {
@@ -966,6 +967,7 @@ export async function retryOrderFinaSync(orderId: number) {
     orderCode: order.orderCode,
     isCancelled: order.status.key === "CANCELLED",
     finaOutOperationId: order.finaOutOperationId,
+    finaSyncStatus: order.finaSyncStatus,
     items: order.items.map((item) => ({
       productVariantId: item.productVariantId,
       quantity: item.quantity,

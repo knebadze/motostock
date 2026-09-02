@@ -221,7 +221,7 @@ registry.registerPath({
   request: { params: orderIdParamSchema },
   responses: {
     200: { description: "Retried — see the order's finaSyncStatus for the result", content: { "application/json": { schema: adminOrderResponse } } },
-    400: { description: "Nothing to retry (FINA not configured, Settings not filled in, or no FINA-linked items)", content: { "application/json": { schema: errorResponseSchema } } },
+    400: { description: "Nothing to retry (FINA not configured, Settings not filled in, no FINA-linked items, or the order is already SYNCED)", content: { "application/json": { schema: errorResponseSchema } } },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
     403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },

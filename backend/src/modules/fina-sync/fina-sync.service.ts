@@ -13,7 +13,7 @@ import {
 } from "./fina-client.js";
 import { finaSyncRepository } from "./fina-sync.repository.js";
 import { getFinaWebCustomerId, getFinaWebUserId } from "../settings/settings.service.js";
-import type { FinaSyncTrigger } from "../../generated/prisma/index.js";
+import type { FinaOrderSyncStatus, FinaSyncTrigger } from "../../generated/prisma/index.js";
 
 export { isFinaConfigured };
 
@@ -429,8 +429,25 @@ export async function retryOrderFinaPush(order: {
   orderCode: string;
   isCancelled: boolean;
   finaOutOperationId: number | null;
+  finaSyncStatus: FinaOrderSyncStatus;
   items: FinaOrderPushItem[];
 }): Promise<void> {
+  // Neither attemptOrderSalePush nor attemptOrderReturnPush check this
+  // themselves (they're also the automatic, fire-once-per-lifecycle-event
+  // paths — see pushOrderSale/pushOrderReturn above, where a second push
+  // simply never happens by construction) — but this admin-triggered retry
+  // can be clicked again after a prior attempt already succeeded (e.g. a
+  // slow response the admin didn't see land), and doing so would write a
+  // second, real saveDocProductOut/saveDocCustomerReturn document into
+  // FINA's actual accounting. Refuse it the same way FinaPushSkipped surfaces
+  // "nothing to retry" for the config-missing case below.
+  if (order.finaSyncStatus === "SYNCED") {
+    throw new ApiError(
+      400,
+      "ეს შეკვეთა უკვე დასინქრონებულია FINA-სთან — ხელახლა გაგზავნა საჭირო არ არის",
+    );
+  }
+
   try {
     if (order.isCancelled) {
       await attemptOrderReturnPush(order);
