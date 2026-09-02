@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { listCache, type CacheEntry } from "@/lib/api/cache";
 import { ApiRequestError } from "@/lib/api/client";
+import type { Settings } from "@/lib/api/settings";
 
 // `now` only ever drives the countdown text below, recomputed from each
 // entry's already-fetched `expiresAt` — a permanent entry needs no
@@ -20,10 +21,19 @@ function formatRemaining(expiresAt: number | null, now: number): string {
   return minutes > 0 ? `${minutes}წთ ${seconds}წმ` : `${seconds}წმ`;
 }
 
-export function CacheTab() {
+export function CacheTab({
+  settings,
+  saving,
+  onSave,
+}: {
+  settings: Settings;
+  saving: boolean;
+  onSave: (next: Settings) => Promise<void>;
+}) {
   const [entries, setEntries] = useState<CacheEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(() => Date.now());
+  const [ttlDraft, setTtlDraft] = useState(settings.homepageCacheTtlMinutes);
 
   async function load() {
     setLoading(true);
@@ -61,14 +71,43 @@ export function CacheTab() {
   }, []);
 
   return (
-    <div className="rounded-2xl border border-border p-5">
+    <div className="flex flex-col gap-6">
+      <div className="rounded-2xl border border-border p-5">
+        <p className="font-medium text-foreground">ქეშის ვადა</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          რამდენ ხანს ინახება მთავარი გვერდის პოპულარული/ფასდაკლებული პროდუქტების და
+          რეკომენდაციების გამოთვლილი სია, სანამ თავისით არ განახლდება.
+        </p>
+
+        <div className="mt-4 flex flex-col gap-1.5 sm:w-1/3">
+          <label className="text-sm font-medium">ვადა (წუთი)</label>
+          <input
+            type="number"
+            min={1}
+            value={ttlDraft}
+            onChange={(event) => setTtlDraft(Number(event.target.value))}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onSave({ ...settings, homepageCacheTtlMinutes: ttlDraft })}
+          disabled={saving}
+          className="mt-5 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          შენახვა
+        </button>
+      </div>
+
+      <div className="rounded-2xl border border-border p-5">
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="font-medium text-foreground">ქეშის შემცველობა</p>
           <p className="mt-1 text-sm text-muted-foreground">
             სერვერის მეხსიერებაში ამჟამად შენახული key-ები — კლასიფიკატორები/პარამეტრები (ხელით
             იწმინდება ცვლილებაზე) და მთავარი გვერდის/რეკომენდაციების გამოთვლილი სიები (თავისით
-            ვადაგასული, 5 წუთში) — სულ {entries.length} ჩანაწერი.
+            ვადაგასული, ზემოთ მითითებული ვადით) — სულ {entries.length} ჩანაწერი.
           </p>
         </div>
         <button
@@ -121,6 +160,7 @@ export function CacheTab() {
           </table>
         </div>
       )}
+      </div>
     </div>
   );
 }

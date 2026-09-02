@@ -12,8 +12,7 @@ import { toImageResponse } from "../product-variant-images/product-variant-image
 import { cartRepository, type CartOwner } from "./cart.repository.js";
 import type { CreateCartItemInput } from "./cart.schema.js";
 import type { CartItemType } from "../../generated/prisma/index.js";
-
-const MAX_QUANTITY = 99;
+import { getCartMaxQuantity } from "../settings/settings.service.js";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
 type LookupRow = { id: number; key: string; nameKa: string; nameEn: string; nameRu: string } | null;
@@ -138,7 +137,7 @@ async function addToExistingCartItem(
   quantity: number,
   stockQuantity: number,
 ) {
-  const nextQuantity = Math.min(existing.quantity + quantity, stockQuantity, MAX_QUANTITY);
+  const nextQuantity = Math.min(existing.quantity + quantity, stockQuantity, await getCartMaxQuantity());
   const row = await cartRepository.updateQuantity(existing.id, nextQuantity);
   return toResponse(row);
 }
@@ -160,7 +159,7 @@ async function addProductVariantToCart(owner: CartOwner, productVariantId: numbe
     return addToExistingCartItem(existing, quantity, variant.stockQuantity);
   }
 
-  const cappedQuantity = Math.min(quantity, variant.stockQuantity, MAX_QUANTITY);
+  const cappedQuantity = Math.min(quantity, variant.stockQuantity, await getCartMaxQuantity());
   try {
     const row = await cartRepository.create({
       ...owner,
@@ -201,7 +200,7 @@ async function addVehicleListingToCart(owner: CartOwner, vehicleListingId: numbe
     return addToExistingCartItem(existing, quantity, listing.stockQuantity);
   }
 
-  const cappedQuantity = Math.min(quantity, listing.stockQuantity, MAX_QUANTITY);
+  const cappedQuantity = Math.min(quantity, listing.stockQuantity, await getCartMaxQuantity());
   try {
     const row = await cartRepository.create({
       ...owner,
@@ -248,7 +247,7 @@ export async function updateCartItemQuantity(owner: CartOwner, id: number, quant
   const stockQuantity = isActive
     ? (existing.productVariant?.stockQuantity ?? existing.vehicleListing?.stockQuantity ?? 0)
     : 0;
-  const cappedQuantity = Math.min(quantity, stockQuantity, MAX_QUANTITY);
+  const cappedQuantity = Math.min(quantity, stockQuantity, await getCartMaxQuantity());
   if (cappedQuantity <= 0) {
     throw new ApiError(400, "მარაგში საკმარისი რაოდენობა აღარ არის", "INSUFFICIENT_STOCK");
   }

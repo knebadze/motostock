@@ -15,11 +15,11 @@ type ProductBuyTogetherRow = {
   createdAt: Date;
 };
 
-function toResponse(row: ProductBuyTogetherRow) {
+async function toResponse(row: ProductBuyTogetherRow) {
   return {
     id: row.id,
     productId: row.productId,
-    relatedProduct: toProductResponse(row.relatedProduct),
+    relatedProduct: await toProductResponse(row.relatedProduct),
     createdAt: row.createdAt,
   };
 }
@@ -122,7 +122,7 @@ async function assertOverlappingCompatibility(productId: number, relatedProductI
 export async function listProductBuyTogether(productId: number) {
   await assertProductExists(productId);
   const rows = await productBuyTogetherRepository.findMany(productId);
-  return rows.map(toResponse);
+  return Promise.all(rows.map(toResponse));
 }
 
 // Admin-only — unified cross-product overview (see /admin/buy-together),

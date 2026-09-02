@@ -22,6 +22,6 @@ export async function resolveCartOwner(req: Request, res: Response, next: NextFu
     return;
   }
 
-  req.guestId = resolveGuestId(req, res);
+  req.guestId = await resolveGuestId(req, res);
   next();
 }

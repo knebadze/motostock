@@ -14,6 +14,7 @@ import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.rep
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getSpecFieldDefinition } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
+import { getHomepageCacheTtlMinutes } from "../settings/settings.service.js";
 import {
   toDiscountResponse,
   type DiscountRow,
@@ -121,7 +122,7 @@ function toNamedRef(row: NamedRefRow) {
 // Exported for reuse by product-buy-together.service.ts, which maps related
 // Product rows (fetched via productsRepository) through this same "product
 // card" response shape.
-export function toResponse(row: ProductRow) {
+export async function toResponse(row: ProductRow) {
   const totalStock = row.variants.reduce((sum, v) => sum + v.stockQuantity, 0);
   return {
     id: row.id,
@@ -172,7 +173,7 @@ export function toResponse(row: ProductRow) {
     variantCount: row.variants.length,
     minPrice: row.variants.length > 0 ? Math.min(...row.variants.map((v) => Number(v.price))) : null,
     totalStock,
-    lowStockQuantity: computeLowStockQuantity(totalStock, row.category.lowStockBadgeEnabled),
+    lowStockQuantity: await computeLowStockQuantity(totalStock, row.category.lowStockBadgeEnabled),
     activeDiscount: findCardActiveDiscount(row.variants),
     viewCount: row.viewCount,
     createdAt: row.createdAt,
@@ -222,7 +223,7 @@ type ProductDetailRow = Omit<ProductRow, "variants"> & {
   buyTogether: { relatedProduct: ProductRow }[];
 };
 
-function toVariantDetailResponse(row: VariantDetailRow, lowStockBadgeEnabled: boolean) {
+async function toVariantDetailResponse(row: VariantDetailRow, lowStockBadgeEnabled: boolean) {
   const activeDiscount = findActiveDiscount(row.discounts);
 
   return {
@@ -233,7 +234,7 @@ function toVariantDetailResponse(row: VariantDetailRow, lowStockBadgeEnabled: bo
     // Per-variant, not the product-level totalStock aggregate — the detail
     // page's badge should reflect whichever variant the shopper currently
     // has selected.
-    lowStockQuantity: computeLowStockQuantity(row.stockQuantity, lowStockBadgeEnabled),
+    lowStockQuantity: await computeLowStockQuantity(row.stockQuantity, lowStockBadgeEnabled),
     isActive: row.isActive,
     size: row.size,
     color: row.color,
@@ -277,9 +278,11 @@ async function toFitmentRuleResponse(rule: FitmentRuleRow) {
 // Exported for reuse by getProductDetailAdmin below.
 export async function toDetailResponse(row: ProductDetailRow) {
   return {
-    ...toResponse(row),
-    variants: row.variants.map((variant) =>
-      toVariantDetailResponse(variant, row.category.lowStockBadgeEnabled),
+    ...(await toResponse(row)),
+    variants: await Promise.all(
+      row.variants.map((variant) =>
+        toVariantDetailResponse(variant, row.category.lowStockBadgeEnabled),
+      ),
     ),
     fitments: row.fitments.map((fitment) => ({
       id: fitment.vehicleCatalog.id,
@@ -287,7 +290,7 @@ export async function toDetailResponse(row: ProductDetailRow) {
       model: fitment.vehicleCatalog.model,
     })),
     fitmentRules: await Promise.all(row.fitmentRules.map(toFitmentRuleResponse)),
-    buyTogether: row.buyTogether.map((link) => toResponse(link.relatedProduct)),
+    buyTogether: await Promise.all(row.buyTogether.map((link) => toResponse(link.relatedProduct))),
   };
 }
 
@@ -425,13 +428,13 @@ export async function buildVehicleCompatibilityWhere(
 // {onSale, limit} or {limit} shape on essentially every guest visit — the
 // ranking barely changes minute-to-minute, so a TTL cache (see lib/cache.ts)
 // avoids re-running the ranking query and its follow-up findByIds on every
-// single homepage load. 5 minutes, not a few seconds: this is a
-// low-traffic, regional (Georgian motorcycle-market) storefront, so a short
-// TTL would mostly just expire between visits and rarely get reused — a
-// longer window actually gets hit, at the cost of a new discount/order
-// taking up to 5 minutes to show up on the homepage (product/cart/checkout
-// pages are unaffected — they never read from this cache).
-const HOMEPAGE_CACHE_TTL_MS = 5 * 60_000;
+// single homepage load. Minutes, not seconds (default 5, see
+// getHomepageCacheTtlMinutes): this is a low-traffic, regional (Georgian
+// motorcycle-market) storefront, so a short TTL would mostly just expire
+// between visits and rarely get reused — a longer window actually gets hit,
+// at the cost of a new discount/order taking up to the TTL to show up on the
+// homepage (product/cart/checkout pages are unaffected — they never read
+// from this cache).
 
 // True only for the homepage's specific "on-sale, nothing else" access
 // pattern (see getOnSaleProductsFromServer on the frontend) — every other
@@ -455,7 +458,7 @@ function isCacheableOnSaleQuery(query: ProductListQuery): boolean {
 export async function listProducts(query: ProductListQuery) {
   const cacheKey = isCacheableOnSaleQuery(query) ? `products:onSale:${query.limit ?? "all"}` : null;
   if (cacheKey) {
-    const cached = cache.get<ReturnType<typeof toResponse>[]>(cacheKey);
+    const cached = cache.get<Awaited<ReturnType<typeof toResponse>>[]>(cacheKey);
     if (cached) return cached;
   }
 
@@ -516,19 +519,21 @@ export async function listProducts(query: ProductListQuery) {
         limit: query.limit,
       });
 
-  let result: ReturnType<typeof toResponse>[];
+  let result: Awaited<ReturnType<typeof toResponse>>[];
   if (searchIds == null) {
-    result = rows.map(toResponse);
+    result = await Promise.all(rows.map(toResponse));
   } else {
     // findMany's `id: {in: searchIds}` doesn't preserve searchIds' relevance
     // order — restore it, then apply the limit here (findMany skipped `take`
     // for this case; see its comment).
     const rankById = new Map(searchIds.map((id, index) => [id, index]));
     const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
-    result = (query.limit != null ? ranked.slice(0, query.limit) : ranked).map(toResponse);
+    result = await Promise.all(
+      (query.limit != null ? ranked.slice(0, query.limit) : ranked).map(toResponse),
+    );
   }
 
-  if (cacheKey) cache.set(cacheKey, result, HOMEPAGE_CACHE_TTL_MS);
+  if (cacheKey) cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
   return result;
 }
 
@@ -539,7 +544,7 @@ export async function listProducts(query: ProductListQuery) {
 // reason as listProducts' on-sale path above.
 export async function listPopularProducts(limit: number) {
   const cacheKey = `products:popular:${limit}`;
-  const cached = cache.get<ReturnType<typeof toResponse>[]>(cacheKey);
+  const cached = cache.get<Awaited<ReturnType<typeof toResponse>>[]>(cacheKey);
   if (cached) return cached;
 
   const rankedIds = await productsRepository.findPopularProductIds(limit);
@@ -547,12 +552,14 @@ export async function listPopularProducts(limit: number) {
 
   const rows = await productsRepository.findByIds(rankedIds);
   const rowById = new Map(rows.map((row) => [row.id, row]));
-  const result = rankedIds
-    .map((id) => rowById.get(id))
-    .filter((row): row is NonNullable<typeof row> => row != null)
-    .map((row) => toResponse(row));
+  const result = await Promise.all(
+    rankedIds
+      .map((id) => rowById.get(id))
+      .filter((row): row is NonNullable<typeof row> => row != null)
+      .map((row) => toResponse(row)),
+  );
 
-  cache.set(cacheKey, result, HOMEPAGE_CACHE_TTL_MS);
+  cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
   return result;
 }
 

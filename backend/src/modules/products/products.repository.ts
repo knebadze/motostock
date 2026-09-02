@@ -2,6 +2,7 @@ import { prisma } from "../../config/prisma.js";
 import type { Prisma } from "../../generated/prisma/index.js";
 import { applyProductAdminFilters } from "../filters/product/product-admin-filter-registry.js";
 import type { FilterEntry } from "../filters/filter-request.schema.js";
+import { getSalesSummaryLimit, getSearchResultCap } from "../settings/settings.service.js";
 import type { AttributeFilterInput } from "./products.schema.js";
 
 // lowStockBadgeEnabled is only meaningful for a product's own category (used
@@ -35,11 +36,6 @@ function candidatePoolSize(limit: number): number {
   return Math.min(1000, Math.max(limit * 20, 200));
 }
 
-// Bounds findSearchRankedIds below the same way candidatePoolSize bounds the
-// popularity queries above — without a cap, a very generic search term could
-// match a large fraction of the catalog, and no storefront view ever needs
-// more ranked results than this in one response.
-const SEARCH_RESULT_CAP = 500;
 const unitRefSelect = {
   id: true,
   nameKa: true,
@@ -366,8 +362,13 @@ export const productsRepository = {
   // Returns ids only, ordered by relevance DESC; findMany's `id: {in: [...]}`
   // doesn't preserve that order, so callers must re-apply it (same caveat as
   // findPopularProductIds below).
+  // Bounds this method the same way candidatePoolSize bounds the popularity
+  // queries above — without a cap, a very generic search term could match a
+  // large fraction of the catalog, and no storefront view ever needs more
+  // ranked results than this in one response. Admin-configurable via
+  // Settings (getSearchResultCap), default 500.
   async findSearchRankedIds(search: string, limit?: number): Promise<number[]> {
-    const cap = limit != null ? candidatePoolSize(limit) : SEARCH_RESULT_CAP;
+    const cap = limit != null ? candidatePoolSize(limit) : await getSearchResultCap();
     const rows = await prisma.$queryRaw<{ id: number }[]>`
       SELECT id
       FROM "dbo"."Product"
@@ -562,6 +563,7 @@ export const productsRepository = {
     }
 
     const where = { productVariantId: { in: variantIds } };
+    const salesSummaryLimit = await getSalesSummaryLimit();
     const [totals, distinctOrders, recentItems] = await Promise.all([
       prisma.orderItem.aggregate({ where, _sum: { quantity: true, lineTotal: true } }),
       prisma.orderItem.findMany({ where, select: { orderId: true }, distinct: ["orderId"] }),
@@ -581,7 +583,7 @@ export const productsRepository = {
           },
         },
         orderBy: { createdAt: "desc" },
-        take: 10,
+        take: salesSummaryLimit,
       }),
     ]);
 

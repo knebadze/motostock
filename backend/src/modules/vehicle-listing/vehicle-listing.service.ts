@@ -6,6 +6,7 @@ import { resolveCategoryAndDescendantIds } from "../categories/categories.servic
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
+import { getHomepageCacheTtlMinutes } from "../settings/settings.service.js";
 import {
   toDiscountResponse,
   type DiscountRow,
@@ -199,7 +200,6 @@ async function assertRefsExist(input: {
 // Same reasoning and TTL as products.service.ts's listProducts/
 // listPopularProducts — the homepage's on-sale/popular vehicle sliders hit
 // these with an identical query shape on essentially every guest visit.
-const HOMEPAGE_CACHE_TTL_MS = 5 * 60_000;
 
 function isCacheableOnSaleQuery(query: VehicleListingListQuery): boolean {
   return (
@@ -297,7 +297,7 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     );
   }
 
-  if (cacheKey) cache.set(cacheKey, result, HOMEPAGE_CACHE_TTL_MS);
+  if (cacheKey) cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
   return result;
 }
 
@@ -321,7 +321,7 @@ export async function listPopularVehicleListings(limit: number) {
     .filter((row): row is NonNullable<typeof row> => row != null)
     .map((row) => toVehicleListingResponse(row));
 
-  cache.set(cacheKey, result, HOMEPAGE_CACHE_TTL_MS);
+  cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
   return result;
 }
 

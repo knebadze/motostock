@@ -18,11 +18,11 @@ type WishlistItemRow = {
 
 // Exported for users.service.ts's admin "full detail" view to reuse
 // (imported there as `toResponse as toWishlistItemResponse`).
-export function toResponse(row: WishlistItemRow) {
+export async function toResponse(row: WishlistItemRow) {
   return {
     id: row.id,
     itemType: row.itemType,
-    product: row.product ? toProductResponse(row.product) : null,
+    product: row.product ? await toProductResponse(row.product) : null,
     vehicleListing: row.vehicleListing ? toVehicleListingResponse(row.vehicleListing) : null,
     createdAt: row.createdAt,
   };
@@ -34,7 +34,7 @@ function ownerMatches(row: { userId: number | null; guestId: string | null }, ow
 
 export async function listMyWishlist(owner: WishlistOwner) {
   const rows = await wishlistRepository.findByOwner(owner);
-  return rows.map(toResponse);
+  return Promise.all(rows.map(toResponse));
 }
 
 async function addProductToWishlist(owner: WishlistOwner, productId: number) {

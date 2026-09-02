@@ -1,8 +1,6 @@
 import sharp from "sharp";
 import { ApiError } from "./ApiError.js";
-
-const MAX_DIMENSION = 1600;
-const WEBP_QUALITY = 82;
+import { getImageMaxDimensionPx, getImageWebpQuality } from "../modules/settings/settings.service.js";
 
 // Multer's fileFilter only checks the client-supplied Content-Type header,
 // which is trivial to spoof — the real validation happens here, via
@@ -22,6 +20,8 @@ export async function processImageForDisk(
     throw new ApiError(400, "ფაილი არ არის ვალიდური სურათი");
   }
 
+  const maxDimension = await getImageMaxDimensionPx();
+
   // Animated GIFs would lose their animation through a naive webp
   // re-encode, so they get their own branch instead of falling into the
   // shared pipeline below — but they still go through it, unlike before.
@@ -36,16 +36,17 @@ export async function processImageForDisk(
   // webp branch below already gets.
   if (format === "gif") {
     const reencoded = await sharp(buffer, { animated: true })
-      .resize({ width: MAX_DIMENSION, height: MAX_DIMENSION, fit: "inside", withoutEnlargement: true })
+      .resize({ width: maxDimension, height: maxDimension, fit: "inside", withoutEnlargement: true })
       .gif()
       .toBuffer();
     return { buffer: reencoded, extension: ".gif" };
   }
 
+  const webpQuality = await getImageWebpQuality();
   const processed = await sharp(buffer)
     .rotate() // respect EXIF orientation before resizing, or phone photos come out sideways
-    .resize({ width: MAX_DIMENSION, height: MAX_DIMENSION, fit: "inside", withoutEnlargement: true })
-    .webp({ quality: WEBP_QUALITY })
+    .resize({ width: maxDimension, height: maxDimension, fit: "inside", withoutEnlargement: true })
+    .webp({ quality: webpQuality })
     .toBuffer();
 
   return { buffer: processed, extension: ".webp" };

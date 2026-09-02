@@ -96,7 +96,7 @@ export async function handleGoogleCallback(req: Request, res: Response) {
 
   try {
     const { user, token } = await loginWithGoogle(parsed.data.code);
-    setAuthCookie(res, token);
+    await setAuthCookie(res, token);
     await mergeGuestDataIntoUser(req, res, user.id);
     await recordAuthEvent("LOGIN_SUCCESS", user.email, user.id, getClientIp(req));
     res.redirect(`${env.FRONTEND_ORIGIN}/account`);
@@ -117,7 +117,7 @@ export async function handleFacebookCallback(req: Request, res: Response) {
 
   try {
     const { user, token } = await loginWithFacebook(parsed.data.code);
-    setAuthCookie(res, token);
+    await setAuthCookie(res, token);
     await mergeGuestDataIntoUser(req, res, user.id);
     await recordAuthEvent("LOGIN_SUCCESS", user.email, user.id, getClientIp(req));
     res.redirect(`${env.FRONTEND_ORIGIN}/account`);

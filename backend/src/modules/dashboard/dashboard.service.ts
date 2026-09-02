@@ -1,18 +1,10 @@
 import { prisma } from "../../config/prisma.js";
-import { LOW_STOCK_THRESHOLD } from "../../lib/low-stock.js";
-
-const RECENT_ORDERS_LIMIT = 8;
-// A comparison table stops being actionable well past this many rows on a
-// glance-only dashboard — the full picture belongs on the future analytics
-// page, not here.
-const LOW_STOCK_LIMIT = 8;
-// Shared by the revenue sum and the status breakdown below — both are
-// "recent activity" snapshots for a glance dashboard, not lifetime totals
-// (that's what totalOrders/the future analytics page are for). A lifetime
-// per-status count would mean the query's cost grows forever with total
-// order history, unlike everything else in this Promise.all batch, which
-// stays bounded by either a `take` or a real filter.
-const RECENT_ACTIVITY_WINDOW_DAYS = 30;
+import {
+  getDashboardRecentOrdersLimit,
+  getDashboardLowStockLimit,
+  getDashboardRecentActivityWindowDays,
+  getLowStockThreshold,
+} from "../settings/settings.service.js";
 
 type StatusRow = { id: number; key: string; nameKa: string; nameEn: string; nameRu: string };
 
@@ -24,11 +16,19 @@ function toStatusLookup(status: StatusRow) {
 // take-limited findMany — run together in one Promise.all so the whole
 // dashboard is a single round trip instead of a waterfall of small requests.
 export async function getDashboardStats() {
+  const [recentOrdersLimit, lowStockLimit, recentActivityWindowDays, lowStockThreshold] =
+    await Promise.all([
+      getDashboardRecentOrdersLimit(),
+      getDashboardLowStockLimit(),
+      getDashboardRecentActivityWindowDays(),
+      getLowStockThreshold(),
+    ]);
+
   const now = new Date();
   const recentActivityWindowStart = new Date(now);
-  recentActivityWindowStart.setDate(recentActivityWindowStart.getDate() - RECENT_ACTIVITY_WINDOW_DAYS);
+  recentActivityWindowStart.setDate(recentActivityWindowStart.getDate() - recentActivityWindowDays);
 
-  const lowStockWhere = { stockQuantity: { lte: LOW_STOCK_THRESHOLD }, isActive: true };
+  const lowStockWhere = { stockQuantity: { lte: lowStockThreshold }, isActive: true };
 
   const [
     totalOrders,
@@ -59,7 +59,7 @@ export async function getDashboardStats() {
       where: { createdAt: { gte: recentActivityWindowStart }, status: { key: { not: "CANCELLED" } } },
     }),
     // Windowed like the revenue aggregate above (see
-    // RECENT_ACTIVITY_WINDOW_DAYS) rather than an all-time breakdown — keeps
+    // getDashboardRecentActivityWindowDays) rather than an all-time breakdown — keeps
     // this query's cost bounded by the window instead of growing forever
     // with total lifetime order count, and a "what's active right now"
     // dashboard has more use for recent activity than an ever-growing
@@ -71,7 +71,7 @@ export async function getDashboardStats() {
     }),
     prisma.orderStatus.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.order.findMany({
-      take: RECENT_ORDERS_LIMIT,
+      take: recentOrdersLimit,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -87,7 +87,7 @@ export async function getDashboardStats() {
     prisma.productVariant.findMany({
       where: lowStockWhere,
       orderBy: { stockQuantity: "asc" },
-      take: LOW_STOCK_LIMIT,
+      take: lowStockLimit,
       select: {
         id: true,
         stockQuantity: true,
@@ -99,7 +99,7 @@ export async function getDashboardStats() {
     prisma.vehicleListing.findMany({
       where: lowStockWhere,
       orderBy: { stockQuantity: "asc" },
-      take: LOW_STOCK_LIMIT,
+      take: lowStockLimit,
       select: {
         id: true,
         stockQuantity: true,
@@ -149,7 +149,7 @@ export async function getDashboardStats() {
     })),
   ]
     .sort((a, b) => a.stockQuantity - b.stockQuantity)
-    .slice(0, LOW_STOCK_LIMIT);
+    .slice(0, lowStockLimit);
 
   return {
     counts: {

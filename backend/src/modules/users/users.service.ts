@@ -61,7 +61,7 @@ export async function getUserDetail(id: number) {
     createdAt: user.createdAt,
     addresses: user.addresses.map(toAddressResponse),
     garage: user.garageVehicles.map(toGarageVehicleResponse),
-    wishlist: user.wishlistItems.map(toWishlistItemResponse),
+    wishlist: await Promise.all(user.wishlistItems.map(toWishlistItemResponse)),
     cart: user.cartItems.map(toCartItemResponse),
   };
 }

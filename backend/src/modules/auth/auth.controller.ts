@@ -24,7 +24,7 @@ export async function register(
   res: Response,
 ) {
   const { user, token } = await registerUser(req.body, getClientIp(req as unknown as Request));
-  setAuthCookie(res, token);
+  await setAuthCookie(res, token);
   await mergeGuestDataIntoUser(req, res, user.id);
   res.status(201).json({ user });
 }
@@ -34,7 +34,7 @@ export async function login(
   res: Response,
 ) {
   const { user, token } = await loginUser(req.body, getClientIp(req as unknown as Request));
-  setAuthCookie(res, token);
+  await setAuthCookie(res, token);
   await mergeGuestDataIntoUser(req, res, user.id);
   res.status(200).json({ user });
 }
@@ -59,7 +59,7 @@ export async function resetPasswordHandler(
   res: Response,
 ) {
   const { user, token } = await resetPassword(req.body);
-  setAuthCookie(res, token);
+  await setAuthCookie(res, token);
   await mergeGuestDataIntoUser(req, res, user.id);
   res.status(200).json({ user });
 }

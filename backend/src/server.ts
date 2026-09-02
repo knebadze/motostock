@@ -3,20 +3,34 @@ import { env } from "./config/env.js";
 import { prisma } from "./config/prisma.js";
 import { logger } from "./lib/logger.js";
 import { isFinaConfigured, runSync } from "./modules/fina-sync/fina-sync.service.js";
+import { getFinaSyncIntervalMinutes } from "./modules/settings/settings.service.js";
 
 const server = app.listen(env.PORT, () => {
   logger.info(`Server listening on http://localhost:${env.PORT}`);
 });
 
-let finaSyncInterval: NodeJS.Timeout | undefined;
+// Self-rescheduling (setTimeout, not setInterval) so an admin changing the
+// interval in Settings takes effect from the *next* run onward, without
+// needing a server restart — a fixed setInterval would freeze whatever
+// value was live at boot.
+let finaSyncTimer: NodeJS.Timeout | undefined;
+let finaSyncStopped = false;
 if (isFinaConfigured()) {
-  finaSyncInterval = setInterval(
-    () => {
-      runSync("SCHEDULED").catch((err: unknown) => logger.error({ err }, "Scheduled FINA sync failed"));
-    },
-    env.FINA_SYNC_INTERVAL_MINUTES * 60_000,
-  );
-  logger.info(`FINA scheduled sync enabled (every ${env.FINA_SYNC_INTERVAL_MINUTES}m)`);
+  const scheduleNext = () => {
+    if (finaSyncStopped) return;
+    getFinaSyncIntervalMinutes()
+      .then((minutes) => {
+        if (finaSyncStopped) return;
+        finaSyncTimer = setTimeout(() => {
+          runSync("SCHEDULED")
+            .catch((err: unknown) => logger.error({ err }, "Scheduled FINA sync failed"))
+            .finally(scheduleNext);
+        }, minutes * 60_000);
+      })
+      .catch((err: unknown) => logger.error({ err }, "Failed to read FINA sync interval setting"));
+  };
+  scheduleNext();
+  logger.info("FINA scheduled sync enabled (interval configurable in Settings)");
 }
 
 // Docker Compose sends SIGTERM (then SIGKILL after its ~10s grace period) on
@@ -32,7 +46,8 @@ function shutdown(signal: string) {
   shuttingDown = true;
   logger.info(`${signal} received, shutting down gracefully`);
 
-  if (finaSyncInterval) clearInterval(finaSyncInterval);
+  finaSyncStopped = true;
+  if (finaSyncTimer) clearTimeout(finaSyncTimer);
 
   const forceExit = setTimeout(() => {
     logger.error("Graceful shutdown timed out, forcing exit");

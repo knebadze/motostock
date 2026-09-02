@@ -3,16 +3,13 @@ import type { Prisma } from "../../generated/prisma/index.js";
 import { getSpecFieldDefinition } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
 import { applyVehicleListingAdminFilters } from "../filters/vehicle-listing/vehicle-listing-admin-filter-registry.js";
 import type { FilterEntry } from "../filters/filter-request.schema.js";
+import { getSalesSummaryLimit, getSearchResultCap } from "../settings/settings.service.js";
 import type { SpecFilterInput } from "./vehicle-listing.schema.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
 const brandModelRefSelect = { id: true, name: true, slug: true } as const;
 const CANCELLED_KEY = "CANCELLED";
 
-// Same reasoning as products.repository.ts's SEARCH_RESULT_CAP — bounds
-// findSearchRankedIds so an overly generic search term can't pull back an
-// unbounded number of ranked candidates.
-const SEARCH_RESULT_CAP = 500;
 function candidatePoolSize(limit: number): number {
   return Math.min(1000, Math.max(limit * 20, 200));
 }
@@ -227,8 +224,12 @@ export const vehicleListingRepository = {
   // word_similarity rationale (identical reasoning, applied here to the
   // Brand/Model tables the listing joins through instead of Product's own
   // name columns).
+  // Same reasoning as products.repository.ts's findSearchRankedIds — bounds
+  // this method so an overly generic search term can't pull back an
+  // unbounded number of ranked candidates. Admin-configurable via Settings
+  // (getSearchResultCap), default 500.
   async findSearchRankedIds(search: string, limit?: number): Promise<number[]> {
-    const cap = limit != null ? candidatePoolSize(limit) : SEARCH_RESULT_CAP;
+    const cap = limit != null ? candidatePoolSize(limit) : await getSearchResultCap();
     const rows = await prisma.$queryRaw<{ id: number }[]>`
       SELECT vl.id
       FROM "dbo"."VehicleListing" vl
@@ -290,6 +291,7 @@ export const vehicleListingRepository = {
   // already has a direct vehicleListingId (no variant indirection needed).
   async findSalesSummary(listingId: number) {
     const where = { vehicleListingId: listingId };
+    const salesSummaryLimit = await getSalesSummaryLimit();
     const [totals, distinctOrders, recentItems] = await Promise.all([
       prisma.orderItem.aggregate({ where, _sum: { quantity: true, lineTotal: true } }),
       prisma.orderItem.findMany({ where, select: { orderId: true }, distinct: ["orderId"] }),
@@ -309,7 +311,7 @@ export const vehicleListingRepository = {
           },
         },
         orderBy: { createdAt: "desc" },
-        take: 10,
+        take: salesSummaryLimit,
       }),
     ]);
 

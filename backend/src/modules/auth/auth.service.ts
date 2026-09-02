@@ -13,12 +13,10 @@ import { ROLES, type RoleName } from "../../lib/roles.js";
 import { usersRepository } from "../users/users.repository.js";
 import { rolesRepository } from "../roles/roles.repository.js";
 import { assertAccountNotLockedOut, recordAuthEvent } from "../fraud/fraud.service.js";
+import { getResetTokenTtlMinutes, getVerificationTokenTtlHours } from "../settings/settings.service.js";
 import { passwordResetTokenRepository } from "./password-reset-token.repository.js";
 import { emailVerificationTokenRepository } from "./email-verification-token.repository.js";
 import type { ForgotPasswordInput, LoginInput, RegisterInput, ResetPasswordInput } from "./auth.schema.js";
-
-const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
-const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
 function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
@@ -46,11 +44,12 @@ export function toSafeUser(user: {
 async function issueVerificationEmail(userId: number, email: string): Promise<void> {
   if (!isMailerConfigured()) return;
 
+  const verificationTokenTtlMs = (await getVerificationTokenTtlHours()) * 60 * 60 * 1000;
   const rawToken = crypto.randomBytes(32).toString("hex");
   await emailVerificationTokenRepository.create({
     userId,
     tokenHash: hashToken(rawToken),
-    expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS),
+    expiresAt: new Date(Date.now() + verificationTokenTtlMs),
   });
 
   const verifyUrl = `${env.FRONTEND_ORIGIN}/verify-email?token=${rawToken}`;
@@ -77,7 +76,7 @@ export async function registerUser(input: RegisterInput, ipAddress: string | nul
     roleId: userRole.id,
   });
 
-  const token = signJwt({ sub: user.id, role: ROLES.USER, loginAt: Date.now() });
+  const token = await signJwt({ sub: user.id, role: ROLES.USER, loginAt: Date.now() });
 
   await recordAuthEvent("REGISTER", user.email, user.id, ipAddress);
 
@@ -115,7 +114,7 @@ export async function loginUser(input: LoginInput, ipAddress: string | null) {
 
   await recordAuthEvent("LOGIN_SUCCESS", user.email, user.id, ipAddress);
 
-  const token = signJwt({ sub: user.id, role: user.role.name as RoleName, loginAt: Date.now() });
+  const token = await signJwt({ sub: user.id, role: user.role.name as RoleName, loginAt: Date.now() });
   return { user: toSafeUser(user), token };
 }
 
@@ -159,11 +158,12 @@ export async function requestPasswordReset(input: ForgotPasswordInput) {
     return;
   }
 
+  const resetTokenTtlMs = (await getResetTokenTtlMinutes()) * 60 * 1000;
   const rawToken = crypto.randomBytes(32).toString("hex");
   await passwordResetTokenRepository.create({
     userId: user.id,
     tokenHash: hashToken(rawToken),
-    expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+    expiresAt: new Date(Date.now() + resetTokenTtlMs),
   });
 
   const resetUrl = `${env.FRONTEND_ORIGIN}/reset-password?token=${rawToken}`;
@@ -190,6 +190,6 @@ export async function resetPassword(input: ResetPasswordInput) {
   const user = await usersRepository.updatePasswordHash(resetToken.userId, passwordHash);
   await passwordResetTokenRepository.markUsed(resetToken.id);
 
-  const token = signJwt({ sub: user.id, role: user.role.name as RoleName, loginAt: Date.now() });
+  const token = await signJwt({ sub: user.id, role: user.role.name as RoleName, loginAt: Date.now() });
   return { user: toSafeUser(user), token };
 }

@@ -12,5 +12,5 @@ import type { ProductViewOwner } from "./product-views.repository.js";
 export async function resolveProductViewOwner(req: Request, res: Response): Promise<ProductViewOwner> {
   const user = await resolveAuthenticatedUser(req, res);
   if (user) return { userId: user.sub };
-  return { guestId: resolveGuestId(req, res) };
+  return { guestId: await resolveGuestId(req, res) };
 }

@@ -3,12 +3,16 @@
 import { useState } from "react";
 import type { Settings } from "@/lib/api/settings";
 
-type FinaDraft = Pick<Settings, "finaWebCustomerId" | "finaWebUserId">;
+type FinaDraft = Pick<
+  Settings,
+  "finaWebCustomerId" | "finaWebUserId" | "finaSyncIntervalMinutes"
+>;
 
 function finaDraftFrom(settings: Settings): FinaDraft {
   return {
     finaWebCustomerId: settings.finaWebCustomerId,
     finaWebUserId: settings.finaWebUserId,
+    finaSyncIntervalMinutes: settings.finaSyncIntervalMinutes,
   };
 }
 
@@ -72,6 +76,22 @@ export function FinaSettingsTab({
             className={inputClassName}
           />
         </div>
+      </div>
+
+      <div className="mt-4 flex flex-col gap-1.5 sm:w-1/2 sm:pr-1.5">
+        <label className="text-sm font-medium">ავტომატური სინქრონიზაციის ინტერვალი (წუთი)</label>
+        <input
+          type="number"
+          min={1}
+          value={draft.finaSyncIntervalMinutes}
+          onChange={(event) =>
+            setDraft((current) => ({
+              ...current,
+              finaSyncIntervalMinutes: Number(event.target.value),
+            }))
+          }
+          className={inputClassName}
+        />
       </div>
 
       <button

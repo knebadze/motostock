@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import { env } from "../config/env.js";
 import { ApiError } from "./ApiError.js";
+import { getImageMaxDimensionPx } from "../modules/settings/settings.service.js";
 
 cloudinary.config({
   cloud_name: env.CLOUDINARY_CLOUD_NAME,
@@ -9,20 +10,19 @@ cloudinary.config({
   secure: true,
 });
 
-const MAX_DIMENSION = 1600;
-
-export function uploadBufferToCloudinary(
+export async function uploadBufferToCloudinary(
   buffer: Buffer,
   folder: string,
 ): Promise<string> {
+  const maxDimension = await getImageMaxDimensionPx();
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder: `motostock/${folder}`,
-        // Resize only if larger than MAX_DIMENSION (never upscale), then let
+        // Resize only if larger than maxDimension (never upscale), then let
         // Cloudinary pick the best compression/format per requesting browser.
         transformation: [
-          { width: MAX_DIMENSION, height: MAX_DIMENSION, crop: "limit" },
+          { width: maxDimension, height: maxDimension, crop: "limit" },
           { quality: "auto:good", fetch_format: "auto" },
         ],
       },

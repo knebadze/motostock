@@ -1,15 +1,15 @@
+import { getRecentlyViewedLimit } from "../settings/settings.service.js";
 import { toResponse as toProductResponse } from "../products/products.service.js";
 import { productViewsRepository, type ProductViewOwner } from "./product-views.repository.js";
-
-const DEFAULT_LIMIT = 10;
 
 export async function recordProductView(owner: ProductViewOwner, productId: number): Promise<void> {
   await productViewsRepository.upsertView(owner, productId);
 }
 
-export async function listRecentlyViewed(owner: ProductViewOwner, limit = DEFAULT_LIMIT) {
-  const rows = await productViewsRepository.findByOwner(owner, limit);
-  return rows.map((row) => toProductResponse(row.product));
+export async function listRecentlyViewed(owner: ProductViewOwner, limit?: number) {
+  const resolvedLimit = limit ?? (await getRecentlyViewedLimit());
+  const rows = await productViewsRepository.findByOwner(owner, resolvedLimit);
+  return Promise.all(rows.map((row) => toProductResponse(row.product)));
 }
 
 // Called from guest-identity.middleware.ts's mergeGuestDataIntoUser, right

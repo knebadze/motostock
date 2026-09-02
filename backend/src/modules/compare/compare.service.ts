@@ -4,13 +4,10 @@ import { productsRepository } from "../products/products.repository.js";
 import { toResponse as toProductResponse } from "../products/products.service.js";
 import { vehicleListingRepository } from "../vehicle-listing/vehicle-listing.repository.js";
 import { toVehicleListingResponse } from "../vehicle-listing/vehicle-listing.service.js";
+import { getCompareMaxItems } from "../settings/settings.service.js";
 import { compareRepository, type CompareOwner } from "./compare.repository.js";
 import type { CreateCompareItemInput } from "./compare.schema.js";
 import type { CompareItemType } from "../../generated/prisma/index.js";
-
-// A comparison table stops being readable well before this — same reasoning
-// as any "compare" widget capping the column count.
-const MAX_COMPARE_ITEMS = 4;
 
 type CompareItemRow = {
   id: number;
@@ -20,11 +17,11 @@ type CompareItemRow = {
   createdAt: Date;
 };
 
-export function toResponse(row: CompareItemRow) {
+export async function toResponse(row: CompareItemRow) {
   return {
     id: row.id,
     itemType: row.itemType,
-    product: row.product ? toProductResponse(row.product) : null,
+    product: row.product ? await toProductResponse(row.product) : null,
     vehicleListing: row.vehicleListing ? toVehicleListingResponse(row.vehicleListing) : null,
     createdAt: row.createdAt,
   };
@@ -36,7 +33,7 @@ function ownerMatches(row: { userId: number | null; guestId: string | null }, ow
 
 export async function listMyCompare(owner: CompareOwner) {
   const rows = await compareRepository.findByOwner(owner);
-  return rows.map(toResponse);
+  return Promise.all(rows.map(toResponse));
 }
 
 async function addProductToCompare(owner: CompareOwner, productId: number) {
@@ -96,13 +93,16 @@ async function addVehicleListingToCompare(owner: CompareOwner, vehicleListingId:
 }
 
 async function assertUnderLimit(owner: CompareOwner) {
-  const count = await compareRepository.countByOwner(owner);
-  if (count >= MAX_COMPARE_ITEMS) {
+  const [count, maxCompareItems] = await Promise.all([
+    compareRepository.countByOwner(owner),
+    getCompareMaxItems(),
+  ]);
+  if (count >= maxCompareItems) {
     throw new ApiError(
       400,
-      `შედარებაში ერთდროულად მაქსიმუმ ${MAX_COMPARE_ITEMS} ერთეულის დამატებაა შესაძლებელი`,
+      `შედარებაში ერთდროულად მაქსიმუმ ${maxCompareItems} ერთეულის დამატებაა შესაძლებელი`,
       "COMPARE_LIMIT_REACHED",
-      { limit: MAX_COMPARE_ITEMS },
+      { limit: maxCompareItems },
     );
   }
 }

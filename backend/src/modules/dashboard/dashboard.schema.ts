@@ -45,9 +45,9 @@ export const dashboardStatsResponseSchema = registry.register(
       lowStockCount: z.int().openapi({ example: 5 }),
     }),
     revenueLast30Days: z.number().openapi({ example: 4520.5 }),
-    // Same 30-day window as revenueLast30Days above (see
-    // dashboard.service.ts's RECENT_ACTIVITY_WINDOW_DAYS) — a recent-activity
-    // snapshot, not a lifetime per-status tally.
+    // Same window as revenueLast30Days above (see
+    // dashboard.service.ts's getDashboardRecentActivityWindowDays) — a
+    // recent-activity snapshot, not a lifetime per-status tally.
     ordersByStatus: z.array(dashboardStatusCountSchema),
     recentOrders: z.array(dashboardOrderSummarySchema),
     lowStockItems: z.array(dashboardLowStockItemSchema),

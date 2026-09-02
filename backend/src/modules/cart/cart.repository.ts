@@ -1,5 +1,6 @@
 import { prisma } from "../../config/prisma.js";
 import { vehicleListingInclude } from "../vehicle-listing/vehicle-listing.repository.js";
+import { getCartMaxQuantity } from "../settings/settings.service.js";
 import type { CartItemType } from "../../generated/prisma/index.js";
 
 export type CartOwner = { userId: number } | { guestId: string };
@@ -122,10 +123,12 @@ export const cartRepository = {
   // another tab) landing on the same target row. Wrapped in one transaction
   // so a crash between the claim and the upsert can't silently drop the
   // item — either both happen or neither does.
-  // Same MAX_QUANTITY as cart.service.ts's own cap — duplicated rather than
-  // imported (cart.service.ts already imports cartRepository from this
-  // file, so importing back would be circular). Deliberately NOT capped by
-  // current stockQuantity here, unlike every other cart-write path: this
+  // Same cap as cart.service.ts's own MAX_QUANTITY use sites, read fresh
+  // here rather than passed in from cart.service.ts (which already imports
+  // cartRepository from this file, so importing it back would be circular)
+  // — settings.service.ts has no such cycle, so it's imported directly.
+  // Deliberately NOT capped by current stockQuantity here, unlike every
+  // other cart-write path: this
   // runs silently on login, with no user action to react to, so silently
   // shrinking a quantity the guest explicitly chose (because stock dropped
   // in the meantime) would just be confusing — "why did my 10 become 3?"
@@ -144,7 +147,7 @@ export const cartRepository = {
     guestId: string,
     userId: number,
   ) {
-    const MAX_QUANTITY = 99;
+    const MAX_QUANTITY = await getCartMaxQuantity();
 
     await prisma.$transaction(async (tx) => {
       const claimed = await tx.cartItem.deleteMany({ where: { id: item.id, guestId } });

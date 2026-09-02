@@ -4,10 +4,15 @@ import { productsRepository } from "../products/products.repository.js";
 import { toResponse as toProductResponse, buildVehicleCompatibilityWhere } from "../products/products.service.js";
 import { productFitmentRepository } from "../product-fitment/product-fitment.repository.js";
 import { productViewsRepository } from "../product-views/product-views.repository.js";
+import {
+  getRecommendationsCacheTtlMinutes,
+  getRecommendationsDefaultLimit,
+  getRecommendationOrderWeight,
+  getRecommendationViewWeight,
+  getRecommendationWishlistWeight,
+} from "../settings/settings.service.js";
 import { recommendationsRepository } from "./recommendations.repository.js";
 import type { Prisma } from "../../generated/prisma/index.js";
-
-const DEFAULT_LIMIT = 10;
 
 // Same TTL and reasoning as products.service.ts's HOMEPAGE_CACHE_TTL_MS —
 // none of these rankings are personalized in a way that changing
@@ -16,8 +21,9 @@ const DEFAULT_LIMIT = 10;
 // between visits. listRecommendedForUser's cache is keyed by userId (see
 // below), so caching it is still safe even though its content is
 // personalized — no cross-user leakage, just less recomputation for the
-// same visitor's repeat page loads.
-const RECOMMENDATIONS_CACHE_TTL_MS = 5 * 60_000;
+// same visitor's repeat page loads. Admin-configurable via Settings
+// (getRecommendationsCacheTtlMinutes, in minutes — converted to ms at each
+// cache.set call site below).
 
 // Re-orders a findByIds/findManyRaw result (which doesn't preserve `in`
 // array order) back into a ranked id list's order — same pattern
@@ -45,7 +51,7 @@ export async function listSimilarProducts(
   options: { vehicleCatalogId?: number; limit?: number },
 ) {
   const anchor = await assertProductExists(productId);
-  const limit = options.limit ?? DEFAULT_LIMIT;
+  const limit = options.limit ?? (await getRecommendationsDefaultLimit());
   const poolSize = Math.min(100, limit * 5);
 
   const vehicleCompatibilityWhere = options.vehicleCatalogId
@@ -74,7 +80,7 @@ export async function listSimilarProducts(
     (a, b) => (overlapCounts.get(b.id) ?? 0) - (overlapCounts.get(a.id) ?? 0),
   );
 
-  return ranked.slice(0, limit).map(toProductResponse);
+  return Promise.all(ranked.slice(0, limit).map(toProductResponse));
 }
 
 // Algorithmic "frequently bought together" — co-purchase counts from
@@ -104,7 +110,7 @@ async function computeFrequentlyBoughtTogether(
   if (finalIds.length === 0) return [];
 
   const rows = await productsRepository.findByIds(finalIds);
-  return reorderByIds(rows, finalIds).map(toProductResponse);
+  return Promise.all(reorderByIds(rows, finalIds).map(toProductResponse));
 }
 
 // Not personalized — same result for every visitor looking at this product
@@ -115,17 +121,17 @@ export async function listFrequentlyBoughtTogether(
   options: { vehicleCatalogId?: number; limit?: number },
 ) {
   await assertProductExists(productId);
-  const limit = options.limit ?? DEFAULT_LIMIT;
+  const limit = options.limit ?? (await getRecommendationsDefaultLimit());
   const cacheKey = `recommendations:boughtTogether:${productId}:${options.vehicleCatalogId ?? "all"}:${limit}`;
 
-  const cached = cache.get<ReturnType<typeof toProductResponse>[]>(cacheKey);
+  const cached = cache.get<Awaited<ReturnType<typeof toProductResponse>>[]>(cacheKey);
   if (cached) return cached;
 
   const result = await computeFrequentlyBoughtTogether(productId, {
     vehicleCatalogId: options.vehicleCatalogId,
     limit,
   });
-  cache.set(cacheKey, result, RECOMMENDATIONS_CACHE_TTL_MS);
+  cache.set(cacheKey, result, (await getRecommendationsCacheTtlMinutes()) * 60_000);
   return result;
 }
 
@@ -152,7 +158,7 @@ async function computeViewedTogether(productId: number, options: { vehicleCatalo
   if (finalIds.length === 0) return [];
 
   const rows = await productsRepository.findByIds(finalIds);
-  return reorderByIds(rows, finalIds).map(toProductResponse);
+  return Promise.all(reorderByIds(rows, finalIds).map(toProductResponse));
 }
 
 // Not personalized, cached the same way and for the same reason as
@@ -162,17 +168,17 @@ export async function listViewedTogether(
   options: { vehicleCatalogId?: number; limit?: number },
 ) {
   await assertProductExists(productId);
-  const limit = options.limit ?? DEFAULT_LIMIT;
+  const limit = options.limit ?? (await getRecommendationsDefaultLimit());
   const cacheKey = `recommendations:viewedTogether:${productId}:${options.vehicleCatalogId ?? "all"}:${limit}`;
 
-  const cached = cache.get<ReturnType<typeof toProductResponse>[]>(cacheKey);
+  const cached = cache.get<Awaited<ReturnType<typeof toProductResponse>>[]>(cacheKey);
   if (cached) return cached;
 
   const result = await computeViewedTogether(productId, {
     vehicleCatalogId: options.vehicleCatalogId,
     limit,
   });
-  cache.set(cacheKey, result, RECOMMENDATIONS_CACHE_TTL_MS);
+  cache.set(cacheKey, result, (await getRecommendationsCacheTtlMinutes()) * 60_000);
   return result;
 }
 
@@ -185,25 +191,23 @@ async function computePopularForVehicle(vehicleCatalogId: number, limit: number)
   if (rankedIds.length === 0) return [];
 
   const rows = await productsRepository.findByIds(rankedIds);
-  return reorderByIds(rows, rankedIds).map(toProductResponse);
+  return Promise.all(reorderByIds(rows, rankedIds).map(toProductResponse));
 }
 
 // Not personalized (same result for every visitor with this vehicle
 // selected), cached globally by (vehicleCatalogId, limit) — same reasoning
 // as listFrequentlyBoughtTogether above.
-export async function listPopularForVehicle(vehicleCatalogId: number, limit = DEFAULT_LIMIT) {
-  const cacheKey = `recommendations:popularForVehicle:${vehicleCatalogId}:${limit}`;
+export async function listPopularForVehicle(vehicleCatalogId: number, limit?: number) {
+  const resolvedLimit = limit ?? (await getRecommendationsDefaultLimit());
+  const cacheKey = `recommendations:popularForVehicle:${vehicleCatalogId}:${resolvedLimit}`;
 
-  const cached = cache.get<ReturnType<typeof toProductResponse>[]>(cacheKey);
+  const cached = cache.get<Awaited<ReturnType<typeof toProductResponse>>[]>(cacheKey);
   if (cached) return cached;
 
-  const result = await computePopularForVehicle(vehicleCatalogId, limit);
-  cache.set(cacheKey, result, RECOMMENDATIONS_CACHE_TTL_MS);
+  const result = await computePopularForVehicle(vehicleCatalogId, resolvedLimit);
+  cache.set(cacheKey, result, (await getRecommendationsCacheTtlMinutes()) * 60_000);
   return result;
 }
-
-const ORDER_AFFINITY_WEIGHT = 2;
-const WISHLIST_AFFINITY_WEIGHT = 1;
 
 type AffinityRow = { categoryId: number; productBrandId: number | null } | null | undefined;
 
@@ -220,8 +224,6 @@ function addAffinity(
   }
 }
 
-const VIEW_AFFINITY_WEIGHT = 0.5;
-
 // "Recommended for you" — content-based, per-user. Tries the best signal
 // available and falls back gracefully:
 //   1. category/brand affinity from the user's own orders + wishlist +
@@ -233,34 +235,39 @@ const VIEW_AFFINITY_WEIGHT = 0.5;
 //      popular-for-that-vehicle list (tier B of listPopularForVehicle);
 //   3. neither -> empty list (the caller/frontend hides the section rather
 //      than showing a misleadingly-labeled generic list).
-export async function listRecommendedForUser(userId: number, limit = DEFAULT_LIMIT) {
-  const cacheKey = `recommendations:forUser:${userId}:${limit}`;
-  const cached = cache.get<ReturnType<typeof toProductResponse>[]>(cacheKey);
+export async function listRecommendedForUser(userId: number, limit?: number) {
+  const resolvedLimit = limit ?? (await getRecommendationsDefaultLimit());
+  const cacheKey = `recommendations:forUser:${userId}:${resolvedLimit}`;
+  const cached = cache.get<Awaited<ReturnType<typeof toProductResponse>>[]>(cacheKey);
   if (cached) return cached;
 
-  const result = await computeRecommendedForUser(userId, limit);
-  cache.set(cacheKey, result, RECOMMENDATIONS_CACHE_TTL_MS);
+  const result = await computeRecommendedForUser(userId, resolvedLimit);
+  cache.set(cacheKey, result, (await getRecommendationsCacheTtlMinutes()) * 60_000);
   return result;
 }
 
 async function computeRecommendedForUser(userId: number, limit: number) {
-  const [orderRows, wishlistRows, viewRows, garageRows] = await Promise.all([
-    recommendationsRepository.findOrderAffinity(userId),
-    recommendationsRepository.findWishlistAffinity(userId),
-    productViewsRepository.findViewAffinity(userId),
-    recommendationsRepository.findGarageVehicleCatalogIds(userId),
-  ]);
+  const [orderRows, wishlistRows, viewRows, garageRows, orderWeight, wishlistWeight, viewWeight] =
+    await Promise.all([
+      recommendationsRepository.findOrderAffinity(userId),
+      recommendationsRepository.findWishlistAffinity(userId),
+      productViewsRepository.findViewAffinity(userId),
+      recommendationsRepository.findGarageVehicleCatalogIds(userId),
+      getRecommendationOrderWeight(),
+      getRecommendationWishlistWeight(),
+      getRecommendationViewWeight(),
+    ]);
 
   const categoryScores = new Map<number, number>();
   const brandScores = new Map<number, number>();
   for (const row of orderRows) {
-    addAffinity(categoryScores, brandScores, row.productVariant?.product, ORDER_AFFINITY_WEIGHT);
+    addAffinity(categoryScores, brandScores, row.productVariant?.product, orderWeight);
   }
   for (const row of wishlistRows) {
-    addAffinity(categoryScores, brandScores, row.product, WISHLIST_AFFINITY_WEIGHT);
+    addAffinity(categoryScores, brandScores, row.product, wishlistWeight);
   }
   for (const row of viewRows) {
-    addAffinity(categoryScores, brandScores, row.product, VIEW_AFFINITY_WEIGHT);
+    addAffinity(categoryScores, brandScores, row.product, viewWeight);
   }
 
   const garageVehicleIds = [...new Set(garageRows.map((row) => row.vehicleCatalogId))];
@@ -291,7 +298,7 @@ async function computeRecommendedForUser(userId: number, limit: number) {
         (candidate.productBrandId != null ? (brandScores.get(candidate.productBrandId) ?? 0) : 0);
 
       const ranked = [...candidates].sort((a, b) => score(b) - score(a));
-      return ranked.slice(0, limit).map(toProductResponse);
+      return Promise.all(ranked.slice(0, limit).map(toProductResponse));
     }
   }
 
@@ -299,7 +306,7 @@ async function computeRecommendedForUser(userId: number, limit: number) {
     const rankedIds = await productsRepository.findPopularProductIds(limit, { productWhere: vehicleWhere });
     if (rankedIds.length > 0) {
       const rows = await productsRepository.findByIds(rankedIds);
-      return reorderByIds(rows, rankedIds).map(toProductResponse);
+      return Promise.all(reorderByIds(rows, rankedIds).map(toProductResponse));
     }
   }
 

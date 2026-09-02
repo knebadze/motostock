@@ -22,6 +22,6 @@ export async function resolveWishlistOwner(req: Request, res: Response, next: Ne
     return;
   }
 
-  req.guestId = resolveGuestId(req, res);
+  req.guestId = await resolveGuestId(req, res);
   next();
 }

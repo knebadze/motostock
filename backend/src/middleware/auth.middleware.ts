@@ -30,7 +30,7 @@ export async function resolveAuthenticatedUser(
     // Absolute session cap — enforced independently of the token's own (2h,
     // sliding) expiry, since an actively-used session keeps getting a fresh
     // 2h token below and would otherwise never expire on its own.
-    if (isSessionExpiredByAbsoluteCap(payload.loginAt)) {
+    if (await isSessionExpiredByAbsoluteCap(payload.loginAt)) {
       res.clearCookie(AUTH_COOKIE_NAME);
       return null;
     }
@@ -47,8 +47,8 @@ export async function resolveAuthenticatedUser(
     // Sliding idle timeout — every authenticated request resets the 2h idle
     // clock by reissuing the cookie, while loginAt (and therefore the
     // absolute cap above) stays pinned to the original login.
-    const refreshed = signJwt({ sub: user.id, role, loginAt: payload.loginAt });
-    setAuthCookie(res, refreshed);
+    const refreshed = await signJwt({ sub: user.id, role, loginAt: payload.loginAt });
+    await setAuthCookie(res, refreshed);
 
     return { sub: user.id, role, loginAt: payload.loginAt };
   } catch {

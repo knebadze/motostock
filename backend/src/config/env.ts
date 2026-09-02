@@ -28,7 +28,6 @@ const envSchema = z.object({
   FINA_PASSWORD: z.string().optional(),
   FINA_TENANT_KEY: z.string().optional(),
   FINA_STORE: z.string().optional(),
-  FINA_SYNC_INTERVAL_MINUTES: z.coerce.number().int().positive().default(15),
   BACKEND_PUBLIC_URL: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),

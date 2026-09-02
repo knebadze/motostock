@@ -9,6 +9,11 @@ import { GeneralSettingsTab } from "./GeneralSettingsTab";
 import { DeliverySettingsTab } from "./DeliverySettingsTab";
 import { FraudSettingsTab } from "./FraudSettingsTab";
 import { FinaSettingsTab } from "./FinaSettingsTab";
+import { CartCompareSettingsTab } from "./CartCompareSettingsTab";
+import { AnalyticsDashboardSettingsTab } from "./AnalyticsDashboardSettingsTab";
+import { SearchRecommendationsSettingsTab } from "./SearchRecommendationsSettingsTab";
+import { SessionAuthSettingsTab } from "./SessionAuthSettingsTab";
+import { ImageSettingsTab } from "./ImageSettingsTab";
 import { CacheTab } from "./CacheTab";
 
 export function SettingsManager({ initialSettings }: { initialSettings: Settings }) {
@@ -58,9 +63,42 @@ export function SettingsManager({ initialSettings }: { initialSettings: Settings
               content: <FinaSettingsTab settings={settings} saving={saving} onSave={save} />,
             },
             {
+              key: "cart-compare",
+              label: "კალათა და შედარება",
+              content: <CartCompareSettingsTab settings={settings} saving={saving} onSave={save} />,
+            },
+            {
+              key: "analytics-dashboard",
+              label: "ანალიტიკა და დაფა",
+              content: (
+                <AnalyticsDashboardSettingsTab settings={settings} saving={saving} onSave={save} />
+              ),
+            },
+            {
+              key: "search-recommendations",
+              label: "ძიება და რეკომენდაციები",
+              content: (
+                <SearchRecommendationsSettingsTab
+                  settings={settings}
+                  saving={saving}
+                  onSave={save}
+                />
+              ),
+            },
+            {
+              key: "session-auth",
+              label: "სესია და ავტორიზაცია",
+              content: <SessionAuthSettingsTab settings={settings} saving={saving} onSave={save} />,
+            },
+            {
+              key: "images",
+              label: "სურათები",
+              content: <ImageSettingsTab settings={settings} saving={saving} onSave={save} />,
+            },
+            {
               key: "cache",
               label: "ქეში",
-              content: <CacheTab />,
+              content: <CacheTab settings={settings} saving={saving} onSave={save} />,
             },
           ]}
         />

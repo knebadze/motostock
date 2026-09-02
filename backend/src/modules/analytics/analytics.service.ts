@@ -1,12 +1,10 @@
 import { analyticsRepository } from "./analytics.repository.js";
 import { startOfDayTbilisi, endOfDayTbilisi, toTbilisiDateOnly, shiftDateOnly } from "../../lib/tbilisi-dates.js";
-
-const DEFAULT_WINDOW_DAYS = 30;
-// Per-signal candidate pool for the demand tables — union of the top N by
-// each of views/wishlist/cart/sales, not just top-viewed, so a product that
-// e.g. sells well but rarely gets browsed still shows up.
-const DEMAND_CANDIDATE_LIMIT = 10;
-const RECENT_CANCELLED_LIMIT = 10;
+import {
+  getAnalyticsDefaultWindowDays,
+  getDashboardDemandCandidateLimit,
+  getDashboardRecentCancelledLimit,
+} from "../settings/settings.service.js";
 
 // dateFromInput/dateToInput are bare "YYYY-MM-DD" (z.iso.date() — see
 // analytics.schema.ts) — anchored to Tbilisi's calendar day (see
@@ -14,9 +12,13 @@ const RECENT_CANCELLED_LIMIT = 10;
 // range) case matches what an admin physically in Georgia means by "today",
 // and an explicit ?dateTo=2026-08-15 covers that whole day locally instead
 // of cutting off ~20 hours early.
-function resolveDateRange(dateFromInput?: string, dateToInput?: string): { from: Date; to: Date } {
+async function resolveDateRange(
+  dateFromInput?: string,
+  dateToInput?: string,
+): Promise<{ from: Date; to: Date }> {
   const toDateOnly = dateToInput ?? toTbilisiDateOnly(new Date());
-  const fromDateOnly = dateFromInput ?? shiftDateOnly(toDateOnly, -DEFAULT_WINDOW_DAYS);
+  const fromDateOnly =
+    dateFromInput ?? shiftDateOnly(toDateOnly, -(await getAnalyticsDefaultWindowDays()));
 
   return { from: startOfDayTbilisi(fromDateOnly), to: endOfDayTbilisi(toDateOnly) };
 }
@@ -55,7 +57,11 @@ function buildRevenueSeries(rows: { createdAt: Date; total: unknown }[], from: D
 }
 
 export async function getAnalyticsOverview(dateFromInput?: string, dateToInput?: string) {
-  const { from, to } = resolveDateRange(dateFromInput, dateToInput);
+  const [{ from, to }, demandCandidateLimit, recentCancelledLimit] = await Promise.all([
+    resolveDateRange(dateFromInput, dateToInput),
+    getDashboardDemandCandidateLimit(),
+    getDashboardRecentCancelledLimit(),
+  ]);
 
   const [
     revenueAgg,
@@ -80,9 +86,9 @@ export async function getAnalyticsOverview(dateFromInput?: string, dateToInput?:
     analyticsRepository.countCancelledOrders(from, to),
     analyticsRepository.sumLostRevenue(from, to),
     analyticsRepository.findCancellationReasonBreakdown(from, to),
-    analyticsRepository.findRecentCancelledOrders(RECENT_CANCELLED_LIMIT),
-    analyticsRepository.findTopViewedProductIds(DEMAND_CANDIDATE_LIMIT),
-    analyticsRepository.findTopViewedVehicleListingIds(DEMAND_CANDIDATE_LIMIT),
+    analyticsRepository.findRecentCancelledOrders(recentCancelledLimit),
+    analyticsRepository.findTopViewedProductIds(demandCandidateLimit),
+    analyticsRepository.findTopViewedVehicleListingIds(demandCandidateLimit),
     analyticsRepository.findWishlistCountsByProduct(),
     analyticsRepository.findWishlistCountsByVehicleListing(),
     analyticsRepository.findCartCountsByProduct(),
@@ -93,20 +99,20 @@ export async function getAnalyticsOverview(dateFromInput?: string, dateToInput?:
 
   const productCandidateIds = new Set<number>([
     ...topViewedProductIds,
-    ...topNIds(wishlistByProduct, DEMAND_CANDIDATE_LIMIT),
-    ...topNIds(cartByProduct, DEMAND_CANDIDATE_LIMIT),
+    ...topNIds(wishlistByProduct, demandCandidateLimit),
+    ...topNIds(cartByProduct, demandCandidateLimit),
     ...topNIds(
       new Map(Array.from(salesByProduct.entries()).map(([id, v]) => [id, v.quantity])),
-      DEMAND_CANDIDATE_LIMIT,
+      demandCandidateLimit,
     ),
   ]);
   const listingCandidateIds = new Set<number>([
     ...topViewedListingIds,
-    ...topNIds(wishlistByListing, DEMAND_CANDIDATE_LIMIT),
-    ...topNIds(cartByListing, DEMAND_CANDIDATE_LIMIT),
+    ...topNIds(wishlistByListing, demandCandidateLimit),
+    ...topNIds(cartByListing, demandCandidateLimit),
     ...topNIds(
       new Map(Array.from(salesByListing.entries()).map(([id, v]) => [id, v.quantity])),
-      DEMAND_CANDIDATE_LIMIT,
+      demandCandidateLimit,
     ),
   ]);
 

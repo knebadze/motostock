@@ -8,6 +8,11 @@ import { vehicleListingResponseSchema } from "../vehicle-listing/vehicle-listing
 
 export const cartItemTypeSchema = z.enum(["PRODUCT_VARIANT", "VEHICLE_LISTING"]);
 
+// The 99 here is just a request-body sanity/DoS ceiling, checked at parse
+// time before any DB lookup is possible — the actual business limit is
+// admin-configurable (getCartMaxQuantity() in settings.service.ts) and is
+// enforced dynamically in cart.service.ts, which can end up capping a
+// quantity below this schema's bound.
 export const createCartItemSchema = registry.register(
   "CreateCartItemInput",
   z.object({
@@ -19,6 +24,7 @@ export const createCartItemSchema = registry.register(
 );
 export type CreateCartItemInput = z.infer<typeof createCartItemSchema>;
 
+// Same sanity-ceiling-vs-business-limit split as createCartItemSchema above.
 export const updateCartItemSchema = registry.register(
   "UpdateCartItemInput",
   z.object({

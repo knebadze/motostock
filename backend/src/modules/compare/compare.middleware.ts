@@ -16,6 +16,6 @@ export async function resolveCompareOwner(req: Request, res: Response, next: Nex
     return;
   }
 
-  req.guestId = resolveGuestId(req, res);
+  req.guestId = await resolveGuestId(req, res);
   next();
 }
