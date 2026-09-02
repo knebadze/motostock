@@ -31,15 +31,26 @@ export function toDiscountResponse(row: DiscountRow) {
   };
 }
 
-async function assertVariantExists(productVariantId: number) {
+async function getVariantOrThrow(productVariantId: number) {
   const variant = await productVariantsRepository.findById(productVariantId);
   if (!variant) {
     throw new ApiError(404, "ვარიანტი ვერ მოიძებნა");
   }
+  return variant;
+}
+
+// A discountPrice at or above the variant's own list price isn't a
+// discount — most likely a data-entry error (e.g. a decimal-point typo)
+// than an intentional markup, and findActiveDiscount/checkout would
+// otherwise charge it without ever questioning it.
+function assertDiscountPriceBelowListPrice(discountPrice: number, listPrice: number) {
+  if (discountPrice >= listPrice) {
+    throw new ApiError(400, "ფასდაკლების ფასი უნდა იყოს ორიგინალ ფასზე დაბალი");
+  }
 }
 
 export async function listDiscounts(productVariantId: number) {
-  await assertVariantExists(productVariantId);
+  await getVariantOrThrow(productVariantId);
   const rows = await productVariantDiscountsRepository.findMany(productVariantId);
   return rows.map(toDiscountResponse);
 }
@@ -48,7 +59,8 @@ export async function createDiscount(
   productVariantId: number,
   input: CreateProductVariantDiscountInput,
 ) {
-  await assertVariantExists(productVariantId);
+  const variant = await getVariantOrThrow(productVariantId);
+  assertDiscountPriceBelowListPrice(input.discountPrice, Number(variant.price));
 
   const startDate = startOfDayTbilisi(input.startDate);
   const endDate = endOfDayTbilisi(input.endDate);
@@ -89,6 +101,11 @@ export async function updateDiscount(
   const endDate = input.endDate ? endOfDayTbilisi(input.endDate) : existing.endDate;
   if (endDate <= startDate) {
     throw new ApiError(400, "დასრულების თარიღი უნდა იყოს დაწყების თარიღის შემდეგ");
+  }
+
+  if (input.discountPrice !== undefined) {
+    const variant = await getVariantOrThrow(productVariantId);
+    assertDiscountPriceBelowListPrice(input.discountPrice, Number(variant.price));
   }
 
   const row = await productVariantDiscountsRepository.update(id, {
