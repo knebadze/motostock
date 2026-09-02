@@ -86,7 +86,7 @@ export async function getAnalyticsOverview(dateFromInput?: string, dateToInput?:
     analyticsRepository.countCancelledOrders(from, to),
     analyticsRepository.sumLostRevenue(from, to),
     analyticsRepository.findCancellationReasonBreakdown(from, to),
-    analyticsRepository.findRecentCancelledOrders(recentCancelledLimit),
+    analyticsRepository.findRecentCancelledOrders(from, to, recentCancelledLimit),
     analyticsRepository.findTopViewedProductIds(demandCandidateLimit),
     analyticsRepository.findTopViewedVehicleListingIds(demandCandidateLimit),
     analyticsRepository.findWishlistCountsByProduct(),

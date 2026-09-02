@@ -228,12 +228,17 @@ export const analyticsRepository = {
     return rows;
   },
 
-  findRecentCancelledOrders(limit: number) {
+  findRecentCancelledOrders(from: Date, to: Date, limit: number) {
     return prisma.order.findMany({
-      where: { status: { key: CANCELLED_KEY } },
       // updatedAt is only ever touched by orders.repository.ts's
       // updateStatus (confirmed no other write path exists), so this
-      // doubles as "when it was cancelled" without a dedicated column.
+      // doubles as "when it was cancelled" without a dedicated column —
+      // filtered by the same [from, to] window as every other cancellation
+      // metric on this page (countCancelledOrders, sumLostRevenue,
+      // findCancellationReasonBreakdown), so this list can't show
+      // cancellations from outside the range the rest of the page is
+      // reporting on.
+      where: { status: { key: CANCELLED_KEY }, updatedAt: { gte: from, lte: to } },
       orderBy: { updatedAt: "desc" },
       take: limit,
       include: {
