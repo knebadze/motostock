@@ -1,5 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { logger } from "../../lib/logger.js";
+import { prisma } from "../../config/prisma.js";
 import {
   getFraudFailedLoginThreshold,
   getFraudFailedLoginWindowMinutes,
@@ -27,6 +28,11 @@ export async function recordAuthEvent(
   }
 }
 
+// Arbitrary, unique to this lock's purpose — same technique as
+// orders.repository.ts's PROMO_CODE_LOCK_NAMESPACE and fina-sync.service.ts's
+// FINA_SYNC_LOCK_KEY.
+const ACCOUNT_LOCKOUT_LOCK_NAMESPACE = 738291645;
+
 // Account-level brute-force lockout — unlike authRateLimit
 // (rateLimit.middleware.ts, scoped per-IP), this blocks based on the target
 // email itself, so a password-guessing attack spread across many IPs
@@ -35,19 +41,60 @@ export async function recordAuthEvent(
 // admin "suspicious login activity" monitoring view below
 // (listSuspiciousLoginActivity) — an account that would surface there is
 // exactly the one this now actively blocks, rather than just flags for an
-// admin to notice after the fact. Called from auth.service.ts's loginUser
-// before the password is even checked, so a locked-out attempt never
-// reaches the bcrypt compare.
-export async function assertAccountNotLockedOut(email: string): Promise<void> {
+// admin to notice after the fact.
+//
+// The naive version of this (count recent failures, then separately record
+// a new one on the *next* failed attempt) is a classic TOCTOU race: a burst
+// of concurrent login attempts for the same email all read the same
+// pre-burst count before any of them has committed its own failure, so all
+// of them pass the threshold check regardless of how large the burst is —
+// the lockout only limits *sequential* attempt rate, not concurrent ones.
+// This closes that the same way orders.repository.ts's promo-code
+// usage-recheck does: a blocking advisory lock scoped to this one email
+// (`hashtext(email)` folds the string into the int4 key advisory locks
+// need), held for the whole count-check-then-record critical section, so a
+// second concurrent attempt against the *same* email is forced to wait for
+// the first to finish and commit before it re-counts. Different emails
+// never contend with each other — this doesn't serialize logins globally,
+// only repeated attempts against one account.
+//
+// `attempt` does the actual credential check (bcrypt compare) — it runs
+// while the lock is held, which is intentional: that's exactly the
+// operation whose outcome needs to be recorded before the lock releases.
+// Bcrypt (~100-300ms) comfortably fits Prisma's default interactive-
+// transaction timeout, and this only serializes repeat attempts on one
+// account, never blocks unrelated logins.
+export async function runWithAccountLockoutGuard<T>(
+  email: string,
+  ipAddress: string | null,
+  attempt: () => Promise<{ ok: true; result: T } | { ok: false; userId: number | null }>,
+): Promise<T> {
   const [threshold, windowMinutes] = await Promise.all([
     getFraudFailedLoginThreshold(),
     getFraudFailedLoginWindowMinutes(),
   ]);
   const since = new Date(Date.now() - windowMinutes * 60 * 1000);
-  const recentFailures = await fraudRepository.countFailedLoginsForEmailSince(email, since);
-  if (recentFailures >= threshold) {
-    throw new ApiError(429, "ძალიან ბევრი წარუმატებელი მცდელობა — სცადეთ მოგვიანებით", "ACCOUNT_LOCKED");
-  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${ACCOUNT_LOCKOUT_LOCK_NAMESPACE}, hashtext(${email}))`;
+
+    const recentFailures = await tx.authEvent.count({
+      where: { type: "LOGIN_FAILURE", email, createdAt: { gte: since } },
+    });
+    if (recentFailures >= threshold) {
+      throw new ApiError(429, "ძალიან ბევრი წარუმატებელი მცდელობა — სცადეთ მოგვიანებით", "ACCOUNT_LOCKED");
+    }
+
+    const outcome = await attempt();
+    if (!outcome.ok) {
+      await tx.authEvent.create({
+        data: { type: "LOGIN_FAILURE", email, userId: outcome.userId, ipAddress },
+      });
+      throw new ApiError(401, "Invalid email or password", "INVALID_CREDENTIALS");
+    }
+
+    return outcome.result;
+  });
 }
 
 type RiskFlag = { type: OrderRiskFlagType; detail: string | null };

@@ -13,7 +13,7 @@ import { logger } from "../../lib/logger.js";
 import { ROLES, type RoleName } from "../../lib/roles.js";
 import { usersRepository } from "../users/users.repository.js";
 import { rolesRepository } from "../roles/roles.repository.js";
-import { assertAccountNotLockedOut, recordAuthEvent } from "../fraud/fraud.service.js";
+import { runWithAccountLockoutGuard, recordAuthEvent } from "../fraud/fraud.service.js";
 import { getResetTokenTtlMinutes, getVerificationTokenTtlHours } from "../settings/settings.service.js";
 import { passwordResetTokenRepository } from "./password-reset-token.repository.js";
 import { emailVerificationTokenRepository } from "./email-verification-token.repository.js";
@@ -109,25 +109,28 @@ export async function registerUser(input: RegisterInput, ipAddress: string | nul
 }
 
 export async function loginUser(input: LoginInput, ipAddress: string | null) {
-  // Checked before anything else — IP-scoped authRateLimit (see
-  // rateLimit.middleware.ts) can't catch a guessing attack spread across
-  // many IPs against one account; this closes that gap regardless of which
-  // IP the current attempt comes from.
-  await assertAccountNotLockedOut(input.email);
-
-  const user = await usersRepository.findByEmail(input.email);
-  if (!user || !user.passwordHash) {
-    // No such user, or an OAuth-only account with no password of its own —
-    // same generic error either way, so we don't leak which case it is.
-    await recordAuthEvent("LOGIN_FAILURE", input.email, user?.id ?? null, ipAddress);
-    throw new ApiError(401, "Invalid email or password", "INVALID_CREDENTIALS");
-  }
-
-  const valid = await comparePassword(input.password, user.passwordHash);
-  if (!valid) {
-    await recordAuthEvent("LOGIN_FAILURE", input.email, user.id, ipAddress);
-    throw new ApiError(401, "Invalid email or password", "INVALID_CREDENTIALS");
-  }
+  // The lockout check (has this email failed too many times recently?), the
+  // credential check, and recording a new failure are all done inside one
+  // lock-held critical section, scoped to this email — see fraud.service.ts's
+  // runWithAccountLockoutGuard for why (closes a TOCTOU race where a burst of
+  // concurrent attempts could otherwise all read the same pre-attack failure
+  // count and all slip through regardless of the configured threshold). IP-
+  // scoped authRateLimit (rateLimit.middleware.ts) can't catch a guessing
+  // attack spread across many IPs against one account; this closes that gap
+  // too, regardless of which IP the current attempt comes from.
+  const user = await runWithAccountLockoutGuard(input.email, ipAddress, async () => {
+    const candidate = await usersRepository.findByEmail(input.email);
+    if (!candidate || !candidate.passwordHash) {
+      // No such user, or an OAuth-only account with no password of its own —
+      // same generic error either way, so we don't leak which case it is.
+      return { ok: false, userId: candidate?.id ?? null };
+    }
+    const valid = await comparePassword(input.password, candidate.passwordHash);
+    if (!valid) {
+      return { ok: false, userId: candidate.id };
+    }
+    return { ok: true, result: candidate };
+  });
 
   await recordAuthEvent("LOGIN_SUCCESS", user.email, user.id, ipAddress);
 
