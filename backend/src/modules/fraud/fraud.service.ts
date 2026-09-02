@@ -52,10 +52,12 @@ export async function assertAccountNotLockedOut(email: string): Promise<void> {
 
 type RiskFlag = { type: OrderRiskFlagType; detail: string | null };
 
-// Best-effort, flag-only — never blocks, reverses, or delays an order.
-// Called from orders.service.ts's placeOrder after the order is fully
-// committed; wrapped entirely in its own try/catch so a scoring bug can
-// never turn a successful checkout into an error response.
+// Best-effort, flag-only — an order auto-confirms whenever FINA itself
+// confirmed stock for it (see orders.service.ts's resolveInitialOrderStatusId),
+// regardless of what this finds; these flags are for admin review, not a
+// gate on that. Called from orders.service.ts's placeOrder after the order
+// is fully committed; wrapped entirely in its own try/catch so a scoring bug
+// can never turn a successful checkout into an error response.
 export async function evaluateOrderRisk(
   order: { id: number; userId: number; total: number; promoCodeId: number | null; ipAddress: string | null },
   userCreatedAt: Date,

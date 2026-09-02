@@ -496,6 +496,9 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
   const bankId = await resolveBank(input.fulfillmentMethod, input.bankId);
 
   const items: PlaceOrderItemInput[] = breakdown.items.map(({ stockQuantity: _stockQuantity, ...item }) => item);
+  const total = Math.round((breakdown.total + delivery.deliveryCost) * 100) / 100;
+  const promoCodeId = breakdown.promoCode?.id ?? null;
+
   const [statusId, soldStatusId] = await Promise.all([
     resolveInitialOrderStatusId(breakdown.finaConfirmed),
     resolveSoldStatusId(),
@@ -512,7 +515,7 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
         addressId: delivery.addressId,
         shippingSnapshot: delivery.shippingSnapshot,
         bankId,
-        promoCodeId: breakdown.promoCode?.id ?? null,
+        promoCodeId,
         promoCodeSnapshot: breakdown.promoCode?.code ?? null,
         promoDiscountPercent: breakdown.promoCode?.discountPercent ?? null,
         subtotal: breakdown.subtotal,
@@ -520,7 +523,7 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
         deliverySpeed: delivery.deliverySpeed,
         deliveryCost: delivery.deliveryCost,
         deliveryTimeSnapshot: delivery.deliveryTimeSnapshot,
-        total: Math.round((breakdown.total + delivery.deliveryCost) * 100) / 100,
+        total,
         ipAddress,
         items,
         soldStatusId,
@@ -535,13 +538,7 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
       // Never throws (see fraud.service.ts) — safe to await inline without
       // its own try/catch here.
       await evaluateOrderRisk(
-        {
-          id: order.id,
-          userId,
-          total: Number(order.total),
-          promoCodeId: breakdown.promoCode?.id ?? null,
-          ipAddress,
-        },
+        { id: order.id, userId, total: Number(order.total), promoCodeId, ipAddress },
         user.createdAt,
       );
 
