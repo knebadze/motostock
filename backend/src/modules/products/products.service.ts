@@ -576,7 +576,11 @@ export async function getProduct(id: number) {
 
 export async function getProductDetail(slug: string, vehicleCatalogId?: number) {
   const row = await productsRepository.findDetailBySlug(slug);
-  if (!row) {
+  // findDetailBySlug already excludes inactive variants (see
+  // storefrontDetailInclude) — a product left with none has nothing
+  // purchasable, so it 404s the same as a genuinely nonexistent slug rather
+  // than rendering an empty/priceless detail page.
+  if (!row || row.variants.length === 0) {
     throw new ApiError(404, "პროდუქტი ვერ მოიძებნა", "PRODUCT_NOT_FOUND");
   }
 

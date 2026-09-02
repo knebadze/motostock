@@ -146,7 +146,11 @@ function buildBreakdownItem(row: CartRow, unitPrice: number): BreakdownItem {
       quantity: row.quantity,
       unitPrice,
       lineTotal: Math.round(unitPrice * row.quantity * 100) / 100,
-      stockQuantity: variant.stockQuantity,
+      // Treated as zero stock when deactivated — reuses the existing
+      // INSUFFICIENT_STOCK_ITEM guard in placeOrder below instead of a
+      // separate check, catching a cart item that was active when added
+      // but deactivated before checkout.
+      stockQuantity: variant.isActive ? variant.stockQuantity : 0,
     };
   }
 
@@ -164,7 +168,9 @@ function buildBreakdownItem(row: CartRow, unitPrice: number): BreakdownItem {
     quantity: row.quantity,
     unitPrice,
     lineTotal: Math.round(unitPrice * row.quantity * 100) / 100,
-    stockQuantity: listing.stockQuantity,
+    // See the productVariant branch above for why this is zeroed instead of
+    // a separate active-check.
+    stockQuantity: listing.isActive ? listing.stockQuantity : 0,
   };
 }
 

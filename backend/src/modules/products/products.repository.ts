@@ -58,21 +58,48 @@ const attributeWithUnitSelect = {
   unit: { select: unitRefSelect },
 } as const;
 
-// Exported for reuse by product-buy-together.repository.ts, which needs the
-// exact same "product card" shape for the related products it embeds.
+const attributeValuesInclude = {
+  include: {
+    attribute: { select: attributeWithUnitSelect },
+    option: { select: { id: true, key: true, labelKa: true, labelEn: true, labelRu: true } },
+  },
+} as const;
+
+// Exported for reuse by compare/wishlist/product-buy-together/product-views
+// repositories, which all need the exact same customer-facing "product
+// card" shape. Deliberately excludes inactive variants (`isActive: false`)
+// from the nested selection — a variant an admin has pulled from sale must
+// never factor into a card's price range/stock/discount badge or be
+// reachable through any of these customer-facing surfaces. Admin code that
+// genuinely needs every variant (create/update/getProduct's own response,
+// the admin list) uses adminProductSummaryInclude below instead.
 export const productSummaryInclude = {
   category: { select: namedRefSelect },
   productBrand: { select: brandModelRefSelect },
-  attributeValues: {
-    include: {
-      attribute: { select: attributeWithUnitSelect },
-      option: { select: { id: true, key: true, labelKa: true, labelEn: true, labelRu: true } },
+  attributeValues: attributeValuesInclude,
+  variants: {
+    where: { isActive: true },
+    select: {
+      price: true,
+      stockQuantity: true,
+      discounts: { select: { discountPrice: true, startDate: true, endDate: true } },
     },
   },
+} as const;
+
+// Unfiltered counterpart to productSummaryInclude above — every variant,
+// active or not, for the handful of admin-only call sites (findById's
+// create/update/updateImage response, so an admin who just deactivated a
+// variant still sees it in the response confirming their own save).
+const adminProductSummaryInclude = {
+  category: { select: namedRefSelect },
+  productBrand: { select: brandModelRefSelect },
+  attributeValues: attributeValuesInclude,
   variants: {
     select: {
       price: true,
       stockQuantity: true,
+      isActive: true,
       discounts: { select: { discountPrice: true, startDate: true, endDate: true } },
     },
   },
@@ -101,25 +128,19 @@ const lookupSelect = { id: true, key: true, nameKa: true, nameEn: true, nameRu: 
 // images/discounts/size/color are only needed for a single product's detail
 // page, not for every product row in a category listing, so this stays a
 // separate query shape.
-const detailInclude = {
+const variantDetailSelect = {
+  size: { select: lookupSelect },
+  color: { select: lookupSelect },
+  condition: { select: lookupSelect },
+  status: { select: lookupSelect },
+  images: { orderBy: { position: "asc" } },
+  discounts: { orderBy: { startDate: "desc" } },
+} as const;
+
+const detailIncludeBase = {
   category: { select: namedRefSelect },
   productBrand: { select: brandModelRefSelect },
-  attributeValues: {
-    include: {
-      attribute: { select: attributeWithUnitSelect },
-      option: { select: { id: true, key: true, labelKa: true, labelEn: true, labelRu: true } },
-    },
-  },
-  variants: {
-    include: {
-      size: { select: lookupSelect },
-      color: { select: lookupSelect },
-      condition: { select: lookupSelect },
-      status: { select: lookupSelect },
-      images: { orderBy: { position: "asc" } },
-      discounts: { orderBy: { startDate: "desc" } },
-    },
-  },
+  attributeValues: attributeValuesInclude,
   fitments: {
     include: {
       vehicleCatalog: {
@@ -142,6 +163,20 @@ const detailInclude = {
     include: { relatedProduct: { include: productSummaryInclude } },
     orderBy: { createdAt: "asc" },
   },
+} as const;
+
+// Admin "full view" — every variant, active or not (findDetailById below).
+const detailInclude = {
+  ...detailIncludeBase,
+  variants: { include: variantDetailSelect },
+} as const;
+
+// Customer-facing detail page (findDetailBySlug below) — a variant an admin
+// has pulled from sale must not be selectable/orderable here, same
+// isActive reasoning as productSummaryInclude above.
+const storefrontDetailInclude = {
+  ...detailIncludeBase,
+  variants: { where: { isActive: true }, include: variantDetailSelect },
 } as const;
 
 type ProductWriteData = {
@@ -272,8 +307,19 @@ export const productsRepository = {
     adminFilters?: FilterEntry[];
     limit?: number;
   }) {
+    const structuredWhere = await buildWhere(filters);
     return prisma.product.findMany({
-      where: await buildWhere(filters),
+      // Customer-facing path only (findManyForAdmin below is the admin
+      // equivalent) — a product left with zero active variants has nothing
+      // purchasable, so it's excluded outright rather than shown as an
+      // empty/priceless card (productSummaryInclude's own variants filter
+      // only hides the individual inactive variants, not the product row).
+      where: {
+        AND: [
+          ...(structuredWhere ? [structuredWhere] : []),
+          { variants: { some: { isActive: true } } },
+        ],
+      },
       include: productSummaryInclude,
       orderBy: { createdAt: "desc" },
       // When search is active, truncating here (by createdAt) would defeat
@@ -345,16 +391,25 @@ export const productsRepository = {
     return rows.map((row) => row.id);
   },
 
+  // Customer-facing only (products.service.ts's listPopularProducts,
+  // recommendations.service.ts) — excludes a product left with zero active
+  // variants, same reasoning as findMany above (a ranked/recommended id
+  // whose product has since gone fully inactive shouldn't surface as an
+  // empty card).
   findByIds(ids: number[]) {
-    return prisma.product.findMany({ where: { id: { in: ids } }, include: productSummaryInclude });
+    return prisma.product.findMany({
+      where: { id: { in: ids }, variants: { some: { isActive: true } } },
+      include: productSummaryInclude,
+    });
   },
 
   // Escape hatch for callers (recommendations.service.ts) whose where-clause
   // shape (OR across category/brand affinity, composed with an AND'd vehicle
   // compatibility clause) doesn't fit buildWhere's fixed structured filters.
+  // Customer-facing only — same active-variant exclusion as findMany/findByIds.
   findManyRaw(where: Prisma.ProductWhereInput, limit: number) {
     return prisma.product.findMany({
-      where,
+      where: { AND: [where, { variants: { some: { isActive: true } } }] },
       include: productSummaryInclude,
       orderBy: { createdAt: "desc" },
       take: limit,
@@ -472,8 +527,13 @@ export const productsRepository = {
       .map(([id]) => id);
   },
 
+  // Shared by the (technically public but frontend-unused) GET /products/:id
+  // route and, more importantly, updateProduct/setProductImage's own "confirm
+  // what was just saved" response below — an admin who just deactivated a
+  // variant must still see it in that response, so this stays unfiltered
+  // rather than switching to productSummaryInclude.
   findById(id: number) {
-    return prisma.product.findUnique({ where: { id }, include: productSummaryInclude });
+    return prisma.product.findUnique({ where: { id }, include: adminProductSummaryInclude });
   },
 
   findBySlug(slug: string) {
@@ -481,12 +541,12 @@ export const productsRepository = {
   },
 
   findDetailBySlug(slug: string) {
-    return prisma.product.findUnique({ where: { slug }, include: detailInclude });
+    return prisma.product.findUnique({ where: { slug }, include: storefrontDetailInclude });
   },
 
-  // Admin "full view" counterpart to findDetailBySlug — same detailInclude
-  // (nothing filtered for customer visibility), looked up by id since
-  // that's what the admin products table already has on hand.
+  // Admin "full view" counterpart to findDetailBySlug — every variant,
+  // active or not (see detailInclude above), looked up by id since that's
+  // what the admin products table already has on hand.
   findDetailById(id: number) {
     return prisma.product.findUnique({ where: { id }, include: detailInclude });
   },
@@ -543,15 +603,15 @@ export const productsRepository = {
   },
 
   create(data: ProductWriteData) {
-    return prisma.product.create({ data, include: productSummaryInclude });
+    return prisma.product.create({ data, include: adminProductSummaryInclude });
   },
 
   update(id: number, data: Partial<ProductWriteData>) {
-    return prisma.product.update({ where: { id }, data, include: productSummaryInclude });
+    return prisma.product.update({ where: { id }, data, include: adminProductSummaryInclude });
   },
 
   updateImage(id: number, imageUrl: string) {
-    return prisma.product.update({ where: { id }, data: { imageUrl }, include: productSummaryInclude });
+    return prisma.product.update({ where: { id }, data: { imageUrl }, include: adminProductSummaryInclude });
   },
 
   delete(id: number) {

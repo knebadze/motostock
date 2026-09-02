@@ -349,8 +349,12 @@ export const ordersRepository = {
 
       for (const item of input.items) {
         if (item.productVariantId != null) {
+          // isActive: true guards against a variant deactivated in the
+          // narrow race window between computeCheckoutTotals's read and
+          // this transaction — same TOCTOU reasoning as the stockQuantity
+          // condition it's alongside.
           const result = await tx.productVariant.updateMany({
-            where: { id: item.productVariantId, stockQuantity: { gte: item.quantity } },
+            where: { id: item.productVariantId, isActive: true, stockQuantity: { gte: item.quantity } },
             data: { stockQuantity: { decrement: item.quantity } },
           });
           if (result.count === 0) {
@@ -361,8 +365,9 @@ export const ordersRepository = {
             data: { statusId: input.soldStatusId },
           });
         } else if (item.vehicleListingId != null) {
+          // Same isActive guard as the productVariant branch above.
           const result = await tx.vehicleListing.updateMany({
-            where: { id: item.vehicleListingId, stockQuantity: { gte: item.quantity } },
+            where: { id: item.vehicleListingId, isActive: true, stockQuantity: { gte: item.quantity } },
             data: { stockQuantity: { decrement: item.quantity } },
           });
           if (result.count === 0) {

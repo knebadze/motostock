@@ -331,7 +331,10 @@ export async function listPopularVehicleListings(limit: number) {
 // safe to always count this as a real view.
 export async function getVehicleListing(id: number) {
   const row = await vehicleListingRepository.findById(id);
-  if (!row) {
+  // Deactivated listings 404 the same as a genuinely nonexistent id — an
+  // admin pulling a listing from sale must make it unreachable here too,
+  // not just absent from browsing/search (findMany above).
+  if (!row || !row.isActive) {
     throw new ApiError(404, "განცხადება ვერ მოიძებნა", "VEHICLE_LISTING_NOT_FOUND");
   }
   await vehicleListingRepository.incrementViewCount(id);

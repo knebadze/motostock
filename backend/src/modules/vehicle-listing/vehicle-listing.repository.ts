@@ -182,8 +182,12 @@ export const vehicleListingRepository = {
     adminFilters?: FilterEntry[];
     limit?: number;
   }) {
+    const structuredWhere = buildWhere(filters);
     return prisma.vehicleListing.findMany({
-      where: buildWhere(filters),
+      // Customer-facing path only (findManyForAdmin below is the admin
+      // equivalent) — a listing an admin has pulled from sale must not
+      // appear in storefront browsing/search.
+      where: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] },
       include,
       // Most-garaged vehicles first (VehicleCatalog.popularity, kept live by
       // the garage module), createdAt as the tiebreaker for equally popular
@@ -242,8 +246,14 @@ export const vehicleListingRepository = {
     return rows.map((row) => row.id);
   },
 
+  // Customer-facing only (vehicle-listing.service.ts's
+  // listPopularVehicleListings) — excludes a listing an admin has since
+  // deactivated, same reasoning as findMany above.
   findByIds(ids: number[]) {
-    return prisma.vehicleListing.findMany({ where: { id: { in: ids } }, include });
+    return prisma.vehicleListing.findMany({
+      where: { id: { in: ids }, isActive: true },
+      include,
+    });
   },
 
   // Ranks listings by total sold quantity (OrderItem.quantity, grouped by

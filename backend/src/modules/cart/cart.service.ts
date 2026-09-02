@@ -34,6 +34,7 @@ type ProductVariantRow = {
   color: LookupRow;
   price: { toString(): string };
   stockQuantity: number;
+  isActive: boolean;
   images: ImageRow[];
   discounts: DiscountRow[];
 };
@@ -69,6 +70,7 @@ function toProductVariantCartResponse(row: ProductVariantRow) {
     color: row.color,
     price: Number(row.price),
     stockQuantity: row.stockQuantity,
+    isActive: row.isActive,
     images: row.images.map(toImageResponse),
     activeDiscount: activeDiscount ? toDiscountResponse(activeDiscount) : null,
   };
@@ -146,7 +148,10 @@ async function addProductVariantToCart(owner: CartOwner, productVariantId: numbe
   if (!variant) {
     throw new ApiError(400, "მითითებული ვარიანტი არ არსებობს", "PRODUCT_VARIANT_NOT_FOUND");
   }
-  if (variant.stockQuantity <= 0) {
+  // Same customer-facing message/code as an out-of-stock variant — an admin
+  // deactivating a variant to pull it from sale should behave identically
+  // to it running out, not surface a different (or no) error.
+  if (!variant.isActive || variant.stockQuantity <= 0) {
     throw new ApiError(400, "პროდუქტი არ არის მარაგში", "OUT_OF_STOCK");
   }
 
@@ -184,7 +189,10 @@ async function addVehicleListingToCart(owner: CartOwner, vehicleListingId: numbe
   if (!listing) {
     throw new ApiError(400, "მითითებული განცხადება არ არსებობს", "VEHICLE_LISTING_NOT_FOUND");
   }
-  if (listing.stockQuantity <= 0) {
+  // Same customer-facing message/code as a sold-out listing — an admin
+  // deactivating a listing to pull it from sale should behave identically
+  // to it running out, not surface a different (or no) error.
+  if (!listing.isActive || listing.stockQuantity <= 0) {
     throw new ApiError(400, "ეს ერთეული ხელმისაწვდომი აღარ არის", "VEHICLE_LISTING_UNAVAILABLE");
   }
 
@@ -233,8 +241,13 @@ export async function updateCartItemQuantity(owner: CartOwner, id: number, quant
     throw new ApiError(404, "ჩანაწერი ვერ მოიძებნა", "CART_ITEM_NOT_FOUND");
   }
 
-  const stockQuantity =
-    existing.productVariant?.stockQuantity ?? existing.vehicleListing?.stockQuantity ?? 0;
+  // Treated the same as zero stock when the item has since been deactivated —
+  // this caps cappedQuantity to 0 below, same as a genuinely sold-out item,
+  // rather than letting an inactive item's quantity be raised.
+  const isActive = existing.productVariant?.isActive ?? existing.vehicleListing?.isActive ?? false;
+  const stockQuantity = isActive
+    ? (existing.productVariant?.stockQuantity ?? existing.vehicleListing?.stockQuantity ?? 0)
+    : 0;
   const cappedQuantity = Math.min(quantity, stockQuantity, MAX_QUANTITY);
   if (cappedQuantity <= 0) {
     throw new ApiError(400, "მარაგში საკმარისი რაოდენობა აღარ არის", "INSUFFICIENT_STOCK");
