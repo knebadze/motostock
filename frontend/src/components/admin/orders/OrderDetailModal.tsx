@@ -183,24 +183,31 @@ export function OrderDetailModal({
               <h3 className="text-lg font-semibold">{order.orderCode}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{formatDateTime(order.createdAt)}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-44">
-                <Select
-                  options={statusOptions}
-                  value={statusId}
-                  onChange={setStatusId}
-                  ariaLabel="შეკვეთის სტატუსი"
-                />
+            {order.status.key === "CANCELLED" ? (
+              <p className="text-sm text-muted-foreground">
+                გაუქმებული შეკვეთის სტატუსის შეცვლა შეუძლებელია — მომხმარებელს შეუძლია იგივე შეკვეთა
+                თავიდან გააკეთოს.
+              </p>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="w-44">
+                  <Select
+                    options={statusOptions}
+                    value={statusId}
+                    onChange={setStatusId}
+                    ariaLabel="შეკვეთის სტატუსი"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleStatusSave}
+                  disabled={savingStatus || statusId === String(order.status.id)}
+                  className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {savingStatus ? "..." : "შენახვა"}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleStatusSave}
-                disabled={savingStatus || statusId === String(order.status.id)}
-                className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {savingStatus ? "..." : "შენახვა"}
-              </button>
-            </div>
+            )}
           </div>
 
           {order.finaSyncStatus !== "NOT_APPLICABLE" && (

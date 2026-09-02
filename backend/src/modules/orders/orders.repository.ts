@@ -149,27 +149,29 @@ export const ordersRepository = {
     return prisma.order.findUnique({ where: { idempotencyKey }, include: orderItemsInclude });
   },
 
-  // `stockAdjustment` mirrors placeOrder's own decrement logic below, in
-  // whichever direction the transition needs (see orders.service.ts's
-  // updateOrderStatus): RESTORE gives stock back when an order newly becomes
-  // CANCELLED; DECREMENT takes it away again if an admin moves a CANCELLED
-  // order to any other status (the symmetric case — without it, toggling an
-  // order's status back and forth would inflate stock for free). Everything
-  // runs in one transaction so the status change and the stock move commit
-  // or roll back together.
+  // `stockAdjustment` mirrors placeOrder's own decrement logic in reverse,
+  // giving stock back when an order newly becomes CANCELLED (see
+  // orders.service.ts's updateOrderStatus) — the only stock-adjusting
+  // transition, since CANCELLED is terminal (un-cancelling is no longer
+  // allowed at all: it used to symmetrically re-decrement stock here, but
+  // that path never re-synced the reversal to FINA and could leave an
+  // order's FINA record permanently stuck; a customer who wants the same
+  // order again places a genuinely new one via reorderOrder instead).
+  // Everything runs in one transaction so the status change and the stock
+  // move commit or roll back together.
   //
   // `expectedCurrentStatusId` guards against two concurrent calls (double
   // click, two admins) both reading the same pre-transition status and both
   // applying `stockAdjustment` — the status update below is a compare-and-
   // swap on statusId, same technique as the stock updates' `stockQuantity:
   // { gte }` guard. Whichever request loses the race sees `count === 0` and
-  // throws, instead of silently double-restoring/double-decrementing stock.
+  // throws, instead of silently double-restoring stock.
   async updateStatus(
     id: number,
     statusId: number,
     cancellation: { cancellationReasonId: number | null; cancellationNote: string | null },
     stockAdjustment: {
-      direction: "RESTORE" | "DECREMENT";
+      direction: "RESTORE";
       items: StockAdjustmentItem[];
       soldStatusId: number;
       availableStatusId: number;
@@ -191,68 +193,34 @@ export const ordersRepository = {
       if (!stockAdjustment) return;
 
       for (const item of stockAdjustment.items) {
-        if (stockAdjustment.direction === "RESTORE") {
-          if (item.productVariantId != null) {
-            await tx.productVariant.update({
-              where: { id: item.productVariantId },
-              data: { stockQuantity: { increment: item.quantity } },
-            });
-            // Only undoes the specific SOLD auto-flip placeOrder made — never
-            // overwrites a status an admin set independently (e.g. RESERVED).
-            await tx.productVariant.updateMany({
-              where: {
-                id: item.productVariantId,
-                statusId: stockAdjustment.soldStatusId,
-                stockQuantity: { gt: 0 },
-              },
-              data: { statusId: stockAdjustment.availableStatusId },
-            });
-          } else if (item.vehicleListingId != null) {
-            await tx.vehicleListing.update({
-              where: { id: item.vehicleListingId },
-              data: { stockQuantity: { increment: item.quantity } },
-            });
-            await tx.vehicleListing.updateMany({
-              where: {
-                id: item.vehicleListingId,
-                statusId: stockAdjustment.soldStatusId,
-                stockQuantity: { gt: 0 },
-              },
-              data: { statusId: stockAdjustment.availableStatusId },
-            });
-          }
-        } else {
-          if (item.productVariantId != null) {
-            const result = await tx.productVariant.updateMany({
-              where: { id: item.productVariantId, stockQuantity: { gte: item.quantity } },
-              data: { stockQuantity: { decrement: item.quantity } },
-            });
-            if (result.count === 0) {
-              throw new ApiError(
-                409,
-                `"${item.itemNameKa}" — მარაგში საკმარისი რაოდენობა აღარ არის, გაუქმების დაბრუნება ვერ მოხერხდება`,
-              );
-            }
-            await tx.productVariant.updateMany({
-              where: { id: item.productVariantId, stockQuantity: { lte: 0 } },
-              data: { statusId: stockAdjustment.soldStatusId },
-            });
-          } else if (item.vehicleListingId != null) {
-            const result = await tx.vehicleListing.updateMany({
-              where: { id: item.vehicleListingId, stockQuantity: { gte: item.quantity } },
-              data: { stockQuantity: { decrement: item.quantity } },
-            });
-            if (result.count === 0) {
-              throw new ApiError(
-                409,
-                `"${item.itemNameKa}" — აღარ არის ხელმისაწვდომი, გაუქმების დაბრუნება ვერ მოხერხდება`,
-              );
-            }
-            await tx.vehicleListing.updateMany({
-              where: { id: item.vehicleListingId, stockQuantity: { lte: 0 } },
-              data: { statusId: stockAdjustment.soldStatusId },
-            });
-          }
+        if (item.productVariantId != null) {
+          await tx.productVariant.update({
+            where: { id: item.productVariantId },
+            data: { stockQuantity: { increment: item.quantity } },
+          });
+          // Only undoes the specific SOLD auto-flip placeOrder made — never
+          // overwrites a status an admin set independently (e.g. RESERVED).
+          await tx.productVariant.updateMany({
+            where: {
+              id: item.productVariantId,
+              statusId: stockAdjustment.soldStatusId,
+              stockQuantity: { gt: 0 },
+            },
+            data: { statusId: stockAdjustment.availableStatusId },
+          });
+        } else if (item.vehicleListingId != null) {
+          await tx.vehicleListing.update({
+            where: { id: item.vehicleListingId },
+            data: { stockQuantity: { increment: item.quantity } },
+          });
+          await tx.vehicleListing.updateMany({
+            where: {
+              id: item.vehicleListingId,
+              statusId: stockAdjustment.soldStatusId,
+              stockQuantity: { gt: 0 },
+            },
+            data: { statusId: stockAdjustment.availableStatusId },
+          });
         }
       }
     });

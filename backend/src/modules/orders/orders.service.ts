@@ -861,22 +861,35 @@ export async function updateOrderStatus(
     throw new ApiError(404, "შეკვეთა ვერ მოიძებნა");
   }
 
-  const wasCancelled = existing.status.key === "CANCELLED";
+  // CANCELLED is a terminal state — un-cancelling used to be allowed (moving
+  // a CANCELLED order to any other status, re-decrementing the stock this
+  // same function had just restored), but that path never re-synced the
+  // reversal to FINA: pushOrderReturn had already set finaSyncStatus to
+  // SYNCED when the order was cancelled, un-cancelling never pushed a fresh
+  // sale, and the manual "retry FINA sync" button now refuses to touch an
+  // already-SYNCED order — so an un-cancelled order's FINA record was
+  // permanently stuck showing it as returned/inactive with no way to fix it
+  // short of direct DB access. Simplest correct fix: cancellation is
+  // final. A customer who wants the same order again uses reorderOrder
+  // (POST /orders/me/:id/reorder) to place a genuinely new order instead.
+  if (existing.status.key === "CANCELLED") {
+    throw new ApiError(
+      400,
+      "გაუქმებული შეკვეთის სტატუსის შეცვლა შეუძლებელია — მომხმარებელს შეუძლია იგივე შეკვეთა თავიდან გააკეთოს",
+      "ORDER_ALREADY_CANCELLED",
+    );
+  }
 
-  // Cancelling restores the stock placeOrder originally decremented;
-  // un-cancelling (an admin moving a CANCELLED order to any other status)
-  // has to take it back the same way placeOrder did — otherwise toggling an
-  // order's status back and forth would inflate stock for free. Any other
-  // transition (e.g. CONFIRMED -> SHIPPED) never touched stock, so it's left
-  // alone here too.
+  // Cancelling restores the stock placeOrder originally decremented. No
+  // other transition (e.g. CONFIRMED -> SHIPPED) ever touches stock.
   let stockAdjustment: Parameters<typeof ordersRepository.updateStatus>[3];
-  if (isCancelling !== wasCancelled) {
+  if (isCancelling) {
     const [soldStatusId, availableStatusId] = await Promise.all([
       resolveSoldStatusId(),
       resolveAvailableStatusId(),
     ]);
     stockAdjustment = {
-      direction: isCancelling ? "RESTORE" : "DECREMENT",
+      direction: "RESTORE",
       items: existing.items.map((item) => ({
         productVariantId: item.productVariantId,
         vehicleListingId: item.vehicleListingId,
@@ -899,11 +912,10 @@ export async function updateOrderStatus(
     existing.statusId,
   );
 
-  // Only the RESTORE direction (a fresh cancel) mirrors into FINA — un-cancel
-  // (DECREMENT) re-takes the local stock but deliberately doesn't re-push a
-  // second FINA sale, which is out of scope here (see fina_sync_integration
-  // memory). Never throws — same best-effort contract as pushOrderSale.
-  if (stockAdjustment?.direction === "RESTORE") {
+  // Cancelling (the only stock-adjusting transition now that un-cancelling
+  // is disallowed above) mirrors into FINA as a return. Never throws — same
+  // best-effort contract as pushOrderSale.
+  if (stockAdjustment) {
     await pushOrderReturn({
       id: existing.id,
       orderCode: existing.orderCode,

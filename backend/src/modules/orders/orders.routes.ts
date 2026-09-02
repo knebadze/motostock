@@ -205,7 +205,7 @@ registry.registerPath({
   },
   responses: {
     200: { description: "Updated", content: { "application/json": { schema: adminOrderResponse } } },
-    400: { description: "Invalid status", content: { "application/json": { schema: errorResponseSchema } } },
+    400: { description: "Invalid status, or the order is already CANCELLED (terminal — status changes are refused; the customer can reorder instead)", content: { "application/json": { schema: errorResponseSchema } } },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
     403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
