@@ -218,8 +218,22 @@ async function buildWhere(filters: {
   onSale?: boolean;
   attributeFilters?: AttributeFilterInput;
   adminFilters?: FilterEntry[];
+  // True only from the customer-facing findMany/count below. priceMin/
+  // priceMax/onSale below each independently ask "does *some* variant match
+  // this?" — without also requiring isActive on that same variant, a
+  // product could match purely because of a variant nothing can actually
+  // buy (e.g. priced in range or discounted, but inactive), even though the
+  // separate `{ variants: { some: { isActive: true } } }` clause findMany
+  // ANDs in only guarantees *a* variant is active, not that it's the *same*
+  // one satisfying the price/sale condition. The admin paths intentionally
+  // don't set this — an admin filtering by price/sale should still be able
+  // to find inactive variants too.
+  requireActiveVariant?: boolean;
 }): Promise<Prisma.ProductWhereInput | undefined> {
   const and: Prisma.ProductWhereInput[] = [];
+  const activeVariantFilter: Prisma.ProductVariantWhereInput = filters.requireActiveVariant
+    ? { isActive: true }
+    : {};
 
   if (filters.categoryIds && filters.categoryIds.length > 0) {
     and.push({ categoryId: { in: filters.categoryIds } });
@@ -245,6 +259,7 @@ async function buildWhere(filters: {
     and.push({
       variants: {
         some: {
+          ...activeVariantFilter,
           price: {
             ...(filters.priceMin != null ? { gte: filters.priceMin } : {}),
             ...(filters.priceMax != null ? { lte: filters.priceMax } : {}),
@@ -257,7 +272,12 @@ async function buildWhere(filters: {
   if (filters.onSale) {
     const now = new Date();
     and.push({
-      variants: { some: { discounts: { some: { startDate: { lte: now }, endDate: { gte: now } } } } },
+      variants: {
+        some: {
+          ...activeVariantFilter,
+          discounts: { some: { startDate: { lte: now }, endDate: { gte: now } } },
+        },
+      },
     });
   }
 
@@ -316,7 +336,7 @@ export const productsRepository = {
     // in JS) and slice to `limit` itself.
     paginate?: boolean;
   }) {
-    const structuredWhere = await buildWhere(filters);
+    const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
     const suppressPagination = !filters.paginate && filters.searchIds != null;
     return prisma.product.findMany({
       // Customer-facing path only (findManyForAdmin below is the admin
@@ -351,7 +371,7 @@ export const productsRepository = {
     onSale?: boolean;
     attributeFilters?: AttributeFilterInput;
   }) {
-    const structuredWhere = await buildWhere(filters);
+    const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
     return prisma.product.count({
       where: {
         AND: [
