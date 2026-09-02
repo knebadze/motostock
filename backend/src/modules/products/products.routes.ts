@@ -49,27 +49,48 @@ productsRouter.post(
 );
 productsRouter.get("/:id", validate(productIdParamSchema, "params"), productsController.getOne);
 
-productsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
+// requireAuth/requireRole are applied per-route below (not as a blanket
+// `productsRouter.use(...)`) — a path-less `.use()` intercepts every request
+// that reaches this router, including ones that don't match any route
+// declared here (e.g. `/api/products/:productId/recommendations/*`, served
+// by the separate, deliberately-public productRecommendationsRouter mounted
+// after this one in app.ts). That blanket form previously 401/403'd every
+// guest/non-admin recommendation request before it could ever reach the
+// right router — same bug class already fixed once for /api/users (see that
+// module's identical per-route pattern).
 productsRouter.get(
   "/:id/detail",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(productIdParamSchema, "params"),
   productsController.getDetailAdmin,
 );
-productsRouter.post("/", validate(createProductSchema), productsController.create);
+productsRouter.post(
+  "/",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  validate(createProductSchema),
+  productsController.create,
+);
 productsRouter.patch(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(productIdParamSchema, "params"),
   validate(updateProductSchema),
   productsController.update,
 );
 productsRouter.delete(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(productIdParamSchema, "params"),
   productsController.remove,
 );
 productsRouter.post(
   "/:id/image",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(productIdParamSchema, "params"),
   imageUpload().single("image"),
   productsController.uploadImage,
