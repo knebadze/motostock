@@ -46,6 +46,7 @@ export function ProductVariantDiscountsPanel({
   const [adding, setAdding] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [deletingDiscount, setDeletingDiscount] = useState<ProductVariantDiscount | null>(null);
+  const [highPercentConfirmOpen, setHighPercentConfirmOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,6 +124,19 @@ export function ProductVariantDiscountsPanel({
     await refresh();
   }
 
+  // A discount over 50% is unusual enough to be worth a second look before
+  // it's saved — cheap insurance against the same kind of typo (e.g. "50"
+  // meant to be "5") that discountPercent's own 100-is-rejected cap can't
+  // catch on its own, since anything under 100 still passes that.
+  function handleAddClick() {
+    const percentNum = Number(discountPercent);
+    if (discountPercent.trim() !== "" && Number.isFinite(percentNum) && percentNum > 50) {
+      setHighPercentConfirmOpen(true);
+      return;
+    }
+    handleAdd();
+  }
+
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border p-3">
       <h3 className="text-sm font-semibold">ფასდაკლებები</h3>
@@ -162,12 +176,21 @@ export function ProductVariantDiscountsPanel({
         onConfirm={handleDelete}
       />
 
+      <ConfirmDialog
+        open={highPercentConfirmOpen}
+        onClose={() => setHighPercentConfirmOpen(false)}
+        title="მაღალი ფასდაკლების დადასტურება"
+        message={`დარწმუნებული ხართ, რომ გსურთ ${discountPercent}%-იანი ფასდაკლების დამატება?`}
+        confirmLabel="დამატება"
+        onConfirm={handleAdd}
+      />
+
       <div className="grid gap-3 sm:grid-cols-5">
         <div className="flex flex-col gap-1.5">
           <input
             type="number"
             min={0}
-            max={100}
+            max={99}
             step="0.01"
             placeholder="ფასდაკლება (%)"
             value={discountPercent}
@@ -207,7 +230,7 @@ export function ProductVariantDiscountsPanel({
         </div>
         <button
           type="button"
-          onClick={handleAdd}
+          onClick={handleAddClick}
           disabled={adding}
           className="h-fit rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
         >

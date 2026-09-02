@@ -7,11 +7,13 @@ import { Select } from "@/components/shared/Select";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { Toggle } from "@/components/shared/Toggle";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
   createPromoCode,
   updatePromoCode,
   type PromoCode,
   type PromoCodeDomain,
+  type PromoCodeInput,
 } from "@/lib/api/promo-codes";
 import type { Category } from "@/lib/api/categories";
 import { listProductBrands, type ProductBrand } from "@/lib/api/product-brands";
@@ -95,6 +97,7 @@ export function PromoCodeFormModal({
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [pendingHighPercentInput, setPendingHighPercentInput] = useState<PromoCodeInput | null>(null);
 
   // PRODUCT: brands/attributes are category-scoped.
   useEffect(() => {
@@ -219,27 +222,40 @@ export function PromoCodeFormModal({
       return;
     }
     setErrors({});
+
+    const input: PromoCodeInput = {
+      domain,
+      code: code.trim().toUpperCase(),
+      categoryId: categoryId ? Number(categoryId) : null,
+      productBrandId: domain === "PRODUCT" && productBrandId ? Number(productBrandId) : null,
+      attributeId: domain === "PRODUCT" && attributeId ? Number(attributeId) : null,
+      attributeOptionId: domain === "PRODUCT" && attributeOptionId ? Number(attributeOptionId) : null,
+      brandId: domain === "VEHICLE" && brandId ? Number(brandId) : null,
+      modelId: domain === "VEHICLE" && modelId ? Number(modelId) : null,
+      specField: domain === "VEHICLE" && specField ? (specField as VehicleSpecField) : null,
+      specLookupItemId: domain === "VEHICLE" && specLookupItemId ? Number(specLookupItemId) : null,
+      discountPercent: Number(discountPercent),
+      usageLimit: usageLimit.trim() ? Number(usageLimit) : null,
+      startDate,
+      endDate,
+      isActive,
+    };
+
+    // A discount over 50% is unusual enough to be worth a second look before
+    // it's saved — cheap insurance against the same kind of typo (e.g. "50"
+    // meant to be "5") that discountPercent's own 100-is-rejected cap can't
+    // catch on its own, since anything under 100 still passes that.
+    if (input.discountPercent > 50) {
+      setPendingHighPercentInput(input);
+      return;
+    }
+
+    await submitPromoCode(input);
+  }
+
+  async function submitPromoCode(input: PromoCodeInput) {
     setLoading(true);
-
     try {
-      const input = {
-        domain,
-        code: code.trim().toUpperCase(),
-        categoryId: categoryId ? Number(categoryId) : null,
-        productBrandId: domain === "PRODUCT" && productBrandId ? Number(productBrandId) : null,
-        attributeId: domain === "PRODUCT" && attributeId ? Number(attributeId) : null,
-        attributeOptionId: domain === "PRODUCT" && attributeOptionId ? Number(attributeOptionId) : null,
-        brandId: domain === "VEHICLE" && brandId ? Number(brandId) : null,
-        modelId: domain === "VEHICLE" && modelId ? Number(modelId) : null,
-        specField: domain === "VEHICLE" && specField ? (specField as VehicleSpecField) : null,
-        specLookupItemId: domain === "VEHICLE" && specLookupItemId ? Number(specLookupItemId) : null,
-        discountPercent: Number(discountPercent),
-        usageLimit: usageLimit.trim() ? Number(usageLimit) : null,
-        startDate,
-        endDate,
-        isActive,
-      };
-
       if (isEditing) {
         await updatePromoCode(promoCode.id, input);
       } else {
@@ -272,6 +288,7 @@ export function PromoCodeFormModal({
   const specValueSelectOptions = specValueOptions.map((item) => ({ value: String(item.id), label: item.nameKa }));
 
   return (
+    <>
     <Modal
       open={open}
       onClose={onClose}
@@ -433,7 +450,7 @@ export function PromoCodeFormModal({
             <input
               type="number"
               min={0}
-              max={100}
+              max={99}
               step="0.01"
               value={discountPercent}
               onChange={(event) => setDiscountPercent(event.target.value)}
@@ -489,5 +506,18 @@ export function PromoCodeFormModal({
         <FormActions onCancel={onClose} loading={loading} />
       </form>
     </Modal>
+
+    <ConfirmDialog
+      open={pendingHighPercentInput !== null}
+      onClose={() => setPendingHighPercentInput(null)}
+      title="მაღალი ფასდაკლების დადასტურება"
+      message={`დარწმუნებული ხართ, რომ გსურთ ${discountPercent}%-იანი პრომოკოდის ${isEditing ? "განახლება" : "დამატება"}?`}
+      confirmLabel={isEditing ? "განახლება" : "დამატება"}
+      onConfirm={async () => {
+        if (pendingHighPercentInput) await submitPromoCode(pendingHighPercentInput);
+        setPendingHighPercentInput(null);
+      }}
+    />
+    </>
   );
 }

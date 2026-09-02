@@ -10,12 +10,14 @@ const codeSchema = z
 
 const commonFields = {
   code: codeSchema,
+  // 100 rejected, not just capped — mirrors promo-codes.schema.ts's backend
+  // constraint (a 100% code makes every matching item free).
   discountPercent: z
     .string()
     .refine(
       (value) =>
-        value.trim() !== "" && !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 100,
-      { message: "0-100 შუალედში" },
+        value.trim() !== "" && !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 99,
+      { message: "0-99 შუალედში" },
     ),
   // Empty means unlimited — see PromoCode.usageLimit.
   usageLimit: optionalIntString({ min: 1, message: "მინიმუმ 1" }),

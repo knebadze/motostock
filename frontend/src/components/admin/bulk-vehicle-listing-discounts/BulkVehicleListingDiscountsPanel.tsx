@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Select } from "@/components/shared/Select";
 import { FieldError } from "@/components/shared/FieldError";
 import { Loader } from "@/components/shared/Loader";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
   applyBulkVehicleListingDiscounts,
   listBulkVehicleDiscountCandidates,
@@ -51,6 +52,7 @@ export function BulkVehicleListingDiscountsPanel({ categories }: { categories: C
   const [endDate, setEndDate] = useState("");
   const [applying, setApplying] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [highPercentConfirmOpen, setHighPercentConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!categoryId) return;
@@ -198,6 +200,19 @@ export function BulkVehicleListingDiscountsPanel({ categories }: { categories: C
     } finally {
       setApplying(false);
     }
+  }
+
+  // A discount over 50% is unusual enough to be worth a second look before
+  // it's applied — this hits every one of the (potentially many) selected
+  // listings at once, so a typo here is more costly than on a single-item
+  // discount form.
+  function handleApplyClick() {
+    const percentNum = Number(discountPercent);
+    if (discountPercent.trim() !== "" && Number.isFinite(percentNum) && percentNum > 50) {
+      setHighPercentConfirmOpen(true);
+      return;
+    }
+    handleApply();
   }
 
   return (
@@ -364,7 +379,7 @@ export function BulkVehicleListingDiscountsPanel({ categories }: { categories: C
               <input
                 type="number"
                 min={0}
-                max={100}
+                max={99}
                 step="0.01"
                 value={discountPercent}
                 onChange={(event) => setDiscountPercent(event.target.value)}
@@ -394,7 +409,7 @@ export function BulkVehicleListingDiscountsPanel({ categories }: { categories: C
             </div>
             <button
               type="button"
-              onClick={handleApply}
+              onClick={handleApplyClick}
               disabled={applying || selectedIds.size === 0}
               className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
@@ -404,6 +419,15 @@ export function BulkVehicleListingDiscountsPanel({ categories }: { categories: C
           </div>
         </>
       )}
+
+      <ConfirmDialog
+        open={highPercentConfirmOpen}
+        onClose={() => setHighPercentConfirmOpen(false)}
+        title="მაღალი ფასდაკლების დადასტურება"
+        message={`დარწმუნებული ხართ, რომ გსურთ ${discountPercent}%-იანი ფასდაკლების გამოყენება ${selectedIds.size} განცხადებაზე?`}
+        confirmLabel="გამოყენება"
+        onConfirm={handleApply}
+      />
     </div>
   );
 }

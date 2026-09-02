@@ -15,7 +15,11 @@ export const bulkApplyVehicleListingDiscountsSchema = registry.register(
   z
     .object({
       vehicleListingIds: z.array(z.int().positive()).min(1),
-      discountPercent: z.coerce.number().positive().max(100).openapi({ example: 15 }),
+      // 100 (or above) rejected, not just capped — bulk-vehicle-listing-discounts.service.ts's
+      // applyPercentDiscount derives discountPrice directly from this percent
+      // (price * (1 - percent/100)), so a stray 100 zeroes out every one of
+      // the (potentially many) selected listings at once.
+      discountPercent: z.coerce.number().positive().max(99).openapi({ example: 15 }),
       startDate: z.iso.date(),
       endDate: z.iso.date(),
     })

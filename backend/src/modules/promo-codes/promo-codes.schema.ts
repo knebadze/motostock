@@ -45,7 +45,12 @@ const baseFields = {
   modelId: z.int().positive().nullable().optional(),
   specField: vehicleSpecFieldSchema.nullable().optional(),
   specLookupItemId: z.int().positive().nullable().optional(),
-  discountPercent: z.coerce.number().positive().max(100).openapi({ example: 15 }),
+  // 100 (or above) is deliberately rejected, not just capped — a 100%
+  // promo code makes every matching item free, and this field drives the
+  // charged price directly (unlike ProductVariantDiscount/VehicleListingDiscount's
+  // discountPrice, which is validated separately against list price), so
+  // there's no other guard between a typo here and a ₾0.00 checkout line.
+  discountPercent: z.coerce.number().positive().max(99).openapi({ example: 15 }),
   // Total redemptions across every customer — null/omitted means unlimited.
   usageLimit: z.int().positive().nullable().optional(),
   startDate: z.iso.date(),
@@ -147,7 +152,9 @@ export const updatePromoCodeSchema = registry.register(
       modelId: z.int().positive().nullable().optional(),
       specField: vehicleSpecFieldSchema.nullable().optional(),
       specLookupItemId: z.int().positive().nullable().optional(),
-      discountPercent: z.coerce.number().positive().max(100).optional(),
+      // See createPromoCodeSchema's baseFields.discountPercent comment — same
+      // "100 makes it free" reasoning applies on update.
+      discountPercent: z.coerce.number().positive().max(99).optional(),
       usageLimit: z.int().positive().nullable().optional(),
       startDate: z.iso.date().optional(),
       endDate: z.iso.date().optional(),
