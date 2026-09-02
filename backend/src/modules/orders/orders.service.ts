@@ -489,11 +489,22 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
       // it can't pick the "right" one itself; each Errors.*.json locale's
       // INSUFFICIENT_STOCK_ITEM template references whichever of
       // itemNameKa/itemNameEn/itemNameRu matches its own language instead.
+      // availableQuantity names exactly how many are actually left, rather
+      // than a generic "not enough in stock" — this is the customer-facing
+      // moment a cart quantity that got out of sync with real stock
+      // (e.g. via the guest-cart merge on login, which deliberately never
+      // silently shrinks a quantity — see cart.repository.ts's
+      // mergeGuestItem) is surfaced, so it needs to be actionable.
       throw new ApiError(
         409,
-        `"${item.itemNameKa}" — მარაგში საკმარისი რაოდენობა აღარ არის`,
+        `"${item.itemNameKa}" — მარაგშია მხოლოდ ${item.stockQuantity} ცალი`,
         "INSUFFICIENT_STOCK_ITEM",
-        { itemNameKa: item.itemNameKa, itemNameEn: item.itemNameEn, itemNameRu: item.itemNameRu },
+        {
+          itemNameKa: item.itemNameKa,
+          itemNameEn: item.itemNameEn,
+          itemNameRu: item.itemNameRu,
+          availableQuantity: item.stockQuantity,
+        },
       );
     }
   }

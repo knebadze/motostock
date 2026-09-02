@@ -576,7 +576,7 @@
     "OUT_OF_STOCK": "This product is out of stock",
     "VEHICLE_LISTING_UNAVAILABLE": "This item is no longer available",
     "INSUFFICIENT_STOCK": "Not enough stock available",
-    "INSUFFICIENT_STOCK_ITEM": "\"{itemNameEn}\" — not enough stock available",
+    "INSUFFICIENT_STOCK_ITEM": "\"{itemNameEn}\" — only {availableQuantity} left in stock",
     "MISSING_REQUIRED_FIELD": "A required field is missing",
     "CART_ITEM_NOT_FOUND": "Cart item not found",
     "WISHLIST_ITEM_NOT_FOUND": "Wishlist item not found",

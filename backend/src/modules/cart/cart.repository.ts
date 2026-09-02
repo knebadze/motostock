@@ -122,6 +122,17 @@ export const cartRepository = {
   // another tab) landing on the same target row. Wrapped in one transaction
   // so a crash between the claim and the upsert can't silently drop the
   // item — either both happen or neither does.
+  // Same MAX_QUANTITY as cart.service.ts's own cap — duplicated rather than
+  // imported (cart.service.ts already imports cartRepository from this
+  // file, so importing back would be circular). Deliberately NOT capped by
+  // current stockQuantity here, unlike every other cart-write path: this
+  // runs silently on login, with no user action to react to, so silently
+  // shrinking a quantity the guest explicitly chose (because stock dropped
+  // in the meantime) would just be confusing — "why did my 10 become 3?"
+  // with no visible cause. A merged quantity that now exceeds stock is
+  // instead surfaced at checkout time, where the customer can actually see
+  // and act on it (see orders.service.ts's placeOrder, which reports how
+  // many are actually left).
   async mergeGuestItem(
     item: {
       id: number;
@@ -133,31 +144,43 @@ export const cartRepository = {
     guestId: string,
     userId: number,
   ) {
+    const MAX_QUANTITY = 99;
+
     await prisma.$transaction(async (tx) => {
       const claimed = await tx.cartItem.deleteMany({ where: { id: item.id, guestId } });
       if (claimed.count === 0) return;
 
       if (item.productVariantId != null) {
+        const existing = await tx.cartItem.findUnique({
+          where: { userId_productVariantId: { userId, productVariantId: item.productVariantId } },
+          select: { quantity: true },
+        });
+        const quantity = Math.min((existing?.quantity ?? 0) + item.quantity, MAX_QUANTITY);
         await tx.cartItem.upsert({
           where: { userId_productVariantId: { userId, productVariantId: item.productVariantId } },
           create: {
             itemType: item.itemType,
             userId,
             productVariantId: item.productVariantId,
-            quantity: item.quantity,
+            quantity,
           },
-          update: { quantity: { increment: item.quantity } },
+          update: { quantity },
         });
       } else if (item.vehicleListingId != null) {
+        const existing = await tx.cartItem.findUnique({
+          where: { userId_vehicleListingId: { userId, vehicleListingId: item.vehicleListingId } },
+          select: { quantity: true },
+        });
+        const quantity = Math.min((existing?.quantity ?? 0) + item.quantity, MAX_QUANTITY);
         await tx.cartItem.upsert({
           where: { userId_vehicleListingId: { userId, vehicleListingId: item.vehicleListingId } },
           create: {
             itemType: item.itemType,
             userId,
             vehicleListingId: item.vehicleListingId,
-            quantity: item.quantity,
+            quantity,
           },
-          update: { quantity: { increment: item.quantity } },
+          update: { quantity },
         });
       }
     });
