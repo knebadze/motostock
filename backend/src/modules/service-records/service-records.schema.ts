@@ -79,5 +79,10 @@ export const serviceRecordResponseSchema = registry.register(
     recordedByUserId: z.int().nullable(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
+    // Set only by create/update (see service-records.service.ts's
+    // checkMileageMonotonicity) — a non-blocking heads-up that this record's
+    // mileage looks out of order next to this vehicle's other records, not a
+    // validation error. Absent on a plain list/get response.
+    mileageWarning: z.string().nullable().optional(),
   }),
 );

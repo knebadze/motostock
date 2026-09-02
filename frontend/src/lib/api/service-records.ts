@@ -22,6 +22,11 @@ export type ServiceRecord = {
   recordedByUserId: number | null;
   createdAt: string;
   updatedAt: string;
+  // Only ever set on a create/update response — a non-blocking heads-up that
+  // this record's mileage looks out of order next to this vehicle's other
+  // records (see backend's checkMileageMonotonicity), not a validation
+  // error. Absent on a plain list/get response.
+  mileageWarning?: string | null;
 };
 
 // Either serviceTypeId or customServiceName — never both, never neither

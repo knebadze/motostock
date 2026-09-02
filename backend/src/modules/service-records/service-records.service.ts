@@ -58,6 +58,45 @@ async function assertMechanicExists(mechanicId: number) {
   }
 }
 
+// Soft check, not a validation error — real exceptions exist (odometer/engine
+// replacement, a correction to a previously-mistyped record), so this never
+// blocks the save; it just flags a likely typo for the admin to double-check.
+// Same-day siblings are excluded entirely — several services logged for one
+// day commonly carry identical or near-identical mileage in no particular
+// order, so comparing them would just produce noise.
+async function checkMileageMonotonicity(
+  garageVehicleId: number,
+  performedAt: Date,
+  mileageKm: number,
+  excludeId?: number,
+): Promise<string | null> {
+  const siblings = (await serviceRecordsRepository.findByGarageVehicleId(garageVehicleId)).filter(
+    (row) => row.id !== excludeId,
+  );
+
+  let closestBefore: (typeof siblings)[number] | null = null;
+  let closestAfter: (typeof siblings)[number] | null = null;
+  for (const row of siblings) {
+    if (row.performedAt.getTime() < performedAt.getTime()) {
+      if (!closestBefore || row.performedAt.getTime() > closestBefore.performedAt.getTime()) {
+        closestBefore = row;
+      }
+    } else if (row.performedAt.getTime() > performedAt.getTime()) {
+      if (!closestAfter || row.performedAt.getTime() < closestAfter.performedAt.getTime()) {
+        closestAfter = row;
+      }
+    }
+  }
+
+  if (closestBefore && mileageKm < closestBefore.mileageKm) {
+    return `მითითებული გარბენი (${mileageKm} კმ) ნაკლებია ${toTbilisiDateOnly(closestBefore.performedAt)}-ის ჩანაწერზე (${closestBefore.mileageKm} კმ) — შეამოწმეთ, ხომ არ არის შეცდომა`;
+  }
+  if (closestAfter && mileageKm > closestAfter.mileageKm) {
+    return `მითითებული გარბენი (${mileageKm} კმ) მეტია ${toTbilisiDateOnly(closestAfter.performedAt)}-ის ჩანაწერზე (${closestAfter.mileageKm} კმ) — შეამოწმეთ, ხომ არ არის შეცდომა`;
+  }
+  return null;
+}
+
 // requestingUserId/isAdmin: an admin can pull any vehicle's history; a
 // regular authenticated user only their own (garageVehicle.userId match) —
 // this keeps the endpoint reusable later for a customer-facing "my
@@ -108,7 +147,13 @@ export async function createServiceRecord(input: CreateServiceRecordInput, recor
     notes: input.notes ?? null,
     recordedByUserId,
   });
-  return toResponse(row);
+  const mileageWarning = await checkMileageMonotonicity(
+    row.garageVehicleId,
+    row.performedAt,
+    row.mileageKm,
+    row.id,
+  );
+  return { ...toResponse(row), mileageWarning };
 }
 
 export async function updateServiceRecord(id: number, input: UpdateServiceRecordInput) {
@@ -129,7 +174,13 @@ export async function updateServiceRecord(id: number, input: UpdateServiceRecord
     ...(input.mechanicId !== undefined ? { mechanicId: input.mechanicId } : {}),
     ...(input.notes !== undefined ? { notes: input.notes } : {}),
   });
-  return toResponse(row);
+  const mileageWarning = await checkMileageMonotonicity(
+    row.garageVehicleId,
+    row.performedAt,
+    row.mileageKm,
+    row.id,
+  );
+  return { ...toResponse(row), mileageWarning };
 }
 
 export async function deleteServiceRecord(id: number) {

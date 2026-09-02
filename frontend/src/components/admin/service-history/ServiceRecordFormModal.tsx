@@ -104,8 +104,9 @@ export function ServiceRecordFormModal({
 
     setLoading(true);
     try {
+      let saved: ServiceRecord;
       if (isEditing) {
-        await updateServiceRecord(record.id, {
+        saved = await updateServiceRecord(record.id, {
           mileageKm: mileage,
           performedAt,
           position: selectedTypeHasPosition() ? position || null : null,
@@ -116,7 +117,7 @@ export function ServiceRecordFormModal({
         });
         toast.success("ჩანაწერი განახლდა");
       } else {
-        await createServiceRecord({
+        saved = await createServiceRecord({
           garageVehicleId,
           ...(isOther
             ? { customServiceName: customServiceName.trim() }
@@ -130,6 +131,12 @@ export function ServiceRecordFormModal({
           notes: notes.trim() || undefined,
         });
         toast.success("სერვისი ჩაიწერა");
+      }
+      // Non-blocking — the record is already saved either way; this just
+      // flags a likely typo against this vehicle's other records (see
+      // backend's checkMileageMonotonicity) for the admin to double-check.
+      if (saved.mileageWarning) {
+        toast.warning(saved.mileageWarning);
       }
       onSaved();
       onClose();
