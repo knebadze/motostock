@@ -11,32 +11,45 @@ export function formatPrice(value: number): string {
   return `${withSeparators}${hasCents ? `.${decimalPart}` : ""} ₾`;
 }
 
-// Same deterministic-formatting rationale as formatPrice above — manual
-// padStart formatting instead of toLocaleString, so server and client render
-// byte-identical output regardless of ICU data availability.
+// Georgia has a single fixed UTC+4 offset year-round (no DST) — mirrors
+// backend/src/lib/tbilisi-dates.ts. Every date helper below shifts the UTC
+// instant forward by this much and then reads it back with *UTC* getters
+// (getUTCDate/getUTCHours/etc, never getDate/getHours) — that's what makes
+// these deterministic: getDate()/getHours() read the *runtime's own local
+// timezone*, which is Tbilisi in a real user's browser but UTC on this
+// app's server (Docker's Node image, no TZ env var set). A Server Component
+// calling the old local-getter version rendered timestamps ~4 hours (and,
+// near local midnight, up to a full calendar day) off from what a Georgia-
+// based visitor should see, permanently (Server Component output is never
+// re-rendered client-side to "correct" it) — and the same mismatch between
+// server (UTC) and client (Tbilisi) locals caused React hydration warnings
+// wherever a "use client" component formatted a server-fetched date during
+// its own first render. Shifting explicitly and reading with UTC getters
+// sidesteps the runtime's local timezone entirely, so server and client
+// (and everyone's browser, regardless of their own OS timezone) render the
+// identical, Tbilisi-correct string — same "byte-identical regardless of
+// environment" rationale as formatPrice above, just for timezone instead of
+// ICU data.
+const TBILISI_OFFSET_MS = 4 * 60 * 60 * 1000;
+
+function toTbilisiWallClock(iso: string): Date {
+  return new Date(new Date(iso).getTime() + TBILISI_OFFSET_MS);
+}
+
 export function formatDateTime(iso: string): string {
-  const date = new Date(iso);
+  const date = toTbilisiWallClock(iso);
   const pad = (value: number) => String(value).padStart(2, "0");
-  return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${pad(date.getUTCDate())}.${pad(date.getUTCMonth() + 1)}.${date.getUTCFullYear()} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
 }
 
 export function formatDate(iso: string): string {
-  const date = new Date(iso);
+  const date = toTbilisiWallClock(iso);
   const pad = (value: number) => String(value).padStart(2, "0");
-  return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
+  return `${pad(date.getUTCDate())}.${pad(date.getUTCMonth() + 1)}.${date.getUTCFullYear()}`;
 }
 
-// Mirrors backend/src/lib/tbilisi-dates.ts's toTbilisiDateOnly — admin
-// discount/promo-code dates are stored as the start/end instant of a
-// Tbilisi (UTC+4, no DST) calendar day, not UTC midnight. A plain
-// `iso.slice(0, 10)` on the returned instant reads the *UTC* calendar date
-// instead, which is a day early for anything stored as Tbilisi midnight
-// (e.g. a discount's startDate) — this reads back the Tbilisi date the
-// backend actually meant instead.
-const TBILISI_OFFSET_MS = 4 * 60 * 60 * 1000;
-
 export function toTbilisiDateOnly(iso: string): string {
-  return new Date(new Date(iso).getTime() + TBILISI_OFFSET_MS).toISOString().slice(0, 10);
+  return toTbilisiWallClock(iso).toISOString().slice(0, 10);
 }
 
 // Lookup rows (Size/Color/Condition/ListingStatus/etc.) store one flat name

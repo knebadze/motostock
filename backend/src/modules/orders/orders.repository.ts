@@ -1,5 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { prisma } from "../../config/prisma.js";
+import { startOfDayTbilisi, endOfDayTbilisi } from "../../lib/tbilisi-dates.js";
 import type {
   CartItemType,
   OrderDeliverySpeed,
@@ -73,8 +74,8 @@ function buildAdminWhere(filters: {
   if (filters.createdFrom || filters.createdTo) {
     and.push({
       createdAt: {
-        ...(filters.createdFrom ? { gte: new Date(filters.createdFrom) } : {}),
-        ...(filters.createdTo ? { lte: new Date(filters.createdTo) } : {}),
+        ...(filters.createdFrom ? { gte: startOfDayTbilisi(filters.createdFrom) } : {}),
+        ...(filters.createdTo ? { lte: endOfDayTbilisi(filters.createdTo) } : {}),
       },
     });
   }

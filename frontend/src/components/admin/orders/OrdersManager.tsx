@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, usePagination } from "@/components/shared/Pagination";
 import { Select } from "@/components/shared/Select";
-import { formatDate, formatDateTime, formatPrice } from "@/lib/format";
+import { formatDate, formatDateTime, formatPrice, toTbilisiDateOnly } from "@/lib/format";
 import { ApiRequestError } from "@/lib/api/client";
 import {
   listAllOrders,
@@ -45,9 +45,17 @@ function getDeliveryUrgency(order: AdminOrderSummary): "green" | "yellow" | "red
   const now = new Date();
   const estimated = new Date(order.estimatedDeliveryDate);
 
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const estimatedDay = new Date(estimated.getFullYear(), estimated.getMonth(), estimated.getDate());
-  if (today >= estimatedDay) return "red";
+  // Compares Tbilisi calendar-day strings, not `new Date(y, m, d)` (which
+  // reads the runtime's own local timezone — UTC on this app's server,
+  // Tbilisi in a real admin's browser) — this table's `initialOrders` are
+  // server-fetched props, so this function's first run is server-side; a
+  // local-getter comparison would disagree with the client's post-hydration
+  // re-run for part of every day (whenever it's already tomorrow in Tbilisi
+  // but still today in UTC), flashing the wrong badge color before React's
+  // hydration correction kicks in.
+  const todayKey = toTbilisiDateOnly(now.toISOString());
+  const estimatedDayKey = toTbilisiDateOnly(order.estimatedDeliveryDate);
+  if (todayKey >= estimatedDayKey) return "red";
 
   const created = new Date(order.createdAt);
   const totalWindowMs = estimated.getTime() - created.getTime();

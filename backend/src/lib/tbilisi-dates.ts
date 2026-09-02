@@ -25,3 +25,15 @@ export function endOfDayTbilisi(dateOnly: string): Date {
 export function toTbilisiDateOnly(date: Date): string {
   return new Date(date.getTime() + TBILISI_OFFSET_MS).toISOString().slice(0, 10);
 }
+
+// Pure calendar-day arithmetic on a "YYYY-MM-DD" string — used for things
+// like "N days before this date-only value" (e.g. a default 30-day report
+// window). Deliberately does the shift on a UTC-anchored Date, not a
+// Tbilisi-anchored one: since Georgia has no DST, whole-day offsets land on
+// the same calendar date either way, and this avoids re-deriving a Tbilisi
+// instant just to throw it away again.
+export function shiftDateOnly(dateOnly: string, days: number): string {
+  const date = new Date(`${dateOnly}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}

@@ -1,4 +1,5 @@
 import { analyticsRepository } from "./analytics.repository.js";
+import { startOfDayTbilisi, endOfDayTbilisi, toTbilisiDateOnly, shiftDateOnly } from "../../lib/tbilisi-dates.js";
 
 const DEFAULT_WINDOW_DAYS = 30;
 // Per-signal candidate pool for the demand tables — union of the top N by
@@ -7,17 +8,17 @@ const DEFAULT_WINDOW_DAYS = 30;
 const DEMAND_CANDIDATE_LIMIT = 10;
 const RECENT_CANCELLED_LIMIT = 10;
 
+// dateFromInput/dateToInput are bare "YYYY-MM-DD" (z.iso.date() — see
+// analytics.schema.ts) — anchored to Tbilisi's calendar day (see
+// lib/tbilisi-dates.ts), not UTC, so "today" in the default (no explicit
+// range) case matches what an admin physically in Georgia means by "today",
+// and an explicit ?dateTo=2026-08-15 covers that whole day locally instead
+// of cutting off ~20 hours early.
 function resolveDateRange(dateFromInput?: string, dateToInput?: string): { from: Date; to: Date } {
-  const to = dateToInput ? new Date(dateToInput) : new Date();
-  to.setHours(23, 59, 59, 999);
+  const toDateOnly = dateToInput ?? toTbilisiDateOnly(new Date());
+  const fromDateOnly = dateFromInput ?? shiftDateOnly(toDateOnly, -DEFAULT_WINDOW_DAYS);
 
-  const from = dateFromInput ? new Date(dateFromInput) : new Date(to);
-  if (!dateFromInput) {
-    from.setDate(from.getDate() - DEFAULT_WINDOW_DAYS);
-  }
-  from.setHours(0, 0, 0, 0);
-
-  return { from, to };
+  return { from: startOfDayTbilisi(fromDateOnly), to: endOfDayTbilisi(toDateOnly) };
 }
 
 function topNIds(counts: Map<number, number>, limit: number): number[] {
@@ -27,12 +28,15 @@ function topNIds(counts: Map<number, number>, limit: number): number[] {
     .map(([id]) => id);
 }
 
-function toDayKey(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
+// Alias for readability at call sites below — buckets an order into the
+// Tbilisi calendar day it was placed on, not the UTC one.
+const toDayKey = toTbilisiDateOnly;
 
 // Zero-filled day series between from/to (inclusive) — a chart shouldn't
-// skip days with no orders, otherwise the x-axis spacing lies.
+// skip days with no orders, otherwise the x-axis spacing lies. Walks
+// Tbilisi calendar-day strings directly (not Date-object setHours/getDate,
+// which are local-timezone-dependent and would walk UTC days on a server
+// that isn't itself running in Tbilisi time).
 function buildRevenueSeries(rows: { createdAt: Date; total: unknown }[], from: Date, to: Date) {
   const totalsByDay = new Map<string, number>();
   for (const row of rows) {
@@ -41,14 +45,11 @@ function buildRevenueSeries(rows: { createdAt: Date; total: unknown }[], from: D
   }
 
   const series: { date: string; revenue: number }[] = [];
-  const cursor = new Date(from);
-  cursor.setHours(0, 0, 0, 0);
-  const end = new Date(to);
-  end.setHours(0, 0, 0, 0);
-  while (cursor <= end) {
-    const key = toDayKey(cursor);
-    series.push({ date: key, revenue: totalsByDay.get(key) ?? 0 });
-    cursor.setDate(cursor.getDate() + 1);
+  const toKey = toTbilisiDateOnly(to);
+  let cursorKey = toTbilisiDateOnly(from);
+  while (cursorKey <= toKey) {
+    series.push({ date: cursorKey, revenue: totalsByDay.get(cursorKey) ?? 0 });
+    cursorKey = shiftDateOnly(cursorKey, 1);
   }
   return series;
 }

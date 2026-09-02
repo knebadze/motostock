@@ -1,5 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import type { ServicePosition } from "../../generated/prisma/index.js";
+import { startOfDayTbilisi, toTbilisiDateOnly } from "../../lib/tbilisi-dates.js";
 import { garageRepository } from "../garage/garage.repository.js";
 import { serviceTypesRepository } from "../service-types/service-types.repository.js";
 import { teamMembersRepository } from "../team-members/team-members.repository.js";
@@ -25,10 +26,6 @@ type ServiceRecordRow = {
   updatedAt: Date;
 };
 
-function toDateOnly(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
 function toResponse(row: ServiceRecordRow) {
   return {
     id: row.id,
@@ -39,7 +36,7 @@ function toResponse(row: ServiceRecordRow) {
       : null,
     customServiceName: row.customServiceName,
     mileageKm: row.mileageKm,
-    performedAt: toDateOnly(row.performedAt),
+    performedAt: toTbilisiDateOnly(row.performedAt),
     position: row.position,
     filterChanged: row.filterChanged,
     price: row.price != null ? Number(row.price) : null,
@@ -103,7 +100,7 @@ export async function createServiceRecord(input: CreateServiceRecordInput, recor
     serviceTypeId: input.serviceTypeId ?? null,
     customServiceName: input.customServiceName ?? null,
     mileageKm: input.mileageKm,
-    performedAt: new Date(input.performedAt),
+    performedAt: startOfDayTbilisi(input.performedAt),
     position: input.position ?? null,
     filterChanged: input.filterChanged ?? null,
     price: input.price ?? null,
@@ -125,7 +122,7 @@ export async function updateServiceRecord(id: number, input: UpdateServiceRecord
 
   const row = await serviceRecordsRepository.update(id, {
     ...(input.mileageKm !== undefined ? { mileageKm: input.mileageKm } : {}),
-    ...(input.performedAt !== undefined ? { performedAt: new Date(input.performedAt) } : {}),
+    ...(input.performedAt !== undefined ? { performedAt: startOfDayTbilisi(input.performedAt) } : {}),
     ...(input.position !== undefined ? { position: input.position } : {}),
     ...(input.filterChanged !== undefined ? { filterChanged: input.filterChanged } : {}),
     ...(input.price !== undefined ? { price: input.price } : {}),
