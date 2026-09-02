@@ -3,6 +3,7 @@ import { env } from "../../config/env.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { comparePassword, hashPassword } from "../../lib/password.js";
 import { signJwt } from "../../lib/jwt.js";
+import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import {
   isMailerConfigured,
   sendPasswordResetEmail,
@@ -68,13 +69,24 @@ export async function registerUser(input: RegisterInput, ipAddress: string | nul
   }
 
   const passwordHash = await hashPassword(input.password);
-  const user = await usersRepository.create({
-    email: input.email,
-    firstName: input.firstName,
-    lastName: input.lastName,
-    passwordHash,
-    roleId: userRole.id,
-  });
+  let user;
+  try {
+    user = await usersRepository.create({
+      email: input.email,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      passwordHash,
+      roleId: userRole.id,
+    });
+  } catch (err) {
+    // A concurrent request (another password registration double-submit, or
+    // an OAuth signup racing this one — see oauth.service.ts's
+    // findOrCreateOAuthUser) can pass the findByEmail check above before
+    // either commits — surface the same clean 409 the pre-check above gives
+    // the non-race case, instead of a raw 500.
+    if (!isUniqueConstraintViolation(err, "email")) throw err;
+    throw new ApiError(409, "Email already in use", "EMAIL_ALREADY_IN_USE");
+  }
 
   const token = await signJwt({
     sub: user.id,
