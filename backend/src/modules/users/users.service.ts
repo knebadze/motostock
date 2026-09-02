@@ -1,6 +1,8 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { comparePassword, hashPassword } from "../../lib/password.js";
 import { resolvePage } from "../../lib/pagination.js";
+import { signJwt } from "../../lib/jwt.js";
+import type { RoleName } from "../../lib/roles.js";
 import { toAddressResponse } from "../addresses/addresses.service.js";
 import { toResponse as toGarageVehicleResponse } from "../garage/garage.service.js";
 import { toResponse as toWishlistItemResponse } from "../wishlist/wishlist.service.js";
@@ -25,7 +27,19 @@ export async function getUserById(id: number) {
   };
 }
 
-export async function changePassword(userId: number, input: ChangePasswordInput) {
+// Returns a freshly-signed token for the caller's OWN session — updatePasswordHash
+// bumps User.tokenVersion, which invalidates every *other* session/device the
+// next time each one is used (see auth.middleware.ts's resolveAuthenticatedUser),
+// but the session making this exact request needs a token that already
+// carries the new version, or its own next request would log itself out too.
+// loginAt is passed in (from the caller's current, already-verified token)
+// rather than reset to now — this is a mid-session cookie reissue, not a new
+// login, so the absolute session cap keeps measuring from the true start.
+export async function changePassword(
+  userId: number,
+  input: ChangePasswordInput,
+  loginAt: number,
+): Promise<string> {
   const user = await usersRepository.findById(userId);
   if (!user) {
     throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა", "USER_NOT_FOUND");
@@ -42,7 +56,14 @@ export async function changePassword(userId: number, input: ChangePasswordInput)
   }
 
   const passwordHash = await hashPassword(input.newPassword);
-  await usersRepository.updatePasswordHash(userId, passwordHash);
+  const updated = await usersRepository.updatePasswordHash(userId, passwordHash);
+
+  return signJwt({
+    sub: updated.id,
+    role: updated.role.name as RoleName,
+    loginAt,
+    tokenVersion: updated.tokenVersion,
+  });
 }
 
 export async function getUserDetail(id: number) {

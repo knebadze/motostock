@@ -14,6 +14,16 @@ model User {
   // area (frontend's account/layout.tsx redirects to /verify-required when
   // unset) — login itself stays unaffected either way.
   emailVerifiedAt         DateTime?
+  // Bumped on every password change (both the emailed reset flow and the
+  // authenticated change-password flow — see users.repository.ts's
+  // updatePasswordHash) — embedded in every issued JWT (lib/jwt.ts) and
+  // compared against this live value on every authenticated request
+  // (auth.middleware.ts's resolveAuthenticatedUser); a mismatch means the
+  // token predates the account's current password and is rejected, so a
+  // password change invalidates every session/device except the one that
+  // just performed it (which gets a freshly re-signed cookie in the same
+  // response).
+  tokenVersion            Int                      @default(0)
   roleId                  Int
   role                    Role                     @relation(fields: [roleId], references: [id])
   finaSyncRuns            FinaSyncRun[]

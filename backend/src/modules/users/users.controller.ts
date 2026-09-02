@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
+import { setAuthCookie } from "../../lib/jwt.js";
 import {
   changePassword as changePasswordService,
   getUserById,
@@ -38,6 +39,10 @@ export async function changePassword(
     throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
   }
 
-  await changePasswordService(req.user.sub, req.body);
+  // Reissues the cookie so this exact session survives the tokenVersion bump
+  // that just invalidated every other one — see users.service.ts's
+  // changePassword.
+  const token = await changePasswordService(req.user.sub, req.body, req.user.loginAt);
+  await setAuthCookie(res, token);
   res.status(204).send();
 }

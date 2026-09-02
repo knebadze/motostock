@@ -75,7 +75,12 @@ async function findOrCreateOAuthUser(profile: OAuthProfile, provider: Provider) 
 
 async function completeOAuthLogin(profile: OAuthProfile, provider: Provider) {
   const user = await findOrCreateOAuthUser(profile, provider);
-  const token = await signJwt({ sub: user.id, role: user.role.name as RoleName, loginAt: Date.now() });
+  const token = await signJwt({
+    sub: user.id,
+    role: user.role.name as RoleName,
+    loginAt: Date.now(),
+    tokenVersion: user.tokenVersion,
+  });
   return { user: toSafeUser(user), token };
 }
 

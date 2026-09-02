@@ -42,15 +42,31 @@ export async function resolveAuthenticatedUser(
     const user = await usersRepository.findById(payload.sub);
     if (!user) return null;
 
+    // A password change bumps User.tokenVersion (see users.repository.ts's
+    // updatePasswordHash) — a token signed before that no longer matches and
+    // is rejected here, which is what actually logs out every other
+    // session/device on a password change (the account-holder's own current
+    // session gets a freshly re-signed cookie in the same response that
+    // changed the password — see users.controller.ts/auth.controller.ts).
+    if (payload.tokenVersion !== user.tokenVersion) {
+      res.clearCookie(AUTH_COOKIE_NAME);
+      return null;
+    }
+
     const role = user.role.name as RoleName;
 
     // Sliding idle timeout — every authenticated request resets the 2h idle
     // clock by reissuing the cookie, while loginAt (and therefore the
     // absolute cap above) stays pinned to the original login.
-    const refreshed = await signJwt({ sub: user.id, role, loginAt: payload.loginAt });
+    const refreshed = await signJwt({
+      sub: user.id,
+      role,
+      loginAt: payload.loginAt,
+      tokenVersion: user.tokenVersion,
+    });
     await setAuthCookie(res, refreshed);
 
-    return { sub: user.id, role, loginAt: payload.loginAt };
+    return { sub: user.id, role, loginAt: payload.loginAt, tokenVersion: user.tokenVersion };
   } catch {
     return null;
   }

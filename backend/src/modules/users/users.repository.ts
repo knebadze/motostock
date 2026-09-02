@@ -113,7 +113,16 @@ export const usersRepository = {
     return prisma.user.update({ where: { id }, data: { facebookId }, include: { role: true } });
   },
 
+  // Bumps tokenVersion alongside the hash so every previously-issued JWT for
+  // this account (every other logged-in device) stops verifying — see
+  // lib/jwt.ts's JwtPayload and auth.middleware.ts's resolveAuthenticatedUser.
+  // Shared by both password-change paths (auth.service.ts's resetPassword,
+  // users.service.ts's changePassword), so this one place covers both.
   updatePasswordHash(id: number, passwordHash: string) {
-    return prisma.user.update({ where: { id }, data: { passwordHash }, include: { role: true } });
+    return prisma.user.update({
+      where: { id },
+      data: { passwordHash, tokenVersion: { increment: 1 } },
+      include: { role: true },
+    });
   },
 };

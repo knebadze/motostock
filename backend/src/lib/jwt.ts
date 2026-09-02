@@ -13,6 +13,14 @@ export type JwtPayload = {
   // renewal (never reset to "now"), so isSessionExpiredByAbsoluteCap can
   // still measure from the true session start.
   loginAt: number;
+  // Snapshot of User.tokenVersion at sign time — auth.middleware.ts's
+  // resolveAuthenticatedUser rejects a token whose tokenVersion no longer
+  // matches the account's current one. Bumped on every password change (see
+  // users.repository.ts's updatePasswordHash), so this is what actually
+  // invalidates every other still-unexpired session/device when a password
+  // changes — the idle/absolute TTLs above only bound how long a token can
+  // live on their own, not this.
+  tokenVersion: number;
 };
 
 // Sliding idle timeout: every authenticated request reissues the cookie with

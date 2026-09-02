@@ -76,7 +76,12 @@ export async function registerUser(input: RegisterInput, ipAddress: string | nul
     roleId: userRole.id,
   });
 
-  const token = await signJwt({ sub: user.id, role: ROLES.USER, loginAt: Date.now() });
+  const token = await signJwt({
+    sub: user.id,
+    role: ROLES.USER,
+    loginAt: Date.now(),
+    tokenVersion: user.tokenVersion,
+  });
 
   await recordAuthEvent("REGISTER", user.email, user.id, ipAddress);
 
@@ -114,7 +119,12 @@ export async function loginUser(input: LoginInput, ipAddress: string | null) {
 
   await recordAuthEvent("LOGIN_SUCCESS", user.email, user.id, ipAddress);
 
-  const token = await signJwt({ sub: user.id, role: user.role.name as RoleName, loginAt: Date.now() });
+  const token = await signJwt({
+    sub: user.id,
+    role: user.role.name as RoleName,
+    loginAt: Date.now(),
+    tokenVersion: user.tokenVersion,
+  });
   return { user: toSafeUser(user), token };
 }
 
@@ -190,6 +200,14 @@ export async function resetPassword(input: ResetPasswordInput) {
   const user = await usersRepository.updatePasswordHash(resetToken.userId, passwordHash);
   await passwordResetTokenRepository.markUsed(resetToken.id);
 
-  const token = await signJwt({ sub: user.id, role: user.role.name as RoleName, loginAt: Date.now() });
+  // tokenVersion was just bumped by updatePasswordHash above — signing with
+  // that fresh value (not a stale one) means this response's own cookie
+  // stays valid instead of immediately invalidating itself.
+  const token = await signJwt({
+    sub: user.id,
+    role: user.role.name as RoleName,
+    loginAt: Date.now(),
+    tokenVersion: user.tokenVersion,
+  });
   return { user: toSafeUser(user), token };
 }
