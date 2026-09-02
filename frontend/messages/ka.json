@@ -577,6 +577,7 @@
     "VEHICLE_LISTING_UNAVAILABLE": "ეს ერთეული ხელმისაწვდომი აღარ არის",
     "INSUFFICIENT_STOCK": "მარაგში საკმარისი რაოდენობა აღარ არის",
     "INSUFFICIENT_STOCK_ITEM": "\"{itemNameKa}\" — მარაგშია მხოლოდ {availableQuantity} ცალი",
+    "IDEMPOTENCY_KEY_CART_CHANGED": "თქვენი კალათა შეიცვალა წინა შეკვეთის მცდელობის შემდეგ — გვერდი განახლდა, გთხოვთ სცადოთ თავიდან",
     "MISSING_REQUIRED_FIELD": "სავალდებულო ველი არ არის მითითებული",
     "CART_ITEM_NOT_FOUND": "კალათის ჩანაწერი ვერ მოიძებნა",
     "WISHLIST_ITEM_NOT_FOUND": "სასურველების ჩანაწერი ვერ მოიძებნა",

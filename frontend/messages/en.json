@@ -577,6 +577,7 @@
     "VEHICLE_LISTING_UNAVAILABLE": "This item is no longer available",
     "INSUFFICIENT_STOCK": "Not enough stock available",
     "INSUFFICIENT_STOCK_ITEM": "\"{itemNameEn}\" — only {availableQuantity} left in stock",
+    "IDEMPOTENCY_KEY_CART_CHANGED": "Your cart changed since your last order attempt — the page has been refreshed, please try again",
     "MISSING_REQUIRED_FIELD": "A required field is missing",
     "CART_ITEM_NOT_FOUND": "Cart item not found",
     "WISHLIST_ITEM_NOT_FOUND": "Wishlist item not found",

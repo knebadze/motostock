@@ -577,6 +577,7 @@
     "VEHICLE_LISTING_UNAVAILABLE": "Этот товар больше недоступен",
     "INSUFFICIENT_STOCK": "Недостаточно товара в наличии",
     "INSUFFICIENT_STOCK_ITEM": "«{itemNameRu}» — в наличии только {availableQuantity} шт.",
+    "IDEMPOTENCY_KEY_CART_CHANGED": "Ваша корзина изменилась после предыдущей попытки оформления заказа — страница обновлена, попробуйте снова",
     "MISSING_REQUIRED_FIELD": "Не указано обязательное поле",
     "CART_ITEM_NOT_FOUND": "Товар в корзине не найден",
     "WISHLIST_ITEM_NOT_FOUND": "Товар в избранном не найден",

@@ -78,8 +78,12 @@ export function CheckoutManager({
   // every preview/place call, including retries — see orders.ts's
   // CheckoutInput.idempotencyKey and orders.service.ts's placeOrder, which
   // uses it to recognize a double-click or timeout-retry and return the
-  // original order instead of creating a second one.
-  const [idempotencyKey] = useState(() => crypto.randomUUID());
+  // original order instead of creating a second one. Regenerated on
+  // IDEMPOTENCY_KEY_CART_CHANGED (see handlePlaceOrder's catch below) —
+  // that error means the backend already placed an order under this key and
+  // is refusing to silently attach it to a cart that's since changed, so a
+  // real *new* attempt needs a key of its own.
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
   const requiresAddress = fulfillmentMethod !== "PICKUP";
   const requiresBank = fulfillmentMethod === "CARD";
@@ -205,6 +209,15 @@ export function CheckoutManager({
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 403) {
         setEmailVerificationRequired(true);
+      } else if (error instanceof ApiRequestError && error.code === "IDEMPOTENCY_KEY_CART_CHANGED") {
+        // The backend already placed an order under the old key and is
+        // refusing to silently attach it to what's now a different cart —
+        // mint a fresh key so the next click is a genuine new attempt, and
+        // refresh so the displayed cart/preview reflect what's actually in
+        // it now.
+        setIdempotencyKey(crypto.randomUUID());
+        toast.error(resolveApiErrorMessage(error, tErrors, t("placeError")));
+        router.refresh();
       } else {
         toast.error(resolveApiErrorMessage(error, tErrors, t("placeError")));
       }

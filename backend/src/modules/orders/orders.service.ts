@@ -477,7 +477,27 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
   // input from ever returning another user's order.
   const existingByKey = await ordersRepository.findByIdempotencyKey(input.idempotencyKey);
   if (existingByKey && existingByKey.userId === userId) {
-    return toOrderResponse(existingByKey);
+    // A genuine retry finds the cart already empty — the first successful
+    // call cleared it as part of its own transaction, so there's nothing new
+    // to reconcile and it's safe to just hand back the order already placed.
+    // But a non-empty cart here means the customer added something *since*
+    // that success — almost always because its response never reached them,
+    // so they assumed the attempt failed and are trying again. Silently
+    // returning the stale order in that case would bury the new cart content
+    // with zero explanation (and zero way for the customer to ever check out
+    // for it, since idempotencyKey is fixed for the page's lifetime — see
+    // CheckoutManager.tsx). Refuse instead, so the client can surface a
+    // clear "your cart changed" message and mint a fresh idempotencyKey for
+    // an actual new attempt.
+    const currentCartRows = await cartRepository.findByOwner({ userId });
+    if (currentCartRows.length === 0) {
+      return toOrderResponse(existingByKey);
+    }
+    throw new ApiError(
+      409,
+      "თქვენი კალათა შეიცვალა წინა შეკვეთის მცდელობის შემდეგ — გთხოვთ განაახლოთ გვერდი და სცადოთ თავიდან",
+      "IDEMPOTENCY_KEY_CART_CHANGED",
+    );
   }
 
   const user = await assertEmailVerified(userId);
