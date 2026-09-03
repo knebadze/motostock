@@ -36,7 +36,9 @@ const baseVehicleListingSchema = z.object({
   warrantyUnit: warrantyUnitSchema.nullable().optional(),
   isActive: z.boolean().optional(),
   price: z.coerce.number().positive().openapi({ example: 4500 }),
-  stockQuantity: z.int().positive().optional(),
+  // nonnegative, not positive — 0 is a legitimate value (out of stock,
+  // sold out but the listing kept for reference), same as mileageKm above.
+  stockQuantity: z.int().nonnegative().optional(),
   descriptionKa: z.string().max(20000).nullable().optional(),
   descriptionEn: z.string().max(20000).nullable().optional(),
   descriptionRu: z.string().max(20000).nullable().optional(),

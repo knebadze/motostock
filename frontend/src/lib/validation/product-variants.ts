@@ -3,5 +3,5 @@ import { optionalIntString, requiredPositiveDecimalString } from "./common";
 
 export const productVariantFormSchema = z.object({
   price: requiredPositiveDecimalString("მიუთითეთ ფასი"),
-  stockQuantity: optionalIntString({ min: 1, message: "მინ. 1" }),
+  stockQuantity: optionalIntString({ min: 0, message: "მინ. 0" }),
 });

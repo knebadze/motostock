@@ -14,7 +14,9 @@ export const createProductVariantSchema = registry.register(
     sizeId: z.int().positive().nullable().optional(),
     colorId: z.int().positive().nullable().optional(),
     price: z.coerce.number().positive().openapi({ example: 89.99 }),
-    stockQuantity: z.int().positive().optional(),
+    // nonnegative, not positive — 0 is a legitimate value (out of stock,
+    // kept listed rather than deactivated).
+    stockQuantity: z.int().nonnegative().optional(),
     conditionId: z.int().positive().nullable().optional(),
     statusId: z.int().positive().nullable().optional(),
     isActive: z.boolean().optional(),

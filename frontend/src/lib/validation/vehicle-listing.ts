@@ -17,7 +17,7 @@ export const vehicleListingFormSchema = z
     warrantyValue: optionalIntString({ min: 1, message: "მინ. 1" }),
     warrantyUnit: z.string(),
     price: requiredPositiveDecimalString("მიუთითეთ ფასი"),
-    stockQuantity: optionalIntString({ min: 1, message: "მინ. 1" }),
+    stockQuantity: optionalIntString({ min: 0, message: "მინ. 0" }),
   })
   .superRefine((data, ctx) => {
     const hasValue = data.warrantyValue.trim() !== "";
