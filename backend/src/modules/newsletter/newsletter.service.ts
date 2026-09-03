@@ -3,6 +3,7 @@ import { env } from "../../config/env.js";
 import { SITE_NAME } from "../../config/site.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { isMailerConfigured, sendTemplatedEmail } from "../../lib/mailer.js";
+import { resolvePage } from "../../lib/pagination.js";
 import { newsletterRepository } from "./newsletter.repository.js";
 import type { ListSubscribersQuery } from "./newsletter.schema.js";
 import type { Prisma } from "../../generated/prisma/index.js";
@@ -112,8 +113,15 @@ function buildAdminWhere(filters: ListSubscribersQuery): Prisma.NewsletterSubscr
 }
 
 export async function listSubscribers(filters: ListSubscribersQuery) {
-  const rows = await newsletterRepository.findMany(buildAdminWhere(filters));
-  return rows.map(toResponse);
+  const { page, pageSize, skip, take } = resolvePage(filters);
+  const where = buildAdminWhere(filters);
+
+  const [rows, total] = await Promise.all([
+    newsletterRepository.findMany(where, skip, take),
+    newsletterRepository.count(where),
+  ]);
+
+  return { items: rows.map(toResponse), total, page, pageSize };
 }
 
 export async function getSubscriberCounts() {

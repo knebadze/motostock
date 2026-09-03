@@ -32,8 +32,8 @@ export async function listSubscribers(
   req: Request<unknown, unknown, unknown, ListSubscribersQuery>,
   res: Response,
 ) {
-  const items = await newsletterService.listSubscribers(req.query);
-  res.status(200).json({ items });
+  const result = await newsletterService.listSubscribers(req.query);
+  res.status(200).json(result);
 }
 
 export async function getSubscriberCounts(_req: Request, res: Response) {

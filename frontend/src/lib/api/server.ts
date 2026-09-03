@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { apiClient } from "./client";
+import type { PagedResult } from "@/components/shared/Pagination";
 import type { User } from "./auth";
 import type { Category } from "./categories";
 import type { Settings, VinDecodeProvider } from "./settings";
@@ -967,10 +968,15 @@ export async function getNewsletterCampaignsFromServer(): Promise<NewsletterCamp
   );
 }
 
-export async function getNewsletterSubscribersFromServer(): Promise<NewsletterSubscriber[]> {
-  return fetchFromServer<{ items: NewsletterSubscriber[] }, NewsletterSubscriber[]>(
+export async function getNewsletterSubscribersFromServer(): Promise<PagedResult<NewsletterSubscriber>> {
+  return fetchFromServer<PagedResult<NewsletterSubscriber>, PagedResult<NewsletterSubscriber>>(
     "/newsletter/subscribers",
-    { fallback: [], extract: (data) => data.items, requireAuth: true },
+    {
+      params: { page: 1, pageSize: 20 },
+      fallback: { items: [], total: 0, page: 1, pageSize: 20 },
+      extract: (data) => data,
+      requireAuth: true,
+    },
   );
 }
 

@@ -15,7 +15,7 @@ export default async function NewsletterPage() {
   return (
     <NewsletterManager
       initialCampaigns={campaigns}
-      initialSubscribers={subscribers}
+      initialSubscribersPage={subscribers}
       initialCounts={counts}
     />
   );

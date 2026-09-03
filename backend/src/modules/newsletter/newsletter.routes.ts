@@ -11,7 +11,7 @@ import {
   confirmSubscriptionSchema,
   listSubscribersQuerySchema,
   newsletterSubscriberCountsResponseSchema,
-  newsletterSubscriberResponseSchema,
+  newsletterSubscribersPageResponseSchema,
   subscribeSchema,
   subscriberIdParamSchema,
   unsubscribeSchema,
@@ -98,7 +98,7 @@ registry.registerPath({
   responses: {
     200: {
       description: "Subscribers",
-      content: { "application/json": { schema: z.object({ items: z.array(newsletterSubscriberResponseSchema) }) } },
+      content: { "application/json": { schema: newsletterSubscribersPageResponseSchema } },
     },
   },
 });

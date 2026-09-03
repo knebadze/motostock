@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
+import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
+import { Loader } from "@/components/shared/Loader";
 import { ApiRequestError } from "@/lib/api/client";
 import {
   deleteNewsletterCampaign,
@@ -72,15 +74,21 @@ function formatDate(value: string | null): string {
 
 export function NewsletterManager({
   initialCampaigns,
-  initialSubscribers,
+  initialSubscribersPage,
   initialCounts,
 }: {
   initialCampaigns: NewsletterCampaign[];
-  initialSubscribers: NewsletterSubscriber[];
+  initialSubscribersPage: PagedResult<NewsletterSubscriber>;
   initialCounts: NewsletterSubscriberCounts;
 }) {
   const [campaigns, setCampaigns] = useState(initialCampaigns);
-  const [subscribers, setSubscribers] = useState(initialSubscribers);
+  const {
+    data: subscribersPage,
+    setData: setSubscribersPage,
+    totalPages: subscriberTotalPages,
+    loading: subscribersLoading,
+    load: loadSubscribers,
+  } = useServerPagination<NewsletterSubscriber>(initialSubscribersPage);
   const [counts, setCounts] = useState(initialCounts);
 
   const [formOpen, setFormOpen] = useState(false);
@@ -97,13 +105,30 @@ export function NewsletterManager({
     }
   }
 
+  function fetchSubscribersPage(page: number) {
+    return listNewsletterSubscribers({ page, pageSize: subscribersPage.pageSize });
+  }
+
+  function loadSubscribersPage(page: number) {
+    loadSubscribers(
+      () => fetchSubscribersPage(page),
+      (error) => {
+        toast.error(error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა");
+      },
+    );
+  }
+
+  // Reloads the current page (not always page 1) — used after a delete, so
+  // removing a subscriber from a later page doesn't jump the admin back to
+  // the start of the list. getNewsletterSubscriberCounts is refreshed
+  // alongside since a delete changes those totals too.
   async function refreshSubscribers() {
     try {
-      const [items, nextCounts] = await Promise.all([
-        listNewsletterSubscribers(),
+      const [page, nextCounts] = await Promise.all([
+        fetchSubscribersPage(subscribersPage.page),
         getNewsletterSubscriberCounts(),
       ]);
-      setSubscribers(items);
+      setSubscribersPage(page);
       setCounts(nextCounts);
     } catch (error) {
       toast.error(error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა");
@@ -227,11 +252,14 @@ export function NewsletterManager({
       </div>
 
       <div>
-        <h3 className="text-lg font-bold tracking-tight">გამომწერები</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold tracking-tight">გამომწერები</h3>
+          {subscribersLoading && <Loader size="sm" label="იტვირთება" />}
+        </div>
         <div className="mt-4">
           <DataTable
             columns={subscriberColumns}
-            data={subscribers}
+            data={subscribersPage.items}
             getRowKey={(subscriber) => subscriber.id}
             emptyMessage="გამომწერი ჯერ არ არსებობს"
             actions={(subscriber) => (
@@ -260,6 +288,11 @@ export function NewsletterManager({
                 </button>
               </div>
             )}
+          />
+          <Pagination
+            currentPage={subscribersPage.page}
+            totalPages={subscriberTotalPages}
+            onPageChange={loadSubscribersPage}
           />
         </div>
       </div>

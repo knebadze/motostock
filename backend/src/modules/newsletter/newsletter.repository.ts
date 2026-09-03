@@ -42,8 +42,16 @@ export const newsletterRepository = {
     });
   },
 
-  findMany(where?: Prisma.NewsletterSubscriberWhereInput) {
-    return prisma.newsletterSubscriber.findMany({ where, orderBy: { createdAt: "desc" } });
+  // Real server-side pagination (skip/take) — see newsletter.service.ts's
+  // listSubscribers. Shared `where` between this and count() below so the
+  // two never drift apart, same pattern as users.repository.ts's
+  // searchWhere.
+  findMany(where: Prisma.NewsletterSubscriberWhereInput | undefined, skip: number, take: number) {
+    return prisma.newsletterSubscriber.findMany({ where, orderBy: { createdAt: "desc" }, skip, take });
+  },
+
+  count(where?: Prisma.NewsletterSubscriberWhereInput) {
+    return prisma.newsletterSubscriber.count({ where });
   },
 
   countByStatus() {

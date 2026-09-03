@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import type { PagedResult } from "@/components/shared/Pagination";
 
 export type NewsletterSubscriberStatus = "PENDING" | "CONFIRMED" | "UNSUBSCRIBED";
 
@@ -29,14 +30,20 @@ export async function unsubscribeFromNewsletter(token: string): Promise<void> {
   await apiClient.post("/newsletter/unsubscribe", { token });
 }
 
+// Real server-side pagination (skip/take) — same pattern as listUsers.
+// Returns the shared PagedResult<T> shape (Pagination.tsx) directly rather
+// than a one-off local type, since the backend's {items,total,page,pageSize}
+// envelope already matches it exactly.
 export async function listNewsletterSubscribers(filters: {
   status?: NewsletterSubscriberStatus;
   search?: string;
-} = {}): Promise<NewsletterSubscriber[]> {
-  const { data } = await apiClient.get<{ items: NewsletterSubscriber[] }>("/newsletter/subscribers", {
+  page?: number;
+  pageSize?: number;
+} = {}): Promise<PagedResult<NewsletterSubscriber>> {
+  const { data } = await apiClient.get<PagedResult<NewsletterSubscriber>>("/newsletter/subscribers", {
     params: filters,
   });
-  return data.items;
+  return data;
 }
 
 export async function getNewsletterSubscriberCounts(): Promise<NewsletterSubscriberCounts> {
