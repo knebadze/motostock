@@ -125,6 +125,14 @@ export async function getAnalyticsOverview(dateFromInput?: string, dateToInput?:
       : Promise.resolve([]),
   ]);
 
+  // productCandidateIds/listingCandidateIds is a *union* of four
+  // independently-capped top-N lists (most viewed, most wishlisted, most
+  // carted, most sold) — each is bounded by demandCandidateLimit on its
+  // own, but with little overlap between the four rankings the union (and
+  // therefore productRows/listingRows below) can hold up to 4x
+  // demandCandidateLimit distinct rows. Without slicing again after the
+  // final sort, the table sent to the frontend inherited that unbounded
+  // union size instead of the configured display limit.
   const topProducts = productRows
     .map((row) => {
       const sales = salesByProduct.get(row.id);
@@ -138,7 +146,8 @@ export async function getAnalyticsOverview(dateFromInput?: string, dateToInput?:
         revenue: sales?.revenue ?? 0,
       };
     })
-    .sort((a, b) => b.viewCount - a.viewCount);
+    .sort((a, b) => b.viewCount - a.viewCount)
+    .slice(0, demandCandidateLimit);
 
   const topVehicleListings = listingRows
     .map((row) => {
@@ -153,7 +162,8 @@ export async function getAnalyticsOverview(dateFromInput?: string, dateToInput?:
         revenue: sales?.revenue ?? 0,
       };
     })
-    .sort((a, b) => b.viewCount - a.viewCount);
+    .sort((a, b) => b.viewCount - a.viewCount)
+    .slice(0, demandCandidateLimit);
 
   const revenue = Number(revenueAgg._sum.total ?? 0);
   const orderCount = revenueAgg._count._all;
