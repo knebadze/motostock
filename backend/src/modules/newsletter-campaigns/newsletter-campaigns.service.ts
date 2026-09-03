@@ -100,9 +100,9 @@ function buildCampaignEmail(campaign: Pick<CampaignRow, "subject" | "body">, uns
 // Synchronous, not queued/fire-and-forget — a rare, deliberate admin action
 // (not a hot path), same reasoning fina-sync.service.ts's runSync already
 // documents for holding a request open across a slow operation. Status
-// flips to SENDING immediately as a double-send guard (rejects a second
-// concurrent call via assertDraft-style status check below) before the
-// per-recipient loop starts; an individual recipient's send failure is
+// flips to SENDING via one atomic conditional update (claimForSending) as
+// the double-send guard — see that repository method's comment — before
+// the per-recipient loop starts; an individual recipient's send failure is
 // caught and counted, not fatal to the whole batch — only an unexpected
 // failure of the batch itself (e.g. the subscriber query failing) trips the
 // outer catch and marks the campaign FAILED. Doesn't scale to a mailing list
@@ -117,11 +117,17 @@ export async function sendCampaign(id: number) {
   if (!campaign) {
     throw new ApiError(404, "კამპანია ვერ მოიძებნა");
   }
-  if (campaign.status !== "DRAFT") {
+
+  // The status check above (campaign.status !== "DRAFT") used to be the
+  // whole guard, checked and then written as two separate statements — a
+  // classic TOCTOU race letting two concurrent sends both pass it and both
+  // email every subscriber. claimForSending re-checks DRAFT and flips to
+  // SENDING as one atomic statement; count: 0 means another call already
+  // won (or the campaign was never DRAFT to begin with).
+  const claim = await newsletterCampaignsRepository.claimForSending(id);
+  if (claim.count === 0) {
     throw new ApiError(409, "კამპანია უკვე გაგზავნილია ან გაგზავნის პროცესშია");
   }
-
-  await newsletterCampaignsRepository.updateStatus(id, "SENDING");
 
   try {
     const subscribers = await newsletterRepository.findConfirmed();
