@@ -1,6 +1,7 @@
 import { signJwt } from "../../lib/jwt.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
+import { normalizeEmail } from "../../lib/email.js";
 import { ROLES, type RoleName } from "../../lib/roles.js";
 import { usersRepository } from "../users/users.repository.js";
 import { rolesRepository } from "../roles/roles.repository.js";
@@ -59,7 +60,15 @@ async function findOrCreateOAuthUser(profile: OAuthProfile, provider: Provider) 
       : await usersRepository.findByFacebookId(profile.providerId);
   if (existingByProvider) return existingByProvider;
 
-  const existingByEmail = await usersRepository.findByEmail(profile.email);
+  // Normalized the same way as emailSchema (lib/email.ts) validates
+  // password-registered addresses — otherwise a provider handing back
+  // different casing than the victim registered with (nothing stops that;
+  // providers don't normalize case for you) would slip past the
+  // password-account link guard below and past User.email's case-sensitive
+  // unique constraint, creating a second account for the same mailbox.
+  const email = normalizeEmail(profile.email);
+
+  const existingByEmail = await usersRepository.findByEmail(email);
   if (existingByEmail) {
     return resolveOAuthEmailMatch(existingByEmail, profile, provider);
   }
@@ -71,7 +80,7 @@ async function findOrCreateOAuthUser(profile: OAuthProfile, provider: Provider) 
 
   try {
     return await usersRepository.createOAuthUser({
-      email: profile.email,
+      email,
       ...splitName(profile.name),
       roleId: userRole.id,
       ...(provider === "google"
@@ -100,7 +109,7 @@ async function findOrCreateOAuthUser(profile: OAuthProfile, provider: Provider) 
       // claimed this email in the meantime — re-run the same email-match
       // decision against whatever's actually there now, instead of blindly
       // retrying the insert.
-      const winner = await usersRepository.findByEmail(profile.email);
+      const winner = await usersRepository.findByEmail(email);
       if (winner) return resolveOAuthEmailMatch(winner, profile, provider);
     }
     throw err;
