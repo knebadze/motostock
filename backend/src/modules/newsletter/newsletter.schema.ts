@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
+import { emailSchema } from "../../lib/email.js";
 
 export const subscribeSchema = registry.register(
   "NewsletterSubscribeInput",
-  z.object({ email: z.email().openapi({ example: "rider@motostock.ge" }) }),
+  z.object({ email: emailSchema.openapi({ example: "rider@motostock.ge" }) }),
 );
 export type SubscribeInput = z.infer<typeof subscribeSchema>;
 
