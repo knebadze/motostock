@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import * as homepageSectionsService from "./homepage-sections.service.js";
-import type { UpdateHomepageSectionInput } from "./homepage-sections.schema.js";
+import type { MoveHomepageSectionInput, UpdateHomepageSectionInput } from "./homepage-sections.schema.js";
 
 export async function list(_req: Request, res: Response) {
   const items = await homepageSectionsService.listHomepageSections();
@@ -21,4 +21,15 @@ export async function update(
     req.body,
   );
   res.status(200).json({ item });
+}
+
+export async function move(
+  req: Request<{ id: string }, unknown, MoveHomepageSectionInput>,
+  res: Response,
+) {
+  const items = await homepageSectionsService.moveHomepageSection(
+    Number(req.params.id),
+    req.body,
+  );
+  res.status(200).json({ items });
 }

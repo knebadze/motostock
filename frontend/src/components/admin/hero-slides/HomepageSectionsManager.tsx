@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Toggle } from "@/components/shared/Toggle";
-import { updateHomepageSection, type HomepageSection } from "@/lib/api/homepage-sections";
+import {
+  moveHomepageSection,
+  updateHomepageSection,
+  type HomepageSection,
+} from "@/lib/api/homepage-sections";
 import { ApiRequestError } from "@/lib/api/client";
 
 const TYPE_LABELS: Record<HomepageSection["type"], string> = {
@@ -277,10 +281,13 @@ export function HomepageSectionsManager({
     setSections(reordered.sort((a, b) => a.sortOrder - b.sortOrder));
 
     try {
-      await Promise.all([
-        updateHomepageSection(section.id, { sortOrder: target.sortOrder }),
-        updateHomepageSection(target.id, { sortOrder: section.sortOrder }),
-      ]);
+      // One request, swapped atomically in one DB transaction on the
+      // backend (see moveHomepageSection) — not two independent PATCHes,
+      // which had no shared transaction and could leave both rows with the
+      // same sortOrder if the second request failed after the first
+      // succeeded.
+      const updated = await moveHomepageSection(section.id, direction);
+      setSections([...updated].sort((a, b) => a.sortOrder - b.sortOrder));
     } catch (error) {
       setSections(previous);
       const message =

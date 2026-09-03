@@ -9,6 +9,7 @@ import * as homepageSectionsController from "./homepage-sections.controller.js";
 import {
   homepageSectionIdParamSchema,
   homepageSectionResponseSchema,
+  moveHomepageSectionSchema,
   updateHomepageSectionSchema,
 } from "./homepage-sections.schema.js";
 
@@ -28,6 +29,12 @@ homepageSectionsRouter.patch(
   validate(homepageSectionIdParamSchema, "params"),
   validate(updateHomepageSectionSchema),
   homepageSectionsController.update,
+);
+homepageSectionsRouter.post(
+  "/:id/move",
+  validate(homepageSectionIdParamSchema, "params"),
+  validate(moveHomepageSectionSchema),
+  homepageSectionsController.move,
 );
 
 const security = [{ cookieAuth: [] }];
@@ -67,6 +74,24 @@ registry.registerPath({
   },
   responses: {
     200: { description: "Updated", content: { "application/json": { schema: itemResponse } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/homepage-sections/{id}/move",
+  tags: ["HomepageSections"],
+  summary:
+    "Move a section up/down relative to its neighbor, swapping their sortOrder atomically in one transaction — the safe alternative to two independent PATCH /homepage-sections/{id} calls, which can't swap two rows without a moment where the update isn't atomic",
+  security,
+  request: {
+    params: homepageSectionIdParamSchema,
+    body: { content: { "application/json": { schema: moveHomepageSectionSchema } } },
+  },
+  responses: {
+    200: { description: "Full section list, freshly re-ordered", content: { "application/json": { schema: listResponse } } },
+    400: { description: "Already at that end of the list", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

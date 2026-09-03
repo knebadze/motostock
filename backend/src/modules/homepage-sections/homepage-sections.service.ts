@@ -1,6 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { homepageSectionsRepository } from "./homepage-sections.repository.js";
-import type { UpdateHomepageSectionInput } from "./homepage-sections.schema.js";
+import type { MoveHomepageSectionInput, UpdateHomepageSectionInput } from "./homepage-sections.schema.js";
 import type { HomepageSectionType } from "../../generated/prisma/index.js";
 
 type HomepageSectionRow = {
@@ -167,6 +167,31 @@ export async function listHomepageSections() {
 export async function listPublicHomepageSections() {
   const rows = await ensureBootstrapped();
   return rows.filter((row) => row.isActive).map(toResponse);
+}
+
+// The admin's move-up/move-down control used to send two independent PATCH
+// requests (one per row) swapping sortOrder client-side — not atomic, so a
+// failed second request (network blip, a concurrent edit landing between
+// the two) could leave two sections holding the *same* sortOrder, or
+// neither holding its intended one. This does the swap as one request,
+// backed by one DB transaction (see homepageSectionsRepository.swapSortOrder),
+// so it can't be observed or left half-done.
+export async function moveHomepageSection(id: number, input: MoveHomepageSectionInput) {
+  const rows = await ensureBootstrapped();
+  const index = rows.findIndex((row) => row.id === id);
+  if (index === -1) {
+    throw new ApiError(404, "სექცია ვერ მოიძებნა");
+  }
+
+  const targetIndex = input.direction === "up" ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= rows.length) {
+    throw new ApiError(400, "სექცია უკვე სიის ბოლოშია", "HOMEPAGE_SECTION_MOVE_OUT_OF_RANGE");
+  }
+
+  await homepageSectionsRepository.swapSortOrder(rows[index], rows[targetIndex]);
+
+  const updated = await homepageSectionsRepository.findMany();
+  return updated.map(toResponse);
 }
 
 export async function updateHomepageSection(id: number, input: UpdateHomepageSectionInput) {

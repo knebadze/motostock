@@ -20,6 +20,14 @@ export const homepageSectionIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+export const moveHomepageSectionSchema = registry.register(
+  "MoveHomepageSectionInput",
+  z.object({
+    direction: z.enum(["up", "down"]),
+  }),
+);
+export type MoveHomepageSectionInput = z.infer<typeof moveHomepageSectionSchema>;
+
 // No create/delete — exactly one row per HomepageSectionType exists always
 // (bootstrapped lazily, see the service), so only title/active/order/count
 // are ever edited.

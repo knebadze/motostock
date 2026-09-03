@@ -58,3 +58,22 @@ export async function updateHomepageSection(
   );
   return data.item;
 }
+
+// Swaps this section's sortOrder with its up/down neighbor atomically in
+// one backend transaction (see homepage-sections.service.ts's
+// moveHomepageSection) — used instead of two independent
+// updateHomepageSection calls, which previously reordered the UI's two
+// rows client-side and PATCHed them separately with no shared transaction,
+// so a failure between the two requests (or a concurrent edit landing in
+// between) could leave both rows holding the same sortOrder. Returns the
+// full, freshly-reordered list so the caller can just replace its state.
+export async function moveHomepageSection(
+  id: number,
+  direction: "up" | "down",
+): Promise<HomepageSection[]> {
+  const { data } = await apiClient.post<{ items: HomepageSection[] }>(
+    `/homepage-sections/${id}/move`,
+    { direction },
+  );
+  return data.items;
+}
