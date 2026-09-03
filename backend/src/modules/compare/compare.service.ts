@@ -142,14 +142,19 @@ export async function getCompareStatus(
 // those rows into the now-known account. A guest item that duplicates
 // something the user already has is just dropped instead of reassigned,
 // since reassigning would collide with the user's own unique constraint —
-// same tradeoff mergeGuestWishlistIntoUser makes. Each item is merged via
-// its own atomic claim-then-insert (see compare.repository.ts's
-// mergeGuestItem) so two concurrent logins on the same guest cookie can't
-// crash on a row the other one already claimed.
+// same tradeoff mergeGuestWishlistIntoUser makes. Once the user's list
+// reaches maxCompareItems, further guest items are dropped the same way
+// (see compare.repository.ts's mergeGuestItem) instead of merging past the
+// configured cap. Each item is merged via its own atomic claim-then-insert
+// so two concurrent logins on the same guest cookie can't crash on a row
+// the other one already claimed.
 export async function mergeGuestCompareIntoUser(guestId: string, userId: number) {
-  const guestItems = await compareRepository.findByGuestId(guestId);
+  const [guestItems, maxCompareItems] = await Promise.all([
+    compareRepository.findByGuestId(guestId),
+    getCompareMaxItems(),
+  ]);
 
   for (const item of guestItems) {
-    await compareRepository.mergeGuestItem(item, guestId, userId);
+    await compareRepository.mergeGuestItem(item, guestId, userId, maxCompareItems);
   }
 }

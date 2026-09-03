@@ -125,6 +125,18 @@ export const compareRepository = {
   // can't double-process it or crash on an already-deleted one;
   // `createMany` with `skipDuplicates` (native ON CONFLICT DO NOTHING)
   // drops it if the user already has the same item, atomically.
+  //
+  // maxCompareItems is enforced here too — without it, a guest who filled
+  // their own compare list up to the cap, logging into an account that's
+  // separately already at (or near) the same cap, would merge past it with
+  // no check at all. Once the user's count reaches the cap, remaining
+  // guest items are dropped rather than merged — the same "just drop it"
+  // tradeoff mergeGuestCompareIntoUser's own doc comment already accepts
+  // for a duplicate item, applied here for a full compare list instead of
+  // erroring out mid-login. The same advisory lock createUnderLimit uses
+  // (scoped to this userId) serializes this against a concurrent
+  // createUnderLimit call for the same user, so the count below can't be
+  // stale either.
   async mergeGuestItem(
     item: {
       id: number;
@@ -134,10 +146,16 @@ export const compareRepository = {
     },
     guestId: string,
     userId: number,
+    maxCompareItems: number,
   ) {
     await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${COMPARE_LIMIT_LOCK_NAMESPACE}, hashtext(${ownerLockKey({ userId })}))`;
+
       const claimed = await tx.compareItem.deleteMany({ where: { id: item.id, guestId } });
       if (claimed.count === 0) return;
+
+      const count = await tx.compareItem.count({ where: { userId } });
+      if (count >= maxCompareItems) return;
 
       await tx.compareItem.createMany({
         data: [
