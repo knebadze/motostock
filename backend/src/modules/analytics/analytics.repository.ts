@@ -185,16 +185,27 @@ export const analyticsRepository = {
 
   // ---- Cancellations ----
 
+  // dateFrom/dateTo bound *when the order was cancelled*, not when it was
+  // originally placed — updatedAt is only ever touched by
+  // orders.repository.ts's updateStatus (same doubles-as-cancellation-date
+  // reasoning as findRecentCancelledOrders below), so this must match that
+  // method's filter field. Filtering by createdAt here instead would answer
+  // a different question ("orders placed in this range that are now
+  // cancelled, whenever that happened") than the rest of this page's
+  // cancellation metrics, and could disagree with the "recently cancelled"
+  // list for the exact same range — an order placed inside the range but
+  // cancelled outside it (or vice versa) would count on one side and not
+  // the other.
   countCancelledOrders(dateFrom: Date, dateTo: Date) {
     return prisma.order.count({
-      where: { status: { key: CANCELLED_KEY }, createdAt: { gte: dateFrom, lte: dateTo } },
+      where: { status: { key: CANCELLED_KEY }, updatedAt: { gte: dateFrom, lte: dateTo } },
     });
   },
 
   async sumLostRevenue(dateFrom: Date, dateTo: Date): Promise<number> {
     const agg = await prisma.order.aggregate({
       _sum: { total: true },
-      where: { status: { key: CANCELLED_KEY }, createdAt: { gte: dateFrom, lte: dateTo } },
+      where: { status: { key: CANCELLED_KEY }, updatedAt: { gte: dateFrom, lte: dateTo } },
     });
     return Number(agg._sum.total ?? 0);
   },
@@ -205,7 +216,7 @@ export const analyticsRepository = {
       prisma.order.groupBy({
         by: ["cancellationReasonId"],
         _count: { _all: true },
-        where: { status: { key: CANCELLED_KEY }, createdAt: { gte: dateFrom, lte: dateTo } },
+        where: { status: { key: CANCELLED_KEY }, updatedAt: { gte: dateFrom, lte: dateTo } },
       }),
     ]);
 
