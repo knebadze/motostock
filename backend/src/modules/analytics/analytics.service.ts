@@ -17,8 +17,13 @@ async function resolveDateRange(
   dateToInput?: string,
 ): Promise<{ from: Date; to: Date }> {
   const toDateOnly = dateToInput ?? toTbilisiDateOnly(new Date());
+  // windowDays - 1, not windowDays: [from, to] is inclusive on both ends
+  // (see startOfDayTbilisi/endOfDayTbilisi below), so shifting back by the
+  // full window count would span windowDays + 1 calendar days (today plus
+  // windowDays prior days) — "last 30 days" must mean today and the 29
+  // days before it, 30 days total, not 31.
   const fromDateOnly =
-    dateFromInput ?? shiftDateOnly(toDateOnly, -(await getAnalyticsDefaultWindowDays()));
+    dateFromInput ?? shiftDateOnly(toDateOnly, -((await getAnalyticsDefaultWindowDays()) - 1));
 
   return { from: startOfDayTbilisi(fromDateOnly), to: endOfDayTbilisi(toDateOnly) };
 }
