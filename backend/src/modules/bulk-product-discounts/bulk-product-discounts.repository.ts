@@ -25,7 +25,14 @@ const candidateSelect = {
       price: true,
       size: { select: lookupSelect },
       color: { select: lookupSelect },
-      discounts: { select: { discountPercent: true, startDate: true, endDate: true } },
+      // orderBy desc matches every other discounts query in the codebase
+      // (products.repository.ts, product-variants.repository.ts, ...) — a
+      // variant with overlapping active discount rows must resolve to the
+      // same "active" one (findActiveDiscount, lib/discounts.ts, takes the
+      // first match) here as it does on the storefront card/detail pages,
+      // or this admin candidate preview would show a different current
+      // discount than what customers actually see.
+      discounts: { select: { discountPercent: true, startDate: true, endDate: true }, orderBy: { startDate: "desc" } },
     },
   },
 } as const;

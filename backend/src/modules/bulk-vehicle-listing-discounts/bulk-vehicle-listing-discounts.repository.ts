@@ -24,7 +24,13 @@ const candidateSelect = {
       powertrainType: { select: lookupSelect },
     },
   },
-  discounts: { select: { discountPercent: true, startDate: true, endDate: true } },
+  // orderBy desc matches every other discounts query in the codebase
+  // (vehicle-listing.repository.ts, ...) — a listing with overlapping
+  // active discount rows must resolve to the same "active" one
+  // (findActiveDiscount, lib/discounts.ts, takes the first match) here as
+  // it does on the storefront card/detail pages, or this admin candidate
+  // preview would show a different current discount than customers see.
+  discounts: { select: { discountPercent: true, startDate: true, endDate: true }, orderBy: { startDate: "desc" } },
 } as const;
 
 const discountHistorySelect = {

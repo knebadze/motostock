@@ -80,7 +80,15 @@ export const productSummaryInclude = {
     select: {
       price: true,
       stockQuantity: true,
-      discounts: { select: { discountPrice: true, startDate: true, endDate: true } },
+      // orderBy matters here: without it, Postgres doesn't guarantee row
+      // order, so two overlapping active discount rows (an admin edit
+      // window that outlives its predecessor) could come back in a
+      // different order than variantDetailSelect's identically-ordered
+      // query below — findActiveDiscount (lib/discounts.ts) just takes the
+      // first match, so an unordered card query and the desc-ordered detail
+      // query could each pick a different "active" discount for the same
+      // variant. desc matches every other discounts query in this codebase.
+      discounts: { select: { discountPrice: true, startDate: true, endDate: true }, orderBy: { startDate: "desc" } },
     },
   },
 } as const;
@@ -98,7 +106,10 @@ const adminProductSummaryInclude = {
       price: true,
       stockQuantity: true,
       isActive: true,
-      discounts: { select: { discountPrice: true, startDate: true, endDate: true } },
+      // Same ordering as productSummaryInclude above, for the same reason
+      // — keeps findActiveDiscount's pick consistent with every other
+      // customer- and admin-facing query over this variant's discounts.
+      discounts: { select: { discountPrice: true, startDate: true, endDate: true }, orderBy: { startDate: "desc" } },
     },
   },
 } as const;
