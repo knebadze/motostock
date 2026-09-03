@@ -55,15 +55,40 @@ export async function mergeGuestDataIntoUser(
   const guestId = req.cookies?.[GUEST_ID_COOKIE_NAME] as string | undefined;
   if (!guestId) return;
 
-  try {
-    await mergeGuestWishlistIntoUser(guestId, userId);
-    await mergeGuestCartIntoUser(guestId, userId);
-    await mergeGuestCompareIntoUser(guestId, userId);
-    await mergeGuestProductViewsIntoUser(guestId, userId);
-    await mergeGuestVehicleListingViewsIntoUser(guestId, userId);
-  } catch (err) {
-    logger.error({ err, userId }, "Failed to merge guest data into user account");
-  }
+  // Each category is run independently (not one try/catch around a
+  // sequential chain) so a failure in, say, wishlist doesn't stop cart/
+  // compare/view-history from merging too. Each of these re-reads whatever
+  // guest-owned rows still exist under this guestId, so a category that
+  // already fully merged is a safe no-op on retry — only the categories
+  // that actually failed have anything left to do next time.
+  const categories: Array<[string, () => Promise<void>]> = [
+    ["wishlist", () => mergeGuestWishlistIntoUser(guestId, userId)],
+    ["cart", () => mergeGuestCartIntoUser(guestId, userId)],
+    ["compare", () => mergeGuestCompareIntoUser(guestId, userId)],
+    ["productViews", () => mergeGuestProductViewsIntoUser(guestId, userId)],
+    ["vehicleListingViews", () => mergeGuestVehicleListingViewsIntoUser(guestId, userId)],
+  ];
 
-  res.clearCookie(GUEST_ID_COOKIE_NAME);
+  const results = await Promise.allSettled(categories.map(([, run]) => run()));
+
+  let allSucceeded = true;
+  results.forEach((result, index) => {
+    if (result.status === "rejected") {
+      allSucceeded = false;
+      logger.error(
+        { err: result.reason, userId, category: categories[index][0] },
+        "Failed to merge a guest data category into user account",
+      );
+    }
+  });
+
+  // Clearing the cookie is what makes the guest data unreachable (it's the
+  // only link back from guestId to this userId) — only do it once every
+  // category actually succeeded. Leaving it set after a partial failure
+  // means the still-unmerged categories get another chance on this user's
+  // next login, instead of being orphaned under a guestId nothing points to
+  // anymore.
+  if (allSucceeded) {
+    res.clearCookie(GUEST_ID_COOKIE_NAME);
+  }
 }
