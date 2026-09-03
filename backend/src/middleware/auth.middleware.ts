@@ -10,6 +10,7 @@ import {
 import type { JwtPayload } from "../lib/jwt.js";
 import type { RoleName } from "../lib/roles.js";
 import { usersRepository } from "../modules/users/users.repository.js";
+import { sessionRepository } from "../modules/auth/session.repository.js";
 
 // Non-throwing core of requireAuth — returns the resolved user (also
 // refreshing the sliding-expiry cookie as a side effect) or null on any
@@ -53,20 +54,39 @@ export async function resolveAuthenticatedUser(
       return null;
     }
 
+    // Per-session revocation, independent of the account-wide tokenVersion
+    // check above — this is what makes auth.controller.ts's logout actually
+    // revoke *this* token server-side rather than only clearing the
+    // browser's cookie (see jwt.ts's JwtPayload.sessionId).
+    const session = await sessionRepository.findById(payload.sessionId);
+    if (!session) {
+      res.clearCookie(AUTH_COOKIE_NAME);
+      return null;
+    }
+
     const role = user.role.name as RoleName;
 
     // Sliding idle timeout — every authenticated request resets the 2h idle
-    // clock by reissuing the cookie, while loginAt (and therefore the
-    // absolute cap above) stays pinned to the original login.
+    // clock by reissuing the cookie, while loginAt/sessionId (and therefore
+    // the absolute cap above and the session-revocation check above) stay
+    // pinned to the original login instead of minting a new Session row on
+    // every single request.
     const refreshed = await signJwt({
       sub: user.id,
       role,
       loginAt: payload.loginAt,
       tokenVersion: user.tokenVersion,
+      sessionId: payload.sessionId,
     });
     await setAuthCookie(res, refreshed);
 
-    return { sub: user.id, role, loginAt: payload.loginAt, tokenVersion: user.tokenVersion };
+    return {
+      sub: user.id,
+      role,
+      loginAt: payload.loginAt,
+      tokenVersion: user.tokenVersion,
+      sessionId: payload.sessionId,
+    };
   } catch {
     return null;
   }

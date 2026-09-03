@@ -27,6 +27,7 @@ model User {
   roleId                  Int
   role                    Role                     @relation(fields: [roleId], references: [id])
   finaSyncRuns            FinaSyncRun[]
+  sessions                Session[]
   passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
   authEvents              AuthEvent[]

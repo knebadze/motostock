@@ -3,6 +3,7 @@ import { ApiError } from "../../lib/ApiError.js";
 import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { normalizeEmail } from "../../lib/email.js";
 import { ROLES, type RoleName } from "../../lib/roles.js";
+import { sessionRepository } from "../auth/session.repository.js";
 import { usersRepository } from "../users/users.repository.js";
 import { rolesRepository } from "../roles/roles.repository.js";
 import { toSafeUser } from "../auth/auth.service.js";
@@ -118,11 +119,13 @@ async function findOrCreateOAuthUser(profile: OAuthProfile, provider: Provider) 
 
 async function completeOAuthLogin(profile: OAuthProfile, provider: Provider) {
   const user = await findOrCreateOAuthUser(profile, provider);
+  const session = await sessionRepository.create(user.id);
   const token = await signJwt({
     sub: user.id,
     role: user.role.name as RoleName,
     loginAt: Date.now(),
     tokenVersion: user.tokenVersion,
+    sessionId: session.id,
   });
   return { user: toSafeUser(user), token };
 }

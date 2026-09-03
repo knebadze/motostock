@@ -21,6 +21,16 @@ export type JwtPayload = {
   // changes — the idle/absolute TTLs above only bound how long a token can
   // live on their own, not this.
   tokenVersion: number;
+  // Id of this token's Session row (auth/session.repository.ts) — minted
+  // once at login and, like loginAt, carried unchanged through every
+  // sliding renewal (never re-minted per request). This is what makes
+  // logout an actual server-side revocation instead of just a
+  // browser-side cookie clear: resolveAuthenticatedUser rejects a token
+  // whose Session row is gone, and auth.controller.ts's logout is what
+  // deletes it. Deliberately per-session, not the account-wide
+  // tokenVersion above — logging out of one device must not also log out
+  // every other device the way a password change intentionally does.
+  sessionId: number;
 };
 
 // Sliding idle timeout: every authenticated request reissues the cookie with

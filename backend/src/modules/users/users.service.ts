@@ -39,6 +39,7 @@ export async function changePassword(
   userId: number,
   input: ChangePasswordInput,
   loginAt: number,
+  sessionId: number,
 ): Promise<string> {
   const user = await usersRepository.findById(userId);
   if (!user) {
@@ -63,6 +64,7 @@ export async function changePassword(
     role: updated.role.name as RoleName,
     loginAt,
     tokenVersion: updated.tokenVersion,
+    sessionId,
   });
 }
 

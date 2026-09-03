@@ -1,8 +1,9 @@
 import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
-import { AUTH_COOKIE_NAME, setAuthCookie } from "../../lib/jwt.js";
+import { AUTH_COOKIE_NAME, setAuthCookie, verifyJwt } from "../../lib/jwt.js";
 import { getClientIp } from "../../lib/request-ip.js";
 import { mergeGuestDataIntoUser } from "../../middleware/guest-identity.middleware.js";
+import { sessionRepository } from "./session.repository.js";
 import {
   loginUser,
   registerUser,
@@ -39,7 +40,24 @@ export async function login(
   res.status(200).json({ user });
 }
 
-export function logout(_req: Request, res: Response) {
+// Actually revokes the token server-side (deletes its Session row — see
+// lib/jwt.ts's JwtPayload.sessionId), not just the browser-side cookie
+// clear this used to be alone. No requireAuth gate here on purpose: an
+// already-expired or otherwise-invalid cookie must still clear cleanly
+// (204, not 401) — there's simply nothing server-side left to revoke for
+// it, so the verify/lookup below is best-effort and never blocks the
+// response.
+export async function logout(req: Request, res: Response) {
+  const token = req.cookies?.[AUTH_COOKIE_NAME];
+  if (token) {
+    try {
+      const payload = verifyJwt(token);
+      await sessionRepository.delete(payload.sessionId);
+    } catch {
+      // Invalid/expired/malformed token — nothing left to revoke server-side.
+    }
+  }
+
   res.clearCookie(AUTH_COOKIE_NAME);
   res.status(204).send();
 }

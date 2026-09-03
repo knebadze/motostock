@@ -1,0 +1,22 @@
+// One row per issued login (password login/register/reset, OAuth login,
+// password change) — its id is embedded in the JWT as sessionId (see
+// lib/jwt.ts's JwtPayload) and carried unchanged through every sliding
+// idle-timeout renewal (auth.middleware.ts's resolveAuthenticatedUser),
+// the same way loginAt already is. Deleting the row (auth.controller.ts's
+// logout) is what actually revokes that one token server-side — without
+// this, logout only cleared the browser's cookie; the JWT itself stayed
+// cryptographically valid and would still authenticate if replayed
+// directly (e.g. via curl with an exfiltrated cookie value) until it
+// naturally expired. A row surviving past its JWT's own expiry is
+// harmless dead weight, not a bug — verifyJwt's own exp check already
+// rejects an expired token before resolveAuthenticatedUser ever looks the
+// session up, so nothing depends on these being swept.
+model Session {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@schema("dbo")
+}

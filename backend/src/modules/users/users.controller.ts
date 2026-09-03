@@ -41,8 +41,14 @@ export async function changePassword(
 
   // Reissues the cookie so this exact session survives the tokenVersion bump
   // that just invalidated every other one — see users.service.ts's
-  // changePassword.
-  const token = await changePasswordService(req.user.sub, req.body, req.user.loginAt);
+  // changePassword. sessionId is carried through unchanged (mid-session
+  // reissue, not a new login), same as loginAt.
+  const token = await changePasswordService(
+    req.user.sub,
+    req.body,
+    req.user.loginAt,
+    req.user.sessionId,
+  );
   await setAuthCookie(res, token);
   res.status(204).send();
 }

@@ -17,6 +17,7 @@ import { runWithAccountLockoutGuard, recordAuthEvent } from "../fraud/fraud.serv
 import { getResetTokenTtlMinutes, getVerificationTokenTtlHours } from "../settings/settings.service.js";
 import { passwordResetTokenRepository } from "./password-reset-token.repository.js";
 import { emailVerificationTokenRepository } from "./email-verification-token.repository.js";
+import { sessionRepository } from "./session.repository.js";
 import type { ForgotPasswordInput, LoginInput, RegisterInput, ResetPasswordInput } from "./auth.schema.js";
 
 function hashToken(token: string): string {
@@ -88,11 +89,13 @@ export async function registerUser(input: RegisterInput, ipAddress: string | nul
     throw new ApiError(409, "Email already in use", "EMAIL_ALREADY_IN_USE");
   }
 
+  const session = await sessionRepository.create(user.id);
   const token = await signJwt({
     sub: user.id,
     role: ROLES.USER,
     loginAt: Date.now(),
     tokenVersion: user.tokenVersion,
+    sessionId: session.id,
   });
 
   await recordAuthEvent("REGISTER", user.email, user.id, ipAddress);
@@ -134,11 +137,13 @@ export async function loginUser(input: LoginInput, ipAddress: string | null) {
 
   await recordAuthEvent("LOGIN_SUCCESS", user.email, user.id, ipAddress);
 
+  const session = await sessionRepository.create(user.id);
   const token = await signJwt({
     sub: user.id,
     role: user.role.name as RoleName,
     loginAt: Date.now(),
     tokenVersion: user.tokenVersion,
+    sessionId: session.id,
   });
   return { user: toSafeUser(user), token };
 }
@@ -236,12 +241,16 @@ export async function resetPassword(input: ResetPasswordInput) {
 
   // tokenVersion was just bumped by updatePasswordHash above — signing with
   // that fresh value (not a stale one) means this response's own cookie
-  // stays valid instead of immediately invalidating itself.
+  // stays valid instead of immediately invalidating itself. A fresh Session
+  // row too — the old one (if any) is just as invalidated as every other
+  // device's by the tokenVersion bump; this response needs its own.
+  const session = await sessionRepository.create(user.id);
   const token = await signJwt({
     sub: user.id,
     role: user.role.name as RoleName,
     loginAt: Date.now(),
     tokenVersion: user.tokenVersion,
+    sessionId: session.id,
   });
   return { user: toSafeUser(user), token };
 }
