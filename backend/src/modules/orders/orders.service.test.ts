@@ -194,7 +194,7 @@ describe("computeCheckoutTotals", () => {
     expect(unmatchedItem?.unitPrice).toBe(50);
   });
 
-  it("lets an active per-item discount override the promo when stacking is disabled", async () => {
+  it("rejects a promo code that would have zero effect (item already discounted, stacking disabled)", async () => {
     vi.mocked(isPromoStackingEnabled).mockResolvedValue(false);
     const row = productVariantCartRow({
       id: 1,
@@ -210,12 +210,31 @@ describe("computeCheckoutTotals", () => {
       matchedKeys: new Set([promoCodeItemKey({ itemType: "PRODUCT_VARIANT", productVariantId: 1 })]),
     });
 
-    const result = await computeCheckoutTotals(1, "HALF");
+    // The 30%-off item discount would win outright either way (stacking is
+    // disabled) — applying the promo would change nothing, so it must be
+    // rejected up front rather than silently "succeeding" for zero benefit
+    // while still burning the customer's one-time use of the code.
+    await expect(computeCheckoutTotals(1, "HALF")).rejects.toMatchObject({
+      code: "PROMO_CODE_NO_EFFECT",
+      statusCode: 400,
+    } satisfies Partial<ApiError>);
+  });
 
-    // The 30%-off item discount wins outright — the promo is not applied on
-    // top of it while stacking is disabled.
+  it("still applies an item's own active discount when no promo code is given (no-promo path unaffected by the zero-effect guard)", async () => {
+    vi.mocked(isPromoStackingEnabled).mockResolvedValue(false);
+    const row = productVariantCartRow({
+      id: 1,
+      price: 100,
+      quantity: 1,
+      discounts: [{ startDate: YESTERDAY, endDate: TOMORROW, discountPrice: 70 }],
+    });
+    vi.mocked(cartRepository.findByOwner).mockResolvedValue([row]);
+
+    const result = await computeCheckoutTotals(1);
+
     expect(result.total).toBe(70);
     expect(result.discountTotal).toBe(30);
+    expect(result.promoCodeBlocked).toBe(true);
   });
 
   it("stacks the promo on top of an active per-item discount when stacking is enabled", async () => {

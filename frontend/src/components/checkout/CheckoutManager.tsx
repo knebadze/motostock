@@ -487,22 +487,28 @@ export function CheckoutManager({
               </button>
             </div>
           ) : (
-            <div className="mt-2 flex gap-2">
-              <input
-                type="text"
-                value={promoCodeInput}
-                onChange={(event) => setPromoCodeInput(event.target.value)}
-                placeholder={t("promoPlaceholder")}
-                className="min-w-0 flex-1 rounded-full border border-border bg-background px-3 py-2 text-sm"
-              />
-              <button
-                type="button"
-                onClick={handleApplyPromoCode}
-                disabled={promoApplying || !promoCodeInput.trim()}
-                className="rounded-full border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-              >
-                {t("applyPromo")}
-              </button>
+            <div className="mt-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={promoCodeInput}
+                  onChange={(event) => setPromoCodeInput(event.target.value)}
+                  placeholder={t("promoPlaceholder")}
+                  disabled={displayPreview?.promoCodeBlocked ?? false}
+                  className="min-w-0 flex-1 rounded-full border border-border bg-background px-3 py-2 text-sm disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyPromoCode}
+                  disabled={promoApplying || !promoCodeInput.trim() || (displayPreview?.promoCodeBlocked ?? false)}
+                  className="rounded-full border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                >
+                  {t("applyPromo")}
+                </button>
+              </div>
+              {displayPreview?.promoCodeBlocked && (
+                <p className="mt-2 text-xs text-muted-foreground">{t("promoBlockedMessage")}</p>
+              )}
             </div>
           )}
 

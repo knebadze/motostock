@@ -119,6 +119,11 @@ export const checkoutPreviewResponseSchema = registry.register(
     deliveryTimeSnapshot: z.string().nullable(),
     total: z.number(),
     promoCode: promoCodeSummarySchema.nullable(),
+    // True when every cart item already has an active discount and
+    // promo-stacking is off — no promo code could change any item's price
+    // in this state, so the checkout UI disables the promo input instead of
+    // letting the customer spend a one-time code for zero benefit.
+    promoCodeBlocked: z.boolean(),
     // True if any item's requested quantity exceeds live stock — the
     // frontend should block order placement while this is true.
     hasStockIssues: z.boolean(),

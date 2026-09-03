@@ -121,6 +121,14 @@ type CheckoutBreakdown = {
   discountTotal: number;
   total: number;
   promoCode: { id: number; code: string; discountPercent: number } | null;
+  // True when every cart item already has an active
+  // ProductVariantDiscount/VehicleListingDiscount and promo-stacking is off
+  // — in that state, no promo code (whichever one the customer might type)
+  // could change any item's price, so the checkout UI disables the promo
+  // input outright instead of letting the customer "spend" a one-time code
+  // for zero benefit. See computeCheckoutTotals's promoCodeBlocked and the
+  // PROMO_CODE_NO_EFFECT guard below for the enforcement side of this.
+  promoCodeBlocked: boolean;
   // Whether FINA was actually reached and confirmed stock for this cart's
   // FINA-linked items during the live refresh below — see placeOrder's use
   // of this to pick the order's initial status (resolveInitialOrderStatusId).
@@ -203,26 +211,76 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
 
   const stackingEnabled = await isPromoStackingEnabled();
 
+  // Precomputed once, reused both for per-item pricing below and for the
+  // cart-wide "would literally any promo code help" signal the checkout UI
+  // uses to proactively disable the promo input (see promoCodeBlocked) —
+  // every item already has an active discount, and stacking is off, so
+  // layering any matching code on top of any of them would price identically
+  // to not entering one at all.
+  const itemDiscounts = cartRows.map((row) =>
+    row.productVariant
+      ? findActiveDiscount(row.productVariant.discounts)
+      : row.vehicleListing
+        ? findActiveDiscount(row.vehicleListing.discounts)
+        : null,
+  );
+  const promoCodeBlocked = !stackingEnabled && itemDiscounts.every((discount) => discount !== null);
+
   let promoMatch: Awaited<ReturnType<typeof resolvePromoCodeForItems>> | null = null;
   if (promoCodeInput) {
+    if (promoCodeBlocked) {
+      throw new ApiError(
+        400,
+        "პრომო კოდის გამოყენება შეუძლებელია — კალათის ყველა ნივთს უკვე აქვს ფასდაკლება",
+        "PROMO_CODE_NO_EFFECT",
+      );
+    }
+
     const matchItems = cartRows.map((row) => ({
       itemType: row.itemType,
       productVariantId: row.productVariant?.id ?? null,
       vehicleListingId: row.vehicleListing?.id ?? null,
     }));
     promoMatch = await resolvePromoCodeForItems(promoCodeInput, matchItems, userId);
+
+    // Narrower than promoCodeBlocked above (which only fires when *every*
+    // cart item is already discounted) — this catches the case where the
+    // code's scope happens to only reach items that are already discounted
+    // while some *other*, out-of-scope cart item isn't. Only meaningful when
+    // stacking is off — with stacking on, an item already having a discount
+    // never means zero effect (the promo still layers on top of it). Either
+    // way, if the code would change literally none of the matched items'
+    // prices, it must not be attached to the order: placeOrder records
+    // promoCode.id on the order, and that's exactly what counts against the
+    // code's usageLimit/one-per-customer limit (promo-codes.repository.ts's
+    // countUsage/hasUserUsed) — so attaching a no-op match here would burn
+    // the customer's code for zero benefit.
+    const matchedItemsAllDiscounted =
+      !stackingEnabled &&
+      cartRows.every((row, index) => {
+        const matchKey = promoCodeItemKey({
+          itemType: row.itemType,
+          productVariantId: row.productVariant?.id ?? null,
+          vehicleListingId: row.vehicleListing?.id ?? null,
+        });
+        if (!promoMatch!.matchedKeys.has(matchKey)) return true;
+        return itemDiscounts[index] !== null;
+      });
+    if (matchedItemsAllDiscounted) {
+      throw new ApiError(
+        400,
+        "პრომო კოდის გამოყენება შეუძლებელია — შესაბამის ნივთებს უკვე აქვთ ფასდაკლება",
+        "PROMO_CODE_NO_EFFECT",
+      );
+    }
   }
 
   let subtotal = 0;
   let total = 0;
 
-  const items = cartRows.map((row) => {
+  const items = cartRows.map((row, index) => {
     const baseUnitPrice = Number(row.productVariant?.price ?? row.vehicleListing?.price ?? 0);
-    const activeDiscount = row.productVariant
-      ? findActiveDiscount(row.productVariant.discounts)
-      : row.vehicleListing
-        ? findActiveDiscount(row.vehicleListing.discounts)
-        : null;
+    const activeDiscount = itemDiscounts[index];
     const hasActiveDiscount = activeDiscount !== null;
     const effectivePrice = activeDiscount ? Number(activeDiscount.discountPrice) : baseUnitPrice;
 
@@ -262,6 +320,7 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
     promoCode: promoMatch
       ? { id: promoMatch.id, code: promoMatch.code, discountPercent: promoMatch.discountPercent }
       : null,
+    promoCodeBlocked,
     finaConfirmed,
   };
 }
@@ -385,6 +444,7 @@ function toBreakdownResponse(breakdown: CheckoutBreakdown, delivery: DeliveryRes
     promoCode: breakdown.promoCode
       ? { code: breakdown.promoCode.code, discountPercent: breakdown.promoCode.discountPercent }
       : null,
+    promoCodeBlocked: breakdown.promoCodeBlocked,
     hasStockIssues: breakdown.items.some((item) => item.quantity > item.stockQuantity),
   };
 }

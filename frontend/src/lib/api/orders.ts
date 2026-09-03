@@ -60,6 +60,11 @@ export type CheckoutPreview = {
   deliveryTimeSnapshot: string | null;
   total: number;
   promoCode: OrderPromoCode | null;
+  // True when every cart item already has an active discount and
+  // promo-stacking is off — no promo code could change any item's price in
+  // this state, so CheckoutManager.tsx disables the promo input instead of
+  // letting the customer spend a one-time code for zero benefit.
+  promoCodeBlocked: boolean;
   // True if any item's requested quantity exceeds live stock — block order
   // placement while this is true (see CheckoutManager.tsx).
   hasStockIssues: boolean;
