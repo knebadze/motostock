@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { isCloudStorageEnabled } from "../modules/settings/settings.service.js";
 import { uploadBufferToCloudinary } from "./cloudinary.js";
-import { processImageForDisk } from "./image-processing.js";
+import { processImageForDisk, sniffImageFormat } from "./image-processing.js";
 
 const UPLOAD_ROOT = path.resolve("uploads");
 
@@ -22,6 +22,13 @@ export async function saveUploadedImage(
   file: Express.Multer.File,
 ): Promise<string> {
   if (await isCloudStorageEnabled()) {
+    // saveToDisk gets this check for free via processImageForDisk — the
+    // cloud path needs it explicitly, or a non-image (or disallowed
+    // format) file sails past Multer's spoofable Content-Type check
+    // straight to Cloudinary. Cloudinary's own transformation (see
+    // cloudinary.ts) still handles resize/format normalization, so the
+    // original buffer is uploaded as-is once it's confirmed genuine.
+    await sniffImageFormat(file.buffer);
     return uploadBufferToCloudinary(file.buffer, subfolder);
   }
   return saveToDisk(subfolder, file);

@@ -7,9 +7,13 @@ import { getImageMaxDimensionPx, getImageWebpQuality } from "../modules/settings
 // libvips' own format sniffing of the actual file bytes.
 const ALLOWED_FORMATS = new Set(["jpeg", "png", "webp", "gif"]);
 
-export async function processImageForDisk(
-  buffer: Buffer,
-): Promise<{ buffer: Buffer; extension: string }> {
+// The actual bytes-are-really-an-image check, factored out so
+// storage.ts's cloud-upload path can run it too — it previously skipped
+// straight to Cloudinary with only Multer's spoofable Content-Type header
+// as a gate, while the disk path got this real libvips-backed check for
+// free by going through processImageForDisk. Returns the sniffed format so
+// processImageForDisk below doesn't redundantly re-sniff it.
+export async function sniffImageFormat(buffer: Buffer): Promise<string> {
   let format: string | undefined;
   try {
     ({ format } = await sharp(buffer).metadata());
@@ -19,6 +23,13 @@ export async function processImageForDisk(
   if (!format || !ALLOWED_FORMATS.has(format)) {
     throw new ApiError(400, "ფაილი არ არის ვალიდური სურათი");
   }
+  return format;
+}
+
+export async function processImageForDisk(
+  buffer: Buffer,
+): Promise<{ buffer: Buffer; extension: string }> {
+  const format = await sniffImageFormat(buffer);
 
   const maxDimension = await getImageMaxDimensionPx();
 
