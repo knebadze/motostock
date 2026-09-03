@@ -1,6 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
-import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { isForeignKeyViolation, isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { productsRepository } from "../products/products.repository.js";
 import { getLookupDelegate, type LookupType } from "../lookups/lookups.registry.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
@@ -115,12 +115,30 @@ async function assertFinaIdAvailable(finaId: number | null | undefined, excludeI
   }
 }
 
+async function assertSkuAvailable(sku: string | null | undefined, excludeId?: number) {
+  if (sku == null) return;
+  const existing = await productVariantsRepository.findBySku(sku);
+  if (existing && existing.id !== excludeId) {
+    throw new ApiError(409, "ეს SKU უკვე გამოყენებულია სხვა ვარიანტზე");
+  }
+}
+
 export async function createProductVariant(input: CreateProductVariantInput) {
   await assertRefsExist(input);
   await assertFinaIdAvailable(input.finaId);
+  await assertSkuAvailable(input.sku);
 
-  const row = await productVariantsRepository.create(input);
-  return toResponse(row);
+  try {
+    const row = await productVariantsRepository.create(input);
+    return toResponse(row);
+  } catch (err) {
+    // A concurrent request can pass the pre-check above before either
+    // commits (same double-submit/race window as registerUser's email
+    // check, oauth.service.ts's, etc.) — surface the same clean 409 instead
+    // of a raw 500.
+    if (!isUniqueConstraintViolation(err, "sku")) throw err;
+    throw new ApiError(409, "ეს SKU უკვე გამოყენებულია სხვა ვარიანტზე");
+  }
 }
 
 export async function updateProductVariant(id: number, input: UpdateProductVariantInput) {
@@ -150,6 +168,9 @@ export async function updateProductVariant(id: number, input: UpdateProductVaria
   if (input.finaId !== undefined) {
     await assertFinaIdAvailable(input.finaId, id);
   }
+  if (input.sku !== undefined) {
+    await assertSkuAvailable(input.sku, id);
+  }
 
   await assertRefsExist({
     productId: input.productId ?? existing.product.id,
@@ -159,8 +180,13 @@ export async function updateProductVariant(id: number, input: UpdateProductVaria
     statusId: input.statusId !== undefined ? input.statusId : existing.status?.id,
   });
 
-  const row = await productVariantsRepository.update(id, input);
-  return toResponse(row);
+  try {
+    const row = await productVariantsRepository.update(id, input);
+    return toResponse(row);
+  } catch (err) {
+    if (!isUniqueConstraintViolation(err, "sku")) throw err;
+    throw new ApiError(409, "ეს SKU უკვე გამოყენებულია სხვა ვარიანტზე");
+  }
 }
 
 export async function deleteProductVariant(id: number) {

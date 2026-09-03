@@ -42,6 +42,10 @@ export const productVariantsRepository = {
     return prisma.productVariant.findUnique({ where: { finaId }, select: { id: true } });
   },
 
+  findBySku(sku: string) {
+    return prisma.productVariant.findUnique({ where: { sku }, select: { id: true } });
+  },
+
   create(data: ProductVariantWriteData) {
     return prisma.productVariant.create({ data, include });
   },

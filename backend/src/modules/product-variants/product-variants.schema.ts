@@ -9,7 +9,11 @@ export const createProductVariantSchema = registry.register(
   "CreateProductVariantInput",
   z.object({
     productId: z.int().positive(),
-    sku: z.string().trim().max(100).nullable().optional(),
+    // Blank normalizes to null (not stored as "") — sku is now unique
+    // (product-variant.prisma), and multiple variants leaving SKU blank
+    // must never collide with each other as if they'd all set the same
+    // literal empty-string SKU.
+    sku: z.string().trim().max(100).transform((value) => (value === "" ? null : value)).nullable().optional(),
     finaId: z.int().positive().nullable().optional(),
     sizeId: z.int().positive().nullable().optional(),
     colorId: z.int().positive().nullable().optional(),
