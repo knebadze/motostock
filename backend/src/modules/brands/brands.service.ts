@@ -1,6 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
-import { saveUploadedImage } from "../../lib/storage.js";
+import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { brandsRepository } from "./brands.repository.js";
 import type { CreateBrandInput, UpdateBrandInput } from "./brands.schema.js";
 
@@ -78,6 +78,7 @@ export async function setBrandLogo(id: number, file: Express.Multer.File) {
 
   const logoUrl = await saveUploadedImage("brands", file);
   const brand = await brandsRepository.updateLogo(id, logoUrl);
+  void deleteUploadedImage(existing.logoUrl);
   return toResponse(brand);
 }
 

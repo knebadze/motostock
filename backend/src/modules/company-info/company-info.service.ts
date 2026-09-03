@@ -1,4 +1,4 @@
-import { saveUploadedImage } from "../../lib/storage.js";
+import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { cache } from "../../lib/cache.js";
 import { companyInfoRepository } from "./company-info.repository.js";
 import type { UpdateCompanyInfoInput } from "./company-info.schema.js";
@@ -102,6 +102,7 @@ export async function setCompanyLogo(file: Express.Multer.File) {
   const existing = await getOrCreateCompanyInfo();
   const logoUrl = await saveUploadedImage("company-info", file);
   await companyInfoRepository.updateLogo(existing.id, logoUrl);
+  void deleteUploadedImage(existing.logoUrl);
   cache.del(COMPANY_INFO_CACHE_KEY);
   return getCompanyInfo();
 }

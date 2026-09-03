@@ -1,5 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
-import { saveUploadedImage } from "../../lib/storage.js";
+import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { banksRepository } from "./banks.repository.js";
 import type { CreateBankInput, ReorderBanksInput, UpdateBankInput } from "./banks.schema.js";
 
@@ -119,6 +119,7 @@ export async function setBankLogo(id: number, file: Express.Multer.File) {
 
   const logoUrl = await saveUploadedImage("banks", file);
   const row = await banksRepository.updateLogo(id, logoUrl);
+  void deleteUploadedImage(existing.logoUrl);
   return toResponse(row);
 }
 

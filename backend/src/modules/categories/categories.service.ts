@@ -1,6 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
-import { saveUploadedImage } from "../../lib/storage.js";
+import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { applyCategoryAdminFilters } from "../filters/category/category-filter-registry.js";
 import { categoriesRepository } from "./categories.repository.js";
 import type {
@@ -202,6 +202,7 @@ export async function setCategoryImage(id: number, file: Express.Multer.File) {
 
   const imageUrl = await saveUploadedImage("categories", file);
   const category = await categoriesRepository.updateImage(id, imageUrl);
+  void deleteUploadedImage(existing.imageUrl);
   return toResponse(category);
 }
 
@@ -213,5 +214,6 @@ export async function setCategoryBannerImage(id: number, file: Express.Multer.Fi
 
   const bannerImageUrl = await saveUploadedImage("categories-banner", file);
   const category = await categoriesRepository.updateBannerImage(id, bannerImageUrl);
+  void deleteUploadedImage(existing.bannerImageUrl);
   return toResponse(category);
 }

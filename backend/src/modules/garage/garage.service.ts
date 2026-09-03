@@ -1,5 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
-import { saveUploadedImage } from "../../lib/storage.js";
+import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
 import { toVehicleCatalogResponse } from "../vehicle-catalog/vehicle-catalog.service.js";
 import { garageRepository } from "./garage.repository.js";
@@ -108,6 +108,7 @@ export async function setGarageVehicleImage(
 
   const imageUrl = await saveUploadedImage("garage-vehicles", file);
   const row = await garageRepository.updateImage(id, imageUrl);
+  void deleteUploadedImage(existing.imageUrl);
   return toResponse(row);
 }
 

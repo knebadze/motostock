@@ -1,5 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
-import { saveUploadedImage } from "../../lib/storage.js";
+import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { productBrandsRepository } from "../product-brands/product-brands.repository.js";
 import { heroSlidesRepository } from "./hero-slides.repository.js";
@@ -230,6 +230,7 @@ export async function setHeroSlideImage(id: number, file: Express.Multer.File) {
 
   const imageUrl = await saveUploadedImage("hero-slides", file);
   const row = await heroSlidesRepository.updateImage(id, imageUrl);
+  void deleteUploadedImage(existing.imageUrl);
   return toResponse(row);
 }
 

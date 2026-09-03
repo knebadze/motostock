@@ -1,5 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
-import { saveUploadedImage } from "../../lib/storage.js";
+import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { productVariantsRepository } from "../product-variants/product-variants.repository.js";
 import { productVariantImagesRepository } from "./product-variant-images.repository.js";
 import type { ReorderProductVariantImagesInput } from "./product-variant-images.schema.js";
@@ -74,4 +74,5 @@ export async function deleteImage(productVariantId: number, imageId: number) {
   }
 
   await productVariantImagesRepository.delete(imageId);
+  void deleteUploadedImage(existing.imageUrl);
 }

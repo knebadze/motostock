@@ -1,6 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
-import { saveUploadedImage } from "../../lib/storage.js";
+import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { brandsRepository } from "../brands/brands.repository.js";
 import { modelsRepository } from "../models/models.repository.js";
 import { getLookupDelegate, type LookupType } from "../lookups/lookups.registry.js";
@@ -352,6 +352,7 @@ export async function setVehicleCatalogImage(id: number, file: Express.Multer.Fi
 
   const imageUrl = await saveUploadedImage("vehicle-catalog", file);
   const row = await vehicleCatalogRepository.updateImage(id, imageUrl);
+  void deleteUploadedImage(existing.imageUrl);
   return toVehicleCatalogResponse(row);
 }
 

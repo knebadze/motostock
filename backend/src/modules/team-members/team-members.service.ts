@@ -1,5 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
-import { saveUploadedImage } from "../../lib/storage.js";
+import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { teamMembersRepository } from "./team-members.repository.js";
@@ -98,6 +98,7 @@ export async function setTeamMemberImage(id: number, file: Express.Multer.File) 
 
   const imageUrl = await saveUploadedImage("team-members", file);
   const row = await teamMembersRepository.updateImage(id, imageUrl);
+  void deleteUploadedImage(existing.imageUrl);
   return toResponse(row);
 }
 

@@ -37,3 +37,11 @@ export async function uploadBufferToCloudinary(
     uploadStream.end(buffer);
   });
 }
+
+// See storage.ts's deleteUploadedImage — the Cloudinary-side half of
+// cleaning up a replaced/removed image. Lets a failure propagate; the
+// caller (deleteUploadedImage) is the one that catches and logs it instead
+// of failing the admin's request over it.
+export async function destroyCloudinaryAsset(publicId: string): Promise<void> {
+  await cloudinary.uploader.destroy(publicId);
+}

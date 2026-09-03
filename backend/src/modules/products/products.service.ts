@@ -4,7 +4,7 @@ import { findActiveDiscount } from "../../lib/discounts.js";
 import { computeLowStockQuantity } from "../../lib/low-stock.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { resolvePage } from "../../lib/pagination.js";
-import { saveUploadedImage } from "../../lib/storage.js";
+import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { productBrandsRepository } from "../product-brands/product-brands.repository.js";
 import { attributesRepository } from "../attributes/attributes.repository.js";
@@ -807,6 +807,7 @@ export async function setProductImage(id: number, file: Express.Multer.File) {
 
   const imageUrl = await saveUploadedImage("products", file);
   const row = await productsRepository.updateImage(id, imageUrl);
+  void deleteUploadedImage(existing.imageUrl);
   return toResponse(row);
 }
 
