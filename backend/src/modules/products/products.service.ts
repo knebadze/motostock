@@ -8,6 +8,7 @@ import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { productBrandsRepository } from "../product-brands/product-brands.repository.js";
 import { attributesRepository } from "../attributes/attributes.repository.js";
+import { productVariantImagesRepository } from "../product-variant-images/product-variant-images.repository.js";
 import { attributeOptionsRepository } from "../attribute-options/attribute-options.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
@@ -817,6 +818,13 @@ export async function deleteProduct(id: number) {
     throw new ApiError(404, "პროდუქტი ვერ მოიძებნა");
   }
 
+  // Collected *before* the delete below — it cascades away every
+  // ProductVariant (and with it, ProductVariantImage) row, so this is the
+  // last point these URLs are still readable. adminProductSummaryInclude
+  // (productsRepository.findById's include) doesn't carry variant images,
+  // hence the dedicated lookup instead of reusing `existing`.
+  const variantImages = await productVariantImagesRepository.findByProductId(id);
+
   try {
     await productsRepository.delete(id);
   } catch (error) {
@@ -827,5 +835,10 @@ export async function deleteProduct(id: number) {
       );
     }
     throw error;
+  }
+
+  void deleteUploadedImage(existing.imageUrl);
+  for (const image of variantImages) {
+    void deleteUploadedImage(image.imageUrl);
   }
 }

@@ -121,4 +121,5 @@ export async function deleteTeamMember(id: number) {
   }
 
   await teamMembersRepository.delete(id);
+  void deleteUploadedImage(existing.imageUrl);
 }

@@ -1,6 +1,7 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { isForeignKeyViolation, isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
+import { deleteUploadedImage } from "../../lib/storage.js";
 import { productsRepository } from "../products/products.repository.js";
 import { getLookupDelegate, type LookupType } from "../lookups/lookups.registry.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
@@ -202,5 +203,11 @@ export async function deleteProductVariant(id: number) {
       throw new ApiError(400, "ეს ჩანაწერი გამოიყენება სხვა ჩანაწერებში, ვერ წაიშლება");
     }
     throw error;
+  }
+
+  // existing.images (product-variants.repository.ts's shared include) was
+  // read before the delete above cascaded the ProductVariantImage rows away.
+  for (const image of existing.images) {
+    void deleteUploadedImage(image.imageUrl);
   }
 }

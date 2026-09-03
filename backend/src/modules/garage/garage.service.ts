@@ -119,4 +119,5 @@ export async function deleteGarageVehicle(userId: number, id: number) {
   }
 
   await garageRepository.deleteWithPopularityBump(id, existing.vehicleCatalogId);
+  void deleteUploadedImage(existing.imageUrl);
 }

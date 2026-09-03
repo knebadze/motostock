@@ -12,6 +12,15 @@ export const productVariantImagesRepository = {
     return prisma.productVariantImage.findUnique({ where: { id } });
   },
 
+  // Used by products.service.ts's deleteProduct to collect every variant
+  // gallery image's URL *before* the DB delete cascades the
+  // ProductVariant/ProductVariantImage rows away — products.repository.ts's
+  // findById (adminProductSummaryInclude) doesn't carry variant images, so
+  // this is a dedicated lookup rather than reusing that include.
+  findByProductId(productId: number) {
+    return prisma.productVariantImage.findMany({ where: { productVariant: { productId } } });
+  },
+
   maxPosition(productVariantId: number) {
     return prisma.productVariantImage.aggregate({
       where: { productVariantId },

@@ -99,4 +99,5 @@ export async function deleteBrand(id: number) {
     }
     throw error;
   }
+  void deleteUploadedImage(existing.logoUrl);
 }

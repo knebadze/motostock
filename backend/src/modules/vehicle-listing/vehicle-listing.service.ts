@@ -3,6 +3,7 @@ import { cache } from "../../lib/cache.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { resolvePage } from "../../lib/pagination.js";
+import { deleteUploadedImage } from "../../lib/storage.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
@@ -478,5 +479,12 @@ export async function deleteVehicleListing(id: number) {
       throw new ApiError(400, "ეს ჩანაწერი გამოიყენება სხვა ჩანაწერებში, ვერ წაიშლება");
     }
     throw error;
+  }
+
+  // existing.images (vehicleListingInclude) was read before the delete
+  // above cascaded the VehicleListingImage rows away — this listing has no
+  // single "own image" field, only the gallery.
+  for (const image of existing.images) {
+    void deleteUploadedImage(image.imageUrl);
   }
 }

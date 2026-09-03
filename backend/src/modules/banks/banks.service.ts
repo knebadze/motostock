@@ -142,4 +142,5 @@ export async function deleteBank(id: number) {
   }
 
   await banksRepository.delete(id);
+  void deleteUploadedImage(existing.logoUrl);
 }

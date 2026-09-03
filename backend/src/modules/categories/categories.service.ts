@@ -192,6 +192,8 @@ export async function deleteCategory(id: number) {
     }
     throw error;
   }
+  void deleteUploadedImage(existing.imageUrl);
+  void deleteUploadedImage(existing.bannerImageUrl);
 }
 
 export async function setCategoryImage(id: number, file: Express.Multer.File) {

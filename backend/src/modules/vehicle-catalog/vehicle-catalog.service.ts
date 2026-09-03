@@ -373,4 +373,5 @@ export async function deleteVehicleCatalogEntry(id: number) {
     }
     throw error;
   }
+  void deleteUploadedImage(existing.imageUrl);
 }

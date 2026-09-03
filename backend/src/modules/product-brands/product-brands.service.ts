@@ -125,4 +125,5 @@ export async function deleteProductBrand(id: number) {
     }
     throw error;
   }
+  void deleteUploadedImage(existing.logoUrl);
 }

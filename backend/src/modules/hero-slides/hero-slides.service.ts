@@ -253,4 +253,5 @@ export async function deleteHeroSlide(id: number) {
   }
 
   await heroSlidesRepository.delete(id);
+  void deleteUploadedImage(existing.imageUrl);
 }
