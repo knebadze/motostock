@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
+import { uploadRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { imageUpload, spreadsheetUpload } from "../../middleware/upload.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
@@ -57,6 +58,7 @@ vehicleCatalogRouter.delete(
 );
 vehicleCatalogRouter.post(
   "/:id/image",
+  uploadRateLimit,
   validate(vehicleCatalogIdParamSchema, "params"),
   imageUpload().single("image"),
   vehicleCatalogController.uploadImage,

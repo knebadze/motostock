@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
+import { uploadRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { imageUpload } from "../../middleware/upload.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
@@ -31,6 +32,7 @@ brandsRouter.patch(
 brandsRouter.delete("/:id", validate(brandIdParamSchema, "params"), brandsController.remove);
 brandsRouter.post(
   "/:id/logo",
+  uploadRateLimit,
   validate(brandIdParamSchema, "params"),
   imageUpload().single("logo"),
   brandsController.uploadLogo,

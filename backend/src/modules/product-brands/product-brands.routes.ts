@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
+import { uploadRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { imageUpload } from "../../middleware/upload.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
@@ -43,6 +44,7 @@ productBrandsRouter.delete(
 );
 productBrandsRouter.post(
   "/:id/logo",
+  uploadRateLimit,
   validate(productBrandIdParamSchema, "params"),
   imageUpload().single("logo"),
   productBrandsController.uploadLogo,

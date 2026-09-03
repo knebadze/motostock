@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
+import { uploadRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { imageUpload } from "../../middleware/upload.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
@@ -19,7 +20,12 @@ companyInfoRouter.get("/", companyInfoController.getOne);
 companyInfoRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
 companyInfoRouter.patch("/", validate(updateCompanyInfoSchema), companyInfoController.update);
-companyInfoRouter.post("/logo", imageUpload().single("logo"), companyInfoController.uploadLogo);
+companyInfoRouter.post(
+  "/logo",
+  uploadRateLimit,
+  imageUpload().single("logo"),
+  companyInfoController.uploadLogo,
+);
 
 const security = [{ cookieAuth: [] }];
 const companyInfoWrapperResponse = z.object({ companyInfo: companyInfoResponseSchema });

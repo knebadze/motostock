@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
+import { uploadRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { imageUpload } from "../../middleware/upload.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
@@ -35,6 +36,7 @@ heroSlidesRouter.patch(
 );
 heroSlidesRouter.post(
   "/:id/image",
+  uploadRateLimit,
   validate(heroSlideIdParamSchema, "params"),
   imageUpload().single("image"),
   heroSlidesController.uploadImage,
