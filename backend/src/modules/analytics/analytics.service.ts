@@ -189,7 +189,11 @@ export async function getAnalyticsOverview(dateFromInput?: string, dateToInput?:
         }
       : null,
     note: order.cancellationNote,
-    createdAt: order.createdAt,
+    // Was order.createdAt (when the order was *placed*) — wrong for a
+    // "recently cancelled" list, whose whole point is showing when the
+    // cancellation happened. cancelledAt is the field that actually means
+    // that now (see order.prisma's comment).
+    cancelledAt: order.cancelledAt,
   }));
 
   return {

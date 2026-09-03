@@ -25,7 +25,8 @@ export type AnalyticsRecentCancelledOrder = {
   total: number;
   reason: LookupItem | null;
   note: string | null;
-  createdAt: string;
+  // When the order was cancelled, not when it was placed.
+  cancelledAt: string;
 };
 
 export type AnalyticsOverview = {

@@ -38,7 +38,11 @@ const recentCancelledOrderSchema = z.object({
   total: z.number(),
   reason: lookupItemResponseSchema.nullable(),
   note: z.string().nullable(),
-  createdAt: z.iso.datetime(),
+  // When the order was cancelled (not when it was placed) — this list is
+  // always filtered to cancelledAt within [range.from, range.to] server-side
+  // (analytics.repository.ts's findRecentCancelledOrders), so it's never
+  // actually null for a row that reaches this response.
+  cancelledAt: z.iso.datetime(),
 });
 
 export const analyticsOverviewResponseSchema = registry.register(

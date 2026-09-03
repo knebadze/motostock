@@ -101,6 +101,15 @@ model Order {
   cancellationReasonId Int?
   cancellationReason   CancellationReason? @relation(fields: [cancellationReasonId], references: [id], onDelete: Restrict)
   cancellationNote     String?
+  // Set exactly once, atomically, in the same update that flips status to
+  // CANCELLED (orders.repository.ts's updateStatus) — analytics.repository.ts's
+  // cancellation metrics filter by this, not updatedAt. updatedAt looked like
+  // a free "cancelled at" timestamp (nothing else touched it... at the time),
+  // but fina-sync.repository.ts's setOrderFinaSyncStatus does its own
+  // separate order.update, and @updatedAt bumps on *any* update — so a
+  // manual FINA-retry click days after the actual cancellation was silently
+  // rewriting what analytics thought was the cancellation date.
+  cancelledAt DateTime?
 
   subtotal      Decimal @db.Decimal(10, 2)
   discountTotal Decimal @default(0) @db.Decimal(10, 2)
@@ -138,5 +147,8 @@ model Order {
   // range (analytics.repository.ts) — none of that was indexed before,
   // meaning a sequential scan + sort as Order grows into the thousands.
   @@index([createdAt])
+  // analytics.repository.ts's cancellation metrics (count/lost-revenue/
+  // reason-breakdown/recent-list) all range-filter on this.
+  @@index([cancelledAt])
   @@schema("dbo")
 }

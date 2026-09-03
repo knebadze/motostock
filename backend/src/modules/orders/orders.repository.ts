@@ -181,7 +181,19 @@ export const ordersRepository = {
     await prisma.$transaction(async (tx) => {
       const result = await tx.order.updateMany({
         where: { id, statusId: expectedCurrentStatusId },
-        data: { statusId, ...cancellation },
+        // cancelledAt is set exactly once, atomically, here — the presence
+        // of stockAdjustment is exactly "this call is cancelling the order"
+        // (see orders.service.ts's updateOrderStatus). Deliberately NOT
+        // updatedAt: that field gets bumped by any later order.update
+        // (e.g. fina-sync.repository.ts's setOrderFinaSyncStatus on a
+        // manual retry, days after the actual cancellation), which used to
+        // silently corrupt analytics.repository.ts's cancellation-date
+        // filtering.
+        data: {
+          statusId,
+          ...cancellation,
+          ...(stockAdjustment ? { cancelledAt: new Date() } : {}),
+        },
       });
       if (result.count === 0) {
         throw new ApiError(

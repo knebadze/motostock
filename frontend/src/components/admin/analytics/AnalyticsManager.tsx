@@ -168,7 +168,7 @@ export function AnalyticsManager({ initialData }: { initialData: AnalyticsOvervi
             { header: "ჯამი", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => formatPrice(row.total) },
             { header: "მიზეზი", render: (row) => row.reason?.nameKa ?? "მითითებული არ არის" },
             { header: "შენიშვნა", render: (row) => row.note ?? "—" },
-            { header: "თარიღი", render: (row) => formatDateTime(row.createdAt) },
+            { header: "გაუქმების თარიღი", render: (row) => formatDateTime(row.cancelledAt) },
           ]}
           data={data.cancellations.recentOrders}
           getRowKey={(row) => row.id}
