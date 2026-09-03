@@ -17,9 +17,15 @@ export const oauthRouter = Router();
 oauthRouter.get("/oauth-status", getOAuthStatus);
 
 oauthRouter.get("/google", authRateLimit, redirectToGoogle);
-oauthRouter.get("/google/callback", handleGoogleCallback);
+// Rate-limited the same as /google above — this is the step that actually
+// calls out to Google's token endpoint with whatever `code` query param
+// shows up, so leaving it unlimited would let a script hammering this URL
+// with garbage codes drive unbounded outbound requests to Google on our
+// server's behalf (an amplification vector), on top of burning our own
+// request-handling capacity.
+oauthRouter.get("/google/callback", authRateLimit, handleGoogleCallback);
 oauthRouter.get("/facebook", authRateLimit, redirectToFacebook);
-oauthRouter.get("/facebook/callback", handleFacebookCallback);
+oauthRouter.get("/facebook/callback", authRateLimit, handleFacebookCallback);
 
 registry.registerPath({
   method: "get",
