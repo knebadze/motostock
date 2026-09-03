@@ -9,6 +9,7 @@ export function ProductBasicInfoTab({
   categoryId,
   onCategoryChange,
   categoryError,
+  categoryLocked,
   productBrandOptions,
   productBrandId,
   onProductBrandChange,
@@ -21,6 +22,12 @@ export function ProductBasicInfoTab({
   categoryId: string;
   onCategoryChange: (id: string) => void;
   categoryError?: string;
+  // True once the product exists — category drives which attributes apply
+  // to the product, so changing it on an existing product would leave
+  // stale attribute values behind (see products.service.ts's updateProduct
+  // for why this is enforced server-side too, not just here). Locked
+  // instead of hidden so the admin can still see which category it's in.
+  categoryLocked: boolean;
   productBrandOptions: SelectOption[];
   productBrandId: string;
   onProductBrandChange: (id: string) => void;
@@ -42,9 +49,16 @@ export function ProductBasicInfoTab({
             value={categoryId}
             onChange={onCategoryChange}
             searchable
+            disabled={categoryLocked}
             placeholder="აირჩიეთ კატეგორია"
           />
-          <FieldError message={categoryError} />
+          {categoryLocked ? (
+            <p className="text-xs text-muted-foreground">
+              კატეგორიის შეცვლა შეუძლებელია არსებული პროდუქტისთვის — საჭიროების შემთხვევაში დაამატეთ ახალი პროდუქტი სწორი კატეგორიით
+            </p>
+          ) : (
+            <FieldError message={categoryError} />
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="product-brand" className="text-sm font-medium">

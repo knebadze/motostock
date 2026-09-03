@@ -212,6 +212,10 @@ registry.registerPath({
   },
   responses: {
     200: { description: "Updated", content: { "application/json": { schema: itemResponse } } },
+    400: {
+      description: "categoryId doesn't match the product's current category — category can't be changed after creation",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

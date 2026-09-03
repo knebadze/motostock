@@ -386,6 +386,7 @@ export function ProductForm({
           categoryId={categoryId}
           onCategoryChange={handleCategoryChange}
           categoryError={errors.categoryId}
+          categoryLocked={isEditing}
           productBrandOptions={productBrandOptions}
           productBrandId={productBrandId}
           onProductBrandChange={setProductBrandId}

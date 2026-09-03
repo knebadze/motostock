@@ -749,8 +749,21 @@ export async function updateProduct(id: number, input: UpdateProductInput) {
     throw new ApiError(404, "პროდუქტი ვერ მოიძებნა");
   }
 
-  if (input.categoryId !== undefined) {
-    await assertCategoryExists(input.categoryId);
+  // Category is fixed after creation. Changing it would leave the
+  // product's attribute values validated against a category schema that no
+  // longer applies — reconciling that automatically (drop values the new
+  // category doesn't define, re-require whatever it does) is exactly the
+  // class of bug two independent audits flagged here (required attributes
+  // never re-validated against the new category on a category-only edit).
+  // Rather than build that reconciliation, category changes are simply not
+  // allowed on an existing product — an admin who needs a different
+  // category creates a new product with it instead.
+  if (input.categoryId !== undefined && input.categoryId !== existing.category.id) {
+    throw new ApiError(
+      400,
+      "პროდუქტის კატეგორიის შეცვლა შეუძლებელია — საჭიროების შემთხვევაში დაამატეთ ახალი პროდუქტი სწორი კატეგორიით",
+      "PRODUCT_CATEGORY_CHANGE_NOT_ALLOWED",
+    );
   }
   if (input.productBrandId) {
     await assertProductBrandExists(input.productBrandId);
