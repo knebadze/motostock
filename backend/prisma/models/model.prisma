@@ -1,7 +1,7 @@
 model Model {
   id         Int              @id @default(autoincrement())
   brandId    Int
-  brand      Brand            @relation(fields: [brandId], references: [id])
+  brand      Brand            @relation(fields: [brandId], references: [id], onDelete: Restrict)
   categoryId Int
   category   Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   name       String

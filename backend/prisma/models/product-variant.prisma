@@ -5,15 +5,20 @@ model ProductVariant {
   sku           String?                  @unique
   finaId        Int?                     @unique
   sizeId        Int?
-  size          Size?                    @relation(fields: [sizeId], references: [id])
+  // SetNull, not Restrict, on all four lookups below — nullable fields
+  // whose implicit (unwritten) default was already SetNull in the live
+  // schema; written explicitly to match it, not to change it (see
+  // product.prisma's productBrand for the same reasoning, confirmed
+  // against the live DB's FK constraints before writing this).
+  size          Size?                    @relation(fields: [sizeId], references: [id], onDelete: SetNull)
   colorId       Int?
-  color         Color?                   @relation(fields: [colorId], references: [id])
+  color         Color?                   @relation(fields: [colorId], references: [id], onDelete: SetNull)
   price         Decimal                  @db.Decimal(10, 2)
   stockQuantity Int                      @default(1)
   conditionId   Int?
-  condition     Condition?               @relation(fields: [conditionId], references: [id])
+  condition     Condition?               @relation(fields: [conditionId], references: [id], onDelete: SetNull)
   statusId      Int?
-  status        ListingStatus?           @relation(fields: [statusId], references: [id])
+  status        ListingStatus?           @relation(fields: [statusId], references: [id], onDelete: SetNull)
   isActive      Boolean                  @default(true)
   images        ProductVariantImage[]
   discounts     ProductVariantDiscount[]

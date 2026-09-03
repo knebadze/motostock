@@ -8,13 +8,13 @@ enum WarrantyUnit {
 model VehicleListing {
   id               Int                      @id @default(autoincrement())
   vehicleCatalogId Int
-  vehicleCatalog   VehicleCatalog           @relation(fields: [vehicleCatalogId], references: [id])
+  vehicleCatalog   VehicleCatalog           @relation(fields: [vehicleCatalogId], references: [id], onDelete: Restrict)
   conditionId      Int
-  condition        Condition                @relation(fields: [conditionId], references: [id])
+  condition        Condition                @relation(fields: [conditionId], references: [id], onDelete: Restrict)
   statusId         Int
-  status           ListingStatus            @relation(fields: [statusId], references: [id])
+  status           ListingStatus            @relation(fields: [statusId], references: [id], onDelete: Restrict)
   colorId          Int
-  color            Color                    @relation(fields: [colorId], references: [id])
+  color            Color                    @relation(fields: [colorId], references: [id], onDelete: Restrict)
   year             Int
   // Odometer reading in km — relevant for used units (secondhand vehicles),
   // null for new stock.

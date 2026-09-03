@@ -7,7 +7,7 @@ model Address {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   phone      String
   cityId     Int
-  city       City     @relation(fields: [cityId], references: [id])
+  city       City     @relation(fields: [cityId], references: [id], onDelete: Restrict)
   street     String
   building   String?
   apartment  String?

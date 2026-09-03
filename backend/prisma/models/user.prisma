@@ -25,7 +25,7 @@ model User {
   // response).
   tokenVersion            Int                      @default(0)
   roleId                  Int
-  role                    Role                     @relation(fields: [roleId], references: [id])
+  role                    Role                     @relation(fields: [roleId], references: [id], onDelete: Restrict)
   finaSyncRuns            FinaSyncRun[]
   sessions                Session[]
   passwordResetTokens     PasswordResetToken[]

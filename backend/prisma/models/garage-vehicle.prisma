@@ -8,7 +8,7 @@ model GarageVehicle {
   userId           Int
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicleCatalogId Int
-  vehicleCatalog   VehicleCatalog @relation(fields: [vehicleCatalogId], references: [id])
+  vehicleCatalog   VehicleCatalog @relation(fields: [vehicleCatalogId], references: [id], onDelete: Restrict)
   year             Int
   // Optional — identifies this one physical vehicle (not stored on
   // VehicleCatalog, which describes a shared model/generation, not an

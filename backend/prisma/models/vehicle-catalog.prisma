@@ -1,9 +1,9 @@
 model VehicleCatalog {
   id                     Int               @id @default(autoincrement())
   brandId                Int
-  brand                  Brand             @relation(fields: [brandId], references: [id])
+  brand                  Brand             @relation(fields: [brandId], references: [id], onDelete: Restrict)
   modelId                Int
-  model                  Model             @relation(fields: [modelId], references: [id])
+  model                  Model             @relation(fields: [modelId], references: [id], onDelete: Restrict)
   variant                String            @default("")
   yearFrom               Int?
   yearTo                 Int?

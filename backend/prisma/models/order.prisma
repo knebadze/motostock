@@ -54,11 +54,16 @@ model Order {
   // creates orders directly.
   idempotencyKey String? @unique
 
+  // Restrict, unlike addressId/promoCodeId/bankId below — those are
+  // SetNull because an order's own snapshot fields keep it readable without
+  // the live row; there's no such snapshot for the buyer or the status
+  // itself, so losing either must stay blocked instead of silently
+  // orphaning order history.
   userId            Int
-  user              User                   @relation(fields: [userId], references: [id])
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
   fulfillmentMethod OrderFulfillmentMethod
   statusId          Int
-  status            OrderStatus            @relation(fields: [statusId], references: [id])
+  status            OrderStatus            @relation(fields: [statusId], references: [id], onDelete: Restrict)
 
   // SetNull (not Restrict/Cascade): losing the live Address row shouldn't
   // block its deletion or cascade-delete order history — the snapshot below

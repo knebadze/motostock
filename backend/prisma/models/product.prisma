@@ -3,7 +3,13 @@ model Product {
   categoryId      Int
   category        Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   productBrandId  Int?
-  productBrand    ProductBrand?           @relation(fields: [productBrandId], references: [id])
+  // SetNull, not Restrict — this is nullable (optional brand), and Prisma's
+  // own implicit default for an optional relation with no onDelete
+  // specified is already SetNull in the live schema; written explicitly
+  // here to match, not to change it (confirmed against the live DB's FK
+  // constraint before writing this — the ProductVariant lookups below are
+  // the same situation).
+  productBrand    ProductBrand?           @relation(fields: [productBrandId], references: [id], onDelete: SetNull)
   nameKa          String
   nameEn          String
   nameRu          String

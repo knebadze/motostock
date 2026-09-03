@@ -10,7 +10,7 @@ model TeamMember {
   nameEn     String
   nameRu     String
   positionId Int
-  position   Position @relation(fields: [positionId], references: [id])
+  position   Position @relation(fields: [positionId], references: [id], onDelete: Restrict)
   imageUrl   String?
   isActive   Boolean  @default(true)
   sortOrder  Int      @default(0)
