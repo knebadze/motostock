@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
@@ -89,6 +90,7 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
   const t = useTranslations("Cart");
   const tCommon = useTranslations("Common");
   const tErrors = useTranslations("ApiErrors");
+  const router = useRouter();
   const [cart, setCart] = useState(initialCart);
   const [pendingId, setPendingId] = useState<number | null>(null);
   const [removingItem, setRemovingItem] = useState<CartItem | null>(null);
@@ -101,6 +103,9 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
       setCart((current) =>
         recomputeCart(current.items.map((existing) => (existing.id === item.id ? updated : existing))),
       );
+      // Keeps the Header's server-rendered cart badge in sync — same fix
+      // CartDropdown.tsx's handleQuantityChange already applies.
+      router.refresh();
     } catch (error) {
       toast.error(resolveApiErrorMessage(error, tErrors, t("updateError")));
     } finally {
@@ -121,6 +126,9 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
       setCart((current) =>
         recomputeCart(current.items.filter((existing) => existing.id !== removingItem.id)),
       );
+      // Keeps the Header's server-rendered cart badge in sync — same fix
+      // CartDropdown.tsx's handleQuantityChange already applies.
+      router.refresh();
     } finally {
       setPendingId(null);
     }
