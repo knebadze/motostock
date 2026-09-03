@@ -151,8 +151,17 @@ export async function verifyEmail(token: string) {
     throw new ApiError(400, "დადასტურების ბმული არასწორია ან ვადაგასულია", "VERIFICATION_LINK_INVALID");
   }
 
+  // Claim the token before doing anything else — if two requests race with
+  // the same token, both can reach this point having read usedAt: null
+  // above, but only one of them gets count: 1 here (see the repository
+  // method's comment). The loser gets the same "invalid or expired" error
+  // as a genuinely reused link, instead of redundantly re-verifying.
+  const claim = await emailVerificationTokenRepository.claim(verificationToken.id);
+  if (claim.count === 0) {
+    throw new ApiError(400, "დადასტურების ბმული არასწორია ან ვადაგასულია", "VERIFICATION_LINK_INVALID");
+  }
+
   await usersRepository.markEmailVerified(verificationToken.userId);
-  await emailVerificationTokenRepository.markUsed(verificationToken.id);
 }
 
 export async function resendVerificationEmail(userId: number) {
@@ -211,9 +220,19 @@ export async function resetPassword(input: ResetPasswordInput) {
     throw new ApiError(400, "აღდგენის ბმული არასწორია ან ვადაგასულია", "RESET_LINK_INVALID");
   }
 
+  // Claim the token before touching the password — if two requests race
+  // with the same token (e.g. a double-submitted reset form in two tabs),
+  // both can reach this point having read usedAt: null above, but only one
+  // of them gets count: 1 here (see the repository method's comment). The
+  // loser gets the same "invalid or expired" error as a genuinely reused
+  // link, instead of also overwriting the password it just set.
+  const claim = await passwordResetTokenRepository.claim(resetToken.id);
+  if (claim.count === 0) {
+    throw new ApiError(400, "აღდგენის ბმული არასწორია ან ვადაგასულია", "RESET_LINK_INVALID");
+  }
+
   const passwordHash = await hashPassword(input.password);
   const user = await usersRepository.updatePasswordHash(resetToken.userId, passwordHash);
-  await passwordResetTokenRepository.markUsed(resetToken.id);
 
   // tokenVersion was just bumped by updatePasswordHash above — signing with
   // that fresh value (not a stale one) means this response's own cookie
