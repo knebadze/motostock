@@ -47,9 +47,12 @@ async function addProductToCompare(owner: CompareOwner, productId: number) {
     return toResponse((await compareRepository.findById(existing.id))!);
   }
 
-  await assertUnderLimit(owner);
+  const maxCompareItems = await getCompareMaxItems();
   try {
-    const row = await compareRepository.create({ ...owner, itemType: "PRODUCT", productId });
+    const row = await compareRepository.createUnderLimit(owner, maxCompareItems, {
+      itemType: "PRODUCT",
+      productId,
+    });
     return toResponse(row);
   } catch (err) {
     // Two simultaneous compare-button clicks for the same not-yet-listed
@@ -75,10 +78,9 @@ async function addVehicleListingToCompare(owner: CompareOwner, vehicleListingId:
     return toResponse((await compareRepository.findById(existing.id))!);
   }
 
-  await assertUnderLimit(owner);
+  const maxCompareItems = await getCompareMaxItems();
   try {
-    const row = await compareRepository.create({
-      ...owner,
+    const row = await compareRepository.createUnderLimit(owner, maxCompareItems, {
       itemType: "VEHICLE_LISTING",
       vehicleListingId,
     });
@@ -89,21 +91,6 @@ async function addVehicleListingToCompare(owner: CompareOwner, vehicleListingId:
     const winner = await compareRepository.findByOwnerAndVehicleListing(owner, vehicleListingId);
     if (!winner) throw err;
     return toResponse((await compareRepository.findById(winner.id))!);
-  }
-}
-
-async function assertUnderLimit(owner: CompareOwner) {
-  const [count, maxCompareItems] = await Promise.all([
-    compareRepository.countByOwner(owner),
-    getCompareMaxItems(),
-  ]);
-  if (count >= maxCompareItems) {
-    throw new ApiError(
-      400,
-      `შედარებაში ერთდროულად მაქსიმუმ ${maxCompareItems} ერთეულის დამატებაა შესაძლებელი`,
-      "COMPARE_LIMIT_REACHED",
-      { limit: maxCompareItems },
-    );
   }
 }
 

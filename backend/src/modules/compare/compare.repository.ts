@@ -1,3 +1,4 @@
+import { ApiError } from "../../lib/ApiError.js";
 import { prisma } from "../../config/prisma.js";
 import { productSummaryInclude } from "../products/products.repository.js";
 import { vehicleListingInclude } from "../vehicle-listing/vehicle-listing.repository.js";
@@ -8,6 +9,19 @@ export type CompareOwner = { userId: number } | { guestId: string };
 function ownerWhere(owner: CompareOwner) {
   return "userId" in owner ? { userId: owner.userId } : { guestId: owner.guestId };
 }
+
+// Distinguishes a userId from a guestId in the lock key below — without a
+// prefix, numeric user id 7 and guest uuid "7" (impossible in practice, but
+// the point is not to rely on that) would hash identically and let a guest
+// and a logged-in user contend for the same lock.
+function ownerLockKey(owner: CompareOwner): string {
+  return "userId" in owner ? `user:${owner.userId}` : `guest:${owner.guestId}`;
+}
+
+// Arbitrary, unique to this lock's purpose — same technique as
+// orders.repository.ts's PROMO_CODE_LOCK_NAMESPACE and fraud.service.ts's
+// ACCOUNT_LOCKOUT_LOCK_NAMESPACE.
+const COMPARE_LIMIT_LOCK_NAMESPACE = 913847205;
 
 export const compareItemInclude = {
   product: { include: productSummaryInclude },
@@ -57,6 +71,42 @@ export const compareRepository = {
     vehicleListingId?: number | null;
   }) {
     return prisma.compareItem.create({ data, include: compareItemInclude });
+  },
+
+  // The count-then-create in compare.service.ts's assertUnderLimit +
+  // create() used to run as two independent statements — a classic TOCTOU
+  // race, same shape as fraud.service.ts's runWithAccountLockoutGuard: two
+  // concurrent "add to compare" requests for the same owner (two tabs, or a
+  // rapid double-add) could both read a count just under the limit before
+  // either commits its insert, letting both through and landing one item
+  // over the configured cap. A blocking advisory lock scoped to this one
+  // owner (hashtext of a userId/guestId key) forces a second concurrent
+  // call for the *same* owner to wait for the first to commit before it
+  // re-counts — different owners never contend with each other.
+  async createUnderLimit(
+    owner: CompareOwner,
+    maxCompareItems: number,
+    data: {
+      itemType: CompareItemType;
+      productId?: number | null;
+      vehicleListingId?: number | null;
+    },
+  ) {
+    return prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${COMPARE_LIMIT_LOCK_NAMESPACE}, hashtext(${ownerLockKey(owner)}))`;
+
+      const count = await tx.compareItem.count({ where: ownerWhere(owner) });
+      if (count >= maxCompareItems) {
+        throw new ApiError(
+          400,
+          `შედარებაში ერთდროულად მაქსიმუმ ${maxCompareItems} ერთეულის დამატებაა შესაძლებელი`,
+          "COMPARE_LIMIT_REACHED",
+          { limit: maxCompareItems },
+        );
+      }
+
+      return tx.compareItem.create({ data: { ...owner, ...data }, include: compareItemInclude });
+    });
   },
 
   delete(id: number) {
