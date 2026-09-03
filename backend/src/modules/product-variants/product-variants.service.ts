@@ -133,12 +133,21 @@ export async function createProductVariant(input: CreateProductVariantInput) {
     const row = await productVariantsRepository.create(input);
     return toResponse(row);
   } catch (err) {
-    // A concurrent request can pass the pre-check above before either
+    // A concurrent request can pass either pre-check above before either
     // commits (same double-submit/race window as registerUser's email
     // check, oauth.service.ts's, etc.) — surface the same clean 409 instead
-    // of a raw 500.
-    if (!isUniqueConstraintViolation(err, "sku")) throw err;
-    throw new ApiError(409, "ეს SKU უკვე გამოყენებულია სხვა ვარიანტზე");
+    // of a raw 500, for whichever of the two unique fields actually
+    // collided (a FINA-import burst can race on finaId, same as an admin
+    // double-submit can race on sku — this file is the only one in the
+    // codebase with two independently-unique fields on one create/update,
+    // so both need their own check here).
+    if (isUniqueConstraintViolation(err, "sku")) {
+      throw new ApiError(409, "ეს SKU უკვე გამოყენებულია სხვა ვარიანტზე");
+    }
+    if (isUniqueConstraintViolation(err, "finaId")) {
+      throw new ApiError(409, "ეს FINA ID უკვე გამოყენებულია სხვა ვარიანტზე");
+    }
+    throw err;
   }
 }
 
@@ -185,8 +194,14 @@ export async function updateProductVariant(id: number, input: UpdateProductVaria
     const row = await productVariantsRepository.update(id, input);
     return toResponse(row);
   } catch (err) {
-    if (!isUniqueConstraintViolation(err, "sku")) throw err;
-    throw new ApiError(409, "ეს SKU უკვე გამოყენებულია სხვა ვარიანტზე");
+    // See createProductVariant's catch above — same two-field race.
+    if (isUniqueConstraintViolation(err, "sku")) {
+      throw new ApiError(409, "ეს SKU უკვე გამოყენებულია სხვა ვარიანტზე");
+    }
+    if (isUniqueConstraintViolation(err, "finaId")) {
+      throw new ApiError(409, "ეს FINA ID უკვე გამოყენებულია სხვა ვარიანტზე");
+    }
+    throw err;
   }
 }
 
