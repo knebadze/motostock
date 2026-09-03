@@ -115,16 +115,15 @@ const adminProductSummaryInclude = {
 } as const;
 
 // Lean projection for the admin products list (see productsRepository's
-// findManyForAdmin) — that list has no limit/pagination on the backend
-// (fetch-everything-filtered, paginate client-side — this codebase's
-// deliberate admin-list convention), unlike storefront browsing, which is
-// always limit-bounded. Reusing productSummaryInclude's full per-variant
-// discounts and complete attributeValues array (needed for storefront card
-// rendering — badges, filter facets) for every row of a potentially large,
-// unbounded fetch was needlessly heavy: ProductsManager.tsx's table only
-// ever renders name/category/brand/price-range/stock/variant-count/
-// view-count, never attributeValues or a discount badge (the admin detail
-// modal fetches full per-product data separately when actually needed).
+// findManyForAdmin, which server-side paginates via skip/take like every
+// other admin list — see products.service.ts's use of resolvePage).
+// Reusing productSummaryInclude's full per-variant discounts and complete
+// attributeValues array (needed for storefront card rendering — badges,
+// filter facets) for every row here was needlessly heavy regardless of
+// pagination: ProductsManager.tsx's table only ever renders name/category/
+// brand/price-range/stock/variant-count/view-count, never attributeValues
+// or a discount badge (the admin detail modal fetches full per-product data
+// separately when actually needed).
 const adminListInclude = {
   category: { select: namedRefSelect },
   productBrand: { select: brandModelRefSelect },
