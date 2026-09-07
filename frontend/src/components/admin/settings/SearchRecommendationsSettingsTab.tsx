@@ -47,10 +47,12 @@ export function SearchRecommendationsSettingsTab({
     label: string,
     min = 0,
     step?: string,
+    hint?: string,
   ) {
     return (
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium">{label}</label>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
         <input
           type="number"
           min={min}
@@ -75,21 +77,69 @@ export function SearchRecommendationsSettingsTab({
       <div className="mt-4 flex flex-col gap-5">
         <div>
           <p className="text-sm font-semibold text-foreground">ძიება</p>
-          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {field("searchResultCap", "ძიების შედეგების მაქს. რაოდენობა (შიდა ჭერი)", 1)}
-            {field("salesSummaryLimit", "გაყიდვების შეჯამების სია (ტოპ N)", 1)}
+          <div className="mt-2 grid grid-cols-1 gap-3">
+            {field(
+              "searchResultCap",
+              "ძიების შედეგების მაქს. რაოდენობა (შიდა ჭერი)",
+              1,
+              undefined,
+              "რამდენ პროდუქტამდე გამოითვლება რელევანტურობა ერთ საძიებო მოთხოვნაზე — ზოგადი საძიებო სიტყვა კატალოგის დიდ ნაწილს რომ არ ემთხვეოდეს და წარმადობას არ აზარალებდეს.",
+            )}
+            {field(
+              "salesSummaryLimit",
+              "გაყიდვების შეჯამების სია (ტოპ N)",
+              1,
+              undefined,
+              "ადმინში პროდუქტის/ტექნიკის დეტალების ფანჯარაში რამდენი ბოლო შეკვეთა გამოჩნდეს გაყიდვების ისტორიაში.",
+            )}
           </div>
         </div>
 
         <div>
           <p className="text-sm font-semibold text-foreground">რეკომენდაციები</p>
-          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {field("recommendationsDefaultLimit", "ნაგულისხმევი რაოდენობა")}
-            {field("recommendationsCacheTtlMinutes", "ქეშის ვადა (წუთი)", 1)}
-            {field("recommendationOrderWeight", "შეკვეთის წონა", 0, "0.1")}
-            {field("recommendationWishlistWeight", "სასურველების წონა", 0, "0.1")}
-            {field("recommendationViewWeight", "დათვალიერების წონა", 0, "0.1")}
-            {field("recentlyViewedLimit", "„ბოლოს ნანახის“ სია (რაოდენობა)")}
+          <div className="mt-2 grid grid-cols-1 gap-3">
+            {field(
+              "recommendationsDefaultLimit",
+              "ნაგულისხმევი რაოდენობა",
+              0,
+              undefined,
+              "რამდენი პროდუქტი დაბრუნდეს რეკომენდაციის სექციებში (მაგ. „თქვენთვის რეკომენდებული“), როცა კონკრეტული რაოდენობა მოთხოვნაში მითითებული არ არის.",
+            )}
+            {field(
+              "recommendationsCacheTtlMinutes",
+              "ქეშის ვადა (წუთი)",
+              1,
+              undefined,
+              "რამდენ წუთს ინახება უკვე გამოთვლილი რეკომენდაცია, სანამ თავიდან არ გამოითვლება — მოკლე ვადა უფრო ცხადს ხდის ცვლილებებს, გრძელი ვადა ამცირებს სერვერის დატვირთვას.",
+            )}
+            {field(
+              "recommendationOrderWeight",
+              "შეკვეთის წონა",
+              0,
+              "0.1",
+              "„თქვენთვის რეკომენდებული“ სექციისთვის — რამდენად მეტ გავლენას ახდენს მომხმარებლის ნაყიდი კატეგორია/ბრენდი რეკომენდაციაზე. ყველაზე ძლიერი სიგნალია (რეალური შესყიდვა), ამიტომ ჩვეულებრივ ყველაზე მაღალია.",
+            )}
+            {field(
+              "recommendationWishlistWeight",
+              "სასურველების წონა",
+              0,
+              "0.1",
+              "იგივე მექანიზმი, სასურველების სიაში დამატებული პროდუქტის კატეგორია/ბრენდისთვის — შუალედური სიგნალია, შესყიდვაზე სუსტი, დათვალიერებაზე ძლიერი.",
+            )}
+            {field(
+              "recommendationViewWeight",
+              "დათვალიერების წონა",
+              0,
+              "0.1",
+              "იგივე მექანიზმი, უბრალოდ ნანახი პროდუქტის კატეგორია/ბრენდისთვის — ყველაზე სუსტი სიგნალია, ამიტომ ჩვეულებრივ ყველაზე დაბალია.",
+            )}
+            {field(
+              "recentlyViewedLimit",
+              "„ბოლოს ნანახის“ სია (რაოდენობა)",
+              0,
+              undefined,
+              "„ბოლოს ნანახი“ სექციაში მაქსიმუმ რამდენი პროდუქტი გამოჩნდეს მომხმარებლის დათვალიერების ისტორიიდან.",
+            )}
           </div>
         </div>
       </div>
