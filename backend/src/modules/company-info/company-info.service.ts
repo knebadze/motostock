@@ -1,5 +1,6 @@
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { cache } from "../../lib/cache.js";
+import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { companyInfoRepository } from "./company-info.repository.js";
 import type { UpdateCompanyInfoInput } from "./company-info.schema.js";
 import type { WeekDay } from "../../generated/prisma/index.js";
@@ -57,11 +58,23 @@ function toResponse(row: CompanyInfoRow) {
 
 // Singleton bootstrap — creates the one CompanyInfo row on first access
 // instead of relying on a seed script, since this is admin-editable data
-// with no meaningful default beyond a placeholder name.
+// with no meaningful default beyond a placeholder name. The `singleton`
+// column's unique constraint is the actual race guard (two concurrent
+// first-ever requests can both pass the findFirst check above); the loser
+// here just re-fetches the winner's row instead of surfacing a 500.
 async function getOrCreateCompanyInfo(): Promise<CompanyInfoRow> {
   const existing = await companyInfoRepository.findFirst();
   if (existing) return existing;
-  return companyInfoRepository.create({ name: "კომპანია" });
+
+  try {
+    return await companyInfoRepository.create({ name: "კომპანია" });
+  } catch (error) {
+    if (isUniqueConstraintViolation(error, "singleton")) {
+      const row = await companyInfoRepository.findFirst();
+      if (row) return row;
+    }
+    throw error;
+  }
 }
 
 export async function getCompanyInfo() {

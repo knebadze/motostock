@@ -16,6 +16,11 @@ enum WeekDay {
 // of no JSON blobs and no other "singleton config" beyond Setting itself.
 model CompanyInfo {
   id           Int      @id @default(autoincrement())
+  // Fixed-value unique column enforcing "at most one row" at the DB level —
+  // without it, two concurrent first-ever requests both seeing no existing
+  // row (see getOrCreateCompanyInfo) would both succeed at creating one,
+  // leaving a permanent duplicate with no way to tell which is "the" row.
+  singleton    Boolean  @unique @default(true)
   name         String
   logoUrl      String?
   cityId       Int?

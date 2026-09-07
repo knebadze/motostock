@@ -7,6 +7,9 @@ import { ROLES } from "../src/lib/roles.js";
 import { USE_CLOUD_STORAGE_KEY } from "../src/modules/settings/settings.service.js";
 import { processImageForDisk } from "../src/lib/image-processing.js";
 import { listHomepageSections } from "../src/modules/homepage-sections/homepage-sections.service.js";
+import { getCompanyInfo } from "../src/modules/company-info/company-info.service.js";
+import { getTerms } from "../src/modules/terms/terms.service.js";
+import { listEmailTemplates } from "../src/modules/email-templates/email-templates.service.js";
 
 // Source images for seed data live here (git-tracked), named after the
 // entity's slug (e.g. "helmets.jpg"). They get resized/re-encoded the same
@@ -1002,6 +1005,19 @@ async function main() {
   // immediately, not just after someone happens to load the page first.
   const homepageSections = await listHomepageSections();
   console.log(`Homepage sections ready: ${homepageSections.map((section) => section.type).join(", ")}`);
+
+  // Same reasoning as homepage sections above — bootstraps the singleton
+  // CompanyInfo/TermsAndConditions rows and the fixed EmailTemplate set
+  // deterministically here, instead of leaving them to whichever request
+  // happens to read them first.
+  await getCompanyInfo();
+  console.log("Company info ready");
+
+  await getTerms();
+  console.log("Terms and conditions ready");
+
+  const emailTemplates = await listEmailTemplates();
+  console.log(`Email templates ready: ${emailTemplates.map((template) => template.key).join(", ")}`);
 }
 
 main()

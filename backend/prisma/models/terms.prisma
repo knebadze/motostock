@@ -3,6 +3,9 @@
 // rich-text editor, rendered as-is on the public page.
 model TermsAndConditions {
   id        Int      @id @default(autoincrement())
+  // Fixed-value unique column enforcing "at most one row" at the DB level —
+  // same singleton guard as CompanyInfo.singleton, see that field's comment.
+  singleton Boolean  @unique @default(true)
   contentKa String   @default("")
   contentEn String   @default("")
   contentRu String   @default("")

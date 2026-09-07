@@ -1,4 +1,5 @@
 import { cache } from "../../lib/cache.js";
+import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { termsRepository } from "./terms.repository.js";
 import type { UpdateTermsInput } from "./terms.schema.js";
 
@@ -18,11 +19,22 @@ function toResponse(row: TermsRow) {
 
 // Singleton bootstrap — creates the one TermsAndConditions row on first
 // access instead of relying on a seed script, since it starts out empty
-// until the admin writes real content.
+// until the admin writes real content. The `singleton` column's unique
+// constraint is the actual race guard (see CompanyInfo's identical
+// getOrCreateCompanyInfo); the loser here just re-fetches the winner's row.
 async function getOrCreateTerms(): Promise<TermsRow> {
   const existing = await termsRepository.findFirst();
   if (existing) return existing;
-  return termsRepository.create();
+
+  try {
+    return await termsRepository.create();
+  } catch (error) {
+    if (isUniqueConstraintViolation(error, "singleton")) {
+      const row = await termsRepository.findFirst();
+      if (row) return row;
+    }
+    throw error;
+  }
 }
 
 export async function getTerms() {
