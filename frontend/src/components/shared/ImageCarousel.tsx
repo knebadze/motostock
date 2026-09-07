@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 const AUTOPLAY_MS = 5000;
+// Minimum horizontal drag distance (px) before a touch gesture counts as a
+// swipe rather than a tap/scroll — same threshold and reasoning as
+// HeroSlider.tsx's identical constant.
+const SWIPE_THRESHOLD_PX = 40;
 
 export type CarouselImage = {
   // Empty until the real photo is dropped in — the slot renders as a
@@ -34,6 +38,34 @@ export function ImageCarousel({
   const t = useTranslations("Common.imageCarousel");
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  // Touch-swipe support — previously the only way to change images on a
+  // touch device was the arrow buttons, which are hidden below the `sm`
+  // breakpoint (`hidden sm:flex`), leaving mobile visitors with no real way
+  // to navigate the carousel besides waiting for autoplay. Same
+  // horizontal-only tracking as HeroSlider.tsx's identical handlers, so a
+  // vertical page-scroll gesture isn't hijacked into an image change.
+  const touchStartXRef = useRef<number | null>(null);
+
+  function handleTouchStart(event: React.TouchEvent) {
+    touchStartXRef.current = event.touches[0].clientX;
+    setPaused(true);
+  }
+
+  function handleTouchEnd(event: React.TouchEvent) {
+    const startX = touchStartXRef.current;
+    touchStartXRef.current = null;
+    setPaused(false);
+    if (startX == null || images.length <= 1) return;
+
+    const deltaX = event.changedTouches[0].clientX - startX;
+    if (Math.abs(deltaX) < SWIPE_THRESHOLD_PX) return;
+
+    if (deltaX < 0) {
+      setIndex((current) => (current + 1) % images.length);
+    } else {
+      setIndex((current) => (current - 1 + images.length) % images.length);
+    }
+  }
 
   useEffect(() => {
     if (images.length <= 1 || paused) return;
@@ -51,6 +83,8 @@ export function ImageCarousel({
     <div
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       className={`relative w-full overflow-hidden bg-muted ${bordered ? "rounded-2xl border border-border" : ""} ${aspectClassName}`}
     >
       {image.src ? (
@@ -84,15 +118,23 @@ export function ImageCarousel({
             </svg>
           </button>
 
-          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2">
+          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2">
             {images.map((img, i) => (
               <button
                 key={img.alt}
                 type="button"
                 aria-label={t("imageDot", { index: i + 1 })}
                 onClick={() => setIndex(i)}
-                className={`size-2.5 rounded-full transition-colors ${i === index ? "bg-white" : "bg-white/40"}`}
-              />
+                // Padding gives each dot a ~30px tap target instead of the
+                // visible dot's bare 10px — same fix as HeroSlider.tsx's
+                // identical dots; the visible size/spacing is unchanged (the
+                // inner span below still renders at the original size).
+                className="p-2.5"
+              >
+                <span
+                  className={`block size-2.5 rounded-full transition-colors ${i === index ? "bg-white" : "bg-white/40"}`}
+                />
+              </button>
             ))}
           </div>
         </>
