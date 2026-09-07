@@ -442,18 +442,28 @@ export async function buildVehicleCompatibilityWhere(
 // pattern (see getOnSaleProductsFromServer on the frontend) — every other
 // filter combination (category browsing, search, admin panel) still goes
 // straight to the DB, since caching a near-infinite combination of filters
-// wouldn't pay for itself.
+// wouldn't pay for itself. Also excludes page/pageSize/sortBy/categoryIds:
+// without these, a paginated storefront call sharing the same {onSale: true}
+// shape (e.g. getShopProductsPageFromServer's /shop?onSale=true grid, which
+// always sends page/pageSize/sortBy) collided with this same cache key and
+// got served the *unbounded, unpaginated* cached array back as if it were
+// "page 1" — silently breaking pagination, sorting, and category filtering
+// on that page for up to the cache TTL.
 function isCacheableOnSaleQuery(query: ProductListQuery): boolean {
   return (
     query.onSale === true &&
     query.categoryId == null &&
+    query.categoryIds == null &&
     query.vehicleCatalogId == null &&
     query.search == null &&
     query.brandIds == null &&
     query.priceMin == null &&
     query.priceMax == null &&
     query.attributeFilters == null &&
-    query.adminFilters == null
+    query.adminFilters == null &&
+    query.page == null &&
+    query.pageSize == null &&
+    query.sortBy == null
   );
 }
 

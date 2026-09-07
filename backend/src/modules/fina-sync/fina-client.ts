@@ -126,26 +126,53 @@ function parseFinaEnvelope<T>(path: string, status: number, ok: boolean, body: F
   return body.data as T;
 }
 
+// A 401 means FINA rejected our cached token specifically — it was
+// rotated/revoked server-side (a FINA-side session limit, credential
+// rotation, or restart) before our own local 35h cache window in getToken()
+// expired it. Nothing else in this file ever clears cachedToken, so without
+// this, every call for up to 35h keeps handing the same now-dead token back
+// out and keeps failing identically — the only recovery was restarting the
+// backend process. Retrying exactly once, only on 401, and only after
+// clearing the cache so the retry actually uses a fresh token: a 401 means
+// FINA rejected the request before doing anything with it, so re-sending is
+// safe even for the non-idempotent saveDocProductOut/saveDocCustomerReturn
+// calls below — unlike a blind retry-on-any-failure, which for those two
+// could double-apply a stock change if the original request actually
+// succeeded server-side despite a failed/ambiguous response.
+async function fetchWithAuthRetry(
+  path: string,
+  buildRequest: (headers: Record<string, string>) => Promise<Response>,
+): Promise<Response> {
+  const res = await buildRequest(await authHeaders());
+  if (res.status !== 401) return res;
+
+  cachedToken = null;
+  cachedTokenExpiresAt = 0;
+  return buildRequest(await authHeaders());
+}
+
 async function finaGet<T>(path: string): Promise<T> {
   assertConfigured();
-  const headers = await authHeaders();
-  const res = await fetch(`${env.FINA_BASE_URL}${path}`, {
-    headers,
-    signal: AbortSignal.timeout(FINA_REQUEST_TIMEOUT_MS),
-  });
+  const res = await fetchWithAuthRetry(path, (headers) =>
+    fetch(`${env.FINA_BASE_URL}${path}`, {
+      headers,
+      signal: AbortSignal.timeout(FINA_REQUEST_TIMEOUT_MS),
+    }),
+  );
   const body = (await res.json()) as FinaEnvelope<T>;
   return parseFinaEnvelope(path, res.status, res.ok, body);
 }
 
 async function finaPost<T>(path: string, payload: unknown): Promise<T> {
   assertConfigured();
-  const headers = await authHeaders();
-  const res = await fetch(`${env.FINA_BASE_URL}${path}`, {
-    method: "POST",
-    headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(FINA_REQUEST_TIMEOUT_MS),
-  });
+  const res = await fetchWithAuthRetry(path, (headers) =>
+    fetch(`${env.FINA_BASE_URL}${path}`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(FINA_REQUEST_TIMEOUT_MS),
+    }),
+  );
   const body = (await res.json()) as FinaEnvelope<T>;
   return parseFinaEnvelope(path, res.status, res.ok, body);
 }

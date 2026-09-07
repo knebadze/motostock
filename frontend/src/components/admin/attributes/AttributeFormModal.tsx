@@ -319,11 +319,14 @@ export function AttributeFormModal({
           value={categoryId}
           onChange={setCategoryId}
           searchable
+          disabled={isEditing}
           placeholder="აირჩიეთ კატეგორია"
         />
         <FieldError message={errors.categoryId} />
         <p className="text-xs text-muted-foreground">
-          მახასიათებელი მემკვიდრეობით გადაეცემა ყველა შვილობილ კატეგორიასაც.
+          {isEditing
+            ? "კატეგორიის შეცვლა შენახვის შემდეგ შეუძლებელია — საჭიროების შემთხვევაში შექმენით ახალი მახასიათებელი."
+            : "მახასიათებელი მემკვიდრეობით გადაეცემა ყველა შვილობილ კატეგორიასაც."}
         </p>
       </div>
 

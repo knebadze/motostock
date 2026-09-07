@@ -144,8 +144,23 @@ export async function updateAttribute(id: number, input: UpdateAttributeInput) {
     throw new ApiError(404, "მახასიათებელი ვერ მოიძებნა");
   }
 
-  if (input.categoryId !== undefined) {
-    await assertCategoryExists(input.categoryId);
+  // Category is fixed after creation — the same policy products.service.ts's
+  // updateProduct applies to a Product's own categoryId, for the mirror-image
+  // reason: existing ProductAttributeValue rows were validated (and, for
+  // required attributes, entered) against this attribute's *current*
+  // category. Moving the attribute to a different category would silently
+  // orphan every value already stored under the old category (dropped the
+  // next time any of those products is saved, since buildAttributeValueWriteData
+  // filters by applicability) and retroactively leave every existing product
+  // already in the new category missing a value for a requirement it never
+  // had a chance to fill in. An admin who needs this attribute somewhere else
+  // creates a new one there instead.
+  if (input.categoryId !== undefined && input.categoryId !== existing.category.id) {
+    throw new ApiError(
+      400,
+      "მახასიათებლის კატეგორიის შეცვლა შეუძლებელია — საჭიროების შემთხვევაში შექმენით ახალი მახასიათებელი სწორი კატეგორიით",
+      "ATTRIBUTE_CATEGORY_CHANGE_NOT_ALLOWED",
+    );
   }
   if (input.unitId != null) {
     await assertUnitExists(input.unitId);
