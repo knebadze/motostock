@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { isReorderPermutation } from "../../lib/reorder.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { banksRepository } from "./banks.repository.js";
 import type { CreateBankInput, ReorderBanksInput, UpdateBankInput } from "./banks.schema.js";
@@ -127,7 +128,7 @@ export async function reorderBanks(input: ReorderBanksInput) {
   const existing = await banksRepository.findMany();
   const existingIds = new Set(existing.map((row) => row.id));
 
-  if (input.ids.length !== existing.length || !input.ids.every((id) => existingIds.has(id))) {
+  if (!isReorderPermutation(input.ids, existingIds)) {
     throw new ApiError(400, "მითითებული ბანკების სია არ ემთხვევა არსებულს");
   }
 

@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { isReorderPermutation } from "../../lib/reorder.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { productBrandsRepository } from "../product-brands/product-brands.repository.js";
@@ -238,7 +239,7 @@ export async function reorderHeroSlides(input: ReorderHeroSlidesInput) {
   const existing = await heroSlidesRepository.findMany();
   const existingIds = new Set(existing.map((row) => row.id));
 
-  if (input.ids.length !== existing.length || !input.ids.every((id) => existingIds.has(id))) {
+  if (!isReorderPermutation(input.ids, existingIds)) {
     throw new ApiError(400, "მითითებული სლაიდების სია არ ემთხვევა არსებულს");
   }
 

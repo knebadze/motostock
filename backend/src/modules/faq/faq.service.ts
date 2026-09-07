@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { isReorderPermutation } from "../../lib/reorder.js";
 import { faqRepository } from "./faq.repository.js";
 import type { CreateFaqInput, ReorderFaqInput, UpdateFaqInput } from "./faq.schema.js";
 
@@ -76,7 +77,7 @@ export async function reorderFaqs(input: ReorderFaqInput) {
   const existing = await faqRepository.findMany();
   const existingIds = new Set(existing.map((row) => row.id));
 
-  if (input.ids.length !== existing.length || !input.ids.every((id) => existingIds.has(id))) {
+  if (!isReorderPermutation(input.ids, existingIds)) {
     throw new ApiError(400, "მითითებული კითხვების სია არ ემთხვევა არსებულს");
   }
 

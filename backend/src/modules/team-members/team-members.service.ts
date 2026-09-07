@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { isReorderPermutation } from "../../lib/reorder.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
@@ -106,7 +107,7 @@ export async function reorderTeamMembers(input: ReorderTeamMembersInput) {
   const existing = await teamMembersRepository.findMany();
   const existingIds = new Set(existing.map((row) => row.id));
 
-  if (input.ids.length !== existing.length || !input.ids.every((id) => existingIds.has(id))) {
+  if (!isReorderPermutation(input.ids, existingIds)) {
     throw new ApiError(400, "მითითებული წევრების სია არ ემთხვევა არსებულს");
   }
 

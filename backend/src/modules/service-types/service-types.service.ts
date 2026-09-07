@@ -1,5 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { isReorderPermutation } from "../../lib/reorder.js";
 import { serviceTypesRepository } from "./service-types.repository.js";
 import type {
   CreateServiceTypeInput,
@@ -83,7 +84,7 @@ export async function reorderServiceTypes(input: ReorderServiceTypesInput) {
   const existing = await serviceTypesRepository.findMany();
   const existingIds = new Set(existing.map((row) => row.id));
 
-  if (input.ids.length !== existing.length || !input.ids.every((id) => existingIds.has(id))) {
+  if (!isReorderPermutation(input.ids, existingIds)) {
     throw new ApiError(400, "მითითებული სერვისების სია არ ემთხვევა არსებულს");
   }
 

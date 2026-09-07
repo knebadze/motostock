@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { isReorderPermutation } from "../../lib/reorder.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { vehicleListingRepository } from "../vehicle-listing/vehicle-listing.repository.js";
 import { vehicleListingImagesRepository } from "./vehicle-listing-images.repository.js";
@@ -53,10 +54,7 @@ export async function reorderImages(
   const existing = await vehicleListingImagesRepository.findMany(vehicleListingId);
   const existingIds = new Set(existing.map((image) => image.id));
 
-  if (
-    input.imageIds.length !== existing.length ||
-    !input.imageIds.every((id) => existingIds.has(id))
-  ) {
+  if (!isReorderPermutation(input.imageIds, existingIds)) {
     throw new ApiError(400, "მითითებული სურათების სია არ ემთხვევა ამ განცხადების სურათებს");
   }
 
