@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { env } from "../../config/env.js";
 import { ApiError } from "../../lib/ApiError.js";
-import { comparePassword, hashPassword } from "../../lib/password.js";
+import { comparePassword, hashPassword, DUMMY_PASSWORD_HASH } from "../../lib/password.js";
 import { signJwt } from "../../lib/jwt.js";
 import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import {
@@ -126,6 +126,13 @@ export async function loginUser(input: LoginInput, ipAddress: string | null) {
     if (!candidate || !candidate.passwordHash) {
       // No such user, or an OAuth-only account with no password of its own —
       // same generic error either way, so we don't leak which case it is.
+      // Still pays bcrypt's cost against a dummy hash before returning —
+      // otherwise this branch returns near-instantly while a real password
+      // account always waits on comparePassword below, and the latency gap
+      // itself becomes an account-enumeration side channel (same class of
+      // leak requestPasswordReset already guards against via its identical
+      // response, just via timing instead of response content).
+      await comparePassword(input.password, DUMMY_PASSWORD_HASH);
       return { ok: false, userId: candidate?.id ?? null };
     }
     const valid = await comparePassword(input.password, candidate.passwordHash);
