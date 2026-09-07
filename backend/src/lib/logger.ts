@@ -45,6 +45,20 @@ function persistErrorLog(args: unknown[]): void {
 
 export const logger = pino({
   level: env.NODE_ENV === "production" ? "info" : "debug",
+  // app.ts's pinoHttp(logger) auto-logs req/res on every request via
+  // pino-std-serializers' default serializers, which copy req.headers (and
+  // any Set-Cookie already staged on res, on a request that ends in a 500 —
+  // see error.middleware.ts) verbatim into the log line. Without this, the
+  // session cookie (lib/jwt.ts's AUTH_COOKIE_NAME) — and therefore a live,
+  // still-valid JWT — landed in every authenticated request's log entry at
+  // plain "info" level, and in the persisted, admin-visible ErrorLog table
+  // (via persistErrorLog below) on a 500. redact runs after serialization
+  // (req/res are already plain objects with a `.headers` key by then), so
+  // these paths match what's actually logged.
+  redact: {
+    paths: ["req.headers.cookie", "req.headers.authorization", 'res.headers["set-cookie"]'],
+    censor: "[REDACTED]",
+  },
   transport:
     env.NODE_ENV === "development"
       ? { target: "pino-pretty", options: { colorize: true } }
