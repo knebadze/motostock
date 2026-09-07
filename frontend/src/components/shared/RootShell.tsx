@@ -1,6 +1,7 @@
 import { Noto_Sans_Georgian, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "@/components/shared/Toaster";
+import { SessionLossRedirector } from "@/components/shared/SessionLossRedirector";
 import "@/app/globals.css";
 
 // Most of this site's content is Georgian — Geist (the create-next-app
@@ -36,6 +37,7 @@ export function RootShell({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
           <Toaster />
+          <SessionLossRedirector />
         </ThemeProvider>
       </body>
     </html>

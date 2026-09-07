@@ -1,4 +1,6 @@
 import axios, { type AxiosError } from "axios";
+import { routing } from "@/i18n/routing";
+import { notifySessionLoss } from "./session-loss";
 
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -60,6 +62,43 @@ export class ApiRequestError extends Error {
   }
 }
 
+// Endpoints whose OWN 401 means "the credentials in this one request were
+// wrong," not "your already-established session died" — must be excluded
+// below, or a failed login attempt (bad password) would immediately bounce
+// the visitor off the very form that's showing them why it failed. One
+// shared /auth/login route serves both the customer and admin login forms
+// (see fraud.service.ts's account-lockout guard, which covers both the same
+// way), so a single entry here covers both.
+const AUTH_ENDPOINTS_WITH_EXPECTED_401 = ["/auth/login"];
+
+// Computes the right login page for wherever the browser currently is —
+// admin panel vs. the locale-prefixed customer site — carrying the current
+// path so the login form can return the visitor to it afterward (same
+// `redirect` query param convention AddToCartButton.tsx/WishlistButton.tsx/
+// BuyTogether.tsx already use for their own local 401 handling). Handed off
+// to session-loss.ts's notifySessionLoss rather than navigated to directly:
+// this runs inside an axios interceptor, not a React render, so there's no
+// framework router instance available here regardless of which page
+// triggered it — SessionLossRedirector.tsx supplies one.
+function redirectToLoginOnSessionLoss() {
+  if (typeof window === "undefined") return;
+  const { pathname } = window.location;
+
+  if (pathname.startsWith("/admin")) {
+    if (pathname === "/admin/login") return;
+    notifySessionLoss(`/admin/login?redirect=${encodeURIComponent(pathname)}`);
+    return;
+  }
+
+  const firstSegment = pathname.split("/").filter(Boolean)[0];
+  const locale = routing.locales.includes(firstSegment as (typeof routing.locales)[number])
+    ? firstSegment
+    : routing.defaultLocale;
+  const loginPath = `/${locale}/login`;
+  if (pathname === loginPath) return;
+  notifySessionLoss(`${loginPath}?redirect=${encodeURIComponent(pathname)}`);
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiErrorPayload>) => {
@@ -68,6 +107,23 @@ apiClient.interceptors.response.use(
     const details = error.response?.data?.error?.details;
     const code = error.response?.data?.error?.code;
     const params = error.response?.data?.error?.params;
+
+    // Session-revocation safety net: before this, only 3 hand-picked
+    // components (cart/wishlist/buy-together) redirected on a 401 — every
+    // other authenticated call site (all ~40 admin Manager components
+    // included) just surfaced a generic "failed to load/save" toast forever
+    // on a revoked session (logged out on another device, a password change
+    // elsewhere bumping tokenVersion, the 30-day absolute cap, or an
+    // explicit server-side session revocation — see session.repository.ts),
+    // with no path back to actually logging in again.
+    const url = error.config?.url ?? "";
+    if (
+      error.response?.status === 401 &&
+      !AUTH_ENDPOINTS_WITH_EXPECTED_401.some((path) => url.startsWith(path))
+    ) {
+      redirectToLoginOnSessionLoss();
+    }
+
     return Promise.reject(
       new ApiRequestError(message, error.response?.status, details, code, params),
     );
