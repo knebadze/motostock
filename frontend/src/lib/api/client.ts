@@ -1,6 +1,7 @@
 import axios, { type AxiosError } from "axios";
 import { routing } from "@/i18n/routing";
 import { notifySessionLoss } from "./session-loss";
+import { isKnownAuthState } from "./auth-state";
 
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -116,9 +117,16 @@ apiClient.interceptors.response.use(
     // elsewhere bumping tokenVersion, the 30-day absolute cap, or an
     // explicit server-side session revocation — see session.repository.ts),
     // with no path back to actually logging in again.
+    //
+    // Gated on isKnownAuthState() — without it, this fired on every guest's
+    // 401 from an optional-auth endpoint too (e.g. WishlistButton's
+    // wishlist-status check on every product card, which deliberately 401s
+    // and silently no-ops for a logged-out visitor), yanking guests who
+    // were never logged in off to the login page. See auth-state.ts.
     const url = error.config?.url ?? "";
     if (
       error.response?.status === 401 &&
+      isKnownAuthState() &&
       !AUTH_ENDPOINTS_WITH_EXPECTED_401.some((path) => url.startsWith(path))
     ) {
       redirectToLoginOnSessionLoss();

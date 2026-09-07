@@ -14,6 +14,7 @@ import { Logo } from "@/components/shared/Logo";
 import { facebookIcon, instagramIcon, tiktokIcon, youtubeIcon } from "@/components/shared/social-icons";
 import { logoutUser, type User } from "@/lib/api/auth";
 import { resolveMediaUrl } from "@/lib/api/client";
+import { setKnownAuthState } from "@/lib/api/auth-state";
 import { formatShortName } from "@/lib/format";
 import type { Category } from "@/lib/api/categories";
 import type { CompanyInfo } from "@/lib/api/company-info";
@@ -82,6 +83,13 @@ export function Header({
   const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Records this page's own SSR-resolved auth state for client.ts's 401
+  // interceptor (see auth-state.ts) — every guest page mounts this exactly
+  // once per navigation/refresh with a fresh `user` prop.
+  useEffect(() => {
+    setKnownAuthState(user != null);
+  }, [user]);
 
   const topLevelCategories = categories.filter((category) => category.parentId === null);
   const socialLinks = [

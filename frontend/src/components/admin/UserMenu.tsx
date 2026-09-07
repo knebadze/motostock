@@ -8,6 +8,7 @@ import { logoutUser } from "@/lib/api/auth";
 import { clearCache } from "@/lib/api/cache";
 import { triggerFinaSync } from "@/lib/api/fina-sync";
 import { ApiRequestError } from "@/lib/api/client";
+import { setKnownAuthState } from "@/lib/api/auth-state";
 import { formatShortName } from "@/lib/format";
 
 export function UserMenu({ userName }: { userName: string }) {
@@ -16,6 +17,13 @@ export function UserMenu({ userName }: { userName: string }) {
   const [clearingCache, setClearingCache] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Mounted only inside admin/(protected), which already hard-redirects
+  // server-side when there's no authenticated admin — see auth-state.ts and
+  // client.ts's 401 interceptor.
+  useEffect(() => {
+    setKnownAuthState(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
