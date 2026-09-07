@@ -1,13 +1,14 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { getCompanyInfoFromServer } from "@/lib/api/server";
 import { facebookIcon, instagramIcon, tiktokIcon, youtubeIcon } from "@/components/shared/social-icons";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
+import { localizedLookupName } from "@/lib/api/lookups";
 import type { CompanyInfo, WeekDay } from "@/lib/api/company-info";
 
 export async function generateMetadata({
@@ -89,9 +90,11 @@ function InfoCard({ icon, label, children }: { icon: ReactNode; label: string; c
 }
 
 function ContactPageView({ companyInfo }: { companyInfo: CompanyInfo }) {
+  const locale = useLocale();
   const t = useTranslations("Contact");
   const logoUrl = resolveMediaUrl(companyInfo.logoUrl);
-  const address = [companyInfo.city?.nameKa, companyInfo.street].filter(Boolean).join(", ");
+  const cityName = companyInfo.city ? localizedLookupName(companyInfo.city, locale) : null;
+  const address = [cityName, companyInfo.street].filter(Boolean).join(", ");
   const socialLinks = [
     { href: companyInfo.facebookUrl, icon: facebookIcon, label: "Facebook" },
     { href: companyInfo.instagramUrl, icon: instagramIcon, label: "Instagram" },

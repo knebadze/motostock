@@ -6,6 +6,7 @@ import { NewsletterSignupForm } from "@/components/shared/NewsletterSignupForm";
 import { getCategoriesFromServer, getCompanyInfoFromServer } from "@/lib/api/server";
 import { facebookIcon, instagramIcon, tiktokIcon, youtubeIcon } from "@/components/shared/social-icons";
 import { groupWorkingHours } from "@/lib/working-hours";
+import { localizedLookupName } from "@/lib/api/lookups";
 import type { CompanyInfo, WeekDay } from "@/lib/api/company-info";
 import type { Category } from "@/lib/api/categories";
 
@@ -48,7 +49,8 @@ function FooterView({
   // orderBy), so no re-sort needed here.
   const topLevelCategories = categories.filter((category) => category.parentId === null);
 
-  const address = [companyInfo.city?.nameKa, companyInfo.street].filter(Boolean).join(", ");
+  const cityName = companyInfo.city ? localizedLookupName(companyInfo.city, locale) : null;
+  const address = [cityName, companyInfo.street].filter(Boolean).join(", ");
   const socialLinks = [
     { href: companyInfo.facebookUrl, icon: facebookIcon, label: "Facebook" },
     { href: companyInfo.instagramUrl, icon: instagramIcon, label: "Instagram" },

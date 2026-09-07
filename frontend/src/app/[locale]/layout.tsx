@@ -8,6 +8,7 @@ import { getAlternateLanguages, getSiteUrl, jsonLdScriptProps } from "@/lib/seo"
 import { siteConfig } from "@/config/site";
 import { getCompanyInfoFromServer } from "@/lib/api/server";
 import { resolveMediaUrl } from "@/lib/api/client";
+import { localizedLookupName } from "@/lib/api/lookups";
 import type { WeekDay } from "@/lib/api/company-info";
 
 const DAY_OF_WEEK_SCHEMA: Record<WeekDay, string> = {
@@ -19,10 +20,6 @@ const DAY_OF_WEEK_SCHEMA: Record<WeekDay, string> = {
   SATURDAY: "https://schema.org/Saturday",
   SUNDAY: "https://schema.org/Sunday",
 };
-
-function cityNameKey(locale: string): "nameKa" | "nameEn" | "nameRu" {
-  return locale === "ka" ? "nameKa" : locale === "ru" ? "nameRu" : "nameEn";
-}
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -78,7 +75,7 @@ async function LocalBusinessJsonLd({ locale }: { locale: string }) {
   const siteUrl = getSiteUrl();
   const companyInfo = await getCompanyInfoFromServer();
   const logoUrl = resolveMediaUrl(companyInfo.logoUrl);
-  const cityName = companyInfo.city?.[cityNameKey(locale)];
+  const cityName = companyInfo.city ? localizedLookupName(companyInfo.city, locale) : undefined;
 
   const address =
     companyInfo.street || cityName
