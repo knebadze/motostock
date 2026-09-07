@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
+import { authRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema, userResponseSchema } from "../../docs/schemas.js";
 import { addressResponseSchema } from "../addresses/addresses.schema.js";
@@ -18,6 +19,11 @@ usersRouter.get("/me", requireAuth, me);
 usersRouter.patch(
   "/me/password",
   requireAuth,
+  // Takes currentPassword — without a limit, a valid-but-stolen session
+  // cookie could be used to brute-force the account's real password via
+  // this endpoint's bcrypt compare, same class of risk authRateLimit
+  // already guards login/register/reset-password against.
+  authRateLimit,
   validate(changePasswordSchema),
   changePassword,
 );
