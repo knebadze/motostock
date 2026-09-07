@@ -1,0 +1,49 @@
+// Live "who's active right now" heartbeat — one row per distinct visitor
+// (ever), continuously overwritten in place on each ping (see
+// visitors.service.ts's recordVisitorPing). "Active now" = count of rows
+// whose lastSeenAt falls within the last few minutes; this table's size is
+// bounded by the number of distinct visitors ever, not by ping volume, so
+// frequent pings from the same visitor never grow it.
+//
+// Same dual-nullable-owner shape as CartItem/WishlistItem/ProductView, with
+// the same owner-XOR CHECK constraint (migration
+// 20260907160000_add_visitor_analytics) enforcing exactly one of
+// userId/guestId at the DB level.
+model VisitorPresence {
+  id         Int      @id @default(autoincrement())
+  userId     Int?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestId    String?
+  lastSeenAt DateTime @default(now())
+
+  @@unique([userId])
+  @@unique([guestId])
+  @@index([lastSeenAt])
+  @@schema("dbo")
+}
+
+// Bounded daily-visitor log — one row per (Tbilisi calendar day, visitor),
+// written at most once per visitor per day (see visitors.repository.ts's
+// recordVisit, an insert-or-ignore upsert on the unique constraints below),
+// not one row per page view. Its size grows with (distinct visitors) x
+// (days they were active), never with raw traffic/ping volume, so it stays
+// bounded the same way VisitorPresence above does.
+//
+// "Unique visitors on day X" = count() where date = X. A weekly figure
+// groups these same rows by distinct visitor across the week's dates (see
+// visitors.service.ts) — deliberately not a running per-day counter column,
+// since that can't answer "how many of today's visitors also visited
+// yesterday" the way this row-per-day-per-visitor shape can.
+model VisitorVisit {
+  id        Int      @id @default(autoincrement())
+  date      String
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestId   String?
+  createdAt DateTime @default(now())
+
+  @@unique([date, userId])
+  @@unique([date, guestId])
+  @@index([date])
+  @@schema("dbo")
+}

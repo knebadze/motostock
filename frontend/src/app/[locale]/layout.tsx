@@ -4,6 +4,7 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { RootShell } from "@/components/shared/RootShell";
+import { VisitorPingBeacon } from "@/components/shared/VisitorPingBeacon";
 import { getAlternateLanguages, getSiteUrl, jsonLdScriptProps } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 import { getCompanyInfoFromServer } from "@/lib/api/server";
@@ -145,6 +146,7 @@ export default async function LocaleLayout({
   return (
     <RootShell lang={locale}>
       <LocalBusinessJsonLd locale={locale} />
+      <VisitorPingBeacon />
       <NextIntlClientProvider>{children}</NextIntlClientProvider>
     </RootShell>
   );

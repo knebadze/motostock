@@ -33,6 +33,7 @@ import {
   termsIcon,
   usersIcon,
   vehicleCatalogIcon,
+  visitorsIcon,
 } from "./admin-nav-icons";
 
 export type AdminNavItem = {
@@ -51,6 +52,7 @@ export const adminNav: AdminNavSection[] = [
     label: "მთავარი",
     items: [
       { label: "დეშბორდი", href: "/admin", icon: dashboardIcon },
+      { label: "ვიზიტორები", href: "/admin/visitors", icon: visitorsIcon },
       { label: "ანალიტიკა", href: "/admin/analytics", icon: analyticsIcon },
       { label: "შეკვეთები", href: "/admin/orders", icon: ordersIcon },
       { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon },

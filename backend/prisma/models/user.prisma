@@ -39,6 +39,8 @@ model User {
   cartItems               CartItem[]
   productViews            ProductView[]
   vehicleListingViews     VehicleListingView[]
+  visitorPresence         VisitorPresence?
+  visitorVisits           VisitorVisit[]
   orders                  Order[]
   // Service history rows this admin logged in the workshop (not this
   // user's own vehicles' history — see GarageVehicle.serviceRecords for

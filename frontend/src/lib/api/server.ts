@@ -44,6 +44,7 @@ import type { NewsletterSubscriber, NewsletterSubscriberCounts } from "./newslet
 import type { NewsletterCampaign } from "./newsletter-campaigns";
 import type { SuspiciousLoginActivity } from "./fraud";
 import type { Session } from "./sessions";
+import type { VisitorOverview } from "./visitors";
 import type { ErrorLogsPage } from "./error-logs";
 
 async function authHeaders() {
@@ -1007,6 +1008,14 @@ export async function getSessionsFromServer(): Promise<PagedResult<Session>> {
   return fetchFromServer<PagedResult<Session>, PagedResult<Session>>("/sessions", {
     params: { page: 1, pageSize: 20 },
     fallback: { items: [], total: 0, page: 1, pageSize: 20 },
+    extract: (data) => data,
+    requireAuth: true,
+  });
+}
+
+export async function getVisitorOverviewFromServer(): Promise<VisitorOverview> {
+  return fetchFromServer<VisitorOverview, VisitorOverview>("/visitors/overview", {
+    fallback: { activeNow: 0, todayVisitors: 0, weekVisitors: 0, dailySeries: [] },
     extract: (data) => data,
     requireAuth: true,
   });

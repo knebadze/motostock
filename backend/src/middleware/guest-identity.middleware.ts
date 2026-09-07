@@ -7,6 +7,7 @@ import { mergeGuestCartIntoUser } from "../modules/cart/cart.service.js";
 import { mergeGuestCompareIntoUser } from "../modules/compare/compare.service.js";
 import { mergeGuestProductViewsIntoUser } from "../modules/product-views/product-views.service.js";
 import { mergeGuestVehicleListingViewsIntoUser } from "../modules/vehicle-listing-views/vehicle-listing-views.service.js";
+import { mergeGuestVisitorDataIntoUser } from "../modules/visitors/visitors.service.js";
 import { getGuestIdCookieMaxAgeDays } from "../modules/settings/settings.service.js";
 
 // One shared anonymous-visitor identity, reused by every guest-accessible
@@ -36,9 +37,10 @@ export async function resolveGuestId(req: Request, res: Response): Promise<strin
 // Called right after setAuthCookie at every login entry point (password
 // login/register/reset, Google/Facebook OAuth callbacks) — folds
 // everything tied to a guest-id cookie (wishlist items, cart items, compare
-// items, product/vehicle-listing views) into the now-known account, then
-// clears the cookie. A no-op when there was no guest cookie (the common
-// case — most logins aren't a guest converting).
+// items, product/vehicle-listing views, visitor presence/visit history)
+// into the now-known account, then clears the cookie. A no-op when there
+// was no guest cookie (the common case — most logins aren't a guest
+// converting).
 //
 // Best-effort — never throws. Every call site sets the auth cookie before
 // calling this, so the login/register/reset has already succeeded from the
@@ -67,6 +69,7 @@ export async function mergeGuestDataIntoUser(
     ["compare", () => mergeGuestCompareIntoUser(guestId, userId)],
     ["productViews", () => mergeGuestProductViewsIntoUser(guestId, userId)],
     ["vehicleListingViews", () => mergeGuestVehicleListingViewsIntoUser(guestId, userId)],
+    ["visitorData", () => mergeGuestVisitorDataIntoUser(guestId, userId)],
   ];
 
   const results = await Promise.allSettled(categories.map(([, run]) => run()));
