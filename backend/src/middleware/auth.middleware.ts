@@ -9,8 +9,16 @@ import {
 } from "../lib/jwt.js";
 import type { JwtPayload } from "../lib/jwt.js";
 import type { RoleName } from "../lib/roles.js";
+import { logger } from "../lib/logger.js";
 import { usersRepository } from "../modules/users/users.repository.js";
 import { sessionRepository } from "../modules/auth/session.repository.js";
+
+// Throttles Session.lastSeenAt writes — without this, the admin "active
+// sessions" page's freshness would cost a DB write on literally every
+// authenticated request. lastSeenAt only needs to be fresh enough for an
+// admin to tell a genuinely active session from an abandoned one, not
+// second-accurate.
+const LAST_SEEN_THROTTLE_MS = 5 * 60 * 1000;
 
 // Non-throwing core of requireAuth — returns the resolved user (also
 // refreshing the sliding-expiry cookie as a side effect) or null on any
@@ -62,6 +70,12 @@ export async function resolveAuthenticatedUser(
     if (!session) {
       res.clearCookie(AUTH_COOKIE_NAME);
       return null;
+    }
+
+    if (Date.now() - session.lastSeenAt.getTime() > LAST_SEEN_THROTTLE_MS) {
+      void sessionRepository
+        .touchLastSeen(session.id)
+        .catch((err) => logger.error({ err, sessionId: session.id }, "Failed to update session lastSeenAt"));
     }
 
     const role = user.role.name as RoleName;

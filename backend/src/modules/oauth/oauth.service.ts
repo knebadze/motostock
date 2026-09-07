@@ -117,9 +117,14 @@ async function findOrCreateOAuthUser(profile: OAuthProfile, provider: Provider) 
   }
 }
 
-async function completeOAuthLogin(profile: OAuthProfile, provider: Provider) {
+async function completeOAuthLogin(
+  profile: OAuthProfile,
+  provider: Provider,
+  ipAddress: string | null,
+  userAgent: string | null,
+) {
   const user = await findOrCreateOAuthUser(profile, provider);
-  const session = await sessionRepository.create(user.id);
+  const session = await sessionRepository.create(user.id, { ipAddress, userAgent });
   const token = await signJwt({
     sub: user.id,
     role: user.role.name as RoleName,
@@ -130,12 +135,20 @@ async function completeOAuthLogin(profile: OAuthProfile, provider: Provider) {
   return { user: toSafeUser(user), token };
 }
 
-export async function loginWithGoogle(code: string) {
+export async function loginWithGoogle(
+  code: string,
+  ipAddress: string | null,
+  userAgent: string | null,
+) {
   const profile = await exchangeGoogleCode(code);
-  return completeOAuthLogin(profile, "google");
+  return completeOAuthLogin(profile, "google", ipAddress, userAgent);
 }
 
-export async function loginWithFacebook(code: string) {
+export async function loginWithFacebook(
+  code: string,
+  ipAddress: string | null,
+  userAgent: string | null,
+) {
   const profile = await exchangeFacebookCode(code);
-  return completeOAuthLogin(profile, "facebook");
+  return completeOAuthLogin(profile, "facebook", ipAddress, userAgent);
 }

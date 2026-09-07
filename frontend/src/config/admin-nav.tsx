@@ -26,6 +26,7 @@ import {
   promoCodesIcon,
   serviceHistoryIcon,
   serviceTypesIcon,
+  sessionsIcon,
   settingsIcon,
   statusesIcon,
   teamIcon,
@@ -114,6 +115,7 @@ export const adminNav: AdminNavSection[] = [
     label: "უსაფრთხოება",
     items: [
       { label: "თაღლითობის მონიტორინგი", href: "/admin/fraud", icon: fraudIcon },
+      { label: "აქტიური სესიები", href: "/admin/sessions", icon: sessionsIcon },
       { label: "შეცდომების ჟურნალი", href: "/admin/error-logs", icon: errorLogIcon },
     ],
   },

@@ -12,10 +12,20 @@
 // rejects an expired token before resolveAuthenticatedUser ever looks the
 // session up, so nothing depends on these being swept.
 model Session {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Captured once at login (lib/request-ip.ts) purely for the admin "active
+  // sessions" page to tell devices apart — never parsed/trusted for any
+  // access-control decision.
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  // Refreshed (throttled, see auth.middleware.ts's resolveAuthenticatedUser)
+  // on each authenticated request carrying this session — lets the admin
+  // page distinguish a genuinely active session from one that's merely
+  // unexpired but abandoned.
+  lastSeenAt DateTime @default(now())
 
   @@index([userId])
   @@schema("dbo")

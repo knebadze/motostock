@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "dbo"."Session"
+  ADD COLUMN "ipAddress" TEXT,
+  ADD COLUMN "userAgent" TEXT,
+  ADD COLUMN "lastSeenAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

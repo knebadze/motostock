@@ -43,6 +43,7 @@ import type { OrderStatusItem } from "./order-statuses";
 import type { NewsletterSubscriber, NewsletterSubscriberCounts } from "./newsletter";
 import type { NewsletterCampaign } from "./newsletter-campaigns";
 import type { SuspiciousLoginActivity } from "./fraud";
+import type { Session } from "./sessions";
 import type { ErrorLogsPage } from "./error-logs";
 
 async function authHeaders() {
@@ -1000,4 +1001,13 @@ export async function getSuspiciousLoginActivityFromServer(): Promise<Suspicious
       requireAuth: true,
     },
   );
+}
+
+export async function getSessionsFromServer(): Promise<PagedResult<Session>> {
+  return fetchFromServer<PagedResult<Session>, PagedResult<Session>>("/sessions", {
+    params: { page: 1, pageSize: 20 },
+    fallback: { items: [], total: 0, page: 1, pageSize: 20 },
+    extract: (data) => data,
+    requireAuth: true,
+  });
 }

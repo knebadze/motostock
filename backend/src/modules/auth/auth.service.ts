@@ -58,7 +58,11 @@ async function issueVerificationEmail(userId: number, email: string): Promise<vo
   await sendVerificationEmail(email, verifyUrl);
 }
 
-export async function registerUser(input: RegisterInput, ipAddress: string | null) {
+export async function registerUser(
+  input: RegisterInput,
+  ipAddress: string | null,
+  userAgent: string | null,
+) {
   const existing = await usersRepository.findByEmail(input.email);
   if (existing) {
     throw new ApiError(409, "Email already in use", "EMAIL_ALREADY_IN_USE");
@@ -89,7 +93,7 @@ export async function registerUser(input: RegisterInput, ipAddress: string | nul
     throw new ApiError(409, "Email already in use", "EMAIL_ALREADY_IN_USE");
   }
 
-  const session = await sessionRepository.create(user.id);
+  const session = await sessionRepository.create(user.id, { ipAddress, userAgent });
   const token = await signJwt({
     sub: user.id,
     role: ROLES.USER,
@@ -111,7 +115,11 @@ export async function registerUser(input: RegisterInput, ipAddress: string | nul
   return { user: toSafeUser(user), token };
 }
 
-export async function loginUser(input: LoginInput, ipAddress: string | null) {
+export async function loginUser(
+  input: LoginInput,
+  ipAddress: string | null,
+  userAgent: string | null,
+) {
   // The lockout check (has this email failed too many times recently?), the
   // credential check, and recording a new failure are all done inside one
   // lock-held critical section, scoped to this email — see fraud.service.ts's
@@ -144,7 +152,7 @@ export async function loginUser(input: LoginInput, ipAddress: string | null) {
 
   await recordAuthEvent("LOGIN_SUCCESS", user.email, user.id, ipAddress);
 
-  const session = await sessionRepository.create(user.id);
+  const session = await sessionRepository.create(user.id, { ipAddress, userAgent });
   const token = await signJwt({
     sub: user.id,
     role: user.role.name as RoleName,
@@ -224,7 +232,11 @@ export async function requestPasswordReset(input: ForgotPasswordInput) {
   });
 }
 
-export async function resetPassword(input: ResetPasswordInput) {
+export async function resetPassword(
+  input: ResetPasswordInput,
+  ipAddress: string | null,
+  userAgent: string | null,
+) {
   const tokenHash = hashToken(input.token);
   const resetToken = await passwordResetTokenRepository.findByTokenHash(tokenHash);
 
@@ -251,7 +263,7 @@ export async function resetPassword(input: ResetPasswordInput) {
   // stays valid instead of immediately invalidating itself. A fresh Session
   // row too — the old one (if any) is just as invalidated as every other
   // device's by the tokenVersion bump; this response needs its own.
-  const session = await sessionRepository.create(user.id);
+  const session = await sessionRepository.create(user.id, { ipAddress, userAgent });
   const token = await signJwt({
     sub: user.id,
     role: user.role.name as RoleName,

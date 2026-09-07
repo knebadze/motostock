@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import { env } from "../../config/env.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { setAuthCookie } from "../../lib/jwt.js";
-import { getClientIp } from "../../lib/request-ip.js";
+import { getClientIp, getClientUserAgent } from "../../lib/request-ip.js";
 import { mergeGuestDataIntoUser } from "../../middleware/guest-identity.middleware.js";
 import { recordAuthEvent } from "../fraud/fraud.service.js";
 import {
@@ -95,7 +95,11 @@ export async function handleGoogleCallback(req: Request, res: Response) {
   }
 
   try {
-    const { user, token } = await loginWithGoogle(parsed.data.code);
+    const { user, token } = await loginWithGoogle(
+      parsed.data.code,
+      getClientIp(req),
+      getClientUserAgent(req),
+    );
     await setAuthCookie(res, token);
     await mergeGuestDataIntoUser(req, res, user.id);
     await recordAuthEvent("LOGIN_SUCCESS", user.email, user.id, getClientIp(req));
@@ -116,7 +120,11 @@ export async function handleFacebookCallback(req: Request, res: Response) {
   }
 
   try {
-    const { user, token } = await loginWithFacebook(parsed.data.code);
+    const { user, token } = await loginWithFacebook(
+      parsed.data.code,
+      getClientIp(req),
+      getClientUserAgent(req),
+    );
     await setAuthCookie(res, token);
     await mergeGuestDataIntoUser(req, res, user.id);
     await recordAuthEvent("LOGIN_SUCCESS", user.email, user.id, getClientIp(req));

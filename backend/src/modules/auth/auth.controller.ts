@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
 import { AUTH_COOKIE_NAME, setAuthCookie, verifyJwt } from "../../lib/jwt.js";
-import { getClientIp } from "../../lib/request-ip.js";
+import { getClientIp, getClientUserAgent } from "../../lib/request-ip.js";
 import { mergeGuestDataIntoUser } from "../../middleware/guest-identity.middleware.js";
 import { sessionRepository } from "./session.repository.js";
 import {
@@ -24,7 +24,11 @@ export async function register(
   req: Request<unknown, unknown, RegisterInput>,
   res: Response,
 ) {
-  const { user, token } = await registerUser(req.body, getClientIp(req as unknown as Request));
+  const { user, token } = await registerUser(
+    req.body,
+    getClientIp(req as unknown as Request),
+    getClientUserAgent(req as unknown as Request),
+  );
   await setAuthCookie(res, token);
   await mergeGuestDataIntoUser(req, res, user.id);
   res.status(201).json({ user });
@@ -34,7 +38,11 @@ export async function login(
   req: Request<unknown, unknown, LoginInput>,
   res: Response,
 ) {
-  const { user, token } = await loginUser(req.body, getClientIp(req as unknown as Request));
+  const { user, token } = await loginUser(
+    req.body,
+    getClientIp(req as unknown as Request),
+    getClientUserAgent(req as unknown as Request),
+  );
   await setAuthCookie(res, token);
   await mergeGuestDataIntoUser(req, res, user.id);
   res.status(200).json({ user });
@@ -76,7 +84,11 @@ export async function resetPasswordHandler(
   req: Request<unknown, unknown, ResetPasswordInput>,
   res: Response,
 ) {
-  const { user, token } = await resetPassword(req.body);
+  const { user, token } = await resetPassword(
+    req.body,
+    getClientIp(req as unknown as Request),
+    getClientUserAgent(req as unknown as Request),
+  );
   await setAuthCookie(res, token);
   await mergeGuestDataIntoUser(req, res, user.id);
   res.status(200).json({ user });
