@@ -1,6 +1,23 @@
 import { prisma } from "../../config/prisma.js";
 import { Prisma, type FinaOrderSyncStatus, type FinaSyncStatus, type FinaSyncTrigger } from "../../generated/prisma/index.js";
 
+// User has no `name` column (only firstName/lastName) — select:{id,name:true}
+// here would throw a Prisma validation error on every single call site
+// below, always, regardless of environment (verified live). Select the real
+// columns and compute the display name here instead.
+const triggeredBySelect = { id: true, firstName: true, lastName: true } as const;
+
+function withTriggeredByName<
+  T extends { triggeredBy: { id: number; firstName: string; lastName: string } | null },
+>(row: T) {
+  return {
+    ...row,
+    triggeredBy: row.triggeredBy
+      ? { id: row.triggeredBy.id, name: `${row.triggeredBy.firstName} ${row.triggeredBy.lastName}` }
+      : null,
+  };
+}
+
 export const finaSyncRepository = {
   findLinkedVariants() {
     return prisma.productVariant.findMany({
@@ -65,7 +82,7 @@ export const finaSyncRepository = {
     });
   },
 
-  createRun(data: {
+  async createRun(data: {
     trigger: FinaSyncTrigger;
     status: FinaSyncStatus;
     finishedAt: Date;
@@ -74,17 +91,52 @@ export const finaSyncRepository = {
     errorMessage: string | null;
     triggeredById: number | null;
   }) {
-    return prisma.finaSyncRun.create({
+    const row = await prisma.finaSyncRun.create({
       data,
-      include: { triggeredBy: { select: { id: true, name: true } } },
+      include: { triggeredBy: { select: triggeredBySelect } },
     });
+    return withTriggeredByName(row);
   },
 
-  listRuns(limit: number) {
-    return prisma.finaSyncRun.findMany({
+  // Written up front by runSync, before its external FINA call — see
+  // fina-sync.service.ts and FinaSyncStatus.RUNNING's comment. Paired with
+  // finishRun below, which the same run later updates to its real outcome.
+  async createRunningRun(data: {
+    trigger: FinaSyncTrigger;
+    variantsChecked: number;
+    triggeredById: number | null;
+  }) {
+    const row = await prisma.finaSyncRun.create({
+      data: { ...data, status: "RUNNING", finishedAt: null, variantsUpdated: 0, errorMessage: null },
+      include: { triggeredBy: { select: triggeredBySelect } },
+    });
+    return withTriggeredByName(row);
+  },
+
+  async finishRun(
+    id: number,
+    data: {
+      status: FinaSyncStatus;
+      finishedAt: Date;
+      variantsChecked: number;
+      variantsUpdated: number;
+      errorMessage: string | null;
+    },
+  ) {
+    const row = await prisma.finaSyncRun.update({
+      where: { id },
+      data,
+      include: { triggeredBy: { select: triggeredBySelect } },
+    });
+    return withTriggeredByName(row);
+  },
+
+  async listRuns(limit: number) {
+    const rows = await prisma.finaSyncRun.findMany({
       orderBy: { startedAt: "desc" },
       take: limit,
-      include: { triggeredBy: { select: { id: true, name: true } } },
+      include: { triggeredBy: { select: triggeredBySelect } },
     });
+    return rows.map(withTriggeredByName);
   },
 };

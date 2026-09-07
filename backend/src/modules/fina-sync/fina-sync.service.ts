@@ -39,6 +39,15 @@ export async function runSync(trigger: FinaSyncTrigger, triggeredById: number | 
   const variants = await finaSyncRepository.findLinkedVariants();
   const variantsChecked = variants.length;
 
+  // Written up front, before the external FINA call below (which is itself
+  // fetched before the transaction/lock further down — see that comment) —
+  // a crash or unhandled failure anywhere from here on (network hang,
+  // process kill, etc.) now leaves this row visibly stuck at RUNNING
+  // (finishedAt stays null) instead of no row existing at all, so the
+  // admin's sync history shows *where* a run went missing instead of a
+  // silent gap.
+  const run = await finaSyncRepository.createRunningRun({ trigger, variantsChecked, triggeredById });
+
   // Fetched before the transaction/lock below, not inside it — an external
   // network call (even timeout-bounded, see fina-client.ts's
   // FINA_REQUEST_TIMEOUT_MS) has no reason to extend how long the advisory
@@ -51,14 +60,12 @@ export async function runSync(trigger: FinaSyncTrigger, triggeredById: number | 
   } catch (err) {
     const message = err instanceof FinaApiError ? err.message : "მოულოდნელი შეცდომა FINA სინქრონიზაციისას";
     logger.error({ err }, "FINA sync failed");
-    return finaSyncRepository.createRun({
-      trigger,
+    return finaSyncRepository.finishRun(run.id, {
       status: "FAILED",
       finishedAt: new Date(),
       variantsChecked,
       variantsUpdated: 0,
       errorMessage: message,
-      triggeredById,
     });
   }
 
@@ -86,7 +93,19 @@ export async function runSync(trigger: FinaSyncTrigger, triggeredById: number | 
         SELECT pg_try_advisory_xact_lock(${FINA_SYNC_LOCK_KEY}) AS locked
       `;
       if (!locked) {
-        throw new ApiError(409, "სინქრონიზაცია უკვე მიმდინარეობს");
+        const message = "სინქრონიზაცია უკვე მიმდინარეობს";
+        // Resolves this run's own RUNNING row instead of leaving it stuck —
+        // this attempt never got to do anything (another run holds the
+        // lock), so it's recorded as FAILED with that explanation rather
+        // than silently orphaned.
+        await finaSyncRepository.finishRun(run.id, {
+          status: "FAILED",
+          finishedAt: new Date(),
+          variantsChecked,
+          variantsUpdated: 0,
+          errorMessage: message,
+        });
+        throw new ApiError(409, message);
       }
 
       try {
@@ -96,26 +115,22 @@ export async function runSync(trigger: FinaSyncTrigger, triggeredById: number | 
         const variantsUpdated = updates.length;
 
         const status = variantsChecked === 0 || variantsUpdated === variantsChecked ? "SUCCESS" : "PARTIAL";
-        return await finaSyncRepository.createRun({
-          trigger,
+        return await finaSyncRepository.finishRun(run.id, {
           status,
           finishedAt: new Date(),
           variantsChecked,
           variantsUpdated,
           errorMessage: null,
-          triggeredById,
         });
       } catch (err) {
         const message = err instanceof FinaApiError ? err.message : "მოულოდნელი შეცდომა FINA სინქრონიზაციისას";
         logger.error({ err }, "FINA sync failed");
-        return await finaSyncRepository.createRun({
-          trigger,
+        return await finaSyncRepository.finishRun(run.id, {
           status: "FAILED",
           finishedAt: new Date(),
           variantsChecked,
           variantsUpdated: 0,
           errorMessage: message,
-          triggeredById,
         });
       }
     },

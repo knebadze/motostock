@@ -5,8 +5,8 @@ export const finaSyncRunResponseSchema = registry.register(
   "FinaSyncRun",
   z.object({
     id: z.int(),
-    trigger: z.enum(["SCHEDULED", "MANUAL"]),
-    status: z.enum(["SUCCESS", "FAILED", "PARTIAL"]),
+    trigger: z.enum(["SCHEDULED", "MANUAL", "CHECKOUT"]),
+    status: z.enum(["RUNNING", "SUCCESS", "FAILED", "PARTIAL"]),
     startedAt: z.iso.datetime(),
     finishedAt: z.iso.datetime().nullable(),
     variantsChecked: z.int(),

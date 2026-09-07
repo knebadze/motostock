@@ -13,6 +13,12 @@ enum FinaSyncTrigger {
 }
 
 enum FinaSyncStatus {
+  // Written up front, before runSync's external FINA call — see
+  // fina-sync.service.ts. A run that crashes (process kill, unhandled
+  // network hang, etc.) before reaching its own finishRun call is left
+  // stuck here with finishedAt still null, which is the visible signal of
+  // that crash in the admin's sync history, instead of no row at all.
+  RUNNING
   SUCCESS
   FAILED
   PARTIAL

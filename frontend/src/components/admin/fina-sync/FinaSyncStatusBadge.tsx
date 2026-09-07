@@ -9,12 +9,14 @@ export const FINA_SYNC_TRIGGER_LABEL: Record<FinaSyncRun["trigger"], string> = {
 };
 
 const FINA_SYNC_STATUS_STYLE: Record<FinaSyncRun["status"], string> = {
+  RUNNING: "bg-blue-500/15 text-blue-600",
   SUCCESS: "bg-primary/15 text-primary",
   PARTIAL: "bg-amber-500/15 text-amber-600",
   FAILED: "bg-red-500/15 text-red-600",
 };
 
 const FINA_SYNC_STATUS_LABEL: Record<FinaSyncRun["status"], string> = {
+  RUNNING: "მიმდინარეობს",
   SUCCESS: "წარმატებული",
   PARTIAL: "ნაწილობრივი",
   FAILED: "წარუმატებელი",

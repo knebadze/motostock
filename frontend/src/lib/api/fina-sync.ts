@@ -8,7 +8,10 @@ export type FinaSyncRun = {
   // A successful checkout-time check isn't logged here at all, to avoid a
   // row per shopper visit.
   trigger: "SCHEDULED" | "MANUAL" | "CHECKOUT";
-  status: "SUCCESS" | "FAILED" | "PARTIAL";
+  // RUNNING is a run still in progress or, if it never got resolved, one
+  // that crashed before finishing (finishedAt stays null either way) — see
+  // backend's FinaSyncStatus.RUNNING comment.
+  status: "RUNNING" | "SUCCESS" | "FAILED" | "PARTIAL";
   startedAt: string;
   finishedAt: string | null;
   variantsChecked: number;
