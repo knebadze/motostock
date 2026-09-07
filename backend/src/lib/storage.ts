@@ -78,8 +78,11 @@ export async function deleteUploadedImage(url: string | null | undefined): Promi
     const filePath = path.resolve(relative);
     // Refuses to delete anything outside the uploads directory — a
     // malformed or unexpected stored URL must never turn into a path
-    // traversal off this project's own upload root.
-    if (!filePath.startsWith(UPLOAD_ROOT)) return;
+    // traversal off this project's own upload root. A plain startsWith(root)
+    // would also pass a sibling path like "uploads-evil/x" (shares the
+    // string prefix without actually being inside the directory), so the
+    // match must land exactly on a path separator.
+    if (filePath !== UPLOAD_ROOT && !filePath.startsWith(UPLOAD_ROOT + path.sep)) return;
     fs.rmSync(filePath, { force: true });
   } catch (err) {
     logger.error({ err, url }, "Failed to delete a replaced/removed uploaded image");
