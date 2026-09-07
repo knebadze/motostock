@@ -4,22 +4,33 @@ import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Modal } from "@/components/shared/Modal";
 import { getTerms } from "@/lib/api/terms";
+import type { LocalizedString } from "@/lib/api/categories";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 
 export function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useTranslations("Terms");
   const tCommon = useTranslations("Common");
   const locale = useLocale() as "ka" | "en" | "ru";
-  const [content, setContent] = useState<string | null>(null);
-  const loading = open && content === null;
+  // Caches the full trilingual response (the fetch itself doesn't depend on
+  // locale — getTerms() always returns all three languages in one call), not
+  // just the already-indexed-by-locale string. Re-indexing by `locale` at
+  // render time means a locale switch while this modal instance's state
+  // survives (it's mounted persistently inside RegisterForm, toggled via
+  // `open` rather than being remounted per-open) always shows the current
+  // language immediately, instead of the previously-cached one string
+  // silently staying stuck until state resets.
+  const [terms, setTerms] = useState<LocalizedString | null>(null);
+  const loading = open && terms === null;
 
   useEffect(() => {
-    if (!open || content !== null) return;
+    if (!open || terms !== null) return;
 
     getTerms()
-      .then((terms) => setContent(terms.content[locale]))
-      .catch(() => setContent(""));
-  }, [open, content, locale]);
+      .then((result) => setTerms(result.content))
+      .catch(() => setTerms({ ka: "", en: "", ru: "" }));
+  }, [open, terms]);
+
+  const content = terms?.[locale] ?? "";
 
   return (
     <Modal
