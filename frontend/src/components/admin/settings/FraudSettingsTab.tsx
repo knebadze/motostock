@@ -124,10 +124,11 @@ export function FraudSettingsTab({
           <p className="text-sm font-semibold text-foreground">წარუმატებელი login-ები</p>
           <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">ბარიერი (მცდელობა)</label>
+              <label className="text-sm font-medium">ბარიერი (მცდელობა, მაქს. 100)</label>
               <input
                 type="number"
                 min={1}
+                max={100}
                 value={draft.fraudFailedLoginThreshold}
                 onChange={(event) =>
                   setDraft((current) => ({

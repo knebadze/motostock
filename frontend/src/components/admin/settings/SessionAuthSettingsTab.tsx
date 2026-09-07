@@ -36,13 +36,14 @@ export function SessionAuthSettingsTab({
 }) {
   const [draft, setDraft] = useState<SessionAuthDraft>(draftFrom(settings));
 
-  function field<K extends keyof SessionAuthDraft>(key: K, label: string) {
+  function field<K extends keyof SessionAuthDraft>(key: K, label: string, max?: number) {
     return (
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium">{label}</label>
         <input
           type="number"
           min={1}
+          max={max}
           value={draft[key]}
           onChange={(event) =>
             setDraft((current) => ({ ...current, [key]: Number(event.target.value) }))
@@ -61,8 +62,8 @@ export function SessionAuthSettingsTab({
       </p>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {field("sessionIdleTtlMinutes", "სესიის უქმობის ვადა (წუთი)")}
-        {field("sessionAbsoluteTtlDays", "სესიის მაქს. ხანგრძლივობა (დღე)")}
+        {field("sessionIdleTtlMinutes", "სესიის უქმობის ვადა (წუთი, მაქს. 10080)", 10080)}
+        {field("sessionAbsoluteTtlDays", "სესიის მაქს. ხანგრძლივობა (დღე, მაქს. 365)", 365)}
         {field("resetTokenTtlMinutes", "პაროლის აღდგენის ბმულის ვადა (წუთი)")}
         {field("verificationTokenTtlHours", "ელფოსტის დადასტურების ბმულის ვადა (საათი)")}
         {field("guestIdCookieMaxAgeDays", "სტუმრის cookie-ის ვადა (დღე)")}

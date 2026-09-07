@@ -23,7 +23,13 @@ export const updateSettingsSchema = registry.register(
     fraudVelocityWindowMinutes: z.int().positive().openapi({ example: 30 }),
     fraudNewAccountWindowHours: z.int().positive().openapi({ example: 24 }),
     fraudHighValueThreshold: z.number().nonnegative().openapi({ example: 1000 }),
-    fraudFailedLoginThreshold: z.int().positive().openapi({ example: 5 }),
+    // Capped (unlike this file's other positive-only numeric settings) —
+    // this is the brute-force lockout threshold (see fraud.service.ts's
+    // runWithAccountLockoutGuard); an admin fat-fingering (or a compromised
+    // admin session setting) an astronomically large value here would
+    // silently neuter the lockout, since it would then never trigger in
+    // practice. 100 is already far looser than any legitimate threshold.
+    fraudFailedLoginThreshold: z.int().positive().max(100).openapi({ example: 5 }),
     fraudFailedLoginWindowMinutes: z.int().positive().openapi({ example: 15 }),
     finaWebCustomerId: z.int().positive().nullable().openapi({ example: null }),
     finaWebUserId: z.int().positive().nullable().openapi({ example: null }),
@@ -44,8 +50,15 @@ export const updateSettingsSchema = registry.register(
     recommendationWishlistWeight: z.number().nonnegative().openapi({ example: 1 }),
     recommendationViewWeight: z.number().nonnegative().openapi({ example: 0.5 }),
     recentlyViewedLimit: z.int().positive().openapi({ example: 10 }),
-    sessionIdleTtlMinutes: z.int().positive().openapi({ example: 120 }),
-    sessionAbsoluteTtlDays: z.int().positive().openapi({ example: 30 }),
+    // Capped for the same reason as fraudFailedLoginThreshold above — an
+    // unbounded idle/absolute session TTL would let a session (and the
+    // cookie carrying it, if ever exfiltrated) stay valid effectively
+    // forever instead of the sliding-idle-timeout/absolute-cap security
+    // control (auth.middleware.ts) actually doing anything. A week of idle
+    // time and a year of absolute lifetime are already far looser than any
+    // legitimate configuration.
+    sessionIdleTtlMinutes: z.int().positive().max(10080).openapi({ example: 120 }),
+    sessionAbsoluteTtlDays: z.int().positive().max(365).openapi({ example: 30 }),
     resetTokenTtlMinutes: z.int().positive().openapi({ example: 60 }),
     verificationTokenTtlHours: z.int().positive().openapi({ example: 24 }),
     guestIdCookieMaxAgeDays: z.int().positive().openapi({ example: 365 }),
@@ -76,7 +89,7 @@ export const settingsResponseSchema = registry.register(
     fraudVelocityWindowMinutes: z.int().positive().openapi({ example: 30 }),
     fraudNewAccountWindowHours: z.int().positive().openapi({ example: 24 }),
     fraudHighValueThreshold: z.number().nonnegative().openapi({ example: 1000 }),
-    fraudFailedLoginThreshold: z.int().positive().openapi({ example: 5 }),
+    fraudFailedLoginThreshold: z.int().positive().max(100).openapi({ example: 5 }),
     fraudFailedLoginWindowMinutes: z.int().positive().openapi({ example: 15 }),
     finaWebCustomerId: z.int().positive().nullable().openapi({ example: null }),
     finaWebUserId: z.int().positive().nullable().openapi({ example: null }),
@@ -97,8 +110,8 @@ export const settingsResponseSchema = registry.register(
     recommendationWishlistWeight: z.number().nonnegative().openapi({ example: 1 }),
     recommendationViewWeight: z.number().nonnegative().openapi({ example: 0.5 }),
     recentlyViewedLimit: z.int().positive().openapi({ example: 10 }),
-    sessionIdleTtlMinutes: z.int().positive().openapi({ example: 120 }),
-    sessionAbsoluteTtlDays: z.int().positive().openapi({ example: 30 }),
+    sessionIdleTtlMinutes: z.int().positive().max(10080).openapi({ example: 120 }),
+    sessionAbsoluteTtlDays: z.int().positive().max(365).openapi({ example: 30 }),
     resetTokenTtlMinutes: z.int().positive().openapi({ example: 60 }),
     verificationTokenTtlHours: z.int().positive().openapi({ example: 24 }),
     guestIdCookieMaxAgeDays: z.int().positive().openapi({ example: 365 }),
