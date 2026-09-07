@@ -201,8 +201,14 @@ async function assertRefsExist(input: {
 
 // Same reasoning and TTL as products.service.ts's listProducts/
 // listPopularProducts — the homepage's on-sale/popular vehicle sliders hit
-// these with an identical query shape on essentially every guest visit.
-
+// these with an identical query shape on essentially every guest visit. Also
+// excludes page/pageSize/sortBy for the same reason as that function's
+// isCacheableOnSaleQuery: without them, a paginated storefront call sharing
+// the same {onSale: true} shape would collide with this cache key and get
+// served the unbounded, unpaginated cached array back as "page 1" — silently
+// breaking pagination/sorting on that page for up to the cache TTL. No such
+// page currently exists on the frontend (no "browse all discounted
+// vehicles" grid yet), so this was latent rather than observed.
 function isCacheableOnSaleQuery(query: VehicleListingListQuery): boolean {
   return (
     query.onSale === true &&
@@ -214,7 +220,10 @@ function isCacheableOnSaleQuery(query: VehicleListingListQuery): boolean {
     query.yearMin == null &&
     query.yearMax == null &&
     query.specFilters == null &&
-    query.adminFilters == null
+    query.adminFilters == null &&
+    query.page == null &&
+    query.pageSize == null &&
+    query.sortBy == null
   );
 }
 
