@@ -52,3 +52,14 @@ export async function sendNewsletterCampaign(id: number): Promise<NewsletterCamp
   );
   return data.item;
 }
+
+// Copies a campaign's subject/body into a new DRAFT, regardless of the
+// source's status — the way to "resend" a SENT/FAILED campaign (e.g. the
+// same discount announcement with updated dates) without touching the
+// original's history.
+export async function duplicateNewsletterCampaign(id: number): Promise<NewsletterCampaign> {
+  const { data } = await apiClient.post<{ item: NewsletterCampaign }>(
+    `/newsletter-campaigns/${id}/duplicate`,
+  );
+  return data.item;
+}

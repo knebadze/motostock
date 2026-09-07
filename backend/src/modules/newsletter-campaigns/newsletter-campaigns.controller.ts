@@ -23,6 +23,11 @@ export async function create(
   res.status(201).json({ item });
 }
 
+export async function duplicate(req: Request<{ id: string }>, res: Response) {
+  const item = await newsletterCampaignsService.duplicateCampaign(Number(req.params.id));
+  res.status(201).json({ item });
+}
+
 export async function update(
   req: Request<{ id: string }, unknown, UpdateNewsletterCampaignInput>,
   res: Response,

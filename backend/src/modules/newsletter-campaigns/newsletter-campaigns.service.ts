@@ -66,6 +66,29 @@ export async function createCampaign(input: CreateNewsletterCampaignInput) {
   return toResponse(row);
 }
 
+// Rather than let a SENT/FAILED campaign be edited or resent in place (a
+// SENT campaign's history — recipientCount/failedCount/sentAt — must stay
+// exactly what actually happened, not be silently overwritten by a later
+// re-send; a FAILED one used to just be a dead end otherwise, since
+// assertDraft/claimForSending both only operate on DRAFT), this copies its
+// subject/body into a brand-new DRAFT row and leaves the original
+// untouched. Fits how these campaigns actually get reused in practice — a
+// discount announcement's text rarely changes, just the dates — so
+// "duplicate, tweak the dates, send" is both the safer and the more
+// convenient path compared to somehow un-sending/rewriting history.
+export async function duplicateCampaign(id: number) {
+  const source = await newsletterCampaignsRepository.findById(id);
+  if (!source) {
+    throw new ApiError(404, "კამპანია ვერ მოიძებნა");
+  }
+
+  const row = await newsletterCampaignsRepository.create({
+    subject: source.subject,
+    body: source.body,
+  });
+  return toResponse(row);
+}
+
 export async function updateCampaign(id: number, input: UpdateNewsletterCampaignInput) {
   await assertDraft(id);
   const row = await newsletterCampaignsRepository.update(id, input);

@@ -44,6 +44,11 @@ newsletterCampaignsRouter.post(
   validate(campaignIdParamSchema, "params"),
   newsletterCampaignsController.send,
 );
+newsletterCampaignsRouter.post(
+  "/:id/duplicate",
+  validate(campaignIdParamSchema, "params"),
+  newsletterCampaignsController.duplicate,
+);
 
 const security = [{ cookieAuth: [] }];
 const listResponse = z.object({ items: z.array(newsletterCampaignResponseSchema) });
@@ -128,5 +133,19 @@ registry.registerPath({
     400: { description: "Mailer not configured", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
     409: { description: "Not a draft", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/newsletter-campaigns/{id}/duplicate",
+  tags: ["Newsletter"],
+  summary:
+    "Copy a campaign's subject/body into a new DRAFT campaign, regardless of the source's status (admin only) — lets a SENT or FAILED campaign be resent (with edits, e.g. new dates) as an independent new record instead of editing history in place",
+  security,
+  request: { params: campaignIdParamSchema },
+  responses: {
+    201: { description: "New draft created", content: { "application/json": { schema: itemResponse } } },
+    404: { description: "Source campaign not found", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

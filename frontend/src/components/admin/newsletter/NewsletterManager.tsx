@@ -10,6 +10,7 @@ import { Loader } from "@/components/shared/Loader";
 import { ApiRequestError } from "@/lib/api/client";
 import {
   deleteNewsletterCampaign,
+  duplicateNewsletterCampaign,
   listNewsletterCampaigns,
   sendNewsletterCampaign,
   type NewsletterCampaign,
@@ -152,6 +153,20 @@ export function NewsletterManager({
     await refreshCampaigns();
   }
 
+  // Duplicate is safe/non-destructive (only ever creates a new DRAFT, never
+  // touches the source), so unlike delete/send it doesn't need a confirm
+  // dialog — it opens the new draft straight in the edit modal so the admin
+  // can tweak content/dates and send it as a fresh record.
+  async function handleDuplicate(campaign: NewsletterCampaign) {
+    try {
+      const draft = await duplicateNewsletterCampaign(campaign.id);
+      await refreshCampaigns();
+      openEditModal(draft);
+    } catch (error) {
+      toast.error(error instanceof ApiRequestError ? error.message : "დუბლირება ვერ მოხერხდა");
+    }
+  }
+
   const campaignColumns: DataTableColumn<NewsletterCampaign>[] = [
     { header: "სათაური", render: (campaign) => campaign.subject },
     {
@@ -241,6 +256,13 @@ export function NewsletterManager({
                     გაგზავნა
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => handleDuplicate(campaign)}
+                  className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+                >
+                  გამეორება
+                </button>
                 <RowActions
                   onEdit={() => openEditModal(campaign)}
                   onDelete={() => setDeletingCampaign(campaign)}
