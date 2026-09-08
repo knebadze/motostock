@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
+import { MAX_DECIMAL_10_2 } from "../../lib/money.js";
 
 export const createServiceTypeSchema = registry.register(
   "CreateServiceTypeInput",
@@ -8,7 +9,13 @@ export const createServiceTypeSchema = registry.register(
     name: localizedStringSchema,
     hasPositionOption: z.boolean().optional(),
     hasFilterOption: z.boolean().optional(),
-    defaultPrice: z.coerce.number().nonnegative().nullable().optional().openapi({ example: 45 }),
+    defaultPrice: z.coerce
+      .number()
+      .nonnegative()
+      .max(MAX_DECIMAL_10_2)
+      .nullable()
+      .optional()
+      .openapi({ example: 45 }),
     isActive: z.boolean().optional(),
   }),
 );

@@ -1,8 +1,10 @@
 import { env } from "../../config/env.js";
+import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { cache } from "../../lib/cache.js";
 import { isVincarioConfigured } from "../vin-decode/vin-decode.providers.js";
 import { settingsRepository } from "./settings.repository.js";
+import type { Prisma } from "../../generated/prisma/index.js";
 import type { UpdateSettingsInput, VinDecodeProvider } from "./settings.schema.js";
 
 export const USE_CLOUD_STORAGE_KEY = "use_cloud_storage";
@@ -558,11 +560,11 @@ export async function getVinDecodeStatus() {
   };
 }
 
-async function upsertNullable(key: string, value: number | null) {
+async function upsertNullable(key: string, value: number | null, tx: Prisma.TransactionClient) {
   if (value == null) {
-    await settingsRepository.delete(key);
+    await settingsRepository.delete(key, tx);
   } else {
-    await settingsRepository.upsert(key, String(value));
+    await settingsRepository.upsert(key, String(value), tx);
   }
 }
 
@@ -581,124 +583,187 @@ export async function updateSettings(input: UpdateSettingsInput) {
     );
   }
 
-  await settingsRepository.upsert(USE_CLOUD_STORAGE_KEY, String(input.useCloudStorage));
-  await settingsRepository.upsert(VIN_DECODE_ENABLED_KEY, String(input.vinDecodeEnabled));
-  await settingsRepository.upsert(VIN_DECODE_PROVIDER_KEY, input.vinDecodeProvider);
-  await settingsRepository.upsert(GUEST_WISHLIST_ENABLED_KEY, String(input.guestWishlistEnabled));
-  await settingsRepository.upsert(GUEST_CART_ENABLED_KEY, String(input.guestCartEnabled));
-  await settingsRepository.upsert(PROMO_STACKING_ENABLED_KEY, String(input.promoStackingEnabled));
-  await settingsRepository.upsert(DELIVERY_TBILISI_PRICE_KEY, String(input.deliveryTbilisiPrice));
-  await settingsRepository.upsert(DELIVERY_TBILISI_TIME_KEY, input.deliveryTbilisiTime);
-  await settingsRepository.upsert(DELIVERY_REGIONS_PRICE_KEY, String(input.deliveryRegionsPrice));
-  await settingsRepository.upsert(DELIVERY_REGIONS_TIME_KEY, input.deliveryRegionsTime);
-  await settingsRepository.upsert(DELIVERY_EXPRESS_PRICE_KEY, String(input.deliveryExpressPrice));
-  await settingsRepository.upsert(DELIVERY_EXPRESS_TIME_KEY, input.deliveryExpressTime);
-  await settingsRepository.upsert(
-    FRAUD_VELOCITY_ORDER_COUNT_KEY,
-    String(input.fraudVelocityOrderCount),
-  );
-  await settingsRepository.upsert(
-    FRAUD_VELOCITY_WINDOW_MINUTES_KEY,
-    String(input.fraudVelocityWindowMinutes),
-  );
-  await settingsRepository.upsert(
-    FRAUD_NEW_ACCOUNT_WINDOW_HOURS_KEY,
-    String(input.fraudNewAccountWindowHours),
-  );
-  await settingsRepository.upsert(
-    FRAUD_HIGH_VALUE_THRESHOLD_KEY,
-    String(input.fraudHighValueThreshold),
-  );
-  await settingsRepository.upsert(
-    FRAUD_FAILED_LOGIN_THRESHOLD_KEY,
-    String(input.fraudFailedLoginThreshold),
-  );
-  await settingsRepository.upsert(
-    FRAUD_FAILED_LOGIN_WINDOW_MINUTES_KEY,
-    String(input.fraudFailedLoginWindowMinutes),
-  );
-  await upsertNullable(FINA_WEB_CUSTOMER_ID_KEY, input.finaWebCustomerId);
-  await upsertNullable(FINA_WEB_USER_ID_KEY, input.finaWebUserId);
-  await settingsRepository.upsert(CART_MAX_QUANTITY_KEY, String(input.cartMaxQuantity));
-  await settingsRepository.upsert(COMPARE_MAX_ITEMS_KEY, String(input.compareMaxItems));
-  await settingsRepository.upsert(
-    ANALYTICS_DEFAULT_WINDOW_DAYS_KEY,
-    String(input.analyticsDefaultWindowDays),
-  );
-  await settingsRepository.upsert(
-    DASHBOARD_DEMAND_CANDIDATE_LIMIT_KEY,
-    String(input.dashboardDemandCandidateLimit),
-  );
-  await settingsRepository.upsert(
-    DASHBOARD_RECENT_CANCELLED_LIMIT_KEY,
-    String(input.dashboardRecentCancelledLimit),
-  );
-  await settingsRepository.upsert(
-    DASHBOARD_RECENT_ORDERS_LIMIT_KEY,
-    String(input.dashboardRecentOrdersLimit),
-  );
-  await settingsRepository.upsert(
-    DASHBOARD_LOW_STOCK_LIMIT_KEY,
-    String(input.dashboardLowStockLimit),
-  );
-  await settingsRepository.upsert(
-    DASHBOARD_RECENT_ACTIVITY_WINDOW_DAYS_KEY,
-    String(input.dashboardRecentActivityWindowDays),
-  );
-  await settingsRepository.upsert(LOW_STOCK_THRESHOLD_KEY, String(input.lowStockThreshold));
-  await settingsRepository.upsert(SEARCH_RESULT_CAP_KEY, String(input.searchResultCap));
-  await settingsRepository.upsert(SALES_SUMMARY_LIMIT_KEY, String(input.salesSummaryLimit));
-  await settingsRepository.upsert(
-    RECOMMENDATIONS_DEFAULT_LIMIT_KEY,
-    String(input.recommendationsDefaultLimit),
-  );
-  await settingsRepository.upsert(
-    RECOMMENDATIONS_CACHE_TTL_MINUTES_KEY,
-    String(input.recommendationsCacheTtlMinutes),
-  );
-  await settingsRepository.upsert(
-    RECOMMENDATION_ORDER_WEIGHT_KEY,
-    String(input.recommendationOrderWeight),
-  );
-  await settingsRepository.upsert(
-    RECOMMENDATION_WISHLIST_WEIGHT_KEY,
-    String(input.recommendationWishlistWeight),
-  );
-  await settingsRepository.upsert(
-    RECOMMENDATION_VIEW_WEIGHT_KEY,
-    String(input.recommendationViewWeight),
-  );
-  await settingsRepository.upsert(RECENTLY_VIEWED_LIMIT_KEY, String(input.recentlyViewedLimit));
-  await settingsRepository.upsert(
-    SESSION_IDLE_TTL_MINUTES_KEY,
-    String(input.sessionIdleTtlMinutes),
-  );
-  await settingsRepository.upsert(
-    SESSION_ABSOLUTE_TTL_DAYS_KEY,
-    String(input.sessionAbsoluteTtlDays),
-  );
-  await settingsRepository.upsert(
-    RESET_TOKEN_TTL_MINUTES_KEY,
-    String(input.resetTokenTtlMinutes),
-  );
-  await settingsRepository.upsert(
-    VERIFICATION_TOKEN_TTL_HOURS_KEY,
-    String(input.verificationTokenTtlHours),
-  );
-  await settingsRepository.upsert(
-    GUEST_ID_COOKIE_MAX_AGE_DAYS_KEY,
-    String(input.guestIdCookieMaxAgeDays),
-  );
-  await settingsRepository.upsert(IMAGE_MAX_DIMENSION_PX_KEY, String(input.imageMaxDimensionPx));
-  await settingsRepository.upsert(IMAGE_WEBP_QUALITY_KEY, String(input.imageWebpQuality));
-  await settingsRepository.upsert(
-    FINA_SYNC_INTERVAL_MINUTES_KEY,
-    String(input.finaSyncIntervalMinutes),
-  );
-  await settingsRepository.upsert(
-    HOMEPAGE_CACHE_TTL_MINUTES_KEY,
-    String(input.homepageCacheTtlMinutes),
-  );
+  // All ~44 settings are written in one transaction — was a bare sequence
+  // of independent upserts, so a failure partway through (a DB blip,
+  // connection drop, timeout on any one of them) left everything written
+  // so far persisted and everything after it not, silently mixing old and
+  // new values across fraud thresholds, delivery pricing, cart limits,
+  // dashboard limits, FINA web IDs, etc. with no rollback and nothing
+  // telling the admin which fields actually saved. Now it's all-or-nothing:
+  // either the whole form's worth of settings lands together, or none of it
+  // does and the admin sees a clean error to retry.
+  await prisma.$transaction(async (tx) => {
+    await settingsRepository.upsert(USE_CLOUD_STORAGE_KEY, String(input.useCloudStorage), tx);
+    await settingsRepository.upsert(VIN_DECODE_ENABLED_KEY, String(input.vinDecodeEnabled), tx);
+    await settingsRepository.upsert(VIN_DECODE_PROVIDER_KEY, input.vinDecodeProvider, tx);
+    await settingsRepository.upsert(
+      GUEST_WISHLIST_ENABLED_KEY,
+      String(input.guestWishlistEnabled),
+      tx,
+    );
+    await settingsRepository.upsert(GUEST_CART_ENABLED_KEY, String(input.guestCartEnabled), tx);
+    await settingsRepository.upsert(
+      PROMO_STACKING_ENABLED_KEY,
+      String(input.promoStackingEnabled),
+      tx,
+    );
+    await settingsRepository.upsert(
+      DELIVERY_TBILISI_PRICE_KEY,
+      String(input.deliveryTbilisiPrice),
+      tx,
+    );
+    await settingsRepository.upsert(DELIVERY_TBILISI_TIME_KEY, input.deliveryTbilisiTime, tx);
+    await settingsRepository.upsert(
+      DELIVERY_REGIONS_PRICE_KEY,
+      String(input.deliveryRegionsPrice),
+      tx,
+    );
+    await settingsRepository.upsert(DELIVERY_REGIONS_TIME_KEY, input.deliveryRegionsTime, tx);
+    await settingsRepository.upsert(
+      DELIVERY_EXPRESS_PRICE_KEY,
+      String(input.deliveryExpressPrice),
+      tx,
+    );
+    await settingsRepository.upsert(DELIVERY_EXPRESS_TIME_KEY, input.deliveryExpressTime, tx);
+    await settingsRepository.upsert(
+      FRAUD_VELOCITY_ORDER_COUNT_KEY,
+      String(input.fraudVelocityOrderCount),
+      tx,
+    );
+    await settingsRepository.upsert(
+      FRAUD_VELOCITY_WINDOW_MINUTES_KEY,
+      String(input.fraudVelocityWindowMinutes),
+      tx,
+    );
+    await settingsRepository.upsert(
+      FRAUD_NEW_ACCOUNT_WINDOW_HOURS_KEY,
+      String(input.fraudNewAccountWindowHours),
+      tx,
+    );
+    await settingsRepository.upsert(
+      FRAUD_HIGH_VALUE_THRESHOLD_KEY,
+      String(input.fraudHighValueThreshold),
+      tx,
+    );
+    await settingsRepository.upsert(
+      FRAUD_FAILED_LOGIN_THRESHOLD_KEY,
+      String(input.fraudFailedLoginThreshold),
+      tx,
+    );
+    await settingsRepository.upsert(
+      FRAUD_FAILED_LOGIN_WINDOW_MINUTES_KEY,
+      String(input.fraudFailedLoginWindowMinutes),
+      tx,
+    );
+    await upsertNullable(FINA_WEB_CUSTOMER_ID_KEY, input.finaWebCustomerId, tx);
+    await upsertNullable(FINA_WEB_USER_ID_KEY, input.finaWebUserId, tx);
+    await settingsRepository.upsert(CART_MAX_QUANTITY_KEY, String(input.cartMaxQuantity), tx);
+    await settingsRepository.upsert(COMPARE_MAX_ITEMS_KEY, String(input.compareMaxItems), tx);
+    await settingsRepository.upsert(
+      ANALYTICS_DEFAULT_WINDOW_DAYS_KEY,
+      String(input.analyticsDefaultWindowDays),
+      tx,
+    );
+    await settingsRepository.upsert(
+      DASHBOARD_DEMAND_CANDIDATE_LIMIT_KEY,
+      String(input.dashboardDemandCandidateLimit),
+      tx,
+    );
+    await settingsRepository.upsert(
+      DASHBOARD_RECENT_CANCELLED_LIMIT_KEY,
+      String(input.dashboardRecentCancelledLimit),
+      tx,
+    );
+    await settingsRepository.upsert(
+      DASHBOARD_RECENT_ORDERS_LIMIT_KEY,
+      String(input.dashboardRecentOrdersLimit),
+      tx,
+    );
+    await settingsRepository.upsert(
+      DASHBOARD_LOW_STOCK_LIMIT_KEY,
+      String(input.dashboardLowStockLimit),
+      tx,
+    );
+    await settingsRepository.upsert(
+      DASHBOARD_RECENT_ACTIVITY_WINDOW_DAYS_KEY,
+      String(input.dashboardRecentActivityWindowDays),
+      tx,
+    );
+    await settingsRepository.upsert(LOW_STOCK_THRESHOLD_KEY, String(input.lowStockThreshold), tx);
+    await settingsRepository.upsert(SEARCH_RESULT_CAP_KEY, String(input.searchResultCap), tx);
+    await settingsRepository.upsert(SALES_SUMMARY_LIMIT_KEY, String(input.salesSummaryLimit), tx);
+    await settingsRepository.upsert(
+      RECOMMENDATIONS_DEFAULT_LIMIT_KEY,
+      String(input.recommendationsDefaultLimit),
+      tx,
+    );
+    await settingsRepository.upsert(
+      RECOMMENDATIONS_CACHE_TTL_MINUTES_KEY,
+      String(input.recommendationsCacheTtlMinutes),
+      tx,
+    );
+    await settingsRepository.upsert(
+      RECOMMENDATION_ORDER_WEIGHT_KEY,
+      String(input.recommendationOrderWeight),
+      tx,
+    );
+    await settingsRepository.upsert(
+      RECOMMENDATION_WISHLIST_WEIGHT_KEY,
+      String(input.recommendationWishlistWeight),
+      tx,
+    );
+    await settingsRepository.upsert(
+      RECOMMENDATION_VIEW_WEIGHT_KEY,
+      String(input.recommendationViewWeight),
+      tx,
+    );
+    await settingsRepository.upsert(
+      RECENTLY_VIEWED_LIMIT_KEY,
+      String(input.recentlyViewedLimit),
+      tx,
+    );
+    await settingsRepository.upsert(
+      SESSION_IDLE_TTL_MINUTES_KEY,
+      String(input.sessionIdleTtlMinutes),
+      tx,
+    );
+    await settingsRepository.upsert(
+      SESSION_ABSOLUTE_TTL_DAYS_KEY,
+      String(input.sessionAbsoluteTtlDays),
+      tx,
+    );
+    await settingsRepository.upsert(
+      RESET_TOKEN_TTL_MINUTES_KEY,
+      String(input.resetTokenTtlMinutes),
+      tx,
+    );
+    await settingsRepository.upsert(
+      VERIFICATION_TOKEN_TTL_HOURS_KEY,
+      String(input.verificationTokenTtlHours),
+      tx,
+    );
+    await settingsRepository.upsert(
+      GUEST_ID_COOKIE_MAX_AGE_DAYS_KEY,
+      String(input.guestIdCookieMaxAgeDays),
+      tx,
+    );
+    await settingsRepository.upsert(
+      IMAGE_MAX_DIMENSION_PX_KEY,
+      String(input.imageMaxDimensionPx),
+      tx,
+    );
+    await settingsRepository.upsert(IMAGE_WEBP_QUALITY_KEY, String(input.imageWebpQuality), tx);
+    await settingsRepository.upsert(
+      FINA_SYNC_INTERVAL_MINUTES_KEY,
+      String(input.finaSyncIntervalMinutes),
+      tx,
+    );
+    await settingsRepository.upsert(
+      HOMEPAGE_CACHE_TTL_MINUTES_KEY,
+      String(input.homepageCacheTtlMinutes),
+      tx,
+    );
+  });
 
   for (const key of ALL_SETTING_KEYS) cache.del(cacheKey(key));
   return getSettings();

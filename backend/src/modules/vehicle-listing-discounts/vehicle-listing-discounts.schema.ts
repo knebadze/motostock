@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
+import { MAX_DECIMAL_10_2 } from "../../lib/money.js";
 
 export const vehicleListingDiscountListingIdParamSchema = z.object({
   listingId: z.coerce.number().int().positive(),
@@ -13,7 +14,7 @@ export const vehicleListingDiscountIdParamSchema = z.object({
 export const createVehicleListingDiscountSchema = registry.register(
   "CreateVehicleListingDiscountInput",
   z.object({
-    discountPrice: z.coerce.number().positive().openapi({ example: 3999 }),
+    discountPrice: z.coerce.number().positive().max(MAX_DECIMAL_10_2).openapi({ example: 3999 }),
     // 100 (or above) rejected, not just capped — matches promo-codes.schema.ts's
     // reasoning: even though the actual charged price here is discountPrice
     // (separately validated against list price), the admin form derives

@@ -3,6 +3,7 @@ import { productsRepository } from "../products/products.repository.js";
 import { productFitmentRepository } from "../product-fitment/product-fitment.repository.js";
 import { productFitmentRulesRepository } from "../product-fitment-rules/product-fitment-rules.repository.js";
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
+import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
 import { getSpecFieldDefinition } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
@@ -192,9 +193,22 @@ export async function getCompatibleVehiclesForProduct(productId: number) {
     or.push({ id: { in: explicitVehicleIds } });
   }
 
+  // Fetched once, up front, only if there's actually a CATEGORY-type rule
+  // to resolve — reused across every such rule below instead of each one
+  // independently refetching the whole categories table via
+  // resolveCategoryAndDescendantIds' own default (single-category) fetch.
+  // A product can have several CATEGORY-type fitment rules (e.g. "fits
+  // scooters" and "fits mopeds" as two separate rules), so this loop is a
+  // real, if bounded, N+1 without the preload.
+  const hasCategoryRule = rules.some((rule) => rule.type === "CATEGORY" && rule.categoryId != null);
+  const allCategories = hasCategoryRule ? await categoriesRepository.findMany() : undefined;
+
   for (const rule of rules) {
     if (rule.type === "CATEGORY" && rule.categoryId != null) {
-      const descendantCategoryIds = await resolveCategoryAndDescendantIds(rule.categoryId);
+      const descendantCategoryIds = await resolveCategoryAndDescendantIds(
+        rule.categoryId,
+        allCategories,
+      );
       or.push({ model: { categoryId: { in: descendantCategoryIds } } });
     } else if (rule.type === "SPEC" && rule.specField && rule.specLookupItemId != null) {
       const { column } = getSpecFieldDefinition(rule.specField);

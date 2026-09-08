@@ -1,6 +1,11 @@
 import ExcelJS from "exceljs";
 import { ApiError } from "../../lib/ApiError.js";
-import { assertNoDuplicate, assertRefsExist } from "./vehicle-catalog.service.js";
+import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
+import {
+  assertNoDuplicate,
+  assertRefsExist,
+  DUPLICATE_VEHICLE_CATALOG_MESSAGE,
+} from "./vehicle-catalog.service.js";
 import { vehicleCatalogRepository } from "./vehicle-catalog.repository.js";
 import { createVehicleCatalogSchema } from "./vehicle-catalog.schema.js";
 import { DATA_COLUMNS } from "./vehicle-catalog-template.service.js";
@@ -68,9 +73,16 @@ export async function bulkImportVehicleCatalog(fileBuffer: Buffer) {
     // an older @types/node pulled in transitively via its fast-csv
     // dependency, which doesn't structurally match this project's — a
     // typings-only clash between two nominally-identical runtime Buffers.
-    // Casting the function itself (not the argument) sidesteps the mismatch.
-    const load = workbook.xlsx.load as unknown as (buffer: Buffer) => Promise<unknown>;
-    await load(fileBuffer);
+    // The cast has to stay INLINE on the call expression, not hoisted into
+    // a separate `const load = workbook.xlsx.load as ...` first — extracting
+    // the method into its own variable detaches it from `workbook.xlsx`, so
+    // calling it as a bare function loses the `this` binding `load()`'s own
+    // implementation needs, and it fails immediately on every file
+    // (verified live: `Cannot read properties of undefined (reading
+    // 'parseRels')`), not just malformed ones — bulk import was completely
+    // non-functional until this was caught by this session's own regression
+    // test for a different fix.
+    await (workbook.xlsx.load as unknown as (buffer: Buffer) => Promise<unknown>)(fileBuffer);
   } catch {
     throw new ApiError(400, "ფაილი ვერ იკითხება — დარწმუნდით, რომ ეს არის ვალიდური .xlsx ფაილი");
   }
@@ -156,7 +168,17 @@ export async function bulkImportVehicleCatalog(fileBuffer: Buffer) {
         yearTo: data.yearTo ?? null,
       });
 
-      const created = await vehicleCatalogRepository.create({ ...data, variant });
+      // Closes the same pre-check-then-write race the single-row create
+      // paths in vehicle-catalog.service.ts already guard against (see
+      // that file's createVehicleCatalogEntry) — a bulk import racing
+      // another concurrent import, or a manual admin create, for the same
+      // model+variant+years would otherwise degrade to a generic "უცნობი
+      // შეცდომა" here instead of the same clean duplicate message.
+      const created = await runUniqueCheckedWrite(
+        () => vehicleCatalogRepository.create({ ...data, variant }),
+        "yearFrom",
+        DUPLICATE_VEHICLE_CATALOG_MESSAGE,
+      );
       seenInFile.add(dedupeKey);
       results.push({ row: rowNumber, status: "created", message: null, id: created.id });
     } catch (error) {

@@ -6,6 +6,9 @@ import { isFinaConfigured, runSync } from "./modules/fina-sync/fina-sync.service
 import { getFinaSyncIntervalMinutes } from "./modules/settings/settings.service.js";
 import { pruneStaleVisitorData } from "./modules/visitors/visitors.service.js";
 import { pruneStaleAuthArtifacts } from "./modules/auth/auth.service.js";
+import { pruneStaleGuestProductViews } from "./modules/product-views/product-views.service.js";
+import { pruneStaleGuestVehicleListingViews } from "./modules/vehicle-listing-views/vehicle-listing-views.service.js";
+import { pruneOrphanedRichTextImages } from "./modules/media/media.service.js";
 
 const server = app.listen(env.PORT, () => {
   logger.info(`Server listening on http://localhost:${env.PORT}`);
@@ -38,16 +41,27 @@ if (isFinaConfigured()) {
 // Bounds the growth of every table with no other retention policy
 // (VisitorPresence/VisitorVisit — see visitors.service.ts's
 // pruneStaleVisitorData; Session/PasswordResetToken/EmailVerificationToken —
-// see auth.service.ts's pruneStaleAuthArtifacts) — daily is plenty, since
-// none of them need pruning more precisely than that. A fixed setInterval is
-// fine here (unlike the FINA timer above): unlike finaSyncIntervalMinutes,
-// this interval isn't admin-configurable, so there's no "pick up a changed
-// Settings value" requirement to justify the self-rescheduling setTimeout
-// pattern.
+// see auth.service.ts's pruneStaleAuthArtifacts; guest-owned
+// ProductView/VehicleListingView rows — see product-views.service.ts's
+// pruneStaleGuestProductViews and its vehicle-listing-views counterpart) —
+// daily is plenty, since none of them need pruning more precisely than
+// that. A fixed setInterval is fine here (unlike the FINA timer above):
+// unlike finaSyncIntervalMinutes, this interval isn't admin-configurable, so
+// there's no "pick up a changed Settings value" requirement to justify the
+// self-rescheduling setTimeout pattern.
 const DAILY_PRUNE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 function runDailyPrune() {
   pruneStaleVisitorData().catch((err: unknown) => logger.error({ err }, "Visitor data pruning failed"));
   pruneStaleAuthArtifacts().catch((err: unknown) => logger.error({ err }, "Auth artifact pruning failed"));
+  pruneStaleGuestProductViews().catch((err: unknown) =>
+    logger.error({ err }, "Guest product-view pruning failed"),
+  );
+  pruneStaleGuestVehicleListingViews().catch((err: unknown) =>
+    logger.error({ err }, "Guest vehicle-listing-view pruning failed"),
+  );
+  pruneOrphanedRichTextImages().catch((err: unknown) =>
+    logger.error({ err }, "Orphaned rich-text image pruning failed"),
+  );
 }
 // Also run once immediately on boot, not just on the interval — this app
 // deploys far more often than every 24h, so a plain setInterval alone would
@@ -96,3 +110,23 @@ function shutdown(signal: string) {
 
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
+
+// Without these, an unhandled rejection anywhere (a fire-and-forget
+// `.catch()` missing on some future code path — every existing one in this
+// codebase already has one, see the daily-prune calls above) or a genuinely
+// uncaught synchronous throw crashed the whole process with nothing beyond
+// Node's raw default stderr dump — no structured log entry, and none of the
+// graceful-drain care the SIGTERM/SIGINT path above already gets. Node's
+// own guidance is that it's not safe to resume normal operation after
+// `uncaughtException` (the process may be in a genuinely broken state), so
+// this reuses the SAME `shutdown()` path rather than trying to keep serving
+// requests — bounded by its existing 8s forceExit fallback either way, so
+// this can never hang the process open indefinitely.
+process.on("unhandledRejection", (reason) => {
+  logger.error({ err: reason }, "Unhandled promise rejection");
+  shutdown("unhandledRejection");
+});
+process.on("uncaughtException", (err) => {
+  logger.error({ err }, "Uncaught exception");
+  shutdown("uncaughtException");
+});

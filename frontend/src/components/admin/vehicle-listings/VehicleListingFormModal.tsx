@@ -22,7 +22,7 @@ import { ApiRequestError } from "@/lib/api/client";
 import { VehicleListingDiscountsPanel } from "./VehicleListingDiscountsPanel";
 import { VehicleListingImagesPanel } from "./VehicleListingImagesPanel";
 import { vehicleListingFormSchema } from "@/lib/validation/vehicle-listing";
-import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+import { MAX_DECIMAL_10_2, getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
 function vehicleCatalogLabel(entry: VehicleCatalogEntry): string {
   const year =
@@ -239,6 +239,7 @@ export function VehicleListingFormModal({
             id="vl-price"
             type="number"
             step="0.01"
+            max={MAX_DECIMAL_10_2}
             value={price}
             onChange={(event) => setPrice(event.target.value)}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"

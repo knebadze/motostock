@@ -85,8 +85,18 @@ export async function listCategories(query: CategoryListQuery = {}) {
 // category (e.g. "transport") must still surface items from its children.
 // One findMany() call builds a parentId -> children[] map in memory, then a
 // single BFS from categoryId — no per-level DB round trips.
-export async function resolveCategoryAndDescendantIds(categoryId: number): Promise<number[]> {
-  const allCategories = await categoriesRepository.findMany();
+//
+// `preloadedCategories` lets a caller that needs this for SEVERAL
+// categoryIds in a row (e.g. compatibility.service.ts's per-CATEGORY-rule
+// loop) fetch the table once and pass it into every call, instead of each
+// call independently refetching the whole categories table — every
+// single-category caller omits it and gets the previous one-fetch-per-call
+// behavior unchanged.
+export async function resolveCategoryAndDescendantIds(
+  categoryId: number,
+  preloadedCategories?: { id: number; parentId: number | null }[],
+): Promise<number[]> {
+  const allCategories = preloadedCategories ?? (await categoriesRepository.findMany());
   const childrenByParentId = new Map<number, number[]>();
   for (const category of allCategories) {
     if (category.parentId == null) continue;

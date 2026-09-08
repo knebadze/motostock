@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
+import { MAX_DECIMAL_10_2 } from "../../lib/money.js";
 import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
 import { productVariantDiscountResponseSchema } from "../product-variant-discounts/product-variant-discounts.schema.js";
 import { productVariantImageResponseSchema } from "../product-variant-images/product-variant-images.schema.js";
@@ -17,7 +18,7 @@ export const createProductVariantSchema = registry.register(
     finaId: z.int().positive().nullable().optional(),
     sizeId: z.int().positive().nullable().optional(),
     colorId: z.int().positive().nullable().optional(),
-    price: z.coerce.number().positive().openapi({ example: 89.99 }),
+    price: z.coerce.number().positive().max(MAX_DECIMAL_10_2).openapi({ example: 89.99 }),
     // nonnegative, not positive — 0 is a legitimate value (out of stock,
     // kept listed rather than deactivated).
     stockQuantity: z.int().nonnegative().optional(),

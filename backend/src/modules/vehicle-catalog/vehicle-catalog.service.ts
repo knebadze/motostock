@@ -201,7 +201,10 @@ export async function getVehicleCatalogEntry(id: number) {
   return toVehicleCatalogResponse(row);
 }
 
-const DUPLICATE_VEHICLE_CATALOG_MESSAGE =
+// Exported for vehicle-catalog-bulk-import.service.ts's per-row create, so
+// a race there gets the same clean message as the single-row paths below
+// instead of falling through to a generic "უცნობი შეცდომა".
+export const DUPLICATE_VEHICLE_CATALOG_MESSAGE =
   "ამ მოდელის, ვარიანტისა და წლების კომბინაციით ჩანაწერი უკვე არსებობს";
 
 // Exported for reuse by vehicle-catalog-bulk-import.service.ts — see

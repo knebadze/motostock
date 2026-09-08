@@ -120,6 +120,16 @@ export const productViewsRepository = {
     return grouped.map((group) => group.productId);
   },
 
+  // Bounds guest-visitor growth — see product-views.service.ts's
+  // pruneStaleGuestProductViews for why only guestId rows (not userId ones)
+  // are ever deleted here.
+  async deleteOldGuestViews(cutoff: Date): Promise<number> {
+    const { count } = await prisma.productView.deleteMany({
+      where: { guestId: { not: null }, updatedAt: { lt: cutoff } },
+    });
+    return count;
+  },
+
   // Category/brand affinity signal for recommendations.service.ts's
   // listRecommendedForUser — the lightest-weight of its three signals (see
   // VIEW_AFFINITY_WEIGHT there).

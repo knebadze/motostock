@@ -7,7 +7,20 @@ import { z } from "zod";
 config({ quiet: true });
 
 const envSchema = z.object({
-  DATABASE_URL: z.string().min(1),
+  // A non-empty-but-malformed value (a typo'd scheme, a stray space) used to
+  // pass this check fine and only surface as a crash on the FIRST real
+  // query — @prisma/adapter-pg constructs its pg Pool eagerly at import
+  // time (config/prisma.ts), but doesn't actually attempt a connection
+  // until something queries it, so a bad URL produced a confusing
+  // first-request failure instead of the same immediate, clear "Invalid
+  // environment variables" boot error every other misconfiguration here
+  // gets. Doesn't validate the full connection-string grammar (host/port/
+  // credentials parsing is still node-postgres's job) — just the one thing
+  // worth failing fast on before anything else even starts.
+  DATABASE_URL: z
+    .string()
+    .min(1)
+    .regex(/^postgres(ql)?:\/\//, "DATABASE_URL must start with postgres:// or postgresql://"),
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   PORT: z.coerce.number().int().positive().default(4000),
   FRONTEND_ORIGIN: z.url(),

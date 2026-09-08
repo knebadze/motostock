@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { requiredPositiveDecimalString } from "./common";
+import { MAX_DECIMAL_10_2, requiredPositiveDecimalString } from "./common";
 
 export const productVariantDiscountFormSchema = z
   .object({
-    discountPrice: requiredPositiveDecimalString("მიუთითეთ ფასდაკლების ფასი"),
+    discountPrice: requiredPositiveDecimalString("მიუთითეთ ფასდაკლების ფასი", MAX_DECIMAL_10_2),
     // 100 rejected, not just capped — mirrors product-variant-discounts.schema.ts's
     // backend constraint (a stray 100 walks the auto-computed discountPrice
     // down to nearly free).

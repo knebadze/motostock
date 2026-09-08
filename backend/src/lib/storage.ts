@@ -5,7 +5,10 @@ import { destroyCloudinaryAsset, uploadBufferToCloudinary } from "./cloudinary.j
 import { processImageForDisk, sniffImageFormat } from "./image-processing.js";
 import { logger } from "./logger.js";
 
-const UPLOAD_ROOT = path.resolve("uploads");
+// Exported for media.service.ts's pruneOrphanedRichTextImages, which needs
+// to list what's actually on disk under uploads/rich-text to diff against
+// what Terms/NewsletterCampaign bodies still reference.
+export const UPLOAD_ROOT = path.resolve("uploads");
 
 async function saveToDisk(subfolder: string, file: Express.Multer.File): Promise<string> {
   const dir = path.join(UPLOAD_ROOT, subfolder);

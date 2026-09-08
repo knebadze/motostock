@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  MAX_DECIMAL_10_2,
   optionalIntString,
   requiredIntString,
   requiredPositiveDecimalString,
@@ -16,7 +17,7 @@ export const vehicleListingFormSchema = z
     mileageKm: optionalIntString({ min: 0, message: "მინ. 0" }),
     warrantyValue: optionalIntString({ min: 1, message: "მინ. 1" }),
     warrantyUnit: z.string(),
-    price: requiredPositiveDecimalString("მიუთითეთ ფასი"),
+    price: requiredPositiveDecimalString("მიუთითეთ ფასი", MAX_DECIMAL_10_2),
     stockQuantity: optionalIntString({ min: 0, message: "მინ. 0" }),
   })
   .superRefine((data, ctx) => {

@@ -301,6 +301,23 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
     });
     const promoApplies = promoMatch != null && promoMatch.matchedKeys.has(matchKey);
 
+    // Deliberately rounds the PER-UNIT price to cents here, before the
+    // quantity multiplication below — not the per-line subtotal. Both are
+    // valid rounding policies and this codebase has picked per-unit
+    // consistently everywhere (every `Math.round(x * 100) / 100` in this
+    // function and buildRevenueSeries operates on a per-unit or per-order
+    // total, never a rounded-then-re-multiplied line), so switching to
+    // per-line here alone would make this one line disagree with every
+    // other money computation's rounding basis instead of fixing anything.
+    // The effect is bounded (at most ~1 cent per affected line, never
+    // compounding across lines) and internally consistent: `lineTotal`
+    // below is always literally `unitPrice * quantity`, and `total` is
+    // built from summing these same already-rounded numbers — so the order
+    // total and its stored line items can never drift from each other,
+    // regardless of which rounding policy this comment is defending. A
+    // genuine per-line-subtotal policy would be a deliberate, whole-codebase
+    // migration (ideally onto Prisma.Decimal/decimal.js instead of
+    // Math.round throughout), not a one-line fix here.
     let unitPrice: number;
     if (promoApplies && promoMatch) {
       if (hasActiveDiscount && !stackingEnabled) {

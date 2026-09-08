@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
+import { MAX_DECIMAL_10_2 } from "../../lib/money.js";
 
 const servicePositionSchema = z.enum(["FRONT", "REAR", "BOTH"]);
 
@@ -18,7 +19,7 @@ export const createServiceRecordSchema = registry.register(
       performedAt: z.iso.date(),
       position: servicePositionSchema.optional(),
       filterChanged: z.boolean().optional(),
-      price: z.coerce.number().nonnegative().optional().openapi({ example: 45 }),
+      price: z.coerce.number().nonnegative().max(MAX_DECIMAL_10_2).optional().openapi({ example: 45 }),
       mechanicId: z.coerce.number().int().positive().optional(),
       notes: z.string().trim().max(2000).optional(),
     })
@@ -39,7 +40,7 @@ export const updateServiceRecordSchema = registry.register(
     performedAt: z.iso.date().optional(),
     position: servicePositionSchema.nullable().optional(),
     filterChanged: z.boolean().nullable().optional(),
-    price: z.coerce.number().nonnegative().nullable().optional(),
+    price: z.coerce.number().nonnegative().max(MAX_DECIMAL_10_2).nullable().optional(),
     mechanicId: z.coerce.number().int().positive().nullable().optional(),
     notes: z.string().trim().max(2000).nullable().optional(),
   }),

@@ -1,6 +1,9 @@
+import { ApiError } from "../../lib/ApiError.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { cache } from "../../lib/cache.js";
 import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
+import { getLookupDelegate } from "../lookups/lookups.registry.js";
+import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { companyInfoRepository } from "./company-info.repository.js";
 import type { UpdateCompanyInfoInput } from "./company-info.schema.js";
 import type { WeekDay } from "../../generated/prisma/index.js";
@@ -86,8 +89,24 @@ export async function getCompanyInfo() {
   return response;
 }
 
+// Same check as addresses.service.ts's assertCityExists, for the identical
+// City lookup table — was missing here, so submitting a stale/deleted
+// cityId hit the DB's FK constraint directly as a raw, unmapped
+// PrismaClientKnownRequestError (P2003), surfacing as an unexplained 500
+// instead of a clean "მითითებული ქალაქი არ არსებობს" 400.
+async function assertCityExists(cityId: number) {
+  const city = await lookupsRepository.findById(getLookupDelegate("cities"), cityId);
+  if (!city) {
+    throw new ApiError(400, "მითითებული ქალაქი არ არსებობს", "CITY_NOT_FOUND");
+  }
+}
+
 export async function updateCompanyInfo(input: UpdateCompanyInfoInput) {
   const existing = await getOrCreateCompanyInfo();
+
+  if (input.cityId != null) {
+    await assertCityExists(input.cityId);
+  }
 
   await companyInfoRepository.update(existing.id, {
     name: input.name,

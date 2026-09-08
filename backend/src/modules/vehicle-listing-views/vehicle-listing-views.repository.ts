@@ -50,4 +50,14 @@ export const vehicleListingViewsRepository = {
       });
     });
   },
+
+  // Bounds guest-visitor growth — see vehicle-listing-views.service.ts's
+  // pruneStaleGuestVehicleListingViews (exact counterpart to
+  // product-views.repository.ts's deleteOldGuestViews).
+  async deleteOldGuestViews(cutoff: Date): Promise<number> {
+    const { count } = await prisma.vehicleListingView.deleteMany({
+      where: { guestId: { not: null }, updatedAt: { lt: cutoff } },
+    });
+    return count;
+  },
 };

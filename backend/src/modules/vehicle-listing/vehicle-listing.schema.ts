@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
+import { MAX_DECIMAL_10_2 } from "../../lib/money.js";
 import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
 import { vehicleListingDiscountResponseSchema } from "../vehicle-listing-discounts/vehicle-listing-discounts.schema.js";
 import { vehicleListingImageResponseSchema } from "../vehicle-listing-images/vehicle-listing-images.schema.js";
@@ -35,7 +36,7 @@ const baseVehicleListingSchema = z.object({
   warrantyValue: z.int().positive().nullable().optional(),
   warrantyUnit: warrantyUnitSchema.nullable().optional(),
   isActive: z.boolean().optional(),
-  price: z.coerce.number().positive().openapi({ example: 4500 }),
+  price: z.coerce.number().positive().max(MAX_DECIMAL_10_2).openapi({ example: 4500 }),
   // nonnegative, not positive — 0 is a legitimate value (out of stock,
   // sold out but the listing kept for reference), same as mileageKm above.
   stockQuantity: z.int().nonnegative().optional(),

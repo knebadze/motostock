@@ -58,17 +58,26 @@ function toResponse(row: AttributeRow) {
   };
 }
 
-// Walks parentId up to the root and returns [categoryId, ...ancestorIds] — the
-// same category-tree traversal categories.service.ts already does for cycle
-// detection, reused here so an attribute defined on a parent category (e.g.
-// "მასალა" on "ეკიპირება") is inherited by every descendant category.
+// Walks parentId up to the root and returns [categoryId, ...ancestorIds] —
+// so an attribute defined on a parent category (e.g. "მასალა" on
+// "ეკიპირება") is inherited by every descendant category. One findMany()
+// call builds an id -> parentId map in memory, then walks up locally — no
+// per-tree-level round trip. Mirrors categories.service.ts's
+// resolveCategoryAndDescendantIds (the same "one findMany, walk in memory"
+// shape for the opposite direction); this function used to do exactly the
+// per-level `categoriesRepository.findById` round trips that one already
+// avoided, and every caller of THIS function (category-filters,
+// vehicle-category-filters, recommendations' per-garage-vehicle fan-out)
+// was paying one query per category-tree depth on every call.
 export async function resolveCategoryAndAncestorIds(categoryId: number): Promise<number[]> {
+  const allCategories = await categoriesRepository.findMany();
+  const parentIdById = new Map(allCategories.map((category) => [category.id, category.parentId]));
+
   const ids: number[] = [];
   let currentId: number | null = categoryId;
   while (currentId !== null) {
     ids.push(currentId);
-    const current = await categoriesRepository.findById(currentId);
-    currentId = current?.parentId ?? null;
+    currentId = parentIdById.get(currentId) ?? null;
   }
   return ids;
 }

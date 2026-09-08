@@ -8,6 +8,7 @@ import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { Loader } from "@/components/shared/Loader";
 import { ApiRequestError } from "@/lib/api/client";
+import { formatDate as formatDateShared } from "@/lib/format";
 import {
   deleteNewsletterCampaign,
   duplicateNewsletterCampaign,
@@ -68,9 +69,16 @@ function StatusBadge<T extends string>({
   );
 }
 
+// Delegates to lib/format.ts's formatDate rather than the native
+// toLocaleDateString("ka-GE", ...) this used to call directly — that locale
+// formats differently between Node's SSR pass and a real browser's
+// hydration pass on Node builds without full ICU data (see lib/format.ts's
+// own top-of-file comment), producing a hydration mismatch on every load of
+// this page. The shared helper exists specifically to be byte-identical
+// between server and client.
 function formatDate(value: string | null): string {
   if (!value) return "—";
-  return new Date(value).toLocaleDateString("ka-GE", { year: "numeric", month: "short", day: "numeric" });
+  return formatDateShared(value);
 }
 
 export function NewsletterManager({

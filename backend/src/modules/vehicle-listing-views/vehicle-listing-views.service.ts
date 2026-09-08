@@ -1,3 +1,4 @@
+import { getGuestIdCookieMaxAgeDays } from "../settings/settings.service.js";
 import {
   vehicleListingViewsRepository,
   type VehicleListingViewOwner,
@@ -23,4 +24,14 @@ export async function mergeGuestVehicleListingViewsIntoUser(guestId: string, use
   for (const view of guestViews) {
     await vehicleListingViewsRepository.mergeGuestItem(view, guestId, userId);
   }
+}
+
+// Exact counterpart to product-views.service.ts's pruneStaleGuestProductViews
+// — see there for the full reasoning (only guest rows are unbounded; the
+// guest-id cookie's own max age is the safe cutoff, since a guestId past
+// that point can never be merged into a real account or seen again).
+export async function pruneStaleGuestVehicleListingViews(): Promise<number> {
+  const maxAgeDays = await getGuestIdCookieMaxAgeDays();
+  const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000);
+  return vehicleListingViewsRepository.deleteOldGuestViews(cutoff);
 }

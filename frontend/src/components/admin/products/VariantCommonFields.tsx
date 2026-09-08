@@ -3,6 +3,7 @@
 import { Select } from "@/components/shared/Select";
 import { Toggle } from "@/components/shared/Toggle";
 import { FieldError } from "@/components/shared/FieldError";
+import { MAX_DECIMAL_10_2 } from "@/lib/validation/common";
 import type { LookupItem } from "@/lib/api/lookups";
 
 function lookupOptions(items: LookupItem[]) {
@@ -114,6 +115,7 @@ export function VariantCommonFields({
         <input
           type="number"
           step="0.01"
+          max={MAX_DECIMAL_10_2}
           value={price}
           onChange={(event) => onPriceChange(event.target.value)}
           className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"

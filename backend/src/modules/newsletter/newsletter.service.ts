@@ -3,6 +3,7 @@ import { env } from "../../config/env.js";
 import { SITE_NAME } from "../../config/site.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { isMailerConfigured, sendTemplatedEmail } from "../../lib/mailer.js";
+import { logger } from "../../lib/logger.js";
 import { resolvePage } from "../../lib/pagination.js";
 import { newsletterRepository } from "./newsletter.repository.js";
 import type { ListSubscribersQuery } from "./newsletter.schema.js";
@@ -79,7 +80,16 @@ export async function subscribe(email: string): Promise<void> {
     });
   }
 
-  await sendConfirmationEmail(email, rawToken);
+  // Fire-and-forget, not awaited — same reasoning as auth.service.ts's
+  // requestPasswordReset. Awaiting this would make the CONFIRMED short-circuit
+  // above (a single DB read, fast) distinguishable from every other case
+  // (a DB write plus a real SMTP round-trip) purely by response latency,
+  // defeating the whole point of this function being "quiet" about which
+  // case it hit — an attacker probing candidate emails could tell "already
+  // confirmed subscriber" from "not confirmed / unknown" just from timing.
+  sendConfirmationEmail(email, rawToken).catch((err) => {
+    logger.error({ err, email }, "Failed to send newsletter confirmation email");
+  });
 }
 
 export async function confirmSubscription(token: string): Promise<void> {

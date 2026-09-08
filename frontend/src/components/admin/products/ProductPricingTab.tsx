@@ -5,7 +5,7 @@ import { FieldError } from "@/components/shared/FieldError";
 import { Toggle } from "@/components/shared/Toggle";
 import { ProductVariantImagesPanel } from "./ProductVariantImagesPanel";
 import type { LookupItem } from "@/lib/api/lookups";
-import type { FieldErrors } from "@/lib/validation/common";
+import { MAX_DECIMAL_10_2, type FieldErrors } from "@/lib/validation/common";
 
 function lookupOptions(items: LookupItem[]) {
   return items.map((item) => ({ value: String(item.id), label: item.nameKa }));
@@ -73,6 +73,7 @@ function DraftVariantsTable({
                 <input
                   type="number"
                   step="0.01"
+                  max={MAX_DECIMAL_10_2}
                   value={variant.price}
                   onChange={(event) => onChange(variant.draftId, { price: event.target.value })}
                   className="w-24 rounded-lg border border-border bg-background px-2 py-1 text-sm outline-none focus:border-primary"
@@ -260,6 +261,7 @@ export function ProductPricingTab({
           <input
             type="number"
             step="0.01"
+            max={MAX_DECIMAL_10_2}
             value={initialBasePrice}
             onChange={(event) => onInitialBasePriceChange(event.target.value)}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"

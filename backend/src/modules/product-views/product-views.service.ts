@@ -1,4 +1,4 @@
-import { getRecentlyViewedLimit } from "../settings/settings.service.js";
+import { getGuestIdCookieMaxAgeDays, getRecentlyViewedLimit } from "../settings/settings.service.js";
 import { toResponse as toProductResponse } from "../products/products.service.js";
 import { productViewsRepository, type ProductViewOwner } from "./product-views.repository.js";
 
@@ -27,4 +27,26 @@ export async function mergeGuestProductViewsIntoUser(guestId: string, userId: nu
   for (const view of guestViews) {
     await productViewsRepository.mergeGuestItem(view, guestId, userId);
   }
+}
+
+// Unlike Session/VisitorVisit/etc. (pruned by their own retention windows —
+// see auth.service.ts's pruneStaleAuthArtifacts and visitors.service.ts's
+// pruneStaleVisitorData), ProductView had no retention policy at all. A
+// logged-in user's own rows are bounded by how many distinct products *that
+// user* has ever viewed, so they're left alone — the actual unbounded axis
+// is the number of distinct GUEST identities that ever viewed anything,
+// since every visitor who never retains the guest-id cookie (a crawler, a
+// strict-privacy browser, a cookie-blocking extension — same population
+// visitors.service.ts's own comment describes) mints a brand-new guestId,
+// and therefore a brand-new permanent row, on every single product page
+// view. The cutoff is the guest-id cookie's own configured lifetime: once a
+// guest's cookie would have expired anyway, that guestId can never be
+// merged into a real account (mergeGuestProductViewsIntoUser needs the
+// still-live cookie to do that) or seen again, so the row is guaranteed
+// dead weight past that point — same reasoning as the Session absolute-TTL
+// cutoff used for pruneStaleSessions.
+export async function pruneStaleGuestProductViews(): Promise<number> {
+  const maxAgeDays = await getGuestIdCookieMaxAgeDays();
+  const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000);
+  return productViewsRepository.deleteOldGuestViews(cutoff);
 }

@@ -14,7 +14,7 @@ import {
 import { ApiRequestError } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
 import { vehicleListingDiscountFormSchema } from "@/lib/validation/vehicle-listing-discounts";
-import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+import { MAX_DECIMAL_10_2, getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
 const columns: DataTableColumn<VehicleListingDiscount>[] = [
   {
@@ -203,6 +203,7 @@ export function VehicleListingDiscountsPanel({
           <input
             type="number"
             step="0.01"
+            max={MAX_DECIMAL_10_2}
             placeholder="ფასდაკლების ფასი *"
             value={discountPrice}
             onChange={(event) => setDiscountPrice(event.target.value)}

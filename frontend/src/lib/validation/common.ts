@@ -2,6 +2,11 @@ import { z } from "zod";
 
 export type FieldErrors = Record<string, string>;
 
+// Mirrors backend/src/lib/money.ts's MAX_DECIMAL_10_2 — every price/
+// discountPrice column is `@db.Decimal(10, 2)`, so this is the largest
+// value Postgres will actually store for one.
+export const MAX_DECIMAL_10_2 = 99_999_999.99;
+
 // zod issue paths are string|number segments (e.g. ["name", "ka"] for a
 // nested field) — join them so nested errors surface under a single flat key
 // that matches how these forms track per-field state (errors["name.ka"]).
@@ -71,10 +76,24 @@ export function optionalPositiveDecimalString(message = "არასწორ�
     });
 }
 
-export function requiredPositiveDecimalString(message = "სავალდებულო ველია") {
+// `max` is optional (backward compatible for any future non-money caller)
+// but every current usage of this helper is a price/discountPrice field
+// backed by a `@db.Decimal(10, 2)` column — see backend/src/lib/money.ts's
+// MAX_DECIMAL_10_2, which each of those call sites passes here. Without it,
+// an admin fat-fingering an extra digit passed client-side validation only
+// to hit the backend's own (now-fixed) schema cap or, before that fix, a
+// raw Postgres numeric-overflow 500.
+export function requiredPositiveDecimalString(
+  message = "სავალდებულო ველია",
+  max?: number,
+  maxMessage?: string,
+) {
   return z
     .string()
     .refine((value) => value.trim() !== "" && !Number.isNaN(Number(value)) && Number(value) > 0, {
       message,
+    })
+    .refine((value) => max === undefined || value.trim() === "" || Number(value) <= max, {
+      message: maxMessage ?? `მნიშვნელობა არ უნდა აღემატებოდეს ${max}-ს`,
     });
 }
