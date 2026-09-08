@@ -7,6 +7,7 @@ import { toAddressResponse } from "../addresses/addresses.service.js";
 import { toResponse as toGarageVehicleResponse } from "../garage/garage.service.js";
 import { toResponse as toWishlistItemResponse } from "../wishlist/wishlist.service.js";
 import { toResponse as toCartItemResponse } from "../cart/cart.service.js";
+import { sessionRepository } from "../auth/session.repository.js";
 import { usersRepository } from "./users.repository.js";
 import type { ChangePasswordInput, ListUsersQuery } from "./users.schema.js";
 
@@ -58,6 +59,13 @@ export async function changePassword(
 
   const passwordHash = await hashPassword(input.newPassword);
   const updated = await usersRepository.updatePasswordHash(userId, passwordHash);
+
+  // Every other device's Session row is now permanently unusable (its next
+  // request fails the tokenVersion check regardless) — delete them here
+  // instead of leaving them to accumulate as dead entries on the admin
+  // "active sessions" page. This one (sessionId) survives — it's getting a
+  // freshly re-signed cookie below, not being replaced.
+  await sessionRepository.deleteAllForUserExcept(userId, sessionId);
 
   return signJwt({
     sub: updated.id,

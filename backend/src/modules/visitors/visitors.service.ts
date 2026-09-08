@@ -30,6 +30,39 @@ export async function mergeGuestVisitorDataIntoUser(guestId: string, userId: num
   }
 }
 
+// Presence rows older than this serve no purpose — getVisitorOverview only
+// ever looks at the last ACTIVE_WINDOW_MS for "active now" — so anything
+// older is pure dead weight.
+const PRESENCE_RETENTION_MS = 24 * 60 * 60 * 1000;
+
+// Visit rows feed today's/this week's stats today, with enough headroom for
+// a future monthly view without another migration; anything older is
+// pruned so the table's growth stays bounded by "distinct visitors x ~90
+// days" instead of unbounded. This matters more for VisitorVisit/
+// VisitorPresence than most other tables in this codebase: the ping that
+// creates them (VisitorPingBeacon.tsx) fires automatically on every
+// storefront page load, not on a deliberate user action — so a client that
+// never retains the guest-id cookie (a crawler, a strict-privacy browser, a
+// cookie-blocking extension) mints a brand-new guest identity, and
+// therefore a brand-new row in each table, on every single ping.
+const VISIT_RETENTION_DAYS = 90;
+
+// Self-rescheduled from server.ts, same pattern as its FINA-sync timer —
+// run once a day; failures are logged there and simply retried on the next
+// tick rather than surfaced anywhere else, since this is maintenance, not a
+// user-facing operation.
+export async function pruneStaleVisitorData(): Promise<{ presenceDeleted: number; visitsDeleted: number }> {
+  const presenceCutoff = new Date(Date.now() - PRESENCE_RETENTION_MS);
+  const visitCutoff = shiftDateOnly(toTbilisiDateOnly(new Date()), -VISIT_RETENTION_DAYS);
+
+  const [presenceDeleted, visitsDeleted] = await Promise.all([
+    visitorsRepository.deleteStalePresence(presenceCutoff),
+    visitorsRepository.deleteOldVisits(visitCutoff),
+  ]);
+
+  return { presenceDeleted, visitsDeleted };
+}
+
 function visitorKey(row: { userId: number | null; guestId: string | null }): string {
   return row.userId != null ? `user:${row.userId}` : `guest:${row.guestId}`;
 }

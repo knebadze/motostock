@@ -1,5 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
-import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { isForeignKeyViolation, isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { cache } from "../../lib/cache.js";
 import { getLookupDelegate, type LookupRecord, type LookupType } from "./lookups.registry.js";
 import { lookupsRepository } from "./lookups.repository.js";
@@ -25,7 +25,22 @@ export async function createLookupItem(type: LookupType, input: CreateLookupItem
   if (existing) {
     throw new ApiError(409, "ეს key უკვე გამოყენებულია");
   }
-  const item = await lookupsRepository.create(delegate, input);
+
+  let item;
+  try {
+    item = await lookupsRepository.create(delegate, input);
+  } catch (error) {
+    // Closes the gap between the findByKey check above and this create — a
+    // double-click, or two admins creating the same key at once, can both
+    // pass that check before either commits (same class of race as
+    // company-info.service.ts's getOrCreateCompanyInfo). Without this, the
+    // loser hit a raw, uncaught P2002 and got a 500 instead of the same
+    // clean 409 the pre-check gives the non-race case.
+    if (isUniqueConstraintViolation(error, "key")) {
+      throw new ApiError(409, "ეს key უკვე გამოყენებულია");
+    }
+    throw error;
+  }
   cache.del(cacheKey(type));
   return item;
 }
@@ -48,7 +63,16 @@ export async function updateLookupItem(
     }
   }
 
-  const item = await lookupsRepository.update(delegate, id, input);
+  let item;
+  try {
+    item = await lookupsRepository.update(delegate, id, input);
+  } catch (error) {
+    // Same race as createLookupItem above, closed the same way.
+    if (isUniqueConstraintViolation(error, "key")) {
+      throw new ApiError(409, "ეს key უკვე გამოყენებულია");
+    }
+    throw error;
+  }
   cache.del(cacheKey(type));
   return item;
 }

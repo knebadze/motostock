@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { usePathname, useRouter } from "@/i18n/navigation";
@@ -162,7 +162,19 @@ export function ProductShopPage({
   // (page/sort/pagination too — see listProductsPage) — any change here
   // refetches (debounced) page 1 instead of re-filtering/re-sorting an
   // already-fetched array in the browser.
+  //
+  // Skips its very first run — React fires an effect after the initial
+  // render too, not just on a later dependency change, so without this
+  // guard a deep link like ?page=3 (SSR-rendered correctly into
+  // initialData/data below) got silently overwritten by an unwanted
+  // fetchPage(1) moments after mount, and the URL-sync effect below then
+  // rewrote the address bar to drop the page param entirely.
+  const skippedFirstFilterRun = useRef(false);
   useEffect(() => {
+    if (!skippedFirstFilterRun.current) {
+      skippedFirstFilterRun.current = true;
+      return;
+    }
     const timeoutId = setTimeout(() => fetchPage(1), FILTER_DEBOUNCE_MS);
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps

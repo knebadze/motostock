@@ -3,7 +3,7 @@ import { findActiveDiscount } from "../../lib/discounts.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
-import { startOfDayTbilisi, endOfDayTbilisi } from "../../lib/tbilisi-dates.js";
+import { startOfDayTbilisi, endOfDayTbilisi, toTbilisiDateOnly } from "../../lib/tbilisi-dates.js";
 import { VEHICLE_SPEC_FIELDS } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
 import {
   toDiscountResponse,
@@ -141,6 +141,14 @@ export async function applyBulkVehicleListingDiscounts(input: BulkApplyVehicleLi
 
   const startDate = startOfDayTbilisi(input.startDate);
   const endDate = endOfDayTbilisi(input.endDate);
+  // Same guard as the single-discount path (product-variant-discounts.
+  // service.ts) and bulk-product-discounts.service.ts's identical fix —
+  // without it, a bulk apply could silently create a batch of
+  // already-expired discount rows.
+  const todayStart = startOfDayTbilisi(toTbilisiDateOnly(new Date()));
+  if (endDate < todayStart) {
+    throw new ApiError(400, "დასრულების თარიღი არ უნდა იყოს წარსულში");
+  }
 
   const rows = listings.map((listing) => ({
     vehicleListingId: listing.id,

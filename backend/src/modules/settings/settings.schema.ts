@@ -59,8 +59,14 @@ export const updateSettingsSchema = registry.register(
     // legitimate configuration.
     sessionIdleTtlMinutes: z.int().positive().max(10080).openapi({ example: 120 }),
     sessionAbsoluteTtlDays: z.int().positive().max(365).openapi({ example: 30 }),
-    resetTokenTtlMinutes: z.int().positive().openapi({ example: 60 }),
-    verificationTokenTtlHours: z.int().positive().openapi({ example: 24 }),
+    // Same reasoning as the session TTLs above — an unbounded value would
+    // let a password-reset or email-verification link stay valid
+    // indefinitely if it ever leaked (a forwarded email, a shared inbox),
+    // defeating the whole point of it expiring. A day for a reset link and
+    // a week for a verification link are already far looser than any
+    // legitimate configuration.
+    resetTokenTtlMinutes: z.int().positive().max(1440).openapi({ example: 60 }),
+    verificationTokenTtlHours: z.int().positive().max(168).openapi({ example: 24 }),
     guestIdCookieMaxAgeDays: z.int().positive().openapi({ example: 365 }),
     imageMaxDimensionPx: z.int().positive().openapi({ example: 1600 }),
     imageWebpQuality: z.int().min(1).max(100).openapi({ example: 82 }),
@@ -112,8 +118,14 @@ export const settingsResponseSchema = registry.register(
     recentlyViewedLimit: z.int().positive().openapi({ example: 10 }),
     sessionIdleTtlMinutes: z.int().positive().max(10080).openapi({ example: 120 }),
     sessionAbsoluteTtlDays: z.int().positive().max(365).openapi({ example: 30 }),
-    resetTokenTtlMinutes: z.int().positive().openapi({ example: 60 }),
-    verificationTokenTtlHours: z.int().positive().openapi({ example: 24 }),
+    // Same reasoning as the session TTLs above — an unbounded value would
+    // let a password-reset or email-verification link stay valid
+    // indefinitely if it ever leaked (a forwarded email, a shared inbox),
+    // defeating the whole point of it expiring. A day for a reset link and
+    // a week for a verification link are already far looser than any
+    // legitimate configuration.
+    resetTokenTtlMinutes: z.int().positive().max(1440).openapi({ example: 60 }),
+    verificationTokenTtlHours: z.int().positive().max(168).openapi({ example: 24 }),
     guestIdCookieMaxAgeDays: z.int().positive().openapi({ example: 365 }),
     imageMaxDimensionPx: z.int().positive().openapi({ example: 1600 }),
     imageWebpQuality: z.int().min(1).max(100).openapi({ example: 82 }),

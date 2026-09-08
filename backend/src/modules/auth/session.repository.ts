@@ -48,6 +48,23 @@ export const sessionRepository = {
     await prisma.session.deleteMany({ where: { id } });
   },
 
+  // Called right after a password change bumps User.tokenVersion (see
+  // users.service.ts's changePassword and auth.service.ts's resetPassword)
+  // — every other session's row was otherwise left behind forever even
+  // though resolveAuthenticatedUser's tokenVersion check makes it
+  // permanently unusable from that point on, silently accumulating dead
+  // entries on the admin "active sessions" page. `exceptSessionId` keeps
+  // the session making the current request alive (it gets a freshly
+  // re-signed cookie in the same response, not a new row) — omit it when
+  // there's no "current" session to preserve (a forgot-password reset,
+  // where the caller wasn't authenticated to begin with and a brand new
+  // session is created separately).
+  async deleteAllForUserExcept(userId: number, exceptSessionId?: number): Promise<void> {
+    await prisma.session.deleteMany({
+      where: { userId, ...(exceptSessionId != null ? { id: { not: exceptSessionId } } : {}) },
+    });
+  },
+
   // Admin "active sessions" list — see sessions.service.ts.
   findManyForAdmin(search: string | undefined, skip: number, take: number) {
     return prisma.session.findMany({

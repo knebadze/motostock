@@ -2,7 +2,13 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
-import { authRateLimit, resendVerificationRateLimit } from "../../middleware/rateLimit.middleware.js";
+import {
+  emailVerificationRateLimit,
+  loginRateLimit,
+  passwordResetRateLimit,
+  registerRateLimit,
+  resendVerificationRateLimit,
+} from "../../middleware/rateLimit.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema, userResponseSchema } from "../../docs/schemas.js";
 import {
@@ -26,27 +32,27 @@ export const authRouter = Router();
 
 authRouter.post(
   "/register",
-  authRateLimit,
+  registerRateLimit,
   validate(registerSchema),
   register,
 );
-authRouter.post("/login", authRateLimit, validate(loginSchema), login);
+authRouter.post("/login", loginRateLimit, validate(loginSchema), login);
 authRouter.post("/logout", logout);
 authRouter.post(
   "/forgot-password",
-  authRateLimit,
+  passwordResetRateLimit,
   validate(forgotPasswordSchema),
   forgotPassword,
 );
 authRouter.post(
   "/reset-password",
-  authRateLimit,
+  passwordResetRateLimit,
   validate(resetPasswordSchema),
   resetPasswordHandler,
 );
 authRouter.post(
   "/verify-email",
-  authRateLimit,
+  emailVerificationRateLimit,
   validate(verifyEmailSchema),
   verifyEmailHandler,
 );

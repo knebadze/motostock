@@ -258,11 +258,18 @@ export async function resetPassword(
   const passwordHash = await hashPassword(input.password);
   const user = await usersRepository.updatePasswordHash(resetToken.userId, passwordHash);
 
+  // Every pre-existing Session row for this user (across every device) is
+  // now permanently unusable — the tokenVersion bump above already rejects
+  // all of them — so they're deleted here rather than left to accumulate as
+  // dead entries on the admin "active sessions" page. No exception (unlike
+  // users.service.ts's changePassword): this request was never
+  // authenticated to begin with, so there's no "current session" to spare.
+  await sessionRepository.deleteAllForUserExcept(user.id);
+
   // tokenVersion was just bumped by updatePasswordHash above — signing with
   // that fresh value (not a stale one) means this response's own cookie
   // stays valid instead of immediately invalidating itself. A fresh Session
-  // row too — the old one (if any) is just as invalidated as every other
-  // device's by the tokenVersion bump; this response needs its own.
+  // row too, created after the cleanup above so it isn't swept up by it.
   const session = await sessionRepository.create(user.id, { ipAddress, userAgent });
   const token = await signJwt({
     sub: user.id,

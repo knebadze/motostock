@@ -64,6 +64,8 @@ const ACCOUNT_LOCKOUT_LOCK_NAMESPACE = 738291645;
 // Bcrypt (~100-300ms) comfortably fits Prisma's default interactive-
 // transaction timeout, and this only serializes repeat attempts on one
 // account, never blocks unrelated logins.
+type LockoutOutcome<T> = { kind: "success"; value: T } | { kind: "failure"; locked: boolean };
+
 export async function runWithAccountLockoutGuard<T>(
   email: string,
   ipAddress: string | null,
@@ -75,26 +77,52 @@ export async function runWithAccountLockoutGuard<T>(
   ]);
   const since = new Date(Date.now() - windowMinutes * 60 * 1000);
 
-  return prisma.$transaction(async (tx) => {
+  // Must never throw from inside this transaction — throwing here rolls
+  // back everything the transaction did, including the tx.authEvent.create
+  // below, silently discarding the very failure record the lockout (and
+  // listSuspiciousLoginActivity's admin monitoring view, which reads the
+  // same AuthEvent rows) depends on. Found live: recentFailures stayed at 0
+  // no matter how many wrong passwords were sent, because every one of
+  // them got written and then immediately undone by the throw that used to
+  // sit right here. Resolving normally (returning a plain result instead)
+  // lets the transaction commit, then the caller decides whether to throw
+  // *after* that commit has actually happened.
+  const outcome = await prisma.$transaction(async (tx): Promise<LockoutOutcome<T>> => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${ACCOUNT_LOCKOUT_LOCK_NAMESPACE}, hashtext(${email}))`;
 
     const recentFailures = await tx.authEvent.count({
       where: { type: "LOGIN_FAILURE", email, createdAt: { gte: since } },
     });
-    if (recentFailures >= threshold) {
-      throw new ApiError(429, "ძალიან ბევრი წარუმატებელი მცდელობა — სცადეთ მოგვიანებით", "ACCOUNT_LOCKED");
+    const locked = recentFailures >= threshold;
+
+    // Always run the real credential check, even while locked — an
+    // attacker who only knows the victim's email could otherwise keep the
+    // account locked forever by sending just `threshold` wrong guesses per
+    // window from a single IP (well under authRateLimit's own budget),
+    // rejecting even the legitimate owner's *correct* password the whole
+    // time. Checking the real outcome first means a correct password
+    // always succeeds regardless of lockout state — the lockout only ever
+    // rejects another *wrong* guess, so brute-forcing stays exactly as
+    // blocked as before, but the true owner is never locked out of their
+    // own account by someone else's guessing.
+    const result = await attempt();
+    if (result.ok) {
+      return { kind: "success", value: result.result };
     }
 
-    const outcome = await attempt();
-    if (!outcome.ok) {
-      await tx.authEvent.create({
-        data: { type: "LOGIN_FAILURE", email, userId: outcome.userId, ipAddress },
-      });
-      throw new ApiError(401, "Invalid email or password", "INVALID_CREDENTIALS");
-    }
-
-    return outcome.result;
+    await tx.authEvent.create({
+      data: { type: "LOGIN_FAILURE", email, userId: result.userId, ipAddress },
+    });
+    return { kind: "failure", locked };
   });
+
+  if (outcome.kind === "success") {
+    return outcome.value;
+  }
+  if (outcome.locked) {
+    throw new ApiError(429, "ძალიან ბევრი წარუმატებელი მცდელობა — სცადეთ მოგვიანებით", "ACCOUNT_LOCKED");
+  }
+  throw new ApiError(401, "Invalid email or password", "INVALID_CREDENTIALS");
 }
 
 type RiskFlag = { type: OrderRiskFlagType; detail: string | null };

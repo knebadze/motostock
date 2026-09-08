@@ -109,14 +109,18 @@ export function AnalyticsManager({ initialData }: { initialData: AnalyticsOvervi
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           მოთხოვნადი პროდუქტები
         </h2>
+        <p className="mb-3 text-xs text-muted-foreground">
+          ნახვები/ვიშლისტი/კალათა — მთლიანი დრო (არ იცვლება თარიღის ფილტრით); გაყიდული/შემოსავალი —
+          მხოლოდ ზემოთ არჩეული პერიოდი.
+        </p>
         <DataTable
           columns={[
             { header: "პროდუქტი", render: (row) => row.nameKa },
-            { header: "ნახვები", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.viewCount },
-            { header: "ვიშლისტი", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.wishlistCount },
-            { header: "კალათა", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.cartCount },
-            { header: "გაყიდული", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.quantitySold },
-            { header: "შემოსავალი", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => formatPrice(row.revenue) },
+            { header: "ნახვები (სულ)", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.viewCount },
+            { header: "ვიშლისტი (სულ)", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.wishlistCount },
+            { header: "კალათა (სულ)", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.cartCount },
+            { header: "გაყიდული (პერიოდში)", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.quantitySold },
+            { header: "შემოსავალი (პერიოდში)", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => formatPrice(row.revenue) },
           ]}
           data={data.topProducts}
           getRowKey={(row) => row.id}
@@ -128,14 +132,18 @@ export function AnalyticsManager({ initialData }: { initialData: AnalyticsOvervi
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           მოთხოვნადი ტექნიკა
         </h2>
+        <p className="mb-3 text-xs text-muted-foreground">
+          ნახვები/ვიშლისტი/კალათა — მთლიანი დრო (არ იცვლება თარიღის ფილტრით); გაყიდული/შემოსავალი —
+          მხოლოდ ზემოთ არჩეული პერიოდი.
+        </p>
         <DataTable
           columns={[
             { header: "ტექნიკა", render: (row) => row.label },
-            { header: "ნახვები", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.viewCount },
-            { header: "ვიშლისტი", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.wishlistCount },
-            { header: "კალათა", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.cartCount },
-            { header: "გაყიდული", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.quantitySold },
-            { header: "შემოსავალი", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => formatPrice(row.revenue) },
+            { header: "ნახვები (სულ)", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.viewCount },
+            { header: "ვიშლისტი (სულ)", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.wishlistCount },
+            { header: "კალათა (სულ)", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.cartCount },
+            { header: "გაყიდული (პერიოდში)", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => row.quantitySold },
+            { header: "შემოსავალი (პერიოდში)", headerClassName: "text-right", cellClassName: "text-right tabular-nums", render: (row) => formatPrice(row.revenue) },
           ]}
           data={data.topVehicleListings}
           getRowKey={(row) => row.id}

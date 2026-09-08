@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma.js";
+import { withNextSortOrderLock } from "../../lib/sortOrder.js";
 
 type BankWriteData = {
   key?: string;
@@ -26,10 +27,12 @@ export const banksRepository = {
     return prisma.bank.findUnique({ where: { key } });
   },
 
-  async create(data: Required<BankWriteData>) {
-    const { _max } = await prisma.bank.aggregate({ _max: { sortOrder: true } });
-    return prisma.bank.create({
-      data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 },
+  create(data: Required<BankWriteData>) {
+    return withNextSortOrderLock("Bank", async (tx) => {
+      const { _max } = await tx.bank.aggregate({ _max: { sortOrder: true } });
+      return tx.bank.create({
+        data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 },
+      });
     });
   },
 

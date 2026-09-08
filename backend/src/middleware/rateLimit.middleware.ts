@@ -12,13 +12,36 @@ export const globalRateLimit = rateLimit({
   message: { error: { message: "Too many requests, please slow down" } },
 });
 
-export const authRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: { message: "Too many attempts, please try again later" } },
-});
+// Factory, not one shared export — each call below produces its own
+// independent limiter (its own in-memory counter), so unrelated auth
+// actions never draw against the same per-IP budget. Before this, a single
+// `authRateLimit` instance was reused across register/login/forgot-password/
+// reset-password/verify-email/both OAuth providers/change-password — a
+// legitimate user who mistyped their password a few times, then tried
+// Google login, then requested a password reset, all from one network,
+// could exhaust that one shared 20-per-15-min bucket and get a generic 429
+// on an action they hadn't actually abused.
+function createAuthRateLimit() {
+  return rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: { message: "Too many attempts, please try again later" } },
+  });
+}
+
+// One independent limiter per logical action group. forgot-password and
+// reset-password share `passwordResetRateLimit` (one real flow, two
+// requests); the 4 OAuth routes share `oauthRateLimit` (they never take
+// user-supplied credentials directly, so contending with each other is
+// low-risk — the callback exchanging a code is what actually matters).
+export const loginRateLimit = createAuthRateLimit();
+export const registerRateLimit = createAuthRateLimit();
+export const passwordResetRateLimit = createAuthRateLimit();
+export const emailVerificationRateLimit = createAuthRateLimit();
+export const oauthRateLimit = createAuthRateLimit();
+export const changePasswordRateLimit = createAuthRateLimit();
 
 // Checkout preview/place both accept a free-typed promoCode — without this,
 // a logged-in account could brute-force short/guessable codes at

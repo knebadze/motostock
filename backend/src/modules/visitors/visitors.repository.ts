@@ -100,4 +100,18 @@ export const visitorsRepository = {
       });
     });
   },
+
+  // See visitors.service.ts's pruneStaleVisitorData for why this exists —
+  // bounds both tables' growth for traffic that never retains the guest-id
+  // cookie (bots, strict-privacy browsers, cookie-blocking extensions),
+  // each of which otherwise mints a brand-new guestId on every single ping.
+  async deleteStalePresence(before: Date): Promise<number> {
+    const result = await prisma.visitorPresence.deleteMany({ where: { lastSeenAt: { lt: before } } });
+    return result.count;
+  },
+
+  async deleteOldVisits(beforeDate: string): Promise<number> {
+    const result = await prisma.visitorVisit.deleteMany({ where: { date: { lt: beforeDate } } });
+    return result.count;
+  },
 };

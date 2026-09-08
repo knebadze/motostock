@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authRateLimit } from "../../middleware/rateLimit.middleware.js";
+import { oauthRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { registry } from "../../docs/registry.js";
 import {
   getOAuthStatus,
@@ -16,16 +16,16 @@ export const oauthRouter = Router();
 // one that's guaranteed to fail (see OAuthButtons.tsx).
 oauthRouter.get("/oauth-status", getOAuthStatus);
 
-oauthRouter.get("/google", authRateLimit, redirectToGoogle);
+oauthRouter.get("/google", oauthRateLimit, redirectToGoogle);
 // Rate-limited the same as /google above — this is the step that actually
 // calls out to Google's token endpoint with whatever `code` query param
 // shows up, so leaving it unlimited would let a script hammering this URL
 // with garbage codes drive unbounded outbound requests to Google on our
 // server's behalf (an amplification vector), on top of burning our own
 // request-handling capacity.
-oauthRouter.get("/google/callback", authRateLimit, handleGoogleCallback);
-oauthRouter.get("/facebook", authRateLimit, redirectToFacebook);
-oauthRouter.get("/facebook/callback", authRateLimit, handleFacebookCallback);
+oauthRouter.get("/google/callback", oauthRateLimit, handleGoogleCallback);
+oauthRouter.get("/facebook", oauthRateLimit, redirectToFacebook);
+oauthRouter.get("/facebook/callback", oauthRateLimit, handleFacebookCallback);
 
 registry.registerPath({
   method: "get",

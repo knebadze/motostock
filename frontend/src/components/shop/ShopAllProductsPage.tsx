@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
@@ -83,7 +83,17 @@ export function ShopAllProductsPage({
     );
   }
 
+  // Skips its very first run — see ProductShopPage.tsx's identical guard.
+  // Currently a no-op here specifically (this page has no page/sort URL
+  // param yet, so initialData is always already page 1), but kept
+  // consistent with the other shop pages so the same fetchPage(1)-on-mount
+  // bug doesn't resurface the moment page-in-URL support is added here too.
+  const skippedFirstFilterRun = useRef(false);
   useEffect(() => {
+    if (!skippedFirstFilterRun.current) {
+      skippedFirstFilterRun.current = true;
+      return;
+    }
     const timeoutId = setTimeout(() => fetchPage(1), FILTER_DEBOUNCE_MS);
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps

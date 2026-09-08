@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma.js";
+import { withNextSortOrderLock } from "../../lib/sortOrder.js";
 
 const include = { position: true } as const;
 
@@ -23,11 +24,13 @@ export const teamMembersRepository = {
     return prisma.teamMember.findUnique({ where: { id }, include });
   },
 
-  async create(data: Required<TeamMemberWriteData>) {
-    const { _max } = await prisma.teamMember.aggregate({ _max: { sortOrder: true } });
-    return prisma.teamMember.create({
-      data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 },
-      include,
+  create(data: Required<TeamMemberWriteData>) {
+    return withNextSortOrderLock("TeamMember", async (tx) => {
+      const { _max } = await tx.teamMember.aggregate({ _max: { sortOrder: true } });
+      return tx.teamMember.create({
+        data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 },
+        include,
+      });
     });
   },
 

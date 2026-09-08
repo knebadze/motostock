@@ -2,7 +2,7 @@ import { ApiError } from "../../lib/ApiError.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
-import { startOfDayTbilisi, endOfDayTbilisi } from "../../lib/tbilisi-dates.js";
+import { startOfDayTbilisi, endOfDayTbilisi, toTbilisiDateOnly } from "../../lib/tbilisi-dates.js";
 import {
   toDiscountResponse,
   type DiscountRow,
@@ -114,6 +114,16 @@ export async function applyBulkProductDiscounts(input: BulkApplyProductDiscounts
 
   const startDate = startOfDayTbilisi(input.startDate);
   const endDate = endOfDayTbilisi(input.endDate);
+  // Same guard as the single-discount path (product-variant-discounts.
+  // service.ts) — without it, a bulk apply could silently create a batch of
+  // already-expired discount rows (endDate is a calendar day, so "today"
+  // still passes: the active-window check elsewhere treats it as valid
+  // through 23:59:59 today Tbilisi time, not just up to the current
+  // instant).
+  const todayStart = startOfDayTbilisi(toTbilisiDateOnly(new Date()));
+  if (endDate < todayStart) {
+    throw new ApiError(400, "დასრულების თარიღი არ უნდა იყოს წარსულში");
+  }
 
   const rows = variants.map((variant) => ({
     productVariantId: variant.id,

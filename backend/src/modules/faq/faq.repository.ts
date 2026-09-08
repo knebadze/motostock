@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma.js";
+import { withNextSortOrderLock } from "../../lib/sortOrder.js";
 
 type FaqWriteData = {
   questionKa?: string;
@@ -22,9 +23,11 @@ export const faqRepository = {
     return prisma.faq.findUnique({ where: { id } });
   },
 
-  async create(data: Required<FaqWriteData>) {
-    const { _max } = await prisma.faq.aggregate({ _max: { sortOrder: true } });
-    return prisma.faq.create({ data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 } });
+  create(data: Required<FaqWriteData>) {
+    return withNextSortOrderLock("Faq", async (tx) => {
+      const { _max } = await tx.faq.aggregate({ _max: { sortOrder: true } });
+      return tx.faq.create({ data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 } });
+    });
   },
 
   update(id: number, data: FaqWriteData) {

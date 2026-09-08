@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { usePathname, useRouter } from "@/i18n/navigation";
@@ -160,7 +160,16 @@ export function VehicleShopPage({
   // (page/sort/pagination too — see listVehicleListingsPage) — any change
   // here refetches (debounced) page 1 instead of re-filtering/re-sorting an
   // already-fetched array in the browser.
+  //
+  // Skips its very first run — see ProductShopPage.tsx's identical guard
+  // for why: without it, a deep link like ?page=3 got silently overwritten
+  // by an unwanted fetchPage(1) moments after mount.
+  const skippedFirstFilterRun = useRef(false);
   useEffect(() => {
+    if (!skippedFirstFilterRun.current) {
+      skippedFirstFilterRun.current = true;
+      return;
+    }
     const timeoutId = setTimeout(() => fetchPage(1), FILTER_DEBOUNCE_MS);
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps

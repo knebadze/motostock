@@ -73,6 +73,11 @@ function EmailTemplateForm({
         ხელმისაწვდომი placeholder-ები: <code>{"{{customerName}}"}</code>, <code>{"{{orderCode}}"}</code>,{" "}
         <code>{"{{total}}"}</code> — ავტომატურად ჩანაცვლდება რეალური მონაცემით გაგზავნისას.
       </p>
+      <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-600">
+        ამჟამად მომხმარებელს ყოველთვის ქართული ვერსია ეგზავნება, მიუხედავად მისი ენისა — სისტემას
+        ჯერ არ აქვს თითო მომხმარებლის ენის პრეფერენცია დამახსოვრებული. ინგლისური და რუსული ვერსიები
+        ინახება მომავალი გამოყენებისთვის, მაგრამ გაგზავნაზე ჯერ არ მოქმედებს.
+      </p>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="flex flex-col gap-1.5">

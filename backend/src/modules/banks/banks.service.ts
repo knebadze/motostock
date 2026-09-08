@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { isReorderPermutation } from "../../lib/reorder.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { banksRepository } from "./banks.repository.js";
@@ -75,15 +76,28 @@ export async function getBank(id: number) {
 export async function createBank(input: CreateBankInput) {
   await assertKeyAvailable(input.key);
 
-  const row = await banksRepository.create({
-    key: input.key,
-    nameKa: input.name.ka,
-    nameEn: input.name.en,
-    nameRu: input.name.ru,
-    isActive: input.isActive ?? true,
-    supportsInstallment: input.supportsInstallment ?? false,
-    supportsSplitPayment: input.supportsSplitPayment ?? false,
-  });
+  let row;
+  try {
+    row = await banksRepository.create({
+      key: input.key,
+      nameKa: input.name.ka,
+      nameEn: input.name.en,
+      nameRu: input.name.ru,
+      isActive: input.isActive ?? true,
+      supportsInstallment: input.supportsInstallment ?? false,
+      supportsSplitPayment: input.supportsSplitPayment ?? false,
+    });
+  } catch (error) {
+    // Closes the gap between assertKeyAvailable's check above and this
+    // create — a double-click, or two admins creating the same key at
+    // once, can both pass that check before either commits. Without this,
+    // the loser hit a raw, uncaught P2002 and got a 500 instead of the same
+    // clean 400 assertKeyAvailable gives the non-race case.
+    if (isUniqueConstraintViolation(error, "key")) {
+      throw new ApiError(400, "ეს იდენტიფიკატორი უკვე გამოყენებულია");
+    }
+    throw error;
+  }
   return toResponse(row);
 }
 
@@ -96,19 +110,28 @@ export async function updateBank(id: number, input: UpdateBankInput) {
     await assertKeyAvailable(input.key, id);
   }
 
-  const row = await banksRepository.update(id, {
-    ...(input.key !== undefined ? { key: input.key } : {}),
-    ...(input.name !== undefined
-      ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
-      : {}),
-    ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
-    ...(input.supportsInstallment !== undefined
-      ? { supportsInstallment: input.supportsInstallment }
-      : {}),
-    ...(input.supportsSplitPayment !== undefined
-      ? { supportsSplitPayment: input.supportsSplitPayment }
-      : {}),
-  });
+  let row;
+  try {
+    row = await banksRepository.update(id, {
+      ...(input.key !== undefined ? { key: input.key } : {}),
+      ...(input.name !== undefined
+        ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
+        : {}),
+      ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+      ...(input.supportsInstallment !== undefined
+        ? { supportsInstallment: input.supportsInstallment }
+        : {}),
+      ...(input.supportsSplitPayment !== undefined
+        ? { supportsSplitPayment: input.supportsSplitPayment }
+        : {}),
+    });
+  } catch (error) {
+    // Same race as createBank above, closed the same way.
+    if (isUniqueConstraintViolation(error, "key")) {
+      throw new ApiError(400, "ეს იდენტიფიკატორი უკვე გამოყენებულია");
+    }
+    throw error;
+  }
   return toResponse(row);
 }
 

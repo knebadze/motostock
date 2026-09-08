@@ -64,8 +64,8 @@ export function SessionAuthSettingsTab({
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {field("sessionIdleTtlMinutes", "სესიის უქმობის ვადა (წუთი, მაქს. 10080)", 10080)}
         {field("sessionAbsoluteTtlDays", "სესიის მაქს. ხანგრძლივობა (დღე, მაქს. 365)", 365)}
-        {field("resetTokenTtlMinutes", "პაროლის აღდგენის ბმულის ვადა (წუთი)")}
-        {field("verificationTokenTtlHours", "ელფოსტის დადასტურების ბმულის ვადა (საათი)")}
+        {field("resetTokenTtlMinutes", "პაროლის აღდგენის ბმულის ვადა (წუთი, მაქს. 1440)", 1440)}
+        {field("verificationTokenTtlHours", "ელფოსტის დადასტურების ბმულის ვადა (საათი, მაქს. 168)", 168)}
         {field("guestIdCookieMaxAgeDays", "სტუმრის cookie-ის ვადა (დღე)")}
       </div>
 

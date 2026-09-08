@@ -4,6 +4,7 @@ import { prisma } from "./config/prisma.js";
 import { logger } from "./lib/logger.js";
 import { isFinaConfigured, runSync } from "./modules/fina-sync/fina-sync.service.js";
 import { getFinaSyncIntervalMinutes } from "./modules/settings/settings.service.js";
+import { pruneStaleVisitorData } from "./modules/visitors/visitors.service.js";
 
 const server = app.listen(env.PORT, () => {
   logger.info(`Server listening on http://localhost:${env.PORT}`);
@@ -33,6 +34,19 @@ if (isFinaConfigured()) {
   logger.info("FINA scheduled sync enabled (interval configurable in Settings)");
 }
 
+// Bounds VisitorPresence/VisitorVisit growth (see visitors.service.ts's
+// pruneStaleVisitorData) — daily is plenty, since neither table needs
+// pruning more precisely than that. A fixed setInterval is fine here
+// (unlike the FINA timer above): unlike finaSyncIntervalMinutes, this
+// interval isn't admin-configurable, so there's no "pick up a changed
+// Settings value" requirement to justify the self-rescheduling setTimeout
+// pattern.
+const VISITOR_PRUNE_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const visitorPruneTimer = setInterval(() => {
+  pruneStaleVisitorData().catch((err: unknown) => logger.error({ err }, "Visitor data pruning failed"));
+}, VISITOR_PRUNE_INTERVAL_MS);
+visitorPruneTimer.unref();
+
 // Docker Compose sends SIGTERM (then SIGKILL after its ~10s grace period) on
 // every `stop`/`restart`/recreate — i.e. on every deploy, not just a rare
 // crash. Without this, Node's default SIGTERM behavior is to exit
@@ -48,6 +62,7 @@ function shutdown(signal: string) {
 
   finaSyncStopped = true;
   if (finaSyncTimer) clearTimeout(finaSyncTimer);
+  clearInterval(visitorPruneTimer);
 
   const forceExit = setTimeout(() => {
     logger.error("Graceful shutdown timed out, forcing exit");

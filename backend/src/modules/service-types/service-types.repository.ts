@@ -1,5 +1,6 @@
 import { prisma } from "../../config/prisma.js";
 import type { Prisma } from "../../generated/prisma/index.js";
+import { withNextSortOrderLock } from "../../lib/sortOrder.js";
 
 type ServiceTypeWriteData = {
   nameKa?: string;
@@ -23,10 +24,12 @@ export const serviceTypesRepository = {
     return prisma.serviceType.findUnique({ where: { id } });
   },
 
-  async create(data: Required<ServiceTypeWriteData>) {
-    const { _max } = await prisma.serviceType.aggregate({ _max: { sortOrder: true } });
-    return prisma.serviceType.create({
-      data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 },
+  create(data: Required<ServiceTypeWriteData>) {
+    return withNextSortOrderLock("ServiceType", async (tx) => {
+      const { _max } = await tx.serviceType.aggregate({ _max: { sortOrder: true } });
+      return tx.serviceType.create({
+        data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 },
+      });
     });
   },
 

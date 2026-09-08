@@ -4,6 +4,7 @@ import type {
   HeroSlideType,
   HeroSlideVerticalPosition,
 } from "../../generated/prisma/index.js";
+import { withNextSortOrderLock } from "../../lib/sortOrder.js";
 
 type HeroSlideWriteData = {
   type?: HeroSlideType;
@@ -36,9 +37,11 @@ export const heroSlidesRepository = {
     return prisma.heroSlide.findUnique({ where: { id } });
   },
 
-  async create(data: Required<HeroSlideWriteData>) {
-    const { _max } = await prisma.heroSlide.aggregate({ _max: { sortOrder: true } });
-    return prisma.heroSlide.create({ data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 } });
+  create(data: Required<HeroSlideWriteData>) {
+    return withNextSortOrderLock("HeroSlide", async (tx) => {
+      const { _max } = await tx.heroSlide.aggregate({ _max: { sortOrder: true } });
+      return tx.heroSlide.create({ data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 } });
+    });
   },
 
   update(id: number, data: HeroSlideWriteData) {
