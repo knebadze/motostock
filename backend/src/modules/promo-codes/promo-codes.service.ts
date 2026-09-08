@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { productBrandsRepository } from "../product-brands/product-brands.repository.js";
 import { attributesRepository } from "../attributes/attributes.repository.js";
@@ -245,23 +246,28 @@ export async function createPromoCode(input: CreatePromoCodeInput) {
     }
   }
 
-  const row = await promoCodesRepository.create({
-    code,
-    domain: input.domain,
-    categoryId: input.categoryId ?? null,
-    productBrandId: input.domain === "PRODUCT" ? (input.productBrandId ?? null) : null,
-    attributeId: input.domain === "PRODUCT" ? (input.attributeId ?? null) : null,
-    attributeOptionId: input.domain === "PRODUCT" ? (input.attributeOptionId ?? null) : null,
-    brandId: input.domain === "VEHICLE" ? (input.brandId ?? null) : null,
-    modelId: input.domain === "VEHICLE" ? (input.modelId ?? null) : null,
-    specField: input.domain === "VEHICLE" ? (input.specField ?? null) : null,
-    specLookupItemId: input.domain === "VEHICLE" ? (input.specLookupItemId ?? null) : null,
-    discountPercent: input.discountPercent,
-    usageLimit: input.usageLimit ?? null,
-    startDate: startOfDayTbilisi(input.startDate),
-    endDate: endOfDayTbilisi(input.endDate),
-    isActive: input.isActive ?? true,
-  });
+  const row = await runUniqueCheckedWrite(
+    () =>
+      promoCodesRepository.create({
+        code,
+        domain: input.domain,
+        categoryId: input.categoryId ?? null,
+        productBrandId: input.domain === "PRODUCT" ? (input.productBrandId ?? null) : null,
+        attributeId: input.domain === "PRODUCT" ? (input.attributeId ?? null) : null,
+        attributeOptionId: input.domain === "PRODUCT" ? (input.attributeOptionId ?? null) : null,
+        brandId: input.domain === "VEHICLE" ? (input.brandId ?? null) : null,
+        modelId: input.domain === "VEHICLE" ? (input.modelId ?? null) : null,
+        specField: input.domain === "VEHICLE" ? (input.specField ?? null) : null,
+        specLookupItemId: input.domain === "VEHICLE" ? (input.specLookupItemId ?? null) : null,
+        discountPercent: input.discountPercent,
+        usageLimit: input.usageLimit ?? null,
+        startDate: startOfDayTbilisi(input.startDate),
+        endDate: endOfDayTbilisi(input.endDate),
+        isActive: input.isActive ?? true,
+      }),
+    "code",
+    "ეს კოდი უკვე გამოყენებულია",
+  );
   return toResponse(row);
 }
 
@@ -321,22 +327,27 @@ export async function updatePromoCode(id: number, input: UpdatePromoCodeInput) {
     throw new ApiError(400, "დაწყების თარიღი დასრულების თარიღზე ადრე უნდა იყოს");
   }
 
-  const row = await promoCodesRepository.update(id, {
-    ...(code !== undefined ? { code } : {}),
-    ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
-    ...(input.productBrandId !== undefined ? { productBrandId: input.productBrandId } : {}),
-    ...(input.attributeId !== undefined ? { attributeId: input.attributeId } : {}),
-    ...(input.attributeOptionId !== undefined ? { attributeOptionId: input.attributeOptionId } : {}),
-    ...(input.brandId !== undefined ? { brandId: input.brandId } : {}),
-    ...(input.modelId !== undefined ? { modelId: input.modelId } : {}),
-    ...(input.specField !== undefined ? { specField: input.specField } : {}),
-    ...(input.specLookupItemId !== undefined ? { specLookupItemId: input.specLookupItemId } : {}),
-    ...(input.discountPercent !== undefined ? { discountPercent: input.discountPercent } : {}),
-    ...(input.usageLimit !== undefined ? { usageLimit: input.usageLimit } : {}),
-    ...(input.startDate !== undefined ? { startDate: startOfDayTbilisi(input.startDate) } : {}),
-    ...(input.endDate !== undefined ? { endDate: endOfDayTbilisi(input.endDate) } : {}),
-    ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
-  });
+  const row = await runUniqueCheckedWrite(
+    () =>
+      promoCodesRepository.update(id, {
+        ...(code !== undefined ? { code } : {}),
+        ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
+        ...(input.productBrandId !== undefined ? { productBrandId: input.productBrandId } : {}),
+        ...(input.attributeId !== undefined ? { attributeId: input.attributeId } : {}),
+        ...(input.attributeOptionId !== undefined ? { attributeOptionId: input.attributeOptionId } : {}),
+        ...(input.brandId !== undefined ? { brandId: input.brandId } : {}),
+        ...(input.modelId !== undefined ? { modelId: input.modelId } : {}),
+        ...(input.specField !== undefined ? { specField: input.specField } : {}),
+        ...(input.specLookupItemId !== undefined ? { specLookupItemId: input.specLookupItemId } : {}),
+        ...(input.discountPercent !== undefined ? { discountPercent: input.discountPercent } : {}),
+        ...(input.usageLimit !== undefined ? { usageLimit: input.usageLimit } : {}),
+        ...(input.startDate !== undefined ? { startDate: startOfDayTbilisi(input.startDate) } : {}),
+        ...(input.endDate !== undefined ? { endDate: endOfDayTbilisi(input.endDate) } : {}),
+        ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+      }),
+    "code",
+    "ეს კოდი უკვე გამოყენებულია",
+  );
   return toResponse(row);
 }
 

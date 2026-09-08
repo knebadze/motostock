@@ -55,22 +55,44 @@ export const fraudRepository = {
     return rows.map((row) => row.userId);
   },
 
-  async countFailedLoginsByEmail(since: Date): Promise<{ email: string; count: number }[]> {
+  // threshold/take pushed into the query itself (having + take), not applied
+  // in JS after the fact — under a distributed credential-stuffing attack
+  // (or just an old/low threshold setting) this groupBy would otherwise
+  // fetch one row per distinct email that has EVER had a single failed
+  // login in the window, sort all of them in JS, and only then discard the
+  // ones below threshold. Same anti-pattern already fixed for the
+  // popularity queries (see search_popularity_scaling) — having filters at
+  // the DB, and take caps the worst case to a bounded page even if an
+  // attack manages to push many distinct identifiers above threshold at
+  // once.
+  async countFailedLoginsByEmail(
+    since: Date,
+    threshold: number,
+    limit = 50,
+  ): Promise<{ email: string; count: number }[]> {
     const grouped = await prisma.authEvent.groupBy({
       by: ["email"],
       where: { type: "LOGIN_FAILURE", createdAt: { gte: since } },
       _count: { email: true },
+      having: { email: { _count: { gte: threshold } } },
       orderBy: { _count: { email: "desc" } },
+      take: limit,
     });
     return grouped.map((row) => ({ email: row.email, count: row._count.email }));
   },
 
-  async countFailedLoginsByIp(since: Date): Promise<{ ipAddress: string; count: number }[]> {
+  async countFailedLoginsByIp(
+    since: Date,
+    threshold: number,
+    limit = 50,
+  ): Promise<{ ipAddress: string; count: number }[]> {
     const grouped = await prisma.authEvent.groupBy({
       by: ["ipAddress"],
       where: { type: "LOGIN_FAILURE", createdAt: { gte: since }, ipAddress: { not: null } },
       _count: { ipAddress: true },
+      having: { ipAddress: { _count: { gte: threshold } } },
       orderBy: { _count: { ipAddress: "desc" } },
+      take: limit,
     });
     return grouped.map((row) => ({ ipAddress: row.ipAddress as string, count: row._count.ipAddress }));
   },

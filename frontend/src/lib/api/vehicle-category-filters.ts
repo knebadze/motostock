@@ -52,7 +52,6 @@ export type VehicleCategoryFilterInput = {
   categoryId: number;
   filterType: VehicleCategoryFilterType;
   specField?: VehicleSpecField | null;
-  sortOrder?: number;
 };
 
 export async function listVehicleCategoryFilters(

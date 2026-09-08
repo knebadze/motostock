@@ -66,6 +66,14 @@ export async function createCategoryFilter(input: CreateCategoryFilterInput) {
     throw new ApiError(400, "მითითებული კატეგორია არ არსებობს");
   }
 
+  // Self + every ancestor — a filter set on a parent already applies here
+  // via inheritance (see listCategoryFilters/findMany), so a duplicate
+  // check scoped to only the exact categoryId would let a direct API call
+  // add a redundant filter that's already inherited from a parent, even
+  // though the admin UI's own "available options" list already prevents
+  // this in normal use.
+  const categoryIds = await resolveCategoryAndAncestorIds(input.categoryId);
+
   if (input.filterType === "ATTRIBUTE") {
     if (!input.attributeId) {
       throw new ApiError(400, "ATTRIBUTE ტიპის ფილტრს სჭირდება attributeId");
@@ -80,7 +88,7 @@ export async function createCategoryFilter(input: CreateCategoryFilterInput) {
     }
 
     const existing = await categoryFiltersRepository.findByCategoryAndAttribute(
-      input.categoryId,
+      categoryIds,
       input.attributeId,
     );
     if (existing) {
@@ -92,7 +100,7 @@ export async function createCategoryFilter(input: CreateCategoryFilterInput) {
     }
 
     const existing = await categoryFiltersRepository.findByCategoryAndType(
-      input.categoryId,
+      categoryIds,
       input.filterType,
     );
     if (existing) {
@@ -104,7 +112,6 @@ export async function createCategoryFilter(input: CreateCategoryFilterInput) {
     categoryId: input.categoryId,
     filterType: input.filterType,
     attributeId: input.filterType === "ATTRIBUTE" ? input.attributeId : null,
-    sortOrder: input.sortOrder ?? 0,
   });
   return toResponse(row);
 }

@@ -44,7 +44,6 @@ export const createVehicleCategoryFilterSchema = registry.register(
     categoryId: z.int().positive(),
     filterType: vehicleCategoryFilterTypeSchema,
     specField: vehicleSpecFieldSchema.nullable().optional(),
-    sortOrder: z.int().optional(),
   }),
 );
 export type CreateVehicleCategoryFilterInput = z.infer<typeof createVehicleCategoryFilterSchema>;

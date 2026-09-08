@@ -47,10 +47,11 @@ const PRESENCE_RETENTION_MS = 24 * 60 * 60 * 1000;
 // therefore a brand-new row in each table, on every single ping.
 const VISIT_RETENTION_DAYS = 90;
 
-// Self-rescheduled from server.ts, same pattern as its FINA-sync timer —
-// run once a day; failures are logged there and simply retried on the next
-// tick rather than surfaced anywhere else, since this is maintenance, not a
-// user-facing operation.
+// Called from server.ts both once immediately on boot and then on a
+// 24h setInterval — deploys happen far more often than daily, so the
+// interval alone would rarely if ever fire in practice. Failures are
+// logged there and simply retried on the next tick rather than surfaced
+// anywhere else, since this is maintenance, not a user-facing operation.
 export async function pruneStaleVisitorData(): Promise<{ presenceDeleted: number; visitsDeleted: number }> {
   const presenceCutoff = new Date(Date.now() - PRESENCE_RETENTION_MS);
   const visitCutoff = shiftDateOnly(toTbilisiDateOnly(new Date()), -VISIT_RETENTION_DAYS);

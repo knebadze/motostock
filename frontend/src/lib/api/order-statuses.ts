@@ -14,7 +14,6 @@ export type OrderStatusItemInput = {
   nameKa: string;
   nameEn: string;
   nameRu: string;
-  sortOrder?: number;
 };
 
 export async function listOrderStatuses(): Promise<OrderStatusItem[]> {
@@ -22,9 +21,7 @@ export async function listOrderStatuses(): Promise<OrderStatusItem[]> {
   return data.items;
 }
 
-export async function createOrderStatus(
-  input: Omit<OrderStatusItemInput, "sortOrder">,
-): Promise<OrderStatusItem> {
+export async function createOrderStatus(input: OrderStatusItemInput): Promise<OrderStatusItem> {
   const { data } = await apiClient.post<{ item: OrderStatusItem }>("/order-statuses", input);
   return data.item;
 }
@@ -38,6 +35,21 @@ export async function updateOrderStatusItem(
     input,
   );
   return data.item;
+}
+
+// One request, swapped atomically in one DB transaction on the backend
+// (see moveOrderStatus) — not two independent PATCHes, which had no shared
+// transaction and could leave both rows with the same sortOrder if the
+// second request failed after the first succeeded.
+export async function moveOrderStatus(
+  id: number,
+  direction: "up" | "down",
+): Promise<OrderStatusItem[]> {
+  const { data } = await apiClient.post<{ items: OrderStatusItem[] }>(
+    `/order-statuses/${id}/move`,
+    { direction },
+  );
+  return data.items;
 }
 
 export async function deleteOrderStatus(id: number): Promise<void> {

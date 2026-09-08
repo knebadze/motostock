@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { productsRepository } from "../products/products.repository.js";
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
 import { productFitmentRepository } from "./product-fitment.repository.js";
@@ -68,10 +69,11 @@ export async function createProductFitment(
     throw new ApiError(409, "ეს თავსებადობა უკვე დამატებულია");
   }
 
-  const row = await productFitmentRepository.create({
-    productId,
-    vehicleCatalogId: input.vehicleCatalogId,
-  });
+  const row = await runUniqueCheckedWrite(
+    () => productFitmentRepository.create({ productId, vehicleCatalogId: input.vehicleCatalogId }),
+    "vehicleCatalogId",
+    "ეს თავსებადობა უკვე დამატებულია",
+  );
   return toResponse(row);
 }
 

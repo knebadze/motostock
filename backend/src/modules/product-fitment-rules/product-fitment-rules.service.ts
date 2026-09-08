@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { productsRepository } from "../products/products.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
@@ -134,13 +135,33 @@ export async function createProductFitmentRule(
     }
   }
 
-  const row = await productFitmentRulesRepository.create({
-    productId,
-    type: input.type,
-    categoryId: input.type === "CATEGORY" ? input.categoryId : null,
-    specField: input.type === "SPEC" ? input.specField : null,
-    specLookupItemId: input.type === "SPEC" ? input.specLookupItemId : null,
-  });
+  // Closes the gap between the type-specific pre-checks above and this
+  // create — two near-simultaneous "add rule" requests for the same
+  // product+category (or product+spec+value, or the ALL type) can both
+  // pass the corresponding findByProductAnd* check before either commits.
+  // The 3 partial unique indexes added in migration 20260908110000 are what
+  // actually stop the duplicate row from being written; this just turns
+  // that into the same clean 409 the pre-check already gives the non-race
+  // case, instead of a raw 500.
+  const [fieldNameHint, conflictMessage] =
+    input.type === "CATEGORY"
+      ? (["category", "ეს კატეგორია უკვე დამატებულია თავსებადობის წესებში"] as const)
+      : input.type === "SPEC"
+        ? (["spec", "ეს მახასიათებელი უკვე დამატებულია თავსებადობის წესებში"] as const)
+        : (["all", "\"ყველა ტრანსპორტთან თავსებადობა\" უკვე დამატებულია"] as const);
+
+  const row = await runUniqueCheckedWrite(
+    () =>
+      productFitmentRulesRepository.create({
+        productId,
+        type: input.type,
+        categoryId: input.type === "CATEGORY" ? input.categoryId : null,
+        specField: input.type === "SPEC" ? input.specField : null,
+        specLookupItemId: input.type === "SPEC" ? input.specLookupItemId : null,
+      }),
+    fieldNameHint,
+    conflictMessage,
+  );
   return toResponse(row);
 }
 

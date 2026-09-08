@@ -1,5 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
-import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { isForeignKeyViolation, runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { attributesRepository } from "../attributes/attributes.repository.js";
 import { attributeOptionsRepository } from "./attribute-options.repository.js";
 import type {
@@ -49,13 +49,18 @@ export async function createAttributeOption(
     throw new ApiError(409, "ეს key უკვე გამოყენებულია ამ მახასიათებელზე");
   }
 
-  const row = await attributeOptionsRepository.create({
-    attributeId,
-    key: input.key,
-    labelKa: input.label.ka,
-    labelEn: input.label.en,
-    labelRu: input.label.ru,
-  });
+  const row = await runUniqueCheckedWrite(
+    () =>
+      attributeOptionsRepository.create({
+        attributeId,
+        key: input.key,
+        labelKa: input.label.ka,
+        labelEn: input.label.en,
+        labelRu: input.label.ru,
+      }),
+    "key",
+    "ეს key უკვე გამოყენებულია ამ მახასიათებელზე",
+  );
   return toResponse(row);
 }
 
@@ -76,12 +81,17 @@ export async function updateAttributeOption(
     }
   }
 
-  const row = await attributeOptionsRepository.update(id, {
-    ...(input.key !== undefined ? { key: input.key } : {}),
-    ...(input.label !== undefined
-      ? { labelKa: input.label.ka, labelEn: input.label.en, labelRu: input.label.ru }
-      : {}),
-  });
+  const row = await runUniqueCheckedWrite(
+    () =>
+      attributeOptionsRepository.update(id, {
+        ...(input.key !== undefined ? { key: input.key } : {}),
+        ...(input.label !== undefined
+          ? { labelKa: input.label.ka, labelEn: input.label.en, labelRu: input.label.ru }
+          : {}),
+      }),
+    "key",
+    "ეს key უკვე გამოყენებულია ამ მახასიათებელზე",
+  );
   return toResponse(row);
 }
 

@@ -205,6 +205,22 @@ export const analyticsRepository = {
     });
   },
 
+  // Deliberately createdAt-scoped, unlike countCancelledOrders right above
+  // — that one answers "how many cancellations happened in this window"
+  // (for the reason-breakdown/recent-cancelled list, where cancelledAt is
+  // the only sensible basis), but the cancellation *rate* needs both halves
+  // of the fraction drawn from the same population: "of the orders placed
+  // in this window, what fraction ended up cancelled". Mixing
+  // findRevenueAndOrderCount's createdAt-scoped orderCount with
+  // countCancelledOrders' cancelledAt-scoped count let a quiet window with
+  // zero new orders but several *older* orders happening to get cancelled
+  // during it show a misleading ~100% cancellation rate.
+  countCancelledOrdersByCreatedDate(dateFrom: Date, dateTo: Date) {
+    return prisma.order.count({
+      where: { status: { key: CANCELLED_KEY }, createdAt: { gte: dateFrom, lte: dateTo } },
+    });
+  },
+
   async sumLostRevenue(dateFrom: Date, dateTo: Date): Promise<number> {
     const agg = await prisma.order.aggregate({
       _sum: { total: true },

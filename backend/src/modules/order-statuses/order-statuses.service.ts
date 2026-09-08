@@ -1,8 +1,12 @@
 import { ApiError } from "../../lib/ApiError.js";
-import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { isForeignKeyViolation, runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { cache } from "../../lib/cache.js";
 import { orderStatusesRepository } from "./order-statuses.repository.js";
-import type { CreateOrderStatusInput, UpdateOrderStatusItemInput } from "./order-statuses.schema.js";
+import type {
+  CreateOrderStatusInput,
+  MoveOrderStatusInput,
+  UpdateOrderStatusItemInput,
+} from "./order-statuses.schema.js";
 import type { OrderStatus } from "../../generated/prisma/index.js";
 
 // Read on every checkout/admin-orders page load but written only from the
@@ -27,8 +31,11 @@ export async function createOrderStatus(input: CreateOrderStatusInput) {
     throw new ApiError(409, "ეს key უკვე გამოყენებულია");
   }
 
-  const maxSortOrder = await orderStatusesRepository.findMaxSortOrder();
-  const item = await orderStatusesRepository.create({ ...input, sortOrder: maxSortOrder + 1 });
+  const item = await runUniqueCheckedWrite(
+    () => orderStatusesRepository.create(input),
+    "key",
+    "ეს key უკვე გამოყენებულია",
+  );
   cache.del(ORDER_STATUSES_CACHE_KEY);
   return item;
 }
@@ -46,9 +53,38 @@ export async function updateOrderStatus(id: number, input: UpdateOrderStatusItem
     }
   }
 
-  const item = await orderStatusesRepository.update(id, input);
+  const item = await runUniqueCheckedWrite(
+    () => orderStatusesRepository.update(id, input),
+    "key",
+    "ეს key უკვე გამოყენებულია",
+  );
   cache.del(ORDER_STATUSES_CACHE_KEY);
   return item;
+}
+
+// Swaps this status with its up/down neighbor's sortOrder, backed by one DB
+// transaction (see orderStatusesRepository.swapSortOrder) — replaces the
+// old two-independent-PATCH-requests approach, which had no shared
+// transaction and could leave both rows holding the same sortOrder if the
+// second request failed after the first (or a concurrent edit landed in
+// between). Same pattern as homepage-sections.service.ts's
+// moveHomepageSection.
+export async function moveOrderStatus(id: number, input: MoveOrderStatusInput) {
+  const rows = await orderStatusesRepository.findMany();
+  const index = rows.findIndex((row) => row.id === id);
+  if (index === -1) {
+    throw new ApiError(404, "სტატუსი ვერ მოიძებნა");
+  }
+
+  const targetIndex = input.direction === "up" ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= rows.length) {
+    throw new ApiError(400, "სტატუსი უკვე სიის ბოლოშია", "ORDER_STATUS_MOVE_OUT_OF_RANGE");
+  }
+
+  await orderStatusesRepository.swapSortOrder(rows[index], rows[targetIndex]);
+  cache.del(ORDER_STATUSES_CACHE_KEY);
+
+  return orderStatusesRepository.findMany();
 }
 
 export async function deleteOrderStatus(id: number) {

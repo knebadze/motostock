@@ -73,6 +73,7 @@ export async function getAnalyticsOverview(dateFromInput?: string, dateToInput?:
     ordersByStatus,
     revenueRows,
     cancelledCount,
+    cancelledCountByCreatedDate,
     lostRevenue,
     reasonBreakdown,
     recentCancelledRaw,
@@ -89,6 +90,7 @@ export async function getAnalyticsOverview(dateFromInput?: string, dateToInput?:
     analyticsRepository.findOrderCountsByStatus(from, to),
     analyticsRepository.findRevenueSeriesRows(from, to),
     analyticsRepository.countCancelledOrders(from, to),
+    analyticsRepository.countCancelledOrdersByCreatedDate(from, to),
     analyticsRepository.sumLostRevenue(from, to),
     analyticsRepository.findCancellationReasonBreakdown(from, to),
     analyticsRepository.findRecentCancelledOrders(from, to, recentCancelledLimit),
@@ -196,13 +198,20 @@ export async function getAnalyticsOverview(dateFromInput?: string, dateToInput?:
     cancelledAt: order.cancelledAt,
   }));
 
+  // Both halves drawn from the same population (orders *placed* in this
+  // range) — see countCancelledOrdersByCreatedDate's comment. cancelledCount
+  // itself stays cancelledAt-scoped (it's paired with the reason-breakdown/
+  // recent-cancelled list right below, which are about the same thing:
+  // "cancellations that happened in this window").
+  const ordersPlacedInRange = orderCount + cancelledCountByCreatedDate;
+
   return {
     range: { from: from.toISOString(), to: to.toISOString() },
     financial: {
       revenue,
       orderCount,
       cancelledCount,
-      cancellationRate: orderCount + cancelledCount > 0 ? cancelledCount / (orderCount + cancelledCount) : 0,
+      cancellationRate: ordersPlacedInRange > 0 ? cancelledCountByCreatedDate / ordersPlacedInRange : 0,
       lostRevenue,
     },
     revenueSeries: buildRevenueSeries(revenueRows, from, to),

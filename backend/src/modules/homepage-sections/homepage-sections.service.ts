@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { homepageSectionsRepository } from "./homepage-sections.repository.js";
 import type { MoveHomepageSectionInput, UpdateHomepageSectionInput } from "./homepage-sections.schema.js";
 import type { HomepageSectionType } from "../../generated/prisma/index.js";
@@ -139,20 +140,36 @@ async function ensureBootstrapped(): Promise<HomepageSectionRow[]> {
   if (missingTypes.length === 0) return rows;
 
   const created = await Promise.all(
-    missingTypes.map((type) => {
+    missingTypes.map(async (type) => {
       const defaults = DEFAULTS[type];
       const isMixed = MIXED_TYPES.includes(type);
-      return homepageSectionsRepository.create({
-        type,
-        titleKa: defaults.titleKa,
-        titleEn: defaults.titleEn,
-        titleRu: defaults.titleRu,
-        isActive: true,
-        sortOrder: defaults.sortOrder,
-        itemCount: 10,
-        productItemCount: isMixed ? 5 : null,
-        vehicleItemCount: isMixed ? 5 : null,
-      });
+      try {
+        return await homepageSectionsRepository.create({
+          type,
+          titleKa: defaults.titleKa,
+          titleEn: defaults.titleEn,
+          titleRu: defaults.titleRu,
+          isActive: true,
+          sortOrder: defaults.sortOrder,
+          itemCount: 10,
+          productItemCount: isMixed ? 5 : null,
+          vehicleItemCount: isMixed ? 5 : null,
+        });
+      } catch (error) {
+        // Two concurrent requests hitting a fresh DB (e.g. two guests
+        // loading the homepage before any row exists yet) can both compute
+        // the same missingTypes set and both attempt to create the same
+        // type's row before either commits — HomepageSection.type is
+        // @unique, so the loser hit a raw, uncaught P2002 here (500)
+        // instead of just picking up the winner's row, same class of race
+        // already guarded against in company-info.service.ts/terms.
+        // service.ts's singleton bootstrap.
+        if (isUniqueConstraintViolation(error, "type")) {
+          const existing = await homepageSectionsRepository.findByType(type);
+          if (existing) return existing;
+        }
+        throw error;
+      }
     }),
   );
 

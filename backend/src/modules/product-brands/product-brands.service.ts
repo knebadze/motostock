@@ -1,5 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
-import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { isForeignKeyViolation, runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
@@ -63,11 +63,16 @@ export async function createProductBrand(input: CreateProductBrandInput) {
     throw new ApiError(409, "ეს slug უკვე გამოყენებულია");
   }
 
-  const row = await productBrandsRepository.create({
-    categoryId: input.categoryId,
-    name: input.name,
-    slug: input.slug,
-  });
+  const row = await runUniqueCheckedWrite(
+    () =>
+      productBrandsRepository.create({
+        categoryId: input.categoryId,
+        name: input.name,
+        slug: input.slug,
+      }),
+    "slug",
+    "ეს slug უკვე გამოყენებულია",
+  );
   return toResponse(row);
 }
 
@@ -88,11 +93,16 @@ export async function updateProductBrand(id: number, input: UpdateProductBrandIn
     }
   }
 
-  const row = await productBrandsRepository.update(id, {
-    ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
-    ...(input.name !== undefined ? { name: input.name } : {}),
-    ...(input.slug !== undefined ? { slug: input.slug } : {}),
-  });
+  const row = await runUniqueCheckedWrite(
+    () =>
+      productBrandsRepository.update(id, {
+        ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.slug !== undefined ? { slug: input.slug } : {}),
+      }),
+    "slug",
+    "ეს slug უკვე გამოყენებულია",
+  );
   return toResponse(row);
 }
 

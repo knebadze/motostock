@@ -72,13 +72,18 @@ export async function createVehicleCategoryFilter(input: CreateVehicleCategoryFi
     throw new ApiError(400, "მითითებული კატეგორია არ არსებობს");
   }
 
+  // Self + every ancestor — see category-filters.service.ts's identical
+  // createCategoryFilter for why the duplicate check has to span the whole
+  // chain, not just the exact category being written to.
+  const categoryIds = await resolveCategoryAndAncestorIds(input.categoryId);
+
   if (input.filterType === "SPEC") {
     if (!input.specField) {
       throw new ApiError(400, "SPEC ტიპის ფილტრს სჭირდება specField");
     }
 
     const existing = await vehicleCategoryFiltersRepository.findByCategoryAndSpecField(
-      input.categoryId,
+      categoryIds,
       input.specField as VehicleSpecField,
     );
     if (existing) {
@@ -90,7 +95,7 @@ export async function createVehicleCategoryFilter(input: CreateVehicleCategoryFi
     }
 
     const existing = await vehicleCategoryFiltersRepository.findByCategoryAndType(
-      input.categoryId,
+      categoryIds,
       input.filterType,
     );
     if (existing) {
@@ -102,7 +107,6 @@ export async function createVehicleCategoryFilter(input: CreateVehicleCategoryFi
     categoryId: input.categoryId,
     filterType: input.filterType,
     specField: input.filterType === "SPEC" ? (input.specField as VehicleSpecField) : null,
-    sortOrder: input.sortOrder ?? 0,
   });
   return toResponse(row);
 }

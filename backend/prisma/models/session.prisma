@@ -28,5 +28,10 @@ model Session {
   lastSeenAt DateTime @default(now())
 
   @@index([userId])
+  // Backs the admin "active sessions" page's `orderBy: { lastSeenAt: "desc" }`
+  // (session.repository.ts's findManyForAdmin) — added in migration
+  // 20260908120000 alongside pruneStaleSessions (visitors.service.ts), which
+  // bounds this table's growth so the index stays cheap to maintain.
+  @@index([lastSeenAt])
   @@schema("dbo")
 }

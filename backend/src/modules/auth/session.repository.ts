@@ -79,4 +79,14 @@ export const sessionRepository = {
   countForAdmin(search?: string) {
     return prisma.session.count({ where: searchWhere(search) });
   },
+
+  // See pruneStaleAuthArtifacts (auth.service.ts) for why `createdAt` (not
+  // lastSeenAt) is the safe cutoff — createdAt is this row's immutable
+  // loginAt, and isSessionExpiredByAbsoluteCap already permanently rejects
+  // any token whose loginAt is this old, regardless of how recently
+  // lastSeenAt was refreshed.
+  async deleteCreatedBefore(cutoff: Date): Promise<number> {
+    const { count } = await prisma.session.deleteMany({ where: { createdAt: { lt: cutoff } } });
+    return count;
+  },
 };

@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { cache } from "../../lib/cache.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { computeLowStockQuantity } from "../../lib/low-stock.js";
@@ -733,19 +734,24 @@ export async function createProduct(input: CreateProductInput) {
     input.attributeValues ?? [],
   );
 
-  const row = await productsRepository.create({
-    categoryId: input.categoryId,
-    productBrandId: input.productBrandId ?? null,
-    nameKa: input.name.ka,
-    nameEn: input.name.en,
-    nameRu: input.name.ru,
-    slug: input.slug,
-    metaTitle: input.metaTitle ?? null,
-    metaDescription: input.metaDescription ?? null,
-    descriptionKa: input.descriptionKa ?? null,
-    descriptionEn: input.descriptionEn ?? null,
-    descriptionRu: input.descriptionRu ?? null,
-  });
+  const row = await runUniqueCheckedWrite(
+    () =>
+      productsRepository.create({
+        categoryId: input.categoryId,
+        productBrandId: input.productBrandId ?? null,
+        nameKa: input.name.ka,
+        nameEn: input.name.en,
+        nameRu: input.name.ru,
+        slug: input.slug,
+        metaTitle: input.metaTitle ?? null,
+        metaDescription: input.metaDescription ?? null,
+        descriptionKa: input.descriptionKa ?? null,
+        descriptionEn: input.descriptionEn ?? null,
+        descriptionRu: input.descriptionRu ?? null,
+      }),
+    "slug",
+    "ეს slug უკვე გამოყენებულია",
+  );
 
   if (attributeWriteData.length > 0) {
     await productsRepository.replaceAttributeValues(row.id, attributeWriteData);
@@ -793,19 +799,24 @@ export async function updateProduct(id: number, input: UpdateProductInput) {
     await productsRepository.replaceAttributeValues(id, attributeWriteData);
   }
 
-  await productsRepository.update(id, {
-    ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
-    ...(input.productBrandId !== undefined ? { productBrandId: input.productBrandId } : {}),
-    ...(input.name !== undefined
-      ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
-      : {}),
-    ...(input.slug !== undefined ? { slug: input.slug } : {}),
-    ...(input.metaTitle !== undefined ? { metaTitle: input.metaTitle } : {}),
-    ...(input.metaDescription !== undefined ? { metaDescription: input.metaDescription } : {}),
-    ...(input.descriptionKa !== undefined ? { descriptionKa: input.descriptionKa } : {}),
-    ...(input.descriptionEn !== undefined ? { descriptionEn: input.descriptionEn } : {}),
-    ...(input.descriptionRu !== undefined ? { descriptionRu: input.descriptionRu } : {}),
-  });
+  await runUniqueCheckedWrite(
+    () =>
+      productsRepository.update(id, {
+        ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
+        ...(input.productBrandId !== undefined ? { productBrandId: input.productBrandId } : {}),
+        ...(input.name !== undefined
+          ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
+          : {}),
+        ...(input.slug !== undefined ? { slug: input.slug } : {}),
+        ...(input.metaTitle !== undefined ? { metaTitle: input.metaTitle } : {}),
+        ...(input.metaDescription !== undefined ? { metaDescription: input.metaDescription } : {}),
+        ...(input.descriptionKa !== undefined ? { descriptionKa: input.descriptionKa } : {}),
+        ...(input.descriptionEn !== undefined ? { descriptionEn: input.descriptionEn } : {}),
+        ...(input.descriptionRu !== undefined ? { descriptionRu: input.descriptionRu } : {}),
+      }),
+    "slug",
+    "ეს slug უკვე გამოყენებულია",
+  );
 
   return getProduct(id);
 }

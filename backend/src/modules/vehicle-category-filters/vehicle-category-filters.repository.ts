@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma.js";
+import { withNextSortOrderLock } from "../../lib/sortOrder.js";
 import type {
   VehicleCategoryFilterType,
   VehicleSpecField,
@@ -17,7 +18,6 @@ type VehicleCategoryFilterWriteData = {
   categoryId: number;
   filterType: VehicleCategoryFilterType;
   specField?: VehicleSpecField | null;
-  sortOrder?: number;
 };
 
 export const vehicleCategoryFiltersRepository = {
@@ -36,16 +36,36 @@ export const vehicleCategoryFiltersRepository = {
     return prisma.vehicleCategoryFilterConfig.findUnique({ where: { id }, include });
   },
 
-  findByCategoryAndType(categoryId: number, filterType: VehicleCategoryFilterType) {
-    return prisma.vehicleCategoryFilterConfig.findFirst({ where: { categoryId, filterType } });
+  // categoryIds is [categoryId, ...ancestorIds] — see
+  // category-filters.repository.ts's identical findByCategoryAndType for
+  // why the duplicate check has to span the whole ancestor chain, not just
+  // the exact category being written to.
+  findByCategoryAndType(categoryIds: number[], filterType: VehicleCategoryFilterType) {
+    return prisma.vehicleCategoryFilterConfig.findFirst({
+      where: { categoryId: { in: categoryIds }, filterType },
+    });
   },
 
-  findByCategoryAndSpecField(categoryId: number, specField: VehicleSpecField) {
-    return prisma.vehicleCategoryFilterConfig.findFirst({ where: { categoryId, specField } });
+  findByCategoryAndSpecField(categoryIds: number[], specField: VehicleSpecField) {
+    return prisma.vehicleCategoryFilterConfig.findFirst({
+      where: { categoryId: { in: categoryIds }, specField },
+    });
   },
 
+  // sortOrder is computed here, not accepted from the caller — see
+  // category-filters.repository.ts's create for the full rationale (same
+  // client-computed-race issue, same fix, same categoryId-scoped lock).
   create(data: VehicleCategoryFilterWriteData) {
-    return prisma.vehicleCategoryFilterConfig.create({ data, include });
+    return withNextSortOrderLock(`VehicleCategoryFilterConfig:${data.categoryId}`, async (tx) => {
+      const { _max } = await tx.vehicleCategoryFilterConfig.aggregate({
+        where: { categoryId: data.categoryId },
+        _max: { sortOrder: true },
+      });
+      return tx.vehicleCategoryFilterConfig.create({
+        data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 },
+        include,
+      });
+    });
   },
 
   updateSortOrder(id: number, sortOrder: number) {

@@ -100,12 +100,10 @@ export function VehicleCategoryFiltersManager({ categories }: { categories: Cate
 
     setAdding(true);
     try {
-      const maxSortOrder = filters.reduce((max, filter) => Math.max(max, filter.sortOrder), -1);
       await createVehicleCategoryFilter({
         categoryId: Number(categoryId),
         filterType: newFilterType as VehicleCategoryFilterType,
         specField: newFilterType === "SPEC" ? (newSpecField as VehicleSpecField) : undefined,
-        sortOrder: maxSortOrder + 1,
       });
       toast.success("ფილტრი დაემატა");
       setNewFilterType("");

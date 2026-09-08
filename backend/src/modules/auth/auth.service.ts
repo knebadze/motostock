@@ -14,7 +14,11 @@ import { ROLES, type RoleName } from "../../lib/roles.js";
 import { usersRepository } from "../users/users.repository.js";
 import { rolesRepository } from "../roles/roles.repository.js";
 import { runWithAccountLockoutGuard, recordAuthEvent } from "../fraud/fraud.service.js";
-import { getResetTokenTtlMinutes, getVerificationTokenTtlHours } from "../settings/settings.service.js";
+import {
+  getResetTokenTtlMinutes,
+  getVerificationTokenTtlHours,
+  getSessionAbsoluteTtlDays,
+} from "../settings/settings.service.js";
 import { passwordResetTokenRepository } from "./password-reset-token.repository.js";
 import { emailVerificationTokenRepository } from "./email-verification-token.repository.js";
 import { sessionRepository } from "./session.repository.js";
@@ -279,4 +283,34 @@ export async function resetPassword(
     sessionId: session.id,
   });
   return { user: toSafeUser(user), token };
+}
+
+// Three tables with the same shape of gap: each has a well-defined point
+// past which a row can *never* be used again (Session — see its model
+// comment: "harmless dead weight, not a bug" once past the JWT's absolute
+// TTL cap; the two token tables — rejected once past their own expiresAt,
+// see verifyEmail/resetPassword above), but nothing was ever sweeping them.
+// Harmless individually, but all three only grow forever otherwise — same
+// missing-retention-policy class VisitorPresence/VisitorVisit had before
+// their own prune job. `createdAt` (Session's immutable loginAt), not
+// lastSeenAt, is the safe Session cutoff: once now - createdAt exceeds the
+// absolute TTL cap, isSessionExpiredByAbsoluteCap permanently rejects that
+// token regardless of how recently it was used.
+export async function pruneStaleAuthArtifacts(): Promise<{
+  sessionsDeleted: number;
+  passwordResetTokensDeleted: number;
+  emailVerificationTokensDeleted: number;
+}> {
+  const absoluteTtlDays = await getSessionAbsoluteTtlDays();
+  const sessionCutoff = new Date(Date.now() - absoluteTtlDays * 24 * 60 * 60 * 1000);
+
+  const [sessionsDeleted, passwordResetTokensDeleted, emailVerificationTokensDeleted] = await Promise.all(
+    [
+      sessionRepository.deleteCreatedBefore(sessionCutoff),
+      passwordResetTokenRepository.deleteExpired(),
+      emailVerificationTokenRepository.deleteExpired(),
+    ],
+  );
+
+  return { sessionsDeleted, passwordResetTokensDeleted, emailVerificationTokensDeleted };
 }

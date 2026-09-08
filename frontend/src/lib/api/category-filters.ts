@@ -30,7 +30,6 @@ export type CategoryFilterInput = {
   categoryId: number;
   filterType: CategoryFilterType;
   attributeId?: number | null;
-  sortOrder?: number;
 };
 
 export async function listCategoryFilters(categoryId: number): Promise<CategoryFilter[]> {

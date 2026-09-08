@@ -1,4 +1,5 @@
 import { Prisma } from "../generated/prisma/index.js";
+import { ApiError } from "./ApiError.js";
 
 export function isForeignKeyViolation(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003";
@@ -38,4 +39,31 @@ function p2002ConstraintName(error: unknown): string | null {
 // constraint name at every call site.
 export function isUniqueConstraintViolation(error: unknown, fieldNameHint: string): boolean {
   return p2002ConstraintName(error)?.includes(fieldNameHint) ?? false;
+}
+
+// Shared by every admin create/update whose target has a real DB unique
+// constraint (slug, code, key, ...) behind an earlier "is this available"
+// pre-check — closes the TOCTOU race between that read and this write: a
+// double-click before the submit button disables, or two admins acting on
+// the same value at once, can both pass the pre-check before either
+// commits. Without this, the loser hit a raw, uncaught P2002 (a bare 500)
+// instead of the same clean conflict response the pre-check already gives
+// the non-race case. First applied to lookups.service.ts/banks.service.ts;
+// extracted here once the identical pattern turned up in ~10 more modules
+// (order-statuses, products, categories, brands, models, product-brands,
+// attribute-options, promo-codes, product-fitment, product-buy-together).
+export async function runUniqueCheckedWrite<T>(
+  write: () => Promise<T>,
+  fieldNameHint: string,
+  conflictMessage: string,
+  statusCode = 409,
+): Promise<T> {
+  try {
+    return await write();
+  } catch (error) {
+    if (isUniqueConstraintViolation(error, fieldNameHint)) {
+      throw new ApiError(statusCode, conflictMessage);
+    }
+    throw error;
+  }
 }

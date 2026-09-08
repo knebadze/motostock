@@ -7,7 +7,7 @@ import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import {
   deleteOrderStatus,
   listOrderStatuses,
-  updateOrderStatusItem,
+  moveOrderStatus,
   type OrderStatusItem,
 } from "@/lib/api/order-statuses";
 import { ApiRequestError } from "@/lib/api/client";
@@ -96,10 +96,12 @@ export function OrderStatusesManager({ initialItems }: { initialItems: OrderStat
     setItems(reordered.sort((a, b) => a.sortOrder - b.sortOrder));
 
     try {
-      await Promise.all([
-        updateOrderStatusItem(item.id, { sortOrder: target.sortOrder }),
-        updateOrderStatusItem(target.id, { sortOrder: item.sortOrder }),
-      ]);
+      // One request, swapped atomically in one DB transaction on the
+      // backend (see moveOrderStatus) — not two independent PATCHes, which
+      // had no shared transaction and could leave both rows with the same
+      // sortOrder if the second request failed after the first succeeded.
+      const updated = await moveOrderStatus(item.id, direction);
+      setItems([...updated].sort((a, b) => a.sortOrder - b.sortOrder));
     } catch (error) {
       setItems(previous);
       const message =

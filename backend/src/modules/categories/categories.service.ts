@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { applyCategoryAdminFilters } from "../filters/category/category-filter-registry.js";
@@ -122,17 +123,22 @@ export async function createCategory(input: CreateCategoryInput) {
     await assertParentExists(input.parentId);
   }
 
-  const category = await categoriesRepository.create({
-    nameKa: input.name.ka,
-    nameEn: input.name.en,
-    nameRu: input.name.ru,
-    slug: input.slug,
-    parentId: input.parentId ?? null,
-    sortOrder: input.sortOrder ?? 0,
-    ...(input.lowStockBadgeEnabled !== undefined
-      ? { lowStockBadgeEnabled: input.lowStockBadgeEnabled }
-      : {}),
-  });
+  const category = await runUniqueCheckedWrite(
+    () =>
+      categoriesRepository.create({
+        nameKa: input.name.ka,
+        nameEn: input.name.en,
+        nameRu: input.name.ru,
+        slug: input.slug,
+        parentId: input.parentId ?? null,
+        sortOrder: input.sortOrder ?? 0,
+        ...(input.lowStockBadgeEnabled !== undefined
+          ? { lowStockBadgeEnabled: input.lowStockBadgeEnabled }
+          : {}),
+      }),
+    "slug",
+    "ეს slug უკვე გამოყენებულია",
+  );
 
   return toResponse(category);
 }
@@ -155,17 +161,22 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
     await assertNoCycle(id, input.parentId);
   }
 
-  const category = await categoriesRepository.update(id, {
-    ...(input.name !== undefined
-      ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
-      : {}),
-    ...(input.slug !== undefined ? { slug: input.slug } : {}),
-    ...(input.parentId !== undefined ? { parentId: input.parentId } : {}),
-    ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
-    ...(input.lowStockBadgeEnabled !== undefined
-      ? { lowStockBadgeEnabled: input.lowStockBadgeEnabled }
-      : {}),
-  });
+  const category = await runUniqueCheckedWrite(
+    () =>
+      categoriesRepository.update(id, {
+        ...(input.name !== undefined
+          ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
+          : {}),
+        ...(input.slug !== undefined ? { slug: input.slug } : {}),
+        ...(input.parentId !== undefined ? { parentId: input.parentId } : {}),
+        ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+        ...(input.lowStockBadgeEnabled !== undefined
+          ? { lowStockBadgeEnabled: input.lowStockBadgeEnabled }
+          : {}),
+      }),
+    "slug",
+    "ეს slug უკვე გამოყენებულია",
+  );
 
   return toResponse(category);
 }

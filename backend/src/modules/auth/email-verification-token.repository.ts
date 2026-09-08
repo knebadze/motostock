@@ -23,4 +23,14 @@ export const emailVerificationTokenRepository = {
       data: { usedAt: new Date() },
     });
   },
+
+  // verifyEmail already rejects any token whose expiresAt is in the past
+  // (see auth.service.ts), so a row past that point can never be claimed —
+  // safe to delete outright instead of leaving it to accumulate forever.
+  async deleteExpired(): Promise<number> {
+    const { count } = await prisma.emailVerificationToken.deleteMany({
+      where: { expiresAt: { lt: new Date() } },
+    });
+    return count;
+  },
 };

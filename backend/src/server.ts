@@ -5,6 +5,7 @@ import { logger } from "./lib/logger.js";
 import { isFinaConfigured, runSync } from "./modules/fina-sync/fina-sync.service.js";
 import { getFinaSyncIntervalMinutes } from "./modules/settings/settings.service.js";
 import { pruneStaleVisitorData } from "./modules/visitors/visitors.service.js";
+import { pruneStaleAuthArtifacts } from "./modules/auth/auth.service.js";
 
 const server = app.listen(env.PORT, () => {
   logger.info(`Server listening on http://localhost:${env.PORT}`);
@@ -34,18 +35,27 @@ if (isFinaConfigured()) {
   logger.info("FINA scheduled sync enabled (interval configurable in Settings)");
 }
 
-// Bounds VisitorPresence/VisitorVisit growth (see visitors.service.ts's
-// pruneStaleVisitorData) — daily is plenty, since neither table needs
-// pruning more precisely than that. A fixed setInterval is fine here
-// (unlike the FINA timer above): unlike finaSyncIntervalMinutes, this
-// interval isn't admin-configurable, so there's no "pick up a changed
+// Bounds the growth of every table with no other retention policy
+// (VisitorPresence/VisitorVisit — see visitors.service.ts's
+// pruneStaleVisitorData; Session/PasswordResetToken/EmailVerificationToken —
+// see auth.service.ts's pruneStaleAuthArtifacts) — daily is plenty, since
+// none of them need pruning more precisely than that. A fixed setInterval is
+// fine here (unlike the FINA timer above): unlike finaSyncIntervalMinutes,
+// this interval isn't admin-configurable, so there's no "pick up a changed
 // Settings value" requirement to justify the self-rescheduling setTimeout
 // pattern.
-const VISITOR_PRUNE_INTERVAL_MS = 24 * 60 * 60 * 1000;
-const visitorPruneTimer = setInterval(() => {
+const DAILY_PRUNE_INTERVAL_MS = 24 * 60 * 60 * 1000;
+function runDailyPrune() {
   pruneStaleVisitorData().catch((err: unknown) => logger.error({ err }, "Visitor data pruning failed"));
-}, VISITOR_PRUNE_INTERVAL_MS);
-visitorPruneTimer.unref();
+  pruneStaleAuthArtifacts().catch((err: unknown) => logger.error({ err }, "Auth artifact pruning failed"));
+}
+// Also run once immediately on boot, not just on the interval — this app
+// deploys far more often than every 24h, so a plain setInterval alone would
+// never actually fire in practice (each deploy tears down the process and
+// starts a fresh interval before the previous one's first tick).
+runDailyPrune();
+const dailyPruneTimer = setInterval(runDailyPrune, DAILY_PRUNE_INTERVAL_MS);
+dailyPruneTimer.unref();
 
 // Docker Compose sends SIGTERM (then SIGKILL after its ~10s grace period) on
 // every `stop`/`restart`/recreate — i.e. on every deploy, not just a rare
@@ -62,7 +72,7 @@ function shutdown(signal: string) {
 
   finaSyncStopped = true;
   if (finaSyncTimer) clearTimeout(finaSyncTimer);
-  clearInterval(visitorPruneTimer);
+  clearInterval(dailyPruneTimer);
 
   const forceExit = setTimeout(() => {
     logger.error("Graceful shutdown timed out, forcing exit");

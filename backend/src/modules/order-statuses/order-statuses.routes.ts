@@ -8,6 +8,7 @@ import { ROLES } from "../../lib/roles.js";
 import * as orderStatusesController from "./order-statuses.controller.js";
 import {
   createOrderStatusSchema,
+  moveOrderStatusSchema,
   orderStatusIdParamSchema,
   orderStatusResponseSchema,
   updateOrderStatusItemSchema,
@@ -27,6 +28,12 @@ orderStatusesRouter.patch(
   validate(orderStatusIdParamSchema, "params"),
   validate(updateOrderStatusItemSchema),
   orderStatusesController.update,
+);
+orderStatusesRouter.post(
+  "/:id/move",
+  validate(orderStatusIdParamSchema, "params"),
+  validate(moveOrderStatusSchema),
+  orderStatusesController.move,
 );
 orderStatusesRouter.delete(
   "/:id",
@@ -75,6 +82,24 @@ registry.registerPath({
     200: { description: "Updated", content: { "application/json": { schema: itemResponse } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
     409: { description: "Key already in use", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/order-statuses/{id}/move",
+  tags: ["OrderStatuses"],
+  summary:
+    "Move a status up/down relative to its neighbor, swapping their sortOrder atomically in one transaction — the safe alternative to two independent PATCH /order-statuses/{id} calls, which can't swap two rows without a moment where the update isn't atomic",
+  security,
+  request: {
+    params: orderStatusIdParamSchema,
+    body: { content: { "application/json": { schema: moveOrderStatusSchema } } },
+  },
+  responses: {
+    200: { description: "Full status list, freshly re-ordered", content: { "application/json": { schema: listResponse } } },
+    400: { description: "Already at that end of the list", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 

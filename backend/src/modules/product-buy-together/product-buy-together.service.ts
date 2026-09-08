@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { productsRepository } from "../products/products.repository.js";
 import { toResponse as toProductResponse } from "../products/products.service.js";
 import { productFitmentRepository } from "../product-fitment/product-fitment.repository.js";
@@ -166,10 +167,11 @@ export async function createProductBuyTogether(
 
   await assertOverlappingCompatibility(productId, input.relatedProductId);
 
-  const row = await productBuyTogetherRepository.create({
-    productId,
-    relatedProductId: input.relatedProductId,
-  });
+  const row = await runUniqueCheckedWrite(
+    () => productBuyTogetherRepository.create({ productId, relatedProductId: input.relatedProductId }),
+    "relatedProductId",
+    "ეს პროდუქტი უკვე დამატებულია",
+  );
   return toResponse(row);
 }
 

@@ -50,21 +50,37 @@ const ACCOUNT_LOCKOUT_LOCK_NAMESPACE = 738291645;
 // of them pass the threshold check regardless of how large the burst is —
 // the lockout only limits *sequential* attempt rate, not concurrent ones.
 // This closes that the same way orders.repository.ts's promo-code
-// usage-recheck does: a blocking advisory lock scoped to this one email
+// usage-recheck does: an advisory lock scoped to this one email
 // (`hashtext(email)` folds the string into the int4 key advisory locks
 // need), held for the whole count-check-then-record critical section, so a
-// second concurrent attempt against the *same* email is forced to wait for
-// the first to finish and commit before it re-counts. Different emails
-// never contend with each other — this doesn't serialize logins globally,
-// only repeated attempts against one account.
+// second concurrent attempt against the *same* email can't re-count before
+// the first has committed. Different emails never contend with each other —
+// this doesn't serialize logins globally, only repeated attempts against
+// one account.
 //
-// `attempt` does the actual credential check (bcrypt compare) — it runs
-// while the lock is held, which is intentional: that's exactly the
-// operation whose outcome needs to be recorded before the lock releases.
-// Bcrypt (~100-300ms) comfortably fits Prisma's default interactive-
-// transaction timeout, and this only serializes repeat attempts on one
-// account, never blocks unrelated logins.
-type LockoutOutcome<T> = { kind: "success"; value: T } | { kind: "failure"; locked: boolean };
+// pg_try_advisory_xact_lock (non-blocking), not pg_advisory_xact_lock
+// (blocking) — this used to block, holding a checked-out pool connection
+// for however long it queued behind every other concurrent attempt against
+// the same email. A single attacker could send a burst of concurrent
+// requests for one (even fabricated) email — comfortably within
+// loginRateLimit's own per-IP budget — and each one would grab a pool
+// connection and then sit blocked in the queue, exhausting the whole app's
+// connection pool (Postgres's/node-postgres's small default) and starving
+// every *other* endpoint, not just login, for as long as the burst lasted.
+// Non-blocking means a request that loses the race never waits while
+// holding a connection: it fails the lock attempt immediately, releases
+// its connection right away, and the caller gets a fast "try again" instead
+// of queuing.
+//
+// `attempt` does the actual credential check (bcrypt compare) — it only
+// runs once the lock is actually held, which is intentional: that's
+// exactly the operation whose outcome needs to be recorded before the lock
+// releases. Bcrypt (~100-300ms) comfortably fits Prisma's default
+// interactive-transaction timeout.
+type LockoutOutcome<T> =
+  | { kind: "success"; value: T }
+  | { kind: "failure"; locked: boolean }
+  | { kind: "busy" };
 
 export async function runWithAccountLockoutGuard<T>(
   email: string,
@@ -88,7 +104,12 @@ export async function runWithAccountLockoutGuard<T>(
   // lets the transaction commit, then the caller decides whether to throw
   // *after* that commit has actually happened.
   const outcome = await prisma.$transaction(async (tx): Promise<LockoutOutcome<T>> => {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${ACCOUNT_LOCKOUT_LOCK_NAMESPACE}, hashtext(${email}))`;
+    const [{ locked: acquired }] = await tx.$queryRaw<{ locked: boolean }[]>`
+      SELECT pg_try_advisory_xact_lock(${ACCOUNT_LOCKOUT_LOCK_NAMESPACE}, hashtext(${email})) AS locked
+    `;
+    if (!acquired) {
+      return { kind: "busy" };
+    }
 
     const recentFailures = await tx.authEvent.count({
       where: { type: "LOGIN_FAILURE", email, createdAt: { gte: since } },
@@ -118,6 +139,13 @@ export async function runWithAccountLockoutGuard<T>(
 
   if (outcome.kind === "success") {
     return outcome.value;
+  }
+  if (outcome.kind === "busy") {
+    throw new ApiError(
+      429,
+      "ამ ანგარიშზე უკვე მიმდინარეობს შესვლის მცდელობა — სცადეთ ცოტა ხანში",
+      "LOGIN_ATTEMPT_IN_PROGRESS",
+    );
   }
   if (outcome.locked) {
     throw new ApiError(429, "ძალიან ბევრი წარუმატებელი მცდელობა — სცადეთ მოგვიანებით", "ACCOUNT_LOCKED");
@@ -212,14 +240,9 @@ export async function listSuspiciousLoginActivity() {
   const since = new Date(Date.now() - windowMinutes * 60 * 1000);
 
   const [byEmail, byIp] = await Promise.all([
-    fraudRepository.countFailedLoginsByEmail(since),
-    fraudRepository.countFailedLoginsByIp(since),
+    fraudRepository.countFailedLoginsByEmail(since, threshold),
+    fraudRepository.countFailedLoginsByIp(since, threshold),
   ]);
 
-  return {
-    windowMinutes,
-    threshold,
-    byEmail: byEmail.filter((row) => row.count >= threshold),
-    byIp: byIp.filter((row) => row.count >= threshold),
-  };
+  return { windowMinutes, threshold, byEmail, byIp };
 }

@@ -2,6 +2,7 @@ import { ApiError } from "../../lib/ApiError.js";
 import { isMailerConfigured, sendTemplatedEmail } from "../../lib/mailer.js";
 import { escapeHtml } from "../../lib/email-shell.js";
 import { logger } from "../../lib/logger.js";
+import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { emailTemplatesRepository } from "./email-templates.repository.js";
 import type { UpdateEmailTemplateInput } from "./email-templates.schema.js";
 import type { EmailTemplateKey } from "../../generated/prisma/index.js";
@@ -99,7 +100,23 @@ async function ensureBootstrapped(): Promise<void> {
     if (existing) continue;
 
     const defaults = DEFAULTS[key];
-    await emailTemplatesRepository.create({ key, ...defaults });
+    try {
+      await emailTemplatesRepository.create({ key, ...defaults });
+    } catch (error) {
+      // Two concurrent calls (e.g. two orders placed at nearly the same
+      // moment right after a fresh deploy, before any EmailTemplate row
+      // exists yet — sendEmailTemplate below calls this on every send, not
+      // just admin-panel loads) can both pass the findByKey check above
+      // before either commits. EmailTemplateKey is @unique, so the loser
+      // used to hit a raw, uncaught P2002 here — worse than the same race
+      // elsewhere, since sendEmailTemplate's outer try/catch would swallow
+      // it and just log, silently never sending that customer's email with
+      // no retry. A unique-violation here just means the row now exists
+      // (created by the winner), so it's a safe no-op.
+      if (!isUniqueConstraintViolation(error, "key")) {
+        throw error;
+      }
+    }
   }
 }
 

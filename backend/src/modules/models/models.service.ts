@@ -1,5 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
-import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { isForeignKeyViolation, runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { brandsRepository } from "../brands/brands.repository.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { modelsRepository } from "./models.repository.js";
@@ -74,12 +74,17 @@ export async function createModel(input: CreateModelInput) {
     throw new ApiError(409, "ამ მარკაზე ეს slug უკვე გამოყენებულია");
   }
 
-  const model = await modelsRepository.create({
-    brandId: input.brandId,
-    categoryId: input.categoryId,
-    name: input.name,
-    slug: input.slug,
-  });
+  const model = await runUniqueCheckedWrite(
+    () =>
+      modelsRepository.create({
+        brandId: input.brandId,
+        categoryId: input.categoryId,
+        name: input.name,
+        slug: input.slug,
+      }),
+    "slug",
+    "ამ მარკაზე ეს slug უკვე გამოყენებულია",
+  );
   return toResponse(model);
 }
 
@@ -104,12 +109,17 @@ export async function updateModel(id: number, input: UpdateModelInput) {
     }
   }
 
-  const model = await modelsRepository.update(id, {
-    ...(input.brandId !== undefined ? { brandId: input.brandId } : {}),
-    ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
-    ...(input.name !== undefined ? { name: input.name } : {}),
-    ...(input.slug !== undefined ? { slug: input.slug } : {}),
-  });
+  const model = await runUniqueCheckedWrite(
+    () =>
+      modelsRepository.update(id, {
+        ...(input.brandId !== undefined ? { brandId: input.brandId } : {}),
+        ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.slug !== undefined ? { slug: input.slug } : {}),
+      }),
+    "slug",
+    "ამ მარკაზე ეს slug უკვე გამოყენებულია",
+  );
   return toResponse(model);
 }
 

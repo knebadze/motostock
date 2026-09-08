@@ -23,16 +23,22 @@ export const createOrderStatusSchema = registry.register(
 );
 export type CreateOrderStatusInput = z.infer<typeof createOrderStatusSchema>;
 
-// sortOrder is edited via the up/down move actions (two paired PATCH
-// calls swapping adjacent rows' values), same as HomepageSection — not a
-// free-typed field in the create/edit form.
+// sortOrder is edited via the up/down move action (moveOrderStatusSchema
+// below — one atomic swap, same as HomepageSection's moveHomepageSection),
+// not a free-typed field in the create/edit form.
 export const updateOrderStatusItemSchema = registry.register(
   "UpdateOrderStatusItemInput",
-  createOrderStatusSchema.partial().extend({
-    sortOrder: z.int().optional(),
-  }),
+  createOrderStatusSchema.partial(),
 );
 export type UpdateOrderStatusItemInput = z.infer<typeof updateOrderStatusItemSchema>;
+
+export const moveOrderStatusSchema = registry.register(
+  "MoveOrderStatusInput",
+  z.object({
+    direction: z.enum(["up", "down"]),
+  }),
+);
+export type MoveOrderStatusInput = z.infer<typeof moveOrderStatusSchema>;
 
 export const orderStatusResponseSchema = registry.register(
   "OrderStatusItem",

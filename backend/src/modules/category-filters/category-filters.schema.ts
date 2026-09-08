@@ -12,7 +12,6 @@ export const createCategoryFilterSchema = registry.register(
     categoryId: z.int().positive(),
     filterType: categoryFilterTypeSchema,
     attributeId: z.int().positive().nullable().optional(),
-    sortOrder: z.int().optional(),
   }),
 );
 export type CreateCategoryFilterInput = z.infer<typeof createCategoryFilterSchema>;

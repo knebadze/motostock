@@ -106,12 +106,10 @@ export function CategoryFiltersManager({ categories }: { categories: Category[] 
 
     setAdding(true);
     try {
-      const maxSortOrder = filters.reduce((max, filter) => Math.max(max, filter.sortOrder), -1);
       await createCategoryFilter({
         categoryId: Number(categoryId),
         filterType: newFilterType as CategoryFilterType,
         attributeId: newFilterType === "ATTRIBUTE" ? Number(newAttributeId) : undefined,
-        sortOrder: maxSortOrder + 1,
       });
       toast.success("ფილტრი დაემატა");
       setNewFilterType("");

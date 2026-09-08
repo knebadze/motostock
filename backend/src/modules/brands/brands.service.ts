@@ -1,5 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
-import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { isForeignKeyViolation, runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { brandsRepository } from "./brands.repository.js";
 import type { CreateBrandInput, UpdateBrandInput } from "./brands.schema.js";
@@ -43,10 +43,11 @@ export async function createBrand(input: CreateBrandInput) {
     throw new ApiError(409, "ეს slug უკვე გამოყენებულია");
   }
 
-  const brand = await brandsRepository.create({
-    name: input.name,
-    slug: input.slug,
-  });
+  const brand = await runUniqueCheckedWrite(
+    () => brandsRepository.create({ name: input.name, slug: input.slug }),
+    "slug",
+    "ეს slug უკვე გამოყენებულია",
+  );
   return toResponse(brand);
 }
 
@@ -63,10 +64,15 @@ export async function updateBrand(id: number, input: UpdateBrandInput) {
     }
   }
 
-  const brand = await brandsRepository.update(id, {
-    ...(input.name !== undefined ? { name: input.name } : {}),
-    ...(input.slug !== undefined ? { slug: input.slug } : {}),
-  });
+  const brand = await runUniqueCheckedWrite(
+    () =>
+      brandsRepository.update(id, {
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.slug !== undefined ? { slug: input.slug } : {}),
+      }),
+    "slug",
+    "ეს slug უკვე გამოყენებულია",
+  );
   return toResponse(brand);
 }
 

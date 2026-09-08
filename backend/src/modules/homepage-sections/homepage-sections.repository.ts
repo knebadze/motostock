@@ -31,6 +31,10 @@ export const homepageSectionsRepository = {
     return prisma.homepageSection.findUnique({ where: { id } });
   },
 
+  findByType(type: HomepageSectionType) {
+    return prisma.homepageSection.findUnique({ where: { type } });
+  },
+
   // Swaps two rows' sortOrder in one transaction — used by
   // homepage-sections.service.ts's moveHomepageSection (the admin's
   // move-up/move-down control) so the pair can never be observed (or left,

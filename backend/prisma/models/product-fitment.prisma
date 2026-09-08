@@ -26,6 +26,14 @@ enum ProductFitmentRuleType {
 // whenever a new catalog entry is added later. A product's actual compatible
 // set is the union of its ProductFitment rows and everything matched by its
 // ProductFitmentRule rows — individual picks still work exactly as before.
+//
+// Uniqueness per rule type is enforced by 3 partial unique indexes added in
+// migration 20260908110000 (one CATEGORY-type rule per product+category, one
+// SPEC-type rule per product+specField+specLookupItemId, one ALL-type rule
+// per product) — migration-SQL-only, same reasoning as the owner-XOR CHECK
+// constraints: Prisma's schema DSL has no partial/filtered unique index
+// syntax, and a single plain @@unique can't express 3 different keys
+// coexisting in one table with mostly-nullable columns.
 model ProductFitmentRule {
   id        Int                    @id @default(autoincrement())
   productId Int
