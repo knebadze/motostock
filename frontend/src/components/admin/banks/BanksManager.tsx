@@ -121,13 +121,13 @@ export function BanksManager({ initialBanks }: { initialBanks: Bank[] }) {
                 )}
               </div>
 
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-mono font-medium text-muted-foreground">
                   {bank.key}
                 </span>
-                <p className="mt-1 font-semibold text-foreground">{bank.name.ka}</p>
+                <p className="mt-1 truncate font-semibold text-foreground">{bank.name.ka}</p>
                 {(bank.supportsInstallment || bank.supportsSplitPayment) && (
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
                     {[
                       bank.supportsInstallment ? "განვადება" : null,
                       bank.supportsSplitPayment ? "ნაწილ-ნაწილ გადახდა" : null,
@@ -138,7 +138,11 @@ export function BanksManager({ initialBanks }: { initialBanks: Bank[] }) {
                 )}
               </div>
 
-              <Toggle checked={bank.isActive} onChange={(checked) => handleToggleActive(bank, checked)} />
+              <Toggle
+                checked={bank.isActive}
+                onChange={(checked) => handleToggleActive(bank, checked)}
+                label={`${bank.name.ka} — აქტიურობა`}
+              />
 
               <div className="flex gap-2">
                 <button

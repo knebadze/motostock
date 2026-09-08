@@ -24,8 +24,8 @@ export async function listDiscounts(
   req: Request<unknown, unknown, unknown, ListProductDiscountHistoryQuery>,
   res: Response,
 ) {
-  const items = await bulkProductDiscountsService.listProductDiscountHistory(req.query);
-  res.status(200).json({ items });
+  const result = await bulkProductDiscountsService.listProductDiscountHistory(req.query);
+  res.status(200).json(result);
 }
 
 export async function apply(

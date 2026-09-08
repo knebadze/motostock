@@ -9,6 +9,7 @@ import { resolveMediaUrl } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import { listMyWishlist, removeFromWishlist, type WishlistItem } from "@/lib/api/wishlist";
+import { attachMenuKeyboardNav } from "@/lib/menuKeyboardNav";
 
 const PREVIEW_LIMIT = 4;
 
@@ -47,6 +48,7 @@ export function WishlistDropdown({ initialCount }: { initialCount: number }) {
   const [items, setItems] = useState<WishlistItem[] | null>(null);
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -57,6 +59,19 @@ export function WishlistDropdown({ initialCount }: { initialCount: number }) {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  // arrowNav: false — this popover mixes links/images/a remove button under
+  // one panel, not a list of role="menuitem" commands, so only Escape-to-
+  // close applies (see attachMenuKeyboardNav's own comment for why the
+  // other 3 header dropdowns get the same treatment while UserMenu/Header's
+  // account menu get full arrow-key nav).
+  useEffect(() => {
+    if (!open || !containerRef.current) return;
+    return attachMenuKeyboardNav(containerRef.current, () => setOpen(false), {
+      triggerEl: triggerRef.current,
+      arrowNav: false,
+    });
   }, [open]);
 
   async function handleToggle() {
@@ -95,10 +110,11 @@ export function WishlistDropdown({ initialCount }: { initialCount: number }) {
   return (
     <div ref={containerRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={handleToggle}
         aria-label={tHeader("wishlist")}
-        aria-haspopup="menu"
+        aria-haspopup="true"
         aria-expanded={open}
         className="relative flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9"
       >
@@ -123,7 +139,6 @@ export function WishlistDropdown({ initialCount }: { initialCount: number }) {
 
       {open && (
         <div
-          role="menu"
           className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-lg"
         >
           {loading ? (

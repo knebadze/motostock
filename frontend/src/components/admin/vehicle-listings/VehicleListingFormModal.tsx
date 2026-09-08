@@ -307,7 +307,7 @@ export function VehicleListingFormModal({
             გამორთვისას განცხადება საიტზე მომხმარებელს არ უჩანება, თუმცა ბაზაში რჩება.
           </p>
         </div>
-        <Toggle checked={isActive} onChange={setIsActive} />
+        <Toggle checked={isActive} onChange={setIsActive} label="აქტიურია" />
       </div>
     </>
   );

@@ -193,11 +193,29 @@ function toDiscountHistoryRow(row: DiscountHistoryRow) {
   };
 }
 
+// This admin history view merges with bulk-vehicle-listing-discounts'
+// identical history into one client-side-combined table (see
+// DiscountHistoryPanel.tsx), which is what a real server-paginated
+// (page/pageSize) API would have to coordinate across two independent
+// sources — disproportionately complex for what was, until now, an
+// unbounded "fetch every discount ever created" query. Capping at
+// DISCOUNT_HISTORY_MAX_ROWS (ordered newest-startDate-first, so the cap
+// only ever drops the OLDEST history, never anything currently active or
+// upcoming) closes the actual unbounded-growth concern without that
+// redesign; `truncated` tells the frontend to prompt for a narrower search
+// instead of silently hiding older rows with no indication.
+const DISCOUNT_HISTORY_MAX_ROWS = 500;
+
 export async function listProductDiscountHistory(query: ListProductDiscountHistoryQuery) {
-  const rows = await bulkProductDiscountsRepository.findAllDiscounts(query.search);
-  const items = rows.map(toDiscountHistoryRow);
-  if (!query.status) return items;
-  return items.filter((item) =>
-    query.status === "active" ? item.computedStatus === "ACTIVE" : item.computedStatus !== "ACTIVE",
-  );
+  const [rows, total] = await Promise.all([
+    bulkProductDiscountsRepository.findAllDiscounts(query.search, DISCOUNT_HISTORY_MAX_ROWS),
+    bulkProductDiscountsRepository.countAllDiscounts(query.search),
+  ]);
+  const allItems = rows.map(toDiscountHistoryRow);
+  const items = !query.status
+    ? allItems
+    : allItems.filter((item) =>
+        query.status === "active" ? item.computedStatus === "ACTIVE" : item.computedStatus !== "ACTIVE",
+      );
+  return { items, total, truncated: total > DISCOUNT_HISTORY_MAX_ROWS };
 }

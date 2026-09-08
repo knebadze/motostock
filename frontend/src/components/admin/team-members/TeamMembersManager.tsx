@@ -129,12 +129,16 @@ export function TeamMembersManager({
                 )}
               </div>
 
-              <div className="flex-1">
-                <p className="font-semibold text-foreground">{member.name.ka}</p>
-                <p className="text-sm text-muted-foreground">{member.role.ka}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold text-foreground">{member.name.ka}</p>
+                <p className="truncate text-sm text-muted-foreground">{member.role.ka}</p>
               </div>
 
-              <Toggle checked={member.isActive} onChange={(checked) => handleToggleActive(member, checked)} />
+              <Toggle
+                checked={member.isActive}
+                onChange={(checked) => handleToggleActive(member, checked)}
+                label={`${member.name.ka} — აქტიურობა`}
+              />
 
               <div className="flex gap-2">
                 <button

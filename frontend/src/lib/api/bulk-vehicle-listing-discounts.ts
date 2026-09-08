@@ -56,14 +56,22 @@ export type VehicleDiscountHistoryFilters = {
   search?: string;
 };
 
+export type VehicleDiscountHistoryResult = {
+  items: VehicleDiscountHistoryRow[];
+  total: number;
+  // True when the backend's fixed row cap cut off older history — see
+  // ProductDiscountHistoryResult's identical field.
+  truncated: boolean;
+};
+
 export async function listVehicleDiscountHistory(
   filters: VehicleDiscountHistoryFilters = {},
-): Promise<VehicleDiscountHistoryRow[]> {
-  const { data } = await apiClient.get<{ items: VehicleDiscountHistoryRow[] }>(
+): Promise<VehicleDiscountHistoryResult> {
+  const { data } = await apiClient.get<VehicleDiscountHistoryResult>(
     "/bulk-vehicle-listing-discounts/discounts",
     { params: { status: filters.status, search: filters.search || undefined } },
   );
-  return data.items;
+  return data;
 }
 
 export async function listBulkVehicleDiscountCandidates(

@@ -140,14 +140,18 @@ export function HeroSlidesManager({
                 )}
               </div>
 
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                   {TYPE_LABELS[slide.type]}
                 </span>
-                <p className="mt-1 font-semibold text-foreground">{slide.title.ka}</p>
+                <p className="mt-1 truncate font-semibold text-foreground">{slide.title.ka}</p>
               </div>
 
-              <Toggle checked={slide.isActive} onChange={(checked) => handleToggleActive(slide, checked)} />
+              <Toggle
+                checked={slide.isActive}
+                onChange={(checked) => handleToggleActive(slide, checked)}
+                label={`${slide.title.ka} — აქტიურობა`}
+              />
 
               <div className="flex gap-2">
                 <button

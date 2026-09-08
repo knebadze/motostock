@@ -120,17 +120,17 @@ export function ServiceTypesManager({ initialServiceTypes }: { initialServiceTyp
             onDrop={() => handleDrop(serviceType.id)}
             className="flex cursor-grab items-center gap-4 rounded-xl border border-border bg-card p-3 shadow-sm active:cursor-grabbing"
           >
-            <div className="flex-1">
-              <p className="font-semibold text-foreground">
-                {serviceType.name.ka}
+            <div className="min-w-0 flex-1">
+              <p className="flex items-baseline gap-2 font-semibold text-foreground">
+                <span className="min-w-0 truncate">{serviceType.name.ka}</span>
                 {serviceType.defaultPrice != null && (
-                  <span className="ml-2 font-normal text-muted-foreground">
+                  <span className="shrink-0 font-normal text-muted-foreground">
                     {formatPrice(serviceType.defaultPrice)}
                   </span>
                 )}
               </p>
               {(serviceType.hasPositionOption || serviceType.hasFilterOption) && (
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
                   {[
                     serviceType.hasPositionOption ? "პოზიცია (წინა/უკანა/ორივე)" : null,
                     serviceType.hasFilterOption ? "ფილტრიც შეიცვალა? (კი/არა)" : null,
@@ -144,6 +144,7 @@ export function ServiceTypesManager({ initialServiceTypes }: { initialServiceTyp
             <Toggle
               checked={serviceType.isActive}
               onChange={(checked) => handleToggleActive(serviceType, checked)}
+              label={`${serviceType.name.ka} — აქტიურობა`}
             />
 
             <div className="flex gap-2">

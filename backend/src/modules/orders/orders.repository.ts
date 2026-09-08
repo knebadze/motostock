@@ -128,6 +128,11 @@ export type PlaceOrderInput = {
   // whichever variant/listing rows this order's decrements actually drove
   // to zero stock.
   soldStatusId: number;
+  // The exact CartItem rows computeCheckoutTotals actually snapshotted into
+  // `items` above — see this function's own cartItem.deleteMany for why
+  // this must scope the post-order cart-clear instead of clearing every
+  // row the user owns.
+  cartItemIds: number[];
 };
 
 export const ordersRepository = {
@@ -381,12 +386,24 @@ export const ordersRepository = {
         }
       }
 
-      const { items, soldStatusId: _soldStatusId, ...orderData } = input;
+      const { items, soldStatusId: _soldStatusId, cartItemIds, ...orderData } = input;
       const order = await tx.order.create({ data: orderData });
       await tx.orderItem.createMany({
         data: items.map((item) => ({ ...item, orderId: order.id })),
       });
-      await tx.cartItem.deleteMany({ where: { userId: input.userId } });
+      // Scoped to exactly the cart rows this order's `items` were snapshotted
+      // from (see computeCheckoutTotals in orders.service.ts) — was
+      // `{ where: { userId: input.userId } }`, clearing the customer's
+      // *entire* cart regardless of what actually got ordered. Between that
+      // snapshot and this transaction committing there's a real window
+      // (resolveDelivery, resolveBank, two lookup queries, and — for a
+      // promo-code order — a *blocking* advisory-lock wait a few lines
+      // above), during which the customer could add something new in
+      // another tab; the old unscoped delete silently discarded it. The
+      // userId condition stays as defense-in-depth (these ids are already
+      // this user's own, from their own cart read) rather than the only
+      // guard.
+      await tx.cartItem.deleteMany({ where: { id: { in: cartItemIds }, userId: input.userId } });
 
       return tx.order.findUniqueOrThrow({ where: { id: order.id }, include: orderItemsInclude });
     });

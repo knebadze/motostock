@@ -10,6 +10,7 @@ import { triggerFinaSync } from "@/lib/api/fina-sync";
 import { ApiRequestError } from "@/lib/api/client";
 import { setKnownAuthState } from "@/lib/api/auth-state";
 import { formatShortName } from "@/lib/format";
+import { attachMenuKeyboardNav } from "@/lib/menuKeyboardNav";
 
 export function UserMenu({ userName }: { userName: string }) {
   const router = useRouter();
@@ -17,6 +18,7 @@ export function UserMenu({ userName }: { userName: string }) {
   const [clearingCache, setClearingCache] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Mounted only inside admin/(protected), which already hard-redirects
   // server-side when there's no authenticated admin — see auth-state.ts and
@@ -37,6 +39,13 @@ export function UserMenu({ userName }: { userName: string }) {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !containerRef.current) return;
+    return attachMenuKeyboardNav(containerRef.current, () => setOpen(false), {
+      triggerEl: triggerRef.current,
+    });
   }, [open]);
 
   async function handleLogout() {
@@ -83,6 +92,7 @@ export function UserMenu({ userName }: { userName: string }) {
   return (
     <div ref={containerRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"

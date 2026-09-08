@@ -10,6 +10,7 @@ import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import { getCartItemDisplay, recomputeCart } from "@/lib/cart-item-display";
 import { getMyCart, removeFromCart, updateCartItemQuantity, type Cart, type CartItem } from "@/lib/api/cart";
+import { attachMenuKeyboardNav } from "@/lib/menuKeyboardNav";
 
 const PREVIEW_LIMIT = 4;
 
@@ -24,6 +25,7 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
   const [loading, setLoading] = useState(false);
   const [pendingId, setPendingId] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -34,6 +36,15 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  // arrowNav: false — see WishlistDropdown's identical comment.
+  useEffect(() => {
+    if (!open || !containerRef.current) return;
+    return attachMenuKeyboardNav(containerRef.current, () => setOpen(false), {
+      triggerEl: triggerRef.current,
+      arrowNav: false,
+    });
   }, [open]);
 
   async function handleToggle() {
@@ -83,10 +94,11 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
   return (
     <div ref={containerRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={handleToggle}
         aria-label={tHeader("cart")}
-        aria-haspopup="menu"
+        aria-haspopup="true"
         aria-expanded={open}
         className="relative flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9"
       >
@@ -114,7 +126,6 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
 
       {open && (
         <div
-          role="menu"
           className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-lg"
         >
           {loading ? (

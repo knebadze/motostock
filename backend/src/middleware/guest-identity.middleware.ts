@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
-import { env } from "../config/env.js";
+import { COOKIE_SECURE } from "../lib/cookies.js";
 import { logger } from "../lib/logger.js";
 import { mergeGuestWishlistIntoUser } from "../modules/wishlist/wishlist.service.js";
 import { mergeGuestCartIntoUser } from "../modules/cart/cart.service.js";
@@ -27,7 +27,7 @@ export async function resolveGuestId(req: Request, res: Response): Promise<strin
   const guestId = randomUUID();
   res.cookie(GUEST_ID_COOKIE_NAME, guestId, {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
+    secure: COOKIE_SECURE,
     sameSite: "lax",
     maxAge: guestIdCookieMaxAgeMs,
   });

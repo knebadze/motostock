@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import type { Request, Response } from "express";
 import { env } from "../../config/env.js";
 import { ApiError } from "../../lib/ApiError.js";
+import { COOKIE_SECURE } from "../../lib/cookies.js";
 import { setAuthCookie } from "../../lib/jwt.js";
 import { getClientIp, getClientUserAgent } from "../../lib/request-ip.js";
 import { mergeGuestDataIntoUser } from "../../middleware/guest-identity.middleware.js";
@@ -21,7 +22,7 @@ const STATE_COOKIE_MAX_AGE_MS = 10 * 60 * 1000;
 function setStateCookie(res: Response, state: string) {
   res.cookie(STATE_COOKIE_NAME, state, {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
+    secure: COOKIE_SECURE,
     sameSite: "lax",
     maxAge: STATE_COOKIE_MAX_AGE_MS,
   });

@@ -206,11 +206,21 @@ function toDiscountHistoryRow(row: DiscountHistoryRow) {
   };
 }
 
+// See bulk-product-discounts.service.ts's listProductDiscountHistory (this
+// module's exact counterpart) for why this is a cap+truncation-flag rather
+// than true server-side pagination.
+const DISCOUNT_HISTORY_MAX_ROWS = 500;
+
 export async function listVehicleDiscountHistory(query: ListVehicleDiscountHistoryQuery) {
-  const rows = await bulkVehicleListingDiscountsRepository.findAllDiscounts(query.search);
-  const items = rows.map(toDiscountHistoryRow);
-  if (!query.status) return items;
-  return items.filter((item) =>
-    query.status === "active" ? item.computedStatus === "ACTIVE" : item.computedStatus !== "ACTIVE",
-  );
+  const [rows, total] = await Promise.all([
+    bulkVehicleListingDiscountsRepository.findAllDiscounts(query.search, DISCOUNT_HISTORY_MAX_ROWS),
+    bulkVehicleListingDiscountsRepository.countAllDiscounts(query.search),
+  ]);
+  const allItems = rows.map(toDiscountHistoryRow);
+  const items = !query.status
+    ? allItems
+    : allItems.filter((item) =>
+        query.status === "active" ? item.computedStatus === "ACTIVE" : item.computedStatus !== "ACTIVE",
+      );
+  return { items, total, truncated: total > DISCOUNT_HISTORY_MAX_ROWS };
 }

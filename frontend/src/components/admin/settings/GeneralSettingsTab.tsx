@@ -38,6 +38,7 @@ export function GeneralSettingsTab({
             checked={settings.useCloudStorage}
             onChange={(next) => onSave({ ...settings, useCloudStorage: next })}
             disabled={saving}
+            label="სურათების ღრუბლოვანი შენახვა"
           />
         </div>
       </div>
@@ -57,6 +58,7 @@ export function GeneralSettingsTab({
             checked={settings.vinDecodeEnabled}
             onChange={(next) => onSave({ ...settings, vinDecodeEnabled: next })}
             disabled={saving}
+            label="VIN კოდით ველების შევსება"
           />
         </div>
 
@@ -91,6 +93,7 @@ export function GeneralSettingsTab({
             checked={settings.guestWishlistEnabled}
             onChange={(next) => onSave({ ...settings, guestWishlistEnabled: next })}
             disabled={saving}
+            label="სასურველების სია სტუმრებისთვის"
           />
         </div>
       </div>
@@ -111,6 +114,7 @@ export function GeneralSettingsTab({
             checked={settings.guestCartEnabled}
             onChange={(next) => onSave({ ...settings, guestCartEnabled: next })}
             disabled={saving}
+            label="კალათა სტუმრებისთვის"
           />
         </div>
       </div>
@@ -131,6 +135,7 @@ export function GeneralSettingsTab({
             checked={settings.promoStackingEnabled}
             onChange={(next) => onSave({ ...settings, promoStackingEnabled: next })}
             disabled={saving}
+            label="პრომო კოდის დაჯამება ფასდაკლებასთან"
           />
         </div>
       </div>

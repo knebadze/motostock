@@ -70,14 +70,23 @@ export async function listBulkDiscountCandidates(categoryId: number): Promise<Bu
   return data.items;
 }
 
+export type ProductDiscountHistoryResult = {
+  items: ProductDiscountHistoryRow[];
+  total: number;
+  // True when the backend's fixed row cap (see this endpoint's own
+  // listProductDiscountHistory) cut off older history — the caller should
+  // prompt for a narrower search rather than assume `items` is everything.
+  truncated: boolean;
+};
+
 export async function listProductDiscountHistory(
   filters: ProductDiscountHistoryFilters = {},
-): Promise<ProductDiscountHistoryRow[]> {
-  const { data } = await apiClient.get<{ items: ProductDiscountHistoryRow[] }>(
+): Promise<ProductDiscountHistoryResult> {
+  const { data } = await apiClient.get<ProductDiscountHistoryResult>(
     "/bulk-product-discounts/discounts",
     { params: { status: filters.status, search: filters.search || undefined } },
   );
-  return data.items;
+  return data;
 }
 
 export async function applyBulkProductDiscounts(

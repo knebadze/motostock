@@ -1,5 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
-import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
+import { isForeignKeyViolation, runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { brandsRepository } from "../brands/brands.repository.js";
 import { modelsRepository } from "../models/models.repository.js";
@@ -201,6 +201,9 @@ export async function getVehicleCatalogEntry(id: number) {
   return toVehicleCatalogResponse(row);
 }
 
+const DUPLICATE_VEHICLE_CATALOG_MESSAGE =
+  "ამ მოდელის, ვარიანტისა და წლების კომბინაციით ჩანაწერი უკვე არსებობს";
+
 // Exported for reuse by vehicle-catalog-bulk-import.service.ts — see
 // assertRefsExist above for the same reasoning.
 export async function assertNoDuplicate(params: {
@@ -212,10 +215,7 @@ export async function assertNoDuplicate(params: {
 }) {
   const duplicate = await vehicleCatalogRepository.findDuplicate(params);
   if (duplicate) {
-    throw new ApiError(
-      409,
-      "ამ მოდელის, ვარიანტისა და წლების კომბინაციით ჩანაწერი უკვე არსებობს",
-    );
+    throw new ApiError(409, DUPLICATE_VEHICLE_CATALOG_MESSAGE);
   }
 }
 
@@ -230,7 +230,16 @@ export async function createVehicleCatalogEntry(input: CreateVehicleCatalogInput
     yearTo: input.yearTo ?? null,
   });
 
-  const row = await vehicleCatalogRepository.create({ ...input, variant });
+  // Closes the gap between assertNoDuplicate's pre-check and this create —
+  // two near-simultaneous submissions of the same model+variant+years (now
+  // catchable at the DB even when yearFrom/yearTo are null, see the
+  // NULLS NOT DISTINCT migration on this table) would otherwise surface as
+  // a raw 500 to whichever request loses the race.
+  const row = await runUniqueCheckedWrite(
+    () => vehicleCatalogRepository.create({ ...input, variant }),
+    "yearFrom",
+    DUPLICATE_VEHICLE_CATALOG_MESSAGE,
+  );
   return toVehicleCatalogResponse(row);
 }
 
@@ -276,22 +285,32 @@ export async function submitVehicleCatalogEntry(userId: number, input: SubmitVeh
     yearTo,
   });
 
-  const { catalog, garageVehicle } = await vehicleCatalogRepository.createSubmission(
-    {
-      brandId: input.brandId,
-      modelId: input.modelId,
-      variant,
-      yearFrom,
-      yearTo,
-      engineVolumeCc: input.engineVolumeCc ?? null,
-      enginePowerHp: input.enginePowerHp ?? null,
-      fuelTypeId: input.fuelTypeId ?? null,
-      transmissionTypeId: input.transmissionTypeId ?? null,
-      userId,
-    },
-    userId,
-    input.year,
-    input.vin,
+  // This is the reachable-by-any-logged-in-customer path (not admin-only
+  // like createVehicleCatalogEntry above), so the race is far more likely
+  // to actually happen in practice — two owners of the identical bike using
+  // "couldn't find mine" around the same moment. Same runUniqueCheckedWrite
+  // rationale as create above.
+  const { catalog, garageVehicle } = await runUniqueCheckedWrite(
+    () =>
+      vehicleCatalogRepository.createSubmission(
+        {
+          brandId: input.brandId,
+          modelId: input.modelId,
+          variant,
+          yearFrom,
+          yearTo,
+          engineVolumeCc: input.engineVolumeCc ?? null,
+          enginePowerHp: input.enginePowerHp ?? null,
+          fuelTypeId: input.fuelTypeId ?? null,
+          transmissionTypeId: input.transmissionTypeId ?? null,
+          userId,
+        },
+        userId,
+        input.year,
+        input.vin,
+      ),
+    "yearFrom",
+    DUPLICATE_VEHICLE_CATALOG_MESSAGE,
   );
 
   return {
@@ -340,7 +359,11 @@ export async function updateVehicleCatalogEntry(id: number, input: UpdateVehicle
     excludeId: id,
   });
 
-  const row = await vehicleCatalogRepository.update(id, input);
+  const row = await runUniqueCheckedWrite(
+    () => vehicleCatalogRepository.update(id, input),
+    "yearFrom",
+    DUPLICATE_VEHICLE_CATALOG_MESSAGE,
+  );
   return toVehicleCatalogResponse(row);
 }
 

@@ -92,24 +92,39 @@ export const bulkProductDiscountsRepository = {
 
   // Every ProductVariantDiscount that exists, regardless of category —
   // powers the discounts-page "history" tab, not scoped to a bulk-selection
-  // session the way findCandidateProducts above is.
-  findAllDiscounts(search?: string) {
+  // session the way findCandidateProducts above is. Capped at
+  // DISCOUNT_HISTORY_MAX_ROWS — see bulk-product-discounts.service.ts's
+  // listProductDiscountHistory for why (this table merges with
+  // bulk-vehicle-listing-discounts' identical history into one admin
+  // table, which makes true server-side pagination of the combined,
+  // client-side-sortable result disproportionately complex for what this
+  // history view actually needs).
+  findAllDiscounts(search: string | undefined, take: number) {
     return prisma.productVariantDiscount.findMany({
-      where: search
-        ? {
-            productVariant: {
-              product: {
-                OR: [
-                  { nameKa: { contains: search, mode: "insensitive" } },
-                  { nameEn: { contains: search, mode: "insensitive" } },
-                  { nameRu: { contains: search, mode: "insensitive" } },
-                ],
-              },
-            },
-          }
-        : undefined,
+      where: discountSearchWhere(search),
       select: discountHistorySelect,
       orderBy: { startDate: "desc" },
+      take,
     });
   },
+
+  countAllDiscounts(search?: string) {
+    return prisma.productVariantDiscount.count({ where: discountSearchWhere(search) });
+  },
 };
+
+function discountSearchWhere(search?: string) {
+  return search
+    ? {
+        productVariant: {
+          product: {
+            OR: [
+              { nameKa: { contains: search, mode: "insensitive" as const } },
+              { nameEn: { contains: search, mode: "insensitive" as const } },
+              { nameRu: { contains: search, mode: "insensitive" as const } },
+            ],
+          },
+        },
+      }
+    : undefined;
+}

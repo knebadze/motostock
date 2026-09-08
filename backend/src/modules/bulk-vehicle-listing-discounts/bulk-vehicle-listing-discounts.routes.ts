@@ -65,7 +65,15 @@ registry.registerPath({
   responses: {
     200: {
       description: "Discounts",
-      content: { "application/json": { schema: z.object({ items: z.array(vehicleDiscountHistoryRowSchema) }) } },
+      content: {
+        "application/json": {
+          schema: z.object({
+            items: z.array(vehicleDiscountHistoryRowSchema),
+            total: z.int(),
+            truncated: z.boolean(),
+          }),
+        },
+      },
     },
   },
 });

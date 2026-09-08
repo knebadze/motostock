@@ -42,7 +42,23 @@ export function CategoryFormModal({
   const [parentId, setParentId] = useState<string>(
     category?.parentId != null ? String(category.parentId) : "",
   );
-  const [sortOrder, setSortOrder] = useState(category?.sortOrder ?? 0);
+  // For a NEW category, defaulting to 0 meant it silently jumped to the
+  // very first position among its siblings unless the admin noticed and
+  // typed a different number — this computes "last among siblings" instead,
+  // scoped to whichever parent is currently selected (siblings sharing the
+  // same parentId, or top-level when none is selected). Editing an existing
+  // category keeps its own stored value unchanged.
+  function nextSortOrderForParent(parentIdValue: string): number {
+    const parentIdNumber = parentIdValue ? Number(parentIdValue) : null;
+    const siblings = categories.filter((candidate) => candidate.parentId === parentIdNumber);
+    return siblings.reduce((max, sibling) => Math.max(max, sibling.sortOrder), -1) + 1;
+  }
+  const [sortOrder, setSortOrder] = useState(
+    category ? category.sortOrder : nextSortOrderForParent(parentId),
+  );
+  // Mirrors slugTouched below — once the admin manually edits sortOrder,
+  // stop overwriting it when they then change the parent dropdown.
+  const [sortOrderTouched, setSortOrderTouched] = useState(false);
   const [lowStockBadgeEnabled, setLowStockBadgeEnabled] = useState(
     category?.lowStockBadgeEnabled ?? true,
   );
@@ -201,7 +217,10 @@ export function CategoryFormModal({
             id="category-parent"
             options={parentOptions}
             value={parentId}
-            onChange={setParentId}
+            onChange={(value) => {
+              setParentId(value);
+              if (!isEditing && !sortOrderTouched) setSortOrder(nextSortOrderForParent(value));
+            }}
             searchable
             placeholder="— არცერთი —"
           />
@@ -215,7 +234,10 @@ export function CategoryFormModal({
             id="category-sort-order"
             type="number"
             value={sortOrder}
-            onChange={(event) => setSortOrder(Number(event.target.value))}
+            onChange={(event) => {
+              setSortOrder(Number(event.target.value));
+              setSortOrderTouched(true);
+            }}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
           <p className="text-xs text-muted-foreground">
@@ -233,7 +255,11 @@ export function CategoryFormModal({
                 მარაგი ჩვეულებრივი მოვლენაა და ბეჯი აზრს დაკარგავს.
               </p>
             </div>
-            <Toggle checked={lowStockBadgeEnabled} onChange={setLowStockBadgeEnabled} />
+            <Toggle
+              checked={lowStockBadgeEnabled}
+              onChange={setLowStockBadgeEnabled}
+              label="„დარჩა მხოლოდ N ცალი” ბეჯი"
+            />
           </div>
         </div>
 

@@ -58,7 +58,15 @@ model VehicleCatalog {
   createdAt              DateTime          @default(now())
   updatedAt              DateTime          @updatedAt
 
-  @@unique([modelId, variant, yearFrom, yearTo])
+  // Uniqueness on (modelId, variant, yearFrom, yearTo) is enforced by a
+  // migration-SQL-only unique index (20260908130000) using
+  // NULLS NOT DISTINCT, not a Prisma @@unique here — Prisma's schema DSL
+  // has no NULLS NOT DISTINCT syntax, and a plain @@unique would fall back
+  // to NULLS DISTINCT (two NULL yearFrom/yearTo never considered equal),
+  // letting concurrent duplicate submissions slip through when either year
+  // is genuinely unset. That index also serves as this column set's lookup
+  // index (findDuplicate/assertNoDuplicate), so no separate @@index is
+  // declared for it here.
   @@index([brandId])
   @@index([modelId])
   @@index([fuelTypeId])

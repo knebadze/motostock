@@ -1,3 +1,4 @@
+import { ApiError } from "../../lib/ApiError.js";
 import { analyticsRepository } from "./analytics.repository.js";
 import { startOfDayTbilisi, endOfDayTbilisi, toTbilisiDateOnly, shiftDateOnly } from "../../lib/tbilisi-dates.js";
 import {
@@ -5,6 +6,21 @@ import {
   getDashboardDemandCandidateLimit,
   getDashboardRecentCancelledLimit,
 } from "../settings/settings.service.js";
+
+// analytics.repository.ts's findRevenueSeriesRows is a plain (no `take`)
+// findMany over every Order in [from, to] — an unbounded range here doesn't
+// just fetch a lot of rows, it turns one dashboard load into an unbounded
+// full-table scan. Admin-only (requireRole(ADMIN) on the whole router), so
+// this needs an already-privileged session to trigger and only degrades
+// performance rather than enabling any bypass — still capped so a
+// multi-year range (however it was arrived at — two explicit dates far
+// apart, or just one very old dateFrom with dateTo left to default to
+// "today") can't slip through. Enforced here rather than in the zod schema
+// because this is the one place the FINAL resolved range is always known,
+// regardless of which of dateFrom/dateTo the caller actually supplied — see
+// analytics.schema.ts's comment for why a schema-level check on the raw
+// inputs alone would miss the single-date case.
+const MAX_ANALYTICS_RANGE_DAYS = 400;
 
 // dateFromInput/dateToInput are bare "YYYY-MM-DD" (z.iso.date() — see
 // analytics.schema.ts) — anchored to Tbilisi's calendar day (see
@@ -25,7 +41,14 @@ async function resolveDateRange(
   const fromDateOnly =
     dateFromInput ?? shiftDateOnly(toDateOnly, -((await getAnalyticsDefaultWindowDays()) - 1));
 
-  return { from: startOfDayTbilisi(fromDateOnly), to: endOfDayTbilisi(toDateOnly) };
+  const from = startOfDayTbilisi(fromDateOnly);
+  const to = endOfDayTbilisi(toDateOnly);
+  const spanDays = (to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000);
+  if (spanDays > MAX_ANALYTICS_RANGE_DAYS) {
+    throw new ApiError(400, `თარიღების დიაპაზონი არ უნდა აღემატებოდეს ${MAX_ANALYTICS_RANGE_DAYS} დღეს`);
+  }
+
+  return { from, to };
 }
 
 function topNIds(counts: Map<number, number>, limit: number): number[] {

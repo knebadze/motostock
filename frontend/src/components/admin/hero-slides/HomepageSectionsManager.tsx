@@ -159,7 +159,11 @@ function SectionRow({
             {TYPE_LABELS[section.type]}
           </span>
         </div>
-        <Toggle checked={section.isActive} onChange={onToggleActive} />
+        <Toggle
+          checked={section.isActive}
+          onChange={onToggleActive}
+          label={`${section.title.ka} — აქტიურობა`}
+        />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">

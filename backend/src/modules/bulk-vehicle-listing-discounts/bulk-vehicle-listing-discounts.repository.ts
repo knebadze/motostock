@@ -81,21 +81,31 @@ export const bulkVehicleListingDiscountsRepository = {
   },
 
   // Every VehicleListingDiscount that exists, regardless of category —
-  // powers the discounts-page "history" tab.
-  findAllDiscounts(search?: string) {
-    const searchWhere: Prisma.VehicleListingWhereInput | undefined = search
-      ? {
-          OR: [
-            { vehicleCatalog: { brand: { name: { contains: search, mode: "insensitive" } } } },
-            { vehicleCatalog: { model: { name: { contains: search, mode: "insensitive" } } } },
-          ],
-        }
-      : undefined;
-
+  // powers the discounts-page "history" tab. Capped at
+  // DISCOUNT_HISTORY_MAX_ROWS — see bulk-product-discounts.service.ts's
+  // listProductDiscountHistory (this module's exact counterpart) for why.
+  findAllDiscounts(search: string | undefined, take: number) {
     return prisma.vehicleListingDiscount.findMany({
-      where: searchWhere ? { vehicleListing: searchWhere } : undefined,
+      where: discountSearchWhere(search),
       select: discountHistorySelect,
       orderBy: { startDate: "desc" },
+      take,
     });
   },
+
+  countAllDiscounts(search?: string) {
+    return prisma.vehicleListingDiscount.count({ where: discountSearchWhere(search) });
+  },
 };
+
+function discountSearchWhere(search?: string) {
+  const searchWhere: Prisma.VehicleListingWhereInput | undefined = search
+    ? {
+        OR: [
+          { vehicleCatalog: { brand: { name: { contains: search, mode: "insensitive" } } } },
+          { vehicleCatalog: { model: { name: { contains: search, mode: "insensitive" } } } },
+        ],
+      }
+    : undefined;
+  return searchWhere ? { vehicleListing: searchWhere } : undefined;
+}

@@ -21,6 +21,12 @@ export { isFinaConfigured };
 // Postgres advisory locks don't need to reference a real row).
 const FINA_SYNC_LOCK_KEY = 851972364;
 
+// Arbitrary namespace for retryOrderFinaPush's per-order lock (two-int form
+// of pg_try_advisory_xact_lock: this namespace + the order's own id) —
+// distinct from FINA_SYNC_LOCK_KEY above so a manual order retry never
+// contends with the unrelated catalog-sync lock.
+const RETRY_FINA_PUSH_LOCK_NAMESPACE = 851972399;
+
 export async function runSync(trigger: FinaSyncTrigger, triggeredById: number | null = null) {
   if (!isFinaConfigured()) {
     const message = "FINA სინქრონიზაცია არ არის კონფიგურირებული";
@@ -447,34 +453,68 @@ export async function retryOrderFinaPush(order: {
   finaSyncStatus: FinaOrderSyncStatus;
   items: FinaOrderPushItem[];
 }): Promise<void> {
-  // Neither attemptOrderSalePush nor attemptOrderReturnPush check this
-  // themselves (they're also the automatic, fire-once-per-lifecycle-event
-  // paths — see pushOrderSale/pushOrderReturn above, where a second push
-  // simply never happens by construction) — but this admin-triggered retry
-  // can be clicked again after a prior attempt already succeeded (e.g. a
-  // slow response the admin didn't see land), and doing so would write a
-  // second, real saveDocProductOut/saveDocCustomerReturn document into
-  // FINA's actual accounting. Refuse it the same way FinaPushSkipped surfaces
-  // "nothing to retry" for the config-missing case below.
-  if (order.finaSyncStatus === "SYNCED") {
-    throw new ApiError(
-      400,
-      "ეს შეკვეთა უკვე დასინქრონებულია FINA-სთან — ხელახლა გაგზავნა საჭირო არ არის",
-    );
-  }
+  // The `order.finaSyncStatus === "SYNCED"` check alone isn't enough to stop
+  // a second real FINA document from being written: two near-simultaneous
+  // retries (an admin double-clicking, or two tabs) both read this same
+  // FAILED status from the caller's earlier findById, both pass the check
+  // below, and both proceed to call saveDocProductOut/saveDocCustomerReturn
+  // for real — this is a genuine external side effect, not a DB row, so
+  // there's no P2002-style safety net to catch the race after the fact.
+  // pg_try_advisory_xact_lock (two-int form: namespace + this order's id)
+  // held for the FULL duration of the external call, same shape as
+  // runSync's FINA_SYNC_LOCK_KEY above but scoped per-order instead of
+  // globally — a losing concurrent retry is refused immediately (429)
+  // instead of queueing behind the winner. Unlike the account-lockout guard
+  // (customer-facing, high-frequency, attacker-reachable), this endpoint is
+  // admin-only and manually clicked, so holding one pool connection for the
+  // ~8s FINA_REQUEST_TIMEOUT_MS duration of the external call is an
+  // acceptable, bounded cost — not the same DoS shape.
+  await prisma.$transaction(
+    async (tx) => {
+      const [{ locked }] = await tx.$queryRaw<{ locked: boolean }[]>`
+        SELECT pg_try_advisory_xact_lock(${RETRY_FINA_PUSH_LOCK_NAMESPACE}, ${order.id}) AS locked
+      `;
+      if (!locked) {
+        throw new ApiError(
+          429,
+          "ამ შეკვეთაზე უკვე მიმდინარეობს ხელახალი გაგზავნა FINA-ში — მოითმინეთ და თავიდან სცადეთ",
+        );
+      }
 
-  try {
-    if (order.isCancelled) {
-      await attemptOrderReturnPush(order);
-    } else {
-      await attemptOrderSalePush(order);
-    }
-  } catch (err) {
-    if (err instanceof FinaPushSkipped) {
-      throw new ApiError(400, err.message);
-    }
-    await finaSyncRepository.setOrderFinaSyncStatus(order.id, "FAILED");
-    const message = err instanceof FinaApiError ? err.message : "მოულოდნელი შეცდომა FINA-სთან კავშირისას";
-    throw new ApiError(502, message);
-  }
+      // Re-read fresh, inside the lock — order.finaSyncStatus above is a
+      // snapshot from before the lock was acquired, and a just-finished
+      // concurrent retry (or the original automatic push) may have already
+      // flipped it to SYNCED in the gap.
+      const fresh = await tx.order.findUnique({
+        where: { id: order.id },
+        select: { finaSyncStatus: true },
+      });
+      if (!fresh || fresh.finaSyncStatus === "SYNCED") {
+        throw new ApiError(
+          400,
+          "ეს შეკვეთა უკვე დასინქრონებულია FINA-სთან — ხელახლა გაგზავნა საჭირო არ არის",
+        );
+      }
+
+      try {
+        if (order.isCancelled) {
+          await attemptOrderReturnPush(order);
+        } else {
+          await attemptOrderSalePush(order);
+        }
+      } catch (err) {
+        if (err instanceof FinaPushSkipped) {
+          throw new ApiError(400, err.message);
+        }
+        await finaSyncRepository.setOrderFinaSyncStatus(order.id, "FAILED");
+        const message =
+          err instanceof FinaApiError ? err.message : "მოულოდნელი შეცდომა FINA-სთან კავშირისას";
+        throw new ApiError(502, message);
+      }
+    },
+    // Generous enough to cover one external FINA call (8s timeout, see
+    // fina-client.ts's FINA_REQUEST_TIMEOUT_MS) plus safety margin, while
+    // still bounded — this is a manual admin action, not a hot path.
+    { timeout: 20_000, maxWait: 10_000 },
+  );
 }

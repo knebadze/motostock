@@ -91,6 +91,7 @@ const TYPE_LABELS: Record<UnifiedRow["type"], string> = {
 export function DiscountHistoryPanel() {
   const [rows, setRows] = useState<UnifiedRow[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [truncated, setTruncated] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"" | "active" | "history">("");
   const [typeFilter, setTypeFilter] = useState<"" | "PRODUCT" | "VEHICLE">("");
   const [search, setSearch] = useState("");
@@ -101,11 +102,12 @@ export function DiscountHistoryPanel() {
     const searchValue = overrides?.search ?? search;
 
     try {
-      const [productRows, vehicleRows] = await Promise.all([
+      const [productResult, vehicleResult] = await Promise.all([
         listProductDiscountHistory({ status: status || undefined, search: searchValue || undefined }),
         listVehicleDiscountHistory({ status: status || undefined, search: searchValue || undefined }),
       ]);
-      setRows([...productRows.map(fromProductRow), ...vehicleRows.map(fromVehicleRow)]);
+      setRows([...productResult.items.map(fromProductRow), ...vehicleResult.items.map(fromVehicleRow)]);
+      setTruncated(productResult.truncated || vehicleResult.truncated);
       setLoaded(true);
     } catch (error) {
       const message = error instanceof ApiRequestError ? error.message : "სიის ჩატვირთვა ვერ მოხერხდა";
@@ -116,9 +118,10 @@ export function DiscountHistoryPanel() {
   useEffect(() => {
     let cancelled = false;
     Promise.all([listProductDiscountHistory(), listVehicleDiscountHistory()])
-      .then(([productRows, vehicleRows]) => {
+      .then(([productResult, vehicleResult]) => {
         if (cancelled) return;
-        setRows([...productRows.map(fromProductRow), ...vehicleRows.map(fromVehicleRow)]);
+        setRows([...productResult.items.map(fromProductRow), ...vehicleResult.items.map(fromVehicleRow)]);
+        setTruncated(productResult.truncated || vehicleResult.truncated);
         setLoaded(true);
       })
       .catch(() => {
@@ -177,6 +180,13 @@ export function DiscountHistoryPanel() {
         წასაშლელად (გასაუქმებლად) გამოიყენეთ ცხრილის მოქმედების ღილაკი, ან რედაქტირებისთვის გახსენით
         შესაბამისი პროდუქტი/განცხადება.
       </p>
+
+      {truncated && (
+        <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-700">
+          ჩანაწერების რაოდენობა დიდია — ნაჩვენებია მხოლოდ ბოლო ფასდაკლებები. დააზუსტეთ ძებნა უფრო
+          ძველი ჩანაწერების საპოვნელად.
+        </p>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <input

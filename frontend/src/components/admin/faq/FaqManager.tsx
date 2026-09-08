@@ -110,11 +110,15 @@ export function FaqManager({ initialFaqs }: { initialFaqs: Faq[] }) {
             onDrop={() => handleDrop(faq.id)}
             className="flex cursor-grab items-center gap-4 rounded-xl border border-border bg-card p-3 shadow-sm active:cursor-grabbing"
           >
-            <div className="flex-1">
-              <p className="font-semibold text-foreground">{faq.question.ka}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold text-foreground">{faq.question.ka}</p>
             </div>
 
-            <Toggle checked={faq.isActive} onChange={(checked) => handleToggleActive(faq, checked)} />
+            <Toggle
+              checked={faq.isActive}
+              onChange={(checked) => handleToggleActive(faq, checked)}
+              label={`${faq.question.ka} — აქტიურობა`}
+            />
 
             <div className="flex gap-2">
               <button

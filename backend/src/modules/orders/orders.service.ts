@@ -117,6 +117,16 @@ type BreakdownItem = PlaceOrderItemInput & { stockQuantity: number };
 
 type CheckoutBreakdown = {
   items: BreakdownItem[];
+  // Same order/index correspondence as `items` — the exact CartItem ids this
+  // breakdown was built from, kept separate from BreakdownItem/
+  // PlaceOrderItemInput (rather than added as a field on each item) so it
+  // can never accidentally leak into previewCheckout's public response
+  // shape (toBreakdownResponse below builds that explicitly) or into the
+  // OrderItem rows placeOrder persists (which spread PlaceOrderItemInput
+  // directly). Consumed only by placeOrder, to scope its post-order
+  // cart-clear to exactly what was ordered instead of the customer's whole
+  // cart — see orders.repository.ts's placeOrder.
+  cartItemIds: number[];
   subtotal: number;
   discountTotal: number;
   total: number;
@@ -314,6 +324,7 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
 
   return {
     items,
+    cartItemIds: cartRows.map((row) => row.id),
     subtotal,
     discountTotal: Math.round((subtotal - total) * 100) / 100,
     total,
@@ -625,6 +636,7 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
         ipAddress,
         items,
         soldStatusId,
+        cartItemIds: breakdown.cartItemIds,
       });
 
       await sendEmailTemplate("ORDER_PLACED", order.user.email, {

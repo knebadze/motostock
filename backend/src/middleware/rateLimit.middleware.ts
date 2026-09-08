@@ -77,6 +77,26 @@ export const newsletterRateLimit = rateLimit({
   message: { error: { message: "Too many requests, please try again later" } },
 });
 
+// Authenticated (requireAuth on the whole router — see vin-decode.routes.ts)
+// but every call triggers a real outbound lookup against NHTSA and/or
+// Vincario (vin-decode.providers.ts), the latter a keyed, presumably
+// billed-per-lookup API, with no per-VIN caching. Without this, any
+// authenticated account — including a freshly self-registered one — could
+// script up to globalRateLimit's full 300/min per IP, indefinitely across
+// IPs, racking up provider billing and/or getting the server's outbound IP
+// rate-limited by NHTSA. Same reasoning as oauthRateLimit/newsletterRateLimit
+// above (both cap an endpoint specifically because it triggers an outbound
+// call to an external service), just missed when this route was added.
+// Budgeted generously for real use (a customer decoding a few VINs while
+// adding vehicles) while meaningfully capping scripted lookups.
+export const vinDecodeRateLimit = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { message: "Too many requests, please slow down" } },
+});
+
 // Image-upload routes (bank logos, etc.) sit behind requireRole(ADMIN)
 // already, so this is a second line of defense against a compromised admin
 // session being used to flood disk writes — generous enough for a normal

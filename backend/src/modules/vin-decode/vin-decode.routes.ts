@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../../middleware/auth.middleware.js";
+import { vinDecodeRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
@@ -11,7 +12,7 @@ export const vinDecodeRouter = Router();
 
 vinDecodeRouter.use(requireAuth);
 
-vinDecodeRouter.post("/", validate(decodeVinSchema), vinDecodeController.decode);
+vinDecodeRouter.post("/", vinDecodeRateLimit, validate(decodeVinSchema), vinDecodeController.decode);
 
 const security = [{ cookieAuth: [] }];
 const resultResponse = z.object({ result: vinDecodeResultSchema });

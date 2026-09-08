@@ -2,6 +2,16 @@ import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
 
+// The actual range-cap enforcement lives in analytics.service.ts's
+// resolveDateRange, not here — a schema-level `.refine()` on dateFrom/dateTo
+// can only see the two raw inputs, but either one (or both) can be omitted,
+// and resolveDateRange defaults a missing dateTo to "today" and a missing
+// dateFrom to the admin-configurable default window. A refine checking only
+// "both present and within range" would miss the single-date case entirely
+// (e.g. `?dateFrom=2000-01-01` with no dateTo still resolves to a 25+ year
+// span once "today" is filled in) — resolveDateRange is the one place the
+// final, fully-resolved span is always known, regardless of which inputs
+// were actually supplied.
 export const analyticsQuerySchema = z.object({
   dateFrom: z.iso.date().optional(),
   dateTo: z.iso.date().optional(),
