@@ -10,7 +10,7 @@ import { uploadProductVariantImages } from "@/lib/api/product-variant-images";
 import { createProductVariantDiscount } from "@/lib/api/product-variant-discounts";
 import { createProductFitment } from "@/lib/api/product-fitment";
 import type { DraftVariant } from "./ProductPricingTab";
-import type { DraftFitment } from "./ProductFitmentPanel";
+import type { DraftFitment } from "./DraftFitmentEditor";
 
 export type ProductFormSaveInput = {
   isEditing: boolean;

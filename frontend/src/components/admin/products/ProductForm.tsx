@@ -21,12 +21,8 @@ import { productVariantDiscountFormSchema } from "@/lib/validation/product-varia
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 import { ProductAttributeFields } from "./ProductAttributeFields";
 import { ProductVariantsPanel } from "./ProductVariantsPanel";
-import {
-  ProductFitmentPanel,
-  DraftFitmentEditor,
-  type DraftFitment,
-  type VehicleSpecLookupMap,
-} from "./ProductFitmentPanel";
+import { ProductFitmentPanel, type VehicleSpecLookupMap } from "./ProductFitmentPanel";
+import { DraftFitmentEditor, type DraftFitment } from "./DraftFitmentEditor";
 import { ProductBuyTogetherPanel } from "./ProductBuyTogetherPanel";
 import { ProductBasicInfoTab } from "./ProductBasicInfoTab";
 import { ProductDescriptionTab } from "./ProductDescriptionTab";

@@ -12,13 +12,7 @@ import type { Unit } from "@/lib/api/units";
 import { ApiRequestError } from "@/lib/api/client";
 import { flattenTree } from "@/lib/categories-tree";
 import { AttributeFormModal } from "./AttributeFormModal";
-
-const VALUE_TYPE_LABELS: Record<Attribute["valueType"], string> = {
-  TEXT: "ტექსტი",
-  NUMBER: "რიცხვი",
-  BOOLEAN: "დიახ/არა",
-  SELECT: "არჩევანი (სია)",
-};
+import { VALUE_TYPE_LABELS } from "./attribute-labels";
 
 const columns: DataTableColumn<Attribute>[] = [
   { header: "სახელი", render: (attribute) => attribute.name.ka },

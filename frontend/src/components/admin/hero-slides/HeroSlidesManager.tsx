@@ -14,15 +14,8 @@ import {
 import type { Category } from "@/lib/api/categories";
 import type { ProductBrand } from "@/lib/api/product-brands";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
+import { HERO_SLIDE_TYPE_SHORT_LABELS as TYPE_LABELS } from "@/lib/hero-slide-labels";
 import { HeroSlideFormModal } from "./HeroSlideFormModal";
-
-const TYPE_LABELS: Record<HeroSlide["type"], string> = {
-  CTA: "ღილაკი (CTA)",
-  DISCOUNT: "ფასდაკლება",
-  VEHICLE_SEARCH: "ტრანსპორტის ძებნა",
-  CATEGORY_FILTER: "კატეგორიის არჩევა",
-  INFO: "საინფორმაციო",
-};
 
 export function HeroSlidesManager({
   initialSlides,

@@ -71,13 +71,11 @@ const DEFAULTS: Record<
   },
 };
 
-const ALL_KEYS: EmailTemplateKey[] = [
-  "ORDER_PLACED",
-  "ORDER_CONFIRMED",
-  "ORDER_SHIPPED",
-  "ORDER_DELIVERED",
-  "ORDER_CANCELLED",
-];
+// Derived from DEFAULTS' own keys, not a separate hand-typed list — a key
+// added to DEFAULTS but forgotten here would silently never get bootstrapped
+// (same drift risk settings.service.ts's old hand-maintained
+// ALL_SETTING_KEYS had, before that got fixed the same way).
+const ALL_KEYS = Object.keys(DEFAULTS) as EmailTemplateKey[];
 
 function toResponse(row: EmailTemplateRow) {
   return {

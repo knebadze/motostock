@@ -92,18 +92,10 @@ const DEFAULTS: Record<
 
 const MIXED_TYPES: HomepageSectionType[] = ["DISCOUNTED_MIXED", "POPULAR_MIXED"];
 
-const ALL_TYPES: HomepageSectionType[] = [
-  "DISCOUNTED_PRODUCTS",
-  "POPULAR_PRODUCTS",
-  "DISCOUNTED_VEHICLES",
-  "POPULAR_VEHICLES",
-  "DISCOUNTED_MIXED",
-  "POPULAR_MIXED",
-  "CATEGORIES",
-  "POPULAR_FOR_VEHICLE",
-  "RECOMMENDED_FOR_YOU",
-  "RECENTLY_VIEWED",
-];
+// Derived from DEFAULTS' own keys, not a separate hand-typed list — same
+// drift-risk reasoning as email-templates.service.ts's ALL_KEYS (and, before
+// that, settings.service.ts's old hand-maintained ALL_SETTING_KEYS).
+const ALL_TYPES = Object.keys(DEFAULTS) as HomepageSectionType[];
 
 function toResponse(row: HomepageSectionRow) {
   return {

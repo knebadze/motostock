@@ -8,36 +8,11 @@ import { Loader } from "@/components/shared/Loader";
 import { Select } from "@/components/shared/Select";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { formatDateTime, formatPrice } from "@/lib/format";
-import {
-  getAnyOrder,
-  updateOrderStatus,
-  retryOrderFinaSync,
-  type AdminOrder,
-  type OrderDeliverySpeed,
-  type OrderFulfillmentMethod,
-  type OrderRiskFlagType,
-} from "@/lib/api/orders";
+import { getAnyOrder, updateOrderStatus, retryOrderFinaSync, type AdminOrder } from "@/lib/api/orders";
 import { syncOrderStock, type OrderStockSyncItem } from "@/lib/api/fina-sync";
 import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
 import { FinaSyncBadge } from "./FinaSyncBadge";
-
-const FULFILLMENT_LABELS: Record<OrderFulfillmentMethod, string> = {
-  CARD: "ბარათით გადახდა",
-  COURIER: "კურიერთან გადახდა",
-  PICKUP: "ადგილიდან გატანა",
-};
-
-const RISK_FLAG_LABELS: Record<OrderRiskFlagType, string> = {
-  NEW_ACCOUNT_HIGH_VALUE: "ახალი ანგარიში + მაღალი თანხა",
-  ORDER_VELOCITY: "შეკვეთების სიხშირე",
-  PROMO_CODE_MULTI_ACCOUNT: "პრომოკოდი — მრავალი ანგარიში",
-  SHARED_IP_MULTIPLE_ACCOUNTS: "საერთო IP რამდენიმე ანგარიშთან",
-};
-
-const DELIVERY_SPEED_LABELS: Record<OrderDeliverySpeed, string> = {
-  STANDARD: "სტანდარტული მიტანა",
-  EXPRESS: "სწრაფი მიტანა (ექსპრესი)",
-};
+import { DELIVERY_SPEED_LABELS, FULFILLMENT_LABELS, RISK_FLAG_LABELS } from "./order-labels";
 
 export function OrderDetailModal({
   orderId,

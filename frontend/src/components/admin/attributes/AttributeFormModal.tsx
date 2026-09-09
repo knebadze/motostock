@@ -24,13 +24,7 @@ import { attributeFormSchema } from "@/lib/validation/attributes";
 import { attributeOptionFormSchema } from "@/lib/validation/attribute-options";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 import { AttributeOptionsPanel } from "./AttributeOptionsPanel";
-
-const VALUE_TYPE_OPTIONS: { value: AttributeValueType; label: string }[] = [
-  { value: "TEXT", label: "ტექსტი" },
-  { value: "NUMBER", label: "რიცხვი" },
-  { value: "BOOLEAN", label: "დიახ/არა" },
-  { value: "SELECT", label: "არჩევანი (სია)" },
-];
+import { VALUE_TYPE_OPTIONS } from "./attribute-labels";
 
 type DraftOption = AttributeOptionInput & { draftId: number };
 

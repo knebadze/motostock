@@ -21,28 +21,16 @@ import type { ProductBrand } from "@/lib/api/product-brands";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { flattenTree } from "@/lib/categories-tree";
 import {
+  HERO_SLIDE_TYPE_DESCRIPTIONS as TYPE_DESCRIPTIONS,
+  HERO_SLIDE_TYPE_OPTIONS as TYPE_OPTIONS,
+} from "@/lib/hero-slide-labels";
+import {
   HERO_SLIDE_BUTTON_LABEL_MAX_LENGTH,
   HERO_SLIDE_SUBTITLE_MAX_LENGTH,
   HERO_SLIDE_TITLE_MAX_LENGTH,
   heroSlideFormSchema,
 } from "@/lib/validation/hero-slides";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
-
-const TYPE_OPTIONS: { value: HeroSlideType; label: string }[] = [
-  { value: "CTA", label: "ღილაკი (CTA)" },
-  { value: "DISCOUNT", label: "ფასდაკლება (ბმული ავტომატურად)" },
-  { value: "VEHICLE_SEARCH", label: "ტრანსპორტის ძებნის ფორმა" },
-  { value: "CATEGORY_FILTER", label: "კატეგორიის არჩევის ფორმა" },
-  { value: "INFO", label: "საინფორმაციო (ღილაკის/ფორმის გარეშე)" },
-];
-
-const TYPE_DESCRIPTIONS: Record<HeroSlideType, string> = {
-  CTA: "ფონური სურათი, სათაური, ქვესათაური და ღილაკი, რომელიც მითითებულ ბმულზე გადადის.",
-  DISCOUNT: "ფონური სურათი, სათაური, ქვესათაური და ღილაკი — ბმული ავტომატურად გამოითვლება არჩეული კატეგორია/ბრენდის მიხედვით (ან ზოგადი ფასდაკლების გვერდი, თუ არცერთი არ აირჩევა).",
-  VEHICLE_SEARCH: "ფონური სურათი, სათაური, ქვესათაური და მარკა/მოდელი/წელი ძებნის ფორმა.",
-  CATEGORY_FILTER: "ფონური სურათი, სათაური, ქვესათაური და კატეგორიის არჩევის ფორმა — მომხმარებელი აირჩევს კატეგორიას და გადავა შესაბამის გვერდზე.",
-  INFO: "მხოლოდ ფონური სურათი, სათაური და ქვესათაური — არც ღილაკი, არც ფორმა.",
-};
 
 const TEXT_POSITION_OPTIONS: { value: HeroSlideTextPosition; label: string }[] = [
   { value: "LEFT", label: "მარცხნივ" },

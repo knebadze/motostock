@@ -17,6 +17,7 @@ import { flattenTree } from "@/lib/categories-tree";
 import { formatPrice, toTbilisiDateOnly } from "@/lib/format";
 import { bulkProductDiscountFormSchema } from "@/lib/validation/bulk-product-discounts";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+import { deriveOptionMap, useBulkDiscountSelection } from "@/components/shared/useBulkDiscountSelection";
 
 function candidateAttributeSummary(candidate: BulkDiscountCandidate): string {
   return candidate.attributeValues
@@ -45,14 +46,22 @@ export function BulkProductDiscountsPanel({ categories }: { categories: Category
   const [colorFilter, setColorFilter] = useState<string[]>([]);
   const [attributeFilters, setAttributeFilters] = useState<Record<number, string[]>>({});
 
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const {
+    selectedIds,
+    setSelectedIds,
+    toggleOne,
+    selectVisible,
+    deselectVisible,
+    highPercentConfirmOpen,
+    setHighPercentConfirmOpen,
+    handleApplyClick: applyWithHighPercentGate,
+  } = useBulkDiscountSelection();
 
   const [discountPercent, setDiscountPercent] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [applying, setApplying] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [highPercentConfirmOpen, setHighPercentConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!categoryId) return;
@@ -85,29 +94,29 @@ export function BulkProductDiscountsPanel({ categories }: { categories: Category
     setAttributeFilters({});
   }
 
-  const brandOptions = useMemo(() => {
-    const map = new Map<number, string>();
-    for (const candidate of candidates) {
-      if (candidate.brand) map.set(candidate.brand.id, candidate.brand.name);
-    }
-    return Array.from(map, ([id, label]) => ({ value: String(id), label }));
-  }, [candidates]);
+  const brandOptions = useMemo(
+    () =>
+      deriveOptionMap(candidates, (candidate) =>
+        candidate.brand ? { id: candidate.brand.id, label: candidate.brand.name } : null,
+      ),
+    [candidates],
+  );
 
-  const sizeOptions = useMemo(() => {
-    const map = new Map<number, string>();
-    for (const candidate of candidates) {
-      if (candidate.size) map.set(candidate.size.id, candidate.size.nameKa);
-    }
-    return Array.from(map, ([id, label]) => ({ value: String(id), label }));
-  }, [candidates]);
+  const sizeOptions = useMemo(
+    () =>
+      deriveOptionMap(candidates, (candidate) =>
+        candidate.size ? { id: candidate.size.id, label: candidate.size.nameKa } : null,
+      ),
+    [candidates],
+  );
 
-  const colorOptions = useMemo(() => {
-    const map = new Map<number, string>();
-    for (const candidate of candidates) {
-      if (candidate.color) map.set(candidate.color.id, candidate.color.nameKa);
-    }
-    return Array.from(map, ([id, label]) => ({ value: String(id), label }));
-  }, [candidates]);
+  const colorOptions = useMemo(
+    () =>
+      deriveOptionMap(candidates, (candidate) =>
+        candidate.color ? { id: candidate.color.id, label: candidate.color.nameKa } : null,
+      ),
+    [candidates],
+  );
 
   // One multi-select filter per SELECT-type attribute actually present in
   // the category's products (e.g. "მასალა" for helmets) — derived straight
@@ -153,31 +162,6 @@ export function BulkProductDiscountsPanel({ categories }: { categories: Category
     });
   }, [candidates, search, brandFilter, sizeFilter, colorFilter, attributeFilters]);
 
-  function toggleOne(variantId: number, checked: boolean) {
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      if (checked) next.add(variantId);
-      else next.delete(variantId);
-      return next;
-    });
-  }
-
-  function selectVisible() {
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      for (const candidate of filteredCandidates) next.add(candidate.variantId);
-      return next;
-    });
-  }
-
-  function deselectVisible() {
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      for (const candidate of filteredCandidates) next.delete(candidate.variantId);
-      return next;
-    });
-  }
-
   async function handleApply() {
     const result = bulkProductDiscountFormSchema.safeParse({ discountPercent, startDate, endDate });
     if (!result.success) {
@@ -213,17 +197,8 @@ export function BulkProductDiscountsPanel({ categories }: { categories: Category
     }
   }
 
-  // A discount over 50% is unusual enough to be worth a second look before
-  // it's applied — this hits every one of the (potentially many) selected
-  // variants at once, so a typo here is more costly than on a single-item
-  // discount form.
   function handleApplyClick() {
-    const percentNum = Number(discountPercent);
-    if (discountPercent.trim() !== "" && Number.isFinite(percentNum) && percentNum > 50) {
-      setHighPercentConfirmOpen(true);
-      return;
-    }
-    handleApply();
+    applyWithHighPercentGate(discountPercent, handleApply);
   }
 
   return (
@@ -314,10 +289,18 @@ export function BulkProductDiscountsPanel({ categories }: { categories: Category
               <span className="font-semibold text-foreground">{selectedIds.size}</span>
             </span>
             <div className="flex gap-3 text-xs">
-              <button type="button" onClick={selectVisible} className="text-primary hover:underline">
+              <button
+                type="button"
+                onClick={() => selectVisible(filteredCandidates.map((candidate) => candidate.variantId))}
+                className="text-primary hover:underline"
+              >
                 ხილულის მონიშვნა
               </button>
-              <button type="button" onClick={deselectVisible} className="text-muted-foreground hover:underline">
+              <button
+                type="button"
+                onClick={() => deselectVisible(filteredCandidates.map((candidate) => candidate.variantId))}
+                className="text-muted-foreground hover:underline"
+              >
                 ხილულის მოხსნა
               </button>
               <button

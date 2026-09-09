@@ -18,16 +18,7 @@ import type { LookupItem } from "@/lib/api/lookups";
 import { OrderDetailModal } from "./OrderDetailModal";
 import { OrderStatusBadge } from "./OrderStatusBadge";
 import { FinaSyncBadge } from "./FinaSyncBadge";
-
-const FULFILLMENT_LABELS: Record<OrderFulfillmentMethod, string> = {
-  CARD: "ბარათით გადახდა",
-  COURIER: "კურიერთან გადახდა",
-  PICKUP: "ადგილიდან გატანა",
-};
-
-const FULFILLMENT_OPTIONS = (Object.keys(FULFILLMENT_LABELS) as OrderFulfillmentMethod[]).map(
-  (value) => ({ value, label: FULFILLMENT_LABELS[value] }),
-);
+import { FULFILLMENT_LABELS, FULFILLMENT_OPTIONS } from "./order-labels";
 
 const DELIVERY_URGENCY_CLASSES: Record<"green" | "yellow" | "red", string> = {
   green: "bg-green-500/15 text-green-600",
