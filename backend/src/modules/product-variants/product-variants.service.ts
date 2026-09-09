@@ -1,5 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
-import { findActiveDiscount } from "../../lib/discounts.js";
+import { findActiveDiscount, findDiscountAtOrAbovePrice } from "../../lib/discounts.js";
 import { isForeignKeyViolation, isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { deleteUploadedImage } from "../../lib/storage.js";
 import { productsRepository } from "../products/products.repository.js";
@@ -161,16 +161,18 @@ export async function updateProductVariant(id: number, input: UpdateProductVaria
   // assertDiscountPriceBelowListPrice, in the opposite direction —
   // that guard only checks a discount against the variant's price *at the
   // moment the discount is created/edited*; without this, lowering the
-  // variant's own price afterward could leave an active discount priced
-  // *above* the new list price, and findActiveDiscount/checkout would
-  // charge that stale, now-higher "discount" price without ever
-  // questioning it (a real overcharge, not just a display glitch).
+  // variant's own price afterward could leave a discount priced *above* the
+  // new list price, and findActiveDiscount/checkout would charge that
+  // stale, now-higher "discount" price without ever questioning it (a real
+  // overcharge, not just a display glitch). Checked against every discount
+  // that hasn't ended yet (not just the currently-active one) — a
+  // SCHEDULED discount is just as vulnerable to this once its window opens.
   if (input.price !== undefined) {
-    const activeDiscount = findActiveDiscount(existing.discounts);
-    if (activeDiscount && Number(input.price) <= Number(activeDiscount.discountPrice)) {
+    const conflictingDiscount = findDiscountAtOrAbovePrice(existing.discounts, Number(input.price));
+    if (conflictingDiscount) {
       throw new ApiError(
         400,
-        "ახალი ფასი ვერ იქნება აქტიური ფასდაკლების ფასზე დაბალი ან ტოლი — ჯერ შეცვალეთ ან გააუქმეთ ფასდაკლება",
+        "ახალი ფასი ვერ იქნება ფასდაკლების ფასზე დაბალი ან ტოლი — ჯერ შეცვალეთ ან გააუქმეთ ფასდაკლება",
       );
     }
   }

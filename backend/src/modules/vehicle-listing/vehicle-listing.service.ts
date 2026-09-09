@@ -1,6 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { cache } from "../../lib/cache.js";
-import { findActiveDiscount } from "../../lib/discounts.js";
+import { findActiveDiscount, findDiscountAtOrAbovePrice } from "../../lib/discounts.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { resolvePage } from "../../lib/pagination.js";
 import { deleteUploadedImage } from "../../lib/storage.js";
@@ -450,15 +450,17 @@ export async function updateVehicleListing(id: number, input: UpdateVehicleListi
   // price guard, in the opposite direction — that one only checks a
   // discount against the listing's price at the moment the discount is
   // created/edited; without this, lowering the listing's own price
-  // afterward could leave an active discount priced *above* the new price,
-  // and findActiveDiscount/checkout would charge that stale, now-higher
-  // "discount" price without ever questioning it.
+  // afterward could leave a discount priced *above* the new price, and
+  // findActiveDiscount/checkout would charge that stale, now-higher
+  // "discount" price without ever questioning it. Checked against every
+  // discount that hasn't ended yet (not just the currently-active one) — a
+  // SCHEDULED discount is just as vulnerable to this once its window opens.
   if (input.price !== undefined) {
-    const activeDiscount = findActiveDiscount(existing.discounts);
-    if (activeDiscount && Number(input.price) <= Number(activeDiscount.discountPrice)) {
+    const conflictingDiscount = findDiscountAtOrAbovePrice(existing.discounts, Number(input.price));
+    if (conflictingDiscount) {
       throw new ApiError(
         400,
-        "ახალი ფასი ვერ იქნება აქტიური ფასდაკლების ფასზე დაბალი ან ტოლი — ჯერ შეცვალეთ ან გააუქმეთ ფასდაკლება",
+        "ახალი ფასი ვერ იქნება ფასდაკლების ფასზე დაბალი ან ტოლი — ჯერ შეცვალეთ ან გააუქმეთ ფასდაკლება",
       );
     }
   }

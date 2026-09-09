@@ -319,7 +319,7 @@ export function ProductPricingTab({
                 <input
                   type="number"
                   min={0}
-                  max={100}
+                  max={99}
                   step="0.01"
                   placeholder="ფასდაკლება (%)"
                   value={initialDiscountPercent}

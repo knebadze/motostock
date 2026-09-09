@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -72,6 +72,13 @@ export function ServiceHistoryManager({
 
   const [records, setRecords] = useState<ServiceRecord[]>([]);
   const [loadingRecords, setLoadingRecords] = useState(false);
+  // Sequence guards for selectUser/refreshRecords below — both fire from
+  // click handlers (not an effect, so no cleanup-based cancellation), and
+  // quickly switching user/vehicle before an earlier fetch resolves could
+  // otherwise let a stale response overwrite state for whatever is
+  // currently selected.
+  const garageRequestSeqRef = useRef(0);
+  const recordsRequestSeqRef = useRef(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<ServiceRecord | null>(null);
   const [deletingRecord, setDeletingRecord] = useState<ServiceRecord | null>(null);
@@ -102,14 +109,24 @@ export function ServiceHistoryManager({
     setSelectedVehicle(null);
     setRecords([]);
     setLoadingGarage(true);
+    // Invalidate any in-flight records fetch from a previously-selected
+    // vehicle — switching users clears the vehicle selection above.
+    recordsRequestSeqRef.current++;
+    const requestSeq = ++garageRequestSeqRef.current;
     getUser(user.id)
-      .then((detail) => setGarageVehicles(detail.garage))
+      .then((detail) => {
+        if (garageRequestSeqRef.current !== requestSeq) return;
+        setGarageVehicles(detail.garage);
+      })
       .catch((error) => {
+        if (garageRequestSeqRef.current !== requestSeq) return;
         const message =
           error instanceof ApiRequestError ? error.message : "გარაჟის ჩატვირთვა ვერ მოხერხდა";
         toast.error(message);
       })
-      .finally(() => setLoadingGarage(false));
+      .finally(() => {
+        if (garageRequestSeqRef.current === requestSeq) setLoadingGarage(false);
+      });
   }
 
   function changeUser() {
@@ -117,6 +134,10 @@ export function ServiceHistoryManager({
     setGarageVehicles([]);
     setSelectedVehicle(null);
     setRecords([]);
+    // Invalidate any in-flight garage/records fetch so a stale response
+    // can't repopulate state after the admin has already backed out.
+    garageRequestSeqRef.current++;
+    recordsRequestSeqRef.current++;
   }
 
   function selectVehicle(vehicle: GarageVehicle) {
@@ -126,14 +147,21 @@ export function ServiceHistoryManager({
 
   function refreshRecords(garageVehicleId: number) {
     setLoadingRecords(true);
+    const requestSeq = ++recordsRequestSeqRef.current;
     listServiceRecordsForVehicle(garageVehicleId)
-      .then(setRecords)
+      .then((items) => {
+        if (recordsRequestSeqRef.current !== requestSeq) return;
+        setRecords(items);
+      })
       .catch((error) => {
+        if (recordsRequestSeqRef.current !== requestSeq) return;
         const message =
           error instanceof ApiRequestError ? error.message : "ისტორიის ჩატვირთვა ვერ მოხერხდა";
         toast.error(message);
       })
-      .finally(() => setLoadingRecords(false));
+      .finally(() => {
+        if (recordsRequestSeqRef.current === requestSeq) setLoadingRecords(false);
+      });
   }
 
   function openCreateModal() {
