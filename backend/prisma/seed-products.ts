@@ -1220,7 +1220,7 @@ async function seedFitmentVehicle() {
   const brand = await prisma.brand.upsert({
     where: { slug: "yamaha" },
     update: {},
-    create: { slug: "yamaha", nameKa: "იამაჰა", nameEn: "Yamaha", nameRu: "Ямаха" },
+    create: { slug: "yamaha", name: "Yamaha" },
   });
 
   const model = await prisma.model.upsert({
@@ -1230,19 +1230,22 @@ async function seedFitmentVehicle() {
       brandId: brand.id,
       categoryId: motorcyclesCatId,
       slug: "mt-07",
-      nameKa: "MT-07",
-      nameEn: "MT-07",
-      nameRu: "MT-07",
+      name: "MT-07",
     },
   });
 
-  const vehicle = await prisma.vehicleCatalog.upsert({
-    where: {
-      modelId_variant_yearFrom_yearTo: { modelId: model.id, variant: "", yearFrom: 2018, yearTo: 2024 },
-    },
-    update: {},
-    create: { brandId: brand.id, modelId: model.id, variant: "", yearFrom: 2018, yearTo: 2024 },
+  // No more @@unique on (modelId, variant, yearFrom, yearTo) in the Prisma
+  // schema (migration 20260908130000 replaced it with a raw NULLS NOT
+  // DISTINCT index) — find-then-create instead of upsert, mirroring
+  // seed-vehicles.ts's identical fix.
+  let vehicle = await prisma.vehicleCatalog.findFirst({
+    where: { modelId: model.id, variant: "", yearFrom: 2018, yearTo: 2024 },
   });
+  if (!vehicle) {
+    vehicle = await prisma.vehicleCatalog.create({
+      data: { brandId: brand.id, modelId: model.id, variant: "", yearFrom: 2018, yearTo: 2024 },
+    });
+  }
 
   return { "yamaha-mt-07": vehicle.id } as Record<string, number>;
 }

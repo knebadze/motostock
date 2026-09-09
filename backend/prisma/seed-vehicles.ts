@@ -703,51 +703,52 @@ async function seedVehicle(seed: VehicleSeed) {
   });
 
   const spec = seed.spec;
-  const vehicleCatalog = await prisma.vehicleCatalog.upsert({
-    where: {
-      modelId_variant_yearFrom_yearTo: {
+  // No more @@unique on (modelId, variant, yearFrom, yearTo) in the Prisma
+  // schema (migration 20260908130000 replaced it with a raw NULLS NOT
+  // DISTINCT index, which Prisma's DSL can't express as a composite-unique
+  // input) — find-then-create instead of upsert, same as the app's own
+  // assertNoDuplicate pattern. Fine for a single-threaded seed script.
+  let vehicleCatalog = await prisma.vehicleCatalog.findFirst({
+    where: { modelId: model.id, variant: "", yearFrom: seed.yearFrom, yearTo: seed.yearTo },
+  });
+  if (!vehicleCatalog) {
+    vehicleCatalog = await prisma.vehicleCatalog.create({
+      data: {
+        brandId: brand.id,
         modelId: model.id,
         variant: "",
         yearFrom: seed.yearFrom,
         yearTo: seed.yearTo,
+        engineVolumeCc: spec.engineVolumeCc,
+        enginePowerHp: spec.enginePowerHp,
+        cylinderCount: spec.cylinderCount,
+        gearCount: spec.gearCount,
+        seatCount: spec.seatCount,
+        weightKg: spec.weightKg,
+        seatHeightMm: spec.seatHeightMm,
+        fuelTankLiters: spec.fuelTankLiters,
+        topSpeedKmh: spec.topSpeedKmh,
+        hasAbs: spec.hasAbs,
+        fuelTypeId: spec.fuelTypeKey ? await lookupId(prisma.fuelType, spec.fuelTypeKey) : null,
+        transmissionTypeId: spec.transmissionTypeKey
+          ? await lookupId(prisma.transmissionType, spec.transmissionTypeKey)
+          : null,
+        coolingTypeId: spec.coolingTypeKey ? await lookupId(prisma.coolingType, spec.coolingTypeKey) : null,
+        finalDriveTypeId: spec.finalDriveTypeKey
+          ? await lookupId(prisma.finalDriveType, spec.finalDriveTypeKey)
+          : null,
+        driveTypeId: spec.driveTypeKey ? await lookupId(prisma.driveType, spec.driveTypeKey) : null,
+        startTypeId: spec.startTypeKey ? await lookupId(prisma.startType, spec.startTypeKey) : null,
+        powertrainTypeId: spec.powertrainTypeKey
+          ? await lookupId(prisma.powertrainType, spec.powertrainTypeKey)
+          : null,
+        motorPowerWatt: spec.motorPowerWatt,
+        batteryCapacityWh: spec.batteryCapacityWh,
+        rangeKm: spec.rangeKm,
+        chargingTimeMinutes: spec.chargingTimeMinutes,
       },
-    },
-    update: {},
-    create: {
-      brandId: brand.id,
-      modelId: model.id,
-      variant: "",
-      yearFrom: seed.yearFrom,
-      yearTo: seed.yearTo,
-      engineVolumeCc: spec.engineVolumeCc,
-      enginePowerHp: spec.enginePowerHp,
-      cylinderCount: spec.cylinderCount,
-      gearCount: spec.gearCount,
-      seatCount: spec.seatCount,
-      weightKg: spec.weightKg,
-      seatHeightMm: spec.seatHeightMm,
-      fuelTankLiters: spec.fuelTankLiters,
-      topSpeedKmh: spec.topSpeedKmh,
-      hasAbs: spec.hasAbs,
-      fuelTypeId: spec.fuelTypeKey ? await lookupId(prisma.fuelType, spec.fuelTypeKey) : null,
-      transmissionTypeId: spec.transmissionTypeKey
-        ? await lookupId(prisma.transmissionType, spec.transmissionTypeKey)
-        : null,
-      coolingTypeId: spec.coolingTypeKey ? await lookupId(prisma.coolingType, spec.coolingTypeKey) : null,
-      finalDriveTypeId: spec.finalDriveTypeKey
-        ? await lookupId(prisma.finalDriveType, spec.finalDriveTypeKey)
-        : null,
-      driveTypeId: spec.driveTypeKey ? await lookupId(prisma.driveType, spec.driveTypeKey) : null,
-      startTypeId: spec.startTypeKey ? await lookupId(prisma.startType, spec.startTypeKey) : null,
-      powertrainTypeId: spec.powertrainTypeKey
-        ? await lookupId(prisma.powertrainType, spec.powertrainTypeKey)
-        : null,
-      motorPowerWatt: spec.motorPowerWatt,
-      batteryCapacityWh: spec.batteryCapacityWh,
-      rangeKm: spec.rangeKm,
-      chargingTimeMinutes: spec.chargingTimeMinutes,
-    },
-  });
+    });
+  }
 
   const existingListing = await prisma.vehicleListing.findFirst({
     where: { vehicleCatalogId: vehicleCatalog.id },
