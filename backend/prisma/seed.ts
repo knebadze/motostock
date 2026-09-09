@@ -4,7 +4,7 @@ import path from "node:path";
 import { prisma } from "../src/config/prisma.js";
 import { hashPassword } from "../src/lib/password.js";
 import { ROLES } from "../src/lib/roles.js";
-import { USE_CLOUD_STORAGE_KEY } from "../src/modules/settings/settings.service.js";
+import { USE_CLOUD_STORAGE_KEY } from "../src/modules/settings/constants/index.js";
 import { processImageForDisk } from "../src/lib/image-processing.js";
 import { listHomepageSections } from "../src/modules/homepage-sections/homepage-sections.service.js";
 import { getCompanyInfo } from "../src/modules/company-info/company-info.service.js";

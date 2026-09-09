@@ -4,57 +4,8 @@ import { ApiError } from "../../lib/ApiError.js";
 import { cache } from "../../lib/cache.js";
 import { isVincarioConfigured } from "../vin-decode/vin-decode.providers.js";
 import { settingsRepository } from "./settings.repository.js";
-import type { Prisma } from "../../generated/prisma/index.js";
-import type { UpdateSettingsInput, VinDecodeProvider } from "./settings.schema.js";
-
-export const USE_CLOUD_STORAGE_KEY = "use_cloud_storage";
-export const VIN_DECODE_ENABLED_KEY = "vin_decode_enabled";
-export const VIN_DECODE_PROVIDER_KEY = "vin_decode_provider";
-export const GUEST_WISHLIST_ENABLED_KEY = "guest_wishlist_enabled";
-export const GUEST_CART_ENABLED_KEY = "guest_cart_enabled";
-export const PROMO_STACKING_ENABLED_KEY = "promo_stacking_enabled";
-export const DELIVERY_TBILISI_PRICE_KEY = "delivery_tbilisi_price";
-export const DELIVERY_TBILISI_TIME_KEY = "delivery_tbilisi_time";
-export const DELIVERY_REGIONS_PRICE_KEY = "delivery_regions_price";
-export const DELIVERY_REGIONS_TIME_KEY = "delivery_regions_time";
-export const DELIVERY_EXPRESS_PRICE_KEY = "delivery_express_price";
-export const DELIVERY_EXPRESS_TIME_KEY = "delivery_express_time";
-export const FRAUD_VELOCITY_ORDER_COUNT_KEY = "fraud_velocity_order_count";
-export const FRAUD_VELOCITY_WINDOW_MINUTES_KEY = "fraud_velocity_window_minutes";
-export const FRAUD_NEW_ACCOUNT_WINDOW_HOURS_KEY = "fraud_new_account_window_hours";
-export const FRAUD_HIGH_VALUE_THRESHOLD_KEY = "fraud_high_value_threshold";
-export const FRAUD_FAILED_LOGIN_THRESHOLD_KEY = "fraud_failed_login_threshold";
-export const FRAUD_FAILED_LOGIN_WINDOW_MINUTES_KEY = "fraud_failed_login_window_minutes";
-export const FINA_WEB_CUSTOMER_ID_KEY = "fina_web_customer_id";
-export const FINA_WEB_USER_ID_KEY = "fina_web_user_id";
-export const CART_MAX_QUANTITY_KEY = "cart_max_quantity";
-export const COMPARE_MAX_ITEMS_KEY = "compare_max_items";
-export const ANALYTICS_DEFAULT_WINDOW_DAYS_KEY = "analytics_default_window_days";
-export const DASHBOARD_DEMAND_CANDIDATE_LIMIT_KEY = "dashboard_demand_candidate_limit";
-export const DASHBOARD_RECENT_CANCELLED_LIMIT_KEY = "dashboard_recent_cancelled_limit";
-export const DASHBOARD_RECENT_ORDERS_LIMIT_KEY = "dashboard_recent_orders_limit";
-export const DASHBOARD_LOW_STOCK_LIMIT_KEY = "dashboard_low_stock_limit";
-export const DASHBOARD_RECENT_ACTIVITY_WINDOW_DAYS_KEY = "dashboard_recent_activity_window_days";
-export const LOW_STOCK_THRESHOLD_KEY = "low_stock_threshold";
-export const SEARCH_RESULT_CAP_KEY = "search_result_cap";
-export const SALES_SUMMARY_LIMIT_KEY = "sales_summary_limit";
-export const RECOMMENDATIONS_DEFAULT_LIMIT_KEY = "recommendations_default_limit";
-export const RECOMMENDATIONS_CACHE_TTL_MINUTES_KEY = "recommendations_cache_ttl_minutes";
-export const RECOMMENDATION_ORDER_WEIGHT_KEY = "recommendation_order_weight";
-export const RECOMMENDATION_WISHLIST_WEIGHT_KEY = "recommendation_wishlist_weight";
-export const RECOMMENDATION_VIEW_WEIGHT_KEY = "recommendation_view_weight";
-export const RECENTLY_VIEWED_LIMIT_KEY = "recently_viewed_limit";
-export const SESSION_IDLE_TTL_MINUTES_KEY = "session_idle_ttl_minutes";
-export const SESSION_ABSOLUTE_TTL_DAYS_KEY = "session_absolute_ttl_days";
-export const RESET_TOKEN_TTL_MINUTES_KEY = "reset_token_ttl_minutes";
-export const VERIFICATION_TOKEN_TTL_HOURS_KEY = "verification_token_ttl_hours";
-export const GUEST_ID_COOKIE_MAX_AGE_DAYS_KEY = "guest_id_cookie_max_age_days";
-export const IMAGE_MAX_DIMENSION_PX_KEY = "image_max_dimension_px";
-export const IMAGE_WEBP_QUALITY_KEY = "image_webp_quality";
-export const FINA_SYNC_INTERVAL_MINUTES_KEY = "fina_sync_interval_minutes";
-export const HOMEPAGE_CACHE_TTL_MINUTES_KEY = "homepage_cache_ttl_minutes";
-
-const ALL_SETTING_KEYS = [
+import {
+  ALL_SETTING_KEYS,
   USE_CLOUD_STORAGE_KEY,
   VIN_DECODE_ENABLED_KEY,
   VIN_DECODE_PROVIDER_KEY,
@@ -73,10 +24,14 @@ const ALL_SETTING_KEYS = [
   FRAUD_HIGH_VALUE_THRESHOLD_KEY,
   FRAUD_FAILED_LOGIN_THRESHOLD_KEY,
   FRAUD_FAILED_LOGIN_WINDOW_MINUTES_KEY,
+  FRAUD_DEFAULTS,
   FINA_WEB_CUSTOMER_ID_KEY,
   FINA_WEB_USER_ID_KEY,
+  FINA_SYNC_INTERVAL_MINUTES_KEY,
+  FINA_SYNC_DEFAULTS,
   CART_MAX_QUANTITY_KEY,
   COMPARE_MAX_ITEMS_KEY,
+  CART_DEFAULTS,
   ANALYTICS_DEFAULT_WINDOW_DAYS_KEY,
   DASHBOARD_DEMAND_CANDIDATE_LIMIT_KEY,
   DASHBOARD_RECENT_CANCELLED_LIMIT_KEY,
@@ -84,6 +39,8 @@ const ALL_SETTING_KEYS = [
   DASHBOARD_LOW_STOCK_LIMIT_KEY,
   DASHBOARD_RECENT_ACTIVITY_WINDOW_DAYS_KEY,
   LOW_STOCK_THRESHOLD_KEY,
+  ANALYTICS_DEFAULTS,
+  DASHBOARD_DEFAULTS,
   SEARCH_RESULT_CAP_KEY,
   SALES_SUMMARY_LIMIT_KEY,
   RECOMMENDATIONS_DEFAULT_LIMIT_KEY,
@@ -92,59 +49,22 @@ const ALL_SETTING_KEYS = [
   RECOMMENDATION_WISHLIST_WEIGHT_KEY,
   RECOMMENDATION_VIEW_WEIGHT_KEY,
   RECENTLY_VIEWED_LIMIT_KEY,
+  SEARCH_DEFAULTS,
+  RECOMMENDATION_DEFAULTS,
   SESSION_IDLE_TTL_MINUTES_KEY,
   SESSION_ABSOLUTE_TTL_DAYS_KEY,
   RESET_TOKEN_TTL_MINUTES_KEY,
   VERIFICATION_TOKEN_TTL_HOURS_KEY,
   GUEST_ID_COOKIE_MAX_AGE_DAYS_KEY,
+  SESSION_DEFAULTS,
   IMAGE_MAX_DIMENSION_PX_KEY,
   IMAGE_WEBP_QUALITY_KEY,
-  FINA_SYNC_INTERVAL_MINUTES_KEY,
+  IMAGE_DEFAULTS,
   HOMEPAGE_CACHE_TTL_MINUTES_KEY,
-];
-
-const FRAUD_DEFAULTS = {
-  velocityOrderCount: 3,
-  velocityWindowMinutes: 30,
-  newAccountWindowHours: 24,
-  highValueThreshold: 1000,
-  failedLoginThreshold: 5,
-  failedLoginWindowMinutes: 15,
-};
-
-// In-code fallbacks for every newly-extracted "global number" — same spirit
-// as FRAUD_DEFAULTS: what the app already behaved like before these became
-// admin-editable, so an unconfigured install (or a deleted row) is
-// indistinguishable from today's hardcoded behavior.
-const CART_DEFAULTS = { maxQuantity: 99, maxCompareItems: 4 };
-const ANALYTICS_DEFAULTS = { defaultWindowDays: 30 };
-const DASHBOARD_DEFAULTS = {
-  demandCandidateLimit: 10,
-  recentCancelledLimit: 10,
-  recentOrdersLimit: 8,
-  lowStockLimit: 8,
-  recentActivityWindowDays: 30,
-  lowStockThreshold: 3,
-};
-const SEARCH_DEFAULTS = { resultCap: 500, salesSummaryLimit: 10 };
-const RECOMMENDATION_DEFAULTS = {
-  defaultLimit: 10,
-  cacheTtlMinutes: 5,
-  orderWeight: 2,
-  wishlistWeight: 1,
-  viewWeight: 0.5,
-  recentlyViewedLimit: 10,
-};
-const SESSION_DEFAULTS = {
-  idleTtlMinutes: 120,
-  absoluteTtlDays: 30,
-  resetTokenTtlMinutes: 60,
-  verificationTokenTtlHours: 24,
-  guestIdCookieMaxAgeDays: 365,
-};
-const IMAGE_DEFAULTS = { maxDimensionPx: 1600, webpQuality: 82 };
-const FINA_SYNC_DEFAULTS = { intervalMinutes: 15 };
-const CACHE_DEFAULTS = { homepageCacheTtlMinutes: 5 };
+  CACHE_DEFAULTS,
+} from "./constants/index.js";
+import type { Prisma } from "../../generated/prisma/index.js";
+import type { UpdateSettingsInput, VinDecodeProvider } from "./settings.schema.js";
 
 // Same read-through pattern as lookups.service.ts's listLookupItems, just
 // generalized over the return type since settings getters parse to
