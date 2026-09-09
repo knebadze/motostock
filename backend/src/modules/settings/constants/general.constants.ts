@@ -9,6 +9,11 @@ export const VIN_DECODE_PROVIDER_KEY = "vin_decode_provider";
 export const GUEST_WISHLIST_ENABLED_KEY = "guest_wishlist_enabled";
 export const GUEST_CART_ENABLED_KEY = "guest_cart_enabled";
 export const PROMO_STACKING_ENABLED_KEY = "promo_stacking_enabled";
+// Nullable with no built-in default (like FINA's web customer/user ids) —
+// the WhatsApp chat option in the storefront widget stays hidden until an
+// admin explicitly sets a real rep number, rather than silently relaying
+// to nothing.
+export const WHATSAPP_SUPPORT_PHONE_NUMBER_KEY = "whatsapp_support_phone_number";
 
 export const GENERAL_SETTING_KEYS = [
   USE_CLOUD_STORAGE_KEY,
@@ -17,4 +22,5 @@ export const GENERAL_SETTING_KEYS = [
   GUEST_WISHLIST_ENABLED_KEY,
   GUEST_CART_ENABLED_KEY,
   PROMO_STACKING_ENABLED_KEY,
+  WHATSAPP_SUPPORT_PHONE_NUMBER_KEY,
 ];

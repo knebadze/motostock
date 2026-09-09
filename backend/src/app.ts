@@ -74,6 +74,7 @@ import { serviceTypesRouter } from "./modules/service-types/service-types.routes
 import { serviceRecordsRouter } from "./modules/service-records/service-records.routes.js";
 import { sessionsRouter } from "./modules/sessions/sessions.routes.js";
 import { visitorsRouter } from "./modules/visitors/visitors.routes.js";
+import { whatsappChatRouter } from "./modules/whatsapp-chat/whatsapp-chat.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
 import { globalRateLimit } from "./middleware/rateLimit.middleware.js";
@@ -106,7 +107,17 @@ app.use(
   }),
 );
 app.use(cookieParser());
-app.use(express.json());
+// `verify` stashes the pre-parse raw bytes on req.rawBody — needed by the
+// WhatsApp webhook's signature check (see whatsapp-cloud-api.ts's
+// verifyWebhookSignature), which HMACs the exact bytes Meta signed, not a
+// reserialized version of the parsed body.
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      (req as express.Request).rawBody = buf;
+    },
+  }),
+);
 app.use(pinoHttp({ logger }));
 
 app.get("/api/health", (_req, res) => {
@@ -186,6 +197,7 @@ app.use("/api/service-types", serviceTypesRouter);
 app.use("/api/service-records", serviceRecordsRouter);
 app.use("/api/sessions", sessionsRouter);
 app.use("/api/visitors", visitorsRouter);
+app.use("/api/whatsapp-chat", whatsappChatRouter);
 
 // registerPath() calls above already ran as a side effect of importing the
 // routers, so the registry is fully populated by the time this generates.

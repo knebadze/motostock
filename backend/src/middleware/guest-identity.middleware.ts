@@ -8,6 +8,7 @@ import { mergeGuestCompareIntoUser } from "../modules/compare/compare.service.js
 import { mergeGuestProductViewsIntoUser } from "../modules/product-views/product-views.service.js";
 import { mergeGuestVehicleListingViewsIntoUser } from "../modules/vehicle-listing-views/vehicle-listing-views.service.js";
 import { mergeGuestVisitorDataIntoUser } from "../modules/visitors/visitors.service.js";
+import { mergeGuestChatIntoUser } from "../modules/whatsapp-chat/whatsapp-chat.service.js";
 import { getGuestIdCookieMaxAgeDays } from "../modules/settings/settings.service.js";
 
 // One shared anonymous-visitor identity, reused by every guest-accessible
@@ -70,6 +71,7 @@ export async function mergeGuestDataIntoUser(
     ["productViews", () => mergeGuestProductViewsIntoUser(guestId, userId)],
     ["vehicleListingViews", () => mergeGuestVehicleListingViewsIntoUser(guestId, userId)],
     ["visitorData", () => mergeGuestVisitorDataIntoUser(guestId, userId)],
+    ["whatsappChat", () => mergeGuestChatIntoUser(guestId, userId)],
   ];
 
   const results = await Promise.allSettled(categories.map(([, run]) => run()));

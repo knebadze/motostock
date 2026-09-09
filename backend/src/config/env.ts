@@ -57,6 +57,19 @@ const envSchema = z.object({
   VINCARIO_API_KEY: z.string().optional(),
   VINCARIO_SECRET_KEY: z.string().optional(),
   VINCARIO_BASE_URL: z.string().optional(),
+  // WhatsApp Cloud API — the business's own Cloud-API-connected number,
+  // used only to relay site-chat messages to the support rep's personal
+  // WhatsApp (see whatsapp-chat module); never used to message customers
+  // directly. WHATSAPP_WEBHOOK_VERIFY_TOKEN is a value we choose ourselves
+  // and enter into Meta's webhook config, not something Meta issues.
+  WHATSAPP_ACCESS_TOKEN: z.string().optional(),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+  WHATSAPP_WEBHOOK_VERIFY_TOKEN: z.string().optional(),
+  // Meta App Secret (App Dashboard → Settings → Basic) — signs every
+  // webhook POST body (X-Hub-Signature-256), checked on every inbound
+  // webhook call so an attacker who finds the webhook URL can't inject a
+  // fake "staff reply" into an arbitrary chat session.
+  WHATSAPP_APP_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

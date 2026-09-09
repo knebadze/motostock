@@ -97,6 +97,19 @@ export const vinDecodeRateLimit = rateLimit({
   message: { error: { message: "Too many requests, please slow down" } },
 });
 
+// Public (guest or authenticated), and every call relays a real WhatsApp
+// message to the support rep's own phone via the Cloud API — without this,
+// POST /whatsapp-chat/messages could be scripted to flood the rep's
+// WhatsApp at globalRateLimit's full 300/min, same reasoning as
+// newsletterRateLimit above.
+export const whatsappChatRateLimit = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { message: "Too many requests, please slow down" } },
+});
+
 // Image-upload routes (bank logos, etc.) sit behind requireRole(ADMIN)
 // already, so this is a second line of defense against a compromised admin
 // session being used to flood disk writes — generous enough for a normal

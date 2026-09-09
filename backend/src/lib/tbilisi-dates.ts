@@ -37,3 +37,25 @@ export function shiftDateOnly(dateOnly: string, days: number): string {
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
 }
+
+const WEEK_DAYS_BY_UTC_INDEX = [
+  "SUNDAY",
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+] as const;
+
+// Used by whatsapp-chat.service.ts's business-hours check — needs the
+// visitor-independent, Tbilisi-local day-of-week and "HH:MM" time, not the
+// server's or visitor's own timezone (a UTC-hosted server checking
+// `new Date().getDay()` directly would read the wrong calendar day for a
+// good chunk of the Tbilisi evening/night).
+export function getCurrentTbilisiDayAndTime(): { dayOfWeek: (typeof WEEK_DAYS_BY_UTC_INDEX)[number]; time: string } {
+  const tbilisiNow = new Date(Date.now() + TBILISI_OFFSET_MS);
+  const dayOfWeek = WEEK_DAYS_BY_UTC_INDEX[tbilisiNow.getUTCDay()];
+  const time = tbilisiNow.toISOString().slice(11, 16);
+  return { dayOfWeek, time };
+}

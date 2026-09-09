@@ -119,6 +119,7 @@ const SETTINGS_FALLBACK: Settings = {
   guestWishlistEnabled: false,
   guestCartEnabled: false,
   promoStackingEnabled: false,
+  whatsappSupportPhoneNumber: null,
   deliveryTbilisiPrice: 0,
   deliveryTbilisiTime: "",
   deliveryRegionsPrice: 0,
@@ -221,6 +222,8 @@ const COMPANY_INFO_FALLBACK: CompanyInfo = {
     openTime: null,
     closeTime: null,
   })),
+  isOpenNow: false,
+  whatsappChatEnabled: false,
   updatedAt: new Date(0).toISOString(),
 };
 

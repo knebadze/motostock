@@ -13,6 +13,9 @@ export const updateSettingsSchema = registry.register(
     guestWishlistEnabled: z.boolean().openapi({ example: false }),
     guestCartEnabled: z.boolean().openapi({ example: false }),
     promoStackingEnabled: z.boolean().openapi({ example: false }),
+    // Dormant (chat option hidden) until an admin sets a real number — same
+    // "no default" reasoning as finaWebCustomerId/finaWebUserId below.
+    whatsappSupportPhoneNumber: z.string().trim().max(30).nullable().openapi({ example: "+995555123456" }),
     deliveryTbilisiPrice: z.number().nonnegative().openapi({ example: 15 }),
     deliveryTbilisiTime: z.string().openapi({ example: "1-2 სამუშაო დღე" }),
     deliveryRegionsPrice: z.number().nonnegative().openapi({ example: 25 }),
@@ -85,6 +88,9 @@ export const settingsResponseSchema = registry.register(
     guestWishlistEnabled: z.boolean().openapi({ example: false }),
     guestCartEnabled: z.boolean().openapi({ example: false }),
     promoStackingEnabled: z.boolean().openapi({ example: false }),
+    // Dormant (chat option hidden) until an admin sets a real number — same
+    // "no default" reasoning as finaWebCustomerId/finaWebUserId below.
+    whatsappSupportPhoneNumber: z.string().trim().max(30).nullable().openapi({ example: "+995555123456" }),
     deliveryTbilisiPrice: z.number().nonnegative().openapi({ example: 15 }),
     deliveryTbilisiTime: z.string().openapi({ example: "1-2 სამუშაო დღე" }),
     deliveryRegionsPrice: z.number().nonnegative().openapi({ example: 25 }),

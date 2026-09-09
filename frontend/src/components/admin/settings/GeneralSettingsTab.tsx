@@ -1,9 +1,12 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState } from "react";
 import { Toggle } from "@/components/shared/Toggle";
 import { Select } from "@/components/shared/Select";
 import type { Settings, VinDecodeProvider } from "@/lib/api/settings";
+
+const inputClassName =
+  "rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary";
 
 const VIN_DECODE_PROVIDER_OPTIONS: { value: VinDecodeProvider; label: string }[] = [
   { value: "nhtsa", label: "NHTSA vPIC (უფასო — მხოლოდ აშშ-ის ბაზა)" },
@@ -20,6 +23,7 @@ export function GeneralSettingsTab({
   onSave: (next: Settings) => Promise<void>;
 }) {
   const vinProviderSelectId = useId();
+  const [whatsappPhoneDraft, setWhatsappPhoneDraft] = useState(settings.whatsappSupportPhoneNumber ?? "");
 
   return (
     <>
@@ -138,6 +142,39 @@ export function GeneralSettingsTab({
             label="პრომო კოდის დაჯამება ფასდაკლებასთან"
           />
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-border p-5">
+        <p className="font-medium text-foreground">WhatsApp ჩატის წარმომადგენლის ნომერი</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          საიტის ჩატიდან გაგზავნილი მომხმარებლის შეტყობინებები რელეირდება ამ ნომერზე
+          (WhatsApp Cloud API-ის საშუალებით) — წარმომადგენელი პასუხობს პირდაპირ თავისი
+          WhatsApp-იდან, &quot;Reply/Quote&quot;-ის გამოყენებით. სანამ ეს ნომერი ცარიელია, საიტის
+          ჩატში WhatsApp ოფცია დამალული იქნება.
+        </p>
+        <div className="mt-4 flex flex-col gap-1.5 sm:w-1/2 sm:pr-1.5">
+          <label className="text-sm font-medium">ტელეფონის ნომერი</label>
+          <input
+            type="tel"
+            placeholder="+995555123456"
+            value={whatsappPhoneDraft}
+            onChange={(event) => setWhatsappPhoneDraft(event.target.value)}
+            className={inputClassName}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() =>
+            onSave({
+              ...settings,
+              whatsappSupportPhoneNumber: whatsappPhoneDraft.trim() === "" ? null : whatsappPhoneDraft.trim(),
+            })
+          }
+          disabled={saving}
+          className="mt-5 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          შენახვა
+        </button>
       </div>
     </>
   );

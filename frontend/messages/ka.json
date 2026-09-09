@@ -386,9 +386,17 @@
     "openLabel": "ჩატის გახსნა",
     "closeLabel": "დახურვა",
     "title": "შეკითხვები გაქვთ?",
-    "greeting": "აირჩიეთ ხშირად დასმული კითხვა, ან დაგვიწერეთ WhatsApp-ზე.",
-    "whatsappCta": "დაგვიწერეთ WhatsApp-ზე",
-    "whatsappMessage": "გამარჯობა! კითხვა მაქვს MotoStock 22-თან დაკავშირებით."
+    "greeting": "აირჩიეთ ხშირად დასმული კითხვა, ან დაგვიწერეთ WhatsApp-ის საშუალებით.",
+    "whatsappStartCta": "WhatsApp ჩატის დაწყება",
+    "whatsappBackLabel": "← უკან",
+    "whatsappPhoneLabel": "თქვენი WhatsApp ნომერი",
+    "whatsappPhonePlaceholder": "+995 5XX XX XX XX",
+    "whatsappMessagePlaceholder": "დაწერეთ შეტყობინება...",
+    "whatsappSendLabel": "გაგზავნა",
+    "whatsappSendingLabel": "იგზავნება...",
+    "whatsappEmptyFieldsError": "შეავსეთ ნომერი და შეტყობინება",
+    "whatsappSendFailedError": "შეტყობინების გაგზავნა ვერ მოხერხდა",
+    "whatsappOfflineBanner": "ამჟამად სამუშაო საათებში არ ვართ — გიპასუხებთ უახლოეს სამუშაო დღეს."
   },
   "Contact": {
     "title": "კონტაქტი",

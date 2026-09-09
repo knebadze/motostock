@@ -46,6 +46,7 @@ model User {
   // user's own vehicles' history — see GarageVehicle.serviceRecords for
   // that side).
   recordedServiceRecords  ServiceRecord[]
+  whatsappChatSessions    WhatsAppChatSession[]
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
 

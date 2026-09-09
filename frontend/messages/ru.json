@@ -387,8 +387,16 @@
     "closeLabel": "Закрыть",
     "title": "Есть вопрос?",
     "greeting": "Выберите часто задаваемый вопрос или напишите нам в WhatsApp.",
-    "whatsappCta": "Написать в WhatsApp",
-    "whatsappMessage": "Здравствуйте! У меня есть вопрос по MotoStock 22."
+    "whatsappStartCta": "Начать чат в WhatsApp",
+    "whatsappBackLabel": "← Назад",
+    "whatsappPhoneLabel": "Ваш номер WhatsApp",
+    "whatsappPhonePlaceholder": "+995 5XX XX XX XX",
+    "whatsappMessagePlaceholder": "Введите сообщение...",
+    "whatsappSendLabel": "Отправить",
+    "whatsappSendingLabel": "Отправка...",
+    "whatsappEmptyFieldsError": "Заполните номер и сообщение",
+    "whatsappSendFailedError": "Не удалось отправить сообщение",
+    "whatsappOfflineBanner": "Сейчас мы вне рабочего времени — ответим в ближайший рабочий день."
   },
   "Contact": {
     "title": "Контакты",

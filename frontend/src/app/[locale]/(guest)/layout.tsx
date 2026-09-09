@@ -42,7 +42,7 @@ export default async function GuestLayout({
       <Footer />
       <CookieNotice />
       <ScrollToTopButton />
-      <ChatWidget faqs={faqs} phone={companyInfo.phone} />
+      <ChatWidget faqs={faqs} whatsappChatEnabled={companyInfo.whatsappChatEnabled} />
     </>
   );
 }

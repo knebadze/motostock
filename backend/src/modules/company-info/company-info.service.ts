@@ -2,8 +2,11 @@ import { ApiError } from "../../lib/ApiError.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { cache } from "../../lib/cache.js";
 import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
+import { getCurrentTbilisiDayAndTime } from "../../lib/tbilisi-dates.js";
+import { isWhatsAppCloudApiConfigured } from "../../lib/whatsapp-cloud-api.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
+import { getWhatsAppSupportPhoneNumber } from "../settings/settings.service.js";
 import { companyInfoRepository } from "./company-info.repository.js";
 import type { UpdateCompanyInfoInput } from "./company-info.schema.js";
 import type { WeekDay } from "../../generated/prisma/index.js";
@@ -26,9 +29,27 @@ const WEEK_DAYS: WeekDay[] = [
 
 type CompanyInfoRow = NonNullable<Awaited<ReturnType<typeof companyInfoRepository.findFirst>>>;
 
+// "HH:MM" strings compare correctly with plain `<=`/`>=` for a same-day
+// range — doesn't handle a range that spans midnight (e.g. 22:00-02:00),
+// which this business doesn't have.
+function isCurrentlyOpen(
+  byDay: Map<WeekDay, { isClosed: boolean; openTime: string | null; closeTime: string | null }>,
+): boolean {
+  const { dayOfWeek, time } = getCurrentTbilisiDayAndTime();
+  const hour = byDay.get(dayOfWeek);
+  if (!hour || hour.isClosed || !hour.openTime || !hour.closeTime) return false;
+  return time >= hour.openTime && time <= hour.closeTime;
+}
+
 // Always returns all 7 days in a fixed order, defaulting missing ones to
 // closed — the admin form always renders a complete week grid regardless of
 // how many rows actually exist in the DB (none at all right after bootstrap).
+//
+// Deliberately does NOT include isOpenNow/whatsappChatEnabled — this is the
+// part cached indefinitely by getCompanyInfo below (invalidated only on an
+// actual write), and "is it open right now" changes with the clock, not
+// with admin edits. Those two are computed fresh on every getCompanyInfo
+// call instead, layered on top of this cached shape.
 function toResponse(row: CompanyInfoRow) {
   const byDay = new Map(row.workingHours.map((hour) => [hour.dayOfWeek, hour]));
 
@@ -81,12 +102,19 @@ async function getOrCreateCompanyInfo(): Promise<CompanyInfoRow> {
 }
 
 export async function getCompanyInfo() {
-  const cached = cache.get<ReturnType<typeof toResponse>>(COMPANY_INFO_CACHE_KEY);
-  if (cached) return cached;
+  let base = cache.get<ReturnType<typeof toResponse>>(COMPANY_INFO_CACHE_KEY);
+  if (!base) {
+    base = toResponse(await getOrCreateCompanyInfo());
+    cache.set(COMPANY_INFO_CACHE_KEY, base);
+  }
 
-  const response = toResponse(await getOrCreateCompanyInfo());
-  cache.set(COMPANY_INFO_CACHE_KEY, response);
-  return response;
+  const byDay = new Map(base.workingHours.map((hour) => [hour.dayOfWeek, hour]));
+  const whatsappSupportPhoneNumber = await getWhatsAppSupportPhoneNumber();
+  return {
+    ...base,
+    isOpenNow: isCurrentlyOpen(byDay),
+    whatsappChatEnabled: isWhatsAppCloudApiConfigured() && whatsappSupportPhoneNumber != null,
+  };
 }
 
 // Same check as addresses.service.ts's assertCityExists, for the identical

@@ -9,6 +9,7 @@ export type Settings = {
   guestWishlistEnabled: boolean;
   guestCartEnabled: boolean;
   promoStackingEnabled: boolean;
+  whatsappSupportPhoneNumber: string | null;
   deliveryTbilisiPrice: number;
   deliveryTbilisiTime: string;
   deliveryRegionsPrice: number;

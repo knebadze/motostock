@@ -32,6 +32,13 @@ export type CompanyInfo = {
   latitude: number | null;
   longitude: number | null;
   workingHours: CompanyWorkingHour[];
+  // Computed server-side (Tbilisi-timezone-aware) on every read, not cached
+  // alongside the rest of this object — see backend's company-info.service.ts.
+  isOpenNow: boolean;
+  // True only once an admin has set a WhatsApp support number AND the
+  // WhatsApp Cloud API env vars are configured — gates the ChatWidget's
+  // WhatsApp option.
+  whatsappChatEnabled: boolean;
   updatedAt: string;
 };
 

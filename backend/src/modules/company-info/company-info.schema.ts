@@ -72,6 +72,8 @@ export const companyInfoResponseSchema = registry.register(
     latitude: z.number().nullable(),
     longitude: z.number().nullable(),
     workingHours: z.array(workingHourResponseSchema),
+    isOpenNow: z.boolean(),
+    whatsappChatEnabled: z.boolean(),
     updatedAt: z.iso.datetime(),
   }),
 );

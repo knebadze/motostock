@@ -387,8 +387,16 @@
     "closeLabel": "Close",
     "title": "Have a question?",
     "greeting": "Pick a frequently asked question, or message us on WhatsApp.",
-    "whatsappCta": "Message us on WhatsApp",
-    "whatsappMessage": "Hi! I have a question about MotoStock 22."
+    "whatsappStartCta": "Start a WhatsApp chat",
+    "whatsappBackLabel": "← Back",
+    "whatsappPhoneLabel": "Your WhatsApp number",
+    "whatsappPhonePlaceholder": "+995 5XX XX XX XX",
+    "whatsappMessagePlaceholder": "Type a message...",
+    "whatsappSendLabel": "Send",
+    "whatsappSendingLabel": "Sending...",
+    "whatsappEmptyFieldsError": "Please fill in both the number and the message",
+    "whatsappSendFailedError": "Failed to send the message",
+    "whatsappOfflineBanner": "We're currently outside working hours — we'll reply on the next business day."
   },
   "Contact": {
     "title": "Contact",

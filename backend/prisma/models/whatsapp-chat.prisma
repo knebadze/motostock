@@ -1,0 +1,51 @@
+enum WhatsAppMessageSender {
+  CUSTOMER
+  STAFF
+  SYSTEM
+
+  @@schema("dbo")
+}
+
+// One thread per site visitor's WhatsApp-relay conversation — the visitor
+// never messages WhatsApp directly; we relay their site-chat text to the
+// support rep's own phone number, and the rep replies from their normal
+// WhatsApp app. See the whatsapp-chat module for the full design. Owner is
+// dual-nullable exactly like ProductView/CartItem/WishlistItem (userId for
+// a logged-in account, guestId for the shared anonymous-visitor cookie),
+// with the same XOR CHECK constraint from migration
+// 20260818093000_add_owner_xor_check_constraints.
+model WhatsAppChatSession {
+  id            Int                   @id @default(autoincrement())
+  userId        Int?
+  user          User?                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestId       String?
+  customerPhone String
+  messages      WhatsAppChatMessage[]
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@index([userId])
+  @@index([guestId])
+  @@schema("dbo")
+}
+
+model WhatsAppChatMessage {
+  id        Int                   @id @default(autoincrement())
+  sessionId Int
+  session   WhatsAppChatSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender    WhatsAppMessageSender
+  body      String
+  // The WhatsApp message id Meta returns when WE relay a CUSTOMER message
+  // to the rep's phone — the rep's WhatsApp "Reply" (quote) on that message
+  // comes back through the webhook carrying this same id as
+  // `context.id`, which is how an inbound STAFF message gets matched back
+  // to the right session despite the rep's one WhatsApp thread carrying
+  // several concurrent site visitors' conversations at once. NULL for
+  // CUSTOMER rows that were never successfully relayed (offline/send
+  // failure) and for SYSTEM rows (never relayed anywhere).
+  relayWhatsAppMessageId String? @unique
+  createdAt              DateTime @default(now())
+
+  @@index([sessionId, createdAt])
+  @@schema("dbo")
+}

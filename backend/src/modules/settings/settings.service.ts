@@ -12,6 +12,7 @@ import {
   GUEST_WISHLIST_ENABLED_KEY,
   GUEST_CART_ENABLED_KEY,
   PROMO_STACKING_ENABLED_KEY,
+  WHATSAPP_SUPPORT_PHONE_NUMBER_KEY,
   DELIVERY_TBILISI_PRICE_KEY,
   DELIVERY_TBILISI_TIME_KEY,
   DELIVERY_REGIONS_PRICE_KEY,
@@ -419,6 +420,16 @@ export async function getFinaWebUserId(): Promise<number | null> {
   });
 }
 
+// Same "dormant until configured" spirit — the storefront's WhatsApp chat
+// option stays hidden (see company-info.service.ts's toResponse) until an
+// admin sets a real rep number here.
+export async function getWhatsAppSupportPhoneNumber(): Promise<string | null> {
+  return cached(WHATSAPP_SUPPORT_PHONE_NUMBER_KEY, async () => {
+    const setting = await settingsRepository.findByKey(WHATSAPP_SUPPORT_PHONE_NUMBER_KEY);
+    return setting?.value ?? null;
+  });
+}
+
 export async function getSettings() {
   return {
     useCloudStorage: await isCloudStorageEnabled(),
@@ -427,6 +438,7 @@ export async function getSettings() {
     guestWishlistEnabled: await isGuestWishlistEnabled(),
     guestCartEnabled: await isGuestCartEnabled(),
     promoStackingEnabled: await isPromoStackingEnabled(),
+    whatsappSupportPhoneNumber: await getWhatsAppSupportPhoneNumber(),
     deliveryTbilisiPrice: await getDeliveryTbilisiPrice(),
     deliveryTbilisiTime: await getDeliveryTbilisiTime(),
     deliveryRegionsPrice: await getDeliveryRegionsPrice(),
@@ -480,7 +492,7 @@ export async function getVinDecodeStatus() {
   };
 }
 
-async function upsertNullable(key: string, value: number | null, tx: Prisma.TransactionClient) {
+async function upsertNullable(key: string, value: number | string | null, tx: Prisma.TransactionClient) {
   if (value == null) {
     await settingsRepository.delete(key, tx);
   } else {
@@ -527,6 +539,7 @@ export async function updateSettings(input: UpdateSettingsInput) {
       String(input.promoStackingEnabled),
       tx,
     );
+    await upsertNullable(WHATSAPP_SUPPORT_PHONE_NUMBER_KEY, input.whatsappSupportPhoneNumber, tx);
     await settingsRepository.upsert(
       DELIVERY_TBILISI_PRICE_KEY,
       String(input.deliveryTbilisiPrice),
