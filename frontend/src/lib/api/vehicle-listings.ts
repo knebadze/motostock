@@ -68,6 +68,9 @@ export type VehicleListing = {
   viewCount: number;
   createdAt: string;
   updatedAt: string;
+  // Same "update-response-only" flag as ProductVariant's identical field —
+  // see VehicleListingInput's previousStockQuantity.
+  stockConflict?: boolean;
 };
 
 export type VehicleListingInput = {
@@ -82,6 +85,10 @@ export type VehicleListingInput = {
   isActive?: boolean;
   price: number;
   stockQuantity?: number;
+  // Same "delta against the live DB value, not an absolute overwrite"
+  // reasoning as ProductVariantInput's identical field — see
+  // VehicleListingFormModal.tsx's handleSubmit.
+  previousStockQuantity?: number;
   descriptionKa?: string | null;
   descriptionEn?: string | null;
   descriptionRu?: string | null;

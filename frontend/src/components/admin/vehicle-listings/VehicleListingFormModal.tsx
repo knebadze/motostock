@@ -132,6 +132,18 @@ export function VehicleListingFormModal({
     setLoading(true);
 
     try {
+      // On edit, only carried along when actually changed from the value
+      // this form was opened with — an untouched field stays out of the
+      // request entirely, and previousStockQuantity travels alongside a
+      // real change so the backend applies it as a delta against whatever's
+      // actually in the DB now instead of overwriting a concurrent order's
+      // stock decrement (see vehicle-listing.service.ts's
+      // updateVehicleListing). Create has no "previous" to diff against —
+      // the entered value is just the listing's starting stock.
+      const nextStockQuantity = stockQuantity ? Number(stockQuantity) : undefined;
+      const stockQuantityChanged =
+        isEditing && nextStockQuantity !== undefined && nextStockQuantity !== listing.stockQuantity;
+
       const input: VehicleListingInput = {
         vehicleCatalogId: Number(vehicleCatalogId),
         conditionId: Number(conditionId),
@@ -143,7 +155,11 @@ export function VehicleListingFormModal({
         warrantyUnit: warrantyUnit ? (warrantyUnit as "YEAR" | "MONTH") : null,
         isActive,
         price: Number(price),
-        stockQuantity: stockQuantity ? Number(stockQuantity) : undefined,
+        ...(isEditing
+          ? stockQuantityChanged
+            ? { stockQuantity: nextStockQuantity, previousStockQuantity: listing.stockQuantity }
+            : {}
+          : { stockQuantity: nextStockQuantity }),
         descriptionKa: toNullableHtml(descriptionKa),
         descriptionEn: toNullableHtml(descriptionEn),
         descriptionRu: toNullableHtml(descriptionRu),
@@ -152,6 +168,12 @@ export function VehicleListingFormModal({
       const saved = isEditing
         ? await updateVehicleListing(listing.id, input)
         : await createVehicleListing(input);
+
+      if (isEditing && saved.stockConflict) {
+        toast.info(
+          "მარაგი რედაქტირების დროს სხვა მოქმედებამ შეცვალა — თქვენი ცვლილება მიმდინარე მარაგის მიხედვით გადაანგარიშდა",
+        );
+      }
 
       if (!isEditing && pendingImageFilesRef.current.length > 0) {
         try {

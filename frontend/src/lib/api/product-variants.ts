@@ -21,6 +21,9 @@ export type ProductVariant = {
   activeDiscount: ProductVariantDiscount | null;
   createdAt: string;
   updatedAt: string;
+  // Only ever present in an update response, and only when stockQuantity
+  // was part of the request — see ProductVariantInput's previousStockQuantity.
+  stockConflict?: boolean;
 };
 
 export type ProductVariantInput = {
@@ -31,6 +34,13 @@ export type ProductVariantInput = {
   colorId?: number | null;
   price: number;
   stockQuantity?: number;
+  // The stockQuantity this variant had when the admin's edit form was
+  // populated — required alongside stockQuantity on an update so the
+  // backend can apply it as a delta against whatever's actually in the DB
+  // now instead of an absolute overwrite that could silently undo a
+  // concurrent order's stock change. Omit both fields together if stock
+  // wasn't touched (see ProductVariantsPanel.tsx's handleSaveEdit).
+  previousStockQuantity?: number;
   conditionId?: number | null;
   statusId?: number | null;
   isActive?: boolean;

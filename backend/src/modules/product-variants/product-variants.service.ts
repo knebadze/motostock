@@ -192,9 +192,29 @@ export async function updateProductVariant(id: number, input: UpdateProductVaria
     statusId: input.statusId !== undefined ? input.statusId : existing.status?.id,
   });
 
+  // Stock is applied as a signed delta against the DB's live value (see
+  // product-variants.repository.ts's update()), not folded into `data` as
+  // an absolute value — closes the "resurrection" bug where an admin
+  // saving an unrelated field change (or a genuinely intended stock edit)
+  // while a checkout had concurrently decremented/restored stock would
+  // silently overwrite that change back to whatever the admin's form last
+  // knew. previousStockQuantity is the baseline the admin's form was
+  // showing; if it no longer matches what's actually in the DB, a
+  // concurrent change happened in between, and the caller is told so
+  // (stockConflict) instead of the save just silently reconciling with no
+  // visible sign anything unusual occurred.
+  const { stockQuantity, previousStockQuantity, ...rest } = input;
+  let stockDelta: number | undefined;
+  let stockConflict = false;
+  if (stockQuantity !== undefined) {
+    const baseline = previousStockQuantity ?? existing.stockQuantity;
+    stockDelta = stockQuantity - baseline;
+    stockConflict = baseline !== existing.stockQuantity;
+  }
+
   try {
-    const row = await productVariantsRepository.update(id, input);
-    return toResponse(row);
+    const row = await productVariantsRepository.update(id, rest, stockDelta);
+    return { ...toResponse(row), stockConflict };
   } catch (err) {
     // See createProductVariant's catch above — same two-field race.
     if (isUniqueConstraintViolation(err, "sku")) {

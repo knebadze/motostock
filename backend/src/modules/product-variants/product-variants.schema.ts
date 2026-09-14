@@ -31,7 +31,17 @@ export type CreateProductVariantInput = z.infer<typeof createProductVariantSchem
 
 export const updateProductVariantSchema = registry.register(
   "UpdateProductVariantInput",
-  createProductVariantSchema.partial(),
+  createProductVariantSchema.partial().extend({
+    // The stockQuantity the admin's edit form was last showing when they
+    // started editing — required alongside stockQuantity for the update to
+    // be applied as a signed delta against whatever's actually in the DB
+    // right now (see product-variants.service.ts's updateProductVariant)
+    // instead of a plain absolute overwrite that could silently undo a
+    // concurrent order's stock decrement/restore. Omitted entirely when the
+    // admin didn't touch stock at all — then stockQuantity itself is also
+    // omitted, and neither field is sent.
+    previousStockQuantity: z.int().nonnegative().optional(),
+  }),
 );
 export type UpdateProductVariantInput = z.infer<typeof updateProductVariantSchema>;
 
@@ -65,5 +75,11 @@ export const productVariantResponseSchema = registry.register(
     activeDiscount: productVariantDiscountResponseSchema.nullable(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
+    // Only ever present on an update response, and only when stockQuantity
+    // was part of the request — true if the admin's previousStockQuantity
+    // didn't match what was actually in the DB, meaning their change was
+    // applied as a delta against a concurrently-changed value rather than
+    // the number they started from (see updateProductVariant).
+    stockConflict: z.boolean().optional(),
   }),
 );

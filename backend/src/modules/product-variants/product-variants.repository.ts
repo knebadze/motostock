@@ -50,8 +50,27 @@ export const productVariantsRepository = {
     return prisma.productVariant.create({ data, include });
   },
 
-  update(id: number, data: Partial<ProductVariantWriteData>) {
-    return prisma.productVariant.update({ where: { id }, data, include });
+  // `stockDelta`, when given, is applied as a single atomic
+  // stockQuantity = GREATEST(stockQuantity + delta, 0) statement instead of
+  // folding an absolute value into `data` — see
+  // product-variants.service.ts's updateProductVariant for why: `data`'s
+  // stockQuantity would otherwise silently overwrite whatever checkout's own
+  // decrement/increment has driven the real value to since the admin's form
+  // last read it. GREATEST(...,0) means this never fails/blocks the admin's
+  // save, even if the delta would otherwise drive it negative — same
+  // "clamp, don't reject" spirit as everywhere else stock is touched.
+  update(id: number, data: Partial<ProductVariantWriteData>, stockDelta?: number) {
+    if (!stockDelta) {
+      return prisma.productVariant.update({ where: { id }, data, include });
+    }
+    return prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        UPDATE "dbo"."ProductVariant"
+        SET "stockQuantity" = GREATEST("stockQuantity" + ${stockDelta}, 0)
+        WHERE "id" = ${id}
+      `;
+      return tx.productVariant.update({ where: { id }, data, include });
+    });
   },
 
   delete(id: number) {

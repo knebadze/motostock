@@ -187,21 +187,38 @@ export function ProductVariantsPanel({
     }
     setErrors({});
 
+    // Only sent when actually changed from the value this form was opened
+    // with — an untouched field stays out of the request entirely, so the
+    // backend never has a stale absolute value to (mis)apply. When it IS
+    // changed, previousStockQuantity travels alongside it so the backend
+    // can apply the change as a delta against whatever's actually in the DB
+    // now, instead of overwriting a concurrent order's stock decrement.
+    const nextStockQuantity = editForm.stockQuantity ? Number(editForm.stockQuantity) : undefined;
+    const stockQuantityChanged =
+      nextStockQuantity !== undefined && nextStockQuantity !== editingVariant.stockQuantity;
+
     setSaving(true);
     try {
-      await updateProductVariant(editingVariant.id, {
+      const updated = await updateProductVariant(editingVariant.id, {
         sizeId: editForm.sizeId ? Number(editForm.sizeId) : null,
         colorId: editForm.colorId ? Number(editForm.colorId) : null,
         conditionId: editForm.conditionId ? Number(editForm.conditionId) : null,
         statusId: editForm.statusId ? Number(editForm.statusId) : null,
         price: Number(editForm.price),
-        stockQuantity: editForm.stockQuantity ? Number(editForm.stockQuantity) : undefined,
+        ...(stockQuantityChanged
+          ? { stockQuantity: nextStockQuantity, previousStockQuantity: editingVariant.stockQuantity }
+          : {}),
         sku: editForm.sku.trim() ? editForm.sku.trim() : null,
         finaId: editForm.finaId.trim() ? Number(editForm.finaId) : null,
         isActive: editForm.isActive,
       });
       handleCancelEdit();
       await refresh();
+      if (updated.stockConflict) {
+        toast.info(
+          "მარაგი რედაქტირების დროს სხვა მოქმედებამ შეცვალა — თქვენი ცვლილება მიმდინარე მარაგის მიხედვით გადაანგარიშდა",
+        );
+      }
       toast.success("ვარიანტი განახლდა");
     } catch (error) {
       const message =

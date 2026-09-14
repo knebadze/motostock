@@ -401,8 +401,21 @@ export const vehicleListingRepository = {
     return prisma.vehicleListing.create({ data, include });
   },
 
-  update(id: number, data: Partial<VehicleListingWriteData>) {
-    return prisma.vehicleListing.update({ where: { id }, data, include });
+  // Same "apply as an atomic clamped delta instead of an absolute
+  // overwrite" reasoning as product-variants.repository.ts's identical
+  // `update` — see vehicle-listing.service.ts's updateVehicleListing.
+  update(id: number, data: Partial<VehicleListingWriteData>, stockDelta?: number) {
+    if (!stockDelta) {
+      return prisma.vehicleListing.update({ where: { id }, data, include });
+    }
+    return prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        UPDATE "dbo"."VehicleListing"
+        SET "stockQuantity" = GREATEST("stockQuantity" + ${stockDelta}, 0)
+        WHERE "id" = ${id}
+      `;
+      return tx.vehicleListing.update({ where: { id }, data, include });
+    });
   },
 
   delete(id: number) {

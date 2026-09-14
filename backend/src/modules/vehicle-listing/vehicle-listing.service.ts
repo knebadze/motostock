@@ -473,8 +473,21 @@ export async function updateVehicleListing(id: number, input: UpdateVehicleListi
     year: input.year ?? existing.year,
   });
 
-  const row = await vehicleListingRepository.update(id, input);
-  return toVehicleListingResponse(row);
+  // Same "apply as a delta against the DB's live value, not an absolute
+  // overwrite" reasoning as product-variants.service.ts's identical
+  // treatment — see that module's updateProductVariant for the full
+  // "resurrection" scenario this closes.
+  const { stockQuantity, previousStockQuantity, ...rest } = input;
+  let stockDelta: number | undefined;
+  let stockConflict = false;
+  if (stockQuantity !== undefined) {
+    const baseline = previousStockQuantity ?? existing.stockQuantity;
+    stockDelta = stockQuantity - baseline;
+    stockConflict = baseline !== existing.stockQuantity;
+  }
+
+  const row = await vehicleListingRepository.update(id, rest, stockDelta);
+  return { ...toVehicleListingResponse(row), stockConflict };
 }
 
 export async function deleteVehicleListing(id: number) {

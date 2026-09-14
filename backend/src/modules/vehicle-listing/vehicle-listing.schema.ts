@@ -53,7 +53,15 @@ export type CreateVehicleListingInput = z.infer<typeof createVehicleListingSchem
 
 export const updateVehicleListingSchema = registry.register(
   "UpdateVehicleListingInput",
-  baseVehicleListingSchema.partial().superRefine(requireWarrantyPair),
+  baseVehicleListingSchema
+    .partial()
+    .extend({
+      // Same "apply as a delta, not an absolute overwrite" reasoning as
+      // product-variants.schema.ts's identical field — see
+      // vehicle-listing.service.ts's updateVehicleListing.
+      previousStockQuantity: z.int().nonnegative().optional(),
+    })
+    .superRefine(requireWarrantyPair),
 );
 export type UpdateVehicleListingInput = z.infer<typeof updateVehicleListingSchema>;
 
@@ -215,6 +223,9 @@ export const vehicleListingResponseSchema = registry.register(
     viewCount: z.int(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
+    // Same "update-response-only" flag as ProductVariant's identical field —
+    // see updateVehicleListing.
+    stockConflict: z.boolean().optional(),
   }),
 );
 
