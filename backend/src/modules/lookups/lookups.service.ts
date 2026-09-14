@@ -9,6 +9,17 @@ function cacheKey(type: LookupType) {
   return `lookups:${type}`;
 }
 
+// Only "listing-statuses" has any reserved keys today — orders.service.ts's
+// resolveSoldStatusId/resolveAvailableStatusId resolve SOLD/AVAILABLE by
+// this exact key, so renaming or deleting either would silently break
+// order placement/cancellation's stock-status flips instead of failing
+// loudly at the point of misuse. Every other LookupType (colors, cities,
+// cancellation-reasons, etc.) is free-form — nothing in the codebase
+// resolves those by a specific hard-coded key.
+const RESERVED_KEYS: Partial<Record<LookupType, readonly string[]>> = {
+  "listing-statuses": ["SOLD", "AVAILABLE"],
+};
+
 export async function listLookupItems(type: LookupType) {
   const key = cacheKey(type);
   const cached = cache.get<LookupRecord[]>(key);
@@ -57,6 +68,9 @@ export async function updateLookupItem(
   }
 
   if (input.key && input.key !== existing.key) {
+    if (RESERVED_KEYS[type]?.includes(existing.key)) {
+      throw new ApiError(400, "სისტემური მნიშვნელობის key-ის შეცვლა შეუძლებელია", "LOOKUP_KEY_RESERVED");
+    }
     const byKey = await lookupsRepository.findByKey(delegate, input.key);
     if (byKey) {
       throw new ApiError(409, "ეს key უკვე გამოყენებულია");
@@ -82,6 +96,10 @@ export async function deleteLookupItem(type: LookupType, id: number) {
   const existing = await lookupsRepository.findById(delegate, id);
   if (!existing) {
     throw new ApiError(404, "ჩანაწერი ვერ მოიძებნა");
+  }
+
+  if (RESERVED_KEYS[type]?.includes(existing.key)) {
+    throw new ApiError(400, "სისტემური მნიშვნელობის წაშლა შეუძლებელია", "LOOKUP_DELETE_RESERVED");
   }
 
   try {

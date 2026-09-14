@@ -16,6 +16,15 @@ import type { OrderStatus } from "../../generated/prisma/index.js";
 // dedicated module; this replaces that entry under its own key.
 const ORDER_STATUSES_CACHE_KEY = "order-statuses";
 
+// Business logic resolves these by stable key rather than id (see
+// orders.service.ts's resolveInitialOrderStatusId, isCancelling/the
+// CANCELLED terminal-state check, and STATUS_KEY_TO_EMAIL_TEMPLATE) — an
+// admin renaming one (e.g. touching up a Georgian label and accidentally
+// editing the Key field too) or deleting an as-yet-unused one would silently
+// break checkout/cancellation/status emails instead of failing loudly at
+// the point of misuse. Every other order status an admin adds is free-form.
+const RESERVED_ORDER_STATUS_KEYS = ["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"];
+
 export async function listOrderStatuses() {
   const cached = cache.get<OrderStatus[]>(ORDER_STATUSES_CACHE_KEY);
   if (cached) return cached;
@@ -47,6 +56,13 @@ export async function updateOrderStatus(id: number, input: UpdateOrderStatusItem
   }
 
   if (input.key && input.key !== existing.key) {
+    if (RESERVED_ORDER_STATUS_KEYS.includes(existing.key)) {
+      throw new ApiError(
+        400,
+        "სისტემური სტატუსის key-ის შეცვლა შეუძლებელია",
+        "ORDER_STATUS_KEY_RESERVED",
+      );
+    }
     const byKey = await orderStatusesRepository.findByKey(input.key);
     if (byKey) {
       throw new ApiError(409, "ეს key უკვე გამოყენებულია");
@@ -91,6 +107,10 @@ export async function deleteOrderStatus(id: number) {
   const existing = await orderStatusesRepository.findById(id);
   if (!existing) {
     throw new ApiError(404, "სტატუსი ვერ მოიძებნა");
+  }
+
+  if (RESERVED_ORDER_STATUS_KEYS.includes(existing.key)) {
+    throw new ApiError(400, "სისტემური სტატუსის წაშლა შეუძლებელია", "ORDER_STATUS_DELETE_RESERVED");
   }
 
   try {
