@@ -199,13 +199,17 @@ export function CheckoutManager({
         idempotencyKey,
       });
       toast.success(t("placeSuccess"));
-      // Clears the router cache for the shared (guest) layout so the
-      // Header's cart badge (fetched there, server-side) reflects the
-      // now-emptied cart instead of staying stale after navigating to a
-      // sibling route — same fix AddToCartButton already applies for
-      // quantity changes.
-      router.refresh();
+      // router.refresh() clears the client cache for whatever route is
+      // "current" at the moment it's called (see Next's own docs) — calling
+      // it *before* push() targeted /checkout, which we're leaving right
+      // afterward, not the destination. The shared (guest) layout's cached
+      // cart badge (fetched there, server-side) then carried over stale
+      // into /account/orders/:id, only correcting itself once something
+      // else (e.g. opening the cart dropdown) forced a live fetch. Navigate
+      // first, then refresh — now "current route" is the order page, so its
+      // shared layout actually refetches.
       router.push(`/account/orders/${order.id}`);
+      router.refresh();
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 403) {
         setEmailVerificationRequired(true);
