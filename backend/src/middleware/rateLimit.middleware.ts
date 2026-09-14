@@ -110,6 +110,21 @@ export const whatsappChatRateLimit = rateLimit({
   message: { error: { message: "Too many requests, please slow down" } },
 });
 
+// Public, Meta-facing GET used only for the webhook verification handshake
+// (whatsapp-chat.controller.ts's verifyWebhook) — without this, anyone who
+// discovers the webhook URL could script unlimited guesses at
+// WHATSAPP_WEBHOOK_VERIFY_TOKEN against globalRateLimit's full 300/min
+// instead of a budget of its own. Meta itself only calls this a handful of
+// times (initial setup, and whenever the webhook config is re-saved), so
+// this stays well clear of legitimate use.
+export const whatsappWebhookVerifyRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { message: "Too many requests, please slow down" } },
+});
+
 // Image-upload routes (bank logos, etc.) sit behind requireRole(ADMIN)
 // already, so this is a second line of defense against a compromised admin
 // session being used to flood disk writes — generous enough for a normal

@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { env } from "../config/env.js";
 import { logger } from "./logger.js";
 
@@ -63,4 +63,17 @@ export function verifyWebhookSignature(rawBody: Buffer, signatureHeader: string 
   const provided = signatureHeader.slice("sha256=".length);
   if (expected.length !== provided.length) return false;
   return timingSafeEqual(Buffer.from(expected), Buffer.from(provided));
+}
+
+// Checked on the GET /webhook verification handshake (whatsapp-chat.
+// controller.ts's verifyWebhook) — hashing both sides to a fixed-length
+// digest first means timingSafeEqual never has to branch on the raw inputs'
+// lengths (it throws on a mismatch), keeping this constant-time regardless
+// of what an attacker sends as ?hub.verify_token=. Same technique as
+// oauth.controller.ts's statesMatch.
+export function verifyWebhookVerifyToken(received: string | undefined, expected: string | undefined): boolean {
+  if (!received || !expected) return false;
+  const receivedHash = createHash("sha256").update(received).digest();
+  const expectedHash = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(receivedHash, expectedHash);
 }

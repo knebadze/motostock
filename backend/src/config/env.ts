@@ -64,7 +64,10 @@ const envSchema = z.object({
   // and enter into Meta's webhook config, not something Meta issues.
   WHATSAPP_ACCESS_TOKEN: z.string().optional(),
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
-  WHATSAPP_WEBHOOK_VERIFY_TOKEN: z.string().optional(),
+  WHATSAPP_WEBHOOK_VERIFY_TOKEN: z
+    .string()
+    .min(16, "WHATSAPP_WEBHOOK_VERIFY_TOKEN must be at least 16 characters")
+    .optional(),
   // Meta App Secret (App Dashboard → Settings → Basic) — signs every
   // webhook POST body (X-Hub-Signature-256), checked on every inbound
   // webhook call so an attacker who finds the webhook URL can't inject a

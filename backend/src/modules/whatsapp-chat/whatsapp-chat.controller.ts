@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { env } from "../../config/env.js";
 import { logger } from "../../lib/logger.js";
-import { verifyWebhookSignature } from "../../lib/whatsapp-cloud-api.js";
+import { verifyWebhookSignature, verifyWebhookVerifyToken } from "../../lib/whatsapp-cloud-api.js";
 import { resolveChatOwner } from "./whatsapp-chat.middleware.js";
 import { getChatForOwner, handleInboundStaffReply, postCustomerMessage } from "./whatsapp-chat.service.js";
 import type { PostChatMessageInput } from "./whatsapp-chat.schema.js";
@@ -38,8 +38,7 @@ export function verifyWebhook(req: Request, res: Response) {
   if (
     mode === "subscribe" &&
     challengeIsValid &&
-    env.WHATSAPP_WEBHOOK_VERIFY_TOKEN &&
-    token === env.WHATSAPP_WEBHOOK_VERIFY_TOKEN
+    verifyWebhookVerifyToken(typeof token === "string" ? token : undefined, env.WHATSAPP_WEBHOOK_VERIFY_TOKEN)
   ) {
     // res.send with a string body defaults Express's Content-Type to
     // text/html — since challenge is reflected from the querystring, that

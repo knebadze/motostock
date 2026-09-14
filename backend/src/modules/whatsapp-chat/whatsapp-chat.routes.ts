@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { validate } from "../../middleware/validate.middleware.js";
-import { whatsappChatRateLimit } from "../../middleware/rateLimit.middleware.js";
+import { whatsappChatRateLimit, whatsappWebhookVerifyRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { registry } from "../../docs/registry.js";
 import * as whatsappChatController from "./whatsapp-chat.controller.js";
 import {
@@ -24,7 +24,7 @@ whatsappChatRouter.get("/messages", whatsappChatController.getMessages);
 // Meta-facing only — signature-verified inside the controller (POST) or
 // verify-token-checked (GET), not requireAuth (Meta's servers can't
 // authenticate as one of our users).
-whatsappChatRouter.get("/webhook", whatsappChatController.verifyWebhook);
+whatsappChatRouter.get("/webhook", whatsappWebhookVerifyRateLimit, whatsappChatController.verifyWebhook);
 whatsappChatRouter.post("/webhook", whatsappChatController.receiveWebhook);
 
 registry.registerPath({
