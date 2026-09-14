@@ -24,8 +24,17 @@ model WhatsAppChatSession {
   createdAt     DateTime              @default(now())
   updatedAt     DateTime              @updatedAt
 
-  @@index([userId])
-  @@index([guestId])
+  // At most one thread per owner — same VisitorPresence pattern (plain
+  // @@unique on each nullable owner column; Postgres treats NULLs as
+  // distinct, so this only constrains the non-null side). Without this, a
+  // check-then-create race in postCustomerMessage (two near-simultaneous
+  // first messages from the same visitor) could create two sessions for one
+  // owner, silently splitting their conversation and losing whichever
+  // session the widget doesn't render (see migration
+  // 20260914090000_whatsapp_chat_session_unique_owner for the dedup this
+  // required against pre-existing rows).
+  @@unique([userId])
+  @@unique([guestId])
   @@schema("dbo")
 }
 

@@ -21,9 +21,30 @@ export const whatsappChatRepository = {
     });
   },
 
-  createSession(owner: ChatOwner, customerPhone: string) {
-    return prisma.whatsAppChatSession.create({
-      data: { ...ownerWhere(owner), customerPhone },
+  // Atomic get-or-create keyed off the owner's unique constraint (see
+  // whatsapp-chat.prisma) — replaces a prior findLatestSessionForOwner-then-
+  // create sequence in postCustomerMessage that let two near-simultaneous
+  // first messages from the same visitor both see "no session yet" and both
+  // create one, splitting that visitor's conversation across two rows. An
+  // existing row's customerPhone is left untouched here; the caller compares
+  // and issues its own updateCustomerPhone when it differs. Branches on
+  // owner shape because Prisma's generated `where` type only accepts the
+  // field an @@unique actually names — same reasoning as
+  // visitors.repository.ts's touchPresence.
+  findOrCreateSessionForOwner(owner: ChatOwner, customerPhone: string) {
+    const create = { ...ownerWhere(owner), customerPhone };
+    if ("userId" in owner) {
+      return prisma.whatsAppChatSession.upsert({
+        where: { userId: owner.userId },
+        create,
+        update: {},
+        include: messagesOrderedAsc,
+      });
+    }
+    return prisma.whatsAppChatSession.upsert({
+      where: { guestId: owner.guestId },
+      create,
+      update: {},
       include: messagesOrderedAsc,
     });
   },
@@ -73,22 +94,40 @@ export const whatsappChatRepository = {
   },
 
   // Merge-on-login support (see whatsapp-chat.service.ts's
-  // mergeGuestChatIntoUser) — mirrors product-views.repository.ts's
-  // findByGuestId/mergeGuestItem pattern.
-  findSessionsByGuestId(guestId: string) {
-    return prisma.whatsAppChatSession.findMany({ where: { guestId } });
+  // mergeGuestChatIntoUser). At most one row per guestId now (see
+  // whatsapp-chat.prisma's @@unique), so this is a lookup, not a list.
+  findSessionByGuestId(guestId: string) {
+    return prisma.whatsAppChatSession.findUnique({ where: { guestId } });
+  },
+
+  findSessionByUserId(userId: number) {
+    return prisma.whatsAppChatSession.findUnique({ where: { userId } });
   },
 
   // Claims a guest session onto `userId` — `updateMany` with the guestId
   // still in the WHERE clause makes this a safe no-op (count 0) if a
   // concurrent merge of the same guest cookie already claimed it, instead
   // of two callers both re-parenting the same row or one hitting a stale
-  // read.
+  // read. Only valid when `userId` has no session of its own yet — the
+  // @@unique([userId]) constraint would reject this otherwise, which is why
+  // mergeGuestChatIntoUser checks findSessionByUserId first and merges
+  // messages instead when one already exists.
   async claimGuestSession(sessionId: number, guestId: string, userId: number) {
     const { count } = await prisma.whatsAppChatSession.updateMany({
       where: { id: sessionId, guestId },
       data: { userId, guestId: null },
     });
     return count > 0;
+  },
+
+  // Folds one session's messages onto another (see
+  // mergeGuestChatIntoUser merging a guest thread into an account's
+  // pre-existing one) and removes the now-empty source session.
+  async mergeSessionInto(fromSessionId: number, toSessionId: number) {
+    await prisma.whatsAppChatMessage.updateMany({
+      where: { sessionId: fromSessionId },
+      data: { sessionId: toSessionId },
+    });
+    await prisma.whatsAppChatSession.delete({ where: { id: fromSessionId } });
   },
 };

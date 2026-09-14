@@ -50,10 +50,8 @@ function relayBodyFor(sessionId: number, phone: string, text: string): string {
 export async function postCustomerMessage(owner: ChatOwner, phone: string, text: string) {
   const supportPhoneNumber = await assertConfigured();
 
-  let session = await whatsappChatRepository.findLatestSessionForOwner(owner);
-  if (!session) {
-    session = await whatsappChatRepository.createSession(owner, phone);
-  } else if (session.customerPhone !== phone) {
+  const session = await whatsappChatRepository.findOrCreateSessionForOwner(owner, phone);
+  if (session.customerPhone !== phone) {
     await whatsappChatRepository.updateCustomerPhone(session.id, phone);
   }
 
@@ -138,8 +136,18 @@ async function nudgeSupportRep() {
 // into the now-known account instead of leaving it stranded under a
 // guestId cookie that's about to be cleared.
 export async function mergeGuestChatIntoUser(guestId: string, userId: number) {
-  const sessions = await whatsappChatRepository.findSessionsByGuestId(guestId);
-  for (const session of sessions) {
-    await whatsappChatRepository.claimGuestSession(session.id, guestId, userId);
+  const guestSession = await whatsappChatRepository.findSessionByGuestId(guestId);
+  if (!guestSession) return;
+
+  // WhatsAppChatSession is unique per owner (see whatsapp-chat.prisma), so a
+  // plain re-parent (claimGuestSession) would violate the userId constraint
+  // if this account already has its own session — fold the guest thread's
+  // messages into it instead of trying to claim the row.
+  const userSession = await whatsappChatRepository.findSessionByUserId(userId);
+  if (userSession) {
+    await whatsappChatRepository.mergeSessionInto(guestSession.id, userSession.id);
+    return;
   }
+
+  await whatsappChatRepository.claimGuestSession(guestSession.id, guestId, userId);
 }
