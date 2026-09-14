@@ -93,10 +93,14 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
                   // place and next-themes' pre-hydration script gets inserted via
                   // React instead of parsed by the browser, which React flags as
                   // an error. A full navigation avoids that.
-                  window.location.href = getPathname({
+                  // usePathname() never includes the query string, so it's
+                  // appended here to preserve page/sort/filter state (e.g.
+                  // /shop?page=2&sort=price) across the language switch.
+                  const targetPath = getPathname({
                     href: pathname,
                     locale: code,
                   });
+                  window.location.href = `${targetPath}${window.location.search}`;
                 }}
                 className={`flex w-full items-center px-3 py-2 text-sm transition-colors hover:bg-muted hover:text-primary ${
                   code === locale ? "text-primary" : "text-foreground"
