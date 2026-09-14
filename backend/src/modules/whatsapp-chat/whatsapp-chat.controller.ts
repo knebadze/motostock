@@ -30,8 +30,23 @@ export function verifyWebhook(req: Request, res: Response) {
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
 
-  if (mode === "subscribe" && env.WHATSAPP_WEBHOOK_VERIFY_TOKEN && token === env.WHATSAPP_WEBHOOK_VERIFY_TOKEN) {
-    res.status(200).send(challenge);
+  // Meta's hub.challenge is always a digit-only string. Requiring that shape
+  // rejects anything else outright (e.g. an injected <script>) instead of
+  // ever considering it for the echo below, on top of the verify-token check.
+  const challengeIsValid = typeof challenge === "string" && /^\d+$/.test(challenge);
+
+  if (
+    mode === "subscribe" &&
+    challengeIsValid &&
+    env.WHATSAPP_WEBHOOK_VERIFY_TOKEN &&
+    token === env.WHATSAPP_WEBHOOK_VERIFY_TOKEN
+  ) {
+    // res.send with a string body defaults Express's Content-Type to
+    // text/html — since challenge is reflected from the querystring, that
+    // would let it render as HTML in a browser that opens this URL directly.
+    // Forcing text/plain here (Meta only ever reads the raw body, never
+    // renders it) closes that off regardless of the validation above.
+    res.status(200).type("text/plain").send(challenge);
     return;
   }
   res.status(403).end();
