@@ -69,7 +69,7 @@
     "sortYearDesc": "Year: newest first",
     "viewGrid": "Grid view",
     "viewList": "List view",
-    "resultCount": "{count} results",
+    "resultCount": "{count, plural, one {# result} other {# results}}",
     "outOfStock": "Out of stock",
     "lowStock": "Only {count} left",
     "discountBadge": "Sale",
@@ -105,7 +105,7 @@
   },
   "Cart": {
     "empty": "Your cart is empty.",
-    "itemCount": "{count} item(s)",
+    "itemCount": "{count, plural, one {# item} other {# items}}",
     "subtotal": "Subtotal",
     "viewCart": "View cart",
     "remove": "Remove",

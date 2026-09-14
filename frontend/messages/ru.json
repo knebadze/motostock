@@ -69,7 +69,7 @@
     "sortYearDesc": "Год: сначала новые",
     "viewGrid": "Сетка",
     "viewList": "Список",
-    "resultCount": "{count} результатов",
+    "resultCount": "{count, plural, one {# результат} few {# результата} many {# результатов} other {# результатов}}",
     "outOfStock": "Нет в наличии",
     "lowStock": "Осталось всего {count} шт.",
     "discountBadge": "Скидка",
@@ -105,7 +105,7 @@
   },
   "Cart": {
     "empty": "Корзина пуста.",
-    "itemCount": "{count} товар(ов)",
+    "itemCount": "{count, plural, one {# товар} few {# товара} many {# товаров} other {# товаров}}",
     "subtotal": "Итого",
     "viewCart": "Смотреть корзину",
     "remove": "Удалить",
