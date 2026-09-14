@@ -920,6 +920,30 @@ const STATUS_KEY_TO_EMAIL_TEMPLATE: Partial<Record<string, EmailTemplateKey>> = 
   CANCELLED: "ORDER_CANCELLED",
 };
 
+function toOrderStatusUpdateResponse(order: OrderRow) {
+  return {
+    ...toOrderResponse(order),
+    buyer: order.user,
+    riskFlags: order.riskFlags.map((flag) => ({
+      type: flag.type,
+      detail: flag.detail,
+      createdAt: flag.createdAt,
+    })),
+    cancellationReason: order.cancellationReason
+      ? {
+          id: order.cancellationReason.id,
+          key: order.cancellationReason.key,
+          nameKa: order.cancellationReason.nameKa,
+          nameEn: order.cancellationReason.nameEn,
+          nameRu: order.cancellationReason.nameRu,
+        }
+      : null,
+    cancellationNote: order.cancellationNote,
+    finaSyncStatus: order.finaSyncStatus,
+    finaOutOperationId: order.finaOutOperationId,
+  };
+}
+
 export async function updateOrderStatus(
   id: number,
   statusId: number,
@@ -967,6 +991,21 @@ export async function updateOrderStatus(
       "გაუქმებული შეკვეთის სტატუსის შეცვლა შეუძლებელია — მომხმარებელს შეუძლია იგივე შეკვეთა თავიდან გააკეთოს",
       "ORDER_ALREADY_CANCELLED",
     );
+  }
+
+  // Re-submitting the status the order is already at is a no-op. Without
+  // this, it isn't actually harmless: updateStatus's compare-and-swap below
+  // guards against a *concurrent* change landing between two calls, but it
+  // can't catch this case at all — expectedCurrentStatusId is `existing`'s
+  // own statusId, freshly read a few lines above, so when the caller asks to
+  // "change" it to that same value the CAS trivially matches itself. Two
+  // admin tabs open on the same order (second tab still shows the pre-change
+  // status and independently submits the status it thinks is "new"), or a
+  // plain client retry of this non-idempotent endpoint, would otherwise fall
+  // through to the unconditional email send below and re-notify the customer
+  // (e.g. a second "your order has shipped" email).
+  if (existing.statusId === statusId) {
+    return toOrderStatusUpdateResponse(existing);
   }
 
   // Cancelling restores the stock placeOrder originally decremented. No
@@ -1026,27 +1065,7 @@ export async function updateOrderStatus(
     });
   }
 
-  return {
-    ...toOrderResponse(order),
-    buyer: order.user,
-    riskFlags: order.riskFlags.map((flag) => ({
-      type: flag.type,
-      detail: flag.detail,
-      createdAt: flag.createdAt,
-    })),
-    cancellationReason: order.cancellationReason
-      ? {
-          id: order.cancellationReason.id,
-          key: order.cancellationReason.key,
-          nameKa: order.cancellationReason.nameKa,
-          nameEn: order.cancellationReason.nameEn,
-          nameRu: order.cancellationReason.nameRu,
-        }
-      : null,
-    cancellationNote: order.cancellationNote,
-    finaSyncStatus: order.finaSyncStatus,
-    finaOutOperationId: order.finaOutOperationId,
-  };
+  return toOrderStatusUpdateResponse(order);
 }
 
 // Admin-triggered manual retry of pushOrderSale/pushOrderReturn (see
