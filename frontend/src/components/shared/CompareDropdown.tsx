@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
@@ -44,6 +44,7 @@ export function CompareDropdown({ initialCount }: { initialCount: number }) {
   const tHeader = useTranslations("Header");
   const t = useTranslations("Account.compare");
   const tErrors = useTranslations("ApiErrors");
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<CompareItem[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -73,7 +74,13 @@ export function CompareDropdown({ initialCount }: { initialCount: number }) {
   async function handleToggle() {
     const next = !open;
     setOpen(next);
-    if (!next) return;
+    if (!next) {
+      // Drops the locally-fetched list on close so the badge falls back to
+      // `initialCount` again instead of permanently shadowing it — same fix
+      // as CartDropdown.tsx's handleToggle.
+      setItems(null);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -89,6 +96,10 @@ export function CompareDropdown({ initialCount }: { initialCount: number }) {
     setItems((current) => (current ? current.filter((item) => item.id !== id) : current));
     try {
       await removeFromCompare(id);
+      // Refreshes server components (the header's own count badge, read
+      // here as `initialCount`) — this dropdown previously never called it,
+      // same gap CompareButton.tsx had.
+      router.refresh();
     } catch (error) {
       // The row is already gone from the visible list — a failed DELETE
       // just leaves a stale row server-side, harmless and self-corrects on

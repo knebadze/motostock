@@ -50,7 +50,16 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
   async function handleToggle() {
     const next = !open;
     setOpen(next);
-    if (!next) return;
+    if (!next) {
+      // Drops the locally-fetched cart on close so the badge falls back to
+      // `initialCount` again instead of permanently shadowing it — without
+      // this, a mutation elsewhere (e.g. AddToCartButton on a product page,
+      // which does refresh initialCount via router.refresh()) never showed
+      // up here again until a hard reload, since `cart` stayed non-null for
+      // the rest of the session once the dropdown had been opened once.
+      setCart(null);
+      return;
+    }
 
     setLoading(true);
     try {

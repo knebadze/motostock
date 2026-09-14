@@ -95,6 +95,18 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
   const [pendingId, setPendingId] = useState<number | null>(null);
   const [removingItem, setRemovingItem] = useState<CartItem | null>(null);
 
+  // React's documented "adjusting state when a prop changes" pattern
+  // (setState during render, not in an effect) — without this, `cart` only
+  // ever reflects the prop this component mounted with. A router.refresh()
+  // triggered by another surface entirely (e.g. the header's CartDropdown)
+  // re-fetches `initialCart` server-side, but this already-mounted
+  // component never picked up the new prop value.
+  const [syncedInitialCart, setSyncedInitialCart] = useState(initialCart);
+  if (initialCart !== syncedInitialCart) {
+    setSyncedInitialCart(initialCart);
+    setCart(initialCart);
+  }
+
   async function handleQuantityChange(item: CartItem, nextQuantity: number) {
     if (nextQuantity < 1) return;
     setPendingId(item.id);

@@ -110,6 +110,12 @@ export function WishlistButton({
         setWishlistItemId(item.id);
         onChange?.(true);
       }
+      // Refreshes server components (the header's wishlist-count badge is
+      // fetched there) without a full page reload — same fix
+      // AddToCartButton.tsx's handleAdd/handleQuantityChange already apply;
+      // this button previously never called it at all, leaving the header
+      // badge stale until something else happened to trigger a refresh.
+      router.refresh();
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 401) {
         router.push({ pathname: "/login", query: { redirect: pathname } });
