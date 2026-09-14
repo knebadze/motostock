@@ -12,10 +12,11 @@ import {
   getViewedTogetherFromServer,
 } from "@/lib/api/server";
 import { getAncestorChain, isVehicleCategory } from "@/lib/categories-tree";
-import { buildCanonicalUrl, getAlternateLanguages, jsonLdScriptProps } from "@/lib/seo";
+import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { siteConfig } from "@/config/site";
 import { SELECTED_VEHICLE_COOKIE } from "@/lib/vehicle-selection";
+import { JsonLd } from "@/components/shared/JsonLd";
 import { ProductDetailPage } from "@/components/shop/product-detail/ProductDetailPage";
 import { VehicleListingDetailPage } from "@/components/shop/vehicle-listing-detail/VehicleListingDetailPage";
 
@@ -174,8 +175,8 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
 
     return (
       <>
-        <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScriptProps(vehicleJsonLd)} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScriptProps(breadcrumbJsonLd)} />
+        <JsonLd data={vehicleJsonLd} />
+        <JsonLd data={breadcrumbJsonLd} />
         <VehicleListingDetailPage
           listing={listing}
           breadcrumbChain={breadcrumbChain}
@@ -270,8 +271,8 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScriptProps(productJsonLd)} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScriptProps(breadcrumbJsonLd)} />
+      <JsonLd data={productJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <ProductDetailPage
         product={product}
         breadcrumbChain={breadcrumbChain}

@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { Noto_Sans_Georgian, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "@/components/shared/Toaster";
@@ -20,13 +21,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export function RootShell({
+export async function RootShell({
   lang,
   children,
 }: {
   lang: string;
   children: React.ReactNode;
 }) {
+  // next-themes renders its own pre-hydration <script> (the theme-flash
+  // guard) via dangerouslySetInnerHTML, which the site's script-src CSP
+  // (proxy.ts) would otherwise silently block — its nonce prop is exactly
+  // the escape hatch the library provides for this.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html
       lang={lang}
@@ -34,7 +41,7 @@ export function RootShell({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem nonce={nonce}>
           {children}
           <Toaster />
           <SessionLossRedirector />

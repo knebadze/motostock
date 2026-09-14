@@ -3,7 +3,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { getFaqListFromServer } from "@/lib/api/server";
 import { sanitizeRichText } from "@/lib/sanitize-html";
-import { buildCanonicalUrl, getAlternateLanguages, jsonLdScriptProps } from "@/lib/seo";
+import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
+import { JsonLd } from "@/components/shared/JsonLd";
 import { siteConfig } from "@/config/site";
 import type { Faq } from "@/lib/api/faq";
 
@@ -55,9 +56,7 @@ export default async function FaqPage() {
 
   return (
     <>
-      {faqJsonLd && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScriptProps(faqJsonLd)} />
-      )}
+      {faqJsonLd && <JsonLd data={faqJsonLd} />}
       <FaqPageView faqs={faqs} />
     </>
   );

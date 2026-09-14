@@ -12,9 +12,10 @@ import {
   getVehicleListingsPageFromServer,
 } from "@/lib/api/server";
 import { isVehicleCategory, getAncestorChain } from "@/lib/categories-tree";
-import { buildCanonicalUrl, getAlternateLanguages, jsonLdScriptProps } from "@/lib/seo";
+import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { siteConfig } from "@/config/site";
+import { JsonLd } from "@/components/shared/JsonLd";
 import { ProductShopPage } from "@/components/shop/ProductShopPage";
 import { VehicleShopPage } from "@/components/shop/VehicleShopPage";
 
@@ -123,9 +124,7 @@ export default async function CategoryShopPage({
   const isVehicle = isVehicleCategory(categories, category.id);
   const subcategories = categories.filter((item) => item.parentId === category.id);
 
-  const breadcrumbScript = (
-    <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScriptProps(breadcrumbJsonLd)} />
-  );
+  const breadcrumbScript = <JsonLd data={breadcrumbJsonLd} />;
 
   if (isVehicle) {
     const vehicleSortBy = parseVehicleSortBy(initialSort);

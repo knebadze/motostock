@@ -5,7 +5,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { RootShell } from "@/components/shared/RootShell";
 import { VisitorPingBeacon } from "@/components/shared/VisitorPingBeacon";
-import { getAlternateLanguages, getSiteUrl, jsonLdScriptProps } from "@/lib/seo";
+import { JsonLd } from "@/components/shared/JsonLd";
+import { getAlternateLanguages, getSiteUrl } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 import { getCompanyInfoFromServer } from "@/lib/api/server";
 import { resolveMediaUrl } from "@/lib/api/client";
@@ -123,9 +124,7 @@ async function LocalBusinessJsonLd({ locale }: { locale: string }) {
     ...(sameAs.length > 0 ? { sameAs } : {}),
   };
 
-  return (
-    <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScriptProps(jsonLd)} />
-  );
+  return <JsonLd data={jsonLd} />;
 }
 
 export default async function LocaleLayout({

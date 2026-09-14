@@ -34,20 +34,23 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Clickjacking protection: without these, any external site could embed
   // login/checkout/admin pages in a hidden <iframe> and hijack clicks from
-  // an already-authenticated visitor. The backend's helmet() only covers
-  // API responses, not these Next-rendered HTML pages, so this has to be
-  // set here. X-Frame-Options is the legacy header, frame-ancestors is its
-  // CSP-based replacement — set both for broad browser support. Scoped to
-  // just frame-ancestors/referrer, not a full CSP (script-src etc. would
-  // need auditing every inline script/external resource this app uses —
-  // OAuth redirects, Cloudinary, WhatsApp — a separate, larger project).
+  // an already-authenticated visitor. X-Frame-Options is the legacy header,
+  // frame-ancestors is its CSP-based replacement — set both for broad
+  // browser support. The backend's helmet() only covers API JSON responses,
+  // not these Next-rendered HTML pages, so this has to be set here too.
+  // The full Content-Security-Policy (script-src, img-src, connect-src,
+  // frame-ancestors, etc.) is NOT set here — it needs a fresh nonce per
+  // request, which a static next.config.ts header can't produce, so it
+  // lives in proxy.ts instead. X-Frame-Options/Referrer-Policy stay here
+  // since they're request-invariant, and this way they still apply outside
+  // proxy.ts's matcher too (static assets, files) even though a CSP there
+  // wouldn't mean much.
   async headers() {
     return [
       {
         source: "/:path*",
         headers: [
           { key: "X-Frame-Options", value: "DENY" },
-          { key: "Content-Security-Policy", value: "frame-ancestors 'none';" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         ],
       },
