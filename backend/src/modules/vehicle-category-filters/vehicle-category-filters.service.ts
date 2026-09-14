@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndAncestorIds, sortByAncestorPriority } from "../attributes/attributes.service.js";
 import { listLookupItems } from "../lookups/lookups.service.js";
@@ -103,11 +104,22 @@ export async function createVehicleCategoryFilter(input: CreateVehicleCategoryFi
     }
   }
 
-  const row = await vehicleCategoryFiltersRepository.create({
-    categoryId: input.categoryId,
-    filterType: input.filterType,
-    specField: input.filterType === "SPEC" ? (input.specField as VehicleSpecField) : null,
-  });
+  // Same TOCTOU gap as category-filters.service.ts's identical comment — the
+  // partial unique indexes backing this (migration
+  // 20260914100000_category_filter_config_unique_slots) turn the race's
+  // loser into a P2002 instead of a silent duplicate row.
+  const row = await runUniqueCheckedWrite(
+    () =>
+      vehicleCategoryFiltersRepository.create({
+        categoryId: input.categoryId,
+        filterType: input.filterType,
+        specField: input.filterType === "SPEC" ? (input.specField as VehicleSpecField) : null,
+      }),
+    input.filterType === "SPEC" ? "spec" : "type",
+    input.filterType === "SPEC"
+      ? "ეს მახასიათებელი უკვე დამატებულია ამ კატეგორიის ფილტრებში"
+      : `${input.filterType} ფილტრი უკვე დამატებულია ამ კატეგორიისთვის`,
+  );
   return toResponse(row);
 }
 

@@ -25,6 +25,16 @@ model CategoryFilterConfig {
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 
+  // At most one ATTRIBUTE-type row per (categoryId, attributeId), and at
+  // most one row per (categoryId, filterType) among the built-in types
+  // (PRICE/BRAND/MY_VEHICLE) — two different uniqueness keys depending on
+  // filterType, which a single @@unique can't express (Prisma's schema DSL
+  // has no partial/filtered unique index syntax), so this is migration-SQL-
+  // only. See migration 20260914100000_category_filter_config_unique_slots,
+  // same per-branch-type pattern as ProductFitmentRule (migration
+  // 20260908110000) — closes a check-then-create race in
+  // category-filters.service.ts's createCategoryFilter that could otherwise
+  // create duplicate filter slots for the same category.
   @@index([categoryId])
   @@schema("cla")
 }

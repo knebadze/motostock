@@ -53,6 +53,10 @@ model VehicleCategoryFilterConfig {
   createdAt  DateTime                  @default(now())
   updatedAt  DateTime                  @updatedAt
 
+  // Same "two uniqueness keys depending on filterType, migration-SQL-only"
+  // reasoning as CategoryFilterConfig's identical comment — see migration
+  // 20260914100000_category_filter_config_unique_slots and
+  // vehicle-category-filters.service.ts's createVehicleCategoryFilter.
   @@index([categoryId])
   @@schema("cla")
 }

@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { attributesRepository } from "../attributes/attributes.repository.js";
 import { resolveCategoryAndAncestorIds, sortByAncestorPriority } from "../attributes/attributes.service.js";
@@ -108,11 +109,24 @@ export async function createCategoryFilter(input: CreateCategoryFilterInput) {
     }
   }
 
-  const row = await categoryFiltersRepository.create({
-    categoryId: input.categoryId,
-    filterType: input.filterType,
-    attributeId: input.filterType === "ATTRIBUTE" ? input.attributeId : null,
-  });
+  // The pre-checks above only catch the non-race case — a double-click (or
+  // two admins) can both pass them before either commits. The partial
+  // unique indexes backing this (migration
+  // 20260914100000_category_filter_config_unique_slots) turn the race's
+  // loser into a P2002 instead of a silent duplicate row; this maps it back
+  // to the same clean 409 the pre-check already gives everyone else.
+  const row = await runUniqueCheckedWrite(
+    () =>
+      categoryFiltersRepository.create({
+        categoryId: input.categoryId,
+        filterType: input.filterType,
+        attributeId: input.filterType === "ATTRIBUTE" ? input.attributeId : null,
+      }),
+    input.filterType === "ATTRIBUTE" ? "attribute" : "type",
+    input.filterType === "ATTRIBUTE"
+      ? "ეს მახასიათებელი უკვე დამატებულია ამ კატეგორიის ფილტრებში"
+      : `${input.filterType} ფილტრი უკვე დამატებულია ამ კატეგორიისთვის`,
+  );
   return toResponse(row);
 }
 
