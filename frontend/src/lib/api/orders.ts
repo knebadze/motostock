@@ -88,6 +88,10 @@ export type Order = {
   total: number;
   promoCode: OrderPromoCode | null;
   bank: OrderBank | null;
+  paymentStatus: PaymentStatus;
+  paymentTransactionId: string | null;
+  paidAt: string | null;
+  paymentPlanLabel: string | null;
 };
 
 export type OrderSummary = {
@@ -164,6 +168,13 @@ export type OrderRiskFlag = {
 // NOT_APPLICABLE means nothing to retry (no FINA-linked items, or FINA/its
 // Settings aren't configured yet) — never shown as an error.
 export type FinaOrderSyncStatus = "NOT_APPLICABLE" | "SYNCED" | "FAILED";
+
+// See backend's PaymentStatus — whether a real bank gateway has actually
+// confirmed payment, entirely independent of fulfillmentMethod/status. No
+// gateway integration exists yet, so every order is NOT_APPLICABLE or
+// AWAITING_PAYMENT today; PAID/FAILED/REFUNDED aren't reachable until one
+// does.
+export type PaymentStatus = "NOT_APPLICABLE" | "AWAITING_PAYMENT" | "PAID" | "FAILED" | "REFUNDED";
 
 export type AdminOrderSummary = OrderSummary & {
   fulfillmentMethod: OrderFulfillmentMethod;

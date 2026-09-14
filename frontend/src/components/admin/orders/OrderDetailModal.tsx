@@ -12,6 +12,7 @@ import { getAnyOrder, updateOrderStatus, retryOrderFinaSync, type AdminOrder } f
 import { syncOrderStock, type OrderStockSyncItem } from "@/lib/api/fina-sync";
 import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
 import { FinaSyncBadge } from "./FinaSyncBadge";
+import { PaymentStatusBadge } from "./PaymentStatusBadge";
 import { DELIVERY_SPEED_LABELS, FULFILLMENT_LABELS, RISK_FLAG_LABELS } from "./order-labels";
 
 export function OrderDetailModal({
@@ -204,6 +205,13 @@ export function OrderDetailModal({
             </div>
           )}
 
+          {order.paymentStatus !== "NOT_APPLICABLE" && (
+            <div className="flex items-center gap-2 rounded-xl border border-border p-4">
+              <span className="text-sm font-medium text-foreground">გადახდა:</span>
+              <PaymentStatusBadge status={order.paymentStatus} />
+            </div>
+          )}
+
           {isCancellingTo && statusId !== String(order.status.id) && (
             <div className="flex flex-col gap-3 rounded-xl border border-border p-4">
               <div className="flex flex-col gap-1.5">
@@ -278,6 +286,14 @@ export function OrderDetailModal({
               )}
               {order.bank && (
                 <p className="text-sm text-muted-foreground">ბანკი: {order.bank.name.ka}</p>
+              )}
+              {order.paymentTransactionId && (
+                <p className="text-sm text-muted-foreground">
+                  ტრანზაქციის ID: {order.paymentTransactionId}
+                </p>
+              )}
+              {order.paymentPlanLabel && (
+                <p className="text-sm text-muted-foreground">გეგმა: {order.paymentPlanLabel}</p>
               )}
               {order.shippingSnapshot && (
                 <p className="text-sm text-muted-foreground">

@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { getMyOrderFromServer } from "@/lib/api/server";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { formatDateTime, formatPrice } from "@/lib/format";
-import type { OrderFulfillmentMethod } from "@/lib/api/orders";
+import type { OrderFulfillmentMethod, PaymentStatus } from "@/lib/api/orders";
 import { ReorderButton } from "@/components/shared/ReorderButton";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -14,6 +14,17 @@ const FULFILLMENT_KEY: Record<OrderFulfillmentMethod, "cardPayment" | "courierPa
   CARD: "cardPayment",
   COURIER: "courierPayment",
   PICKUP: "pickup",
+};
+
+// NOT_APPLICABLE has no key — it's rendered as nothing (see below), same as
+// the admin PaymentStatusBadge convention.
+const PAYMENT_STATUS_KEY: Partial<
+  Record<PaymentStatus, "paymentStatusAwaitingPayment" | "paymentStatusPaid" | "paymentStatusFailed" | "paymentStatusRefunded">
+> = {
+  AWAITING_PAYMENT: "paymentStatusAwaitingPayment",
+  PAID: "paymentStatusPaid",
+  FAILED: "paymentStatusFailed",
+  REFUNDED: "paymentStatusRefunded",
 };
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -60,6 +71,14 @@ function OrderDetailPageView({ order }: { order: NonNullable<Awaited<ReturnType<
               <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                 <span>{t("bankLabel")}:</span>
                 <span className="font-medium text-foreground">{order.bank.name[locale]}</span>
+              </p>
+            )}
+            {PAYMENT_STATUS_KEY[order.paymentStatus] && (
+              <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                <span>{t("paymentStatusLabel")}:</span>
+                <span className="font-medium text-foreground">
+                  {t(PAYMENT_STATUS_KEY[order.paymentStatus]!)}
+                </span>
               </p>
             )}
             {order.shippingSnapshot && (

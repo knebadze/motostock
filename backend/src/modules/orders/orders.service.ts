@@ -527,6 +527,10 @@ function toOrderResponse(order: OrderRow) {
           logoUrl: order.bank.logoUrl,
         }
       : null,
+    paymentStatus: order.paymentStatus,
+    paymentTransactionId: order.paymentTransactionId,
+    paidAt: order.paidAt,
+    paymentPlanLabel: order.paymentPlanLabel,
     items: order.items.map((item) =>
       toItemResponse({
         id: item.id,
@@ -651,6 +655,9 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
         deliveryTimeSnapshot: delivery.deliveryTimeSnapshot,
         total,
         ipAddress,
+        // No gateway integration exists yet (see PaymentStatus's own
+        // comment) — this is purely additive labeling for now.
+        paymentStatus: input.fulfillmentMethod === "CARD" ? "AWAITING_PAYMENT" : "NOT_APPLICABLE",
         items,
         soldStatusId,
         cartItemIds: breakdown.cartItemIds,

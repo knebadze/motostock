@@ -137,6 +137,19 @@ const orderBankSchema = z.object({
   logoUrl: z.string().nullable(),
 });
 
+// See order.prisma's PaymentStatus — whether a real bank gateway has
+// actually confirmed payment for this order, entirely independent of
+// fulfillmentMethod/status. NOT_APPLICABLE covers both non-CARD orders and
+// CARD orders placed before any gateway integration exists; nothing in the
+// checkout/status flow reads or enforces this yet (see orders.service.ts).
+export const paymentStatusSchema = z.enum([
+  "NOT_APPLICABLE",
+  "AWAITING_PAYMENT",
+  "PAID",
+  "FAILED",
+  "REFUNDED",
+]);
+
 export const orderResponseSchema = registry.register(
   "Order",
   z.object({
@@ -147,6 +160,10 @@ export const orderResponseSchema = registry.register(
     shippingSnapshot: shippingSnapshotSchema.nullable(),
     promoCode: promoCodeSummarySchema.nullable(),
     bank: orderBankSchema.nullable(),
+    paymentStatus: paymentStatusSchema,
+    paymentTransactionId: z.string().nullable(),
+    paidAt: z.iso.datetime().nullable(),
+    paymentPlanLabel: z.string().nullable(),
     items: z.array(orderItemResponseSchema),
     subtotal: z.number(),
     discountTotal: z.number(),

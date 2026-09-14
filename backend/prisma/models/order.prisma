@@ -33,6 +33,28 @@ enum FinaOrderSyncStatus {
   @@schema("dbo")
 }
 
+// A real bank-gateway integration is not built yet (see Bank's own comment
+// and orders.service.ts's resolveBank, which is still a plain DB lookup, no
+// gateway call) — this tracks whether one has actually been paid, entirely
+// independent of fulfillmentMethod/status. Deliberately the same shape as
+// FinaOrderSyncStatus: a parallel status field on Order, not folded into the
+// PENDING/CONFIRMED/... fulfillment lifecycle, since "paid" and "shipped"
+// are orthogonal facts about an order.
+enum PaymentStatus {
+  // Default — fulfillmentMethod is COURIER/PICKUP (no payment gateway
+  // involved at all), or CARD but no gateway is wired up for the chosen
+  // bank yet. Not a failure state.
+  NOT_APPLICABLE
+  // A CARD order was placed against a bank a gateway integration exists
+  // for, but the gateway hasn't yet confirmed the payment.
+  AWAITING_PAYMENT
+  PAID
+  FAILED
+  REFUNDED
+
+  @@schema("dbo")
+}
+
 // A placed order — the historical record of a checkout. Unlike CartItem,
 // everything that could later change (address, promo code, product name)
 // is snapshotted at creation time (see shippingSnapshot/promoCodeSnapshot/
@@ -135,6 +157,24 @@ model Order {
   // never blocks checkout — see orders.service.ts).
   finaOutOperationId Int?
   finaSyncStatus     FinaOrderSyncStatus @default(NOT_APPLICABLE)
+
+  // Foundation for the real bank-gateway integration (see PaymentStatus's
+  // own comment) — set at placeOrder time to AWAITING_PAYMENT for a CARD
+  // order, NOT_APPLICABLE otherwise. Nothing reads or enforces this yet;
+  // it's purely additive labeling until a real gateway client exists.
+  paymentStatus PaymentStatus @default(NOT_APPLICABLE)
+  // The gateway's own reference for this payment, once one exists — needed
+  // later to call that gateway's refund endpoint on cancellation, same role
+  // finaOutOperationId plays for FINA's return document.
+  paymentTransactionId String?
+  // Set exactly once, atomically, when paymentStatus first becomes PAID —
+  // same "don't reuse updatedAt" reasoning as cancelledAt above.
+  paidAt DateTime?
+  // Free-form (e.g. "6 თვე, 0%") rather than a structured plan schema,
+  // since installment/split-payment is chosen on the bank's own hosted
+  // page and the real shape a bank reports back isn't known yet — see
+  // Bank.supportsInstallment/supportsSplitPayment.
+  paymentPlanLabel String?
 
   items     OrderItem[]
   createdAt DateTime    @default(now())

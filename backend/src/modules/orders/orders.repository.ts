@@ -5,6 +5,7 @@ import type {
   CartItemType,
   OrderDeliverySpeed,
   OrderFulfillmentMethod,
+  PaymentStatus,
   Prisma,
 } from "../../generated/prisma/index.js";
 
@@ -122,6 +123,10 @@ export type PlaceOrderInput = {
   deliveryTimeSnapshot?: string | null;
   total: number;
   ipAddress?: string | null;
+  // Resolved once by orders.service.ts from fulfillmentMethod (see
+  // PaymentStatus's own comment in order.prisma) — purely additive labeling
+  // until a real gateway integration exists.
+  paymentStatus: PaymentStatus;
   items: PlaceOrderItemInput[];
   // Resolved once by orders.service.ts (same "look up the lookup row by
   // its stable key" pattern as statusId/PENDING above) — applied below to
