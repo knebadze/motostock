@@ -482,13 +482,27 @@ export async function getSettings() {
   };
 }
 
-// The only settings data exposed publicly — just enough for a guest-facing
-// form to know whether to show the "fill via VIN" button. Everything else
-// about Settings (including whether Cloudinary is on) stays admin-only.
+// One of only two bits of settings data exposed publicly (see
+// getGuestFeatureStatus below) — just enough for a guest-facing form to know
+// whether to show the "fill via VIN" button. Everything else about Settings
+// (including whether Cloudinary is on) stays admin-only.
 export async function getVinDecodeStatus() {
   return {
     enabled: await isVinDecodeEnabled(),
     provider: await getVinDecodeProvider(),
+  };
+}
+
+// The other publicly-exposed bit — lets guest-facing wishlist/cart widgets
+// (WishlistButton.tsx, AddToCartButton.tsx) skip their per-item "is this
+// already saved?" status check entirely for a logged-out visitor when the
+// admin has the corresponding guest feature turned off, instead of firing it
+// unconditionally and just eating the resulting 401 (resolveWishlistOwner/
+// resolveCartOwner reject a disabled guest exactly like requireAuth would).
+export async function getGuestFeatureStatus() {
+  return {
+    guestWishlistEnabled: await isGuestWishlistEnabled(),
+    guestCartEnabled: await isGuestCartEnabled(),
   };
 }
 

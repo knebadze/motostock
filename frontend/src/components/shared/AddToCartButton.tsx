@@ -6,6 +6,8 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
+import { isKnownAuthState } from "@/lib/api/auth-state";
+import { isGuestCartKnownEnabled } from "@/lib/api/guest-feature-state";
 import {
   addToCart,
   getCartStatus,
@@ -57,6 +59,11 @@ export function AddToCartButton({
   }
 
   useEffect(() => {
+    // A logged-out visitor whose session Header already knows isn't
+    // authenticated, on a site where the admin hasn't turned on guest cart
+    // access, can never get anything but a 401 here — skip the request
+    // entirely instead of firing it just to catch that every time.
+    if (!isKnownAuthState() && !isGuestCartKnownEnabled()) return;
     let cancelled = false;
 
     async function checkStatus() {
@@ -69,7 +76,9 @@ export function AddToCartButton({
           setCartItem(items.length > 0 ? { id: items[0].id, quantity: items[0].quantity } : null);
         }
       } catch {
-        // Logged-out visitors 401 here — the button just starts as "add".
+        // Logged-out visitors 401 here when guest cart access is on but
+        // this particular visitor has nothing in it yet — the button just
+        // starts as "add".
       }
     }
 

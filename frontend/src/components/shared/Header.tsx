@@ -15,6 +15,8 @@ import { facebookIcon, instagramIcon, tiktokIcon, youtubeIcon } from "@/componen
 import { logoutUser, type User } from "@/lib/api/auth";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { setKnownAuthState } from "@/lib/api/auth-state";
+import { setKnownGuestFeatureStatus } from "@/lib/api/guest-feature-state";
+import type { GuestFeatureStatus } from "@/lib/api/server";
 import { formatShortName } from "@/lib/format";
 import { attachMenuKeyboardNav } from "@/lib/menuKeyboardNav";
 import type { Category } from "@/lib/api/categories";
@@ -65,6 +67,7 @@ export function Header({
   wishlistCount = 0,
   compareCount = 0,
   cartCount = 0,
+  guestFeatureStatus = { guestWishlistEnabled: false, guestCartEnabled: false },
 }: {
   user?: User | null;
   /** Full category tree (all depths) — the header derives top-level nav items and their children itself. */
@@ -73,6 +76,7 @@ export function Header({
   wishlistCount?: number;
   compareCount?: number;
   cartCount?: number;
+  guestFeatureStatus?: GuestFeatureStatus;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -88,10 +92,14 @@ export function Header({
 
   // Records this page's own SSR-resolved auth state for client.ts's 401
   // interceptor (see auth-state.ts) — every guest page mounts this exactly
-  // once per navigation/refresh with a fresh `user` prop.
+  // once per navigation/refresh with a fresh `user` prop. Same treatment for
+  // guestFeatureStatus (see guest-feature-state.ts), so WishlistButton/
+  // AddToCartButton elsewhere on the page can skip their status check
+  // instead of always firing it and relying on a 401.
   useEffect(() => {
     setKnownAuthState(user != null);
-  }, [user]);
+    setKnownGuestFeatureStatus(guestFeatureStatus);
+  }, [user, guestFeatureStatus]);
 
   const topLevelCategories = categories.filter((category) => category.parentId === null);
   const socialLinks = [

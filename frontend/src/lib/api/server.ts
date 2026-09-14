@@ -183,6 +183,18 @@ export async function getVinDecodeStatusFromServer(): Promise<{
   });
 }
 
+export type GuestFeatureStatus = { guestWishlistEnabled: boolean; guestCartEnabled: boolean };
+
+export async function getGuestFeatureStatusFromServer(): Promise<GuestFeatureStatus> {
+  return fetchFromServer<GuestFeatureStatus, GuestFeatureStatus>("/settings/guest-feature-status", {
+    // Fails closed: if this lookup itself fails, WishlistButton/
+    // AddToCartButton just fall back to always attempting their status
+    // check (today's behavior) rather than assuming a guest feature is on.
+    fallback: { guestWishlistEnabled: false, guestCartEnabled: false },
+    extract: (data) => data,
+  });
+}
+
 export async function getUsersFromServer(): Promise<AdminUsersPage> {
   return fetchFromServer<AdminUsersPage, AdminUsersPage>("/users", {
     params: { page: 1, pageSize: 20 },

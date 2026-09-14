@@ -12,6 +12,11 @@ export async function getVinDecodeStatus(_req: Request, res: Response) {
   res.status(200).json(status);
 }
 
+export async function getGuestFeatureStatus(_req: Request, res: Response) {
+  const status = await settingsService.getGuestFeatureStatus();
+  res.status(200).json(status);
+}
+
 export async function update(
   req: Request<unknown, unknown, UpdateSettingsInput>,
   res: Response,

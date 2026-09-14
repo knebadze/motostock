@@ -151,3 +151,15 @@ export const vinDecodeStatusResponseSchema = registry.register(
     provider: vinDecodeProviderSchema.openapi({ example: "nhtsa" }),
   }),
 );
+
+// Same "just the resulting flag, not the Settings resource" reasoning as
+// vinDecodeStatusResponseSchema above — lets guest-facing wishlist/cart
+// widgets decide whether to even attempt a status check instead of always
+// firing one and relying on a 401 to find out.
+export const guestFeatureStatusResponseSchema = registry.register(
+  "GuestFeatureStatus",
+  z.object({
+    guestWishlistEnabled: z.boolean().openapi({ example: false }),
+    guestCartEnabled: z.boolean().openapi({ example: false }),
+  }),
+);

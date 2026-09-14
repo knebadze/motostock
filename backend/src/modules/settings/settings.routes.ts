@@ -7,6 +7,7 @@ import { errorResponseSchema } from "../../docs/schemas.js";
 import { ROLES } from "../../lib/roles.js";
 import * as settingsController from "./settings.controller.js";
 import {
+  guestFeatureStatusResponseSchema,
   settingsResponseSchema,
   updateSettingsSchema,
   vinDecodeStatusResponseSchema,
@@ -19,6 +20,12 @@ export const settingsRouter = Router();
 // the "fill via VIN" button. The admin fully controls this via the
 // settings page; this route only exposes the resulting flag.
 settingsRouter.get("/vin-decode-status", settingsController.getVinDecodeStatus);
+
+// Public, same reasoning as vin-decode-status above — lets WishlistButton/
+// AddToCartButton skip their per-item status check for a logged-out visitor
+// when the corresponding guest feature is off, instead of always firing it
+// and relying on the resulting 401.
+settingsRouter.get("/guest-feature-status", settingsController.getGuestFeatureStatus);
 
 settingsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
@@ -37,6 +44,19 @@ registry.registerPath({
     200: {
       description: "VIN decode status",
       content: { "application/json": { schema: vinDecodeStatusResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/settings/guest-feature-status",
+  tags: ["Settings"],
+  summary: "Get whether guest wishlist/cart access is enabled (public)",
+  responses: {
+    200: {
+      description: "Guest feature status",
+      content: { "application/json": { schema: guestFeatureStatusResponseSchema } },
     },
   },
 });

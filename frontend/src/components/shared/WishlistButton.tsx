@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import { ApiRequestError } from "@/lib/api/client";
+import { isKnownAuthState } from "@/lib/api/auth-state";
+import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
 import {
   addToWishlist,
   getWishlistStatus,
@@ -58,6 +60,11 @@ export function WishlistButton({
 
   useEffect(() => {
     if (initialWishlistItemId !== undefined) return;
+    // A logged-out visitor whose session Header already knows isn't
+    // authenticated, on a site where the admin hasn't turned on guest
+    // wishlist access, can never get anything but a 401 here — skip the
+    // request entirely instead of firing it just to catch that every time.
+    if (!isKnownAuthState() && !isGuestWishlistKnownEnabled()) return;
     let cancelled = false;
 
     async function checkStatus() {
@@ -70,7 +77,9 @@ export function WishlistButton({
           setWishlistItemId(status.items[0].id);
         }
       } catch {
-        // Logged-out visitors 401 here — the heart just starts empty.
+        // Logged-out visitors 401 here when guest wishlist access is on but
+        // this particular visitor was never added — the heart just starts
+        // empty.
       }
     }
 
