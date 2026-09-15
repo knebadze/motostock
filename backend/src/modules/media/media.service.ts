@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { prisma } from "../../config/prisma.js";
 import { UPLOAD_ROOT } from "../../lib/storage.js";
 import { logger } from "../../lib/logger.js";
 import { isCloudStorageEnabled } from "../settings/settings.service.js";
@@ -36,10 +37,27 @@ export async function pruneOrphanedRichTextImages(): Promise<number> {
   const dir = path.join(UPLOAD_ROOT, RICH_TEXT_SUBFOLDER);
   if (!fs.existsSync(dir)) return 0;
 
-  const [terms, campaigns] = await Promise.all([
-    termsRepository.findFirst(),
-    newsletterCampaignsRepository.findMany(),
-  ]);
+  // Every table with a RichTextEditor field that can embed one of these
+  // images — the uploader (media.controller.ts) isn't tied to any single
+  // entity, so ALL of these need to be checked, not just Terms/Newsletter.
+  // Missing one here means a live, referenced image gets deleted out from
+  // under a published page once it clears the grace period below.
+  const [terms, campaigns, products, vehicleCatalogEntries, vehicleListings, faqs, emailTemplates] =
+    await Promise.all([
+      termsRepository.findFirst(),
+      newsletterCampaignsRepository.findMany(),
+      prisma.product.findMany({
+        select: { descriptionKa: true, descriptionEn: true, descriptionRu: true },
+      }),
+      prisma.vehicleCatalog.findMany({
+        select: { descriptionKa: true, descriptionEn: true, descriptionRu: true },
+      }),
+      prisma.vehicleListing.findMany({
+        select: { descriptionKa: true, descriptionEn: true, descriptionRu: true },
+      }),
+      prisma.faq.findMany({ select: { answerKa: true, answerEn: true, answerRu: true } }),
+      prisma.emailTemplate.findMany({ select: { bodyKa: true, bodyEn: true, bodyRu: true } }),
+    ]);
 
   // One haystack of every place a rich-text image URL could still be
   // referenced from. A plain substring check per file (below) rather than
@@ -53,6 +71,19 @@ export async function pruneOrphanedRichTextImages(): Promise<number> {
     terms?.contentEn ?? "",
     terms?.contentRu ?? "",
     ...campaigns.map((campaign) => campaign.body),
+    ...products.flatMap((p) => [p.descriptionKa ?? "", p.descriptionEn ?? "", p.descriptionRu ?? ""]),
+    ...vehicleCatalogEntries.flatMap((v) => [
+      v.descriptionKa ?? "",
+      v.descriptionEn ?? "",
+      v.descriptionRu ?? "",
+    ]),
+    ...vehicleListings.flatMap((v) => [
+      v.descriptionKa ?? "",
+      v.descriptionEn ?? "",
+      v.descriptionRu ?? "",
+    ]),
+    ...faqs.flatMap((f) => [f.answerKa, f.answerEn, f.answerRu]),
+    ...emailTemplates.flatMap((e) => [e.bodyKa, e.bodyEn, e.bodyRu]),
   ].join("\n");
 
   const now = Date.now();
