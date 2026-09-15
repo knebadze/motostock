@@ -109,7 +109,7 @@ export function EditBulkDiscountEventModal({
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium">აღწერა (ქართულად)</label>
               <textarea
