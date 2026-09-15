@@ -6,6 +6,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, useServerPagination } from "@/components/shared/Pagination";
 import { Loader } from "@/components/shared/Loader";
+import { RowActions } from "@/components/shared/RowActions";
 import {
   deleteBulkDiscountEvent,
   listBulkDiscountEvents,
@@ -102,44 +103,35 @@ export function DiscountEventsPanel() {
           getRowKey={(event) => event.id}
           emptyMessage="ივენთი ჯერ არ შექმნილა"
           actions={(event) => (
-            <div className="flex justify-end gap-1">
-              <button
-                type="button"
-                onClick={() => setEditingEvent(event)}
-                className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
-              >
-                რედაქტირება
-              </button>
-              <button
-                type="button"
-                onClick={() => setRepeatingEvent(event)}
-                className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
-              >
-                გამეორება
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeletingEvent(event)}
-                aria-label="წაშლა"
-                title="წაშლა"
-                className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-red-600"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="size-4"
+            <RowActions
+              onEdit={() => setEditingEvent(event)}
+              onDelete={() => setDeletingEvent(event)}
+              extra={
+                <button
+                  type="button"
+                  onClick={() => setRepeatingEvent(event)}
+                  aria-label="გამეორება"
+                  title="გამეორება"
+                  className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
                 >
-                  <path d="M3 6h18" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                </svg>
-              </button>
-            </div>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="size-4"
+                  >
+                    <path d="m17 2 4 4-4 4" />
+                    <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+                    <path d="m7 22-4-4 4-4" />
+                    <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+                  </svg>
+                </button>
+              }
+            />
           )}
         />
         <Pagination currentPage={data.page} totalPages={totalPages} onPageChange={loadPage} />
