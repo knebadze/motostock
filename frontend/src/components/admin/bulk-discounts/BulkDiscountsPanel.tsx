@@ -39,14 +39,16 @@ function candidateAttributeSummary(candidate: BulkDiscountCandidate): string {
 }
 
 export function BulkProductDiscountsPanel({ categories }: { categories: Category[] }) {
-  const categoryOptions = useMemo(
-    () =>
-      flattenTree(categories).map((category) => ({
-        value: String(category.id),
-        label: `${"— ".repeat(category.depth)}${category.name.ka}`,
-      })),
-    [categories],
-  );
+  const categoryOptions = useMemo(() => {
+    // Excludes vehicle (transport) categories — those are vehicle listings,
+    // not products, and belong only in BulkVehicleListingDiscountsPanel's
+    // own category picker below.
+    const productCategories = categories.filter((category) => !isVehicleCategory(categories, category.id));
+    return flattenTree(productCategories).map((category) => ({
+      value: String(category.id),
+      label: `${"— ".repeat(category.depth)}${category.name.ka}`,
+    }));
+  }, [categories]);
 
   const [categoryId, setCategoryId] = useState("");
   const [candidates, setCandidates] = useState<BulkDiscountCandidate[]>([]);
