@@ -68,7 +68,7 @@ export const promoCodesRepository = {
   // see promo-code.prisma's usageLimit comment. Excludes CANCELLED orders:
   // a cancelled order never actually consumed its discount (same "restore
   // what was consumed" reasoning as stock restoration on cancel — see
-  // orders.service.ts's updateOrderStatus), so it shouldn't count against
+  // orders-admin.service.ts's updateOrderStatus), so it shouldn't count against
   // the limit or block the same user from reusing the code.
   countUsage(promoCodeId: number) {
     return prisma.order.count({

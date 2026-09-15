@@ -61,7 +61,7 @@ type BulkImportRowResult = {
 
 // Best-effort, per-row — one bad row never blocks the rest of the file,
 // same "partial success, detailed report" shape already established by
-// orders.service.ts's reorderOrder. Row-level validation reuses the exact
+// orders-query.service.ts's reorderOrder. Row-level validation reuses the exact
 // same zod schema and FK/duplicate checks as the single-row admin create
 // endpoint (createVehicleCatalogSchema, assertRefsExist, assertNoDuplicate)
 // so a bulk-imported row can never end up more (or less) permissive than

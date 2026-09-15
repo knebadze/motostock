@@ -376,7 +376,7 @@ async function attemptOrderSalePush(order: FinaOrderPushInput): Promise<number> 
   return finaOutOperationId;
 }
 
-// Mirrors an order's local stock-restore-on-cancel (see orders.service.ts's
+// Mirrors an order's local stock-restore-on-cancel (see orders-admin.service.ts's
 // updateOrderStatus RESTORE branch) into FINA via saveDocCustomerReturn,
 // referencing the stored finaOutOperationId as out_id. Throws
 // FinaPushSkipped when finaOutOperationId is null — the original sale was
@@ -421,7 +421,7 @@ export async function pushOrderSale(order: FinaOrderPushInput): Promise<void> {
   }
 }
 
-// Fires from updateOrderStatus's RESTORE branch (see orders.service.ts).
+// Fires from updateOrderStatus's RESTORE branch (see orders-admin.service.ts).
 // Same best-effort catch/log/no-op contract as pushOrderSale.
 export async function pushOrderReturn(
   order: FinaOrderPushInput & { finaOutOperationId: number | null },
@@ -435,7 +435,7 @@ export async function pushOrderReturn(
   }
 }
 
-// Admin-triggered manual retry (see orders.service.ts's retryOrderFinaSync,
+// Admin-triggered manual retry (see orders-admin.service.ts's retryOrderFinaSync,
 // wired to the order-detail "გაუშვი ხელით" button) — unlike the two
 // best-effort pushes above, this is a deliberate admin click with its own
 // error toast, so it surfaces failures as a thrown ApiError instead of

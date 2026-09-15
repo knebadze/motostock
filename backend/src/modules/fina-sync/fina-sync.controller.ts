@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import * as finaSyncService from "./fina-sync.service.js";
-import { confirmOrderAfterFinaCheck } from "../orders/orders.service.js";
+import { confirmOrderAfterFinaCheck } from "../orders/orders-admin.service.js";
 
 export async function run(req: Request, res: Response) {
   const result = await finaSyncService.runSync("MANUAL", req.user!.sub);
@@ -18,7 +18,7 @@ export async function syncOrder(req: Request, res: Response) {
 
   // Every one of this order's FINA-linked items was found and refreshed —
   // strong enough confirmation to auto-confirm a still-PENDING order (see
-  // orders.service.ts's confirmOrderAfterFinaCheck), same bar an admin
+  // orders-admin.service.ts's confirmOrderAfterFinaCheck), same bar an admin
   // manually reviewing the sync result would apply themselves.
   const order =
     result.checked > 0 && result.updated === result.checked
