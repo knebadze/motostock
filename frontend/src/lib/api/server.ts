@@ -28,6 +28,7 @@ import type { ServiceType } from "./service-types";
 import type { HomepageSection } from "./homepage-sections";
 import type { PromoCode, PromoCodeDomain } from "./promo-codes";
 import type { WishlistItem } from "./wishlist";
+import type { MyNewsletterStatus } from "./newsletter";
 import type { CompareItem } from "./compare";
 import type { Cart } from "./cart";
 import type { AdminOrdersPage, Order, OrderSummary } from "./orders";
@@ -88,6 +89,19 @@ export async function getCurrentUserFromServer(): Promise<User | null> {
   return fetchFromServer<{ user: User }, User | null>("/users/me", {
     fallback: null,
     extract: (data) => data.user,
+    requireAuth: true,
+  });
+}
+
+// Backs the account-page newsletter toggle's initial render — "NOT_SUBSCRIBED"
+// fallback matches what the endpoint itself returns for an account whose
+// email has no NewsletterSubscriber row (see newsletter.service.ts's
+// getMyStatus), so a fetch failure degrades to the same state as "never
+// subscribed" rather than a distinct error state.
+export async function getMyNewsletterStatusFromServer(): Promise<MyNewsletterStatus> {
+  return fetchFromServer<{ status: MyNewsletterStatus }, MyNewsletterStatus>("/newsletter/my-status", {
+    fallback: "NOT_SUBSCRIBED",
+    extract: (data) => data.status,
     requireAuth: true,
   });
 }

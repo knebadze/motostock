@@ -431,7 +431,8 @@
       "cart": "Cart",
       "orders": "Order history",
       "address": "Address",
-      "changePassword": "Change password"
+      "changePassword": "Change password",
+      "newsletter": "Newsletter"
     },
     "dashboard": {
       "greeting": "Welcome, {name}",
@@ -570,6 +571,14 @@
       "mismatch": "Passwords do not match",
       "success": "Password changed successfully",
       "error": "Failed to change password"
+    },
+    "newsletter": {
+      "label": "Newsletter subscription",
+      "description": "Get news about new products and promotions by email.",
+      "pendingHint": "Pending confirmation — check your email and click the link.",
+      "subscribeSuccess": "A confirmation email has been sent to your address",
+      "unsubscribeSuccess": "Unsubscribed",
+      "error": "Action failed"
     }
   },
   "NotFound": {

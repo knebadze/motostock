@@ -64,6 +64,15 @@ export const newsletterSubscribersPageResponseSchema = registry.register(
   }),
 );
 
+// "NOT_SUBSCRIBED" covers an account whose email has no NewsletterSubscriber
+// row at all — see newsletter.service.ts's getMyStatus.
+export const myNewsletterStatusResponseSchema = registry.register(
+  "MyNewsletterStatus",
+  z.object({
+    status: z.enum(["NOT_SUBSCRIBED", "PENDING", "CONFIRMED", "UNSUBSCRIBED"]).openapi({ example: "CONFIRMED" }),
+  }),
+);
+
 export const newsletterSubscriberCountsResponseSchema = registry.register(
   "NewsletterSubscriberCounts",
   z.object({

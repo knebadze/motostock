@@ -115,6 +115,29 @@ export async function unsubscribe(token: string): Promise<void> {
   }
 }
 
+// Backs the customer-facing account-page toggle (see users routes' /account
+// area) — NewsletterSubscriber has no FK to User, so this is a best-effort
+// lookup by the logged-in account's own email. NOT_SUBSCRIBED (not a DB
+// enum value) covers "no row at all", the common case for an account that's
+// never touched the newsletter.
+export type MyNewsletterStatus = "NOT_SUBSCRIBED" | "PENDING" | "CONFIRMED" | "UNSUBSCRIBED";
+
+export async function getMyStatus(email: string): Promise<MyNewsletterStatus> {
+  const subscriber = await newsletterRepository.findByEmail(email);
+  return subscriber?.status ?? "NOT_SUBSCRIBED";
+}
+
+// Unsubscribes the logged-in account's own email directly, without the
+// emailed token unsubscribe() above requires — the session itself already
+// proves ownership of this email, so re-deriving/checking a token would add
+// nothing. Idempotent no-op for "never subscribed" or "already
+// unsubscribed", same as the token-based path.
+export async function unsubscribeByEmail(email: string): Promise<void> {
+  const subscriber = await newsletterRepository.findByEmail(email);
+  if (!subscriber || subscriber.status === "UNSUBSCRIBED") return;
+  await newsletterRepository.unsubscribe(subscriber.id);
+}
+
 function buildAdminWhere(filters: ListSubscribersQuery): Prisma.NewsletterSubscriberWhereInput | undefined {
   const and: Prisma.NewsletterSubscriberWhereInput[] = [];
   if (filters.status) and.push({ status: filters.status });

@@ -10,6 +10,7 @@ import * as newsletterController from "./newsletter.controller.js";
 import {
   confirmSubscriptionSchema,
   listSubscribersQuerySchema,
+  myNewsletterStatusResponseSchema,
   newsletterSubscriberCountsResponseSchema,
   newsletterSubscribersPageResponseSchema,
   subscribeSchema,
@@ -35,6 +36,13 @@ newsletterRouter.post(
   validate(unsubscribeSchema),
   newsletterController.unsubscribe,
 );
+
+// Account-page toggle (see newsletter.controller.ts's getMyStatus/
+// subscribeMe/unsubscribeMe) — any authenticated customer, not admin-only,
+// always acting on their own session's email.
+newsletterRouter.get("/my-status", requireAuth, newsletterController.getMyStatus);
+newsletterRouter.post("/my-subscribe", newsletterRateLimit, requireAuth, newsletterController.subscribeMe);
+newsletterRouter.post("/my-unsubscribe", requireAuth, newsletterController.unsubscribeMe);
 
 newsletterRouter.use("/subscribers", requireAuth, requireRole(ROLES.ADMIN));
 newsletterRouter.get(
@@ -85,6 +93,43 @@ registry.registerPath({
   responses: {
     200: { description: "Unsubscribed (idempotent)", content: { "application/json": { schema: okResponse } } },
     400: { description: "Invalid token", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/newsletter/my-status",
+  tags: ["Newsletter"],
+  summary: "Get the logged-in account's own newsletter subscription status",
+  security,
+  responses: {
+    200: { description: "Status", content: { "application/json": { schema: myNewsletterStatusResponseSchema } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/newsletter/my-subscribe",
+  tags: ["Newsletter"],
+  summary: "Subscribe the logged-in account's own email (double opt-in — sends a confirmation email)",
+  security,
+  responses: {
+    200: { description: "Confirmation email sent (or already subscribed)", content: { "application/json": { schema: okResponse } } },
+    400: { description: "Mailer not configured", content: { "application/json": { schema: errorResponseSchema } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/newsletter/my-unsubscribe",
+  tags: ["Newsletter"],
+  summary: "Unsubscribe the logged-in account's own email directly (no token needed — session proves ownership)",
+  security,
+  responses: {
+    200: { description: "Unsubscribed (idempotent)", content: { "application/json": { schema: okResponse } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 
