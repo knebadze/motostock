@@ -36,3 +36,7 @@ export type OrderStockSyncResult = z.infer<typeof orderStockSyncResultSchema>;
 export const orderIdParamSchema = z.object({
   orderId: z.coerce.number().int().positive(),
 });
+
+export const productIdParamSchema = z.object({
+  productId: z.coerce.number().int().positive(),
+});

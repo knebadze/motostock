@@ -280,6 +280,47 @@ export async function syncOrderStock(orderId: number): Promise<OrderStockSyncRes
   }
 }
 
+// Admin product-detail action (see fina-sync.controller.ts's syncProduct) —
+// same shape and reasoning as syncOrderStock above, scoped to one Product's
+// own FINA-linked variants instead of one order's. Reuses
+// OrderStockSyncResult's shape as-is (identical fields, no order-specific
+// meaning attached) rather than declaring a parallel duplicate type.
+export async function syncProductStock(productId: number): Promise<OrderStockSyncResult> {
+  if (!isFinaConfigured()) {
+    throw new ApiError(400, "FINA სინქრონიზაცია არ არის კონფიგურირებული");
+  }
+
+  const variants = await finaSyncRepository.findLinkedVariantsByProduct(productId);
+  if (variants.length === 0) {
+    return { checked: 0, updated: 0, items: [] };
+  }
+
+  try {
+    const rests = await getProductsRestArray(variants.map((variant) => variant.finaId!));
+    const restByFinaId = new Map(rests.map((r) => [r.id, r.rest]));
+
+    const items: OrderStockSyncResult["items"] = [];
+    let updated = 0;
+    for (const variant of variants) {
+      const rest = restByFinaId.get(variant.finaId!);
+      if (rest === undefined) {
+        items.push({ productVariantId: variant.id, previousStock: variant.stockQuantity, newStock: null });
+        continue;
+      }
+      const newStock = Math.max(0, Math.floor(rest));
+      await finaSyncRepository.updateStock(variant.id, newStock);
+      updated += 1;
+      items.push({ productVariantId: variant.id, previousStock: variant.stockQuantity, newStock });
+    }
+
+    return { checked: variants.length, updated, items };
+  } catch (err) {
+    const message = err instanceof FinaApiError ? err.message : "მოულოდნელი შეცდომა FINA სინქრონიზაციისას";
+    logger.error({ err }, "FINA product stock sync failed");
+    throw new ApiError(502, message);
+  }
+}
+
 // Web orders are always non-cash from FINA's point of view (bank/card, not
 // someone handing over cash at the register) — confirmed with the user
 // rather than inferred from fulfillmentMethod.

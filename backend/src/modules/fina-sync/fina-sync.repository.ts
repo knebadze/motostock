@@ -40,6 +40,13 @@ export const finaSyncRepository = {
     });
   },
 
+  findLinkedVariantsByProduct(productId: number) {
+    return prisma.productVariant.findMany({
+      where: { finaId: { not: null }, productId },
+      select: { id: true, finaId: true, stockQuantity: true },
+    });
+  },
+
   updateStock(id: number, stockQuantity: number) {
     return prisma.productVariant.update({ where: { id }, data: { stockQuantity } });
   },

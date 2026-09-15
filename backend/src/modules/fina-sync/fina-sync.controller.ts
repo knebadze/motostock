@@ -27,3 +27,9 @@ export async function syncOrder(req: Request, res: Response) {
 
   res.status(200).json({ ...result, order });
 }
+
+export async function syncProduct(req: Request, res: Response) {
+  const productId = Number(req.params.productId);
+  const result = await finaSyncService.syncProductStock(productId);
+  res.status(200).json(result);
+}

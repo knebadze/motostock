@@ -4,13 +4,21 @@ export function RowActions({
   onView,
   onEdit,
   onDelete,
+  extra,
 }: {
   onView?: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  // Extension point for a one-off, row-specific action that doesn't belong
+  // in this shared component's own fixed view/edit/delete set (e.g.
+  // ProductsManager.tsx's per-product FINA sync button) — rendered before
+  // the fixed buttons so it never gets mistaken for delete when scanning
+  // right-to-left.
+  extra?: React.ReactNode;
 }) {
   return (
     <div className="flex justify-end gap-1">
+      {extra}
       {onView && (
         <button
           type="button"

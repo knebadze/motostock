@@ -56,3 +56,14 @@ export async function syncOrderStock(orderId: number): Promise<OrderStockSyncRes
   const { data } = await apiClient.post<OrderStockSyncResult>(`/fina-sync/orders/${orderId}`);
   return data;
 }
+
+// Same shape as OrderStockSyncResult minus the order-confirmation field
+// (that concept doesn't apply to a bare product) — admin products-list
+// per-row action (see ProductsManager.tsx), re-checks just this product's
+// own FINA-linked variants.
+export type ProductStockSyncResult = Omit<OrderStockSyncResult, "order">;
+
+export async function syncProductStock(productId: number): Promise<ProductStockSyncResult> {
+  const { data } = await apiClient.post<ProductStockSyncResult>(`/fina-sync/products/${productId}`);
+  return data;
+}

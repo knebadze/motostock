@@ -9,6 +9,7 @@ import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination } from "@/components/shared/Pagination";
 import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
 import { deleteProduct, listProductsPage, type Product } from "@/lib/api/products";
+import { syncProductStock } from "@/lib/api/fina-sync";
 import type { AdminListPage } from "@/lib/api/server";
 import { resolveMediaUrl, ApiRequestError } from "@/lib/api/client";
 import type { AdminFilterEntry } from "@/lib/api/admin-filters";
@@ -96,6 +97,7 @@ export function ProductsManager({
   const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [viewingProductId, setViewingProductId] = useState<number | null>(null);
+  const [syncingProductId, setSyncingProductId] = useState<number | null>(null);
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   const canCreate = categories.length > 0;
@@ -124,6 +126,32 @@ export function ProductsManager({
   async function handleFilterApply(filters: AdminFilterEntry[]) {
     setAdminFilters(filters);
     await loadPage(1, filters);
+  }
+
+  // Per-product manual re-check (see fina-sync.ts's syncProductStock),
+  // mirroring OrderDetailModal.tsx's handleSyncStock — same messaging shape,
+  // minus the order-auto-confirm concept that doesn't apply to a bare
+  // product. Always shown regardless of whether this product actually has
+  // any FINA-linked variants (the same "0 checked" case OrderDetailModal
+  // already handles gracefully), rather than fetching variant/finaId detail
+  // into the list response just to conditionally hide one button.
+  async function handleSyncProduct(product: Product) {
+    setSyncingProductId(product.id);
+    try {
+      const result = await syncProductStock(product.id);
+      if (result.checked === 0) {
+        toast.info("ამ პროდუქტს FINA-სთან დაკავშირებული ვარიანტი არ აქვს");
+      } else {
+        toast.success(`შემოწმდა ${result.checked} ვარიანტი, განახლდა ${result.updated}`);
+        await loadPage(data.page);
+      }
+    } catch (error) {
+      const message =
+        error instanceof ApiRequestError ? error.message : "მარაგის სინქრონიზაცია ვერ მოხერხდა";
+      toast.error(message);
+    } finally {
+      setSyncingProductId(null);
+    }
   }
 
   return (
@@ -161,6 +189,32 @@ export function ProductsManager({
               onView={() => setViewingProductId(product.id)}
               onEdit={() => router.push(`/admin/products/${product.id}`)}
               onDelete={() => setDeletingProduct(product)}
+              extra={
+                <button
+                  type="button"
+                  onClick={() => handleSyncProduct(product)}
+                  disabled={syncingProductId === product.id}
+                  aria-label="FINA სინქრონიზაცია"
+                  title="FINA სინქრონიზაცია"
+                  className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:opacity-50"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`size-4 ${syncingProductId === product.id ? "animate-spin" : ""}`}
+                  >
+                    <path d="M21 12a9 9 0 0 1-15.3 6.4L3 16" />
+                    <path d="M3 12a9 9 0 0 1 15.3-6.4L21 8" />
+                    <path d="M3 16v4h4" />
+                    <path d="M21 8V4h-4" />
+                  </svg>
+                </button>
+              }
             />
           )}
         />
