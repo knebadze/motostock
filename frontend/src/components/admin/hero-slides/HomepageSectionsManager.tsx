@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Toggle } from "@/components/shared/Toggle";
+import { useOptimisticToggle } from "@/components/shared/useOptimisticToggle";
 import {
   moveHomepageSection,
   updateHomepageSection,
@@ -259,18 +260,7 @@ export function HomepageSectionsManager({
     );
   }
 
-  async function handleToggleActive(section: HomepageSection, isActive: boolean) {
-    const previous = sections;
-    setSections((current) => current.map((s) => (s.id === section.id ? { ...s, isActive } : s)));
-    try {
-      const updated = await updateHomepageSection(section.id, { isActive });
-      updateOne(updated);
-    } catch (error) {
-      setSections(previous);
-      const message = error instanceof ApiRequestError ? error.message : "განახლება ვერ მოხერხდა";
-      toast.error(message);
-    }
-  }
+  const handleToggleActive = useOptimisticToggle(sections, setSections, updateHomepageSection, updateOne);
 
   async function handleMove(section: HomepageSection, direction: "up" | "down") {
     const index = sections.findIndex((s) => s.id === section.id);

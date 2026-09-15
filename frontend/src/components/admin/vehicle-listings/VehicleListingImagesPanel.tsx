@@ -37,6 +37,17 @@ export function VehicleListingImagesPanel({
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
   const nextLocalIdRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Mirrors localImages into a ref so the unmount-only cleanup below (see
+  // that effect's comment) can read the latest array instead of closing
+  // over the [] it mounted with. Same fix as
+  // ProductVariantImagesPanel.tsx's identical bug (a stale-closure blob URL
+  // leak) — a ref write during render is disallowed by this project's lint
+  // rules, hence the dedicated effect instead of assigning
+  // localImagesRef.current = localImages inline.
+  const localImagesRef = useRef<LocalImage[]>(localImages);
+  useEffect(() => {
+    localImagesRef.current = localImages;
+  }, [localImages]);
 
   useEffect(() => {
     if (!isAttached) return;
@@ -58,11 +69,15 @@ export function VehicleListingImagesPanel({
     };
   }, [isAttached, listingId]);
 
+  // Runs its cleanup exactly once, on unmount — deliberately not depending
+  // on localImages (that would re-fire on every add/reorder, revoking URLs
+  // for images that are still displayed, not actually removed). Reading
+  // from the ref instead of closing over localImages directly is what makes
+  // that cleanup see the final array instead of the [] it mounted with.
   useEffect(() => {
     return () => {
-      localImages.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+      localImagesRef.current.forEach((image) => URL.revokeObjectURL(image.previewUrl));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const items: DisplayItem[] = isAttached

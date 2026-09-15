@@ -1,23 +1,7 @@
-import { z } from "zod";
-import { MAX_DECIMAL_10_2, requiredPositiveDecimalString } from "./common";
-
-export const vehicleListingDiscountFormSchema = z
-  .object({
-    discountPrice: requiredPositiveDecimalString("მიუთითეთ ფასდაკლების ფასი", MAX_DECIMAL_10_2),
-    // 100 rejected, not just capped — mirrors vehicle-listing-discounts.schema.ts's
-    // backend constraint (a stray 100 walks the auto-computed discountPrice
-    // down to nearly free).
-    discountPercent: z
-      .string()
-      .refine(
-        (value) =>
-          value.trim() === "" || (!Number.isNaN(Number(value)) && Number(value) >= 0 && Number(value) <= 99),
-        { message: "0-99 შუალედში" },
-      ),
-    startDate: z.string().trim().min(1, "აირჩიეთ დაწყების თარიღი"),
-    endDate: z.string().trim().min(1, "აირჩიეთ დასრულების თარიღი"),
-  })
-  .refine((data) => data.startDate.trim() === "" || new Date(data.endDate) > new Date(data.startDate), {
-    message: "დასრულების თარიღი უნდა იყოს დაწყების თარიღის შემდეგ",
-    path: ["endDate"],
-  });
+// Identical validation to product-variant-discounts.ts's schema (same
+// discount-price/percent/date-range rules apply regardless of what's being
+// discounted) — re-exported under this domain's own name instead of
+// duplicating the schema, same "one shared schema, imported under each
+// caller's own name" DRY-ing already done for bulk-product-discounts.ts /
+// bulk-vehicle-listing-discounts.ts.
+export { productVariantDiscountFormSchema as vehicleListingDiscountFormSchema } from "./product-variant-discounts";

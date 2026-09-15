@@ -11,6 +11,7 @@ import { formatPrice } from "@/lib/format";
 import { getCartItemDisplay, recomputeCart } from "@/lib/cart-item-display";
 import { removeFromCart, updateCartItemQuantity, type Cart, type CartItem } from "@/lib/api/cart";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { QuantityStepper } from "@/components/shared/QuantityStepper";
 
 function CartLineRow({
   item,
@@ -46,27 +47,16 @@ function CartLineRow({
         {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
 
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 rounded-full border border-border">
-            <button
-              type="button"
-              onClick={() => onQuantityChange(item.quantity - 1)}
-              disabled={pending || item.quantity <= 1}
-              aria-label={t("decreaseQuantity")}
-              className="flex size-8 items-center justify-center text-foreground transition-colors hover:text-primary disabled:opacity-40"
-            >
-              −
-            </button>
-            <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
-            <button
-              type="button"
-              onClick={() => onQuantityChange(item.quantity + 1)}
-              disabled={pending || item.quantity >= stockQuantity}
-              aria-label={t("increaseQuantity")}
-              className="flex size-8 items-center justify-center text-foreground transition-colors hover:text-primary disabled:opacity-40"
-            >
-              +
-            </button>
-          </div>
+          <QuantityStepper
+            quantity={item.quantity}
+            onDecrease={() => onQuantityChange(item.quantity - 1)}
+            onIncrease={() => onQuantityChange(item.quantity + 1)}
+            decrementDisabled={pending || item.quantity <= 1}
+            incrementDisabled={pending || item.quantity >= stockQuantity}
+            decreaseLabel={t("decreaseQuantity")}
+            increaseLabel={t("increaseQuantity")}
+            size="md"
+          />
 
           <div className="flex items-center gap-3">
             <span className="font-semibold text-primary">{formatPrice(item.lineTotal)}</span>

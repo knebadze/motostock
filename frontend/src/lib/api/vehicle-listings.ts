@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { BrandModelRef, NamedRef } from "./vehicle-catalog";
+import type { VehicleCatalogEntry } from "./vehicle-catalog";
 import type { LookupItem } from "./lookups";
 import type { VehicleListingDiscount } from "./vehicle-listing-discounts";
 import type { VehicleListingImage } from "./vehicle-listing-images";
@@ -10,41 +10,10 @@ export type WarrantyUnit = "YEAR" | "MONTH";
 
 export type VehicleListing = {
   id: number;
-  vehicleCatalog: {
-    id: number;
-    category: NamedRef;
-    brand: BrandModelRef;
-    model: BrandModelRef;
-    variant: string;
-    yearFrom: number | null;
-    yearTo: number | null;
-    engineVolumeCc: number | null;
-    enginePowerHp: number | null;
-    cylinderCount: number | null;
-    gearCount: number | null;
-    seatCount: number | null;
-    weightKg: number | null;
-    seatHeightMm: number | null;
-    fuelTankLiters: number | null;
-    topSpeedKmh: number | null;
-    hasAbs: boolean | null;
-    fuelType: LookupItem | null;
-    transmissionType: LookupItem | null;
-    coolingType: LookupItem | null;
-    finalDriveType: LookupItem | null;
-    driveType: LookupItem | null;
-    startType: LookupItem | null;
-    powertrainType: LookupItem | null;
-    motorPowerWatt: number | null;
-    batteryCapacityWh: number | null;
-    rangeKm: number | null;
-    chargingTimeMinutes: number | null;
-    hasLockingDifferential: boolean | null;
-    descriptionKa: string | null;
-    descriptionEn: string | null;
-    descriptionRu: string | null;
-    imageUrl: string | null;
-  };
+  // Was a 35-field inline copy of VehicleCatalogEntry, drifting silently
+  // whenever a new spec field was added there (nothing forced this shape to
+  // keep up) — this Omit derives it instead, so it can never fall behind.
+  vehicleCatalog: Omit<VehicleCatalogEntry, "submittedBy" | "popularity" | "createdAt" | "updatedAt">;
   condition: LookupItem;
   status: LookupItem;
   color: LookupItem;

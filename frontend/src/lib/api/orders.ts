@@ -34,7 +34,7 @@ export type OrderItem = {
 
 export type OrderShippingSnapshot = {
   phone: string;
-  city: { id: number; key: string; nameKa: string; nameEn: string; nameRu: string; isTbilisi: boolean };
+  city: LookupItem & { isTbilisi: boolean };
   street: string;
   building: string | null;
   apartment: string | null;

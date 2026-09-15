@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Toggle } from "@/components/shared/Toggle";
+import { useOptimisticToggle } from "@/components/shared/useOptimisticToggle";
 import { deleteBank, listBanks, reorderBanks, updateBank, type Bank } from "@/lib/api/banks";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { BankFormModal } from "./BankFormModal";
@@ -35,17 +36,7 @@ export function BanksManager({ initialBanks }: { initialBanks: Bank[] }) {
     setFormOpen(true);
   }
 
-  async function handleToggleActive(bank: Bank, isActive: boolean) {
-    const previous = banks;
-    setBanks((current) => current.map((b) => (b.id === bank.id ? { ...b, isActive } : b)));
-    try {
-      await updateBank(bank.id, { isActive });
-    } catch (error) {
-      setBanks(previous);
-      const message = error instanceof ApiRequestError ? error.message : "განახლება ვერ მოხერხდა";
-      toast.error(message);
-    }
-  }
+  const handleToggleActive = useOptimisticToggle(banks, setBanks, updateBank);
 
   async function handleDrop(targetId: number) {
     const currentDraggedId = draggedId;

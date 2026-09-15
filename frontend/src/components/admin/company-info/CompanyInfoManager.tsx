@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Select } from "@/components/shared/Select";
 import { Toggle } from "@/components/shared/Toggle";
+import { useFileUploadPreview } from "@/components/shared/useFileUploadPreview";
 import {
   updateCompanyInfo,
   uploadCompanyLogo,
@@ -50,27 +51,16 @@ export function CompanyInfoManager({
   const [workingHours, setWorkingHours] = useState<CompanyWorkingHour[]>(
     initialCompanyInfo.workingHours,
   );
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(
-    resolveMediaUrl(initialCompanyInfo.logoUrl),
-  );
+  const {
+    file: logoFile,
+    previewUrl,
+    onChange: handleLogoChange,
+    reset: resetLogoPreview,
+  } = useFileUploadPreview(resolveMediaUrl(initialCompanyInfo.logoUrl));
   const [saving, setSaving] = useState(false);
 
   const cityLabelKey = "nameKa" as const;
   const cityOptions = cities.map((city) => ({ value: String(city.id), label: city[cityLabelKey] }));
-
-  useEffect(() => {
-    return () => {
-      if (logoFile && previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewUrl]);
-
-  function handleLogoChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-    setLogoFile(file);
-    if (file) setPreviewUrl(URL.createObjectURL(file));
-  }
 
   function updateWorkingHour(dayOfWeek: WeekDay, patch: Partial<CompanyWorkingHour>) {
     setWorkingHours((current) =>
@@ -105,7 +95,7 @@ export function CompanyInfoManager({
       if (logoFile) {
         try {
           const withLogo = await uploadCompanyLogo(logoFile);
-          setPreviewUrl(resolveMediaUrl(withLogo.logoUrl));
+          resetLogoPreview(resolveMediaUrl(withLogo.logoUrl));
         } catch {
           toast.error("ინფორმაცია შენახულია, მაგრამ ლოგოს ატვირთვა ვერ მოხერხდა");
           setSaving(false);
@@ -113,7 +103,6 @@ export function CompanyInfoManager({
         }
       }
 
-      setLogoFile(null);
       toast.success("კომპანიის ინფორმაცია განახლდა");
     } catch (error) {
       toast.error(error instanceof ApiRequestError ? error.message : "შენახვა ვერ მოხერხდა");

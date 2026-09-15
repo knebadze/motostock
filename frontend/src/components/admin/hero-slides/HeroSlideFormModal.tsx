@@ -7,6 +7,7 @@ import { Select } from "@/components/shared/Select";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { Toggle } from "@/components/shared/Toggle";
+import { useFileUploadPreview } from "@/components/shared/useFileUploadPreview";
 import {
   createHeroSlide,
   updateHeroSlide,
@@ -94,8 +95,9 @@ export function HeroSlideFormModal({
     slide?.verticalPosition ?? "BOTTOM",
   );
   const [isActive, setIsActive] = useState(slide?.isActive ?? true);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(resolveMediaUrl(slide?.imageUrl ?? null));
+  const { file: imageFile, previewUrl, onChange: handleImageChange } = useFileUploadPreview(
+    resolveMediaUrl(slide?.imageUrl ?? null),
+  );
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
 
@@ -110,14 +112,6 @@ export function HeroSlideFormModal({
     { value: "", label: "ყველა ბრენდი" },
     ...productBrands.map((brand) => ({ value: String(brand.id), label: brand.name })),
   ];
-
-  function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-    setImageFile(file);
-    if (file) {
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();

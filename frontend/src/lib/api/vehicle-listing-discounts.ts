@@ -1,46 +1,13 @@
-import { apiClient } from "./client";
+import { createDiscountCollectionApi } from "./collection-discount-api";
+import type { CollectionDiscountBase, CollectionDiscountInput } from "./collection-discount-api";
 
-export type VehicleListingDiscount = {
-  id: number;
-  vehicleListingId: number;
-  discountPrice: number;
-  discountPercent: number | null;
-  startDate: string;
-  endDate: string;
-  createdAt: string;
-  updatedAt: string;
-};
+export type VehicleListingDiscount = CollectionDiscountBase & { vehicleListingId: number };
+export type VehicleListingDiscountInput = CollectionDiscountInput;
 
-export type VehicleListingDiscountInput = {
-  discountPrice: number;
-  discountPercent?: number | null;
-  startDate: string;
-  endDate: string;
-};
+const vehicleListingDiscountsApi = createDiscountCollectionApi<VehicleListingDiscount>(
+  (listingId) => `/vehicle-listings/${listingId}/discounts`,
+);
 
-export async function listVehicleListingDiscounts(
-  listingId: number,
-): Promise<VehicleListingDiscount[]> {
-  const { data } = await apiClient.get<{ items: VehicleListingDiscount[] }>(
-    `/vehicle-listings/${listingId}/discounts`,
-  );
-  return data.items;
-}
-
-export async function createVehicleListingDiscount(
-  listingId: number,
-  input: VehicleListingDiscountInput,
-): Promise<VehicleListingDiscount> {
-  const { data } = await apiClient.post<{ item: VehicleListingDiscount }>(
-    `/vehicle-listings/${listingId}/discounts`,
-    input,
-  );
-  return data.item;
-}
-
-export async function deleteVehicleListingDiscount(
-  listingId: number,
-  id: number,
-): Promise<void> {
-  await apiClient.delete(`/vehicle-listings/${listingId}/discounts/${id}`);
-}
+export const listVehicleListingDiscounts = vehicleListingDiscountsApi.list;
+export const createVehicleListingDiscount = vehicleListingDiscountsApi.create;
+export const deleteVehicleListingDiscount = vehicleListingDiscountsApi.remove;

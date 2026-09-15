@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Toggle } from "@/components/shared/Toggle";
+import { useOptimisticToggle } from "@/components/shared/useOptimisticToggle";
 import { deleteFaq, listFaqs, reorderFaqs, updateFaq, type Faq } from "@/lib/api/faq";
 import { ApiRequestError } from "@/lib/api/client";
 import { FaqFormModal } from "./FaqFormModal";
@@ -35,17 +36,7 @@ export function FaqManager({ initialFaqs }: { initialFaqs: Faq[] }) {
     setFormOpen(true);
   }
 
-  async function handleToggleActive(faq: Faq, isActive: boolean) {
-    const previous = faqs;
-    setFaqs((current) => current.map((item) => (item.id === faq.id ? { ...item, isActive } : item)));
-    try {
-      await updateFaq(faq.id, { isActive });
-    } catch (error) {
-      setFaqs(previous);
-      const message = error instanceof ApiRequestError ? error.message : "განახლება ვერ მოხერხდა";
-      toast.error(message);
-    }
-  }
+  const handleToggleActive = useOptimisticToggle(faqs, setFaqs, updateFaq);
 
   async function handleDrop(targetId: number) {
     const currentDraggedId = draggedId;

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Toggle } from "@/components/shared/Toggle";
+import { useOptimisticToggle } from "@/components/shared/useOptimisticToggle";
 import {
   deleteServiceType,
   listServiceTypes,
@@ -42,19 +43,7 @@ export function ServiceTypesManager({ initialServiceTypes }: { initialServiceTyp
     setFormOpen(true);
   }
 
-  async function handleToggleActive(serviceType: ServiceType, isActive: boolean) {
-    const previous = serviceTypes;
-    setServiceTypes((current) =>
-      current.map((item) => (item.id === serviceType.id ? { ...item, isActive } : item)),
-    );
-    try {
-      await updateServiceType(serviceType.id, { isActive });
-    } catch (error) {
-      setServiceTypes(previous);
-      const message = error instanceof ApiRequestError ? error.message : "განახლება ვერ მოხერხდა";
-      toast.error(message);
-    }
-  }
+  const handleToggleActive = useOptimisticToggle(serviceTypes, setServiceTypes, updateServiceType);
 
   async function handleDrop(targetId: number) {
     const currentDraggedId = draggedId;

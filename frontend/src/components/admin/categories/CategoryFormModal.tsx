@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Select } from "@/components/shared/Select";
@@ -8,6 +8,7 @@ import { Toggle } from "@/components/shared/Toggle";
 import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
+import { useFileUploadPreview } from "@/components/shared/useFileUploadPreview";
 import {
   createCategory,
   updateCategory,
@@ -62,51 +63,21 @@ export function CategoryFormModal({
   const [lowStockBadgeEnabled, setLowStockBadgeEnabled] = useState(
     category?.lowStockBadgeEnabled ?? true,
   );
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(
+  const { file: imageFile, previewUrl, onChange: handleImageChange } = useFileUploadPreview(
     resolveMediaUrl(category?.imageUrl ?? null),
   );
-  const [bannerImageFile, setBannerImageFile] = useState<File | null>(null);
-  const [bannerPreviewUrl, setBannerPreviewUrl] = useState<string | null>(
-    resolveMediaUrl(category?.bannerImageUrl ?? null),
-  );
+  const {
+    file: bannerImageFile,
+    previewUrl: bannerPreviewUrl,
+    onChange: handleBannerImageChange,
+  } = useFileUploadPreview(resolveMediaUrl(category?.bannerImageUrl ?? null));
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
-
-  useEffect(() => {
-    return () => {
-      if (imageFile && previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewUrl]);
-
-  useEffect(() => {
-    return () => {
-      if (bannerImageFile && bannerPreviewUrl) URL.revokeObjectURL(bannerPreviewUrl);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bannerPreviewUrl]);
 
   const excludedIds = category ? getDescendantIds(categories, category.id) : new Set<number>();
   const parentOptions = categories
     .filter((item) => item.id !== category?.id && !excludedIds.has(item.id))
     .map((item) => ({ value: String(item.id), label: item.name.ka }));
-
-  function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-    setImageFile(file);
-    if (file) {
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  }
-
-  function handleBannerImageChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-    setBannerImageFile(file);
-    if (file) {
-      setBannerPreviewUrl(URL.createObjectURL(file));
-    }
-  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Toggle } from "@/components/shared/Toggle";
+import { useOptimisticToggle } from "@/components/shared/useOptimisticToggle";
 import {
   deleteHeroSlide,
   listHeroSlides,
@@ -52,17 +53,7 @@ export function HeroSlidesManager({
     setFormOpen(true);
   }
 
-  async function handleToggleActive(slide: HeroSlide, isActive: boolean) {
-    const previous = slides;
-    setSlides((current) => current.map((s) => (s.id === slide.id ? { ...s, isActive } : s)));
-    try {
-      await updateHeroSlide(slide.id, { isActive });
-    } catch (error) {
-      setSlides(previous);
-      const message = error instanceof ApiRequestError ? error.message : "განახლება ვერ მოხერხდა";
-      toast.error(message);
-    }
-  }
+  const handleToggleActive = useOptimisticToggle(slides, setSlides, updateHeroSlide);
 
   async function handleDrop(targetId: number) {
     const currentDraggedId = draggedId;

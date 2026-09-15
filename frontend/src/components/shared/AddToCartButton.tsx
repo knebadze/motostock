@@ -8,6 +8,7 @@ import { ApiRequestError } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { isKnownAuthState } from "@/lib/api/auth-state";
 import { isGuestCartKnownEnabled } from "@/lib/api/guest-feature-state";
+import { QuantityStepper } from "@/components/shared/QuantityStepper";
 import {
   addToCart,
   getCartStatus,
@@ -136,29 +137,17 @@ export function AddToCartButton({
 
   if (cartItem) {
     return (
-      <div
-        className={`flex items-center gap-1.5 rounded-full border border-border ${className}`}
-      >
-        <button
-          type="button"
-          onClick={() => handleQuantityChange(cartItem.quantity - 1)}
-          disabled={status === "loading"}
-          aria-label={tCart("decreaseQuantity")}
-          className="flex size-9 items-center justify-center text-foreground transition-colors hover:text-primary disabled:opacity-40"
-        >
-          −
-        </button>
-        <span className="w-6 text-center text-sm font-medium">{cartItem.quantity}</span>
-        <button
-          type="button"
-          onClick={() => handleQuantityChange(cartItem.quantity + 1)}
-          disabled={status === "loading" || cartItem.quantity >= stockQuantity}
-          aria-label={tCart("increaseQuantity")}
-          className="flex size-9 items-center justify-center text-foreground transition-colors hover:text-primary disabled:opacity-40"
-        >
-          +
-        </button>
-      </div>
+      <QuantityStepper
+        quantity={cartItem.quantity}
+        onDecrease={() => handleQuantityChange(cartItem.quantity - 1)}
+        onIncrease={() => handleQuantityChange(cartItem.quantity + 1)}
+        decrementDisabled={status === "loading"}
+        incrementDisabled={status === "loading" || cartItem.quantity >= stockQuantity}
+        decreaseLabel={tCart("decreaseQuantity")}
+        increaseLabel={tCart("increaseQuantity")}
+        size="lg"
+        className={className}
+      />
     );
   }
 

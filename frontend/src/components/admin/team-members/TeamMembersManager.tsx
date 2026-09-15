@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Toggle } from "@/components/shared/Toggle";
+import { useOptimisticToggle } from "@/components/shared/useOptimisticToggle";
 import {
   deleteTeamMember,
   listTeamMembers,
@@ -48,17 +49,7 @@ export function TeamMembersManager({
     setFormOpen(true);
   }
 
-  async function handleToggleActive(member: TeamMember, isActive: boolean) {
-    const previous = members;
-    setMembers((current) => current.map((m) => (m.id === member.id ? { ...m, isActive } : m)));
-    try {
-      await updateTeamMember(member.id, { isActive });
-    } catch (error) {
-      setMembers(previous);
-      const message = error instanceof ApiRequestError ? error.message : "განახლება ვერ მოხერხდა";
-      toast.error(message);
-    }
-  }
+  const handleToggleActive = useOptimisticToggle(members, setMembers, updateTeamMember);
 
   async function handleDrop(targetId: number) {
     const currentDraggedId = draggedId;

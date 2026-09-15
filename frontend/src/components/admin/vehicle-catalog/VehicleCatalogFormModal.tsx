@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { FormActions } from "@/components/shared/FormActions";
 import { Tabs } from "@/components/shared/Tabs";
+import { useFileUploadPreview } from "@/components/shared/useFileUploadPreview";
 import {
   createVehicleCatalogEntry,
   updateVehicleCatalogEntry,
@@ -121,19 +122,11 @@ export function VehicleCatalogFormModal({
   const [descriptionKa, setDescriptionKa] = useState(entry?.descriptionKa ?? "");
   const [descriptionEn, setDescriptionEn] = useState(entry?.descriptionEn ?? "");
   const [descriptionRu, setDescriptionRu] = useState(entry?.descriptionRu ?? "");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(
+  const { file: imageFile, previewUrl, onChange: handleImageChange } = useFileUploadPreview(
     resolveMediaUrl(entry?.imageUrl ?? null),
   );
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
-
-  useEffect(() => {
-    return () => {
-      if (imageFile && previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewUrl]);
 
   const categoryOptions = useMemo(() => {
     // This is only a filter to narrow the model list below — but a vehicle
@@ -200,14 +193,6 @@ export function VehicleCatalogFormModal({
     const model = models.find((item) => String(item.id) === nextModelId);
     if (model?.category) {
       setCategoryFilter(String(model.category.id));
-    }
-  }
-
-  function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-    setImageFile(file);
-    if (file) {
-      setPreviewUrl(URL.createObjectURL(file));
     }
   }
 

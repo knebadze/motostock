@@ -11,6 +11,7 @@ import { WishlistDropdown } from "@/components/shared/WishlistDropdown";
 import { CompareDropdown } from "@/components/shared/CompareDropdown";
 import { CartDropdown } from "@/components/shared/CartDropdown";
 import { Logo } from "@/components/shared/Logo";
+import { usePopoverMenu } from "@/components/shared/usePopoverMenu";
 import { facebookIcon, instagramIcon, tiktokIcon, youtubeIcon } from "@/components/shared/social-icons";
 import { logoutUser, type User } from "@/lib/api/auth";
 import { resolveMediaUrl } from "@/lib/api/client";
@@ -18,7 +19,6 @@ import { setKnownAuthState } from "@/lib/api/auth-state";
 import { setKnownGuestFeatureStatus } from "@/lib/api/guest-feature-state";
 import type { GuestFeatureStatus } from "@/lib/api/server";
 import { formatShortName } from "@/lib/format";
-import { attachMenuKeyboardNav } from "@/lib/menuKeyboardNav";
 import type { Category } from "@/lib/api/categories";
 import type { CompanyInfo } from "@/lib/api/company-info";
 
@@ -84,10 +84,13 @@ export function Header({
   const tHeader = useTranslations("Header");
   const tFooter = useTranslations("Footer");
   const [isOpen, setIsOpen] = useState(false);
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const {
+    open: accountMenuOpen,
+    setOpen: setAccountMenuOpen,
+    containerRef: accountMenuRef,
+    triggerRef: accountMenuTriggerRef,
+  } = usePopoverMenu({ arrowNav: true });
   const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
-  const accountMenuRef = useRef<HTMLDivElement>(null);
-  const accountMenuTriggerRef = useRef<HTMLButtonElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Records this page's own SSR-resolved auth state for client.ts's 401
@@ -149,24 +152,6 @@ export function Header({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
-
-  useEffect(() => {
-    if (!accountMenuOpen) return;
-    function handleClickOutside(event: MouseEvent) {
-      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
-        setAccountMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [accountMenuOpen]);
-
-  useEffect(() => {
-    if (!accountMenuOpen || !accountMenuRef.current) return;
-    return attachMenuKeyboardNav(accountMenuRef.current, () => setAccountMenuOpen(false), {
-      triggerEl: accountMenuTriggerRef.current,
-    });
-  }, [accountMenuOpen]);
 
   async function handleLogout() {
     setAccountMenuOpen(false);

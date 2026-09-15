@@ -1,46 +1,13 @@
-import { apiClient } from "./client";
+import { createDiscountCollectionApi } from "./collection-discount-api";
+import type { CollectionDiscountBase, CollectionDiscountInput } from "./collection-discount-api";
 
-export type ProductVariantDiscount = {
-  id: number;
-  productVariantId: number;
-  discountPrice: number;
-  discountPercent: number | null;
-  startDate: string;
-  endDate: string;
-  createdAt: string;
-  updatedAt: string;
-};
+export type ProductVariantDiscount = CollectionDiscountBase & { productVariantId: number };
+export type ProductVariantDiscountInput = CollectionDiscountInput;
 
-export type ProductVariantDiscountInput = {
-  discountPrice: number;
-  discountPercent?: number | null;
-  startDate: string;
-  endDate: string;
-};
+const productVariantDiscountsApi = createDiscountCollectionApi<ProductVariantDiscount>(
+  (variantId) => `/product-variants/${variantId}/discounts`,
+);
 
-export async function listProductVariantDiscounts(
-  variantId: number,
-): Promise<ProductVariantDiscount[]> {
-  const { data } = await apiClient.get<{ items: ProductVariantDiscount[] }>(
-    `/product-variants/${variantId}/discounts`,
-  );
-  return data.items;
-}
-
-export async function createProductVariantDiscount(
-  variantId: number,
-  input: ProductVariantDiscountInput,
-): Promise<ProductVariantDiscount> {
-  const { data } = await apiClient.post<{ item: ProductVariantDiscount }>(
-    `/product-variants/${variantId}/discounts`,
-    input,
-  );
-  return data.item;
-}
-
-export async function deleteProductVariantDiscount(
-  variantId: number,
-  id: number,
-): Promise<void> {
-  await apiClient.delete(`/product-variants/${variantId}/discounts/${id}`);
-}
+export const listProductVariantDiscounts = productVariantDiscountsApi.list;
+export const createProductVariantDiscount = productVariantDiscountsApi.create;
+export const deleteProductVariantDiscount = productVariantDiscountsApi.remove;

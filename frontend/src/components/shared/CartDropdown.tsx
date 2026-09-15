@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -10,7 +10,8 @@ import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import { getCartItemDisplay, recomputeCart } from "@/lib/cart-item-display";
 import { getMyCart, removeFromCart, updateCartItemQuantity, type Cart, type CartItem } from "@/lib/api/cart";
-import { attachMenuKeyboardNav } from "@/lib/menuKeyboardNav";
+import { usePopoverMenu } from "./usePopoverMenu";
+import { QuantityStepper } from "./QuantityStepper";
 
 const PREVIEW_LIMIT = 4;
 
@@ -20,32 +21,15 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
   const tCart = useTranslations("Cart");
   const tErrors = useTranslations("ApiErrors");
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  // arrowNav: false — this popover mixes links/images/a quantity stepper
+  // under one panel, not a list of role="menuitem" commands, so only
+  // Escape-to-close applies (see attachMenuKeyboardNav's own comment for
+  // why the other header dropdowns get the same treatment while UserMenu/
+  // Header's account menu get full arrow-key nav).
+  const { open, setOpen, containerRef, triggerRef } = usePopoverMenu({ arrowNav: false });
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(false);
   const [pendingId, setPendingId] = useState<number | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
-
-  // arrowNav: false — see WishlistDropdown's identical comment.
-  useEffect(() => {
-    if (!open || !containerRef.current) return;
-    return attachMenuKeyboardNav(containerRef.current, () => setOpen(false), {
-      triggerEl: triggerRef.current,
-      arrowNav: false,
-    });
-  }, [open]);
 
   async function handleToggle() {
     const next = !open;
@@ -169,27 +153,16 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
                       </Link>
 
                       <div className="flex items-center justify-between gap-3 pl-15">
-                        <div className="flex items-center gap-1 rounded-full border border-border">
-                          <button
-                            type="button"
-                            onClick={() => handleQuantityChange(item, item.quantity - 1)}
-                            disabled={pending}
-                            aria-label={tCart("decreaseQuantity")}
-                            className="flex size-7 items-center justify-center text-foreground transition-colors hover:text-primary disabled:opacity-40"
-                          >
-                            −
-                          </button>
-                          <span className="w-5 text-center text-xs font-medium">{item.quantity}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleQuantityChange(item, item.quantity + 1)}
-                            disabled={pending || item.quantity >= stockQuantity}
-                            aria-label={tCart("increaseQuantity")}
-                            className="flex size-7 items-center justify-center text-foreground transition-colors hover:text-primary disabled:opacity-40"
-                          >
-                            +
-                          </button>
-                        </div>
+                        <QuantityStepper
+                          quantity={item.quantity}
+                          onDecrease={() => handleQuantityChange(item, item.quantity - 1)}
+                          onIncrease={() => handleQuantityChange(item, item.quantity + 1)}
+                          decrementDisabled={pending}
+                          incrementDisabled={pending || item.quantity >= stockQuantity}
+                          decreaseLabel={tCart("decreaseQuantity")}
+                          increaseLabel={tCart("increaseQuantity")}
+                          size="sm"
+                        />
                         <span className="text-sm font-semibold text-primary">{formatPrice(item.lineTotal)}</span>
                       </div>
                     </li>

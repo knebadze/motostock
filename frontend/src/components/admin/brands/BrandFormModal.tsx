@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
+import { useFileUploadPreview } from "@/components/shared/useFileUploadPreview";
 import { createBrand, updateBrand, uploadBrandLogo, type Brand } from "@/lib/api/brands";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { slugify } from "@/lib/categories-tree";
@@ -26,27 +27,11 @@ export function BrandFormModal({
   const [name, setName] = useState(brand?.name ?? "");
   const [slug, setSlug] = useState(brand?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(false);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(
+  const { file: logoFile, previewUrl, onChange: handleLogoChange } = useFileUploadPreview(
     resolveMediaUrl(brand?.logoUrl ?? null),
   );
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
-
-  useEffect(() => {
-    return () => {
-      if (logoFile && previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewUrl]);
-
-  function handleLogoChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-    setLogoFile(file);
-    if (file) {
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();

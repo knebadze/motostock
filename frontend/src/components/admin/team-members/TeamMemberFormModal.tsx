@@ -7,6 +7,7 @@ import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { Select } from "@/components/shared/Select";
 import { Toggle } from "@/components/shared/Toggle";
+import { useFileUploadPreview } from "@/components/shared/useFileUploadPreview";
 import {
   createTeamMember,
   updateTeamMember,
@@ -47,8 +48,9 @@ export function TeamMemberFormModal({
   const [nameRu, setNameRu] = useState(member?.name.ru ?? "");
   const [positionId, setPositionId] = useState(member ? String(member.positionId) : "");
   const [isActive, setIsActive] = useState(member?.isActive ?? true);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(resolveMediaUrl(member?.imageUrl ?? null));
+  const { file: imageFile, previewUrl, onChange: handleImageChange } = useFileUploadPreview(
+    resolveMediaUrl(member?.imageUrl ?? null),
+  );
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
 
@@ -56,14 +58,6 @@ export function TeamMemberFormModal({
     value: String(position.id),
     label: position.nameKa,
   }));
-
-  function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-    setImageFile(file);
-    if (file) {
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();

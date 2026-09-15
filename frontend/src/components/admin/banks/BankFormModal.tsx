@@ -7,6 +7,7 @@ import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { Toggle } from "@/components/shared/Toggle";
+import { useFileUploadPreview } from "@/components/shared/useFileUploadPreview";
 import { createBank, updateBank, uploadBankLogo, type Bank } from "@/lib/api/banks";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { bankFormSchema } from "@/lib/validation/banks";
@@ -32,18 +33,11 @@ export function BankFormModal({
   const [isActive, setIsActive] = useState(bank?.isActive ?? true);
   const [supportsInstallment, setSupportsInstallment] = useState(bank?.supportsInstallment ?? false);
   const [supportsSplitPayment, setSupportsSplitPayment] = useState(bank?.supportsSplitPayment ?? false);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(resolveMediaUrl(bank?.logoUrl ?? null));
+  const { file: logoFile, previewUrl, onChange: handleLogoChange } = useFileUploadPreview(
+    resolveMediaUrl(bank?.logoUrl ?? null),
+  );
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
-
-  function handleLogoChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-    setLogoFile(file);
-    if (file) {
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
