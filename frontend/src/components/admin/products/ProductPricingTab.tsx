@@ -6,6 +6,7 @@ import { Toggle } from "@/components/shared/Toggle";
 import { ProductVariantImagesPanel } from "./ProductVariantImagesPanel";
 import type { LookupItem } from "@/lib/api/lookups";
 import { MAX_DECIMAL_10_2, type FieldErrors } from "@/lib/validation/common";
+import { generateVariantCombinations } from "@/lib/variant-matrix";
 
 function lookupOptions(items: LookupItem[]) {
   return items.map((item) => ({ value: String(item.id), label: item.nameKa }));
@@ -20,6 +21,13 @@ export type DraftVariant = {
   price: string;
   stockQuantity: string;
   sku: string;
+  // Each draft row is already independently editable (unlike
+  // ProductVariantsPanel's edit-flow add-form, which generates several
+  // variants from one shared form) — so, unlike there, finaId is just a
+  // normal per-row field here, no shared-vs-per-combination distinction
+  // needed. Still optional and still @unique DB-side (see
+  // product-form-save.ts's createProductVariant call).
+  finaId: string;
   isActive: boolean;
 };
 
@@ -51,6 +59,7 @@ function DraftVariantsTable({
             <th className="px-4 py-3 font-medium">ზომა</th>
             <th className="px-4 py-3 font-medium">ფერი</th>
             <th className="px-4 py-3 font-medium">SKU</th>
+            <th className="px-4 py-3 font-medium">FINA ID</th>
             <th className="px-4 py-3 font-medium">ფასი</th>
             <th className="px-4 py-3 font-medium">მარაგი</th>
             <th className="px-4 py-3 font-medium text-right">მოქმედება</th>
@@ -67,6 +76,15 @@ function DraftVariantsTable({
                   value={variant.sku}
                   onChange={(event) => onChange(variant.draftId, { sku: event.target.value })}
                   className="w-28 rounded-lg border border-border bg-background px-2 py-1 text-sm font-mono outline-none focus:border-primary"
+                />
+              </td>
+              <td className="px-4 py-2">
+                <input
+                  type="number"
+                  value={variant.finaId}
+                  onChange={(event) => onChange(variant.draftId, { finaId: event.target.value })}
+                  placeholder="—"
+                  className="w-24 rounded-lg border border-border bg-background px-2 py-1 text-sm font-mono outline-none focus:border-primary"
                 />
               </td>
               <td className="px-4 py-2">
@@ -126,6 +144,8 @@ export function ProductPricingTab({
   onInitialStatusIdChange,
   initialBaseSku,
   onInitialBaseSkuChange,
+  initialFinaId,
+  onInitialFinaIdChange,
   initialBasePrice,
   onInitialBasePriceChange,
   initialBaseStockQuantity,
@@ -161,6 +181,8 @@ export function ProductPricingTab({
   onInitialStatusIdChange: (id: string) => void;
   initialBaseSku: string;
   onInitialBaseSkuChange: (value: string) => void;
+  initialFinaId: string;
+  onInitialFinaIdChange: (value: string) => void;
   initialBasePrice: string;
   onInitialBasePriceChange: (value: string) => void;
   initialBaseStockQuantity: string;
@@ -182,6 +204,13 @@ export function ProductPricingTab({
   onInitialDiscountEndDateChange: (value: string) => void;
   errors: FieldErrors;
 }) {
+  // finaId is @unique, so the shared field below can only ever be usefully
+  // typed in when the current size/color selection is about to generate
+  // exactly one variant — a multi-row batch gets its FINA IDs per-row in
+  // DraftVariantsTable instead (see handleGenerateDraftVariants).
+  const willGenerateSingleVariant =
+    generateVariantCombinations(initialSizeIds.map(Number), initialColorIds.map(Number)).length === 1;
+
   return (
     <>
       <p className="text-xs text-muted-foreground">
@@ -256,6 +285,18 @@ export function ProductPricingTab({
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
           />
         </div>
+        {willGenerateSingleVariant && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-muted-foreground">FINA ID</label>
+            <input
+              type="number"
+              value={initialFinaId}
+              onChange={(event) => onInitialFinaIdChange(event.target.value)}
+              placeholder="მარაგის სინქრონიზაციისთვის"
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
+            />
+          </div>
+        )}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs text-muted-foreground">ფასი</label>
           <input

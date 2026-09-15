@@ -113,6 +113,12 @@ export function ProductForm({
   const [initialBasePrice, setInitialBasePrice] = useState("");
   const [initialBaseStockQuantity, setInitialBaseStockQuantity] = useState("1");
   const [initialBaseSku, setInitialBaseSku] = useState("");
+  // Only ever applied when the current selection generates exactly one
+  // variant (see ProductPricingTab.tsx's willGenerateSingleVariant) — finaId
+  // is @unique, so a shared value can't apply to more than one row in the
+  // same generated batch; a multi-row batch is instead edited per-row
+  // directly in DraftVariantsTable.
+  const [initialFinaId, setInitialFinaId] = useState("");
   const [initialIsActive, setInitialIsActive] = useState(true);
   const [draftVariants, setDraftVariants] = useState<DraftVariant[]>([]);
   const nextDraftVariantId = useRef(0);
@@ -246,6 +252,9 @@ export function ProductForm({
     );
     const conditionId = initialConditionId ? Number(initialConditionId) : null;
     const statusId = initialStatusId ? Number(initialStatusId) : null;
+    // Only carried into the new row when exactly one is being generated —
+    // see initialFinaId's own comment.
+    const finaId = combinations.length === 1 ? initialFinaId : "";
 
     setDraftVariants((prev) => [
       ...prev,
@@ -258,9 +267,25 @@ export function ProductForm({
         price: initialBasePrice,
         stockQuantity: initialBaseStockQuantity,
         sku: initialBaseSku,
+        finaId,
         isActive: initialIsActive,
       })),
     ]);
+
+    // Reset the generator inputs back to their defaults after each batch —
+    // mirrors ProductVariantsPanel.tsx's edit-flow add-form, which resets
+    // via getDefaultAddForm() after every generation, so a leftover
+    // size/color/price selection from the previous batch never silently
+    // carries into the next one.
+    setInitialSizeIds([]);
+    setInitialColorIds([]);
+    setInitialConditionId(String(conditions.find((c) => c.key === "NEW")?.id ?? ""));
+    setInitialStatusId(String(statuses.find((s) => s.key === "AVAILABLE")?.id ?? ""));
+    setInitialBasePrice("");
+    setInitialBaseStockQuantity("1");
+    setInitialBaseSku("");
+    setInitialFinaId("");
+    setInitialIsActive(true);
   }
 
   function updateDraftVariant(draftId: number, patch: Partial<DraftVariant>) {
@@ -476,6 +501,8 @@ export function ProductForm({
                 onInitialStatusIdChange={setInitialStatusId}
                 initialBaseSku={initialBaseSku}
                 onInitialBaseSkuChange={setInitialBaseSku}
+                initialFinaId={initialFinaId}
+                onInitialFinaIdChange={setInitialFinaId}
                 initialBasePrice={initialBasePrice}
                 onInitialBasePriceChange={setInitialBasePrice}
                 initialBaseStockQuantity={initialBaseStockQuantity}

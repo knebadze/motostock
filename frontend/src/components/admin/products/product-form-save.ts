@@ -70,6 +70,7 @@ export async function saveProductForm(input: ProductFormSaveInput): Promise<Prod
           colorId: draft.colorId,
           conditionId: draft.conditionId,
           statusId: draft.statusId,
+          finaId: draft.finaId.trim() ? Number(draft.finaId) : undefined,
           price: Number(draft.price),
           stockQuantity: draft.stockQuantity ? Number(draft.stockQuantity) : undefined,
           sku: draft.sku.trim() ? draft.sku.trim() : null,

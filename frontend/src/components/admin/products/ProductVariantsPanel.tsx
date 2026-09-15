@@ -15,7 +15,7 @@ import {
 import type { LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
-import { generateVariantCombinations } from "@/lib/variant-matrix";
+import { generateVariantCombinations, type VariantCombination } from "@/lib/variant-matrix";
 import { productVariantFormSchema } from "@/lib/validation/product-variants";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 import { ProductVariantImagesPanel } from "./ProductVariantImagesPanel";
@@ -24,6 +24,14 @@ import { VariantCommonFields } from "./VariantCommonFields";
 
 function lookupOptions(items: LookupItem[]) {
   return items.map((item) => ({ value: String(item.id), label: item.nameKa }));
+}
+
+// Stable key for a size/color combination, independent of combination order
+// — used to keep each row's individually-typed FINA ID attached to the
+// right row as the size/color selection (and therefore the generated
+// combination list) changes.
+function comboKey(combo: VariantCombination): string {
+  return `${combo.sizeId ?? "none"}:${combo.colorId ?? "none"}`;
 }
 
 function getDefaultAddForm(conditions: LookupItem[], statuses: LookupItem[]) {
@@ -35,6 +43,13 @@ function getDefaultAddForm(conditions: LookupItem[], statuses: LookupItem[]) {
     price: "",
     stockQuantity: "1",
     sku: "",
+    // Used when the current selection generates exactly one variant (see
+    // willGenerateSingleVariant below).
+    finaId: "",
+    // Used instead, one entry per row, when generating more than one
+    // variant at once — finaId is @unique, so each row needs its own value
+    // rather than one shared field.
+    finaIdByCombo: {} as Record<string, string>,
     isActive: true,
   };
 }
@@ -125,12 +140,21 @@ export function ProductVariantsPanel({
     setSaving(true);
     try {
       for (const combo of combinations) {
+        // A single generated variant uses the shared finaId field; a batch
+        // of several uses each row's own value instead (see
+        // getDefaultAddForm's finaId/finaIdByCombo comments) — finaId is
+        // @unique, so a shared value can't apply to more than one row.
+        const rawFinaId =
+          combinations.length === 1 ? addForm.finaId : addForm.finaIdByCombo[comboKey(combo)];
+        const finaId = rawFinaId?.trim() ? Number(rawFinaId) : undefined;
+
         await createProductVariant({
           productId,
           sizeId: combo.sizeId,
           colorId: combo.colorId,
           conditionId,
           statusId,
+          finaId,
           price: Number(addForm.price),
           stockQuantity: addForm.stockQuantity ? Number(addForm.stockQuantity) : undefined,
           sku: addForm.sku.trim() ? addForm.sku.trim() : null,
@@ -267,6 +291,22 @@ export function ProductVariantsPanel({
       ),
     },
   ];
+
+  // Recomputed on every render from the current size/color selection —
+  // drives both which FINA ID input(s) the add-form shows (one shared field
+  // for a single generated variant, one per-row field for a batch) and
+  // handleGenerate's own combinations above.
+  const pendingCombinations = generateVariantCombinations(
+    addForm.sizeIds.map(Number),
+    addForm.colorIds.map(Number),
+  );
+  const willGenerateSingleVariant = pendingCombinations.length === 1;
+
+  function comboLabel(combo: VariantCombination): string {
+    const sizeLabel = combo.sizeId != null ? sizes.find((s) => s.id === combo.sizeId)?.nameKa : null;
+    const colorLabel = combo.colorId != null ? colors.find((c) => c.id === combo.colorId)?.nameKa : null;
+    return [sizeLabel, colorLabel].filter(Boolean).join(" / ") || "—";
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -422,6 +462,12 @@ export function ProductVariantsPanel({
               sku={addForm.sku}
               onSkuChange={(value) => setAddForm((prev) => ({ ...prev, sku: value }))}
               skuPlaceholder="საერთო ყველასთვის, ან ცარიელი"
+              finaId={addForm.finaId}
+              onFinaIdChange={
+                willGenerateSingleVariant
+                  ? (value) => setAddForm((prev) => ({ ...prev, finaId: value }))
+                  : undefined
+              }
               price={addForm.price}
               onPriceChange={(value) => setAddForm((prev) => ({ ...prev, price: value }))}
               priceError={errors.price}
@@ -433,6 +479,38 @@ export function ProductVariantsPanel({
               onIsActiveChange={(checked) => setAddForm((prev) => ({ ...prev, isActive: checked }))}
             />
           </div>
+
+          {pendingCombinations.length > 1 && (
+            <div className="mt-3 rounded-lg border border-dashed border-border p-3">
+              <p className="text-xs text-muted-foreground">
+                თითოეულ კომბინაციას შეგიძლიათ ცალკე FINA ID მიანიჭოთ (არასავალდებულო) — თითოეული
+                უნდა იყოს უნიკალური.
+              </p>
+              <div className="mt-2 flex flex-col gap-1.5">
+                {pendingCombinations.map((combo) => {
+                  const key = comboKey(combo);
+                  return (
+                    <div key={key} className="flex items-center gap-3">
+                      <span className="w-40 shrink-0 truncate text-sm">{comboLabel(combo)}</span>
+                      <input
+                        type="number"
+                        value={addForm.finaIdByCombo[key] ?? ""}
+                        onChange={(event) =>
+                          setAddForm((prev) => ({
+                            ...prev,
+                            finaIdByCombo: { ...prev.finaIdByCombo, [key]: event.target.value },
+                          }))
+                        }
+                        placeholder="FINA ID"
+                        className="w-full max-w-40 rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-mono outline-none focus:border-primary"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={handleGenerate}
