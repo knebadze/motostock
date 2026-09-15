@@ -1,0 +1,52 @@
+enum ScheduledJobKey {
+  DAILY_PRUNE_VISITOR_DATA
+  DAILY_PRUNE_AUTH_ARTIFACTS
+  DAILY_PRUNE_GUEST_PRODUCT_VIEWS
+  DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS
+  DAILY_PRUNE_RICH_TEXT_IMAGES
+
+  @@schema("dbo")
+}
+
+enum ScheduledJobTrigger {
+  SCHEDULED
+  MANUAL
+
+  @@schema("dbo")
+}
+
+enum ScheduledJobStatus {
+  // Written up front, before the job itself runs — see
+  // scheduled-jobs.service.ts's runScheduledJob. A run that crashes
+  // (process kill, unhandled error, etc.) before reaching its own finishRun
+  // call is left stuck here with finishedAt still null, which is the
+  // visible signal of that crash in the admin's run history, instead of no
+  // row at all — same convention as FinaSyncStatus.RUNNING.
+  RUNNING
+  SUCCESS
+  FAILED
+
+  @@schema("dbo")
+}
+
+model ScheduledJobRun {
+  id            Int                 @id @default(autoincrement())
+  jobKey        ScheduledJobKey
+  trigger       ScheduledJobTrigger
+  status        ScheduledJobStatus
+  startedAt     DateTime            @default(now())
+  finishedAt    DateTime?
+  itemsAffected Int?
+  // Per-category breakdown for jobs that delete from more than one table
+  // (e.g. pruneStaleVisitorData returns {presenceDeleted, visitsDeleted}) —
+  // itemsAffected is their sum, for the admin table's headline number;
+  // detail keeps the full breakdown for a tooltip/expanded view.
+  detail        Json?
+  errorMessage  String?
+  triggeredById Int?
+  triggeredBy   User?               @relation(fields: [triggeredById], references: [id], onDelete: SetNull)
+
+  @@index([jobKey, startedAt])
+  @@index([triggeredById])
+  @@schema("dbo")
+}

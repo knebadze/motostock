@@ -24,6 +24,7 @@ import {
   ordersIcon,
   productsIcon,
   promoCodesIcon,
+  scheduledJobsIcon,
   serviceHistoryIcon,
   serviceTypesIcon,
   sessionsIcon,
@@ -58,6 +59,7 @@ export const adminNav: AdminNavSection[] = [
       { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon },
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },
       { label: "FINA სინქრონიზაცია", href: "/admin/fina-sync", icon: finaSyncIcon },
+      { label: "ავტომატური დავალებები", href: "/admin/scheduled-jobs", icon: scheduledJobsIcon },
     ],
   },
   {

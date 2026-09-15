@@ -43,6 +43,7 @@ import { productVariantsRouter } from "./modules/product-variants/product-varian
 import { productVariantImagesRouter } from "./modules/product-variant-images/product-variant-images.routes.js";
 import { productVariantDiscountsRouter } from "./modules/product-variant-discounts/product-variant-discounts.routes.js";
 import { finaSyncRouter } from "./modules/fina-sync/fina-sync.routes.js";
+import { scheduledJobsRouter } from "./modules/scheduled-jobs/scheduled-jobs.routes.js";
 import { cacheRouter } from "./modules/cache/cache.routes.js";
 import { errorLogsRouter } from "./modules/error-logs/error-logs.routes.js";
 import { companyInfoRouter } from "./modules/company-info/company-info.routes.js";
@@ -168,6 +169,7 @@ app.use("/api/product-variants", productVariantsRouter);
 app.use("/api/product-variants/:variantId/discounts", productVariantDiscountsRouter);
 app.use("/api/product-variants/:variantId/images", productVariantImagesRouter);
 app.use("/api/fina-sync", finaSyncRouter);
+app.use("/api/scheduled-jobs", scheduledJobsRouter);
 app.use("/api/cache", cacheRouter);
 app.use("/api/error-logs", errorLogsRouter);
 app.use("/api/company-info", companyInfoRouter);

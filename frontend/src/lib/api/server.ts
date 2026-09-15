@@ -46,6 +46,7 @@ import type { SuspiciousLoginActivity } from "./fraud";
 import type { Session } from "./sessions";
 import type { VisitorOverview } from "./visitors";
 import type { ErrorLogsPage } from "./error-logs";
+import type { ScheduledJobDefinition, ScheduledJobRunsPage } from "./scheduled-jobs";
 
 async function authHeaders() {
   const cookieStore = await cookies();
@@ -301,6 +302,23 @@ export async function getFinaSyncRunsFromServer(): Promise<FinaSyncRun[]> {
   return fetchFromServer<{ runs: FinaSyncRun[] }, FinaSyncRun[]>("/fina-sync/runs", {
     fallback: [],
     extract: (data) => data.runs,
+    requireAuth: true,
+  });
+}
+
+export async function getScheduledJobsFromServer(): Promise<ScheduledJobDefinition[]> {
+  return fetchFromServer<{ jobs: ScheduledJobDefinition[] }, ScheduledJobDefinition[]>("/scheduled-jobs", {
+    fallback: [],
+    extract: (data) => data.jobs,
+    requireAuth: true,
+  });
+}
+
+export async function getScheduledJobRunsFromServer(): Promise<ScheduledJobRunsPage> {
+  return fetchFromServer<ScheduledJobRunsPage, ScheduledJobRunsPage>("/scheduled-jobs/runs", {
+    params: { page: 1, pageSize: 20 },
+    fallback: { runs: [], total: 0, page: 1, pageSize: 20 },
+    extract: (data) => data,
     requireAuth: true,
   });
 }

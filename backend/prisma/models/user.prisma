@@ -27,6 +27,7 @@ model User {
   roleId                  Int
   role                    Role                     @relation(fields: [roleId], references: [id], onDelete: Restrict)
   finaSyncRuns            FinaSyncRun[]
+  scheduledJobRuns        ScheduledJobRun[]
   sessions                Session[]
   passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]

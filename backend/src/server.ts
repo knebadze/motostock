@@ -1,14 +1,12 @@
+import cron, { type ScheduledTask } from "node-cron";
 import { app } from "./app.js";
 import { env } from "./config/env.js";
 import { prisma } from "./config/prisma.js";
 import { logger } from "./lib/logger.js";
 import { isFinaConfigured, runSync } from "./modules/fina-sync/fina-sync.service.js";
 import { getFinaSyncIntervalMinutes } from "./modules/settings/settings.service.js";
-import { pruneStaleVisitorData } from "./modules/visitors/visitors.service.js";
-import { pruneStaleAuthArtifacts } from "./modules/auth/auth.service.js";
-import { pruneStaleGuestProductViews } from "./modules/product-views/product-views.service.js";
-import { pruneStaleGuestVehicleListingViews } from "./modules/vehicle-listing-views/vehicle-listing-views.service.js";
-import { pruneOrphanedRichTextImages } from "./modules/media/media.service.js";
+import { JOB_DEFINITIONS } from "./modules/scheduled-jobs/scheduled-jobs.registry.js";
+import { runScheduledJob } from "./modules/scheduled-jobs/scheduled-jobs.service.js";
 
 const server = app.listen(env.PORT, () => {
   logger.info(`Server listening on http://localhost:${env.PORT}`);
@@ -39,37 +37,42 @@ if (isFinaConfigured()) {
 }
 
 // Bounds the growth of every table with no other retention policy
-// (VisitorPresence/VisitorVisit — see visitors.service.ts's
-// pruneStaleVisitorData; Session/PasswordResetToken/EmailVerificationToken —
-// see auth.service.ts's pruneStaleAuthArtifacts; guest-owned
-// ProductView/VehicleListingView rows — see product-views.service.ts's
-// pruneStaleGuestProductViews and its vehicle-listing-views counterpart) —
-// daily is plenty, since none of them need pruning more precisely than
-// that. A fixed setInterval is fine here (unlike the FINA timer above):
-// unlike finaSyncIntervalMinutes, this interval isn't admin-configurable, so
-// there's no "pick up a changed Settings value" requirement to justify the
-// self-rescheduling setTimeout pattern.
-const DAILY_PRUNE_INTERVAL_MS = 24 * 60 * 60 * 1000;
-function runDailyPrune() {
-  pruneStaleVisitorData().catch((err: unknown) => logger.error({ err }, "Visitor data pruning failed"));
-  pruneStaleAuthArtifacts().catch((err: unknown) => logger.error({ err }, "Auth artifact pruning failed"));
-  pruneStaleGuestProductViews().catch((err: unknown) =>
-    logger.error({ err }, "Guest product-view pruning failed"),
-  );
-  pruneStaleGuestVehicleListingViews().catch((err: unknown) =>
-    logger.error({ err }, "Guest vehicle-listing-view pruning failed"),
-  );
-  pruneOrphanedRichTextImages().catch((err: unknown) =>
-    logger.error({ err }, "Orphaned rich-text image pruning failed"),
+// (VisitorPresence/VisitorVisit, Session/PasswordResetToken/
+// EmailVerificationToken, guest-owned ProductView/VehicleListingView rows,
+// orphaned rich-text images — see scheduled-jobs.registry.ts for the actual
+// prune functions) — daily is plenty, none of them need pruning more
+// precisely than that. Real wall-clock cron (03:00 Tbilisi time) instead of
+// a plain `setInterval`, which only ever counted 24h from whenever this
+// process happened to boot — during frequent redeploys that interval
+// effectively never fired, and even when it did it could land at any hour.
+// Each run is persisted via scheduled-jobs' RUNNING->SUCCESS/FAILED history
+// (see the admin "ავტომატური დავალებები" page) instead of only logging on
+// failure. `noOverlap` skips a cron tick if the previous run of the *same*
+// job is still in flight — no separate lock needed, this is a single-
+// instance deployment (see docker-compose.yml) and every job here is a pure
+// cutoff-based delete with no correctness risk from a stray concurrent run,
+// unlike FINA sync's stock mutations above. `unref` matches the old
+// `dailyPruneTimer.unref()` — these tasks must never keep the process alive
+// on their own.
+const DAILY_PRUNE_CRON = "0 3 * * *";
+function runDailyPruneJob(key: (typeof JOB_DEFINITIONS)[number]["key"]) {
+  runScheduledJob(key, "SCHEDULED", null).catch((err: unknown) =>
+    logger.error({ err, jobKey: key }, "Scheduled job failed"),
   );
 }
-// Also run once immediately on boot, not just on the interval — this app
-// deploys far more often than every 24h, so a plain setInterval alone would
-// never actually fire in practice (each deploy tears down the process and
-// starts a fresh interval before the previous one's first tick).
-runDailyPrune();
-const dailyPruneTimer = setInterval(runDailyPrune, DAILY_PRUNE_INTERVAL_MS);
-dailyPruneTimer.unref();
+// Also run once immediately on boot, not just on the cron schedule — this
+// app still deploys far more often than once a day, so relying on the cron
+// trigger alone would often mean these jobs never actually fire in
+// practice (same rationale the old setInterval version's boot-time call
+// had; node-cron's TaskOptions has no "run immediately" flag of its own).
+JOB_DEFINITIONS.forEach((job) => runDailyPruneJob(job.key));
+const dailyPruneCronTasks: ScheduledTask[] = JOB_DEFINITIONS.map((job) =>
+  cron.schedule(DAILY_PRUNE_CRON, () => runDailyPruneJob(job.key), {
+    timezone: "Asia/Tbilisi",
+    noOverlap: true,
+    unref: true,
+  }),
+);
 
 // Docker Compose sends SIGTERM (then SIGKILL after its ~10s grace period) on
 // every `stop`/`restart`/recreate — i.e. on every deploy, not just a rare
@@ -86,7 +89,7 @@ function shutdown(signal: string) {
 
   finaSyncStopped = true;
   if (finaSyncTimer) clearTimeout(finaSyncTimer);
-  clearInterval(dailyPruneTimer);
+  dailyPruneCronTasks.forEach((task) => task.stop());
 
   const forceExit = setTimeout(() => {
     logger.error("Graceful shutdown timed out, forcing exit");
