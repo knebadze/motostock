@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import NextLink from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
@@ -282,14 +283,32 @@ export function Header({
                   className="absolute right-0 top-12 z-50 w-48 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg"
                 >
                   <li>
-                    <Link
-                      href="/account"
-                      onClick={() => setAccountMenuOpen(false)}
-                      role="menuitem"
-                      className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
-                    >
-                      {tHeader("myAccount")}
-                    </Link>
+                    {user.role === "ADMIN" ? (
+                      // /admin isn't locale-routed (see proxy.ts's own comment on this) —
+                      // a logged-in admin's "account" is the admin panel, not the
+                      // customer-facing /account area (which also hard-gates on
+                      // emailVerified, a check that never applies to how admin accounts
+                      // are provisioned). Plain next/link, not the i18n-aware `Link`
+                      // above, since that one only knows how to prefix locale-routed
+                      // paths.
+                      <NextLink
+                        href="/admin"
+                        onClick={() => setAccountMenuOpen(false)}
+                        role="menuitem"
+                        className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+                      >
+                        {tHeader("adminPanel")}
+                      </NextLink>
+                    ) : (
+                      <Link
+                        href="/account"
+                        onClick={() => setAccountMenuOpen(false)}
+                        role="menuitem"
+                        className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+                      >
+                        {tHeader("myAccount")}
+                      </Link>
+                    )}
                   </li>
                   <li className="border-t border-border">
                     <button
@@ -509,13 +528,23 @@ export function Header({
 
             {user ? (
               <>
-                <Link
-                  href="/account"
-                  onClick={() => setIsOpen(false)}
-                  className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
-                >
-                  {tHeader("myAccount")}
-                </Link>
+                {user.role === "ADMIN" ? (
+                  <NextLink
+                    href="/admin"
+                    onClick={() => setIsOpen(false)}
+                    className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+                  >
+                    {tHeader("adminPanel")}
+                  </NextLink>
+                ) : (
+                  <Link
+                    href="/account"
+                    onClick={() => setIsOpen(false)}
+                    className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+                  >
+                    {tHeader("myAccount")}
+                  </Link>
+                )}
                 <button
                   type="button"
                   onClick={handleLogout}

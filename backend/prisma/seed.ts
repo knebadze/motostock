@@ -944,6 +944,12 @@ async function main() {
         lastName: ADMIN_LAST_NAME,
         passwordHash,
         roleId: adminRole.id,
+        // An admin account is never expected to go through the public
+        // registration+email-verification flow — leaving this null used to
+        // trip the storefront's /account emailVerified gate (see Header.tsx's
+        // account-dropdown link, which now routes ADMIN users to /admin
+        // instead of /account, but this is the actual root cause either way).
+        emailVerifiedAt: new Date(),
       },
     });
     console.log(`Created admin user: ${ADMIN_EMAIL}`);
