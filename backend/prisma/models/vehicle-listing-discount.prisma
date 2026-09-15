@@ -9,6 +9,14 @@ model VehicleListingDiscount {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
+  // Optional — set only when this row was created as part of a named,
+  // admin-grouped batch (see BulkDiscountEvent). SetNull: deleting the event
+  // must never touch this discount (individual behavior is never allowed to
+  // change because of grouping — see bulk-discount-event.prisma).
+  bulkDiscountEventId Int?
+  bulkDiscountEvent   BulkDiscountEvent? @relation(fields: [bulkDiscountEventId], references: [id], onDelete: SetNull)
+
   @@index([vehicleListingId, startDate, endDate])
+  @@index([bulkDiscountEventId])
   @@schema("dbo")
 }

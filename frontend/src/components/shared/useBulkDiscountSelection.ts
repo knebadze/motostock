@@ -4,7 +4,7 @@ import { useState } from "react";
 
 // Selection-set + "confirm before applying a >50% discount" bookkeeping
 // shared between BulkProductDiscountsPanel and BulkVehicleListingDiscountsPanel
-// — both let the admin build up a working set of ids across several filter
+// (BulkDiscountsPanel.tsx) — both let the admin build up a working set of ids across several filter
 // passes (selecting/deselecting only what's currently visible without
 // losing earlier picks) before applying one discount to all of them. The
 // actual apply call (API function + success/error toasts, which differ in

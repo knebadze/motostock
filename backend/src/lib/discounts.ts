@@ -4,8 +4,8 @@
 // structurally, so one generic works for both without either module
 // depending on the other's types. Previously reimplemented independently in
 // 7 services (cart, orders, products, product-variants, vehicle-listing,
-// bulk-product-discounts, bulk-vehicle-listing-discounts) — consolidated
-// here so the window comparison can't drift between call sites.
+// bulk-discounts x2) — consolidated here so the window comparison can't
+// drift between call sites.
 export function findActiveDiscount<T extends { startDate: Date; endDate: Date }>(
   discounts: T[],
 ): T | null {

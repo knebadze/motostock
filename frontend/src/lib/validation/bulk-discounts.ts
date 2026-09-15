@@ -1,9 +1,12 @@
 import { z } from "zod";
 
-export const bulkProductDiscountFormSchema = z
+// Shared by both BulkProductDiscountsPanel and BulkVehicleListingDiscountsPanel
+// (BulkDiscountsPanel.tsx) — the percent/date-range rules are identical
+// regardless of what's being bulk-discounted.
+export const bulkDiscountFormSchema = z
   .object({
-    // 100 rejected, not just capped — mirrors bulk-product-discounts.schema.ts's
-    // backend constraint (a stray 100 zeroes out every selected variant's
+    // 100 rejected, not just capped — mirrors bulk-discounts.schema.ts's
+    // backend constraint (a stray 100 zeroes out every selected item's
     // discountPrice at once).
     discountPercent: z
       .string()

@@ -6,14 +6,11 @@ import { Select } from "@/components/shared/Select";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import {
-  listProductDiscountHistory,
+  listDiscountHistory,
+  type DiscountStatus,
   type ProductDiscountHistoryRow,
-  type ProductDiscountStatus,
-} from "@/lib/api/bulk-product-discounts";
-import {
-  listVehicleDiscountHistory,
   type VehicleDiscountHistoryRow,
-} from "@/lib/api/bulk-vehicle-listing-discounts";
+} from "@/lib/api/bulk-discounts";
 import { deleteProductVariantDiscount } from "@/lib/api/product-variant-discounts";
 import { deleteVehicleListingDiscount } from "@/lib/api/vehicle-listing-discounts";
 import { ApiRequestError } from "@/lib/api/client";
@@ -29,7 +26,7 @@ type UnifiedRow = {
   discountPercent: number | null;
   startDate: string;
   endDate: string;
-  computedStatus: ProductDiscountStatus;
+  computedStatus: DiscountStatus;
   variantId: number | null;
   vehicleListingId: number | null;
   discountId: number;
@@ -71,13 +68,13 @@ function fromVehicleRow(row: VehicleDiscountHistoryRow): UnifiedRow {
   };
 }
 
-const STATUS_LABELS: Record<ProductDiscountStatus, string> = {
+const STATUS_LABELS: Record<DiscountStatus, string> = {
   ACTIVE: "აქტიური",
   SCHEDULED: "დაგეგმილი",
   EXPIRED: "ვადაგასული",
 };
 
-const STATUS_CLASSES: Record<ProductDiscountStatus, string> = {
+const STATUS_CLASSES: Record<DiscountStatus, string> = {
   ACTIVE: "bg-green-500/10 text-green-600",
   SCHEDULED: "bg-blue-500/10 text-blue-600",
   EXPIRED: "bg-muted text-muted-foreground",
@@ -103,8 +100,8 @@ export function DiscountHistoryPanel() {
 
     try {
       const [productResult, vehicleResult] = await Promise.all([
-        listProductDiscountHistory({ status: status || undefined, search: searchValue || undefined }),
-        listVehicleDiscountHistory({ status: status || undefined, search: searchValue || undefined }),
+        listDiscountHistory("PRODUCT", { status: status || undefined, search: searchValue || undefined }),
+        listDiscountHistory("VEHICLE_LISTING", { status: status || undefined, search: searchValue || undefined }),
       ]);
       setRows([...productResult.items.map(fromProductRow), ...vehicleResult.items.map(fromVehicleRow)]);
       setTruncated(productResult.truncated || vehicleResult.truncated);
@@ -117,7 +114,7 @@ export function DiscountHistoryPanel() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([listProductDiscountHistory(), listVehicleDiscountHistory()])
+    Promise.all([listDiscountHistory("PRODUCT"), listDiscountHistory("VEHICLE_LISTING")])
       .then(([productResult, vehicleResult]) => {
         if (cancelled) return;
         setRows([...productResult.items.map(fromProductRow), ...vehicleResult.items.map(fromVehicleRow)]);
