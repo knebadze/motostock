@@ -17,6 +17,7 @@ import { formatDate } from "@/lib/format";
 import { VEHICLE_ROOT_CATEGORY_SLUG } from "@/lib/categories-tree";
 import { EditBulkDiscountEventModal } from "./EditBulkDiscountEventModal";
 import { EventHeroSlideModal } from "./EventHeroSlideModal";
+import { EventNewsletterModal } from "./EventNewsletterModal";
 import { RepeatBulkDiscountEventModal } from "./RepeatBulkDiscountEventModal";
 
 // Admin panel is KA-only (see backend architecture conventions), so the
@@ -39,6 +40,7 @@ export function DiscountEventsPanel() {
   const [repeatingEvent, setRepeatingEvent] = useState<BulkDiscountEvent | null>(null);
   const [editingEvent, setEditingEvent] = useState<BulkDiscountEvent | null>(null);
   const [heroSlideEvent, setHeroSlideEvent] = useState<BulkDiscountEvent | null>(null);
+  const [newsletterEvent, setNewsletterEvent] = useState<BulkDiscountEvent | null>(null);
   const [deletingEvent, setDeletingEvent] = useState<BulkDiscountEvent | null>(null);
 
   function fetchPage(page: number) {
@@ -166,6 +168,27 @@ export function DiscountEventsPanel() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setNewsletterEvent(event)}
+                    aria-label="მეილის გაგზავნა"
+                    title="მეილის გაგზავნა"
+                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="size-4"
+                    >
+                      <rect width="20" height="16" x="2" y="4" rx="2" />
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setRepeatingEvent(event)}
                     aria-label="გამეორება"
                     title="გამეორება"
@@ -207,6 +230,12 @@ export function DiscountEventsPanel() {
         event={heroSlideEvent}
         onClose={() => setHeroSlideEvent(null)}
         onSaved={() => loadPage(data.page)}
+      />
+
+      <EventNewsletterModal
+        key={`newsletter-${newsletterEvent?.id ?? "none"}`}
+        event={newsletterEvent}
+        onClose={() => setNewsletterEvent(null)}
       />
 
       <RepeatBulkDiscountEventModal
