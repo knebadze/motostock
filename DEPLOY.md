@@ -90,11 +90,18 @@ docker compose logs -f backend
 
 ```bash
 git pull
-docker compose build
+docker compose build migrate
 docker compose run --rm migrate                          # თუ ახალი მიგრაცია დაემატა
+docker compose build
 docker compose run --rm migrate npx prisma db seed        # თუ prisma/seed.ts შეიცვალა
 docker compose up -d
 ```
+
+⚠️ **`migrate` ცალკე უნდა აშენდეს (`docker compose build migrate`), არა უბრალო `docker compose
+build`-ით** — `migrate`-ს `docker-compose.yml`-ში აქვს `profiles: ["tools"]`, ამიტომ სახელის
+გარეშე გაშვებული `build` მას საერთოდ გამოტოვებს (მხოლოდ `backend`/`frontend` აშენდება) და
+`docker compose run --rm migrate` მაშინ ძველ, ქეშირებულ image-ს გამოიყენებს ახალი მიგრაციების
+დანახვის მაგივრად — build სწრაფად (წამებში) დასრულდება, ეს ნიშანია, რომ ეს რეალურად მოხდა.
 
 ## სარეზერვო ასლი
 
