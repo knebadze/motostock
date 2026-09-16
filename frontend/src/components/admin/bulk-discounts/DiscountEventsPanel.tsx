@@ -28,6 +28,15 @@ function shopLinkFor(event: BulkDiscountEvent): string {
   return `/ka${path}?eventId=${event.id}`;
 }
 
+// A slide/campaign built from an expired event would either advertise a
+// deal that no longer applies (newsletter) or already render inactive on
+// the storefront (see hero-slides.service.ts's own expiry-aware isActive) —
+// so both actions are disabled here rather than left to silently produce
+// something pointless.
+function isEventExpired(event: BulkDiscountEvent): boolean {
+  return new Date() > new Date(event.endDate);
+}
+
 const TARGET_TYPE_LABELS: Record<BulkDiscountEvent["targetType"], string> = {
   PRODUCT: "პროდუქტი",
   VEHICLE_LISTING: "ტრანსპორტი",
@@ -147,9 +156,16 @@ export function DiscountEventsPanel() {
                   <button
                     type="button"
                     onClick={() => setHeroSlideEvent(event)}
+                    disabled={isEventExpired(event)}
                     aria-label={event.heroSlideId != null ? "სლაიდის რედაქტირება" : "სლაიდის შექმნა"}
-                    title={event.heroSlideId != null ? "სლაიდის რედაქტირება" : "სლაიდის შექმნა"}
-                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                    title={
+                      isEventExpired(event)
+                        ? "ვადაგასულია — სლაიდი ვეღარ შეიქმნება/რედაქტირდება"
+                        : event.heroSlideId != null
+                          ? "სლაიდის რედაქტირება"
+                          : "სლაიდის შექმნა"
+                    }
+                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:pointer-events-none disabled:opacity-40"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -169,9 +185,14 @@ export function DiscountEventsPanel() {
                   <button
                     type="button"
                     onClick={() => setNewsletterEvent(event)}
+                    disabled={isEventExpired(event)}
                     aria-label="მეილის გაგზავნა"
-                    title="მეილის გაგზავნა"
-                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                    title={
+                      isEventExpired(event)
+                        ? "ვადაგასულია — მეილი ვეღარ გაიგზავნება"
+                        : "მეილის გაგზავნა"
+                    }
+                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:pointer-events-none disabled:opacity-40"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"

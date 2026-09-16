@@ -219,9 +219,16 @@ export function PromoCodesManager({
                   <button
                     type="button"
                     onClick={() => setHeroSlidePromoCode(item)}
+                    disabled={item.computedStatus === "EXPIRED"}
                     aria-label={item.heroSlideId != null ? "სლაიდის რედაქტირება" : "სლაიდის შექმნა"}
-                    title={item.heroSlideId != null ? "სლაიდის რედაქტირება" : "სლაიდის შექმნა"}
-                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                    title={
+                      item.computedStatus === "EXPIRED"
+                        ? "ვადაგასულია — სლაიდი ვეღარ შეიქმნება/რედაქტირდება"
+                        : item.heroSlideId != null
+                          ? "სლაიდის რედაქტირება"
+                          : "სლაიდის შექმნა"
+                    }
+                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:pointer-events-none disabled:opacity-40"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -241,9 +248,14 @@ export function PromoCodesManager({
                   <button
                     type="button"
                     onClick={() => setNewsletterPromoCode(item)}
+                    disabled={item.computedStatus === "EXPIRED"}
                     aria-label="მეილის გაგზავნა"
-                    title="მეილის გაგზავნა"
-                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                    title={
+                      item.computedStatus === "EXPIRED"
+                        ? "ვადაგასულია — მეილი ვეღარ გაიგზავნება"
+                        : "მეილის გაგზავნა"
+                    }
+                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:pointer-events-none disabled:opacity-40"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
