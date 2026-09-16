@@ -19,6 +19,7 @@ import { toTbilisiDateOnly } from "@/lib/format";
 import { flattenTree, isVehicleCategory } from "@/lib/categories-tree";
 import { PromoCodeFormModal } from "./PromoCodeFormModal";
 import { PromoCodeHeroSlideModal } from "./PromoCodeHeroSlideModal";
+import { PromoCodeNewsletterModal } from "./PromoCodeNewsletterModal";
 
 const STATUS_LABELS: Record<PromoCodeStatus, string> = {
   ACTIVE: "აქტიური",
@@ -42,7 +43,10 @@ function StatusBadge({ status }: { status: PromoCodeStatus }) {
   );
 }
 
-function scopeSummary(promoCode: PromoCode): string {
+// Exported so PromoCodeNewsletterModal.tsx can reuse the exact same scope
+// description in its default email body, instead of re-deriving a
+// (potentially drifting) summary of its own.
+export function scopeSummary(promoCode: PromoCode): string {
   if (!promoCode.category) {
     return promoCode.domain === "PRODUCT" ? "ყველა პროდუქტი" : "მთელი ტრანსპორტი";
   }
@@ -76,6 +80,7 @@ export function PromoCodesManager({
   const [formOpen, setFormOpen] = useState(false);
   const [editingPromoCode, setEditingPromoCode] = useState<PromoCode | null>(null);
   const [heroSlidePromoCode, setHeroSlidePromoCode] = useState<PromoCode | null>(null);
+  const [newsletterPromoCode, setNewsletterPromoCode] = useState<PromoCode | null>(null);
   const [deletingPromoCode, setDeletingPromoCode] = useState<PromoCode | null>(null);
 
   const applicableCategories = useMemo(
@@ -210,28 +215,51 @@ export function PromoCodesManager({
               onEdit={() => openEditModal(item)}
               onDelete={() => setDeletingPromoCode(item)}
               extra={
-                <button
-                  type="button"
-                  onClick={() => setHeroSlidePromoCode(item)}
-                  aria-label={item.heroSlideId != null ? "სლაიდის რედაქტირება" : "სლაიდის შექმნა"}
-                  title={item.heroSlideId != null ? "სლაიდის რედაქტირება" : "სლაიდის შექმნა"}
-                  className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="size-4"
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setHeroSlidePromoCode(item)}
+                    aria-label={item.heroSlideId != null ? "სლაიდის რედაქტირება" : "სლაიდის შექმნა"}
+                    title={item.heroSlideId != null ? "სლაიდის რედაქტირება" : "სლაიდის შექმნა"}
+                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
                   >
-                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                    <circle cx="9" cy="9" r="2" />
-                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                  </svg>
-                </button>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="size-4"
+                    >
+                      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                      <circle cx="9" cy="9" r="2" />
+                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewsletterPromoCode(item)}
+                    aria-label="მეილის გაგზავნა"
+                    title="მეილის გაგზავნა"
+                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="size-4"
+                    >
+                      <rect width="20" height="16" x="2" y="4" rx="2" />
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    </svg>
+                  </button>
+                </>
               }
             />
           )}
@@ -253,6 +281,12 @@ export function PromoCodesManager({
         promoCode={heroSlidePromoCode}
         onClose={() => setHeroSlidePromoCode(null)}
         onSaved={() => refresh()}
+      />
+
+      <PromoCodeNewsletterModal
+        key={`newsletter-${newsletterPromoCode?.id ?? "none"}`}
+        promoCode={newsletterPromoCode}
+        onClose={() => setNewsletterPromoCode(null)}
       />
 
       <ConfirmDialog
