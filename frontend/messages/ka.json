@@ -698,7 +698,10 @@
       "prevSlide": "წინა სლაიდი",
       "nextSlide": "შემდეგი სლაიდი",
       "slideDot": "სლაიდი {index}",
-      "discountBadge": "-{percent}% ფასდაკლება {startDate}-დან {endDate}-მდე"
+      "discountBadge": "-{percent}% ფასდაკლება {startDate}-დან {endDate}-მდე",
+      "promoCodeBadge": "-{percent}% ფასდაკლება კოდით {code} ({scope}), {startDate}-დან {endDate}-მდე",
+      "promoCodeScopeAllProducts": "ყველა პროდუქტი",
+      "promoCodeScopeAllVehicles": "მთელი ტრანსპორტი"
     }
   }
 }

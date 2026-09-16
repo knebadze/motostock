@@ -698,7 +698,10 @@
       "prevSlide": "Previous slide",
       "nextSlide": "Next slide",
       "slideDot": "Slide {index}",
-      "discountBadge": "-{percent}% off, {startDate} – {endDate}"
+      "discountBadge": "-{percent}% off, {startDate} – {endDate}",
+      "promoCodeBadge": "-{percent}% off with code {code} ({scope}), {startDate} – {endDate}",
+      "promoCodeScopeAllProducts": "all products",
+      "promoCodeScopeAllVehicles": "all vehicles"
     }
   }
 }

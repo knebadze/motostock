@@ -34,9 +34,15 @@ const VERTICAL_POSITION_CLASSES: Record<HeroSlideVerticalPosition, string> = {
 
 // DISCOUNT slides never store a hand-typed link. An event-scoped slide
 // (bulkDiscountEvent set) always wins — its own scoped listing page is the
-// whole point of that slide, so it's checked before falling back to the
-// general category/brand targeting (general when neither is set, narrowed by
-// category and/or brand otherwise).
+// whole point of that slide, so it's checked first. A promo-code-linked
+// slide comes next, deliberately WITHOUT onSale=true — a promo code creates
+// no discount rows at all (it's a declarative, checkout-time rule, see
+// promo-code.prisma), so filtering by "currently on sale" would show
+// whatever else happens to be discounted, not what the code actually
+// applies to (a code with no category, i.e. "every product," previously
+// showed only the handful of items something unrelated had discounted).
+// Neither set: general discount page, narrowed by category and/or brand
+// when those are set.
 function buildDiscountLink(slide: HeroSlide): string {
   if (slide.bulkDiscountEvent) {
     const path =
@@ -45,6 +51,12 @@ function buildDiscountLink(slide: HeroSlide): string {
         : "/shop";
     return `${path}?eventId=${slide.bulkDiscountEvent.id}`;
   }
+  if (slide.promoCode) {
+    if (slide.promoCode.domain === "VEHICLE") {
+      return slide.promoCode.category ? `/${slide.promoCode.category.slug}` : `/${VEHICLE_ROOT_CATEGORY_SLUG}`;
+    }
+    return slide.promoCode.category ? `/shop?categoryId=${slide.promoCode.category.id}` : "/shop";
+  }
 
   const params = new URLSearchParams({ onSale: "true" });
   if (slide.discountCategoryId != null) params.set("categoryId", String(slide.discountCategoryId));
@@ -52,6 +64,23 @@ function buildDiscountLink(slide: HeroSlide): string {
     params.set("brandIds", String(slide.discountProductBrandId));
   }
   return `/shop?${params.toString()}`;
+}
+
+// Descriptive text for a promo code's scope, since its slide's button link
+// can't itself communicate "which category" the way an active-discount-row
+// filter's result set would — see buildDiscountLink's comment. `null` means
+// "applies to everything," shown as a localized "all products"/"all
+// vehicles" phrase instead of a category name.
+function promoCodeScopeText(
+  promoCode: NonNullable<HeroSlide["promoCode"]>,
+  locale: "ka" | "en" | "ru",
+  t: ReturnType<typeof useTranslations>,
+): string {
+  if (!promoCode.category) {
+    return promoCode.domain === "VEHICLE" ? t("promoCodeScopeAllVehicles") : t("promoCodeScopeAllProducts");
+  }
+  const categoryName = promoCode.category.name[locale];
+  return promoCode.productBrand ? `${categoryName} · ${promoCode.productBrand.name}` : categoryName;
 }
 
 export function HeroSlider({
@@ -140,6 +169,17 @@ export function HeroSlider({
                 percent: slide.bulkDiscountEvent.discountPercent,
                 startDate: formatDate(slide.bulkDiscountEvent.startDate),
                 endDate: formatDate(slide.bulkDiscountEvent.endDate),
+              })}
+            </span>
+          )}
+          {slide.type === "DISCOUNT" && !slide.bulkDiscountEvent && slide.promoCode && (
+            <span className="w-fit rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground">
+              {t("promoCodeBadge", {
+                percent: slide.promoCode.discountPercent,
+                code: slide.promoCode.code,
+                scope: promoCodeScopeText(slide.promoCode, locale, t),
+                startDate: formatDate(slide.promoCode.startDate),
+                endDate: formatDate(slide.promoCode.endDate),
               })}
             </span>
           )}

@@ -698,7 +698,10 @@
       "prevSlide": "Предыдущий слайд",
       "nextSlide": "Следующий слайд",
       "slideDot": "Слайд {index}",
-      "discountBadge": "-{percent}% скидка, {startDate} – {endDate}"
+      "discountBadge": "-{percent}% скидка, {startDate} – {endDate}",
+      "promoCodeBadge": "-{percent}% скидка по коду {code} ({scope}), {startDate} – {endDate}",
+      "promoCodeScopeAllProducts": "все товары",
+      "promoCodeScopeAllVehicles": "вся техника"
     }
   }
 }

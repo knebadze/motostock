@@ -7,11 +7,12 @@ enum HeroSlideType {
   // an existing category page (/{category.slug}) instead of a vehicle.
   CATEGORY_FILTER
   // A button whose link is computed automatically (never hand-typed) from
-  // discountCategoryId/discountProductBrandId or discountBulkEventId —
-  // /shop?onSale=true (narrowed by category/brand when set, general when
-  // neither is) unless discountBulkEventId is set, which always wins and
-  // links to that event's own scoped listing page instead (see
-  // HeroSlider.tsx's buildDiscountLink).
+  // discountCategoryId/discountProductBrandId, discountBulkEventId, or
+  // discountPromoCodeId — /shop?onSale=true (narrowed by category/brand when
+  // set, general when neither is) unless discountBulkEventId or
+  // discountPromoCodeId is set, either of which always wins and links to
+  // that campaign's own page instead (see HeroSlider.tsx's buildDiscountLink
+  // — bulk event checked first, promo code second).
   DISCOUNT
 
   @@schema("dbo")
@@ -72,6 +73,13 @@ model HeroSlide {
   // to a general discount link, not delete or block deleting the event.
   discountBulkEventId    Int?                      @unique
   discountBulkEvent      BulkDiscountEvent?        @relation(fields: [discountBulkEventId], references: [id], onDelete: SetNull)
+  // DISCOUNT-only — same idea as discountBulkEventId above, but for a
+  // PromoCode (a customer-typed-at-checkout code, not a materialized
+  // discount row) instead of a bulk-discount batch. Built via that module's
+  // own create/edit-slide flow (promo-codes.service.ts), never through this
+  // module's own create/update. @unique + SetNull for the same reasons.
+  discountPromoCodeId    Int?                      @unique
+  discountPromoCode      PromoCode?                @relation(fields: [discountPromoCodeId], references: [id], onDelete: SetNull)
   textPosition           HeroSlideTextPosition     @default(LEFT)
   verticalPosition       HeroSlideVerticalPosition @default(BOTTOM)
   isActive               Boolean                   @default(true)

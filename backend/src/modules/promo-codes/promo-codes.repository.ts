@@ -11,6 +11,11 @@ const include = {
   attributeOption: { select: { id: true, key: true, labelKa: true, labelEn: true, labelRu: true } },
   brand: { select: brandModelRefSelect },
   model: { select: brandModelRefSelect },
+  // Read-only — surfaces whether this code already has a homepage
+  // hero-slider slide, same purpose as bulk-discount-events.repository.ts's
+  // heroSlideInclude. Never written from here: writes to HeroSlide happen in
+  // this module's own service, through prisma.heroSlide directly.
+  heroSlide: { select: { id: true } },
 } as const;
 
 type PromoCodeWriteData = {

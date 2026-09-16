@@ -1,8 +1,10 @@
 import type { Request, Response } from "express";
+import { ApiError } from "../../lib/ApiError.js";
 import * as promoCodesService from "./promo-codes.service.js";
 import type {
   CreatePromoCodeInput,
   ListPromoCodesQuery,
+  PromoCodeHeroSlideInput,
   UpdatePromoCodeInput,
 } from "./promo-codes.schema.js";
 
@@ -39,4 +41,25 @@ export async function update(
 export async function remove(req: Request<{ id: string }>, res: Response) {
   await promoCodesService.deletePromoCode(Number(req.params.id));
   res.status(204).send();
+}
+
+export async function getHeroSlide(req: Request<{ id: string }>, res: Response) {
+  const item = await promoCodesService.getPromoCodeHeroSlide(Number(req.params.id));
+  res.status(200).json({ item });
+}
+
+export async function setHeroSlide(
+  req: Request<{ id: string }, unknown, PromoCodeHeroSlideInput>,
+  res: Response,
+) {
+  const item = await promoCodesService.setPromoCodeHeroSlide(Number(req.params.id), req.body);
+  res.status(200).json({ item });
+}
+
+export async function uploadHeroSlideImage(req: Request<{ id: string }>, res: Response) {
+  if (!req.file) {
+    throw new ApiError(400, "სურათი არ არის ატვირთული");
+  }
+  const item = await promoCodesService.setPromoCodeHeroSlideImage(Number(req.params.id), req.file);
+  res.status(200).json({ item });
 }

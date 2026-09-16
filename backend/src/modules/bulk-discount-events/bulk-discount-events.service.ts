@@ -17,10 +17,16 @@ import type { Prisma } from "../../generated/prisma/index.js";
 // Included on every prisma.heroSlide read/write below, so the mapped
 // response's bulkDiscountEvent carries enough for the storefront to render
 // the "-X% | start – end" line under the slide's title (see HeroSlider.tsx) —
-// same shape hero-slides.repository.ts's own discountBulkEventInclude uses.
+// same shape hero-slides.repository.ts's own campaignIncludes uses.
+// discountPromoCode is included too (always null here — an event-created
+// slide never has one) purely so the Prisma result structurally matches
+// hero-slides.service.ts's HeroSlideRow, which toHeroSlideResponse expects.
 const heroSlideDiscountBulkEventInclude = {
   discountBulkEvent: {
     select: { id: true, targetType: true, discountPercent: true, startDate: true, endDate: true },
+  },
+  discountPromoCode: {
+    select: { id: true, code: true, domain: true, discountPercent: true, startDate: true, endDate: true },
   },
 } as const;
 

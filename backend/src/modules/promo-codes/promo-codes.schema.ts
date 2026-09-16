@@ -215,7 +215,43 @@ export const promoCodeResponseSchema = registry.register(
     endDate: z.iso.datetime(),
     isActive: z.boolean(),
     computedStatus: z.enum(["ACTIVE", "SCHEDULED", "EXPIRED", "DISABLED"]),
+    // Non-null once the admin has used the "სლაიდი" action to create this
+    // code's homepage hero-slider slide — lets the admin table render that
+    // action as create-vs-edit without a separate round trip (same pattern
+    // as BulkDiscountEvent.heroSlideId).
+    heroSlideId: z.int().nullable(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
   }),
 );
+
+// Same trilingual title/subtitle/buttonLabel shape/limits as
+// bulk-discount-events.schema.ts's bulkDiscountEventHeroSlideInputSchema —
+// duplicated as literal numbers rather than cross-imported, since that
+// schema is this module's sibling, not a shared dependency either belongs
+// under.
+const heroSlideTitleFieldSchema = z.object({
+  ka: z.string().trim().min(1).max(60),
+  en: z.string().trim().min(1).max(60),
+  ru: z.string().trim().min(1).max(60),
+});
+const heroSlideSubtitleFieldSchema = z.object({
+  ka: z.string().trim().min(1).max(120),
+  en: z.string().trim().min(1).max(120),
+  ru: z.string().trim().min(1).max(120),
+});
+const heroSlideButtonLabelFieldSchema = z.object({
+  ka: z.string().trim().min(1).max(30),
+  en: z.string().trim().min(1).max(30),
+  ru: z.string().trim().min(1).max(30),
+});
+
+export const promoCodeHeroSlideInputSchema = registry.register(
+  "PromoCodeHeroSlideInput",
+  z.object({
+    title: heroSlideTitleFieldSchema,
+    subtitle: heroSlideSubtitleFieldSchema.nullable().optional(),
+    buttonLabel: heroSlideButtonLabelFieldSchema,
+  }),
+);
+export type PromoCodeHeroSlideInput = z.infer<typeof promoCodeHeroSlideInputSchema>;

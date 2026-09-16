@@ -31,6 +31,26 @@ export type HeroSlide = {
     startDate: string;
     endDate: string;
   } | null;
+  // DISCOUNT-only, same mutual-exclusivity/precedence rules as
+  // bulkDiscountEvent above — set only via the promo-codes module's own
+  // create/edit-slide flow. buildDiscountLink checks bulkDiscountEvent
+  // first, this second.
+  promoCode: {
+    id: number;
+    code: string;
+    domain: "PRODUCT" | "VEHICLE";
+    discountPercent: number;
+    startDate: string;
+    endDate: string;
+    // The code's own scope — null means "applies to everything in its
+    // domain." Used both to build a correctly scoped (non-onSale) shop link
+    // and to show the scope as text — see HeroSlider.tsx's buildDiscountLink
+    // and its scope-text rendering (never /shop?onSale=true: a promo code
+    // creates no discount rows, so that filter would show whatever else
+    // happens to be discounted, not what this code actually applies to).
+    category: { id: number; name: LocalizedString; slug: string } | null;
+    productBrand: { id: number; name: string; slug: string } | null;
+  } | null;
   textPosition: HeroSlideTextPosition;
   verticalPosition: HeroSlideVerticalPosition;
   isActive: boolean;

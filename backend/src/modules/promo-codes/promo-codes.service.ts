@@ -1,5 +1,9 @@
+import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
+import { saveUploadedImage } from "../../lib/storage.js";
+import { withNextSortOrderLock } from "../../lib/sortOrder.js";
+import { toResponse as toHeroSlideResponse, type HeroSlideRow } from "../hero-slides/hero-slides.service.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { productBrandsRepository } from "../product-brands/product-brands.repository.js";
 import { attributesRepository } from "../attributes/attributes.repository.js";
@@ -19,6 +23,7 @@ import { promoCodesRepository } from "./promo-codes.repository.js";
 import type {
   CreatePromoCodeInput,
   ListPromoCodesQuery,
+  PromoCodeHeroSlideInput,
   UpdatePromoCodeInput,
   VehicleSpecFieldInput,
 } from "./promo-codes.schema.js";
@@ -51,6 +56,7 @@ type PromoCodeRow = {
   startDate: Date;
   endDate: Date;
   isActive: boolean;
+  heroSlide: { id: number } | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -114,6 +120,7 @@ async function toResponse(row: PromoCodeRow) {
     endDate: row.endDate,
     isActive: row.isActive,
     computedStatus: computeStatus(row),
+    heroSlideId: row.heroSlide?.id ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -358,6 +365,135 @@ export async function deletePromoCode(id: number) {
   }
 
   await promoCodesRepository.delete(id);
+}
+
+// ============================ Hero-slider slide ============================
+// One HeroSlide per code (discountPromoCodeId is @unique — see hero-slide.
+// prisma), created/edited/imaged entirely from here via prisma.heroSlide
+// directly, never through heroSlidesRepository/hero-slides.service.ts's own
+// create/update — those never reference discountPromoCodeId at all, so the
+// general Hero Slides Manager can't see or clear this link even by
+// accident. Same architecture as bulk-discount-events.service.ts's
+// identical section — see that file for the fuller rationale.
+
+const heroSlideCampaignIncludes = {
+  discountBulkEvent: {
+    select: { id: true, targetType: true, discountPercent: true, startDate: true, endDate: true },
+  },
+  discountPromoCode: {
+    select: {
+      id: true,
+      code: true,
+      domain: true,
+      discountPercent: true,
+      startDate: true,
+      endDate: true,
+      category: { select: { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } },
+      productBrand: { select: { id: true, name: true, slug: true } },
+    },
+  },
+} as const;
+
+export async function getPromoCodeHeroSlide(promoCodeId: number) {
+  const promoCode = await promoCodesRepository.findById(promoCodeId);
+  if (!promoCode) {
+    throw new ApiError(404, "პრომოკოდი ვერ მოიძებნა");
+  }
+
+  const row = await prisma.heroSlide.findUnique({
+    where: { discountPromoCodeId: promoCodeId },
+    include: heroSlideCampaignIncludes,
+  });
+  if (!row) {
+    throw new ApiError(404, "ამ კოდს სლაიდი ჯერ არ აქვს შექმნილი");
+  }
+  return toHeroSlideResponse(row as HeroSlideRow);
+}
+
+// Create-or-update (upsert), keyed on the unique discountPromoCodeId — one
+// button in the admin UI covers both cases. No image default (unlike
+// BulkDiscountEvent, a PromoCode has no image of its own) — the admin must
+// upload one via setPromoCodeHeroSlideImage below; imageUrl starts null.
+// discountCategoryId/discountProductBrandId (the fields the general DISCOUNT
+// slide uses to narrow its /shop?onSale=true link) are deliberately left
+// null here — that fallback assumes an actual active discount *row* exists
+// on the matching products, which a promo code never creates (it's a
+// declarative, checkout-time rule — see promo-code.prisma). Copying the
+// code's category onto discountCategoryId once looked like a free win but
+// was wrong: /shop?onSale=true&categoryId=X shows whatever ELSE is on sale
+// in that category, not "everything this code applies to" — a scope-less
+// ("all products") code showed only the handful of items something
+// unrelated had discounted. buildDiscountLink instead reads
+// slide.promoCode.category directly and links there with no onSale filter
+// at all (see hero-slides.repository.ts's campaignIncludes for why that
+// field is fetched).
+export async function setPromoCodeHeroSlide(promoCodeId: number, input: PromoCodeHeroSlideInput) {
+  const promoCode = await promoCodesRepository.findById(promoCodeId);
+  if (!promoCode) {
+    throw new ApiError(404, "პრომოკოდი ვერ მოიძებნა");
+  }
+
+  const row = await withNextSortOrderLock("HeroSlide", async (tx) => {
+    const { _max } = await tx.heroSlide.aggregate({ _max: { sortOrder: true } });
+    return tx.heroSlide.upsert({
+      where: { discountPromoCodeId: promoCodeId },
+      create: {
+        type: "DISCOUNT",
+        titleKa: input.title.ka,
+        titleEn: input.title.en,
+        titleRu: input.title.ru,
+        subtitleKa: input.subtitle?.ka ?? null,
+        subtitleEn: input.subtitle?.en ?? null,
+        subtitleRu: input.subtitle?.ru ?? null,
+        buttonLabelKa: input.buttonLabel.ka,
+        buttonLabelEn: input.buttonLabel.en,
+        buttonLabelRu: input.buttonLabel.ru,
+        buttonLink: null,
+        imageUrl: null,
+        discountCategoryId: null,
+        discountProductBrandId: null,
+        discountPromoCodeId: promoCodeId,
+        textPosition: "LEFT",
+        verticalPosition: "BOTTOM",
+        isActive: true,
+        sortOrder: (_max.sortOrder ?? -1) + 1,
+      },
+      update: {
+        titleKa: input.title.ka,
+        titleEn: input.title.en,
+        titleRu: input.title.ru,
+        subtitleKa: input.subtitle?.ka ?? null,
+        subtitleEn: input.subtitle?.en ?? null,
+        subtitleRu: input.subtitle?.ru ?? null,
+        buttonLabelKa: input.buttonLabel.ka,
+        buttonLabelEn: input.buttonLabel.en,
+        buttonLabelRu: input.buttonLabel.ru,
+      },
+      include: heroSlideCampaignIncludes,
+    });
+  });
+
+  return toHeroSlideResponse(row as HeroSlideRow);
+}
+
+export async function setPromoCodeHeroSlideImage(promoCodeId: number, file: Express.Multer.File) {
+  const existing = await prisma.heroSlide.findUnique({ where: { discountPromoCodeId: promoCodeId } });
+  if (!existing) {
+    throw new ApiError(404, "ამ კოდს სლაიდი ჯერ არ აქვს შექმნილი");
+  }
+
+  const imageUrl = await saveUploadedImage("hero-slides", file);
+  const row = await prisma.heroSlide.update({
+    where: { discountPromoCodeId: promoCodeId },
+    data: { imageUrl },
+    include: heroSlideCampaignIncludes,
+  });
+  // No deleteUploadedImage call — unlike a bulk-discount-event's image, a
+  // promo code's slide image is never shared by reference with anything
+  // else, so this is purely a "we don't bother" simplification, not a
+  // safety requirement the way it is for that module. Kept for symmetry and
+  // because there's no strong reason to diverge.
+  return toHeroSlideResponse(row as HeroSlideRow);
 }
 
 export type PromoCodeMatchItem = {

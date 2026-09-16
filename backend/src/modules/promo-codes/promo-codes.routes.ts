@@ -2,13 +2,17 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
+import { uploadRateLimit } from "../../middleware/rateLimit.middleware.js";
+import { imageUpload } from "../../middleware/upload.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
 import { ROLES } from "../../lib/roles.js";
+import { heroSlideResponseSchema } from "../hero-slides/hero-slides.schema.js";
 import * as promoCodesController from "./promo-codes.controller.js";
 import {
   createPromoCodeSchema,
   listPromoCodesQuerySchema,
+  promoCodeHeroSlideInputSchema,
   promoCodeIdParamSchema,
   promoCodeResponseSchema,
   updatePromoCodeSchema,
@@ -28,6 +32,25 @@ promoCodesRouter.patch(
   promoCodesController.update,
 );
 promoCodesRouter.delete("/:id", validate(promoCodeIdParamSchema, "params"), promoCodesController.remove);
+
+promoCodesRouter.get(
+  "/:id/hero-slide",
+  validate(promoCodeIdParamSchema, "params"),
+  promoCodesController.getHeroSlide,
+);
+promoCodesRouter.put(
+  "/:id/hero-slide",
+  validate(promoCodeIdParamSchema, "params"),
+  validate(promoCodeHeroSlideInputSchema),
+  promoCodesController.setHeroSlide,
+);
+promoCodesRouter.post(
+  "/:id/hero-slide/image",
+  uploadRateLimit,
+  validate(promoCodeIdParamSchema, "params"),
+  imageUpload().single("image"),
+  promoCodesController.uploadHeroSlideImage,
+);
 
 const security = [{ cookieAuth: [] }];
 const listResponse = z.object({ items: z.array(promoCodeResponseSchema) });
@@ -100,5 +123,57 @@ registry.registerPath({
   responses: {
     204: { description: "Deleted" },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/promo-codes/{id}/hero-slide",
+  tags: ["PromoCodes"],
+  summary: "Get this code's homepage hero-slider slide, if one has been created",
+  security,
+  request: { params: promoCodeIdParamSchema },
+  responses: {
+    200: {
+      description: "Slide",
+      content: { "application/json": { schema: z.object({ item: heroSlideResponseSchema }) } },
+    },
+    404: { description: "Code or slide not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "put",
+  path: "/promo-codes/{id}/hero-slide",
+  tags: ["PromoCodes"],
+  summary: "Create or update this code's homepage hero-slider slide (title/subtitle/buttonLabel only)",
+  security,
+  request: {
+    params: promoCodeIdParamSchema,
+    body: { content: { "application/json": { schema: promoCodeHeroSlideInputSchema } } },
+  },
+  responses: {
+    200: {
+      description: "Created or updated",
+      content: { "application/json": { schema: z.object({ item: heroSlideResponseSchema }) } },
+    },
+    404: { description: "Code not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/promo-codes/{id}/hero-slide/image",
+  tags: ["PromoCodes"],
+  summary: "Upload/replace this code's hero-slider slide image",
+  security,
+  request: { params: promoCodeIdParamSchema },
+  responses: {
+    200: {
+      description: "Updated",
+      content: { "application/json": { schema: z.object({ item: heroSlideResponseSchema }) } },
+    },
+    400: { description: "No file uploaded", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "No slide created for this code yet", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

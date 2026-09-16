@@ -25,13 +25,35 @@ type HeroSlideWriteData = {
   isActive?: boolean;
 };
 
-// Read-only — surfaces which event (if any) a DISCOUNT slide belongs to, for
-// buildDiscountLink() on the frontend. Never written from this module: all
-// writes to discountBulkEventId happen in bulk-discount-events.service.ts,
-// through prisma.heroSlide directly (see that file's own comment for why).
-const discountBulkEventInclude = {
+// Read-only — surfaces which campaign (bulk-discount event or promo code, if
+// either) a DISCOUNT slide belongs to, for buildDiscountLink() and the
+// "-X% ..." badge on the frontend. Never written from this module: writes to
+// discountBulkEventId/discountPromoCodeId happen in bulk-discount-events.
+// service.ts / promo-codes.service.ts, through prisma.heroSlide directly
+// (see those files' own comments for why).
+const campaignIncludes = {
   discountBulkEvent: {
     select: { id: true, targetType: true, discountPercent: true, startDate: true, endDate: true },
+  },
+  discountPromoCode: {
+    select: {
+      id: true,
+      code: true,
+      domain: true,
+      discountPercent: true,
+      startDate: true,
+      endDate: true,
+      // A promo code's scope is never an active-discount-row filter (unlike
+      // discountCategoryId/discountProductBrandId on this same slide, which
+      // assume /shop?onSale=true — a promo code creates no discount rows at
+      // all, so that fallback silently narrowed to whatever *other*
+      // discounts happened to be active, not this code's real scope). These
+      // are surfaced instead so buildDiscountLink can link straight to the
+      // code's actual category (plain, no onSale=true) and the storefront
+      // can show the scope as text — see HeroSlider.tsx.
+      category: { select: { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } },
+      productBrand: { select: { id: true, name: true, slug: true } },
+    },
   },
 } as const;
 
@@ -40,12 +62,12 @@ export const heroSlidesRepository = {
     return prisma.heroSlide.findMany({
       where: onlyActive ? { isActive: true } : undefined,
       orderBy: { sortOrder: "asc" },
-      include: discountBulkEventInclude,
+      include: campaignIncludes,
     });
   },
 
   findById(id: number) {
-    return prisma.heroSlide.findUnique({ where: { id }, include: discountBulkEventInclude });
+    return prisma.heroSlide.findUnique({ where: { id }, include: campaignIncludes });
   },
 
   create(data: Required<HeroSlideWriteData>) {
@@ -53,20 +75,20 @@ export const heroSlidesRepository = {
       const { _max } = await tx.heroSlide.aggregate({ _max: { sortOrder: true } });
       return tx.heroSlide.create({
         data: { ...data, sortOrder: (_max.sortOrder ?? -1) + 1 },
-        include: discountBulkEventInclude,
+        include: campaignIncludes,
       });
     });
   },
 
   update(id: number, data: HeroSlideWriteData) {
-    return prisma.heroSlide.update({ where: { id }, data, include: discountBulkEventInclude });
+    return prisma.heroSlide.update({ where: { id }, data, include: campaignIncludes });
   },
 
   updateImage(id: number, imageUrl: string) {
     return prisma.heroSlide.update({
       where: { id },
       data: { imageUrl },
-      include: discountBulkEventInclude,
+      include: campaignIncludes,
     });
   },
 

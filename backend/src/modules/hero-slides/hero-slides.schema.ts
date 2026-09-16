@@ -2,6 +2,7 @@ import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
 import { bulkDiscountEventTargetTypeSchema } from "../bulk-discount-events/bulk-discount-events.schema.js";
+import { promoCodeDomainSchema } from "../promo-codes/promo-codes.schema.js";
 
 export const heroSlideTypeSchema = z.enum([
   "CTA",
@@ -99,6 +100,22 @@ export const heroSlideResponseSchema = registry.register(
         discountPercent: z.number(),
         startDate: z.iso.date(),
         endDate: z.iso.date(),
+      })
+      .nullable(),
+    promoCode: z
+      .object({
+        id: z.int(),
+        code: z.string(),
+        domain: promoCodeDomainSchema,
+        discountPercent: z.number(),
+        startDate: z.iso.date(),
+        endDate: z.iso.date(),
+        // The code's own scope — null means "applies to everything in its
+        // domain" (see promo-code.prisma). Used both to build a correctly
+        // scoped (non-onSale) shop link and to show the scope as text on the
+        // storefront slide (see HeroSlider.tsx).
+        category: z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() }).nullable(),
+        productBrand: z.object({ id: z.int(), name: z.string(), slug: z.string() }).nullable(),
       })
       .nullable(),
     textPosition: heroSlideTextPositionSchema,

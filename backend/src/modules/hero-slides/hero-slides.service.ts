@@ -41,6 +41,16 @@ export type HeroSlideRow = {
     startDate: Date;
     endDate: Date;
   } | null;
+  discountPromoCode: {
+    id: number;
+    code: string;
+    domain: "PRODUCT" | "VEHICLE";
+    discountPercent: { toString(): string };
+    startDate: Date;
+    endDate: Date;
+    category: { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string } | null;
+    productBrand: { id: number; name: string; slug: string } | null;
+  } | null;
   textPosition: HeroSlideTextPositionInput;
   verticalPosition: HeroSlideVerticalPositionInput;
   isActive: boolean;
@@ -85,19 +95,44 @@ export function toResponse(row: HeroSlideRow) {
           endDate: row.discountBulkEvent.endDate,
         }
       : null,
+    promoCode: row.discountPromoCode
+      ? {
+          id: row.discountPromoCode.id,
+          code: row.discountPromoCode.code,
+          domain: row.discountPromoCode.domain,
+          discountPercent: Number(row.discountPromoCode.discountPercent),
+          startDate: row.discountPromoCode.startDate,
+          endDate: row.discountPromoCode.endDate,
+          category: row.discountPromoCode.category
+            ? {
+                id: row.discountPromoCode.category.id,
+                name: {
+                  ka: row.discountPromoCode.category.nameKa,
+                  en: row.discountPromoCode.category.nameEn,
+                  ru: row.discountPromoCode.category.nameRu,
+                },
+                slug: row.discountPromoCode.category.slug,
+              }
+            : null,
+          productBrand: row.discountPromoCode.productBrand,
+        }
+      : null,
     textPosition: row.textPosition,
     verticalPosition: row.verticalPosition,
     // The isActive column is the admin's own manual on/off toggle — it knows
-    // nothing about an event's own end date. An event-linked slide the admin
-    // never bothered to turn off should still stop showing to customers once
-    // its campaign ends, so the *effective* isActive reported here also
-    // folds in that expiry check — same "compute from the date window at
-    // read time, never a stored/cronned status flag" pattern this codebase
-    // already uses for discount rows (see lib/discounts.ts's
-    // findActiveDiscount). listHeroSlides below re-filters on this same
-    // value for the public (onlyActive) listing, since the repository's own
-    // WHERE clause only sees the raw column.
-    isActive: row.isActive && !(row.discountBulkEvent && new Date() > row.discountBulkEvent.endDate),
+    // nothing about a linked campaign's own end date. A campaign-linked
+    // slide the admin never bothered to turn off should still stop showing
+    // to customers once that campaign ends, so the *effective* isActive
+    // reported here also folds in both expiry checks — same "compute from
+    // the date window at read time, never a stored/cronned status flag"
+    // pattern this codebase already uses for discount rows (see
+    // lib/discounts.ts's findActiveDiscount). listHeroSlides below
+    // re-filters on this same value for the public (onlyActive) listing,
+    // since the repository's own WHERE clause only sees the raw column.
+    isActive:
+      row.isActive &&
+      !(row.discountBulkEvent && new Date() > row.discountBulkEvent.endDate) &&
+      !(row.discountPromoCode && new Date() > row.discountPromoCode.endDate),
     sortOrder: row.sortOrder,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

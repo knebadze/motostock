@@ -3,6 +3,7 @@ import type { LocalizedString } from "./categories";
 import type { BrandModelRef, NamedRef } from "./vehicle-catalog";
 import type { LookupItem } from "./lookups";
 import type { VehicleSpecField } from "./vehicle-category-filters";
+import type { HeroSlide } from "./hero-slides";
 
 export type PromoCodeDomain = "PRODUCT" | "VEHICLE";
 export type PromoCodeStatus = "ACTIVE" | "SCHEDULED" | "EXPIRED" | "DISABLED";
@@ -28,6 +29,10 @@ export type PromoCode = {
   endDate: string;
   isActive: boolean;
   computedStatus: PromoCodeStatus;
+  // Non-null once the "სლაიდი" action has created this code's homepage
+  // hero-slider slide — lets the admin table render that action as
+  // create-vs-edit without a separate round trip.
+  heroSlideId: number | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -84,4 +89,45 @@ export async function updatePromoCode(
 
 export async function deletePromoCode(id: number): Promise<void> {
   await apiClient.delete(`/promo-codes/${id}`);
+}
+
+// ---- homepage hero-slider slide ----
+
+export type PromoCodeHeroSlideInput = {
+  title: { ka: string; en: string; ru: string };
+  subtitle?: { ka: string; en: string; ru: string } | null;
+  buttonLabel: { ka: string; en: string; ru: string };
+};
+
+export async function getPromoCodeHeroSlide(promoCodeId: number): Promise<HeroSlide> {
+  const { data } = await apiClient.get<{ item: HeroSlide }>(`/promo-codes/${promoCodeId}/hero-slide`);
+  return data.item;
+}
+
+// Create-or-update — one call covers both (see promo-codes.service.ts's
+// setPromoCodeHeroSlide, an upsert keyed on the code id).
+export async function setPromoCodeHeroSlide(
+  promoCodeId: number,
+  input: PromoCodeHeroSlideInput,
+): Promise<HeroSlide> {
+  const { data } = await apiClient.put<{ item: HeroSlide }>(
+    `/promo-codes/${promoCodeId}/hero-slide`,
+    input,
+  );
+  return data.item;
+}
+
+export async function uploadPromoCodeHeroSlideImage(
+  promoCodeId: number,
+  file: File,
+): Promise<HeroSlide> {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const { data } = await apiClient.post<{ item: HeroSlide }>(
+    `/promo-codes/${promoCodeId}/hero-slide/image`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return data.item;
 }

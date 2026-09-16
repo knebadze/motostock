@@ -60,6 +60,7 @@ model PromoCode {
   endDate         DateTime
   isActive        Boolean  @default(true)
   orders          Order[]
+  heroSlide       HeroSlide?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
