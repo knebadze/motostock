@@ -460,6 +460,7 @@ function isCacheableOnSaleQuery(query: ProductListQuery): boolean {
     query.brandIds == null &&
     query.priceMin == null &&
     query.priceMax == null &&
+    query.bulkDiscountEventId == null &&
     query.attributeFilters == null &&
     query.adminFilters == null &&
     query.page == null &&
@@ -525,6 +526,7 @@ export async function listProducts(query: ProductListQuery) {
       priceMin: query.priceMin,
       priceMax: query.priceMax,
       onSale: query.onSale,
+      bulkDiscountEventId: query.bulkDiscountEventId,
       attributeFilters: query.attributeFilters,
       adminFilters: query.adminFilters,
     };
@@ -553,6 +555,7 @@ export async function listProducts(query: ProductListQuery) {
       priceMin: query.priceMin,
       priceMax: query.priceMax,
       onSale: query.onSale,
+      bulkDiscountEventId: query.bulkDiscountEventId,
       attributeFilters: query.attributeFilters,
     };
 
@@ -602,6 +605,7 @@ export async function listProducts(query: ProductListQuery) {
     priceMin: query.priceMin,
     priceMax: query.priceMax,
     onSale: query.onSale,
+    bulkDiscountEventId: query.bulkDiscountEventId,
     attributeFilters: query.attributeFilters,
     limit: query.limit,
   });

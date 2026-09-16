@@ -101,6 +101,10 @@ export const productListQuerySchema = z.object({
   // "Sale" page (homepage CTA slide + /sale) — narrows to products with at
   // least one variant currently on an active discount, across every category.
   onSale: z.coerce.boolean().optional(),
+  // Narrows to products discounted as part of one BulkDiscountEvent — the
+  // homepage hero-slider's event-scoped DISCOUNT slides link here (see
+  // bulk-discount-events.service.ts's setEventHeroSlide).
+  bulkDiscountEventId: z.coerce.number().int().positive().optional(),
   // Homepage sliders (see homepage-sections module) cap how many products
   // they pull — optional everywhere else.
   limit: z.coerce.number().int().positive().max(50).optional(),

@@ -3,6 +3,13 @@ import type { Prisma } from "../../generated/prisma/index.js";
 
 type DbClient = typeof prisma | Prisma.TransactionClient;
 
+// Read-only — surfaces whether this event already has a homepage hero-slider
+// slide, so the admin table can render the "სლაიდი" action as create-vs-edit
+// without a separate round trip. Never written from here: all writes to
+// HeroSlide.discountBulkEventId happen in this same service file, through
+// prisma.heroSlide directly (see setEventHeroSlide's own comment).
+const heroSlideInclude = { heroSlide: { select: { id: true } } } as const;
+
 export const bulkDiscountEventsRepository = {
   // `client` defaults to the plain prisma singleton, but the apply flow
   // (bulk-discounts.repository.ts) passes its own `tx` so the event row and
@@ -28,7 +35,7 @@ export const bulkDiscountEventsRepository = {
   },
 
   findById(id: number) {
-    return prisma.bulkDiscountEvent.findUnique({ where: { id } });
+    return prisma.bulkDiscountEvent.findUnique({ where: { id }, include: heroSlideInclude });
   },
 
   // Item ids this event grouped, keyed by which side is populated (a given
@@ -45,7 +52,13 @@ export const bulkDiscountEventsRepository = {
   },
 
   findMany(where: Prisma.BulkDiscountEventWhereInput | undefined, skip: number, take: number) {
-    return prisma.bulkDiscountEvent.findMany({ where, orderBy: { createdAt: "desc" }, skip, take });
+    return prisma.bulkDiscountEvent.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take,
+      include: heroSlideInclude,
+    });
   },
 
   count(where?: Prisma.BulkDiscountEventWhereInput) {
@@ -53,7 +66,11 @@ export const bulkDiscountEventsRepository = {
   },
 
   updateImage(id: number, imageUrl: string) {
-    return prisma.bulkDiscountEvent.update({ where: { id }, data: { imageUrl } });
+    return prisma.bulkDiscountEvent.update({
+      where: { id },
+      data: { imageUrl },
+      include: heroSlideInclude,
+    });
   },
 
   // Metadata-only edit — name/description, same fields the apply flow's own
@@ -74,7 +91,7 @@ export const bulkDiscountEventsRepository = {
       descriptionRu: string | null;
     },
   ) {
-    return prisma.bulkDiscountEvent.update({ where: { id }, data });
+    return prisma.bulkDiscountEvent.update({ where: { id }, data, include: heroSlideInclude });
   },
 
   delete(id: number) {

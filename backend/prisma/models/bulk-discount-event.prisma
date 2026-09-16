@@ -7,12 +7,11 @@ enum BulkDiscountEventTargetType {
 
 // Optional grouping for a batch of discounts applied together via the admin
 // bulk-discount flow (see the bulk-discounts module's applyBulkDiscounts) —
-// never required, never a new source of truth
-// for pricing/active-window checks. Trilingual name/description + image are
-// stored even though nothing reads them yet, because a later phase (a
-// newsletter campaign and a hero-slider slide built from an event) will need
-// exactly this shape — see product_form_decomposition-style memory notes for
-// that phase once it lands.
+// never required, never a new source of truth for pricing/active-window
+// checks. Trilingual name/description + image can now also back a homepage
+// hero-slider DISCOUNT slide (see the optional `heroSlide` back-relation and
+// HeroSlide.discountBulkEventId) — a newsletter campaign built from an event
+// is still a future phase.
 // Deleting an event never touches the discounts it grouped (FK below is
 // SetNull) — the event is metadata about a batch, not the batch's source of
 // truth.
@@ -37,6 +36,7 @@ model BulkDiscountEvent {
 
   productDiscounts ProductVariantDiscount[]
   vehicleDiscounts VehicleListingDiscount[]
+  heroSlide        HeroSlide?
 
   @@schema("dbo")
 }

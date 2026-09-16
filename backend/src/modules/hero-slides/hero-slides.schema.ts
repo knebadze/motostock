@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
+import { bulkDiscountEventTargetTypeSchema } from "../bulk-discount-events/bulk-discount-events.schema.js";
 
 export const heroSlideTypeSchema = z.enum([
   "CTA",
@@ -91,6 +92,15 @@ export const heroSlideResponseSchema = registry.register(
     buttonLink: z.string().nullable(),
     discountCategoryId: z.int().nullable(),
     discountProductBrandId: z.int().nullable(),
+    bulkDiscountEvent: z
+      .object({
+        id: z.int(),
+        targetType: bulkDiscountEventTargetTypeSchema,
+        discountPercent: z.number(),
+        startDate: z.iso.date(),
+        endDate: z.iso.date(),
+      })
+      .nullable(),
     textPosition: heroSlideTextPositionSchema,
     verticalPosition: heroSlideVerticalPositionSchema,
     isActive: z.boolean(),

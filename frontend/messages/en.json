@@ -697,7 +697,8 @@
     "heroSlider": {
       "prevSlide": "Previous slide",
       "nextSlide": "Next slide",
-      "slideDot": "Slide {index}"
+      "slideDot": "Slide {index}",
+      "discountBadge": "-{percent}% off, {startDate} – {endDate}"
     }
   }
 }

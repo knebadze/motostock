@@ -18,7 +18,7 @@ import type {
 // discountCategoryId/discountProductBrandId).
 const TYPES_WITH_BUTTON_LABEL = new Set<HeroSlideTypeInput>(["CTA", "DISCOUNT"]);
 
-type HeroSlideRow = {
+export type HeroSlideRow = {
   id: number;
   type: HeroSlideTypeInput;
   titleKa: string;
@@ -34,6 +34,13 @@ type HeroSlideRow = {
   buttonLink: string | null;
   discountCategoryId: number | null;
   discountProductBrandId: number | null;
+  discountBulkEvent: {
+    id: number;
+    targetType: "PRODUCT" | "VEHICLE_LISTING";
+    discountPercent: { toString(): string };
+    startDate: Date;
+    endDate: Date;
+  } | null;
   textPosition: HeroSlideTextPositionInput;
   verticalPosition: HeroSlideVerticalPositionInput;
   isActive: boolean;
@@ -42,7 +49,11 @@ type HeroSlideRow = {
   updatedAt: Date;
 };
 
-function toResponse(row: HeroSlideRow) {
+// Exported so bulk-discount-events.service.ts can map the HeroSlide rows its
+// own event-linked create/update/upsert calls return, without duplicating
+// this shape — same reuse pattern as product-variant-discounts.service.ts's
+// exported toDiscountResponse.
+export function toResponse(row: HeroSlideRow) {
   const hasSubtitle = row.subtitleKa != null && row.subtitleEn != null && row.subtitleRu != null;
   const hasButtonLabel =
     row.buttonLabelKa != null && row.buttonLabelEn != null && row.buttonLabelRu != null;
@@ -65,9 +76,28 @@ function toResponse(row: HeroSlideRow) {
     buttonLink: row.buttonLink,
     discountCategoryId: row.discountCategoryId,
     discountProductBrandId: row.discountProductBrandId,
+    bulkDiscountEvent: row.discountBulkEvent
+      ? {
+          id: row.discountBulkEvent.id,
+          targetType: row.discountBulkEvent.targetType,
+          discountPercent: Number(row.discountBulkEvent.discountPercent),
+          startDate: row.discountBulkEvent.startDate,
+          endDate: row.discountBulkEvent.endDate,
+        }
+      : null,
     textPosition: row.textPosition,
     verticalPosition: row.verticalPosition,
-    isActive: row.isActive,
+    // The isActive column is the admin's own manual on/off toggle — it knows
+    // nothing about an event's own end date. An event-linked slide the admin
+    // never bothered to turn off should still stop showing to customers once
+    // its campaign ends, so the *effective* isActive reported here also
+    // folds in that expiry check — same "compute from the date window at
+    // read time, never a stored/cronned status flag" pattern this codebase
+    // already uses for discount rows (see lib/discounts.ts's
+    // findActiveDiscount). listHeroSlides below re-filters on this same
+    // value for the public (onlyActive) listing, since the repository's own
+    // WHERE clause only sees the raw column.
+    isActive: row.isActive && !(row.discountBulkEvent && new Date() > row.discountBulkEvent.endDate),
     sortOrder: row.sortOrder,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -108,7 +138,15 @@ async function assertDiscountTargetsExist(
 
 export async function listHeroSlides(onlyActive?: boolean) {
   const rows = await heroSlidesRepository.findMany(onlyActive);
-  return rows.map(toResponse);
+  const items = rows.map(toResponse);
+  // findMany's WHERE only checked the raw isActive column — an event-linked
+  // slide whose campaign already ended but was never manually toggled off
+  // would still pass it. toResponse's own isActive already folds expiry in,
+  // so re-filtering on that here keeps the public (onlyActive) listing
+  // honest without touching the DB column at all. The admin's own list
+  // (onlyActive omitted) is untouched — it still sees every slide, each one
+  // now correctly labeled.
+  return onlyActive ? items.filter((item) => item.isActive) : items;
 }
 
 export async function getHeroSlide(id: number) {

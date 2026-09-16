@@ -107,6 +107,10 @@ export const vehicleListingListQuerySchema = z.object({
   // Homepage "discounted vehicles" slider — narrows to listings with at
   // least one currently active discount.
   onSale: z.coerce.boolean().optional(),
+  // Narrows to listings discounted as part of one BulkDiscountEvent — the
+  // homepage hero-slider's event-scoped DISCOUNT slides link here (see
+  // bulk-discount-events.service.ts's setEventHeroSlide).
+  bulkDiscountEventId: z.coerce.number().int().positive().optional(),
   // Homepage sliders cap how many listings they pull — optional everywhere
   // else.
   limit: z.coerce.number().int().positive().max(50).optional(),

@@ -409,11 +409,14 @@ export async function getVehicleCatalogEntryFromServer(
   );
 }
 
-export async function getVehicleListingsFromServer(categoryId?: number): Promise<VehicleListing[]> {
+export async function getVehicleListingsFromServer(
+  categoryId?: number,
+  bulkDiscountEventId?: number,
+): Promise<VehicleListing[]> {
   // Public endpoint (guest shop page reads this too) — must not bail out just
   // because there's no admin session cookie, same fix as getCategoriesFromServer.
   return fetchFromServer<{ items: VehicleListing[] }, VehicleListing[]>("/vehicle-listings", {
-    params: categoryId ? { categoryId } : undefined,
+    params: { categoryId, bulkDiscountEventId },
     fallback: [],
     extract: (data) => data.items,
   });
@@ -431,11 +434,12 @@ export async function getVehicleListingsPageFromServer(
   categoryId: number,
   page: number,
   sortBy: "newest" | "year-desc" | "price-asc" | "price-desc",
+  bulkDiscountEventId?: number,
 ): Promise<AdminListPage<VehicleListing>> {
   return fetchFromServer<AdminListPage<VehicleListing>, AdminListPage<VehicleListing>>(
     "/vehicle-listings",
     {
-      params: { categoryId, page, pageSize: SHOP_PAGE_SIZE, sortBy },
+      params: { categoryId, page, pageSize: SHOP_PAGE_SIZE, sortBy, bulkDiscountEventId },
       fallback: { items: [], total: 0, page: 1, pageSize: SHOP_PAGE_SIZE },
       extract: (data) => data,
     },
@@ -882,6 +886,7 @@ export async function getShopProductsFromServer(filters: {
   categoryId?: number;
   brandIds?: number[];
   onSale?: boolean;
+  bulkDiscountEventId?: number;
 }): Promise<Product[]> {
   // Public endpoint (the /shop page) — must not bail out just because there
   // is no admin session cookie, same fix as getCategoriesFromServer. Kept
@@ -894,6 +899,7 @@ export async function getShopProductsFromServer(filters: {
       categoryId: filters.categoryId,
       brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
       onSale: filters.onSale || undefined,
+      bulkDiscountEventId: filters.bulkDiscountEventId,
     },
     fallback: [],
     extract: (data) => data.items,
@@ -908,12 +914,14 @@ export async function getShopProductsPageFromServer(filters: {
   categoryId?: number;
   brandIds?: number[];
   onSale?: boolean;
+  bulkDiscountEventId?: number;
 }): Promise<AdminListPage<Product>> {
   return fetchFromServer<AdminListPage<Product>, AdminListPage<Product>>("/products", {
     params: {
       categoryId: filters.categoryId,
       brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
       onSale: filters.onSale || undefined,
+      bulkDiscountEventId: filters.bulkDiscountEventId,
       page: 1,
       pageSize: SHOP_PAGE_SIZE,
       sortBy: "newest",

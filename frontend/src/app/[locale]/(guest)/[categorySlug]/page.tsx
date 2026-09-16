@@ -21,7 +21,7 @@ import { VehicleShopPage } from "@/components/shop/VehicleShopPage";
 
 type Locale = "ka" | "en" | "ru";
 type PageParams = { locale: Locale; categorySlug: string };
-type PageSearchParams = { page?: string; sort?: string };
+type PageSearchParams = { page?: string; sort?: string; eventId?: string };
 
 type ProductSortBy = "newest" | "price-asc" | "price-desc";
 const PRODUCT_SORT_VALUES: ProductSortBy[] = ["newest", "price-asc", "price-desc"];
@@ -89,7 +89,7 @@ export default async function CategoryShopPage({
   searchParams: Promise<PageSearchParams>;
 }) {
   const { locale, categorySlug } = await params;
-  const { page, sort } = await searchParams;
+  const { page, sort, eventId } = await searchParams;
 
   const categories = await getCategoriesFromServer();
   const category = categories.find((item) => item.slug === categorySlug);
@@ -99,6 +99,14 @@ export default async function CategoryShopPage({
 
   const initialPage = Number(page) || 1;
   const initialSort = sort ?? "newest";
+  // Set by the homepage hero-slider's event-scoped DISCOUNT slides (see
+  // HeroSlider.tsx's buildDiscountLink) when a BulkDiscountEvent targets
+  // vehicle listings — always visited via the vehicle root category
+  // (VEHICLE_ROOT_CATEGORY_SLUG), never a leaf category, since
+  // resolveCategoryAndDescendantIds already covers every vehicle category
+  // from there. Vehicle-only: PRODUCT events link to the cross-category
+  // /shop page instead.
+  const parsedEventId = eventId ? Number(eventId) : undefined;
 
   const tNav = await getTranslations({ locale, namespace: "Nav" });
   const ancestorChain = getAncestorChain(categories, category.id);
@@ -132,8 +140,8 @@ export default async function CategoryShopPage({
     // to see every brand present in the category, not just the current
     // page's — `listingsPage` (real server pagination) feeds the actual grid.
     const [listings, listingsPage, vehicleFilters] = await Promise.all([
-      getVehicleListingsFromServer(category.id),
-      getVehicleListingsPageFromServer(category.id, initialPage, vehicleSortBy),
+      getVehicleListingsFromServer(category.id, parsedEventId),
+      getVehicleListingsPageFromServer(category.id, initialPage, vehicleSortBy, parsedEventId),
       getVehicleCategoryFiltersFromServer(category.id),
     ]);
     return (
@@ -147,6 +155,7 @@ export default async function CategoryShopPage({
           initialData={listingsPage}
           filters={vehicleFilters}
           initialSort={vehicleSortBy}
+          initialEventId={parsedEventId}
         />
       </>
     );

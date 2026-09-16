@@ -7,8 +7,10 @@ import { imageUpload } from "../../middleware/upload.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
 import { ROLES } from "../../lib/roles.js";
+import { heroSlideResponseSchema } from "../hero-slides/hero-slides.schema.js";
 import * as bulkDiscountEventsController from "./bulk-discount-events.controller.js";
 import {
+  bulkDiscountEventHeroSlideInputSchema,
   bulkDiscountEventIdParamSchema,
   bulkDiscountEventInputSchema,
   bulkDiscountEventResponseSchema,
@@ -44,6 +46,24 @@ bulkDiscountEventsRouter.post(
   validate(bulkDiscountEventIdParamSchema, "params"),
   imageUpload().single("image"),
   bulkDiscountEventsController.uploadImage,
+);
+bulkDiscountEventsRouter.get(
+  "/:id/hero-slide",
+  validate(bulkDiscountEventIdParamSchema, "params"),
+  bulkDiscountEventsController.getHeroSlide,
+);
+bulkDiscountEventsRouter.put(
+  "/:id/hero-slide",
+  validate(bulkDiscountEventIdParamSchema, "params"),
+  validate(bulkDiscountEventHeroSlideInputSchema),
+  bulkDiscountEventsController.setHeroSlide,
+);
+bulkDiscountEventsRouter.post(
+  "/:id/hero-slide/image",
+  uploadRateLimit,
+  validate(bulkDiscountEventIdParamSchema, "params"),
+  imageUpload().single("image"),
+  bulkDiscountEventsController.uploadHeroSlideImage,
 );
 bulkDiscountEventsRouter.delete(
   "/:id",
@@ -121,6 +141,58 @@ registry.registerPath({
     },
     400: { description: "No file uploaded", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Event not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/bulk-discount-events/{id}/hero-slide",
+  tags: ["BulkDiscountEvents"],
+  summary: "Get this event's homepage hero-slider slide, if one has been created",
+  security,
+  request: { params: bulkDiscountEventIdParamSchema },
+  responses: {
+    200: {
+      description: "Slide",
+      content: { "application/json": { schema: z.object({ item: heroSlideResponseSchema }) } },
+    },
+    404: { description: "Event or slide not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "put",
+  path: "/bulk-discount-events/{id}/hero-slide",
+  tags: ["BulkDiscountEvents"],
+  summary: "Create or update this event's homepage hero-slider slide (title/subtitle/buttonLabel only)",
+  security,
+  request: {
+    params: bulkDiscountEventIdParamSchema,
+    body: { content: { "application/json": { schema: bulkDiscountEventHeroSlideInputSchema } } },
+  },
+  responses: {
+    200: {
+      description: "Created or updated",
+      content: { "application/json": { schema: z.object({ item: heroSlideResponseSchema }) } },
+    },
+    404: { description: "Event not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/bulk-discount-events/{id}/hero-slide/image",
+  tags: ["BulkDiscountEvents"],
+  summary: "Upload/replace this event's hero-slider slide image",
+  security,
+  request: { params: bulkDiscountEventIdParamSchema },
+  responses: {
+    200: {
+      description: "Updated",
+      content: { "application/json": { schema: z.object({ item: heroSlideResponseSchema }) } },
+    },
+    400: { description: "No file uploaded", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "No slide created for this event yet", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 

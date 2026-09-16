@@ -8,6 +8,8 @@ import { resolveMediaUrl } from "@/lib/api/client";
 import type { HeroSlide, HeroSlideTextPosition, HeroSlideVerticalPosition } from "@/lib/api/hero-slides";
 import type { GarageVehicle, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 import type { Category } from "@/lib/api/categories";
+import { VEHICLE_ROOT_CATEGORY_SLUG } from "@/lib/categories-tree";
+import { formatDate } from "@/lib/format";
 import { VehicleSearchForm } from "./VehicleSearchForm";
 import { CategorySearchForm } from "./CategorySearchForm";
 
@@ -30,9 +32,20 @@ const VERTICAL_POSITION_CLASSES: Record<HeroSlideVerticalPosition, string> = {
   BOTTOM: "justify-end",
 };
 
-// DISCOUNT slides never store a hand-typed link — general when neither
-// targeting field is set, narrowed by category and/or brand otherwise.
+// DISCOUNT slides never store a hand-typed link. An event-scoped slide
+// (bulkDiscountEvent set) always wins — its own scoped listing page is the
+// whole point of that slide, so it's checked before falling back to the
+// general category/brand targeting (general when neither is set, narrowed by
+// category and/or brand otherwise).
 function buildDiscountLink(slide: HeroSlide): string {
+  if (slide.bulkDiscountEvent) {
+    const path =
+      slide.bulkDiscountEvent.targetType === "VEHICLE_LISTING"
+        ? `/${VEHICLE_ROOT_CATEGORY_SLUG}`
+        : "/shop";
+    return `${path}?eventId=${slide.bulkDiscountEvent.id}`;
+  }
+
   const params = new URLSearchParams({ onSale: "true" });
   if (slide.discountCategoryId != null) params.set("categoryId", String(slide.discountCategoryId));
   if (slide.discountProductBrandId != null) {
@@ -121,6 +134,15 @@ export function HeroSlider({
           <h1 className="max-w-2xl text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
             {slide.title[locale]}
           </h1>
+          {slide.type === "DISCOUNT" && slide.bulkDiscountEvent && (
+            <span className="w-fit rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground">
+              {t("discountBadge", {
+                percent: slide.bulkDiscountEvent.discountPercent,
+                startDate: formatDate(slide.bulkDiscountEvent.startDate),
+                endDate: formatDate(slide.bulkDiscountEvent.endDate),
+              })}
+            </span>
+          )}
           {slide.subtitle && (
             <p className="max-w-xl text-base text-white/90 sm:text-lg">{slide.subtitle[locale]}</p>
           )}

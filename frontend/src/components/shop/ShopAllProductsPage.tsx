@@ -38,6 +38,7 @@ export function ShopAllProductsPage({
   initialOnSale,
   initialCategoryId,
   initialBrandIds,
+  initialEventId,
 }: {
   // Unbounded — feeds the category-checkbox facet list, which needs to see
   // every category present, not just the current page's.
@@ -48,6 +49,10 @@ export function ShopAllProductsPage({
   initialOnSale: boolean;
   initialCategoryId?: number;
   initialBrandIds?: number[];
+  // Set by the homepage hero-slider's event-scoped DISCOUNT slides — fixed
+  // for this page's lifetime, same "not a togglable UI control" treatment as
+  // initialOnSale/initialCategoryId/initialBrandIds above.
+  initialEventId?: number;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
@@ -74,6 +79,7 @@ export function ShopAllProductsPage({
           vehicleCatalogId: vehicleCatalogId ? Number(vehicleCatalogId) : undefined,
           brandIds: initialBrandIds,
           onSale: initialOnSale || undefined,
+          bulkDiscountEventId: initialEventId,
           search: search.trim() || undefined,
           page,
           pageSize: data.pageSize,

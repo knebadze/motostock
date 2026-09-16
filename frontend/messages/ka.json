@@ -697,7 +697,8 @@
     "heroSlider": {
       "prevSlide": "წინა სლაიდი",
       "nextSlide": "შემდეგი სლაიდი",
-      "slideDot": "სლაიდი {index}"
+      "slideDot": "სლაიდი {index}",
+      "discountBadge": "-{percent}% ფასდაკლება {startDate}-დან {endDate}-მდე"
     }
   }
 }

@@ -7,8 +7,11 @@ enum HeroSlideType {
   // an existing category page (/{category.slug}) instead of a vehicle.
   CATEGORY_FILTER
   // A button whose link is computed automatically (never hand-typed) from
-  // discountCategoryId/discountProductBrandId — always /shop?onSale=true,
-  // narrowed by category and/or brand when set, general when both are null.
+  // discountCategoryId/discountProductBrandId or discountBulkEventId —
+  // /shop?onSale=true (narrowed by category/brand when set, general when
+  // neither is) unless discountBulkEventId is set, which always wins and
+  // links to that event's own scoped listing page instead (see
+  // HeroSlider.tsx's buildDiscountLink).
   DISCOUNT
 
   @@schema("dbo")
@@ -58,6 +61,17 @@ model HeroSlide {
   discountCategory       Category?                 @relation(fields: [discountCategoryId], references: [id], onDelete: SetNull)
   discountProductBrandId Int?
   discountProductBrand   ProductBrand?             @relation(fields: [discountProductBrandId], references: [id], onDelete: SetNull)
+  // DISCOUNT-only — an alternative to discountCategory/discountProductBrand
+  // targeting above: this slide belongs to one BulkDiscountEvent instead
+  // (built via that module's own create/edit-slide flow, never through this
+  // module's own create/update — see hero-slides.service.ts, which never
+  // reads or writes this field). @unique enforces "at most one slide per
+  // event" at the DB level, letting that flow use a single upsert keyed on
+  // this column. SetNull (not Restrict/Cascade), same reasoning as the
+  // category/brand FKs above: deleting the event should fall the slide back
+  // to a general discount link, not delete or block deleting the event.
+  discountBulkEventId    Int?                      @unique
+  discountBulkEvent      BulkDiscountEvent?        @relation(fields: [discountBulkEventId], references: [id], onDelete: SetNull)
   textPosition           HeroSlideTextPosition     @default(LEFT)
   verticalPosition       HeroSlideVerticalPosition @default(BOTTOM)
   isActive               Boolean                   @default(true)

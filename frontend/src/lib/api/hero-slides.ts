@@ -15,6 +15,22 @@ export type HeroSlide = {
   buttonLink: string | null;
   discountCategoryId: number | null;
   discountProductBrandId: number | null;
+  // DISCOUNT-only, mutually exclusive with discountCategoryId/
+  // discountProductBrandId in practice — set only via the bulk-discount-events
+  // module's own create/edit-slide flow, never through this module's own
+  // create/update. Wins over category/brand targeting when present — see
+  // HeroSlider.tsx's buildDiscountLink.
+  bulkDiscountEvent: {
+    id: number;
+    targetType: "PRODUCT" | "VEHICLE_LISTING";
+    // Rendered as a "-X% | start – end" line under the slide's title (see
+    // HeroSlider.tsx) — always the event's own live values, never hand-typed
+    // into title/subtitle, so the slide can't drift out of sync with what
+    // the linked campaign actually is.
+    discountPercent: number;
+    startDate: string;
+    endDate: string;
+  } | null;
   textPosition: HeroSlideTextPosition;
   verticalPosition: HeroSlideVerticalPosition;
   isActive: boolean;

@@ -48,6 +48,7 @@ export function VehicleShopPage({
   initialData,
   filters,
   initialSort = "newest",
+  initialEventId,
 }: {
   category: Category;
   breadcrumbChain: Category[];
@@ -59,6 +60,12 @@ export function VehicleShopPage({
   initialData: PagedResult<VehicleListing>;
   filters: VehicleCategoryFilter[];
   initialSort?: string;
+  // Set by the homepage hero-slider's event-scoped DISCOUNT slides — fixed
+  // for this page's lifetime (not a togglable UI control, same treatment as
+  // ShopAllProductsPage.tsx's identical prop), and kept in the URL across
+  // page/sort changes below so pagination/sorting doesn't silently drop back
+  // to "every vehicle in this category."
+  initialEventId?: number;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
@@ -147,6 +154,7 @@ export function VehicleShopPage({
           yearMax: yearMax.trim() ? Number(yearMax) : undefined,
           priceMin: priceMin.trim() ? Number(priceMin) : undefined,
           priceMax: priceMax.trim() ? Number(priceMax) : undefined,
+          bulkDiscountEventId: initialEventId,
           specFilters,
           page,
           pageSize: data.pageSize,
@@ -194,6 +202,7 @@ export function VehicleShopPage({
     const query: Record<string, string> = {};
     if (data.page > 1) query.page = String(data.page);
     if (sortBy !== "newest") query.sort = sortBy;
+    if (initialEventId != null) query.eventId = String(initialEventId);
     router.replace({ pathname, query }, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.page, sortBy]);

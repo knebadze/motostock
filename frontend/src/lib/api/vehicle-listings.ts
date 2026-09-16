@@ -78,6 +78,10 @@ export type VehicleListingFilters = {
   yearMin?: number;
   yearMax?: number;
   onSale?: boolean;
+  // Narrows to listings discounted as part of one BulkDiscountEvent — set by
+  // the vehicle-root category page's own ?eventId= URL param (see the
+  // homepage hero-slider's event-scoped DISCOUNT slides).
+  bulkDiscountEventId?: number;
   limit?: number;
   specFilters?: VehicleSpecFilters;
   adminFilters?: AdminFilterEntry[];
@@ -118,6 +122,7 @@ async function fetchVehicleListingsList(
       yearMin: filters.yearMin,
       yearMax: filters.yearMax,
       onSale: filters.onSale || undefined,
+      bulkDiscountEventId: filters.bulkDiscountEventId,
       limit: filters.limit,
       specFilters:
         filters.specFilters && !isEmptySpecFilters(filters.specFilters)

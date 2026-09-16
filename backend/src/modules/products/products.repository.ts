@@ -226,6 +226,12 @@ async function buildWhere(filters: {
   priceMin?: number;
   priceMax?: number;
   onSale?: boolean;
+  // Narrows onSale-style filtering to variants discounted specifically as
+  // part of one BulkDiscountEvent — used by the homepage hero-slider's
+  // event-scoped slides and their "ნახვა მაღაზიაში" shop link (see
+  // HeroSlider.tsx's buildDiscountLink). Implies the same active-window
+  // check onSale does; there's no separate "onSale=true" requirement.
+  bulkDiscountEventId?: number;
   attributeFilters?: AttributeFilterInput;
   adminFilters?: FilterEntry[];
   // True only from the customer-facing findMany/count below. priceMin/
@@ -291,6 +297,24 @@ async function buildWhere(filters: {
     });
   }
 
+  if (filters.bulkDiscountEventId != null) {
+    const now = new Date();
+    and.push({
+      variants: {
+        some: {
+          ...activeVariantFilter,
+          discounts: {
+            some: {
+              bulkDiscountEventId: filters.bulkDiscountEventId,
+              startDate: { lte: now },
+              endDate: { gte: now },
+            },
+          },
+        },
+      },
+    });
+  }
+
   for (const facet of filters.attributeFilters?.selectFilters ?? []) {
     and.push({
       attributeValues: { some: { attributeId: facet.attributeId, optionId: { in: facet.optionIds } } },
@@ -331,6 +355,7 @@ export const productsRepository = {
     priceMin?: number;
     priceMax?: number;
     onSale?: boolean;
+    bulkDiscountEventId?: number;
     attributeFilters?: AttributeFilterInput;
     adminFilters?: FilterEntry[];
     limit?: number;
@@ -379,6 +404,7 @@ export const productsRepository = {
     priceMin?: number;
     priceMax?: number;
     onSale?: boolean;
+    bulkDiscountEventId?: number;
     attributeFilters?: AttributeFilterInput;
   }) {
     const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
@@ -404,6 +430,7 @@ export const productsRepository = {
     priceMin?: number;
     priceMax?: number;
     onSale?: boolean;
+    bulkDiscountEventId?: number;
     attributeFilters?: AttributeFilterInput;
     adminFilters?: FilterEntry[];
     skip?: number;
@@ -426,6 +453,7 @@ export const productsRepository = {
     priceMin?: number;
     priceMax?: number;
     onSale?: boolean;
+    bulkDiscountEventId?: number;
     attributeFilters?: AttributeFilterInput;
     adminFilters?: FilterEntry[];
   }) {

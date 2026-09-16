@@ -70,9 +70,45 @@ export const bulkDiscountEventResponseSchema = registry.register(
     startDate: z.iso.date(),
     endDate: z.iso.date(),
     itemCount: z.int(),
+    // Non-null once an admin has used the "სლაიდი" action to create this
+    // event's homepage hero-slider slide — lets the admin table render that
+    // button as "create" vs "edit" without a separate round trip.
+    heroSlideId: z.int().nullable(),
     createdAt: z.iso.datetime(),
   }),
 );
+
+// Same trilingual title/subtitle/buttonLabel limits hero-slides.schema.ts
+// enforces for its own CTA/DISCOUNT slides — duplicated as literal numbers
+// rather than cross-imported, since this schema's shape (no buttonLink, no
+// category/brand targeting, no textPosition/verticalPosition — all fixed
+// defaults, see bulk-discount-events.service.ts's setEventHeroSlide) is
+// deliberately narrower than the general hero-slide input.
+const heroSlideTitleFieldSchema = z.object({
+  ka: z.string().trim().min(1).max(60),
+  en: z.string().trim().min(1).max(60),
+  ru: z.string().trim().min(1).max(60),
+});
+const heroSlideSubtitleFieldSchema = z.object({
+  ka: z.string().trim().min(1).max(120),
+  en: z.string().trim().min(1).max(120),
+  ru: z.string().trim().min(1).max(120),
+});
+const heroSlideButtonLabelFieldSchema = z.object({
+  ka: z.string().trim().min(1).max(30),
+  en: z.string().trim().min(1).max(30),
+  ru: z.string().trim().min(1).max(30),
+});
+
+export const bulkDiscountEventHeroSlideInputSchema = registry.register(
+  "BulkDiscountEventHeroSlideInput",
+  z.object({
+    title: heroSlideTitleFieldSchema,
+    subtitle: heroSlideSubtitleFieldSchema.nullable().optional(),
+    buttonLabel: heroSlideButtonLabelFieldSchema,
+  }),
+);
+export type BulkDiscountEventHeroSlideInput = z.infer<typeof bulkDiscountEventHeroSlideInputSchema>;
 
 export const bulkDiscountEventsPageResponseSchema = registry.register(
   "BulkDiscountEventsPage",

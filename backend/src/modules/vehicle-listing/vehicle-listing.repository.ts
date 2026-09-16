@@ -91,6 +91,10 @@ function buildWhere(filters: {
   yearMin?: number;
   yearMax?: number;
   onSale?: boolean;
+  // Narrows onSale-style filtering to listings discounted specifically as
+  // part of one BulkDiscountEvent — same purpose as products.repository.ts's
+  // identical field (see that file's comment).
+  bulkDiscountEventId?: number;
   specFilters?: SpecFilterInput;
   adminFilters?: FilterEntry[];
 }): Prisma.VehicleListingWhereInput | undefined {
@@ -129,6 +133,19 @@ function buildWhere(filters: {
   if (filters.onSale) {
     const now = new Date();
     and.push({ discounts: { some: { startDate: { lte: now }, endDate: { gte: now } } } });
+  }
+
+  if (filters.bulkDiscountEventId != null) {
+    const now = new Date();
+    and.push({
+      discounts: {
+        some: {
+          bulkDiscountEventId: filters.bulkDiscountEventId,
+          startDate: { lte: now },
+          endDate: { gte: now },
+        },
+      },
+    });
   }
 
   // Spec fields resolve to a dynamic VehicleCatalog column name at runtime
@@ -190,6 +207,7 @@ export const vehicleListingRepository = {
     yearMin?: number;
     yearMax?: number;
     onSale?: boolean;
+    bulkDiscountEventId?: number;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
     limit?: number;
@@ -232,6 +250,7 @@ export const vehicleListingRepository = {
     yearMin?: number;
     yearMax?: number;
     onSale?: boolean;
+    bulkDiscountEventId?: number;
     specFilters?: SpecFilterInput;
   }) {
     const structuredWhere = buildWhere(filters);
@@ -254,6 +273,7 @@ export const vehicleListingRepository = {
     yearMin?: number;
     yearMax?: number;
     onSale?: boolean;
+    bulkDiscountEventId?: number;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
     skip?: number;
@@ -278,6 +298,7 @@ export const vehicleListingRepository = {
     yearMin?: number;
     yearMax?: number;
     onSale?: boolean;
+    bulkDiscountEventId?: number;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
   }) {

@@ -166,6 +166,10 @@ export type ProductListFilters = {
   // "Sale" page (homepage CTA slide + /sale) — narrows to products with an
   // active discount right now, across every category.
   onSale?: boolean;
+  // Narrows to products discounted as part of one BulkDiscountEvent — set by
+  // /shop's own ?eventId= URL param (see the homepage hero-slider's
+  // event-scoped DISCOUNT slides).
+  bulkDiscountEventId?: number;
   attributeFilters?: ProductAttributeFilters;
   adminFilters?: AdminFilterEntry[];
   // Homepage product sliders cap how many products they pull.
@@ -199,6 +203,7 @@ async function fetchProductsList(filters: ProductListFilters): Promise<ProductLi
       priceMin: filters.priceMin,
       priceMax: filters.priceMax,
       onSale: filters.onSale || undefined,
+      bulkDiscountEventId: filters.bulkDiscountEventId,
       attributeFilters:
         filters.attributeFilters && !isEmptyAttributeFilters(filters.attributeFilters)
           ? JSON.stringify(filters.attributeFilters)
