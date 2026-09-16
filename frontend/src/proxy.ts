@@ -19,6 +19,7 @@ function resolveApiOrigin(): string {
 }
 
 const apiOrigin = resolveApiOrigin();
+const siteIsHttps = (process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https://");
 
 // A fresh nonce per request lets script-src stay strict (block arbitrary
 // inline/external script injection) while still allowing the specific
@@ -49,8 +50,15 @@ function buildCspHeader(nonce: string): string {
     `form-action 'self'`,
     `frame-ancestors 'none'`,
   ];
-  // Upgrading to https would break the plain-http local backend in dev.
-  if (!isDev) directives.push("upgrade-insecure-requests");
+  // Gated on the site's own declared scheme (the same NEXT_PUBLIC_SITE_URL
+  // DEPLOY.md has the admin set per phase), not NODE_ENV — production still
+  // means plain HTTP during DEPLOY.md's initial IP-only test phase (no
+  // domain/TLS yet), and forcing an https upgrade there breaks every _next/
+  // static/font/image request exactly like it would against the local dev
+  // backend (a real incident: 2026-09-16, deployed to a bare-IP Caddy
+  // instance with no :443 listener — every static asset came back
+  // ERR_CONNECTION_REFUSED because the browser dutifully upgraded them).
+  if (siteIsHttps) directives.push("upgrade-insecure-requests");
   return directives.join("; ");
 }
 

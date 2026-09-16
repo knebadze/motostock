@@ -5,7 +5,7 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
 import { pinoHttp } from "pino-http";
-import { corsAllowedOrigins } from "./config/env.js";
+import { corsAllowedOrigins, env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
 import { generateOpenApiDocument } from "./docs/openapi.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
@@ -90,7 +90,26 @@ export const app = express();
 // sits behind more than one proxy layer.
 app.set("trust proxy", 1);
 
-app.use(helmet());
+// Gated on BACKEND_PUBLIC_URL's own declared scheme (the same var DEPLOY.md
+// has the admin set per phase) rather than NODE_ENV — production can still
+// mean plain HTTP during DEPLOY.md's initial IP-only test phase (no
+// domain/TLS yet), and helmet's default CSP directives include
+// upgrade-insecure-requests unconditionally. Left on, that forces every
+// asset a browser loads from a page carrying this header (notably the
+// admin-only /api/docs Swagger UI below) to https, which fails outright
+// with no :443 listener — the exact bug this mirrors on the frontend's own
+// CSP (see proxy.ts's siteIsHttps).
+const backendIsHttps = (env.BACKEND_PUBLIC_URL ?? "").startsWith("https://");
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        ...(backendIsHttps ? {} : { "upgrade-insecure-requests": null }),
+      },
+    },
+  }),
+);
 app.use(
   cors({
     origin(origin, callback) {
@@ -215,6 +234,11 @@ app.use(
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
         "script-src": ["'self'", "'unsafe-inline'"],
         "style-src": ["'self'", "'unsafe-inline'"],
+        // Same backendIsHttps gate as the global helmet() call above — this
+        // page (Swagger UI) loads its own JS/CSS from this same response's
+        // origin, so it's just as exposed to the upgrade-insecure-requests
+        // bug on a plain-HTTP deployment.
+        ...(backendIsHttps ? {} : { "upgrade-insecure-requests": null }),
       },
     },
   }),
