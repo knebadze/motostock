@@ -94,7 +94,7 @@ export async function getUserDetail(id: number) {
     addresses: user.addresses.map(toAddressResponse),
     garage: user.garageVehicles.map(toGarageVehicleResponse),
     wishlist: await Promise.all(user.wishlistItems.map(toWishlistItemResponse)),
-    cart: user.cartItems.map(toCartItemResponse),
+    cart: await Promise.all(user.cartItems.map(toCartItemResponse)),
   };
 }
 

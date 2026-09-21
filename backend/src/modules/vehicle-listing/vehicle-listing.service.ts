@@ -8,7 +8,11 @@ import { resolveCategoryAndDescendantIds } from "../categories/categories.servic
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
-import { getHomepageCacheTtlMinutes } from "../settings/settings.service.js";
+import {
+  getHomepageCacheTtlMinutes,
+  getUsdToGelRate,
+  getUsdToGelRateUpdatedAt,
+} from "../settings/settings.service.js";
 import {
   toDiscountResponse,
   type DiscountRow,
@@ -70,6 +74,7 @@ type VehicleListingRow = {
   warrantyValue: number | null;
   warrantyUnit: "YEAR" | "MONTH" | null;
   isActive: boolean;
+  priceCurrency: "GEL" | "USD";
   price: { toString(): string };
   stockQuantity: number;
   descriptionKa: string | null;
@@ -137,6 +142,7 @@ export function toVehicleListingResponse(row: VehicleListingRow) {
     warrantyValue: row.warrantyValue,
     warrantyUnit: row.warrantyUnit,
     isActive: row.isActive,
+    priceCurrency: row.priceCurrency,
     price: Number(row.price),
     stockQuantity: row.stockQuantity,
     descriptionKa: row.descriptionKa,
@@ -234,6 +240,15 @@ function isCacheableOnSaleQuery(query: VehicleListingListQuery): boolean {
   );
 }
 
+// Public — backs the storefront's GEL⇄USD toggle (useUsdToGelRate.ts) and
+// the admin listing form's "today's rate" hint. `rate`/`updatedAt` are both
+// null only on a brand-new install with zero successful FETCH_USD_GEL_RATE
+// runs yet (see settings.service.ts's getUsdToGelRate).
+export async function getUsdToGelExchangeRate() {
+  const [rate, updatedAt] = await Promise.all([getUsdToGelRate(), getUsdToGelRateUpdatedAt()]);
+  return { rate, updatedAt };
+}
+
 // total/page/pageSize are real (DB-backed) whenever the caller is paginated
 // — the admin list (always) or a storefront browse/search that explicitly
 // sent page/pageSize. Every other caller (homepage sliders, any `limit`-only
@@ -253,6 +268,11 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     query.search != null
       ? await vehicleListingRepository.findSearchRankedIds(query.search, query.limit)
       : undefined;
+  // Resolved once regardless of whether priceMin/priceMax/price-sort is
+  // actually in play this call — cheap (in-memory cached), and needed by
+  // both buildWhere's price-filter OR-clause and the price-sort comparator
+  // below.
+  const usdToGelRate = (await getUsdToGelRate()) ?? undefined;
 
   // The admin panel (AdminFilterPanel, which always sends adminFilters)
   // fetches one server-paginated page (page/pageSize below) of the filtered
@@ -282,6 +302,7 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       bulkDiscountEventId: query.bulkDiscountEventId,
       featured: query.featured,
       customsCleared: query.customsCleared,
+      usdToGelRate,
       specFilters: query.specFilters,
       adminFilters: query.adminFilters,
     };
@@ -319,6 +340,7 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       bulkDiscountEventId: query.bulkDiscountEventId,
       featured: query.featured,
       customsCleared: query.customsCleared,
+      usdToGelRate,
       specFilters: query.specFilters,
     };
 
@@ -330,7 +352,11 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       const rows = await vehicleListingRepository.findMany(filters);
       const effectivePrice = (row: (typeof rows)[number]) => {
         const activeDiscount = findActiveDiscount(row.discounts);
-        return activeDiscount ? Number(activeDiscount.discountPrice) : Number(row.price);
+        const raw = activeDiscount ? Number(activeDiscount.discountPrice) : Number(row.price);
+        // Normalize to GEL before comparing — a USD listing's discount (see
+        // vehicle-listing.prisma's priceCurrency comment) is same-currency
+        // as its own listing, so this one multiply covers both branches.
+        return row.priceCurrency === "USD" ? raw * (usdToGelRate ?? 1) : raw;
       };
       const sorted = [...rows].sort((a, b) =>
         query.sortBy === "price-asc"
@@ -375,6 +401,7 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     bulkDiscountEventId: query.bulkDiscountEventId,
     featured: query.featured,
     customsCleared: query.customsCleared,
+    usdToGelRate,
     specFilters: query.specFilters,
     limit: query.limit,
   });

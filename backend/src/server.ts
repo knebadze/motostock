@@ -54,8 +54,10 @@ if (isFinaConfigured()) {
 // unlike FINA sync's stock mutations above. `unref` matches the old
 // `dailyPruneTimer.unref()` — these tasks must never keep the process alive
 // on their own.
-const DAILY_PRUNE_CRON = "0 3 * * *";
-function runDailyPruneJob(key: (typeof JOB_DEFINITIONS)[number]["key"]) {
+// Not just prune jobs anymore (FETCH_USD_GEL_RATE also rides this array/
+// schedule, purely for infra reuse — see scheduled-jobs.registry.ts).
+const DAILY_SCHEDULED_JOB_CRON = "0 3 * * *";
+function runDailyScheduledJob(key: (typeof JOB_DEFINITIONS)[number]["key"]) {
   runScheduledJob(key, "SCHEDULED", null).catch((err: unknown) =>
     logger.error({ err, jobKey: key }, "Scheduled job failed"),
   );
@@ -65,9 +67,9 @@ function runDailyPruneJob(key: (typeof JOB_DEFINITIONS)[number]["key"]) {
 // trigger alone would often mean these jobs never actually fire in
 // practice (same rationale the old setInterval version's boot-time call
 // had; node-cron's TaskOptions has no "run immediately" flag of its own).
-JOB_DEFINITIONS.forEach((job) => runDailyPruneJob(job.key));
-const dailyPruneCronTasks: ScheduledTask[] = JOB_DEFINITIONS.map((job) =>
-  cron.schedule(DAILY_PRUNE_CRON, () => runDailyPruneJob(job.key), {
+JOB_DEFINITIONS.forEach((job) => runDailyScheduledJob(job.key));
+const dailyScheduledJobCronTasks: ScheduledTask[] = JOB_DEFINITIONS.map((job) =>
+  cron.schedule(DAILY_SCHEDULED_JOB_CRON, () => runDailyScheduledJob(job.key), {
     timezone: "Asia/Tbilisi",
     noOverlap: true,
     unref: true,
@@ -89,7 +91,7 @@ function shutdown(signal: string) {
 
   finaSyncStopped = true;
   if (finaSyncTimer) clearTimeout(finaSyncTimer);
-  dailyPruneCronTasks.forEach((task) => task.stop());
+  dailyScheduledJobCronTasks.forEach((task) => task.stop());
 
   const forceExit = setTimeout(() => {
     logger.error("Graceful shutdown timed out, forcing exit");

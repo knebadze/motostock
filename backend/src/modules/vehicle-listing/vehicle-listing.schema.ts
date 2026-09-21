@@ -9,6 +9,7 @@ import { vehicleSpecFieldSchema } from "../vehicle-category-filters/vehicle-cate
 import { adminFiltersQuerySchema } from "../filters/filter-request.schema.js";
 
 export const warrantyUnitSchema = z.enum(["YEAR", "MONTH"]);
+export const vehicleListingCurrencySchema = z.enum(["GEL", "USD"]);
 
 // Both null together (no warranty advertised) or both set — never just one,
 // on either create or a partial update.
@@ -44,6 +45,10 @@ const baseVehicleListingSchema = z.object({
   // shown on the storefront and filterable (see the list query's
   // customsCleared param below).
   isCustomsCleared: z.boolean().optional(),
+  // The currency `price` is denominated in — defaults GEL. See
+  // vehicle-listing.prisma's matching field for the checkout-conversion
+  // rationale.
+  priceCurrency: vehicleListingCurrencySchema.optional(),
   price: z.coerce.number().positive().max(MAX_DECIMAL_10_2).openapi({ example: 4500 }),
   // nonnegative, not positive — 0 is a legitimate value (out of stock,
   // sold out but the listing kept for reference), same as mileageKm above.
@@ -225,6 +230,7 @@ export const vehicleListingResponseSchema = registry.register(
     warrantyValue: z.int().nullable(),
     warrantyUnit: warrantyUnitSchema.nullable(),
     isActive: z.boolean(),
+    priceCurrency: vehicleListingCurrencySchema,
     price: z.number().openapi({ example: 4500 }),
     stockQuantity: z.int(),
     descriptionKa: z.string().nullable(),

@@ -31,6 +31,7 @@ vehicleListingRouter.get(
   validate(popularVehicleListingsQuerySchema, "query"),
   vehicleListingController.getPopular,
 );
+vehicleListingRouter.get("/exchange-rate/usd-gel", vehicleListingController.getExchangeRate);
 vehicleListingRouter.get(
   "/:id",
   validate(vehicleListingIdParamSchema, "params"),
@@ -91,6 +92,23 @@ registry.registerPath({
   request: { query: popularVehicleListingsQuerySchema },
   responses: {
     200: { description: "Popular vehicle listings", content: { "application/json": { schema: listResponse } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-listings/exchange-rate/usd-gel",
+  tags: ["VehicleListings"],
+  summary: "Get today's USD/GEL rate (public — storefront currency toggle, admin form hint)",
+  responses: {
+    200: {
+      description: "Exchange rate",
+      content: {
+        "application/json": {
+          schema: z.object({ rate: z.number().nullable(), updatedAt: z.iso.datetime().nullable() }),
+        },
+      },
+    },
   },
 });
 

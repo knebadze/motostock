@@ -73,6 +73,7 @@ type VehicleListingWriteData = {
   warrantyValue?: number | null;
   warrantyUnit?: "YEAR" | "MONTH" | null;
   isActive?: boolean;
+  priceCurrency?: "GEL" | "USD";
   price: number;
   stockQuantity?: number;
   descriptionKa?: string | null;
@@ -99,6 +100,12 @@ function buildWhere(filters: {
   bulkDiscountEventId?: number;
   featured?: boolean;
   customsCleared?: boolean;
+  // Resolved once by vehicle-listing.service.ts (getUsdToGelRate) — lets
+  // priceMin/priceMax (always GEL from the shopper's perspective) match
+  // USD-priced listings too, by converting the bounds instead of the price
+  // column itself. Falls back to 1 (no conversion) if the rate isn't
+  // available yet — see vehicle-listing.prisma's priceCurrency comment.
+  usdToGelRate?: number;
   specFilters?: SpecFilterInput;
   adminFilters?: FilterEntry[];
 }): Prisma.VehicleListingWhereInput | undefined {
@@ -117,11 +124,24 @@ function buildWhere(filters: {
   }
 
   if (filters.priceMin != null || filters.priceMax != null) {
+    const rate = filters.usdToGelRate ?? 1;
     and.push({
-      price: {
-        ...(filters.priceMin != null ? { gte: filters.priceMin } : {}),
-        ...(filters.priceMax != null ? { lte: filters.priceMax } : {}),
-      },
+      OR: [
+        {
+          priceCurrency: "GEL",
+          price: {
+            ...(filters.priceMin != null ? { gte: filters.priceMin } : {}),
+            ...(filters.priceMax != null ? { lte: filters.priceMax } : {}),
+          },
+        },
+        {
+          priceCurrency: "USD",
+          price: {
+            ...(filters.priceMin != null ? { gte: filters.priceMin / rate } : {}),
+            ...(filters.priceMax != null ? { lte: filters.priceMax / rate } : {}),
+          },
+        },
+      ],
     });
   }
 
@@ -222,6 +242,7 @@ export const vehicleListingRepository = {
     bulkDiscountEventId?: number;
     featured?: boolean;
     customsCleared?: boolean;
+    usdToGelRate?: number;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
     limit?: number;
@@ -267,6 +288,7 @@ export const vehicleListingRepository = {
     bulkDiscountEventId?: number;
     featured?: boolean;
     customsCleared?: boolean;
+    usdToGelRate?: number;
     specFilters?: SpecFilterInput;
   }) {
     const structuredWhere = buildWhere(filters);
@@ -292,6 +314,7 @@ export const vehicleListingRepository = {
     bulkDiscountEventId?: number;
     featured?: boolean;
     customsCleared?: boolean;
+    usdToGelRate?: number;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
     skip?: number;
@@ -319,6 +342,7 @@ export const vehicleListingRepository = {
     bulkDiscountEventId?: number;
     featured?: boolean;
     customsCleared?: boolean;
+    usdToGelRate?: number;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
   }) {

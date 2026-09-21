@@ -979,7 +979,7 @@ export function BulkVehicleListingDiscountsPanel({ categories }: { categories: C
                     <td className="px-3 py-2 text-muted-foreground">{candidate.condition.nameKa}</td>
                     <td className="px-3 py-2 text-muted-foreground">{candidate.color.nameKa}</td>
                     <td className="px-3 py-2 text-muted-foreground">{vehicleCandidateSpecSummary(candidate) || "—"}</td>
-                    <td className="px-3 py-2">{formatPrice(candidate.price)}</td>
+                    <td className="px-3 py-2">{formatPrice(candidate.price, candidate.priceCurrency)}</td>
                     <td className="px-3 py-2">
                       {candidate.activeDiscount ? (
                         <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:text-amber-400">

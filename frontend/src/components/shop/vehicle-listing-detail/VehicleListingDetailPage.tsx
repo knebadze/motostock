@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/format";
 import { sanitizeRichText } from "@/lib/sanitize-html";
+import { useVehiclePriceDisplay } from "@/lib/useVehiclePriceDisplay";
 import { WishlistButton } from "@/components/shared/WishlistButton";
 import { CompareButton } from "@/components/shared/CompareButton";
 import { AddToCartButton } from "@/components/shared/AddToCartButton";
@@ -12,6 +13,7 @@ import { Breadcrumb } from "../Breadcrumb";
 import { ProductGallery } from "../product-detail/ProductGallery";
 import { VehicleSpecs } from "./VehicleSpecs";
 import { SimilarVehicleListings } from "./SimilarVehicleListings";
+import { CurrencyToggleButton } from "../CurrencyToggleButton";
 
 export function VehicleListingDetailPage({
   listing,
@@ -28,6 +30,7 @@ export function VehicleListingDetailPage({
   const tCart = useTranslations("Cart");
 
   const outOfStock = listing.stockQuantity === 0;
+  const priceDisplay = useVehiclePriceDisplay(listing.priceCurrency);
   const title = [listing.vehicleCatalog.model.name, listing.vehicleCatalog.variant]
     .filter(Boolean)
     .join(" ");
@@ -59,14 +62,26 @@ export function VehicleListingDetailPage({
             {listing.activeDiscount ? (
               <>
                 <span className="text-lg text-muted-foreground line-through">
-                  {formatPrice(listing.price)}
+                  {formatPrice(priceDisplay.convert(listing.price), priceDisplay.displayCurrency)}
                 </span>
                 <span className="text-2xl font-bold text-primary">
-                  {formatPrice(listing.activeDiscount.discountPrice)}
+                  {formatPrice(
+                    priceDisplay.convert(listing.activeDiscount.discountPrice),
+                    priceDisplay.displayCurrency,
+                  )}
                 </span>
               </>
             ) : (
-              <span className="text-2xl font-bold text-primary">{formatPrice(listing.price)}</span>
+              <span className="text-2xl font-bold text-primary">
+                {formatPrice(priceDisplay.convert(listing.price), priceDisplay.displayCurrency)}
+              </span>
+            )}
+            {priceDisplay.canToggle && (
+              <CurrencyToggleButton
+                label={tShop("toggleCurrency")}
+                targetCurrency={priceDisplay.targetCurrency}
+                onClick={() => priceDisplay.toggle()}
+              />
             )}
             {outOfStock && (
               <span className="rounded-full bg-foreground/80 px-2.5 py-1 text-xs font-semibold text-background">

@@ -7,6 +7,7 @@ import type { VehicleSpecField } from "./vehicle-category-filters";
 import type { ProductVariantDiscount } from "./product-variant-discounts";
 import type { VehicleListingDiscount } from "./vehicle-listing-discounts";
 import type { BulkDiscountEventInput, BulkDiscountEventTargetType } from "./bulk-discount-events";
+import type { VehicleListingCurrency } from "./vehicle-listings";
 
 // One client module for both PRODUCT and VEHICLE_LISTING bulk discounts —
 // the apply/date/event-grouping request shape is identical between the two
@@ -78,6 +79,7 @@ export type BulkVehicleDiscountCandidate = {
   color: LookupItem;
   specValues: BulkVehicleDiscountCandidateSpecValue[];
   price: number;
+  priceCurrency: VehicleListingCurrency;
   activeDiscount: { discountPercent: number | null; startDate: string; endDate: string } | null;
 };
 
@@ -91,6 +93,7 @@ export type VehicleDiscountHistoryRow = {
   condition: LookupItem;
   color: LookupItem;
   price: number;
+  priceCurrency: VehicleListingCurrency;
   discountPrice: number;
   discountPercent: number | null;
   startDate: string;

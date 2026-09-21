@@ -7,6 +7,7 @@ import type { VehicleSpecField } from "./vehicle-category-filters";
 import type { AdminFilterEntry } from "./admin-filters";
 
 export type WarrantyUnit = "YEAR" | "MONTH";
+export type VehicleListingCurrency = "GEL" | "USD";
 
 export type VehicleListing = {
   id: number;
@@ -22,6 +23,10 @@ export type VehicleListing = {
   warrantyValue: number | null;
   warrantyUnit: WarrantyUnit | null;
   isActive: boolean;
+  // Most vehicles here are actually priced as a USD amount converted to GEL
+  // at sale time using the day's National Bank of Georgia rate — see
+  // useUsdToGelRate.ts and the storefront card/detail page's currency toggle.
+  priceCurrency: VehicleListingCurrency;
   price: number;
   stockQuantity: number;
   descriptionKa: string | null;
@@ -58,6 +63,7 @@ export type VehicleListingInput = {
   warrantyValue?: number | null;
   warrantyUnit?: WarrantyUnit | null;
   isActive?: boolean;
+  priceCurrency?: VehicleListingCurrency;
   price: number;
   stockQuantity?: number;
   // Same "delta against the live DB value, not an absolute overwrite"
@@ -239,4 +245,13 @@ export async function updateVehicleListing(
 
 export async function deleteVehicleListing(id: number): Promise<void> {
   await apiClient.delete(`/vehicle-listings/${id}`);
+}
+
+export type UsdToGelExchangeRate = { rate: number | null; updatedAt: string | null };
+
+// Public — backs the storefront's GEL⇄USD toggle (see useUsdToGelRate.ts)
+// and the admin listing form's "today's rate" hint.
+export async function getUsdToGelRate(): Promise<UsdToGelExchangeRate> {
+  const { data } = await apiClient.get<UsdToGelExchangeRate>("/vehicle-listings/exchange-rate/usd-gel");
+  return data;
 }

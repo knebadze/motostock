@@ -31,7 +31,7 @@ const scheduledJobRunSchema = z.object({
   startedAt: z.iso.datetime(),
   finishedAt: z.iso.datetime().nullable(),
   itemsAffected: z.int().nullable(),
-  detail: z.record(z.string(), z.number()).nullable(),
+  detail: z.record(z.string(), z.union([z.number(), z.string()])).nullable(),
   errorMessage: z.string().nullable(),
   triggeredBy: triggeredBySchema,
 });

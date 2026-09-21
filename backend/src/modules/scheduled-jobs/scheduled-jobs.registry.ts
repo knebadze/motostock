@@ -3,9 +3,12 @@ import { pruneStaleAuthArtifacts } from "../auth/auth.service.js";
 import { pruneStaleGuestProductViews } from "../product-views/product-views.service.js";
 import { pruneStaleGuestVehicleListingViews } from "../vehicle-listing-views/vehicle-listing-views.service.js";
 import { pruneOrphanedRichTextImages } from "../media/media.service.js";
+import { fetchNbgUsdToGelRate } from "../vehicle-listing/exchange-rate.service.js";
 import type { ScheduledJobKey } from "./scheduled-jobs.schema.js";
 
-export type JobResult = { itemsAffected: number; detail?: Record<string, number> };
+// number for count-style detail (every existing prune job), string for
+// FETCH_USD_GEL_RATE's fetched-date value.
+export type JobResult = { itemsAffected: number; detail?: Record<string, number | string> };
 
 export type JobDefinition = {
   key: ScheduledJobKey;
@@ -53,5 +56,13 @@ export const JOB_DEFINITIONS: JobDefinition[] = [
     key: "DAILY_PRUNE_RICH_TEXT_IMAGES",
     labelKa: "მიტოვებული სურათების გასუფთავება",
     run: async () => ({ itemsAffected: await pruneOrphanedRichTextImages() }),
+  },
+  {
+    key: "FETCH_USD_GEL_RATE",
+    labelKa: "USD/GEL კურსის განახლება (ეროვნული ბანკი)",
+    run: async () => {
+      const { rate, fetchedAt } = await fetchNbgUsdToGelRate();
+      return { itemsAffected: 1, detail: { rate, fetchedAt: fetchedAt.toISOString() } };
+    },
   },
 ];

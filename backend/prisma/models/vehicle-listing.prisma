@@ -5,6 +5,16 @@ enum WarrantyUnit {
   @@schema("dbo")
 }
 
+// Most vehicles here are actually priced as a USD amount converted to GEL at
+// sale time using that day's National Bank of Georgia rate (see
+// exchange-rate.service.ts) — this lets an admin price a listing either way.
+enum VehicleListingCurrency {
+  GEL
+  USD
+
+  @@schema("dbo")
+}
+
 model VehicleListing {
   id               Int                      @id @default(autoincrement())
   vehicleCatalogId Int
@@ -36,6 +46,13 @@ model VehicleListing {
   // vehicle-category-filters system, which is for VehicleCatalog's
   // heterogeneous per-category engineering specs).
   isCustomsCleared Boolean                  @default(false)
+  // The currency `price` (and any VehicleListingDiscount.discountPrice on
+  // this listing — always same-currency as its own listing, never mixed)
+  // is denominated in. Defaults GEL so every pre-existing row is unaffected.
+  // Checkout always converts a USD listing to GEL at the current NBG rate
+  // before freezing it into an OrderItem — see orders.service.ts's
+  // computeCheckoutTotals.
+  priceCurrency    VehicleListingCurrency   @default(GEL)
   price            Decimal                  @db.Decimal(10, 2)
   stockQuantity    Int                      @default(1)
   descriptionKa    String?

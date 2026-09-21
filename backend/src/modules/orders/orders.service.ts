@@ -20,6 +20,7 @@ import {
   getDeliveryExpressPrice,
   getDeliveryExpressTime,
   getAdminNotificationEmail,
+  getUsdToGelRate,
 } from "../settings/settings.service.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
@@ -285,11 +286,21 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
   let subtotal = 0;
   let total = 0;
 
+  // This store only ever charges in GEL — a USD-priced vehicle listing (see
+  // vehicle-listing.prisma's priceCurrency comment) gets converted to GEL
+  // right here, at the current NBG rate, before any further math runs.
+  // OrderItem.unitPrice/lineTotal are a frozen snapshot from this point on
+  // (never re-derived later), so this is the only place this conversion
+  // needs to happen. A same-currency VehicleListingDiscount.discountPrice
+  // gets the identical conversion.
+  const usdToGelRate = (await getUsdToGelRate()) ?? 1;
+
   const items = cartRows.map((row, index) => {
-    const baseUnitPrice = Number(row.productVariant?.price ?? row.vehicleListing?.price ?? 0);
+    const rate = row.vehicleListing?.priceCurrency === "USD" ? usdToGelRate : 1;
+    const baseUnitPrice = Number(row.productVariant?.price ?? row.vehicleListing?.price ?? 0) * rate;
     const activeDiscount = itemDiscounts[index];
     const hasActiveDiscount = activeDiscount !== null;
-    const effectivePrice = activeDiscount ? Number(activeDiscount.discountPrice) : baseUnitPrice;
+    const effectivePrice = activeDiscount ? Number(activeDiscount.discountPrice) * rate : baseUnitPrice;
 
     const matchKey = promoCodeItemKey({
       itemType: row.itemType,

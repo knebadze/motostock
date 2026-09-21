@@ -58,14 +58,14 @@ const columns: DataTableColumn<VehicleListing>[] = [
       listing.activeDiscount ? (
         <span className="flex flex-col">
           <span className="text-xs text-muted-foreground line-through">
-            {formatPrice(listing.price)}
+            {formatPrice(listing.price, listing.priceCurrency)}
           </span>
           <span className="font-semibold text-primary">
-            {formatPrice(listing.activeDiscount.discountPrice)}
+            {formatPrice(listing.activeDiscount.discountPrice, listing.priceCurrency)}
           </span>
         </span>
       ) : (
-        formatPrice(listing.price)
+        formatPrice(listing.price, listing.priceCurrency)
       ),
   },
   {

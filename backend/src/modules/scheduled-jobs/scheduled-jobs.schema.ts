@@ -8,6 +8,7 @@ export const scheduledJobKeySchema = z.enum([
   "DAILY_PRUNE_GUEST_PRODUCT_VIEWS",
   "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS",
   "DAILY_PRUNE_RICH_TEXT_IMAGES",
+  "FETCH_USD_GEL_RATE",
 ]);
 export type ScheduledJobKey = z.infer<typeof scheduledJobKeySchema>;
 

@@ -12,7 +12,7 @@ import { toImageResponse } from "../product-variant-images/product-variant-image
 import { cartRepository, type CartOwner } from "./cart.repository.js";
 import type { CreateCartItemInput } from "./cart.schema.js";
 import type { CartItemType } from "../../generated/prisma/index.js";
-import { getCartMaxQuantity } from "../settings/settings.service.js";
+import { getCartMaxQuantity, getUsdToGelRate } from "../settings/settings.service.js";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
 type LookupRow = { id: number; key: string; nameKa: string; nameEn: string; nameRu: string } | null;
@@ -81,14 +81,23 @@ function ownerMatches(row: { userId: number | null; guestId: string | null }, ow
 
 // Exported for users.service.ts's admin "full detail" view to reuse
 // (imported there as `toResponse as toCartItemResponse`).
-export function toResponse(row: CartItemRow) {
+export async function toResponse(row: CartItemRow) {
   const productVariant = row.productVariant ? toProductVariantCartResponse(row.productVariant) : null;
   const vehicleListing = row.vehicleListing ? toVehicleListingResponse(row.vehicleListing) : null;
+  // The cart always displays/totals in GEL (the only currency this store
+  // ever actually charges) — a USD-priced listing's own price and its
+  // same-currency active discount (see vehicle-listing.prisma's
+  // priceCurrency comment) both need converting before use here.
+  const rate = vehicleListing?.priceCurrency === "USD" ? ((await getUsdToGelRate()) ?? 1) : 1;
+  const vehicleListingPrice = vehicleListing ? vehicleListing.price * rate : null;
+  const vehicleListingDiscountPrice = vehicleListing?.activeDiscount
+    ? vehicleListing.activeDiscount.discountPrice * rate
+    : null;
   const unitPrice =
     productVariant?.activeDiscount?.discountPrice ??
     productVariant?.price ??
-    vehicleListing?.activeDiscount?.discountPrice ??
-    vehicleListing?.price ??
+    vehicleListingDiscountPrice ??
+    vehicleListingPrice ??
     0;
 
   return {
@@ -105,7 +114,7 @@ export function toResponse(row: CartItemRow) {
 
 export async function listMyCart(owner: CartOwner) {
   const rows = await cartRepository.findByOwner(owner);
-  const items = rows.map(toResponse);
+  const items = await Promise.all(rows.map(toResponse));
   const subtotal = Math.round(items.reduce((sum, item) => sum + item.lineTotal, 0) * 100) / 100;
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   return { items, subtotal, itemCount };

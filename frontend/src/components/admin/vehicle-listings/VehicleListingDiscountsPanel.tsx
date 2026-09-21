@@ -11,32 +11,42 @@ import {
   listVehicleListingDiscounts,
   type VehicleListingDiscount,
 } from "@/lib/api/vehicle-listing-discounts";
+import type { VehicleListingCurrency } from "@/lib/api/vehicle-listings";
 import { ApiRequestError } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
 import { vehicleListingDiscountFormSchema } from "@/lib/validation/vehicle-listing-discounts";
 import { MAX_DECIMAL_10_2, getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
-const columns: DataTableColumn<VehicleListingDiscount>[] = [
-  {
-    header: "ფასდაკლების ფასი",
-    render: (discount) => formatPrice(discount.discountPrice),
-  },
-  {
-    header: "პროცენტი",
-    render: (discount) => (discount.discountPercent != null ? `${discount.discountPercent}%` : "—"),
-    cellClassName: "text-muted-foreground",
-  },
-  { header: "დაწყება", render: (discount) => discount.startDate, cellClassName: "text-muted-foreground" },
-  { header: "დასრულება", render: (discount) => discount.endDate, cellClassName: "text-muted-foreground" },
-];
+// A discount's discountPrice is always denominated in the same currency as
+// its own listing's price (see vehicle-listing.prisma's priceCurrency
+// comment) — never mixed — so this whole panel just needs to know which
+// symbol to show, not to convert anything.
+function buildColumns(priceCurrency: VehicleListingCurrency): DataTableColumn<VehicleListingDiscount>[] {
+  return [
+    {
+      header: "ფასდაკლების ფასი",
+      render: (discount) => formatPrice(discount.discountPrice, priceCurrency),
+    },
+    {
+      header: "პროცენტი",
+      render: (discount) => (discount.discountPercent != null ? `${discount.discountPercent}%` : "—"),
+      cellClassName: "text-muted-foreground",
+    },
+    { header: "დაწყება", render: (discount) => discount.startDate, cellClassName: "text-muted-foreground" },
+    { header: "დასრულება", render: (discount) => discount.endDate, cellClassName: "text-muted-foreground" },
+  ];
+}
 
 export function VehicleListingDiscountsPanel({
   listingId,
   basePrice,
+  priceCurrency,
 }: {
   listingId: number;
   basePrice: number;
+  priceCurrency: VehicleListingCurrency;
 }) {
+  const columns = buildColumns(priceCurrency);
   const [discounts, setDiscounts] = useState<VehicleListingDiscount[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [discountPercent, setDiscountPercent] = useState("");
@@ -167,7 +177,7 @@ export function VehicleListingDiscountsPanel({
           <>
             დარწმუნებული ხართ, რომ გსურთ წაშალოთ ფასდაკლება{" "}
             <span className="font-semibold text-foreground">
-              {deletingDiscount ? formatPrice(deletingDiscount.discountPrice) : ""}
+              {deletingDiscount ? formatPrice(deletingDiscount.discountPrice, priceCurrency) : ""}
             </span>
             ? ამ მოქმედების გაუქმება შეუძლებელია.
           </>
@@ -204,7 +214,7 @@ export function VehicleListingDiscountsPanel({
             type="number"
             step="0.01"
             max={MAX_DECIMAL_10_2}
-            placeholder="ფასდაკლების ფასი *"
+            placeholder={`ფასდაკლების ფასი (${priceCurrency === "USD" ? "$" : "₾"}) *`}
             value={discountPrice}
             onChange={(event) => setDiscountPrice(event.target.value)}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
@@ -240,7 +250,7 @@ export function VehicleListingDiscountsPanel({
       </div>
       <p className="text-xs text-muted-foreground">
         პროცენტის მითითებისას ფასდაკლების ფასი ავტომატურად გამოითვლება მიმდინარე ფასიდან
-        ({formatPrice(basePrice)}) — შეგიძლიათ შემდეგ ხელითაც შეასწოროთ.
+        ({formatPrice(basePrice, priceCurrency)}) — შეგიძლიათ შემდეგ ხელითაც შეასწოროთ.
       </p>
     </div>
   );

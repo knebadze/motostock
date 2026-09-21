@@ -3,12 +3,16 @@
 // silently formats differently server-side than a real browser does
 // client-side — causing a React hydration mismatch. This manual formatter
 // produces the same byte-identical output in both environments.
-export function formatPrice(value: number): string {
+// `currency` defaults to GEL so every pre-existing call site (Product
+// pricing, which never has a currency concept) is unaffected — only
+// VehicleListing's USD-priced items ever pass "USD" explicitly.
+export function formatPrice(value: number, currency: "GEL" | "USD" = "GEL"): string {
   const fixed = value.toFixed(2);
   const [integerPart, decimalPart] = fixed.split(".");
   const withSeparators = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   const hasCents = decimalPart !== "00";
-  return `${withSeparators}${hasCents ? `.${decimalPart}` : ""} ₾`;
+  const symbol = currency === "USD" ? "$" : "₾";
+  return `${withSeparators}${hasCents ? `.${decimalPart}` : ""} ${symbol}`;
 }
 
 // Georgia has a single fixed UTC+4 offset year-round (no DST) — mirrors

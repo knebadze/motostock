@@ -80,6 +80,7 @@
     "discountBadge": "Скидка",
     "customsCleared": "Растаможен",
     "customsClearedFilter": "Растаможен",
+    "toggleCurrency": "Переключить валюту (₾/$)",
     "emptyState": "Ничего не найдено",
     "loadProductsError": "Не удалось загрузить товары",
     "loadVehiclesError": "Не удалось загрузить технику",

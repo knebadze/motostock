@@ -80,6 +80,7 @@
     "discountBadge": "ფასდაკლება",
     "customsCleared": "განბაჟებული",
     "customsClearedFilter": "განბაჟებული",
+    "toggleCurrency": "ვალუტის გადართვა (₾/$)",
     "emptyState": "შედეგი ვერ მოიძებნა",
     "loadProductsError": "პროდუქტების ჩატვირთვა ვერ მოხერხდა",
     "loadVehiclesError": "ტექნიკის ჩატვირთვა ვერ მოხერხდა",

@@ -5,8 +5,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { formatPrice, pickLookupName } from "@/lib/format";
+import { useVehiclePriceDisplay } from "@/lib/useVehiclePriceDisplay";
 import { WishlistButton } from "@/components/shared/WishlistButton";
 import { CompareButton } from "@/components/shared/CompareButton";
+import { CurrencyToggleButton } from "./CurrencyToggleButton";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 import type { ViewMode } from "./ViewModeToggle";
 
@@ -36,6 +38,7 @@ export function VehicleListingCard({
   const imageUrl = resolveMediaUrl(listing.images[0]?.imageUrl ?? listing.vehicleCatalog.imageUrl);
   const outOfStock = listing.stockQuantity === 0;
   const { activeDiscount } = listing;
+  const priceDisplay = useVehiclePriceDisplay(listing.priceCurrency);
   // Brand + model, not model alone — matches the detail page's JSON-LD and
   // gives image search / screen readers the full identifying label.
   const vehicleLabel = `${listing.vehicleCatalog.brand.name} ${listing.vehicleCatalog.model.name}`;
@@ -127,18 +130,34 @@ export function VehicleListingCard({
             </span>
           </div>
         </div>
-        {activeDiscount ? (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground line-through">
-              {formatPrice(listing.price)}
-            </span>
+        <div className="flex items-center gap-2">
+          {activeDiscount ? (
+            <>
+              <span className="text-sm text-muted-foreground line-through">
+                {formatPrice(priceDisplay.convert(listing.price), priceDisplay.displayCurrency)}
+              </span>
+              <span className="text-lg font-bold text-primary">
+                {formatPrice(priceDisplay.convert(activeDiscount.discountPrice), priceDisplay.displayCurrency)}
+              </span>
+            </>
+          ) : (
             <span className="text-lg font-bold text-primary">
-              {formatPrice(activeDiscount.discountPrice)}
+              {formatPrice(priceDisplay.convert(listing.price), priceDisplay.displayCurrency)}
             </span>
-          </div>
-        ) : (
-          <span className="text-lg font-bold text-primary">{formatPrice(listing.price)}</span>
-        )}
+          )}
+          {priceDisplay.canToggle && (
+            <CurrencyToggleButton
+              className="pointer-events-auto"
+              label={t("toggleCurrency")}
+              targetCurrency={priceDisplay.targetCurrency}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                priceDisplay.toggle();
+              }}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

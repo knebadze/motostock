@@ -25,6 +25,11 @@ export async function getPopular(
   res.status(200).json({ items });
 }
 
+export async function getExchangeRate(_req: Request, res: Response) {
+  const { rate, updatedAt } = await vehicleListingService.getUsdToGelExchangeRate();
+  res.status(200).json({ rate, updatedAt });
+}
+
 export async function getOne(req: Request, res: Response) {
   const item = await vehicleListingService.getVehicleListing(Number(req.params.id));
 

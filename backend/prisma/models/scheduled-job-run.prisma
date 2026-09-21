@@ -4,6 +4,10 @@ enum ScheduledJobKey {
   DAILY_PRUNE_GUEST_PRODUCT_VIEWS
   DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS
   DAILY_PRUNE_RICH_TEXT_IMAGES
+  // Not a prune — fetches the day's official USD/GEL rate from the National
+  // Bank of Georgia's public API (see exchange-rate.service.ts). Rides the
+  // same daily schedule as the prune jobs above purely for infra reuse.
+  FETCH_USD_GEL_RATE
 
   @@schema("dbo")
 }

@@ -440,6 +440,41 @@ export async function getAdminNotificationEmail(): Promise<string | null> {
   });
 }
 
+// Deliberately NOT part of GENERAL_SETTING_KEYS/ALL_SETTING_KEYS/the admin
+// Settings form — this value is never admin-typed, only ever written by
+// exchange-rate.service.ts's daily FETCH_USD_GEL_RATE job (see
+// scheduled-jobs.registry.ts). Same "dormant until set" contract as the
+// getters above: a fresh install with zero successful fetches yet returns
+// null, handled by vehicle-listing.service.ts/orders.service.ts as a
+// startup-only edge case.
+const USD_TO_GEL_RATE_KEY = "usd_to_gel_rate";
+const USD_TO_GEL_RATE_UPDATED_AT_KEY = "usd_to_gel_rate_updated_at";
+
+export async function getUsdToGelRate(): Promise<number | null> {
+  return cached(USD_TO_GEL_RATE_KEY, async () => {
+    const setting = await settingsRepository.findByKey(USD_TO_GEL_RATE_KEY);
+    return setting?.value ? Number(setting.value) : null;
+  });
+}
+
+export async function getUsdToGelRateUpdatedAt(): Promise<string | null> {
+  return cached(USD_TO_GEL_RATE_UPDATED_AT_KEY, async () => {
+    const setting = await settingsRepository.findByKey(USD_TO_GEL_RATE_UPDATED_AT_KEY);
+    return setting?.value ?? null;
+  });
+}
+
+// Called only by exchange-rate.service.ts after a successful NBG fetch — a
+// failed fetch simply never calls this, leaving yesterday's rate (and this
+// cache entry) in place, same "best-effort, no throw" contract as
+// pushOrderSale/syncVariantStockByIds.
+export async function setUsdToGelRate(rate: number, fetchedAt: Date): Promise<void> {
+  await settingsRepository.upsert(USD_TO_GEL_RATE_KEY, String(rate));
+  await settingsRepository.upsert(USD_TO_GEL_RATE_UPDATED_AT_KEY, fetchedAt.toISOString());
+  cache.del(cacheKey(USD_TO_GEL_RATE_KEY));
+  cache.del(cacheKey(USD_TO_GEL_RATE_UPDATED_AT_KEY));
+}
+
 export async function getSettings() {
   return {
     useCloudStorage: await isCloudStorageEnabled(),
