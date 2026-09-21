@@ -9,6 +9,8 @@
     "aboutDescription": "Узнайте больше о {siteName} — надёжном магазине мотоэкипировки, аксессуаров и запчастей в Грузии.",
     "faqTitle": "Часто задаваемые вопросы — {siteName}",
     "faqDescription": "Ответы на часто задаваемые вопросы о заказе, доставке и оплате в {siteName}.",
+    "vacanciesTitle": "Вакансии — {siteName}",
+    "vacanciesDescription": "Присоединяйтесь к нашей команде — ознакомьтесь с открытыми вакансиями в {siteName}.",
     "contactTitle": "Контакты — {siteName}",
     "contactDescription": "Свяжитесь с нами — адрес, телефон, эл. почта и часы работы {siteName}.",
     "termsTitle": "Условия использования — {siteName}",
@@ -320,6 +322,7 @@
     "contactTitle": "Контакты",
     "termsTitle": "Условия использования",
     "faqTitle": "Частые вопросы",
+    "vacanciesTitle": "Вакансии",
     "rights": "Все права защищены.",
     "hoursClosed": "Закрыто",
     "mondayShort": "Пн",
@@ -361,6 +364,12 @@
   "Faq": {
     "title": "Часто задаваемые вопросы",
     "empty": "Вопросы появятся позже."
+  },
+  "Vacancies": {
+    "title": "Вакансии",
+    "empty": "На данный момент открытых вакансий нет.",
+    "viewDetails": "Подробнее",
+    "backToList": "Все вакансии"
   },
   "About": {
     "title": "О нас",

@@ -9,6 +9,8 @@
     "aboutDescription": "Learn about {siteName} — your trusted store for motorcycle gear, apparel, and parts in Georgia.",
     "faqTitle": "Frequently Asked Questions — {siteName}",
     "faqDescription": "Answers to common questions about ordering, delivery, and payment at {siteName}.",
+    "vacanciesTitle": "Vacancies — {siteName}",
+    "vacanciesDescription": "Join our team — browse open vacancies at {siteName}.",
     "contactTitle": "Contact Us — {siteName}",
     "contactDescription": "Get in touch — address, phone, email, and working hours for {siteName}.",
     "termsTitle": "Terms & Conditions — {siteName}",
@@ -320,6 +322,7 @@
     "contactTitle": "Contact",
     "termsTitle": "Terms & Conditions",
     "faqTitle": "FAQ",
+    "vacanciesTitle": "Vacancies",
     "rights": "All rights reserved.",
     "hoursClosed": "Closed",
     "mondayShort": "Mon",
@@ -361,6 +364,12 @@
   "Faq": {
     "title": "Frequently Asked Questions",
     "empty": "Questions coming soon."
+  },
+  "Vacancies": {
+    "title": "Vacancies",
+    "empty": "There are no open vacancies at the moment.",
+    "viewDetails": "View details",
+    "backToList": "All vacancies"
   },
   "About": {
     "title": "About Us",

@@ -71,6 +71,7 @@ import { teamMembersRouter } from "./modules/team-members/team-members.routes.js
 import { banksRouter } from "./modules/banks/banks.routes.js";
 import { mediaRouter } from "./modules/media/media.routes.js";
 import { faqRouter } from "./modules/faq/faq.routes.js";
+import { vacanciesRouter } from "./modules/vacancies/vacancies.routes.js";
 import { serviceTypesRouter } from "./modules/service-types/service-types.routes.js";
 import { serviceRecordsRouter } from "./modules/service-records/service-records.routes.js";
 import { sessionsRouter } from "./modules/sessions/sessions.routes.js";
@@ -214,6 +215,7 @@ app.use("/api/team-members", teamMembersRouter);
 app.use("/api/banks", banksRouter);
 app.use("/api/media", mediaRouter);
 app.use("/api/faq", faqRouter);
+app.use("/api/vacancies", vacanciesRouter);
 app.use("/api/service-types", serviceTypesRouter);
 app.use("/api/service-records", serviceRecordsRouter);
 app.use("/api/sessions", sessionsRouter);

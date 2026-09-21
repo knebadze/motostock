@@ -116,6 +116,11 @@ function FooterView({
                 {tFooter("faqTitle")}
               </Link>
             </li>
+            <li>
+              <Link href="/vacancies" className="transition-colors hover:text-primary">
+                {tFooter("vacanciesTitle")}
+              </Link>
+            </li>
           </ul>
         </div>
 

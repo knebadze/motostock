@@ -39,6 +39,7 @@ import type { ProductBuyTogetherPage } from "./product-buy-together";
 import type { CompanyInfo, WeekDay } from "./company-info";
 import type { Terms } from "./terms";
 import type { Faq } from "./faq";
+import type { Vacancy } from "./vacancies";
 import type { EmailTemplate } from "./email-templates";
 import type { OrderStatusItem } from "./order-statuses";
 import type { NewsletterSubscriber, NewsletterSubscriberCounts } from "./newsletter";
@@ -289,6 +290,37 @@ export async function getFaqListFromServer(): Promise<Faq[]> {
 // same split as getBanksFromServer vs getPublicBanksFromServer.
 export async function getAllFaqsFromServer(): Promise<Faq[]> {
   return fetchFromServer<{ items: Faq[] }, Faq[]>("/faq", {
+    fallback: [],
+    extract: (data) => data.items,
+    requireAuth: true,
+  });
+}
+
+// Public endpoint (the guest /vacancies page reads this) — must not bail
+// out just because there's no admin session cookie, same fix as
+// getCategoriesFromServer.
+export async function getVacancyListFromServer(): Promise<Vacancy[]> {
+  return fetchFromServer<{ items: Vacancy[] }, Vacancy[]>("/vacancies/public", {
+    fallback: [],
+    extract: (data) => data.items,
+  });
+}
+
+// Public endpoint (the guest /vacancies/[slug] detail page) — an inactive or
+// missing vacancy both 404, which fetchFromServer's catch collapses to this
+// same `null` fallback, so the page can call notFound() either way.
+export async function getVacancyBySlugFromServer(slug: string): Promise<Vacancy | null> {
+  return fetchFromServer<{ item: Vacancy }, Vacancy | null>(`/vacancies/by-slug/${slug}`, {
+    fallback: null,
+    extract: (data) => data.item,
+  });
+}
+
+// Admin — every vacancy, including inactive ones (see the admin vacancies
+// manager). Distinct from getVacancyListFromServer's public/active-only
+// list, same split as getFaqListFromServer vs getAllFaqsFromServer.
+export async function getAllVacanciesFromServer(): Promise<Vacancy[]> {
+  return fetchFromServer<{ items: Vacancy[] }, Vacancy[]>("/vacancies", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
