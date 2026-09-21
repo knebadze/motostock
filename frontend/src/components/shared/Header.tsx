@@ -223,6 +223,9 @@ export function Header({
               <Link href="/terms" className="transition-colors hover:text-primary">
                 {tFooter("termsTitle")}
               </Link>
+              <Link href="/privacy" className="transition-colors hover:text-primary">
+                {tFooter("privacyTitle")}
+              </Link>
             </nav>
             <span className="h-3.5 w-px bg-border" aria-hidden />
             <LanguageSwitcher compact />
@@ -506,6 +509,14 @@ export function Header({
               className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
             >
               {tFooter("termsTitle")}
+            </Link>
+
+            <Link
+              href="/privacy"
+              onClick={() => setIsOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+            >
+              {tFooter("privacyTitle")}
             </Link>
 
             <div className="my-2 border-t border-border" />

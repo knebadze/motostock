@@ -15,6 +15,8 @@
     "contactDescription": "Свяжитесь с нами — адрес, телефон, эл. почта и часы работы {siteName}.",
     "termsTitle": "Условия использования — {siteName}",
     "termsDescription": "Условия использования сервисов {siteName}.",
+    "privacyTitle": "Политика конфиденциальности — {siteName}",
+    "privacyDescription": "Как {siteName} собирает, использует и защищает ваши персональные данные.",
     "catalogTitle": "Каталог — {siteName}",
     "catalogDescription": "Просмотрите полный каталог {siteName} по категориям."
   },
@@ -321,6 +323,7 @@
     "aboutUs": "О нас",
     "contactTitle": "Контакты",
     "termsTitle": "Условия использования",
+    "privacyTitle": "Политика конфиденциальности",
     "faqTitle": "Частые вопросы",
     "vacanciesTitle": "Вакансии",
     "rights": "Все права защищены.",
@@ -358,6 +361,11 @@
   },
   "Terms": {
     "title": "Условия использования",
+    "empty": "Текст будет добавлен позже.",
+    "loading": "Загрузка..."
+  },
+  "PrivacyPolicy": {
+    "title": "Политика конфиденциальности",
     "empty": "Текст будет добавлен позже.",
     "loading": "Загрузка..."
   },

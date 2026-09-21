@@ -26,7 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Static nav pages — no DB-backed updatedAt to source lastModified from
   // (unlike categories/products/listings below), so left unset, same as home.
-  const staticPages = ["/catalog", "/about", "/faq", "/vacancies", "/contact", "/terms"];
+  const staticPages = ["/catalog", "/about", "/faq", "/vacancies", "/contact", "/terms", "/privacy"];
   for (const pathname of staticPages) {
     const languages = getAlternateLanguages(pathname);
     for (const locale of routing.locales) {

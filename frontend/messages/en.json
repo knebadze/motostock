@@ -15,6 +15,8 @@
     "contactDescription": "Get in touch — address, phone, email, and working hours for {siteName}.",
     "termsTitle": "Terms & Conditions — {siteName}",
     "termsDescription": "The terms and conditions for using {siteName}'s services.",
+    "privacyTitle": "Privacy Policy — {siteName}",
+    "privacyDescription": "How {siteName} collects, uses, and protects your personal data.",
     "catalogTitle": "Catalog — {siteName}",
     "catalogDescription": "Browse the full {siteName} catalog by category."
   },
@@ -321,6 +323,7 @@
     "aboutUs": "About us",
     "contactTitle": "Contact",
     "termsTitle": "Terms & Conditions",
+    "privacyTitle": "Privacy Policy",
     "faqTitle": "FAQ",
     "vacanciesTitle": "Vacancies",
     "rights": "All rights reserved.",
@@ -358,6 +361,11 @@
   },
   "Terms": {
     "title": "Terms & Conditions",
+    "empty": "Content coming soon.",
+    "loading": "Loading..."
+  },
+  "PrivacyPolicy": {
+    "title": "Privacy Policy",
     "empty": "Content coming soon.",
     "loading": "Loading..."
   },

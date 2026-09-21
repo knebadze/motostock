@@ -38,6 +38,7 @@ import type { CompatibilityPage } from "./compatibility";
 import type { ProductBuyTogetherPage } from "./product-buy-together";
 import type { CompanyInfo, WeekDay } from "./company-info";
 import type { Terms } from "./terms";
+import type { PrivacyPolicy } from "./privacy-policy";
 import type { Faq } from "./faq";
 import type { Vacancy } from "./vacancies";
 import type { EmailTemplate } from "./email-templates";
@@ -273,6 +274,16 @@ export async function getTermsFromServer(): Promise<Terms> {
   return fetchFromServer<{ terms: Terms }, Terms>("/terms", {
     fallback: { id: 0, content: { ka: "", en: "", ru: "" }, updatedAt: new Date(0).toISOString() },
     extract: (data) => data.terms,
+  });
+}
+
+export async function getPrivacyPolicyFromServer(): Promise<PrivacyPolicy> {
+  // Public endpoint (the guest /privacy page reads this) — must not bail out
+  // just because there's no admin session cookie, same fix as
+  // getCategoriesFromServer.
+  return fetchFromServer<{ privacyPolicy: PrivacyPolicy }, PrivacyPolicy>("/privacy-policy", {
+    fallback: { id: 0, content: { ka: "", en: "", ru: "" }, updatedAt: new Date(0).toISOString() },
+    extract: (data) => data.privacyPolicy,
   });
 }
 
