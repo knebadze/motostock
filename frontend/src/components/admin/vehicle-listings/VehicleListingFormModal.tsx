@@ -86,6 +86,7 @@ export function VehicleListingFormModal({
   const [isFeaturedOnHomepage, setIsFeaturedOnHomepage] = useState(
     listing?.isFeaturedOnHomepage ?? false,
   );
+  const [isCustomsCleared, setIsCustomsCleared] = useState(listing?.isCustomsCleared ?? false);
   const [price, setPrice] = useState(listing ? String(listing.price) : "");
   const [stockQuantity, setStockQuantity] = useState(
     listing ? String(listing.stockQuantity) : "1",
@@ -158,6 +159,7 @@ export function VehicleListingFormModal({
         warrantyUnit: warrantyUnit ? (warrantyUnit as "YEAR" | "MONTH") : null,
         isActive,
         isFeaturedOnHomepage,
+        isCustomsCleared,
         price: Number(price),
         ...(isEditing
           ? stockQuantityChanged
@@ -349,6 +351,17 @@ export function VehicleListingFormModal({
           onChange={setIsFeaturedOnHomepage}
           label="ახალი პროდუქცია სლაიდერში"
         />
+      </div>
+
+      <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+        <div>
+          <p className="text-sm font-medium">განბაჟებულია</p>
+          <p className="text-sm text-muted-foreground">
+            გამოჩნდება მომხმარებლისთვის, როგორც განბაჟებული ტექნიკა, და შეიძლება გამოყენებულ იქნას
+            მაღაზიის ფილტრში.
+          </p>
+        </div>
+        <Toggle checked={isCustomsCleared} onChange={setIsCustomsCleared} label="განბაჟებულია" />
       </div>
     </>
   );

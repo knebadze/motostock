@@ -79,6 +79,7 @@ type VehicleListingRow = {
   discounts: DiscountRow[];
   viewCount: number;
   isFeaturedOnHomepage: boolean;
+  isCustomsCleared: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -146,6 +147,7 @@ export function toVehicleListingResponse(row: VehicleListingRow) {
     activeDiscount: activeDiscount ? { discountPrice: Number(activeDiscount.discountPrice) } : null,
     viewCount: row.viewCount,
     isFeaturedOnHomepage: row.isFeaturedOnHomepage,
+    isCustomsCleared: row.isCustomsCleared,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -223,6 +225,7 @@ function isCacheableOnSaleQuery(query: VehicleListingListQuery): boolean {
     query.yearMax == null &&
     query.bulkDiscountEventId == null &&
     query.featured == null &&
+    query.customsCleared == null &&
     query.specFilters == null &&
     query.adminFilters == null &&
     query.page == null &&
@@ -278,6 +281,7 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       onSale: query.onSale,
       bulkDiscountEventId: query.bulkDiscountEventId,
       featured: query.featured,
+      customsCleared: query.customsCleared,
       specFilters: query.specFilters,
       adminFilters: query.adminFilters,
     };
@@ -314,6 +318,7 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       onSale: query.onSale,
       bulkDiscountEventId: query.bulkDiscountEventId,
       featured: query.featured,
+      customsCleared: query.customsCleared,
       specFilters: query.specFilters,
     };
 
@@ -369,6 +374,7 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     onSale: query.onSale,
     bulkDiscountEventId: query.bulkDiscountEventId,
     featured: query.featured,
+    customsCleared: query.customsCleared,
     specFilters: query.specFilters,
     limit: query.limit,
   });

@@ -80,6 +80,7 @@ export function VehicleShopPage({
   const [yearMax, setYearMax] = useState("");
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
+  const [customsCleared, setCustomsCleared] = useState(false);
   const [specFilterState, setSpecFilterState] = useState<
     Partial<Record<VehicleSpecField, SpecFilterState>>
   >({});
@@ -154,6 +155,7 @@ export function VehicleShopPage({
           yearMax: yearMax.trim() ? Number(yearMax) : undefined,
           priceMin: priceMin.trim() ? Number(priceMin) : undefined,
           priceMax: priceMax.trim() ? Number(priceMax) : undefined,
+          customsCleared: customsCleared || undefined,
           bulkDiscountEventId: initialEventId,
           specFilters,
           page,
@@ -189,6 +191,7 @@ export function VehicleShopPage({
     yearMax,
     priceMin,
     priceMax,
+    customsCleared,
     specFilters,
     sortBy,
   ]);
@@ -264,6 +267,14 @@ export function VehicleShopPage({
       });
     }
 
+    if (customsCleared) {
+      tags.push({
+        key: "customsCleared",
+        label: t("customsClearedFilter"),
+        onRemove: () => setCustomsCleared(false),
+      });
+    }
+
     for (const [fieldText, state] of Object.entries(specFilterState)) {
       const field = fieldText as VehicleSpecField;
       const filter = specFiltersByField.get(field);
@@ -308,6 +319,7 @@ export function VehicleShopPage({
     yearMax,
     priceMin,
     priceMax,
+    customsCleared,
     specFilterState,
     specFiltersByField,
     locale,
@@ -320,6 +332,7 @@ export function VehicleShopPage({
     setYearMax("");
     setPriceMin("");
     setPriceMax("");
+    setCustomsCleared(false);
     setSpecFilterState({});
   }
 
@@ -361,6 +374,8 @@ export function VehicleShopPage({
         onPriceMaxChange={(value) => {
           setPriceMax(value);
         }}
+        customsCleared={customsCleared}
+        onCustomsClearedChange={setCustomsCleared}
         specFilterState={specFilterState}
         onToggleSpecOption={toggleSpecOption}
         onToggleSpecBoolean={toggleSpecBoolean}

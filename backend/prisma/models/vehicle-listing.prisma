@@ -28,6 +28,14 @@ model VehicleListing {
   // Product.isFeaturedOnHomepage's identical comment; same purely-manual
   // membership signal for the homepage's FEATURED_MIXED slider.
   isFeaturedOnHomepage Boolean              @default(false)
+  // Admin-set customs-clearance status for this specific imported unit —
+  // shown to shoppers on the storefront (card badge + detail page row) and
+  // filterable on the shop grid, same plain-boolean-column shape as
+  // isFeaturedOnHomepage above (not a per-category spec filter — every
+  // listing has this regardless of category, so it doesn't belong in the
+  // vehicle-category-filters system, which is for VehicleCatalog's
+  // heterogeneous per-category engineering specs).
+  isCustomsCleared Boolean                  @default(false)
   price            Decimal                  @db.Decimal(10, 2)
   stockQuantity    Int                      @default(1)
   descriptionKa    String?
@@ -53,5 +61,6 @@ model VehicleListing {
   @@index([statusId])
   @@index([colorId])
   @@index([isFeaturedOnHomepage])
+  @@index([isCustomsCleared])
   @@schema("dbo")
 }

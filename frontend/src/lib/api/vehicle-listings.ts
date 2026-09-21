@@ -38,6 +38,9 @@ export type VehicleListing = {
   // Admin-curated membership in the homepage's manually-curated "New
   // Arrivals" mixed slider — a plain checkbox, not computed.
   isFeaturedOnHomepage: boolean;
+  // Admin-set customs-clearance status for this specific imported unit —
+  // shown on the storefront and filterable on the shop grid.
+  isCustomsCleared: boolean;
   createdAt: string;
   updatedAt: string;
   // Same "update-response-only" flag as ProductVariant's identical field —
@@ -65,6 +68,7 @@ export type VehicleListingInput = {
   descriptionEn?: string | null;
   descriptionRu?: string | null;
   isFeaturedOnHomepage?: boolean;
+  isCustomsCleared?: boolean;
 };
 
 export type VehicleSpecFilters = {
@@ -89,6 +93,9 @@ export type VehicleListingFilters = {
   // Homepage "New Arrivals" mixed slider — a plain admin-curated flag, not
   // computed from any discount/popularity data.
   featured?: boolean;
+  // Customer-facing shop filter — narrows to listings the admin has marked
+  // as customs-cleared.
+  customsCleared?: boolean;
   limit?: number;
   specFilters?: VehicleSpecFilters;
   adminFilters?: AdminFilterEntry[];
@@ -131,6 +138,7 @@ async function fetchVehicleListingsList(
       onSale: filters.onSale || undefined,
       bulkDiscountEventId: filters.bulkDiscountEventId,
       featured: filters.featured || undefined,
+      customsCleared: filters.customsCleared || undefined,
       limit: filters.limit,
       specFilters:
         filters.specFilters && !isEmptySpecFilters(filters.specFilters)
