@@ -69,6 +69,16 @@ const DEFAULTS: Record<
     bodyEn: "<p>Hi {{customerName}},</p><p>Your order #{{orderCode}} has been cancelled. Contact us if you have any questions.</p>",
     bodyRu: "<p>Здравствуйте, {{customerName}}!</p><p>Ваш заказ №{{orderCode}} отменён. Свяжитесь с нами, если у вас есть вопросы.</p>",
   },
+  // Sent to the admin-configurable address, not a customer — vars are the
+  // same customerName/orderCode/total set, phrased for the admin reader.
+  NEW_ORDER_ADMIN: {
+    subjectKa: "ახალი შეკვეთა მიღებულია — {{orderCode}}",
+    subjectEn: "New order received — {{orderCode}}",
+    subjectRu: "Получен новый заказ — {{orderCode}}",
+    bodyKa: "<p>მიღებულია ახალი შეკვეთა #{{orderCode}}.</p><p>მომხმარებელი: {{customerName}}</p><p>ჯამური თანხა: {{total}} ₾</p>",
+    bodyEn: "<p>A new order has been received — #{{orderCode}}.</p><p>Customer: {{customerName}}</p><p>Total: {{total}} GEL</p>",
+    bodyRu: "<p>Получен новый заказ №{{orderCode}}.</p><p>Клиент: {{customerName}}</p><p>Сумма: {{total}} GEL</p>",
+  },
 };
 
 // Derived from DEFAULTS' own keys, not a separate hand-typed list — a key

@@ -11,6 +11,11 @@ enum EmailTemplateKey {
   ORDER_SHIPPED
   ORDER_DELIVERED
   ORDER_CANCELLED
+  // Sent to the admin-configurable notification address (Settings' General
+  // tab) right after ORDER_PLACED — see orders.service.ts's placeOrder and
+  // settings.service.ts's getAdminNotificationEmail. Skipped entirely while
+  // that address is unset.
+  NEW_ORDER_ADMIN
 
   @@schema("dbo")
 }

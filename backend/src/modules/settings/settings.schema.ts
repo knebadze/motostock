@@ -16,6 +16,9 @@ export const updateSettingsSchema = registry.register(
     // Dormant (chat option hidden) until an admin sets a real number — same
     // "no default" reasoning as finaWebCustomerId/finaWebUserId below.
     whatsappSupportPhoneNumber: z.string().trim().max(30).nullable().openapi({ example: "+995555123456" }),
+    // Dormant (no NEW_ORDER_ADMIN email sent) until an admin sets a real
+    // address here — same "no default" reasoning as the WhatsApp number.
+    adminNotificationEmail: z.email().nullable().openapi({ example: "admin@example.com" }),
     deliveryTbilisiPrice: z.number().nonnegative().openapi({ example: 15 }),
     deliveryTbilisiTime: z.string().openapi({ example: "1-2 სამუშაო დღე" }),
     deliveryRegionsPrice: z.number().nonnegative().openapi({ example: 25 }),
@@ -91,6 +94,9 @@ export const settingsResponseSchema = registry.register(
     // Dormant (chat option hidden) until an admin sets a real number — same
     // "no default" reasoning as finaWebCustomerId/finaWebUserId below.
     whatsappSupportPhoneNumber: z.string().trim().max(30).nullable().openapi({ example: "+995555123456" }),
+    // Dormant (no NEW_ORDER_ADMIN email sent) until an admin sets a real
+    // address here — same "no default" reasoning as the WhatsApp number.
+    adminNotificationEmail: z.email().nullable().openapi({ example: "admin@example.com" }),
     deliveryTbilisiPrice: z.number().nonnegative().openapi({ example: 15 }),
     deliveryTbilisiTime: z.string().openapi({ example: "1-2 სამუშაო დღე" }),
     deliveryRegionsPrice: z.number().nonnegative().openapi({ example: 25 }),

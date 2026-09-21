@@ -1,6 +1,7 @@
 "use client";
 
 import { AdminThemeToggle } from "./AdminThemeToggle";
+import { AdminOrderNotifications } from "./AdminOrderNotifications";
 import { UserMenu } from "./UserMenu";
 import { Logo } from "@/components/shared/Logo";
 
@@ -44,6 +45,7 @@ export function AdminHeader({
       </div>
 
       <div className="flex items-center gap-2">
+        <AdminOrderNotifications />
         <AdminThemeToggle />
         <UserMenu userName={userName} />
       </div>

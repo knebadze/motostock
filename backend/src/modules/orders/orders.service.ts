@@ -19,6 +19,7 @@ import {
   getDeliveryRegionsTime,
   getDeliveryExpressPrice,
   getDeliveryExpressTime,
+  getAdminNotificationEmail,
 } from "../settings/settings.service.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
@@ -668,6 +669,15 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
         orderCode: order.orderCode,
         total: Number(order.total).toFixed(2),
       });
+
+      const adminNotificationEmail = await getAdminNotificationEmail();
+      if (adminNotificationEmail) {
+        await sendEmailTemplate("NEW_ORDER_ADMIN", adminNotificationEmail, {
+          customerName: `${order.user.firstName} ${order.user.lastName}`.trim(),
+          orderCode: order.orderCode,
+          total: Number(order.total).toFixed(2),
+        });
+      }
 
       // Never throws (see fraud.service.ts) — safe to await inline without
       // its own try/catch here.

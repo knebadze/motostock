@@ -24,6 +24,9 @@ export function GeneralSettingsTab({
 }) {
   const vinProviderSelectId = useId();
   const [whatsappPhoneDraft, setWhatsappPhoneDraft] = useState(settings.whatsappSupportPhoneNumber ?? "");
+  const [adminNotificationEmailDraft, setAdminNotificationEmailDraft] = useState(
+    settings.adminNotificationEmail ?? "",
+  );
 
   return (
     <>
@@ -168,6 +171,38 @@ export function GeneralSettingsTab({
             onSave({
               ...settings,
               whatsappSupportPhoneNumber: whatsappPhoneDraft.trim() === "" ? null : whatsappPhoneDraft.trim(),
+            })
+          }
+          disabled={saving}
+          className="mt-5 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          შენახვა
+        </button>
+      </div>
+
+      <div className="rounded-2xl border border-border p-5">
+        <p className="font-medium text-foreground">ახალი შეკვეთის შეტყობინების მეილი</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          ახალი შეკვეთის დროს შეტყობინება გაეგზავნება ამ მისამართზე (შაბლონის რედაქტირება
+          შესაძლებელია „იმეილის შაბლონები” გვერდზე). თუ ცარიელია, მეილი არ გაიგზავნება.
+        </p>
+        <div className="mt-4 flex flex-col gap-1.5 sm:w-1/2 sm:pr-1.5">
+          <label className="text-sm font-medium">ელფოსტა</label>
+          <input
+            type="email"
+            placeholder="admin@example.com"
+            value={adminNotificationEmailDraft}
+            onChange={(event) => setAdminNotificationEmailDraft(event.target.value)}
+            className={inputClassName}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() =>
+            onSave({
+              ...settings,
+              adminNotificationEmail:
+                adminNotificationEmailDraft.trim() === "" ? null : adminNotificationEmailDraft.trim(),
             })
           }
           disabled={saving}

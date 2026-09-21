@@ -13,6 +13,7 @@ import {
   GUEST_CART_ENABLED_KEY,
   PROMO_STACKING_ENABLED_KEY,
   WHATSAPP_SUPPORT_PHONE_NUMBER_KEY,
+  ADMIN_NOTIFICATION_EMAIL_KEY,
   DELIVERY_TBILISI_PRICE_KEY,
   DELIVERY_TBILISI_TIME_KEY,
   DELIVERY_REGIONS_PRICE_KEY,
@@ -430,6 +431,15 @@ export async function getWhatsAppSupportPhoneNumber(): Promise<string | null> {
   });
 }
 
+// Same "dormant until configured" spirit — orders.service.ts's placeOrder
+// simply skips sending the NEW_ORDER_ADMIN email while this is unset.
+export async function getAdminNotificationEmail(): Promise<string | null> {
+  return cached(ADMIN_NOTIFICATION_EMAIL_KEY, async () => {
+    const setting = await settingsRepository.findByKey(ADMIN_NOTIFICATION_EMAIL_KEY);
+    return setting?.value ?? null;
+  });
+}
+
 export async function getSettings() {
   return {
     useCloudStorage: await isCloudStorageEnabled(),
@@ -439,6 +449,7 @@ export async function getSettings() {
     guestCartEnabled: await isGuestCartEnabled(),
     promoStackingEnabled: await isPromoStackingEnabled(),
     whatsappSupportPhoneNumber: await getWhatsAppSupportPhoneNumber(),
+    adminNotificationEmail: await getAdminNotificationEmail(),
     deliveryTbilisiPrice: await getDeliveryTbilisiPrice(),
     deliveryTbilisiTime: await getDeliveryTbilisiTime(),
     deliveryRegionsPrice: await getDeliveryRegionsPrice(),
@@ -554,6 +565,7 @@ export async function updateSettings(input: UpdateSettingsInput) {
       tx,
     );
     await upsertNullable(WHATSAPP_SUPPORT_PHONE_NUMBER_KEY, input.whatsappSupportPhoneNumber, tx);
+    await upsertNullable(ADMIN_NOTIFICATION_EMAIL_KEY, input.adminNotificationEmail, tx);
     await settingsRepository.upsert(
       DELIVERY_TBILISI_PRICE_KEY,
       String(input.deliveryTbilisiPrice),

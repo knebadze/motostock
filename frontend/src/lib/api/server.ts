@@ -137,6 +137,7 @@ const SETTINGS_FALLBACK: Settings = {
   guestCartEnabled: false,
   promoStackingEnabled: false,
   whatsappSupportPhoneNumber: null,
+  adminNotificationEmail: null,
   deliveryTbilisiPrice: 0,
   deliveryTbilisiTime: "",
   deliveryRegionsPrice: 0,
