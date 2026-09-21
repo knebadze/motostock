@@ -5,9 +5,14 @@ export type SpecFieldKind = "LOOKUP" | "NUMBER" | "BOOLEAN";
 
 export type SpecFieldDefinition = {
   kind: SpecFieldKind;
-  // The Prisma column on VehicleCatalog this field reads/filters on — an
-  // *Id column (fuelTypeId, ...) for LOOKUP kind, the scalar column itself
-  // for NUMBER/BOOLEAN kind.
+  // Which table `column` lives on — omitted (defaults to "VehicleCatalog" at
+  // the vehicle-listing.repository.ts buildWhere call sites) for every field
+  // here except IS_CUSTOMS_CLEARED, so the other 22 pre-existing entries
+  // don't all need touching just to add this one VehicleListing-level field.
+  table?: "VehicleCatalog" | "VehicleListing";
+  // The Prisma column this field reads/filters on — an *Id column
+  // (fuelTypeId, ...) for LOOKUP kind, the scalar column itself for
+  // NUMBER/BOOLEAN kind.
   column: string;
   lookupType?: LookupType;
   nameKa: string;
@@ -176,6 +181,19 @@ export const VEHICLE_SPEC_FIELDS: Record<VehicleSpecField, SpecFieldDefinition> 
     nameKa: "დიფერენციალის ბლოკირება",
     nameEn: "Locking differential",
     nameRu: "Блокировка дифференциала",
+  },
+  // The one VehicleListing-level field in this otherwise-VehicleCatalog
+  // registry — see vehicle-listing.prisma's isCustomsCleared comment. Every
+  // unit's own customs status, not a catalog/model spec, so it's still
+  // admin-enabled per category like every other filter here rather than
+  // always shown.
+  IS_CUSTOMS_CLEARED: {
+    kind: "BOOLEAN",
+    table: "VehicleListing",
+    column: "isCustomsCleared",
+    nameKa: "განბაჟებულია",
+    nameEn: "Customs cleared",
+    nameRu: "Растаможен",
   },
 };
 

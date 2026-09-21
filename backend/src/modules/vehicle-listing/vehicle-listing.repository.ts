@@ -99,7 +99,6 @@ function buildWhere(filters: {
   // identical field (see that file's comment).
   bulkDiscountEventId?: number;
   featured?: boolean;
-  customsCleared?: boolean;
   // Resolved once by vehicle-listing.service.ts (getUsdToGelRate) — lets
   // priceMin/priceMax (always GEL from the shopper's perspective) match
   // USD-priced listings too, by converting the bounds instead of the price
@@ -176,14 +175,14 @@ function buildWhere(filters: {
     and.push({ isFeaturedOnHomepage: true });
   }
 
-  if (filters.customsCleared) {
-    and.push({ isCustomsCleared: true });
-  }
-
-  // Spec fields resolve to a dynamic VehicleCatalog column name at runtime
-  // (see vehicle-spec-fields.registry.ts) — Prisma's generated WhereInput
-  // type can't express "one of these known keys, chosen at runtime", so the
-  // constructed clause is cast back to it.
+  // Spec fields resolve to a dynamic column name at runtime (see
+  // vehicle-spec-fields.registry.ts) — Prisma's generated WhereInput type
+  // can't express "one of these known keys, chosen at runtime", so the
+  // constructed clause is cast back to it. Almost all resolve to a
+  // VehicleCatalog column (the default when `table` is omitted); IS_CUSTOMS_
+  // CLEARED is the one VehicleListing-level exception (see the registry's
+  // own comment) and is pushed at the top level instead of nested under
+  // `vehicleCatalog`.
   for (const lookupFilter of filters.specFilters?.lookupFilters ?? []) {
     const { column } = getSpecFieldDefinition(lookupFilter.field);
     and.push({
@@ -204,8 +203,12 @@ function buildWhere(filters: {
   }
 
   for (const field of filters.specFilters?.booleanFields ?? []) {
-    const { column } = getSpecFieldDefinition(field);
-    and.push({ vehicleCatalog: { [column]: true } as Prisma.VehicleCatalogWhereInput });
+    const { table = "VehicleCatalog", column } = getSpecFieldDefinition(field);
+    and.push(
+      table === "VehicleListing"
+        ? ({ [column]: true } as Prisma.VehicleListingWhereInput)
+        : ({ vehicleCatalog: { [column]: true } } as Prisma.VehicleListingWhereInput),
+    );
   }
 
   const adminWhere = applyVehicleListingAdminFilters(filters.adminFilters);
@@ -241,7 +244,6 @@ export const vehicleListingRepository = {
     onSale?: boolean;
     bulkDiscountEventId?: number;
     featured?: boolean;
-    customsCleared?: boolean;
     usdToGelRate?: number;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
@@ -287,7 +289,6 @@ export const vehicleListingRepository = {
     onSale?: boolean;
     bulkDiscountEventId?: number;
     featured?: boolean;
-    customsCleared?: boolean;
     usdToGelRate?: number;
     specFilters?: SpecFilterInput;
   }) {
@@ -313,7 +314,6 @@ export const vehicleListingRepository = {
     onSale?: boolean;
     bulkDiscountEventId?: number;
     featured?: boolean;
-    customsCleared?: boolean;
     usdToGelRate?: number;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
@@ -341,7 +341,6 @@ export const vehicleListingRepository = {
     onSale?: boolean;
     bulkDiscountEventId?: number;
     featured?: boolean;
-    customsCleared?: boolean;
     usdToGelRate?: number;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];

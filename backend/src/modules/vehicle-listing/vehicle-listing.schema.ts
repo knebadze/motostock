@@ -42,8 +42,9 @@ const baseVehicleListingSchema = z.object({
   // field for the full rationale.
   isFeaturedOnHomepage: z.boolean().optional(),
   // Admin-set customs-clearance status for this specific imported unit —
-  // shown on the storefront and filterable (see the list query's
-  // customsCleared param below).
+  // shown on the storefront and filterable via the vehicle-category-filters
+  // system's IS_CUSTOMS_CLEARED spec field (per-category admin-enabled),
+  // not a fixed list-query param of its own.
   isCustomsCleared: z.boolean().optional(),
   // The currency `price` is denominated in — defaults GEL. See
   // vehicle-listing.prisma's matching field for the checkout-conversion
@@ -127,9 +128,6 @@ export const vehicleListingListQuerySchema = z.object({
   // Homepage "New Arrivals" mixed slider (FEATURED_MIXED) — a plain
   // admin-curated boolean, not computed from any discount/popularity data.
   featured: z.coerce.boolean().optional(),
-  // Customer-facing shop filter — narrows to listings the admin has marked
-  // as customs-cleared.
-  customsCleared: z.coerce.boolean().optional(),
   // Homepage sliders cap how many listings they pull — optional everywhere
   // else.
   limit: z.coerce.number().int().positive().max(50).optional(),

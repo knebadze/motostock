@@ -26,8 +26,6 @@ export function VehicleFilters({
   priceMax,
   onPriceMinChange,
   onPriceMaxChange,
-  customsCleared,
-  onCustomsClearedChange,
   specFilterState,
   onToggleSpecOption,
   onToggleSpecBoolean,
@@ -47,11 +45,6 @@ export function VehicleFilters({
   priceMax: string;
   onPriceMinChange: (value: string) => void;
   onPriceMaxChange: (value: string) => void;
-  // Plain fixed-column filter (like onSale/featured), not a per-category
-  // spec field — every listing has this regardless of category, so it
-  // isn't part of the dynamic `filters`/specFilterState system below.
-  customsCleared: boolean;
-  onCustomsClearedChange: (value: boolean) => void;
   specFilterState: Partial<Record<VehicleSpecField, SpecFilterState>>;
   onToggleSpecOption: (field: VehicleSpecField, optionId: number) => void;
   onToggleSpecBoolean: (field: VehicleSpecField) => void;
@@ -70,16 +63,6 @@ export function VehicleFilters({
           className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
       </div>
-
-      <label className="flex items-center gap-2 text-sm font-medium">
-        <input
-          type="checkbox"
-          checked={customsCleared}
-          onChange={(event) => onCustomsClearedChange(event.target.checked)}
-          className="size-4 rounded border-border accent-primary"
-        />
-        {t("customsClearedFilter")}
-      </label>
 
       {filters.map((filter) => {
         if (filter.filterType === "BRAND") {

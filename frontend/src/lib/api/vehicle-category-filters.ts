@@ -26,7 +26,8 @@ export type VehicleSpecField =
   | "RANGE_KM"
   | "CHARGING_TIME_MINUTES"
   | "HAS_ABS"
-  | "HAS_LOCKING_DIFFERENTIAL";
+  | "HAS_LOCKING_DIFFERENTIAL"
+  | "IS_CUSTOMS_CLEARED";
 
 export type SpecFieldKind = "LOOKUP" | "NUMBER" | "BOOLEAN";
 

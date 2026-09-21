@@ -231,7 +231,6 @@ function isCacheableOnSaleQuery(query: VehicleListingListQuery): boolean {
     query.yearMax == null &&
     query.bulkDiscountEventId == null &&
     query.featured == null &&
-    query.customsCleared == null &&
     query.specFilters == null &&
     query.adminFilters == null &&
     query.page == null &&
@@ -301,7 +300,6 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       onSale: query.onSale,
       bulkDiscountEventId: query.bulkDiscountEventId,
       featured: query.featured,
-      customsCleared: query.customsCleared,
       usdToGelRate,
       specFilters: query.specFilters,
       adminFilters: query.adminFilters,
@@ -339,7 +337,6 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       onSale: query.onSale,
       bulkDiscountEventId: query.bulkDiscountEventId,
       featured: query.featured,
-      customsCleared: query.customsCleared,
       usdToGelRate,
       specFilters: query.specFilters,
     };
@@ -400,7 +397,6 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     onSale: query.onSale,
     bulkDiscountEventId: query.bulkDiscountEventId,
     featured: query.featured,
-    customsCleared: query.customsCleared,
     usdToGelRate,
     specFilters: query.specFilters,
     limit: query.limit,

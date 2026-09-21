@@ -79,7 +79,6 @@
     "lowStock": "დარჩა მხოლოდ {count} ცალი",
     "discountBadge": "ფასდაკლება",
     "customsCleared": "განბაჟებული",
-    "customsClearedFilter": "განბაჟებული",
     "toggleCurrency": "ვალუტის გადართვა (₾/$)",
     "emptyState": "შედეგი ვერ მოიძებნა",
     "loadProductsError": "პროდუქტების ჩატვირთვა ვერ მოხერხდა",

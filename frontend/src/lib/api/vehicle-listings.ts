@@ -99,9 +99,6 @@ export type VehicleListingFilters = {
   // Homepage "New Arrivals" mixed slider — a plain admin-curated flag, not
   // computed from any discount/popularity data.
   featured?: boolean;
-  // Customer-facing shop filter — narrows to listings the admin has marked
-  // as customs-cleared.
-  customsCleared?: boolean;
   limit?: number;
   specFilters?: VehicleSpecFilters;
   adminFilters?: AdminFilterEntry[];
@@ -144,7 +141,6 @@ async function fetchVehicleListingsList(
       onSale: filters.onSale || undefined,
       bulkDiscountEventId: filters.bulkDiscountEventId,
       featured: filters.featured || undefined,
-      customsCleared: filters.customsCleared || undefined,
       limit: filters.limit,
       specFilters:
         filters.specFilters && !isEmptySpecFilters(filters.specFilters)
