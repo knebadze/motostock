@@ -38,6 +38,10 @@ export const createProductSchema = registry.register(
     descriptionEn: optionalDescription,
     descriptionRu: optionalDescription,
     attributeValues: z.array(productAttributeValueInputSchema).optional(),
+    // Admin checkbox — "show this product in the homepage's FEATURED_MIXED
+    // (New Arrivals) slider" (see homepage-section.prisma). Optional/defaults
+    // false on create, same as every other boolean flag in this schema.
+    isFeaturedOnHomepage: z.boolean().optional(),
   }),
 );
 export type CreateProductInput = z.infer<typeof createProductSchema>;
@@ -105,6 +109,11 @@ export const productListQuerySchema = z.object({
   // homepage hero-slider's event-scoped DISCOUNT slides link here (see
   // bulk-discount-events.service.ts's setEventHeroSlide).
   bulkDiscountEventId: z.coerce.number().int().positive().optional(),
+  // Homepage's FEATURED_MIXED slider — narrows to products with their own
+  // isFeaturedOnHomepage checkbox ticked (see createProductSchema below),
+  // across every category. Unlike onSale/bulkDiscountEventId this isn't
+  // computed from discount rows at all — it's a plain admin-curated flag.
+  featured: z.coerce.boolean().optional(),
   // Homepage sliders (see homepage-sections module) cap how many products
   // they pull — optional everywhere else.
   limit: z.coerce.number().int().positive().max(50).optional(),
@@ -246,6 +255,7 @@ export const productResponseSchema = registry.register(
     // — an admin-facing interest signal, separate from the Order-based
     // "most sold" ranking used by the popular-products slider.
     viewCount: z.int().openapi({ example: 0 }),
+    isFeaturedOnHomepage: z.boolean(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
   }),

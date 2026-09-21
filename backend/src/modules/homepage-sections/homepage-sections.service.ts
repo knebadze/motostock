@@ -64,6 +64,16 @@ const DEFAULTS: Record<
     titleRu: "Популярные товары и транспорт",
     sortOrder: 5,
   },
+  FEATURED_MIXED: {
+    titleKa: "ახალი პროდუქცია",
+    titleEn: "New Arrivals",
+    titleRu: "Новые поступления",
+    // 10, not the next sequential number — every other type's sortOrder
+    // below is already taken (0-9) and renumbering them would just be
+    // cosmetic churn; this only sets each row's *initial* position anyway,
+    // freely reorderable afterward via the admin's move up/down control.
+    sortOrder: 10,
+  },
   CATEGORIES: {
     titleKa: "კატეგორიები",
     titleEn: "Categories",
@@ -90,7 +100,7 @@ const DEFAULTS: Record<
   },
 };
 
-const MIXED_TYPES: HomepageSectionType[] = ["DISCOUNTED_MIXED", "POPULAR_MIXED"];
+const MIXED_TYPES: HomepageSectionType[] = ["DISCOUNTED_MIXED", "POPULAR_MIXED", "FEATURED_MIXED"];
 
 // Derived from DEFAULTS' own keys, not a separate hand-typed list — same
 // drift-risk reasoning as email-templates.service.ts's ALL_KEYS (and, before

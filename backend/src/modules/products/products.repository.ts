@@ -199,6 +199,7 @@ type ProductWriteData = {
   slug: string;
   metaTitle?: string | null;
   metaDescription?: string | null;
+  isFeaturedOnHomepage?: boolean;
 };
 
 type AttributeValueWriteData = {
@@ -232,6 +233,7 @@ async function buildWhere(filters: {
   // HeroSlider.tsx's buildDiscountLink). Implies the same active-window
   // check onSale does; there's no separate "onSale=true" requirement.
   bulkDiscountEventId?: number;
+  featured?: boolean;
   attributeFilters?: AttributeFilterInput;
   adminFilters?: FilterEntry[];
   // True only from the customer-facing findMany/count below. priceMin/
@@ -315,6 +317,10 @@ async function buildWhere(filters: {
     });
   }
 
+  if (filters.featured) {
+    and.push({ isFeaturedOnHomepage: true });
+  }
+
   for (const facet of filters.attributeFilters?.selectFilters ?? []) {
     and.push({
       attributeValues: { some: { attributeId: facet.attributeId, optionId: { in: facet.optionIds } } },
@@ -356,6 +362,7 @@ export const productsRepository = {
     priceMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
     attributeFilters?: AttributeFilterInput;
     adminFilters?: FilterEntry[];
     limit?: number;
@@ -405,6 +412,7 @@ export const productsRepository = {
     priceMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
     attributeFilters?: AttributeFilterInput;
   }) {
     const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
@@ -431,6 +439,7 @@ export const productsRepository = {
     priceMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
     attributeFilters?: AttributeFilterInput;
     adminFilters?: FilterEntry[];
     skip?: number;
@@ -454,6 +463,7 @@ export const productsRepository = {
     priceMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
     attributeFilters?: AttributeFilterInput;
     adminFilters?: FilterEntry[];
   }) {

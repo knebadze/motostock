@@ -112,6 +112,7 @@ type ProductRow = {
   metaTitle: string | null;
   metaDescription: string | null;
   viewCount: number;
+  isFeaturedOnHomepage: boolean;
   attributeValues: AttributeValueRow[];
   variants: VariantSummaryRow[];
   createdAt: Date;
@@ -179,6 +180,7 @@ export async function toResponse(row: ProductRow) {
     lowStockQuantity: await computeLowStockQuantity(totalStock, row.category.lowStockBadgeEnabled),
     activeDiscount: findCardActiveDiscount(row.variants),
     viewCount: row.viewCount,
+    isFeaturedOnHomepage: row.isFeaturedOnHomepage,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -461,6 +463,7 @@ function isCacheableOnSaleQuery(query: ProductListQuery): boolean {
     query.priceMin == null &&
     query.priceMax == null &&
     query.bulkDiscountEventId == null &&
+    query.featured == null &&
     query.attributeFilters == null &&
     query.adminFilters == null &&
     query.page == null &&
@@ -527,6 +530,7 @@ export async function listProducts(query: ProductListQuery) {
       priceMax: query.priceMax,
       onSale: query.onSale,
       bulkDiscountEventId: query.bulkDiscountEventId,
+      featured: query.featured,
       attributeFilters: query.attributeFilters,
       adminFilters: query.adminFilters,
     };
@@ -556,6 +560,7 @@ export async function listProducts(query: ProductListQuery) {
       priceMax: query.priceMax,
       onSale: query.onSale,
       bulkDiscountEventId: query.bulkDiscountEventId,
+      featured: query.featured,
       attributeFilters: query.attributeFilters,
     };
 
@@ -606,6 +611,7 @@ export async function listProducts(query: ProductListQuery) {
     priceMax: query.priceMax,
     onSale: query.onSale,
     bulkDiscountEventId: query.bulkDiscountEventId,
+    featured: query.featured,
     attributeFilters: query.attributeFilters,
     limit: query.limit,
   });
@@ -752,6 +758,7 @@ export async function createProduct(input: CreateProductInput) {
         descriptionKa: input.descriptionKa ?? null,
         descriptionEn: input.descriptionEn ?? null,
         descriptionRu: input.descriptionRu ?? null,
+        isFeaturedOnHomepage: input.isFeaturedOnHomepage ?? false,
       }),
     "slug",
     "ეს slug უკვე გამოყენებულია",
@@ -817,6 +824,9 @@ export async function updateProduct(id: number, input: UpdateProductInput) {
         ...(input.descriptionKa !== undefined ? { descriptionKa: input.descriptionKa } : {}),
         ...(input.descriptionEn !== undefined ? { descriptionEn: input.descriptionEn } : {}),
         ...(input.descriptionRu !== undefined ? { descriptionRu: input.descriptionRu } : {}),
+        ...(input.isFeaturedOnHomepage !== undefined
+          ? { isFeaturedOnHomepage: input.isFeaturedOnHomepage }
+          : {}),
       }),
     "slug",
     "ეს slug უკვე გამოყენებულია",

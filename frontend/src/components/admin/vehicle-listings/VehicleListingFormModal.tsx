@@ -83,6 +83,9 @@ export function VehicleListingFormModal({
   );
   const [warrantyUnit, setWarrantyUnit] = useState(listing?.warrantyUnit ?? "");
   const [isActive, setIsActive] = useState(listing?.isActive ?? true);
+  const [isFeaturedOnHomepage, setIsFeaturedOnHomepage] = useState(
+    listing?.isFeaturedOnHomepage ?? false,
+  );
   const [price, setPrice] = useState(listing ? String(listing.price) : "");
   const [stockQuantity, setStockQuantity] = useState(
     listing ? String(listing.stockQuantity) : "1",
@@ -154,6 +157,7 @@ export function VehicleListingFormModal({
         warrantyValue: warrantyValue ? Number(warrantyValue) : null,
         warrantyUnit: warrantyUnit ? (warrantyUnit as "YEAR" | "MONTH") : null,
         isActive,
+        isFeaturedOnHomepage,
         price: Number(price),
         ...(isEditing
           ? stockQuantityChanged
@@ -331,6 +335,20 @@ export function VehicleListingFormModal({
           </p>
         </div>
         <Toggle checked={isActive} onChange={setIsActive} label="აქტიურია" />
+      </div>
+
+      <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+        <div>
+          <p className="text-sm font-medium">ახალი პროდუქცია სლაიდერში</p>
+          <p className="text-sm text-muted-foreground">
+            გამოჩნდება მთავარი გვერდის &quot;ახალი პროდუქცია&quot; სლაიდერში.
+          </p>
+        </div>
+        <Toggle
+          checked={isFeaturedOnHomepage}
+          onChange={setIsFeaturedOnHomepage}
+          label="ახალი პროდუქცია სლაიდერში"
+        />
       </div>
     </>
   );

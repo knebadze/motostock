@@ -3,6 +3,7 @@
 import { Select, type SelectOption } from "@/components/shared/Select";
 import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
 import { FieldError } from "@/components/shared/FieldError";
+import { Toggle } from "@/components/shared/Toggle";
 
 export function ProductBasicInfoTab({
   categoryOptions,
@@ -17,6 +18,8 @@ export function ProductBasicInfoTab({
   onNameChange,
   onEnglishChange,
   nameErrors,
+  isFeaturedOnHomepage,
+  onIsFeaturedOnHomepageChange,
 }: {
   categoryOptions: SelectOption[];
   categoryId: string;
@@ -35,6 +38,8 @@ export function ProductBasicInfoTab({
   onNameChange: (next: { ka: string; en: string; ru: string }) => void;
   onEnglishChange: (value: string) => void;
   nameErrors: { ka?: string; en?: string; ru?: string };
+  isFeaturedOnHomepage: boolean;
+  onIsFeaturedOnHomepageChange: (value: boolean) => void;
 }) {
   return (
     <>
@@ -83,6 +88,20 @@ export function ProductBasicInfoTab({
         onEnglishChange={onEnglishChange}
         errors={{ ka: nameErrors.ka, en: nameErrors.en, ru: nameErrors.ru }}
       />
+
+      <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+        <div>
+          <p className="text-sm font-medium">ახალი პროდუქცია სლაიდერში</p>
+          <p className="text-sm text-muted-foreground">
+            გამოჩნდება მთავარი გვერდის &quot;ახალი პროდუქცია&quot; სლაიდერში.
+          </p>
+        </div>
+        <Toggle
+          checked={isFeaturedOnHomepage}
+          onChange={onIsFeaturedOnHomepageChange}
+          label="ახალი პროდუქცია სლაიდერში"
+        />
+      </div>
     </>
   );
 }

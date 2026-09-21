@@ -78,6 +78,7 @@ type VehicleListingWriteData = {
   descriptionKa?: string | null;
   descriptionEn?: string | null;
   descriptionRu?: string | null;
+  isFeaturedOnHomepage?: boolean;
 };
 
 function buildWhere(filters: {
@@ -95,6 +96,7 @@ function buildWhere(filters: {
   // part of one BulkDiscountEvent — same purpose as products.repository.ts's
   // identical field (see that file's comment).
   bulkDiscountEventId?: number;
+  featured?: boolean;
   specFilters?: SpecFilterInput;
   adminFilters?: FilterEntry[];
 }): Prisma.VehicleListingWhereInput | undefined {
@@ -146,6 +148,10 @@ function buildWhere(filters: {
         },
       },
     });
+  }
+
+  if (filters.featured) {
+    and.push({ isFeaturedOnHomepage: true });
   }
 
   // Spec fields resolve to a dynamic VehicleCatalog column name at runtime
@@ -208,6 +214,7 @@ export const vehicleListingRepository = {
     yearMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
     limit?: number;
@@ -251,6 +258,7 @@ export const vehicleListingRepository = {
     yearMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
     specFilters?: SpecFilterInput;
   }) {
     const structuredWhere = buildWhere(filters);
@@ -274,6 +282,7 @@ export const vehicleListingRepository = {
     yearMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
     skip?: number;
@@ -299,6 +308,7 @@ export const vehicleListingRepository = {
     yearMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
   }) {

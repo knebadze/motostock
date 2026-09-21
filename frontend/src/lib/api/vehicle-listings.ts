@@ -35,6 +35,9 @@ export type VehicleListing = {
   // from the listing's own `price`.
   activeDiscount: { discountPrice: number } | null;
   viewCount: number;
+  // Admin-curated membership in the homepage's manually-curated "New
+  // Arrivals" mixed slider — a plain checkbox, not computed.
+  isFeaturedOnHomepage: boolean;
   createdAt: string;
   updatedAt: string;
   // Same "update-response-only" flag as ProductVariant's identical field —
@@ -61,6 +64,7 @@ export type VehicleListingInput = {
   descriptionKa?: string | null;
   descriptionEn?: string | null;
   descriptionRu?: string | null;
+  isFeaturedOnHomepage?: boolean;
 };
 
 export type VehicleSpecFilters = {
@@ -82,6 +86,9 @@ export type VehicleListingFilters = {
   // the vehicle-root category page's own ?eventId= URL param (see the
   // homepage hero-slider's event-scoped DISCOUNT slides).
   bulkDiscountEventId?: number;
+  // Homepage "New Arrivals" mixed slider — a plain admin-curated flag, not
+  // computed from any discount/popularity data.
+  featured?: boolean;
   limit?: number;
   specFilters?: VehicleSpecFilters;
   adminFilters?: AdminFilterEntry[];
@@ -123,6 +130,7 @@ async function fetchVehicleListingsList(
       yearMax: filters.yearMax,
       onSale: filters.onSale || undefined,
       bulkDiscountEventId: filters.bulkDiscountEventId,
+      featured: filters.featured || undefined,
       limit: filters.limit,
       specFilters:
         filters.specFilters && !isEmptySpecFilters(filters.specFilters)

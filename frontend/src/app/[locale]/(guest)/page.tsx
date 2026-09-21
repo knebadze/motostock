@@ -4,6 +4,8 @@ import { Link } from "@/i18n/navigation";
 import { SELECTED_VEHICLE_COOKIE } from "@/lib/vehicle-selection";
 import {
   getCategoriesFromServer,
+  getFeaturedProductsFromServer,
+  getFeaturedVehicleListingsFromServer,
   getMyGarageFromServer,
   getOnSaleProductsFromServer,
   getOnSaleVehicleListingsFromServer,
@@ -119,6 +121,16 @@ export default async function HomePage({
           const [products, listings] = await Promise.all([
             getPopularProductsFromServer(section.productItemCount ?? 5),
             getPopularVehicleListingsFromServer(section.vehicleItemCount ?? 5),
+          ]);
+          return {
+            key: section.id,
+            node: <MixedCarouselSection title={title} products={products} listings={listings} />,
+          };
+        }
+        case "FEATURED_MIXED": {
+          const [products, listings] = await Promise.all([
+            getFeaturedProductsFromServer(section.productItemCount ?? 5),
+            getFeaturedVehicleListingsFromServer(section.vehicleItemCount ?? 5),
           ]);
           return {
             key: section.id,

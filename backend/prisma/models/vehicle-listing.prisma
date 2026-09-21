@@ -24,6 +24,10 @@ model VehicleListing {
   warrantyValue    Int?
   warrantyUnit     WarrantyUnit?
   isActive         Boolean                  @default(true)
+  // Admin-curated (a checkbox on this listing's own edit form) — see
+  // Product.isFeaturedOnHomepage's identical comment; same purely-manual
+  // membership signal for the homepage's FEATURED_MIXED slider.
+  isFeaturedOnHomepage Boolean              @default(false)
   price            Decimal                  @db.Decimal(10, 2)
   stockQuantity    Int                      @default(1)
   descriptionKa    String?
@@ -48,5 +52,6 @@ model VehicleListing {
   @@index([conditionId])
   @@index([statusId])
   @@index([colorId])
+  @@index([isFeaturedOnHomepage])
   @@schema("dbo")
 }

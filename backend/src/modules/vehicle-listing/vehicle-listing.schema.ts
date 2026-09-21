@@ -36,6 +36,10 @@ const baseVehicleListingSchema = z.object({
   warrantyValue: z.int().positive().nullable().optional(),
   warrantyUnit: warrantyUnitSchema.nullable().optional(),
   isActive: z.boolean().optional(),
+  // Admin-curated membership in the homepage's manually-curated "New
+  // Arrivals" mixed slider (FEATURED_MIXED) — see product.prisma's matching
+  // field for the full rationale.
+  isFeaturedOnHomepage: z.boolean().optional(),
   price: z.coerce.number().positive().max(MAX_DECIMAL_10_2).openapi({ example: 4500 }),
   // nonnegative, not positive — 0 is a legitimate value (out of stock,
   // sold out but the listing kept for reference), same as mileageKm above.
@@ -111,6 +115,9 @@ export const vehicleListingListQuerySchema = z.object({
   // homepage hero-slider's event-scoped DISCOUNT slides link here (see
   // bulk-discount-events.service.ts's setEventHeroSlide).
   bulkDiscountEventId: z.coerce.number().int().positive().optional(),
+  // Homepage "New Arrivals" mixed slider (FEATURED_MIXED) — a plain
+  // admin-curated boolean, not computed from any discount/popularity data.
+  featured: z.coerce.boolean().optional(),
   // Homepage sliders cap how many listings they pull — optional everywhere
   // else.
   limit: z.coerce.number().int().positive().max(50).optional(),
@@ -225,6 +232,7 @@ export const vehicleListingResponseSchema = registry.register(
     // `price`).
     activeDiscount: z.object({ discountPrice: z.number().openapi({ example: 3999 }) }).nullable(),
     viewCount: z.int(),
+    isFeaturedOnHomepage: z.boolean(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
     // Same "update-response-only" flag as ProductVariant's identical field —

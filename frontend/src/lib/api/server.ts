@@ -484,6 +484,16 @@ export async function getOnSaleVehicleListingsFromServer(limit: number): Promise
   });
 }
 
+// Homepage "New Arrivals" mixed slider (FEATURED_MIXED) — a plain
+// admin-curated flag, not a discount/popularity computation.
+export async function getFeaturedVehicleListingsFromServer(limit: number): Promise<VehicleListing[]> {
+  return fetchFromServer<{ items: VehicleListing[] }, VehicleListing[]>("/vehicle-listings", {
+    params: { featured: true, limit },
+    fallback: [],
+    extract: (data) => data.items,
+  });
+}
+
 // Homepage "popular vehicles" slider.
 export async function getPopularVehicleListingsFromServer(limit: number): Promise<VehicleListing[]> {
   return fetchFromServer<{ items: VehicleListing[] }, VehicleListing[]>("/vehicle-listings/popular", {
@@ -758,6 +768,16 @@ export async function getAdminProductsFromServer(): Promise<AdminListPage<Produc
 export async function getOnSaleProductsFromServer(limit: number): Promise<Product[]> {
   return fetchFromServer<{ items: Product[] }, Product[]>("/products", {
     params: { onSale: true, limit },
+    fallback: [],
+    extract: (data) => data.items,
+  });
+}
+
+// Homepage "New Arrivals" mixed slider (FEATURED_MIXED) — a plain
+// admin-curated flag, not a discount/popularity computation.
+export async function getFeaturedProductsFromServer(limit: number): Promise<Product[]> {
+  return fetchFromServer<{ items: Product[] }, Product[]>("/products", {
+    params: { featured: true, limit },
     fallback: [],
     extract: (data) => data.items,
   });

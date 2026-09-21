@@ -25,6 +25,15 @@ model Product {
   // signal shown to admins, separate from the Order-based "most sold"
   // ranking used by the homepage "popular products" slider.
   viewCount       Int                     @default(0)
+  // Admin-curated (a checkbox on this product's own edit form) — no
+  // relation to whether the product is actually new, popular, or on sale;
+  // purely "should this be one of the hand-picked items in the homepage's
+  // FEATURED_MIXED slider" (see homepage-section.prisma). Deliberately a
+  // plain boolean, not a join table — DISCOUNTED_MIXED/POPULAR_MIXED already
+  // establish that a homepage mixed-slider's *membership* computation lives
+  // entirely in products.service.ts/vehicle-listing.service.ts's query
+  // filters, never in HomepageSection itself.
+  isFeaturedOnHomepage Boolean            @default(false)
   variants        ProductVariant[]
   attributeValues ProductAttributeValue[]
   fitments        ProductFitment[]
@@ -39,6 +48,7 @@ model Product {
 
   @@index([categoryId])
   @@index([productBrandId])
+  @@index([isFeaturedOnHomepage])
   // pg_trgm GIN indexes — products.repository.ts's buildWhere searches these
   // three columns with `ILIKE '%term%'` (leading wildcard), which a plain
   // btree index can't accelerate at all; without these, that search does a

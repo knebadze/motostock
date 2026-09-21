@@ -9,6 +9,7 @@ export const homepageSectionTypeSchema = z.enum([
   "POPULAR_VEHICLES",
   "DISCOUNTED_MIXED",
   "POPULAR_MIXED",
+  "FEATURED_MIXED",
   "CATEGORIES",
   "POPULAR_FOR_VEHICLE",
   "RECOMMENDED_FOR_YOU",

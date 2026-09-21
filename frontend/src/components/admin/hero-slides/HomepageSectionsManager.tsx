@@ -18,13 +18,14 @@ const TYPE_LABELS: Record<HomepageSection["type"], string> = {
   POPULAR_VEHICLES: "პოპულარული ტრანსპორტი",
   DISCOUNTED_MIXED: "ფასდაკლებული პროდუქტები და ტრანსპორტი (შერეული)",
   POPULAR_MIXED: "პოპულარული პროდუქტები და ტრანსპორტი (შერეული)",
+  FEATURED_MIXED: "ახალი პროდუქცია და ტრანსპორტი (შერეული)",
   CATEGORIES: "კატეგორიები",
   POPULAR_FOR_VEHICLE: "პოპულარული მომხმარებლის ტრანსპორტისთვის",
   RECOMMENDED_FOR_YOU: "რეკომენდებული (პერსონალიზებული)",
   RECENTLY_VIEWED: "ბოლოს ნანახი",
 };
 
-const MIXED_TYPES: HomepageSection["type"][] = ["DISCOUNTED_MIXED", "POPULAR_MIXED"];
+const MIXED_TYPES: HomepageSection["type"][] = ["DISCOUNTED_MIXED", "POPULAR_MIXED", "FEATURED_MIXED"];
 
 function SectionRow({
   section,

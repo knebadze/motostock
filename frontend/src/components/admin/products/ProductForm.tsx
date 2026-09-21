@@ -82,6 +82,9 @@ export function ProductForm({
   const [metaDescriptionTouched, setMetaDescriptionTouched] = useState(
     (product?.metaDescription ?? "") !== "",
   );
+  const [isFeaturedOnHomepage, setIsFeaturedOnHomepage] = useState(
+    product?.isFeaturedOnHomepage ?? false,
+  );
   const [descriptionKa, setDescriptionKa] = useState(product?.descriptionKa ?? "");
   const [descriptionEn, setDescriptionEn] = useState(product?.descriptionEn ?? "");
   const [descriptionRu, setDescriptionRu] = useState(product?.descriptionRu ?? "");
@@ -361,6 +364,7 @@ export function ProductForm({
         descriptionKa: toNullableHtml(descriptionKa),
         descriptionEn: toNullableHtml(descriptionEn),
         descriptionRu: toNullableHtml(descriptionRu),
+        isFeaturedOnHomepage,
         attributeValues: toAttributeValueInputs(attributeValues, categoryAttributes),
       };
 
@@ -415,6 +419,8 @@ export function ProductForm({
           onNameChange={handleNameChange}
           onEnglishChange={handleEnglishNameChange}
           nameErrors={{ ka: errors["name.ka"], en: errors["name.en"], ru: errors["name.ru"] }}
+          isFeaturedOnHomepage={isFeaturedOnHomepage}
+          onIsFeaturedOnHomepageChange={setIsFeaturedOnHomepage}
         />
       ),
     },

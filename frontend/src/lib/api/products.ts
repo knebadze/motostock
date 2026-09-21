@@ -52,6 +52,9 @@ export type Product = {
   // from the Order-based "most sold" ranking used by the popular-products
   // homepage slider (see listPopularProducts).
   viewCount: number;
+  // Admin-curated membership in the homepage's manually-curated "New
+  // Arrivals" mixed slider — a plain checkbox, not computed.
+  isFeaturedOnHomepage: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -67,6 +70,7 @@ export type ProductInput = {
   descriptionEn?: string | null;
   descriptionRu?: string | null;
   attributeValues?: ProductAttributeValueInput[];
+  isFeaturedOnHomepage?: boolean;
 };
 
 export type ProductVariantDetail = {
@@ -170,6 +174,9 @@ export type ProductListFilters = {
   // /shop's own ?eventId= URL param (see the homepage hero-slider's
   // event-scoped DISCOUNT slides).
   bulkDiscountEventId?: number;
+  // Homepage "New Arrivals" mixed slider — a plain admin-curated flag, not
+  // computed from any discount/popularity data.
+  featured?: boolean;
   attributeFilters?: ProductAttributeFilters;
   adminFilters?: AdminFilterEntry[];
   // Homepage product sliders cap how many products they pull.
@@ -204,6 +211,7 @@ async function fetchProductsList(filters: ProductListFilters): Promise<ProductLi
       priceMax: filters.priceMax,
       onSale: filters.onSale || undefined,
       bulkDiscountEventId: filters.bulkDiscountEventId,
+      featured: filters.featured || undefined,
       attributeFilters:
         filters.attributeFilters && !isEmptyAttributeFilters(filters.attributeFilters)
           ? JSON.stringify(filters.attributeFilters)
