@@ -13,7 +13,7 @@ import { listProductBrands, type ProductBrand } from "@/lib/api/product-brands";
 import type { LookupItem } from "@/lib/api/lookups";
 import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
-import { flattenTree, slugify } from "@/lib/categories-tree";
+import { flattenTree, isVehicleCategory, slugify } from "@/lib/categories-tree";
 import { generateVariantCombinations } from "@/lib/variant-matrix";
 import { productFormSchema, buildAttributeValuesSchema, type AttributeFieldValue } from "@/lib/validation/products";
 import { productVariantFormSchema } from "@/lib/validation/product-variants";
@@ -64,7 +64,12 @@ export function ProductForm({
 }) {
   const router = useRouter();
   const isEditing = product !== null;
-  const flatCategories = flattenTree(categories);
+  // Excludes vehicle (transport) categories — those are vehicle listings,
+  // not products, and belong only in the vehicle listing form's own category
+  // picker (same fix as BulkDiscountsPanel.tsx's product category picker).
+  const flatCategories = flattenTree(
+    categories.filter((category) => !isVehicleCategory(categories, category.id)),
+  );
 
   const [categoryId, setCategoryId] = useState(product ? String(product.category.id) : "");
   const [productBrandId, setProductBrandId] = useState(
