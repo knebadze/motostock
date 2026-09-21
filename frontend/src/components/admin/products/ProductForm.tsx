@@ -130,12 +130,10 @@ export function ProductForm({
   const [initialIsActive, setInitialIsActive] = useState(true);
   const [draftVariants, setDraftVariants] = useState<DraftVariant[]>([]);
   const nextDraftVariantId = useRef(0);
-
-  const [initialDiscountPercent, setInitialDiscountPercent] = useState("");
-  const [initialDiscountPrice, setInitialDiscountPrice] = useState("");
-  const [initialDiscountStartDate, setInitialDiscountStartDate] = useState("");
-  const [initialDiscountEndDate, setInitialDiscountEndDate] = useState("");
-  const pendingVariantImageFilesRef = useRef<File[]>([]);
+  // Which draft row currently has its "images/discount" section open — at
+  // most one at a time, same simple accordion pattern as most other
+  // expandable admin lists in this app.
+  const [expandedDraftId, setExpandedDraftId] = useState<number | null>(null);
 
   // Same create-time batching as the variant matrix above: fitment links are
   // held locally until the product actually exists, then created right after
@@ -277,6 +275,11 @@ export function ProductForm({
         sku: initialBaseSku,
         finaId,
         isActive: initialIsActive,
+        imageFiles: [],
+        discountPercent: "",
+        discountPrice: "",
+        discountStartDate: "",
+        discountEndDate: "",
       })),
     ]);
 
@@ -304,22 +307,11 @@ export function ProductForm({
 
   function removeDraftVariant(draftId: number) {
     setDraftVariants((prev) => prev.filter((variant) => variant.draftId !== draftId));
+    setExpandedDraftId((current) => (current === draftId ? null : current));
   }
 
-  function handleInitialDiscountPercentChange(value: string) {
-    setInitialDiscountPercent(value);
-
-    const percentNum = Number(value);
-    const priceNum = Number(initialBasePrice);
-    if (
-      value.trim() !== "" &&
-      Number.isFinite(percentNum) &&
-      percentNum >= 0 &&
-      percentNum <= 100 &&
-      initialBasePrice.trim() !== ""
-    ) {
-      setInitialDiscountPrice((priceNum * (1 - percentNum / 100)).toFixed(2));
-    }
+  function toggleDraftVariantExpanded(draftId: number) {
+    setExpandedDraftId((current) => (current === draftId ? null : draftId));
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -335,21 +327,34 @@ export function ProductForm({
     const attributeResult = buildAttributeValuesSchema(categoryAttributes).safeParse(
       withAttributeDefaults(attributeValues, categoryAttributes),
     );
-    const wantsInitialDiscount = draftVariants.length > 0 && initialDiscountPrice.trim() !== "";
-    const discountResult = wantsInitialDiscount
-      ? productVariantDiscountFormSchema.safeParse({
-          discountPrice: initialDiscountPrice,
-          discountPercent: initialDiscountPercent,
-          startDate: initialDiscountStartDate,
-          endDate: initialDiscountEndDate,
-        })
-      : null;
 
-    if (!mainResult.success || !attributeResult.success || discountResult?.success === false) {
+    // Each draft variant's discount is independently optional — only
+    // validated (and only reported) for rows where the admin actually
+    // started filling one in, keyed by draftId so DraftVariantsTable can
+    // show each row's own errors without them colliding.
+    const draftDiscountErrors: FieldErrors = {};
+    let hasDraftDiscountError = false;
+    for (const draft of draftVariants) {
+      if (draft.discountPrice.trim() === "") continue;
+      const result = productVariantDiscountFormSchema.safeParse({
+        discountPrice: draft.discountPrice,
+        discountPercent: draft.discountPercent,
+        startDate: draft.discountStartDate,
+        endDate: draft.discountEndDate,
+      });
+      if (!result.success) {
+        hasDraftDiscountError = true;
+        for (const [key, message] of Object.entries(getFieldErrors(result.error))) {
+          draftDiscountErrors[`draft-${draft.draftId}-${key}`] = message;
+        }
+      }
+    }
+
+    if (!mainResult.success || !attributeResult.success || hasDraftDiscountError) {
       setErrors({
         ...(mainResult.success ? {} : getFieldErrors(mainResult.error)),
         ...(attributeResult.success ? {} : getFieldErrors(attributeResult.error)),
-        ...(discountResult?.success === false ? getFieldErrors(discountResult.error) : {}),
+        ...draftDiscountErrors,
       });
       toast.error("გთხოვთ შეასწოროთ ველები");
       return;
@@ -379,15 +384,6 @@ export function ProductForm({
         productInput,
         imageFile,
         draftVariants,
-        pendingVariantImageFiles: pendingVariantImageFilesRef.current,
-        initialDiscount: wantsInitialDiscount
-          ? {
-              price: initialDiscountPrice,
-              percent: initialDiscountPercent,
-              startDate: initialDiscountStartDate,
-              endDate: initialDiscountEndDate,
-            }
-          : null,
         draftFitments,
       });
 
@@ -522,19 +518,10 @@ export function ProductForm({
                 onInitialIsActiveChange={setInitialIsActive}
                 onGenerateDraftVariants={handleGenerateDraftVariants}
                 draftVariants={draftVariants}
+                expandedDraftId={expandedDraftId}
+                onToggleDraftVariantExpanded={toggleDraftVariantExpanded}
                 onDraftVariantChange={updateDraftVariant}
                 onDraftVariantRemove={removeDraftVariant}
-                onPendingVariantImageFilesChange={(files) => {
-                  pendingVariantImageFilesRef.current = files;
-                }}
-                initialDiscountPercent={initialDiscountPercent}
-                onInitialDiscountPercentChange={handleInitialDiscountPercentChange}
-                initialDiscountPrice={initialDiscountPrice}
-                onInitialDiscountPriceChange={setInitialDiscountPrice}
-                initialDiscountStartDate={initialDiscountStartDate}
-                onInitialDiscountStartDateChange={setInitialDiscountStartDate}
-                initialDiscountEndDate={initialDiscountEndDate}
-                onInitialDiscountEndDateChange={setInitialDiscountEndDate}
                 errors={errors}
               />
             ),

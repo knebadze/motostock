@@ -29,27 +29,224 @@ export type DraftVariant = {
   // product-form-save.ts's createProductVariant call).
   finaId: string;
   isActive: boolean;
+  // Own images + optional launch discount, not a single shared field
+  // applying only to the first row — see product-form-save.ts's per-variant
+  // loop, which uploads/creates these against whichever real variant this
+  // draft becomes.
+  imageFiles: File[];
+  discountPercent: string;
+  discountPrice: string;
+  discountStartDate: string;
+  discountEndDate: string;
 };
+
+function DraftVariantRow({
+  variant,
+  sizes,
+  colors,
+  expanded,
+  onToggleExpanded,
+  onChange,
+  onRemove,
+  errors,
+}: {
+  variant: DraftVariant;
+  sizes: LookupItem[];
+  colors: LookupItem[];
+  expanded: boolean;
+  onToggleExpanded: () => void;
+  onChange: (draftId: number, patch: Partial<DraftVariant>) => void;
+  onRemove: (draftId: number) => void;
+  errors: FieldErrors;
+}) {
+  const hasExtras = variant.imageFiles.length > 0 || variant.discountPrice.trim() !== "";
+
+  return (
+    <>
+      <tr className="border-b border-border last:border-0">
+        <td className="px-4 py-2">
+          <Select
+            options={lookupOptions(sizes)}
+            value={variant.sizeId != null ? String(variant.sizeId) : ""}
+            onChange={(value) => onChange(variant.draftId, { sizeId: value ? Number(value) : null })}
+            searchable
+            placeholder="—"
+            ariaLabel="ზომა"
+          />
+        </td>
+        <td className="px-4 py-2">
+          <Select
+            options={lookupOptions(colors)}
+            value={variant.colorId != null ? String(variant.colorId) : ""}
+            onChange={(value) => onChange(variant.draftId, { colorId: value ? Number(value) : null })}
+            searchable
+            placeholder="—"
+            ariaLabel="ფერი"
+          />
+        </td>
+        <td className="px-4 py-2">
+          <input
+            type="text"
+            value={variant.sku}
+            onChange={(event) => onChange(variant.draftId, { sku: event.target.value })}
+            className="w-28 rounded-lg border border-border bg-background px-2 py-1 text-sm font-mono outline-none focus:border-primary"
+          />
+        </td>
+        <td className="px-4 py-2">
+          <input
+            type="number"
+            value={variant.finaId}
+            onChange={(event) => onChange(variant.draftId, { finaId: event.target.value })}
+            placeholder="—"
+            className="w-24 rounded-lg border border-border bg-background px-2 py-1 text-sm font-mono outline-none focus:border-primary"
+          />
+        </td>
+        <td className="px-4 py-2">
+          <input
+            type="number"
+            step="0.01"
+            max={MAX_DECIMAL_10_2}
+            value={variant.price}
+            onChange={(event) => onChange(variant.draftId, { price: event.target.value })}
+            className="w-24 rounded-lg border border-border bg-background px-2 py-1 text-sm outline-none focus:border-primary"
+          />
+        </td>
+        <td className="px-4 py-2">
+          <input
+            type="number"
+            min={0}
+            value={variant.stockQuantity}
+            onChange={(event) => onChange(variant.draftId, { stockQuantity: event.target.value })}
+            className="w-20 rounded-lg border border-border bg-background px-2 py-1 text-sm outline-none focus:border-primary"
+          />
+        </td>
+        <td className="px-4 py-2">
+          <Toggle
+            checked={variant.isActive}
+            onChange={(value) => onChange(variant.draftId, { isActive: value })}
+            label="აქტიურია"
+          />
+        </td>
+        <td className="whitespace-nowrap px-4 py-2 text-right">
+          <button
+            type="button"
+            onClick={onToggleExpanded}
+            className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors hover:bg-muted ${
+              hasExtras ? "text-primary" : "text-foreground"
+            }`}
+          >
+            სურათები/ფასდაკლება {expanded ? "▲" : "▼"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onRemove(variant.draftId)}
+            className="rounded-full px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10"
+          >
+            წაშლა
+          </button>
+        </td>
+      </tr>
+      {expanded && (
+        <tr className="border-b border-border bg-muted/20 last:border-0">
+          <td colSpan={8} className="px-4 py-4">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium">სურათები</label>
+                <ProductVariantImagesPanel
+                  variantId={null}
+                  initialFiles={variant.imageFiles}
+                  onPendingFilesChange={(files) => onChange(variant.draftId, { imageFiles: files })}
+                />
+              </div>
+
+              <div className="flex flex-col gap-3 rounded-lg border border-border p-3">
+                <h4 className="text-sm font-semibold">ფასდაკლება (არასავალდებულო)</h4>
+                <div className="grid gap-3 sm:grid-cols-4">
+                  <div className="flex flex-col gap-1.5">
+                    <input
+                      type="number"
+                      min={0}
+                      max={99}
+                      step="0.01"
+                      placeholder="ფასდაკლება (%)"
+                      value={variant.discountPercent}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        const percentNum = Number(value);
+                        const priceNum = Number(variant.price);
+                        const autoPrice =
+                          value.trim() !== "" &&
+                          Number.isFinite(percentNum) &&
+                          percentNum >= 0 &&
+                          percentNum <= 100 &&
+                          variant.price.trim() !== ""
+                            ? (priceNum * (1 - percentNum / 100)).toFixed(2)
+                            : variant.discountPrice;
+                        onChange(variant.draftId, { discountPercent: value, discountPrice: autoPrice });
+                      }}
+                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    />
+                    <FieldError message={errors[`draft-${variant.draftId}-discountPercent`]} />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="ფასდაკლების ფასი"
+                      value={variant.discountPrice}
+                      onChange={(event) => onChange(variant.draftId, { discountPrice: event.target.value })}
+                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    />
+                    <FieldError message={errors[`draft-${variant.draftId}-discountPrice`]} />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <input
+                      type="date"
+                      value={variant.discountStartDate}
+                      onChange={(event) => onChange(variant.draftId, { discountStartDate: event.target.value })}
+                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    />
+                    <FieldError message={errors[`draft-${variant.draftId}-startDate`]} />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <input
+                      type="date"
+                      value={variant.discountEndDate}
+                      onChange={(event) => onChange(variant.draftId, { discountEndDate: event.target.value })}
+                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    />
+                    <FieldError message={errors[`draft-${variant.draftId}-endDate`]} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
 
 function DraftVariantsTable({
   variants,
   sizes,
   colors,
+  expandedDraftId,
+  onToggleExpanded,
   onChange,
   onRemove,
+  errors,
 }: {
   variants: DraftVariant[];
   sizes: LookupItem[];
   colors: LookupItem[];
+  expandedDraftId: number | null;
+  onToggleExpanded: (draftId: number) => void;
   onChange: (draftId: number, patch: Partial<DraftVariant>) => void;
   onRemove: (draftId: number) => void;
+  errors: FieldErrors;
 }) {
   if (variants.length === 0) return null;
-
-  function labelFor(items: LookupItem[], id: number | null) {
-    if (id == null) return "—";
-    return items.find((item) => item.id === id)?.nameKa ?? "—";
-  }
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-border">
@@ -62,60 +259,23 @@ function DraftVariantsTable({
             <th className="px-4 py-3 font-medium">FINA ID</th>
             <th className="px-4 py-3 font-medium">ფასი</th>
             <th className="px-4 py-3 font-medium">მარაგი</th>
+            <th className="px-4 py-3 font-medium">აქტიური</th>
             <th className="px-4 py-3 font-medium text-right">მოქმედება</th>
           </tr>
         </thead>
         <tbody>
           {variants.map((variant) => (
-            <tr key={variant.draftId} className="border-b border-border last:border-0">
-              <td className="px-4 py-2 text-muted-foreground">{labelFor(sizes, variant.sizeId)}</td>
-              <td className="px-4 py-2 text-muted-foreground">{labelFor(colors, variant.colorId)}</td>
-              <td className="px-4 py-2">
-                <input
-                  type="text"
-                  value={variant.sku}
-                  onChange={(event) => onChange(variant.draftId, { sku: event.target.value })}
-                  className="w-28 rounded-lg border border-border bg-background px-2 py-1 text-sm font-mono outline-none focus:border-primary"
-                />
-              </td>
-              <td className="px-4 py-2">
-                <input
-                  type="number"
-                  value={variant.finaId}
-                  onChange={(event) => onChange(variant.draftId, { finaId: event.target.value })}
-                  placeholder="—"
-                  className="w-24 rounded-lg border border-border bg-background px-2 py-1 text-sm font-mono outline-none focus:border-primary"
-                />
-              </td>
-              <td className="px-4 py-2">
-                <input
-                  type="number"
-                  step="0.01"
-                  max={MAX_DECIMAL_10_2}
-                  value={variant.price}
-                  onChange={(event) => onChange(variant.draftId, { price: event.target.value })}
-                  className="w-24 rounded-lg border border-border bg-background px-2 py-1 text-sm outline-none focus:border-primary"
-                />
-              </td>
-              <td className="px-4 py-2">
-                <input
-                  type="number"
-                  min={0}
-                  value={variant.stockQuantity}
-                  onChange={(event) => onChange(variant.draftId, { stockQuantity: event.target.value })}
-                  className="w-20 rounded-lg border border-border bg-background px-2 py-1 text-sm outline-none focus:border-primary"
-                />
-              </td>
-              <td className="px-4 py-2 text-right">
-                <button
-                  type="button"
-                  onClick={() => onRemove(variant.draftId)}
-                  className="rounded-full px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10"
-                >
-                  წაშლა
-                </button>
-              </td>
-            </tr>
+            <DraftVariantRow
+              key={variant.draftId}
+              variant={variant}
+              sizes={sizes}
+              colors={colors}
+              expanded={expandedDraftId === variant.draftId}
+              onToggleExpanded={() => onToggleExpanded(variant.draftId)}
+              onChange={onChange}
+              onRemove={onRemove}
+              errors={errors}
+            />
           ))}
         </tbody>
       </table>
@@ -154,17 +314,10 @@ export function ProductPricingTab({
   onInitialIsActiveChange,
   onGenerateDraftVariants,
   draftVariants,
+  expandedDraftId,
+  onToggleDraftVariantExpanded,
   onDraftVariantChange,
   onDraftVariantRemove,
-  onPendingVariantImageFilesChange,
-  initialDiscountPercent,
-  onInitialDiscountPercentChange,
-  initialDiscountPrice,
-  onInitialDiscountPriceChange,
-  initialDiscountStartDate,
-  onInitialDiscountStartDateChange,
-  initialDiscountEndDate,
-  onInitialDiscountEndDateChange,
   errors,
 }: {
   sizes: LookupItem[];
@@ -191,17 +344,10 @@ export function ProductPricingTab({
   onInitialIsActiveChange: (value: boolean) => void;
   onGenerateDraftVariants: () => void;
   draftVariants: DraftVariant[];
+  expandedDraftId: number | null;
+  onToggleDraftVariantExpanded: (draftId: number) => void;
   onDraftVariantChange: (draftId: number, patch: Partial<DraftVariant>) => void;
   onDraftVariantRemove: (draftId: number) => void;
-  onPendingVariantImageFilesChange: (files: File[]) => void;
-  initialDiscountPercent: string;
-  onInitialDiscountPercentChange: (value: string) => void;
-  initialDiscountPrice: string;
-  onInitialDiscountPriceChange: (value: string) => void;
-  initialDiscountStartDate: string;
-  onInitialDiscountStartDateChange: (value: string) => void;
-  initialDiscountEndDate: string;
-  onInitialDiscountEndDateChange: (value: string) => void;
   errors: FieldErrors;
 }) {
   // finaId is @unique, so the shared field below can only ever be usefully
@@ -215,8 +361,9 @@ export function ProductPricingTab({
     <>
       <p className="text-xs text-muted-foreground">
         არასავალდებულოა — აირჩიეთ ზომები/ფერები და დააჭირეთ გენერაციას, პროდუქტთან ერთად
-        დაემატება ყველა კომბინაცია ერთდროულად (სურათებითა და ფასდაკლებით — მხოლოდ პირველ
-        გენერირებულ ვარიანტზე). ცარიელი დატოვების შემთხვევაში პროდუქტი შეინახება მხოლოდ
+        დაემატება ყველა კომბინაცია ერთდროულად. თითოეულ დამატებულ ვარიანტს ცალკე შეგიძლიათ
+        დაურთოთ სურათები და ფასდაკლება (იხილეთ „სურათები/ფასდაკლება&rdquo; ღილაკი მისივე
+        მწკრივზე). ცარიელი დატოვების შემთხვევაში პროდუქტი შეინახება მხოლოდ
         სპეციფიკაციად — ვარიანტებს მოგვიანებით, რედაქტირებიდან დაამატებთ.
       </p>
 
@@ -338,70 +485,12 @@ export function ProductPricingTab({
         variants={draftVariants}
         sizes={sizes}
         colors={colors}
+        expandedDraftId={expandedDraftId}
+        onToggleExpanded={onToggleDraftVariantExpanded}
         onChange={onDraftVariantChange}
         onRemove={onDraftVariantRemove}
+        errors={errors}
       />
-
-      {draftVariants.length > 0 && (
-        <>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium">სურათები</label>
-            <p className="text-xs text-muted-foreground">დაერთვება პირველ გენერირებულ ვარიანტს.</p>
-            <ProductVariantImagesPanel
-              variantId={null}
-              onPendingFilesChange={onPendingVariantImageFilesChange}
-            />
-          </div>
-
-          <div className="flex flex-col gap-3 rounded-lg border border-border p-3">
-            <h3 className="text-sm font-semibold">ფასდაკლება (არასავალდებულო, პირველ ვარიანტზე)</h3>
-            <div className="grid gap-3 sm:grid-cols-4">
-              <div className="flex flex-col gap-1.5">
-                <input
-                  type="number"
-                  min={0}
-                  max={99}
-                  step="0.01"
-                  placeholder="ფასდაკლება (%)"
-                  value={initialDiscountPercent}
-                  onChange={(event) => onInitialDiscountPercentChange(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.discountPercent} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="ფასდაკლების ფასი"
-                  value={initialDiscountPrice}
-                  onChange={(event) => onInitialDiscountPriceChange(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.discountPrice} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <input
-                  type="date"
-                  value={initialDiscountStartDate}
-                  onChange={(event) => onInitialDiscountStartDateChange(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.startDate} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <input
-                  type="date"
-                  value={initialDiscountEndDate}
-                  onChange={(event) => onInitialDiscountEndDateChange(event.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                />
-                <FieldError message={errors.endDate} />
-              </div>
-            </div>
-          </div>
-        </>
-      )}
     </>
   );
 }

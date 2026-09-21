@@ -19,15 +19,10 @@ export type ProductFormSaveInput = {
   imageFile: File | null;
   // The rest only ever apply on create — once a product exists, variants
   // and fitments are managed through their own panels instead (see
-  // ProductForm.tsx's isEditing-gated tabs).
+  // ProductForm.tsx's isEditing-gated tabs). Each draft's own imageFiles/
+  // discount* fields (see ProductPricingTab.tsx's DraftVariant type) travel
+  // with it — no separate "first variant only" fields anymore.
   draftVariants: DraftVariant[];
-  pendingVariantImageFiles: File[];
-  initialDiscount: {
-    price: string;
-    percent: string;
-    startDate: string;
-    endDate: string;
-  } | null;
   draftFitments: DraftFitment[];
 };
 
@@ -62,7 +57,6 @@ export async function saveProductForm(input: ProductFormSaveInput): Promise<Prod
 
   if (!input.isEditing && input.draftVariants.length > 0) {
     try {
-      let firstVariantId: number | null = null;
       for (const draft of input.draftVariants) {
         const variant = await createProductVariant({
           productId: product.id,
@@ -76,20 +70,19 @@ export async function saveProductForm(input: ProductFormSaveInput): Promise<Prod
           sku: draft.sku.trim() ? draft.sku.trim() : null,
           isActive: draft.isActive,
         });
-        if (firstVariantId === null) firstVariantId = variant.id;
-      }
 
-      if (firstVariantId !== null && input.pendingVariantImageFiles.length > 0) {
-        await uploadProductVariantImages(firstVariantId, input.pendingVariantImageFiles);
-      }
+        if (draft.imageFiles.length > 0) {
+          await uploadProductVariantImages(variant.id, draft.imageFiles);
+        }
 
-      if (firstVariantId !== null && input.initialDiscount) {
-        await createProductVariantDiscount(firstVariantId, {
-          discountPrice: Number(input.initialDiscount.price),
-          discountPercent: input.initialDiscount.percent ? Number(input.initialDiscount.percent) : null,
-          startDate: input.initialDiscount.startDate,
-          endDate: input.initialDiscount.endDate,
-        });
+        if (draft.discountPrice.trim() !== "") {
+          await createProductVariantDiscount(variant.id, {
+            discountPrice: Number(draft.discountPrice),
+            discountPercent: draft.discountPercent ? Number(draft.discountPercent) : null,
+            startDate: draft.discountStartDate,
+            endDate: draft.discountEndDate,
+          });
+        }
       }
     } catch {
       return { ok: false, product, warning: "variants" };

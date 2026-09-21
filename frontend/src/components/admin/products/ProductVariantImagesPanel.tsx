@@ -17,17 +17,37 @@ type DisplayItem = { key: string; previewUrl: string };
 
 export function ProductVariantImagesPanel({
   variantId,
+  initialFiles,
   onPendingFilesChange,
 }: {
   // null while creating a new variant (no id to upload against yet) — images
   // are then held locally and uploaded right after the variant is created.
   variantId: number | null;
+  // Re-hydrates this panel's local preview thumbnails from files already
+  // picked earlier in the same create-flow session (e.g. ProductPricingTab's
+  // per-draft-variant expand/collapse toggle, which unmounts this panel on
+  // collapse — without this, re-expanding would silently show an empty
+  // picker even though the parent's draft state still has the files).
+  // Ignored once `isAttached` (variantId set) — that path always loads real
+  // uploaded images instead.
+  initialFiles?: File[];
   onPendingFilesChange?: (files: File[]) => void;
 }) {
   const isAttached = variantId !== null;
 
   const [remoteImages, setRemoteImages] = useState<ProductVariantImage[]>([]);
-  const [localImages, setLocalImages] = useState<LocalImage[]>([]);
+  // Seeded from the initial-files count so ids issued afterward (via
+  // handleFilesSelected below) never collide with these — a plain index is
+  // fine for the initializer itself since it never re-runs after mount, no
+  // ref access needed at render time.
+  const nextLocalIdRef = useRef(initialFiles?.length ?? 0);
+  const [localImages, setLocalImages] = useState<LocalImage[]>(() =>
+    (initialFiles ?? []).map((file, index) => ({
+      id: index,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    })),
+  );
   const [loaded, setLoaded] = useState(!isAttached);
   const [uploading, setUploading] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
@@ -35,7 +55,6 @@ export function ProductVariantImagesPanel({
   // Only used for the isAttached (persisted) case below — an unsaved local
   // image is just removed from in-memory state, nothing to confirm.
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
-  const nextLocalIdRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Mirrors localImages into a ref so the unmount-only cleanup below (see
   // that effect's comment) can read the latest array instead of closing
