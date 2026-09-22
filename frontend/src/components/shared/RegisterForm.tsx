@@ -74,103 +74,105 @@ export function RegisterForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="w-full max-w-sm rounded-2xl border border-border bg-card p-8"
+      className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 sm:max-w-xl"
     >
       <h1 className="text-xl font-bold tracking-tight">{t("registerTitle")}</h1>
 
       <div className="mt-6 flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="first-name" className="text-sm font-medium">
-            {t("firstNameLabel")}
-          </label>
-          <input
-            id="first-name"
-            type="text"
-            autoComplete="given-name"
-            value={firstName}
-            onChange={(event) => setFirstName(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-          <FieldError message={errors.firstName} />
-        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="first-name" className="text-sm font-medium">
+              {t("firstNameLabel")}
+            </label>
+            <input
+              id="first-name"
+              type="text"
+              autoComplete="given-name"
+              value={firstName}
+              onChange={(event) => setFirstName(event.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <FieldError message={errors.firstName} />
+          </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="last-name" className="text-sm font-medium">
-            {t("lastNameLabel")}
-          </label>
-          <input
-            id="last-name"
-            type="text"
-            autoComplete="family-name"
-            value={lastName}
-            onChange={(event) => setLastName(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-          <FieldError message={errors.lastName} />
-        </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="last-name" className="text-sm font-medium">
+              {t("lastNameLabel")}
+            </label>
+            <input
+              id="last-name"
+              type="text"
+              autoComplete="family-name"
+              value={lastName}
+              onChange={(event) => setLastName(event.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <FieldError message={errors.lastName} />
+          </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-sm font-medium">
-            {t("emailLabel")}
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="username"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-          <FieldError message={errors.email} />
-        </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="email" className="text-sm font-medium">
+              {t("emailLabel")}
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="username"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <FieldError message={errors.email} />
+          </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="phone" className="text-sm font-medium">
-            {t("phoneLabel")}
-          </label>
-          <input
-            id="phone"
-            type="tel"
-            autoComplete="tel"
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
-          <FieldError message={errors.phone} />
-        </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="phone" className="text-sm font-medium">
+              {t("phoneLabel")}
+            </label>
+            <input
+              id="phone"
+              type="tel"
+              autoComplete="tel"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <FieldError message={errors.phone} />
+          </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="date-of-birth" className="text-sm font-medium">
-            {t("dateOfBirthLabel")}
-          </label>
-          <DateInput id="date-of-birth" value={dateOfBirth} onChange={setDateOfBirth} />
-          <FieldError message={errors.dateOfBirth} />
-        </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <label htmlFor="date-of-birth" className="text-sm font-medium">
+              {t("dateOfBirthLabel")}
+            </label>
+            <DateInput id="date-of-birth" value={dateOfBirth} onChange={setDateOfBirth} />
+            <FieldError message={errors.dateOfBirth} />
+          </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="password" className="text-sm font-medium">
-            {t("passwordLabel")}
-          </label>
-          <PasswordInput
-            id="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          <FieldError message={errors.password} />
-        </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="password" className="text-sm font-medium">
+              {t("passwordLabel")}
+            </label>
+            <PasswordInput
+              id="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+            <FieldError message={errors.password} />
+          </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="confirm-password" className="text-sm font-medium">
-            {t("confirmPasswordLabel")}
-          </label>
-          <PasswordInput
-            id="confirm-password"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-          />
-          <FieldError message={errors.confirmPassword} />
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="confirm-password" className="text-sm font-medium">
+              {t("confirmPasswordLabel")}
+            </label>
+            <PasswordInput
+              id="confirm-password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+            />
+            <FieldError message={errors.confirmPassword} />
+          </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
