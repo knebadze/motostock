@@ -1,6 +1,7 @@
 "use client";
 
 import { Select } from "@/components/shared/Select";
+import { DateInput } from "@/components/shared/DateInput";
 import { FieldError } from "@/components/shared/FieldError";
 import { Toggle } from "@/components/shared/Toggle";
 import { ProductVariantImagesPanel } from "./ProductVariantImagesPanel";
@@ -200,20 +201,16 @@ function DraftVariantRow({
                     <FieldError message={errors[`draft-${variant.draftId}-discountPrice`]} />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <input
-                      type="date"
+                    <DateInput
                       value={variant.discountStartDate}
-                      onChange={(event) => onChange(variant.draftId, { discountStartDate: event.target.value })}
-                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                      onChange={(nextValue) => onChange(variant.draftId, { discountStartDate: nextValue })}
                     />
                     <FieldError message={errors[`draft-${variant.draftId}-startDate`]} />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <input
-                      type="date"
+                    <DateInput
                       value={variant.discountEndDate}
-                      onChange={(event) => onChange(variant.draftId, { discountEndDate: event.target.value })}
-                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                      onChange={(nextValue) => onChange(variant.draftId, { discountEndDate: nextValue })}
                     />
                     <FieldError message={errors[`draft-${variant.draftId}-endDate`]} />
                   </div>

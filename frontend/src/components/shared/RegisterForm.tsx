@@ -9,6 +9,7 @@ import { ApiRequestError } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { OAuthButtons, type OAuthStatus } from "@/components/shared/OAuthButtons";
 import { PasswordInput } from "@/components/shared/PasswordInput";
+import { DateInput } from "@/components/shared/DateInput";
 import { FieldError } from "@/components/shared/FieldError";
 import { TermsModal } from "@/components/shared/TermsModal";
 import { createRegisterFormSchema } from "@/lib/validation/auth";
@@ -142,14 +143,7 @@ export function RegisterForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
           <label htmlFor="date-of-birth" className="text-sm font-medium">
             {t("dateOfBirthLabel")}
           </label>
-          <input
-            id="date-of-birth"
-            type="date"
-            autoComplete="bday"
-            value={dateOfBirth}
-            onChange={(event) => setDateOfBirth(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
+          <DateInput id="date-of-birth" value={dateOfBirth} onChange={setDateOfBirth} />
           <FieldError message={errors.dateOfBirth} />
         </div>
 

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Select } from "@/components/shared/Select";
+import { DateInput } from "@/components/shared/DateInput";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { Toggle } from "@/components/shared/Toggle";
@@ -460,22 +461,12 @@ export function PromoCodeFormModal({
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">დაწყება *</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(event) => setStartDate(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
+            <DateInput value={startDate} onChange={setStartDate} />
             <FieldError message={errors.startDate} />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">დასრულება *</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(event) => setEndDate(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
+            <DateInput value={endDate} onChange={setEndDate} />
             <FieldError message={errors.endDate} />
           </div>
         </div>

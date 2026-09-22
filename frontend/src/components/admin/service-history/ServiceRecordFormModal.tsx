@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { FormActions } from "@/components/shared/FormActions";
 import { Select } from "@/components/shared/Select";
+import { DateInput } from "@/components/shared/DateInput";
 import {
   createServiceRecord,
   updateServiceRecord,
@@ -236,12 +237,10 @@ export function ServiceRecordFormModal({
             <label htmlFor="service-record-date" className="text-sm font-medium">
               თარიღი *
             </label>
-            <input
+            <DateInput
               id="service-record-date"
-              type="date"
               value={performedAt}
-              onChange={(event) => setPerformedAt(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              onChange={setPerformedAt}
             />
           </div>
         </div>

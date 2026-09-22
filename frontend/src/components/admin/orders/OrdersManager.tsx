@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { Select } from "@/components/shared/Select";
+import { DateInput } from "@/components/shared/DateInput";
 import { formatDate, formatDateTime, formatPrice, toTbilisiDateOnly } from "@/lib/format";
 import { ApiRequestError } from "@/lib/api/client";
 import {
@@ -264,21 +265,11 @@ export function OrdersManager({
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">თარიღი (დან)</label>
-          <input
-            type="date"
-            value={createdFrom}
-            onChange={(event) => setCreatedFrom(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
+          <DateInput value={createdFrom} onChange={setCreatedFrom} />
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">თარიღი (მდე)</label>
-          <input
-            type="date"
-            value={createdTo}
-            onChange={(event) => setCreatedTo(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
+          <DateInput value={createdTo} onChange={setCreatedTo} />
         </div>
         <label className="flex items-center gap-2 pb-2 text-sm font-medium text-foreground">
           <input

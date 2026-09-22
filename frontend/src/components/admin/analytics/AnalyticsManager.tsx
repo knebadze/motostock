@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/shared/DataTable";
+import { DateInput } from "@/components/shared/DateInput";
 import { ApiRequestError } from "@/lib/api/client";
 import { getAnalytics, type AnalyticsOverview } from "@/lib/api/analytics";
 import { formatDate, formatDateTime, formatPrice } from "@/lib/format";
@@ -55,21 +56,11 @@ export function AnalyticsManager({ initialData }: { initialData: AnalyticsOvervi
       <div className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4">
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">თარიღი (დან)</label>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(event) => setDateFrom(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
+          <DateInput value={dateFrom} onChange={setDateFrom} />
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">თარიღი (მდე)</label>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(event) => setDateTo(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
+          <DateInput value={dateTo} onChange={setDateTo} />
         </div>
         <button
           type="button"

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
+import { DateInput } from "@/components/shared/DateInput";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { createWalkInUser, type AdminUser } from "@/lib/api/users";
@@ -106,12 +107,10 @@ export function AddWalkInCustomerModal({
           <label htmlFor="walkin-dob" className="text-sm font-medium">
             დაბადების თარიღი *
           </label>
-          <input
+          <DateInput
             id="walkin-dob"
-            type="date"
             value={dateOfBirth}
-            onChange={(event) => setDateOfBirth(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            onChange={setDateOfBirth}
           />
           <FieldError message={errors.dateOfBirth} />
         </div>
