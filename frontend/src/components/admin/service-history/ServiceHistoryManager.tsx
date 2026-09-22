@@ -102,7 +102,7 @@ export function ServiceHistoryManager({
 
     setSearchingUsers(true);
     const timeoutId = setTimeout(() => {
-      listUsers(query)
+      listUsers({ search: query })
         .then((result) => setUserResults(result.users))
         .catch(() => setUserResults([]))
         .finally(() => setSearchingUsers(false));

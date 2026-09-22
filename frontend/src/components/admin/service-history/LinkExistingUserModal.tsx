@@ -44,7 +44,7 @@ export function LinkExistingUserModal({
 
     setSearching(true);
     const timeoutId = setTimeout(() => {
-      listUsers(trimmed)
+      listUsers({ search: trimmed })
         .then((result) => setResults(result.users.filter((user) => user.id !== sourceUser.id)))
         .catch(() => setResults([]))
         .finally(() => setSearching(false));

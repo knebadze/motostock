@@ -4,11 +4,25 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
+import { Select } from "@/components/shared/Select";
 import { Loader } from "@/components/shared/Loader";
-import { listUsers, type AdminUser, type AdminUsersPage } from "@/lib/api/users";
+import { listUsers, type AdminUser, type AdminUsersPage, type ListUsersFilters } from "@/lib/api/users";
 import { ApiRequestError } from "@/lib/api/client";
 import { formatDateTime } from "@/lib/format";
 import { UserDetailModal } from "./UserDetailModal";
+
+const ROLE_OPTIONS = [
+  { value: "", label: "ყველა" },
+  { value: "USER", label: "მომხმარებელი" },
+  { value: "ADMIN", label: "ადმინი" },
+];
+
+const CUSTOMER_TYPE_OPTIONS = [
+  { value: "", label: "ყველა" },
+  { value: "WALK_IN", label: "სტუმარი" },
+  { value: "REGISTERED", label: "დარეგისტრირებული" },
+  { value: "MERGED", label: "შერწყმული" },
+];
 
 function methodBadges(user: AdminUser) {
   const methods: string[] = [];
@@ -85,19 +99,47 @@ export function UsersManager({ initialData }: { initialData: AdminUsersPage }) {
   });
   const [viewingUserId, setViewingUserId] = useState<number | null>(null);
 
+  const [search, setSearch] = useState("");
+  const [role, setRole] = useState("");
+  const [customerType, setCustomerType] = useState("");
+
+  const hasActiveFilters = search.trim() !== "" || role !== "" || customerType !== "";
+
+  function currentFilters(): ListUsersFilters {
+    return {
+      search: search.trim() || undefined,
+      role: (role || undefined) as ListUsersFilters["role"],
+      customerType: (customerType || undefined) as ListUsersFilters["customerType"],
+    };
+  }
+
   // listUsers' {users,...} envelope is remapped into useServerPagination's
   // {items,...} shape here — the API response shape itself is unchanged.
-  async function fetchUsersPage(page: number): Promise<PagedResult<AdminUser>> {
-    const result = await listUsers(undefined, page, data.pageSize);
+  async function fetchUsersPage(
+    filters: ListUsersFilters,
+    page: number,
+  ): Promise<PagedResult<AdminUser>> {
+    const result = await listUsers({ ...filters, page, pageSize: data.pageSize });
     return { items: result.users, total: result.total, page: result.page, pageSize: result.pageSize };
   }
 
+  function onLoadError(error: unknown) {
+    toast.error(error instanceof ApiRequestError ? error.message : "მომხმარებლების ჩატვირთვა ვერ მოხერხდა");
+  }
+
+  function handleApplyFilters() {
+    load(() => fetchUsersPage(currentFilters(), 1), onLoadError);
+  }
+
+  function handleClearFilters() {
+    setSearch("");
+    setRole("");
+    setCustomerType("");
+    load(() => fetchUsersPage({}, 1), onLoadError);
+  }
+
   function loadPage(page: number) {
-    load(() => fetchUsersPage(page), (error) => {
-      const message =
-        error instanceof ApiRequestError ? error.message : "მომხმარებლების ჩატვირთვა ვერ მოხერხდა";
-      toast.error(message);
-    });
+    load(() => fetchUsersPage(currentFilters(), page), onLoadError);
   }
 
   return (
@@ -110,6 +152,56 @@ export function UsersManager({ initialData }: { initialData: AdminUsersPage }) {
           </p>
         </div>
         {loading && <Loader size="sm" label="იტვირთება" />}
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4">
+        <div className="flex min-w-48 flex-1 flex-col gap-1.5">
+          <label htmlFor="users-filter-search" className="text-xs font-medium text-muted-foreground">
+            ძებნა
+          </label>
+          <input
+            id="users-filter-search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="სახელი, გვარი, ემეილი ან ტელეფონი"
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+        </div>
+        <div className="flex w-48 flex-col gap-1.5">
+          <label htmlFor="users-filter-role" className="text-xs font-medium text-muted-foreground">
+            როლი
+          </label>
+          <Select id="users-filter-role" options={ROLE_OPTIONS} value={role} onChange={setRole} />
+        </div>
+        <div className="flex w-48 flex-col gap-1.5">
+          <label htmlFor="users-filter-customer-type" className="text-xs font-medium text-muted-foreground">
+            ტიპი
+          </label>
+          <Select
+            id="users-filter-customer-type"
+            options={CUSTOMER_TYPE_OPTIONS}
+            value={customerType}
+            onChange={setCustomerType}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleApplyFilters}
+          disabled={loading}
+          className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
+        >
+          გაფილტვრა
+        </button>
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={handleClearFilters}
+            disabled={loading}
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary disabled:opacity-50"
+          >
+            გაწმენდა
+          </button>
+        )}
       </div>
 
       <div className="mt-6">

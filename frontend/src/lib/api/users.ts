@@ -36,16 +36,24 @@ export type AdminUsersPage = {
   pageSize: number;
 };
 
+export type ListUsersFilters = {
+  search?: string;
+  role?: "USER" | "ADMIN";
+  // Mirrors the admin list's own badges (see UsersManager.tsx): WALK_IN is
+  // isWalkIn regardless of merge status, REGISTERED is !isWalkIn, MERGED is
+  // mergedIntoUserId set.
+  customerType?: "WALK_IN" | "REGISTERED" | "MERGED";
+  page?: number;
+  pageSize?: number;
+};
+
 // Real server-side pagination (skip/take), like error-logs — the user base
 // only grows, so fetching everyone up front and slicing client-side doesn't
 // scale (see users.repository.ts's findMany).
-export async function listUsers(
-  search?: string,
-  page = 1,
-  pageSize = 20,
-): Promise<AdminUsersPage> {
+export async function listUsers(filters: ListUsersFilters = {}): Promise<AdminUsersPage> {
+  const { search, page = 1, pageSize = 20, ...rest } = filters;
   const { data } = await apiClient.get<AdminUsersPage>("/users", {
-    params: { q: search || undefined, page, pageSize },
+    params: { q: search || undefined, page, pageSize, ...rest },
   });
   return data;
 }

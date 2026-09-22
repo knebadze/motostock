@@ -127,10 +127,11 @@ export async function getUserDetail(id: number) {
 
 export async function listUsers(query: ListUsersQuery) {
   const { page, pageSize, skip, take } = resolvePage(query);
+  const filters = { search: query.q, role: query.role, customerType: query.customerType };
 
   const [users, total] = await Promise.all([
-    usersRepository.findMany(query.q, skip, take),
-    usersRepository.count(query.q),
+    usersRepository.findMany(filters, skip, take),
+    usersRepository.count(filters),
   ]);
 
   return {

@@ -26,6 +26,12 @@ export const userIdParamSchema = z.object({
 // errorLogsQuerySchema).
 export const listUsersQuerySchema = z.object({
   q: z.string().trim().min(1).max(200).optional(),
+  role: z.enum(["USER", "ADMIN"]).optional(),
+  // Mirrors the admin list's own badges (see UsersManager.tsx): WALK_IN is
+  // isWalkIn regardless of merge status (a manually-merged walk-in keeps
+  // isWalkIn: true — see users.service.ts's mergeUserInto), REGISTERED is
+  // !isWalkIn, MERGED is mergedIntoUserId set (independent of the other two).
+  customerType: z.enum(["WALK_IN", "REGISTERED", "MERGED"]).optional(),
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(100).optional(),
 });

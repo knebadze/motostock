@@ -6,20 +6,42 @@ import { vehicleCatalogInclude } from "../vehicle-catalog/vehicle-catalog.reposi
 import { wishlistItemInclude } from "../wishlist/wishlist.repository.js";
 import { cartItemInclude } from "../cart/cart.repository.js";
 
+export type UserListFilters = {
+  search?: string;
+  role?: "USER" | "ADMIN";
+  customerType?: "WALK_IN" | "REGISTERED" | "MERGED";
+};
+
 // Shared between findMany and count so the two never drift apart — the
 // admin user list's total (for pagination) must match exactly what the
 // paged query would return.
-function searchWhere(search?: string): Prisma.UserWhereInput | undefined {
-  return search
-    ? {
-        OR: [
-          { firstName: { contains: search, mode: "insensitive" } },
-          { lastName: { contains: search, mode: "insensitive" } },
-          { email: { contains: search, mode: "insensitive" } },
-          { phone: { contains: search, mode: "insensitive" } },
-        ],
-      }
-    : undefined;
+function buildWhere(filters: UserListFilters): Prisma.UserWhereInput | undefined {
+  const and: Prisma.UserWhereInput[] = [];
+
+  if (filters.search) {
+    and.push({
+      OR: [
+        { firstName: { contains: filters.search, mode: "insensitive" } },
+        { lastName: { contains: filters.search, mode: "insensitive" } },
+        { email: { contains: filters.search, mode: "insensitive" } },
+        { phone: { contains: filters.search, mode: "insensitive" } },
+      ],
+    });
+  }
+
+  if (filters.role) {
+    and.push({ role: { name: filters.role } });
+  }
+
+  if (filters.customerType === "WALK_IN") {
+    and.push({ isWalkIn: true });
+  } else if (filters.customerType === "REGISTERED") {
+    and.push({ isWalkIn: false });
+  } else if (filters.customerType === "MERGED") {
+    and.push({ mergedIntoUserId: { not: null } });
+  }
+
+  return and.length > 0 ? { AND: and } : undefined;
 }
 
 export const usersRepository = {
@@ -50,9 +72,9 @@ export const usersRepository = {
     });
   },
 
-  findMany(search: string | undefined, skip: number, take: number) {
+  findMany(filters: UserListFilters, skip: number, take: number) {
     return prisma.user.findMany({
-      where: searchWhere(search),
+      where: buildWhere(filters),
       include: { role: true },
       orderBy: { createdAt: "desc" },
       skip,
@@ -60,8 +82,8 @@ export const usersRepository = {
     });
   },
 
-  count(search?: string) {
-    return prisma.user.count({ where: searchWhere(search) });
+  count(filters: UserListFilters) {
+    return prisma.user.count({ where: buildWhere(filters) });
   },
 
   findByGoogleId(googleId: string) {
