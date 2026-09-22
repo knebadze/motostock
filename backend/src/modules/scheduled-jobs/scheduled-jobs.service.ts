@@ -2,7 +2,7 @@ import { ApiError } from "../../lib/ApiError.js";
 import { logger } from "../../lib/logger.js";
 import type { ScheduledJobTrigger } from "../../generated/prisma/index.js";
 import { scheduledJobsRepository } from "./scheduled-jobs.repository.js";
-import { JOB_DEFINITIONS } from "./scheduled-jobs.registry.js";
+import { DEFAULT_JOB_CRON, JOB_DEFINITIONS, formatCronScheduleLabel } from "./scheduled-jobs.registry.js";
 import type { ScheduledJobKey, ScheduledJobRunsQuery } from "./scheduled-jobs.schema.js";
 import { resolvePage } from "../../lib/pagination.js";
 
@@ -52,6 +52,7 @@ export async function listJobDefinitions() {
   return JOB_DEFINITIONS.map((job) => ({
     key: job.key,
     labelKa: job.labelKa,
+    scheduleLabelKa: formatCronScheduleLabel(job.cron ?? DEFAULT_JOB_CRON),
     lastRun: latestByKey.get(job.key) ?? null,
   }));
 }

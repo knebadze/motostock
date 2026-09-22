@@ -26,6 +26,18 @@ export type JobDefinition = {
   cron?: string;
 };
 
+// Derives the admin-facing "ყოველდღე HH:MM (თბილისის დრო)" label straight
+// from a job's own `cron` field instead of a second, separately-maintained
+// label string — the two drifting apart (schedule changed, label forgotten)
+// is exactly the bug this replaces. Every job here uses the simple daily
+// "M H * * *" shape; a job with a genuinely different cadence would need a
+// richer formatter, but none exists yet.
+export function formatCronScheduleLabel(cronExpression: string): string {
+  const [minute, hour] = cronExpression.split(" ");
+  const pad = (value: string) => value.padStart(2, "0");
+  return `ყოველდღე ${pad(hour)}:${pad(minute)} (თბილისის დრო)`;
+}
+
 // Wires each existing prune function (none of them changed — see
 // server.ts's old runDailyPrune) into the common { itemsAffected, detail }
 // shape scheduled-jobs.service.ts persists. The 4 different return shapes

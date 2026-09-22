@@ -32,6 +32,10 @@ export type ScheduledJobRun = {
 export type ScheduledJobDefinition = {
   key: ScheduledJobKey;
   labelKa: string;
+  // Derived server-side straight from the job's own cron expression (see
+  // backend's formatCronScheduleLabel) — never a second hand-typed schedule
+  // string, so it can't drift from what actually runs.
+  scheduleLabelKa: string;
   lastRun: ScheduledJobRun | null;
 };
 

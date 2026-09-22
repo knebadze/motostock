@@ -38,6 +38,7 @@ const scheduledJobRunSchema = z.object({
 const scheduledJobDefinitionSchema = z.object({
   key: scheduledJobKeySchema,
   labelKa: z.string(),
+  scheduleLabelKa: z.string(),
   lastRun: scheduledJobRunSchema.nullable(),
 });
 
