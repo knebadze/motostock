@@ -113,6 +113,24 @@ export const usersRepository = {
     return prisma.user.findUnique({ where: { phone }, include: { role: true } });
   },
 
+  // birthday-email.service.ts's BIRTHDAY_EMAIL scheduled job — Prisma has no
+  // month/day-of-date extraction in its query builder, so this needs a raw
+  // query. isWalkIn rows are excluded: they only ever have a synthetic
+  // walkin+<uuid>@walkin.internal placeholder address (see user.prisma's
+  // isWalkIn comment), never a real one to send to. A Feb 29 birthday simply
+  // won't match in a non-leap year, same as any other month/day-only
+  // comparison — not worth working around for a once-a-year courtesy email.
+  findUsersWithBirthdayToday(month: number, day: number) {
+    return prisma.$queryRaw<{ id: number; email: string; firstName: string; lastName: string }[]>`
+      SELECT id, email, "firstName", "lastName"
+      FROM "dbo"."User"
+      WHERE "dateOfBirth" IS NOT NULL
+        AND "isWalkIn" = false
+        AND EXTRACT(MONTH FROM "dateOfBirth") = ${month}
+        AND EXTRACT(DAY FROM "dateOfBirth") = ${day}
+    `;
+  },
+
   // Admin workshop "+ ახალი სტუმარი მომხმარებელი" action — synthetic email so
   // the unique/non-null constraint on User.email stays untouched; no
   // passwordHash, since a walk-in never logs in as itself.

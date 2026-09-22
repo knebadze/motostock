@@ -4,16 +4,26 @@ import { pruneStaleGuestProductViews } from "../product-views/product-views.serv
 import { pruneStaleGuestVehicleListingViews } from "../vehicle-listing-views/vehicle-listing-views.service.js";
 import { pruneOrphanedRichTextImages } from "../media/media.service.js";
 import { fetchNbgUsdToGelRate } from "../vehicle-listing/exchange-rate.service.js";
+import { sendBirthdayEmails } from "../users/birthday-email.service.js";
 import type { ScheduledJobKey } from "./scheduled-jobs.schema.js";
 
 // number for count-style detail (every existing prune job), string for
 // FETCH_USD_GEL_RATE's fetched-date value.
 export type JobResult = { itemsAffected: number; detail?: Record<string, number | string> };
 
+// The shared slot every job defaults to unless it overrides `cron` below —
+// server.ts schedules one node-cron task per job using its own `cron` field,
+// so several jobs landing on the same expression (the common case) is just
+// several `cron.schedule()` calls with identical args, not a special case.
+export const DEFAULT_JOB_CRON = "0 3 * * *";
+
 export type JobDefinition = {
   key: ScheduledJobKey;
   labelKa: string;
   run: () => Promise<JobResult>;
+  // Asia/Tbilisi cron expression, defaults to DEFAULT_JOB_CRON (03:00) — see
+  // BIRTHDAY_EMAIL below for why a job would override it.
+  cron?: string;
 };
 
 // Wires each existing prune function (none of them changed — see
@@ -63,6 +73,18 @@ export const JOB_DEFINITIONS: JobDefinition[] = [
     run: async () => {
       const { rate, fetchedAt } = await fetchNbgUsdToGelRate();
       return { itemsAffected: 1, detail: { rate, fetchedAt: fetchedAt.toISOString() } };
+    },
+  },
+  {
+    key: "BIRTHDAY_EMAIL",
+    labelKa: "დაბადების დღის მილოცვების გაგზავნა",
+    // Noon, not the shared 03:00 slot — nobody wants a birthday email at
+    // 3am, unlike the other jobs here, which are invisible maintenance
+    // (prune/rate-fetch) that nobody's waiting on.
+    cron: "0 12 * * *",
+    run: async () => {
+      const { sentCount, skipped } = await sendBirthdayEmails();
+      return { itemsAffected: sentCount, detail: { skipped: skipped ? "already sent today" : "no" } };
     },
   },
 ];

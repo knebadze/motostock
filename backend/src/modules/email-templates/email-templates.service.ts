@@ -79,6 +79,16 @@ const DEFAULTS: Record<
     bodyEn: "<p>A new order has been received — #{{orderCode}}.</p><p>Customer: {{customerName}}</p><p>Total: {{total}} GEL</p>",
     bodyRu: "<p>Получен новый заказ №{{orderCode}}.</p><p>Клиент: {{customerName}}</p><p>Сумма: {{total}} GEL</p>",
   },
+  // Sent once a year by the BIRTHDAY_EMAIL scheduled job (see
+  // birthday-email.service.ts) — only vars available here are customerName.
+  BIRTHDAY: {
+    subjectKa: "გილოცავთ დაბადების დღეს, {{customerName}}!",
+    subjectEn: "Happy Birthday, {{customerName}}!",
+    subjectRu: "С днём рождения, {{customerName}}!",
+    bodyKa: "<p>გამარჯობა, {{customerName}}!</p><p>Motostock-ის გუნდი გულითადად გილოცავთ დაბადების დღეს! გისურვებთ ჯანმრთელობას და უსაფრთხო გზებს.</p>",
+    bodyEn: "<p>Hi {{customerName}},</p><p>The Motostock team wishes you a very happy birthday! Stay healthy and ride safe.</p>",
+    bodyRu: "<p>Здравствуйте, {{customerName}}!</p><p>Команда Motostock от всей души поздравляет вас с днём рождения! Желаем здоровья и безопасных дорог.</p>",
+  },
 };
 
 // Derived from DEFAULTS' own keys, not a separate hand-typed list — a key

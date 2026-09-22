@@ -5,7 +5,7 @@ import { prisma } from "./config/prisma.js";
 import { logger } from "./lib/logger.js";
 import { isFinaConfigured, runSync } from "./modules/fina-sync/fina-sync.service.js";
 import { getFinaSyncIntervalMinutes } from "./modules/settings/settings.service.js";
-import { JOB_DEFINITIONS } from "./modules/scheduled-jobs/scheduled-jobs.registry.js";
+import { DEFAULT_JOB_CRON, JOB_DEFINITIONS } from "./modules/scheduled-jobs/scheduled-jobs.registry.js";
 import { runScheduledJob } from "./modules/scheduled-jobs/scheduled-jobs.service.js";
 
 const server = app.listen(env.PORT, () => {
@@ -41,22 +41,20 @@ if (isFinaConfigured()) {
 // EmailVerificationToken, guest-owned ProductView/VehicleListingView rows,
 // orphaned rich-text images — see scheduled-jobs.registry.ts for the actual
 // prune functions) — daily is plenty, none of them need pruning more
-// precisely than that. Real wall-clock cron (03:00 Tbilisi time) instead of
-// a plain `setInterval`, which only ever counted 24h from whenever this
-// process happened to boot — during frequent redeploys that interval
-// effectively never fired, and even when it did it could land at any hour.
-// Each run is persisted via scheduled-jobs' RUNNING->SUCCESS/FAILED history
-// (see the admin "ავტომატური დავალებები" page) instead of only logging on
-// failure. `noOverlap` skips a cron tick if the previous run of the *same*
-// job is still in flight — no separate lock needed, this is a single-
-// instance deployment (see docker-compose.yml) and every job here is a pure
-// cutoff-based delete with no correctness risk from a stray concurrent run,
-// unlike FINA sync's stock mutations above. `unref` matches the old
-// `dailyPruneTimer.unref()` — these tasks must never keep the process alive
-// on their own.
-// Not just prune jobs anymore (FETCH_USD_GEL_RATE also rides this array/
-// schedule, purely for infra reuse — see scheduled-jobs.registry.ts).
-const DAILY_SCHEDULED_JOB_CRON = "0 3 * * *";
+// precisely than that. Real wall-clock cron (Tbilisi time, per-job — see
+// each JobDefinition's own `cron` field, defaulting to DEFAULT_JOB_CRON's
+// 03:00) instead of a plain `setInterval`, which only ever counted 24h from
+// whenever this process happened to boot — during frequent redeploys that
+// interval effectively never fired, and even when it did it could land at
+// any hour. Each run is persisted via scheduled-jobs' RUNNING->SUCCESS/
+// FAILED history (see the admin "ავტომატური დავალებები" page) instead of
+// only logging on failure. `noOverlap` skips a cron tick if the previous run
+// of the *same* job is still in flight — no separate lock needed, this is a
+// single-instance deployment (see docker-compose.yml) and every job here is
+// either a pure cutoff-based delete or an idempotent daily fetch/send, with
+// no correctness risk from a stray concurrent run, unlike FINA sync's stock
+// mutations above. `unref` matches the old `dailyPruneTimer.unref()` — these
+// tasks must never keep the process alive on their own.
 function runDailyScheduledJob(key: (typeof JOB_DEFINITIONS)[number]["key"]) {
   runScheduledJob(key, "SCHEDULED", null).catch((err: unknown) =>
     logger.error({ err, jobKey: key }, "Scheduled job failed"),
@@ -69,7 +67,7 @@ function runDailyScheduledJob(key: (typeof JOB_DEFINITIONS)[number]["key"]) {
 // had; node-cron's TaskOptions has no "run immediately" flag of its own).
 JOB_DEFINITIONS.forEach((job) => runDailyScheduledJob(job.key));
 const dailyScheduledJobCronTasks: ScheduledTask[] = JOB_DEFINITIONS.map((job) =>
-  cron.schedule(DAILY_SCHEDULED_JOB_CRON, () => runDailyScheduledJob(job.key), {
+  cron.schedule(job.cron ?? DEFAULT_JOB_CRON, () => runDailyScheduledJob(job.key), {
     timezone: "Asia/Tbilisi",
     noOverlap: true,
     unref: true,

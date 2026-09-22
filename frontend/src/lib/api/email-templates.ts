@@ -6,7 +6,9 @@ export type EmailTemplateKey =
   | "ORDER_CONFIRMED"
   | "ORDER_SHIPPED"
   | "ORDER_DELIVERED"
-  | "ORDER_CANCELLED";
+  | "ORDER_CANCELLED"
+  | "NEW_ORDER_ADMIN"
+  | "BIRTHDAY";
 
 export type EmailTemplate = {
   id: number;

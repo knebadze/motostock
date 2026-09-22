@@ -8,6 +8,12 @@ enum ScheduledJobKey {
   // Bank of Georgia's public API (see exchange-rate.service.ts). Rides the
   // same daily schedule as the prune jobs above purely for infra reuse.
   FETCH_USD_GEL_RATE
+  // Sends the BIRTHDAY EmailTemplate to every user whose birthday is today —
+  // see birthday-email.service.ts. Also guards against double-sending on
+  // process boot (every job here also runs once immediately on startup, not
+  // just on the shared daily cron) by checking for an already-SUCCESSful run
+  // on today's Tbilisi calendar date before doing any work.
+  BIRTHDAY_EMAIL
 
   @@schema("dbo")
 }

@@ -13,6 +13,24 @@ const TYPE_LABELS: Record<EmailTemplate["key"], string> = {
   ORDER_SHIPPED: "გზაშია",
   ORDER_DELIVERED: "ჩაბარება",
   ORDER_CANCELLED: "გაუქმება",
+  NEW_ORDER_ADMIN: "ახალი შეკვეთა (ადმინი)",
+  BIRTHDAY: "დაბადების დღე",
+};
+
+// Not every key gets the same variables at send time (see
+// email-templates.service.ts's sendEmailTemplate call sites) — BIRTHDAY has
+// no order to reference, so showing orderCode/total there would invite an
+// admin to type a placeholder that's silently left as literal "{{...}}"
+// text in the sent email (see renderText's "leave unmatched tokens as-is"
+// behavior).
+const AVAILABLE_PLACEHOLDERS: Record<EmailTemplate["key"], string[]> = {
+  ORDER_PLACED: ["customerName", "orderCode", "total"],
+  ORDER_CONFIRMED: ["customerName", "orderCode", "total"],
+  ORDER_SHIPPED: ["customerName", "orderCode", "total"],
+  ORDER_DELIVERED: ["customerName", "orderCode", "total"],
+  ORDER_CANCELLED: ["customerName", "orderCode", "total"],
+  NEW_ORDER_ADMIN: ["customerName", "orderCode", "total"],
+  BIRTHDAY: ["customerName"],
 };
 
 const inputClassName =
@@ -70,8 +88,14 @@ function EmailTemplateForm({
   return (
     <div className="flex flex-col gap-4">
       <p className="rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
-        ხელმისაწვდომი placeholder-ები: <code>{"{{customerName}}"}</code>, <code>{"{{orderCode}}"}</code>,{" "}
-        <code>{"{{total}}"}</code> — ავტომატურად ჩანაცვლდება რეალური მონაცემით გაგზავნისას.
+        ხელმისაწვდომი placeholder-ები:{" "}
+        {AVAILABLE_PLACEHOLDERS[template.key].map((name, index) => (
+          <span key={name}>
+            {index > 0 && ", "}
+            <code>{`{{${name}}}`}</code>
+          </span>
+        ))}{" "}
+        — ავტომატურად ჩანაცვლდება რეალური მონაცემით გაგზავნისას.
       </p>
       <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-600">
         ამჟამად მომხმარებელს ყოველთვის ქართული ვერსია ეგზავნება, მიუხედავად მისი ენისა — სისტემას
@@ -136,7 +160,8 @@ export function EmailTemplatesManager({
     <div>
       <h1 className="text-2xl font-bold tracking-tight">იმეილის შაბლონები</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        ეს ტექსტები ავტომატურად ეგზავნება მომხმარებელს შეკვეთის გაფორმებისა და სტატუსის ცვლილების დროს.
+        ეს ტექსტები ავტომატურად ეგზავნება — შეკვეთის გაფორმების, სტატუსის ცვლილებისა და
+        მომხმარებლის დაბადების დღის დროს.
       </p>
 
       <div className="mt-6">

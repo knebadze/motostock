@@ -5,7 +5,9 @@ export type ScheduledJobKey =
   | "DAILY_PRUNE_AUTH_ARTIFACTS"
   | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS"
   | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS"
-  | "DAILY_PRUNE_RICH_TEXT_IMAGES";
+  | "DAILY_PRUNE_RICH_TEXT_IMAGES"
+  | "FETCH_USD_GEL_RATE"
+  | "BIRTHDAY_EMAIL";
 
 export type ScheduledJobRun = {
   id: number;
@@ -20,7 +22,9 @@ export type ScheduledJobRun = {
   itemsAffected: number | null;
   // Per-category breakdown for jobs that delete from more than one table
   // (e.g. {presenceDeleted, visitsDeleted}) — itemsAffected is their sum.
-  detail: Record<string, number> | null;
+  // string values cover non-count detail (FETCH_USD_GEL_RATE's fetchedAt,
+  // BIRTHDAY_EMAIL's skipped flag).
+  detail: Record<string, number | string> | null;
   errorMessage: string | null;
   triggeredBy: { id: number; name: string } | null;
 };

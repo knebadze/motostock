@@ -16,6 +16,11 @@ enum EmailTemplateKey {
   // settings.service.ts's getAdminNotificationEmail. Skipped entirely while
   // that address is unset.
   NEW_ORDER_ADMIN
+  // Sent once a year to every registered customer whose User.dateOfBirth
+  // month+day matches today — see birthday-email.service.ts. Never sent to
+  // a walk-in (isWalkIn: true) row, since those only ever have a synthetic
+  // placeholder address (see user.prisma's isWalkIn comment).
+  BIRTHDAY
 
   @@schema("dbo")
 }
