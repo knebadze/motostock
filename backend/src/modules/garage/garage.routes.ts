@@ -55,7 +55,7 @@ garageRouter.delete(
 garageRouter.get(
   "/:userId/garage",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(garageUserIdParamSchema, "params"),
   garageController.adminList,
 );

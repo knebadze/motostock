@@ -8,8 +8,14 @@ import {
   getUserDetail,
   listUsers,
   mergeUserInto,
+  updateUserRole,
 } from "./users.service.js";
-import type { ChangePasswordInput, CreateWalkInUserInput, ListUsersQuery } from "./users.schema.js";
+import type {
+  ChangePasswordInput,
+  CreateWalkInUserInput,
+  ListUsersQuery,
+  UpdateUserRoleInput,
+} from "./users.schema.js";
 
 export async function me(req: Request, res: Response) {
   if (!req.user) {
@@ -65,5 +71,17 @@ export async function createWalkIn(
 
 export async function merge(req: Request<{ id: string; targetUserId: string }>, res: Response) {
   const user = await mergeUserInto(Number(req.params.id), Number(req.params.targetUserId));
+  res.status(200).json({ user });
+}
+
+export async function updateRole(
+  req: Request<{ id: string }, unknown, UpdateUserRoleInput>,
+  res: Response,
+) {
+  if (!req.user) {
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
+  }
+
+  const user = await updateUserRole(Number(req.params.id), req.user.sub, req.body);
   res.status(200).json({ user });
 }

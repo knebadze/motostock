@@ -26,7 +26,7 @@ export const userIdParamSchema = z.object({
 // errorLogsQuerySchema).
 export const listUsersQuerySchema = z.object({
   q: z.string().trim().min(1).max(200).optional(),
-  role: z.enum(["USER", "ADMIN"]).optional(),
+  role: z.enum(["USER", "ADMIN", "OPERATOR"]).optional(),
   // Mirrors the admin list's own badges (see UsersManager.tsx): WALK_IN is
   // isWalkIn regardless of merge status (a manually-merged walk-in keeps
   // isWalkIn: true — see users.service.ts's mergeUserInto), REGISTERED is
@@ -59,3 +59,14 @@ export const mergeUserParamsSchema = z.object({
   id: z.coerce.number().int().positive(),
   targetUserId: z.coerce.number().int().positive(),
 });
+
+// Admin-only role change (users.service.ts's updateUserRole) — the only way
+// to grant/revoke OPERATOR today (no self-registration path ever produces
+// it — see auth.service.ts's registerUser, which always assigns ROLES.USER).
+export const updateUserRoleSchema = registry.register(
+  "UpdateUserRoleInput",
+  z.object({
+    role: z.enum(["USER", "ADMIN", "OPERATOR"]),
+  }),
+);
+export type UpdateUserRoleInput = z.infer<typeof updateUserRoleSchema>;

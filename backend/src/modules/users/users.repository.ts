@@ -8,7 +8,7 @@ import { cartItemInclude } from "../cart/cart.repository.js";
 
 export type UserListFilters = {
   search?: string;
-  role?: "USER" | "ADMIN";
+  role?: "USER" | "ADMIN" | "OPERATOR";
   customerType?: "WALK_IN" | "REGISTERED" | "MERGED";
 };
 
@@ -172,6 +172,14 @@ export const usersRepository = {
       data: { mergedIntoUserId: targetUserId },
       include: { role: true },
     });
+  },
+
+  // No tokenVersion bump needed — resolveAuthenticatedUser (auth.middleware.ts)
+  // re-reads role.name from the DB on every request rather than trusting the
+  // JWT's own claim, so this takes effect on the target user's very next
+  // request, not just their next login.
+  updateRole(id: number, roleId: number) {
+    return prisma.user.update({ where: { id }, data: { roleId }, include: { role: true } });
   },
 
   createOAuthUser(data: {

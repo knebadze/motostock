@@ -15,7 +15,8 @@ export type AdminUser = {
   // Set once an admin manually links this (walk-in) row onto a real
   // account — the row is kept, not deleted, and stays visible in the list.
   mergedIntoUserId: number | null;
-  role: "USER" | "ADMIN";
+  // OPERATOR is a limited staff/cashier role — see AdminRoleContext.tsx.
+  role: "USER" | "ADMIN" | "OPERATOR";
   hasPassword: boolean;
   hasGoogle: boolean;
   hasFacebook: boolean;
@@ -38,7 +39,7 @@ export type AdminUsersPage = {
 
 export type ListUsersFilters = {
   search?: string;
-  role?: "USER" | "ADMIN";
+  role?: "USER" | "ADMIN" | "OPERATOR";
   // Mirrors the admin list's own badges (see UsersManager.tsx): WALK_IN is
   // isWalkIn regardless of merge status, REGISTERED is !isWalkIn, MERGED is
   // mergedIntoUserId set.
@@ -86,5 +87,15 @@ export async function mergeUserInto(id: number, targetUserId: number): Promise<A
   const { data } = await apiClient.post<{ user: AdminUser }>(
     `/users/${id}/merge-into/${targetUserId}`,
   );
+  return data.user;
+}
+
+// The only way to grant/revoke OPERATOR (or promote/demote ADMIN) — no
+// self-registration path ever produces anything but "USER".
+export async function updateUserRole(
+  id: number,
+  role: "USER" | "ADMIN" | "OPERATOR",
+): Promise<AdminUser> {
+  const { data } = await apiClient.patch<{ user: AdminUser }>(`/users/${id}/role`, { role });
   return data.user;
 }

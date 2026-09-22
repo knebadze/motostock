@@ -16,23 +16,41 @@ import {
 
 export const serviceTypesRouter = Router();
 
-serviceTypesRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
-serviceTypesRouter.get("/", serviceTypesController.list);
-serviceTypesRouter.post("/", validate(createServiceTypeSchema), serviceTypesController.create);
+// Per-route (not a blanket `.use()`) so GET can grant OPERATOR too — the
+// workshop "სერვისის ისტორია" screen's service-type dropdown needs this
+// list; write routes stay ADMIN-only.
+serviceTypesRouter.get(
+  "/",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  serviceTypesController.list,
+);
+serviceTypesRouter.post(
+  "/",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  validate(createServiceTypeSchema),
+  serviceTypesController.create,
+);
 serviceTypesRouter.patch(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(serviceTypeIdParamSchema, "params"),
   validate(updateServiceTypeSchema),
   serviceTypesController.update,
 );
 serviceTypesRouter.put(
   "/order",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(reorderServiceTypesSchema),
   serviceTypesController.reorder,
 );
 serviceTypesRouter.delete(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(serviceTypeIdParamSchema, "params"),
   serviceTypesController.remove,
 );

@@ -2,8 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { adminNav } from "@/config/admin-nav";
+import { adminNav, type AdminNavItem } from "@/config/admin-nav";
 import { Logo } from "@/components/shared/Logo";
+import { useAdminRole } from "./AdminRoleContext";
+
+function canSeeNavItem(item: AdminNavItem, role: ReturnType<typeof useAdminRole>): boolean {
+  if (role === "ADMIN") return true;
+  return item.allowedRoles?.includes(role) ?? false;
+}
 
 export function AdminSidebar({
   open,
@@ -17,6 +23,10 @@ export function AdminSidebar({
   onToggleCollapsed: () => void;
 }) {
   const pathname = usePathname();
+  const role = useAdminRole();
+  const visibleNav = adminNav
+    .map((section) => ({ ...section, items: section.items.filter((item) => canSeeNavItem(item, role)) }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <>
@@ -66,7 +76,7 @@ export function AdminSidebar({
             collapsed ? "md:items-center md:px-2" : ""
           }`}
         >
-          {adminNav.map((section) => (
+          {visibleNav.map((section) => (
             <div key={section.label} className="flex w-full flex-col gap-0.5">
               <span
                 className={`px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground ${

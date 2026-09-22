@@ -17,6 +17,7 @@ import type { Category } from "@/lib/api/categories";
 import { ApiRequestError } from "@/lib/api/client";
 import { toTbilisiDateOnly } from "@/lib/format";
 import { flattenTree, isVehicleCategory } from "@/lib/categories-tree";
+import { useAdminRole } from "@/components/admin/AdminRoleContext";
 import { PromoCodeFormModal } from "./PromoCodeFormModal";
 import { PromoCodeHeroSlideModal } from "./PromoCodeHeroSlideModal";
 import { PromoCodeNewsletterModal } from "./PromoCodeNewsletterModal";
@@ -73,6 +74,7 @@ export function PromoCodesManager({
   initialPromoCodes: PromoCode[];
   categories: Category[];
 }) {
+  const isOperator = useAdminRole() === "OPERATOR";
   const [promoCodes, setPromoCodes] = useState(initialPromoCodes);
   const [statusFilter, setStatusFilter] = useState<"" | "active" | "history">("");
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -160,13 +162,15 @@ export function PromoCodesManager({
         <h2 className="text-xl font-bold tracking-tight">
           {domain === "PRODUCT" ? "პროდუქტების პრომოკოდები" : "ტრანსპორტის პრომოკოდები"}
         </h2>
-        <button
-          type="button"
-          onClick={openCreateModal}
-          className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
-        >
-          + კოდის დამატება
-        </button>
+        {!isOperator && (
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+          >
+            + კოდის დამატება
+          </button>
+        )}
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -212,66 +216,68 @@ export function PromoCodesManager({
           emptyMessage="პრომოკოდი არ არსებობს"
           actions={(item) => (
             <RowActions
-              onEdit={() => openEditModal(item)}
-              onDelete={() => setDeletingPromoCode(item)}
+              onEdit={isOperator ? undefined : () => openEditModal(item)}
+              onDelete={isOperator ? undefined : () => setDeletingPromoCode(item)}
               extra={
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setHeroSlidePromoCode(item)}
-                    disabled={item.computedStatus === "EXPIRED"}
-                    aria-label={item.heroSlideId != null ? "სლაიდის რედაქტირება" : "სლაიდის შექმნა"}
-                    title={
-                      item.computedStatus === "EXPIRED"
-                        ? "ვადაგასულია — სლაიდი ვეღარ შეიქმნება/რედაქტირდება"
-                        : item.heroSlideId != null
-                          ? "სლაიდის რედაქტირება"
-                          : "სლაიდის შექმნა"
-                    }
-                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:pointer-events-none disabled:opacity-40"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="size-4"
+                isOperator ? undefined : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setHeroSlidePromoCode(item)}
+                      disabled={item.computedStatus === "EXPIRED"}
+                      aria-label={item.heroSlideId != null ? "სლაიდის რედაქტირება" : "სლაიდის შექმნა"}
+                      title={
+                        item.computedStatus === "EXPIRED"
+                          ? "ვადაგასულია — სლაიდი ვეღარ შეიქმნება/რედაქტირდება"
+                          : item.heroSlideId != null
+                            ? "სლაიდის რედაქტირება"
+                            : "სლაიდის შექმნა"
+                      }
+                      className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:pointer-events-none disabled:opacity-40"
                     >
-                      <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                      <circle cx="9" cy="9" r="2" />
-                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewsletterPromoCode(item)}
-                    disabled={item.computedStatus === "EXPIRED"}
-                    aria-label="მეილის გაგზავნა"
-                    title={
-                      item.computedStatus === "EXPIRED"
-                        ? "ვადაგასულია — მეილი ვეღარ გაიგზავნება"
-                        : "მეილის გაგზავნა"
-                    }
-                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:pointer-events-none disabled:opacity-40"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="size-4"
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="size-4"
+                      >
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                        <circle cx="9" cy="9" r="2" />
+                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewsletterPromoCode(item)}
+                      disabled={item.computedStatus === "EXPIRED"}
+                      aria-label="მეილის გაგზავნა"
+                      title={
+                        item.computedStatus === "EXPIRED"
+                          ? "ვადაგასულია — მეილი ვეღარ გაიგზავნება"
+                          : "მეილის გაგზავნა"
+                      }
+                      className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:pointer-events-none disabled:opacity-40"
                     >
-                      <rect width="20" height="16" x="2" y="4" rx="2" />
-                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                    </svg>
-                  </button>
-                </>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="size-4"
+                      >
+                        <rect width="20" height="16" x="2" y="4" rx="2" />
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                      </svg>
+                    </button>
+                  </>
+                )
               }
             />
           )}

@@ -11,9 +11,11 @@ import { ApiRequestError } from "@/lib/api/client";
 import { setKnownAuthState } from "@/lib/api/auth-state";
 import { formatShortName } from "@/lib/format";
 import { attachMenuKeyboardNav } from "@/lib/menuKeyboardNav";
+import { useAdminRole } from "@/components/admin/AdminRoleContext";
 
 export function UserMenu({ userName }: { userName: string }) {
   const router = useRouter();
+  const role = useAdminRole();
   const [open, setOpen] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -122,16 +124,18 @@ export function UserMenu({ userName }: { userName: string }) {
           role="menu"
           className="absolute right-0 top-12 z-50 w-52 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg"
         >
-          <li>
-            <Link
-              href="/admin/settings"
-              onClick={() => setOpen(false)}
-              role="menuitem"
-              className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
-            >
-              პარამეტრები
-            </Link>
-          </li>
+          {role !== "OPERATOR" && (
+            <li>
+              <Link
+                href="/admin/settings"
+                onClick={() => setOpen(false)}
+                role="menuitem"
+                className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+              >
+                პარამეტრები
+              </Link>
+            </li>
+          )}
           <li>
             <button
               type="button"
@@ -153,18 +157,20 @@ export function UserMenu({ userName }: { userName: string }) {
               პაროლის შეცვლა
             </Link>
           </li>
-          <li className="border-t border-border">
-            <button
-              type="button"
-              onClick={handleClearCache}
-              disabled={clearingCache}
-              role="menuitem"
-              className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary disabled:opacity-50"
-            >
-              {clearingCache ? "იწმინდება..." : "ქეშის გასუფთავება"}
-            </button>
-          </li>
-          <li>
+          {role !== "OPERATOR" && (
+            <li className="border-t border-border">
+              <button
+                type="button"
+                onClick={handleClearCache}
+                disabled={clearingCache}
+                role="menuitem"
+                className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary disabled:opacity-50"
+              >
+                {clearingCache ? "იწმინდება..." : "ქეშის გასუფთავება"}
+              </button>
+            </li>
+          )}
+          <li className={role === "OPERATOR" ? "border-t border-border" : ""}>
             <button
               type="button"
               onClick={handleLogout}

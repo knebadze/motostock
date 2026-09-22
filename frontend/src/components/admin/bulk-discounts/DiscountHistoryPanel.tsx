@@ -16,6 +16,7 @@ import { deleteVehicleListingDiscount } from "@/lib/api/vehicle-listing-discount
 import type { VehicleListingCurrency } from "@/lib/api/vehicle-listings";
 import { ApiRequestError } from "@/lib/api/client";
 import { formatPrice, toTbilisiDateOnly } from "@/lib/format";
+import { useAdminRole } from "@/components/admin/AdminRoleContext";
 
 type UnifiedRow = {
   key: string;
@@ -92,6 +93,7 @@ const TYPE_LABELS: Record<UnifiedRow["type"], string> = {
 };
 
 export function DiscountHistoryPanel() {
+  const isOperator = useAdminRole() === "OPERATOR";
   const [rows, setRows] = useState<UnifiedRow[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [truncated, setTruncated] = useState(false);
@@ -238,15 +240,19 @@ export function DiscountHistoryPanel() {
           data={filteredRows}
           getRowKey={(row) => row.key}
           emptyMessage="ფასდაკლება არ არსებობს"
-          actions={(row) => (
-            <button
-              type="button"
-              onClick={() => setDeletingRow(row)}
-              className="rounded-full px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10"
-            >
-              წაშლა
-            </button>
-          )}
+          actions={
+            isOperator
+              ? undefined
+              : (row) => (
+                  <button
+                    type="button"
+                    onClick={() => setDeletingRow(row)}
+                    className="rounded-full px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10"
+                  >
+                    წაშლა
+                  </button>
+                )
+          }
         />
       )}
 

@@ -5,8 +5,10 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Loader } from "@/components/shared/Loader";
-import { getUser, type AdminUserDetail } from "@/lib/api/users";
+import { Select } from "@/components/shared/Select";
+import { getUser, updateUserRole, type AdminUser, type AdminUserDetail } from "@/lib/api/users";
 import type { WishlistItem } from "@/lib/api/wishlist";
+import { useAdminRole } from "@/components/admin/AdminRoleContext";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { formatDate, formatDateTime, formatVehicleCatalogLabel } from "@/lib/format";
 import { getCartItemDisplay } from "@/lib/cart-item-display";
@@ -25,6 +27,18 @@ const cameraIcon = (
     <circle cx="12" cy="13" r="4" />
   </svg>
 );
+
+const ROLE_OPTIONS = [
+  { value: "USER", label: "მომხმარებელი" },
+  { value: "ADMIN", label: "ადმინი" },
+  { value: "OPERATOR", label: "ოპერატორი" },
+];
+
+const ROLE_LABELS: Record<AdminUser["role"], string> = {
+  USER: "მომხმარებელი",
+  ADMIN: "ადმინი",
+  OPERATOR: "ოპერატორი",
+};
 
 function wishlistItemLabel(item: WishlistItem): string {
   if (item.product) return item.product.name.ka;
@@ -54,9 +68,38 @@ function authMethodBadges(user: AdminUserDetail) {
   );
 }
 
-export function UserDetailModal({ userId, onClose }: { userId: number; onClose: () => void }) {
+export function UserDetailModal({
+  userId,
+  onClose,
+  onRoleChanged,
+}: {
+  userId: number;
+  onClose: () => void;
+  // Lets the caller's own list refresh (the badge/role column there would
+  // otherwise stay stale until the admin reloads the page) — see
+  // UsersManager.tsx.
+  onRoleChanged?: (user: AdminUser) => void;
+}) {
+  const viewerIsOperator = useAdminRole() === "OPERATOR";
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [changingRole, setChangingRole] = useState(false);
+
+  async function handleRoleChange(nextRole: string) {
+    if (!detail || nextRole === detail.role) return;
+    setChangingRole(true);
+    try {
+      const updated = await updateUserRole(detail.id, nextRole as AdminUser["role"]);
+      setDetail((current) => (current ? { ...current, role: updated.role } : current));
+      onRoleChanged?.(updated);
+      toast.success("როლი განახლდა");
+    } catch (error) {
+      const message = error instanceof ApiRequestError ? error.message : "როლის შეცვლა ვერ მოხერხდა";
+      toast.error(message);
+    } finally {
+      setChangingRole(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -94,15 +137,29 @@ export function UserDetailModal({ userId, onClose }: { userId: number; onClose: 
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h3 className="text-lg font-semibold">{detail.name}</h3>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                  detail.role === "ADMIN"
-                    ? "bg-primary/15 text-primary"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {detail.role === "ADMIN" ? "ადმინი" : "მომხმარებელი"}
-              </span>
+              {viewerIsOperator ? (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    detail.role === "ADMIN"
+                      ? "bg-primary/15 text-primary"
+                      : detail.role === "OPERATOR"
+                        ? "bg-amber-500/15 text-amber-600"
+                        : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {ROLE_LABELS[detail.role]}
+                </span>
+              ) : (
+                <div className="w-40">
+                  <Select
+                    ariaLabel="როლი"
+                    options={ROLE_OPTIONS}
+                    value={detail.role}
+                    onChange={handleRoleChange}
+                    disabled={changingRole}
+                  />
+                </div>
+              )}
               {detail.isWalkIn && (
                 <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-600">
                   სტუმარი

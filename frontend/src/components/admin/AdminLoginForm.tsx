@@ -19,9 +19,9 @@ export function AdminLoginForm() {
     try {
       const user = await loginUser({ email, password });
 
-      if (user.role !== "ADMIN") {
+      if (user.role !== "ADMIN" && user.role !== "OPERATOR") {
         await logoutUser();
-        toast.error("ამ ანგარიშს არ აქვს ადმინისტრატორის უფლებები");
+        toast.error("ამ ანგარიშს არ აქვს ადმინ პანელზე წვდომის უფლება");
         return;
       }
 

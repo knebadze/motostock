@@ -15,17 +15,28 @@ import {
 
 export const finaSyncRouter = Router();
 
-finaSyncRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
-finaSyncRouter.post("/run", finaSyncController.run);
-finaSyncRouter.get("/runs", finaSyncController.list);
+// Per-route (not a blanket `.use()`) — every route here grants OPERATOR too;
+// re-syncing/re-checking FINA stock is part of the OPERATOR role's normal
+// products/orders workflow, not a catalog/data-management write it's
+// otherwise kept away from.
+finaSyncRouter.post(
+  "/run",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  finaSyncController.run,
+);
+finaSyncRouter.get("/runs", requireAuth, requireRole(ROLES.ADMIN, ROLES.OPERATOR), finaSyncController.list);
 finaSyncRouter.post(
   "/orders/:orderId",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(orderIdParamSchema, "params"),
   finaSyncController.syncOrder,
 );
 finaSyncRouter.post(
   "/products/:productId",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(productIdParamSchema, "params"),
   finaSyncController.syncProduct,
 );

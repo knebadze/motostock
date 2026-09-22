@@ -62,7 +62,7 @@ productsRouter.get("/:id", validate(productIdParamSchema, "params"), productsCon
 productsRouter.get(
   "/:id/detail",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(productIdParamSchema, "params"),
   productsController.getDetailAdmin,
 );

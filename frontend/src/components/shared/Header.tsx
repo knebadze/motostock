@@ -289,14 +289,15 @@ export function Header({
                   className="absolute right-0 top-12 z-50 w-48 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg"
                 >
                   <li>
-                    {user.role === "ADMIN" ? (
+                    {user.role === "ADMIN" || user.role === "OPERATOR" ? (
                       // /admin isn't locale-routed (see proxy.ts's own comment on this) —
-                      // a logged-in admin's "account" is the admin panel, not the
-                      // customer-facing /account area (which also hard-gates on
-                      // emailVerified, a check that never applies to how admin accounts
-                      // are provisioned). Plain next/link, not the i18n-aware `Link`
-                      // above, since that one only knows how to prefix locale-routed
-                      // paths.
+                      // a logged-in admin's (or operator's — same reasoning, a
+                      // limited staff role, not a customer) "account" is the
+                      // admin panel, not the customer-facing /account area
+                      // (which also hard-gates on emailVerified, a check that
+                      // never applies to how these accounts are provisioned).
+                      // Plain next/link, not the i18n-aware `Link` above, since
+                      // that one only knows how to prefix locale-routed paths.
                       <NextLink
                         href="/admin"
                         onClick={() => setAccountMenuOpen(false)}
@@ -550,7 +551,7 @@ export function Header({
 
             {user ? (
               <>
-                {user.role === "ADMIN" ? (
+                {user.role === "ADMIN" || user.role === "OPERATOR" ? (
                   <NextLink
                     href="/admin"
                     onClick={() => setIsOpen(false)}

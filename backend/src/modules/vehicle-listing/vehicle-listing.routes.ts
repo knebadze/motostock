@@ -38,26 +38,42 @@ vehicleListingRouter.get(
   vehicleListingController.getOne,
 );
 
-vehicleListingRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
+// Per-route (not a blanket `.use()`) so /:id/detail can grant OPERATOR
+// while POST/PATCH/DELETE stay ADMIN-only — a path-less `.use()` can't
+// express that split. Also avoids the class of bug fixed for /api/products
+// and /api/users: this router's mount prefix also catches requests meant
+// for vehicleListingDiscountsRouter/vehicleListingImagesRouter (mounted
+// separately at /api/vehicle-listings/:listingId/discounts|images but still
+// routed through this router's stack first), which happened to be harmless
+// here only because those routers already required ADMIN too — a future
+// route added to either with a different role requirement would have
+// silently inherited this router's blanket gate instead.
 vehicleListingRouter.get(
   "/:id/detail",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(vehicleListingIdParamSchema, "params"),
   vehicleListingController.getDetailAdmin,
 );
 vehicleListingRouter.post(
   "/",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(createVehicleListingSchema),
   vehicleListingController.create,
 );
 vehicleListingRouter.patch(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(vehicleListingIdParamSchema, "params"),
   validate(updateVehicleListingSchema),
   vehicleListingController.update,
 );
 vehicleListingRouter.delete(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(vehicleListingIdParamSchema, "params"),
   vehicleListingController.remove,
 );

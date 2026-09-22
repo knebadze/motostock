@@ -7,7 +7,7 @@ export const userResponseSchema = registry.register(
     id: z.int().openapi({ example: 1 }),
     email: z.email().openapi({ example: "rider@motostock.ge" }),
     name: z.string().openapi({ example: "Nika Beridze" }),
-    role: z.enum(["USER", "ADMIN"]),
+    role: z.enum(["USER", "ADMIN", "OPERATOR"]),
     createdAt: z.iso.datetime(),
     emailVerified: z.boolean(),
   }),

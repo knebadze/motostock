@@ -23,6 +23,7 @@ import { formatPrice, toTbilisiDateOnly } from "@/lib/format";
 import { bulkDiscountFormSchema } from "@/lib/validation/bulk-discounts";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 import { deriveOptionMap, useBulkDiscountSelection } from "@/components/shared/useBulkDiscountSelection";
+import { useAdminRole } from "@/components/admin/AdminRoleContext";
 
 // PRODUCT and VEHICLE_LISTING share the exact same apply/date/event-grouping
 // mechanics (see bulk-discounts.ts's BulkApplyDiscountsInput) — only the
@@ -40,6 +41,7 @@ function candidateAttributeSummary(candidate: BulkDiscountCandidate): string {
 }
 
 export function BulkProductDiscountsPanel({ categories }: { categories: Category[] }) {
+  const isOperator = useAdminRole() === "OPERATOR";
   const categoryOptions = useMemo(() => {
     // Excludes vehicle (transport) categories — those are vehicle listings,
     // not products, and belong only in BulkVehicleListingDiscountsPanel's
@@ -565,15 +567,17 @@ export function BulkProductDiscountsPanel({ categories }: { categories: Category
               <DateInput value={endDate} onChange={setEndDate} />
               <FieldError message={errors.endDate} />
             </div>
-            <button
-              type="button"
-              onClick={handleApplyClick}
-              disabled={applying || selectedIds.size === 0}
-              className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
-            >
-              {applying && <Loader size="xs" />}
-              გამოყენება ({selectedIds.size} ვარიანტზე)
-            </button>
+            {!isOperator && (
+              <button
+                type="button"
+                onClick={handleApplyClick}
+                disabled={applying || selectedIds.size === 0}
+                className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
+              >
+                {applying && <Loader size="xs" />}
+                გამოყენება ({selectedIds.size} ვარიანტზე)
+              </button>
+            )}
           </div>
         </>
       )}
@@ -599,6 +603,7 @@ function vehicleCandidateSpecSummary(candidate: BulkVehicleDiscountCandidate): s
 }
 
 export function BulkVehicleListingDiscountsPanel({ categories }: { categories: Category[] }) {
+  const isOperator = useAdminRole() === "OPERATOR";
   const vehicleCategoryOptions = useMemo(() => {
     const vehicleCategories = categories.filter((category) => isVehicleCategory(categories, category.id));
     return flattenTree(vehicleCategories).map((category) => ({
@@ -1107,15 +1112,17 @@ export function BulkVehicleListingDiscountsPanel({ categories }: { categories: C
               <DateInput value={endDate} onChange={setEndDate} />
               <FieldError message={errors.endDate} />
             </div>
-            <button
-              type="button"
-              onClick={handleApplyClick}
-              disabled={applying || selectedIds.size === 0}
-              className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
-            >
-              {applying && <Loader size="xs" />}
-              გამოყენება ({selectedIds.size} განცხადებაზე)
-            </button>
+            {!isOperator && (
+              <button
+                type="button"
+                onClick={handleApplyClick}
+                disabled={applying || selectedIds.size === 0}
+                className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
+              >
+                {applying && <Loader size="xs" />}
+                გამოყენება ({selectedIds.size} განცხადებაზე)
+              </button>
+            )}
           </div>
         </>
       )}

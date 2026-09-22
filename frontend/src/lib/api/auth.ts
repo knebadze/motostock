@@ -4,7 +4,10 @@ export type User = {
   id: number;
   email: string;
   name: string;
-  role: "USER" | "ADMIN";
+  // OPERATOR is a limited staff/cashier role — view-only across most admin
+  // screens plus order status changes; see AdminRoleContext.tsx for how the
+  // admin panel gates on it.
+  role: "USER" | "ADMIN" | "OPERATOR";
   createdAt: string;
   emailVerified: boolean;
 };

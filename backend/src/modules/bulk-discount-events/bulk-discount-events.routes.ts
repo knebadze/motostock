@@ -21,27 +21,36 @@ import {
 
 export const bulkDiscountEventsRouter = Router();
 
-bulkDiscountEventsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
+// Per-route (not a blanket `.use()`) — the two GETs (view-only) grant
+// OPERATOR too; every write (repeat/update/image/hero-slide/delete) stays
+// ADMIN-only.
 bulkDiscountEventsRouter.get(
   "/",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(listBulkDiscountEventsQuerySchema, "query"),
   bulkDiscountEventsController.list,
 );
 bulkDiscountEventsRouter.post(
   "/:id/repeat",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(bulkDiscountEventIdParamSchema, "params"),
   validate(repeatBulkDiscountEventSchema),
   bulkDiscountEventsController.repeat,
 );
 bulkDiscountEventsRouter.patch(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(bulkDiscountEventIdParamSchema, "params"),
   validate(bulkDiscountEventInputSchema),
   bulkDiscountEventsController.update,
 );
 bulkDiscountEventsRouter.post(
   "/:id/image",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   uploadRateLimit,
   validate(bulkDiscountEventIdParamSchema, "params"),
   imageUpload().single("image"),
@@ -49,17 +58,23 @@ bulkDiscountEventsRouter.post(
 );
 bulkDiscountEventsRouter.get(
   "/:id/hero-slide",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(bulkDiscountEventIdParamSchema, "params"),
   bulkDiscountEventsController.getHeroSlide,
 );
 bulkDiscountEventsRouter.put(
   "/:id/hero-slide",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(bulkDiscountEventIdParamSchema, "params"),
   validate(bulkDiscountEventHeroSlideInputSchema),
   bulkDiscountEventsController.setHeroSlide,
 );
 bulkDiscountEventsRouter.post(
   "/:id/hero-slide/image",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   uploadRateLimit,
   validate(bulkDiscountEventIdParamSchema, "params"),
   imageUpload().single("image"),
@@ -67,6 +82,8 @@ bulkDiscountEventsRouter.post(
 );
 bulkDiscountEventsRouter.delete(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(bulkDiscountEventIdParamSchema, "params"),
   bulkDiscountEventsController.remove,
 );

@@ -18,6 +18,7 @@ import type { ServiceType } from "@/lib/api/service-types";
 import type { TeamMember } from "@/lib/api/team-members";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { formatDate, formatPrice, formatVehicleCatalogLabel } from "@/lib/format";
+import { useAdminRole } from "@/components/admin/AdminRoleContext";
 import { ServiceRecordFormModal } from "./ServiceRecordFormModal";
 import { AddWalkInCustomerModal } from "./AddWalkInCustomerModal";
 import { AddGarageVehicleModal } from "./AddGarageVehicleModal";
@@ -66,6 +67,8 @@ export function ServiceHistoryManager({
   teamMembers: TeamMember[];
   vehicleCatalog: VehicleCatalogEntry[];
 }) {
+  const role = useAdminRole();
+  const isOperator = role === "OPERATOR";
   const [serviceTypes] = useState(initialServiceTypes);
 
   const [userQuery, setUserQuery] = useState("");
@@ -301,7 +304,7 @@ export function ServiceHistoryManager({
               )}
             </div>
             <div className="flex items-center gap-2">
-              {selectedUser.isWalkIn && selectedUser.mergedIntoUserId == null && (
+              {!isOperator && selectedUser.isWalkIn && selectedUser.mergedIntoUserId == null && (
                 <button
                   type="button"
                   onClick={() => setLinkUserOpen(true)}
@@ -322,13 +325,15 @@ export function ServiceHistoryManager({
 
           <div className="mt-6 flex items-center justify-between">
             <h2 className="text-sm font-semibold">ტრანსპორტი</h2>
-            <button
-              type="button"
-              onClick={() => setAddVehicleOpen(true)}
-              className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
-            >
-              + ტრანსპორტის დამატება
-            </button>
+            {!isOperator && (
+              <button
+                type="button"
+                onClick={() => setAddVehicleOpen(true)}
+                className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+              >
+                + ტრანსპორტის დამატება
+              </button>
+            )}
           </div>
 
           {loadingGarage ? (
@@ -383,13 +388,15 @@ export function ServiceHistoryManager({
                 <h2 className="text-sm font-semibold">
                   სერვისის ისტორია — {formatVehicleCatalogLabel(selectedVehicle.vehicleCatalog)}
                 </h2>
-                <button
-                  type="button"
-                  onClick={openCreateModal}
-                  className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
-                >
-                  + სერვისის დამატება
-                </button>
+                {!isOperator && (
+                  <button
+                    type="button"
+                    onClick={openCreateModal}
+                    className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+                  >
+                    + სერვისის დამატება
+                  </button>
+                )}
               </div>
 
               <div className="mt-3">
@@ -403,24 +410,28 @@ export function ServiceHistoryManager({
                     data={records}
                     getRowKey={(record) => record.id}
                     emptyMessage="ჩანაწერი ჯერ არ დამატებულა"
-                    actions={(record) => (
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(record)}
-                          className="rounded-full px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
-                        >
-                          რედაქტირება
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeletingRecord(record)}
-                          className="rounded-full px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10"
-                        >
-                          წაშლა
-                        </button>
-                      </div>
-                    )}
+                    actions={
+                      isOperator
+                        ? undefined
+                        : (record) => (
+                            <div className="flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(record)}
+                                className="rounded-full px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+                              >
+                                რედაქტირება
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeletingRecord(record)}
+                                className="rounded-full px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10"
+                              >
+                                წაშლა
+                              </button>
+                            </div>
+                          )
+                    }
                   />
                 )}
               </div>

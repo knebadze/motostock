@@ -10,12 +10,13 @@ import { garageVehicleResponseSchema } from "../garage/garage.schema.js";
 import { wishlistItemResponseSchema } from "../wishlist/wishlist.schema.js";
 import { cartItemResponseSchema } from "../cart/cart.schema.js";
 import { ROLES } from "../../lib/roles.js";
-import { changePassword, createWalkIn, getOne, list, me, merge } from "./users.controller.js";
+import { changePassword, createWalkIn, getOne, list, me, merge, updateRole } from "./users.controller.js";
 import {
   changePasswordSchema,
   createWalkInUserSchema,
   listUsersQuerySchema,
   mergeUserParamsSchema,
+  updateUserRoleSchema,
   userIdParamSchema,
 } from "./users.schema.js";
 
@@ -38,21 +39,29 @@ usersRouter.patch(
 usersRouter.get(
   "/",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  // Also OPERATOR — the workshop "სერვისის ისტორია" screen searches this
+  // list to pick a customer before it can show/attach their garage/service
+  // records (see garage.routes.ts's admin-scoped /:userId/garage, granted
+  // the same way).
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(listUsersQuerySchema, "query"),
   list,
 );
 usersRouter.get(
   "/:id",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(userIdParamSchema, "params"),
   getOne,
 );
 usersRouter.post(
   "/walk-in",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  // Also OPERATOR — registering a walk-in customer is part of the workshop
+  // "სერვისის ისტორია" screen's normal flow (see ServiceHistoryManager.tsx),
+  // not a catalog/data-management write the OPERATOR role is otherwise kept
+  // away from.
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(createWalkInUserSchema),
   createWalkIn,
 );
@@ -62,6 +71,14 @@ usersRouter.post(
   requireRole(ROLES.ADMIN),
   validate(mergeUserParamsSchema, "params"),
   merge,
+);
+usersRouter.patch(
+  "/:id/role",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  validate(userIdParamSchema, "params"),
+  validate(updateUserRoleSchema),
+  updateRole,
 );
 
 registry.registerPath({
@@ -117,7 +134,7 @@ const adminUserResponseSchema = registry.register(
     // account — the row is kept, not deleted, and stays visible in the
     // admin list, per the "მაინც უნდა ჩანდეს" requirement.
     mergedIntoUserId: z.int().nullable(),
-    role: z.enum(["USER", "ADMIN"]),
+    role: z.enum(["USER", "ADMIN", "OPERATOR"]),
     hasPassword: z.boolean(),
     hasGoogle: z.boolean(),
     hasFacebook: z.boolean(),
@@ -198,7 +215,7 @@ registry.registerPath({
   method: "post",
   path: "/users/walk-in",
   tags: ["Users"],
-  summary: "Create a walk-in customer with no site login (admin only, workshop screen)",
+  summary: "Create a walk-in customer with no site login (admin or operator, workshop screen)",
   security: [{ cookieAuth: [] }],
   request: { body: { content: { "application/json": { schema: createWalkInUserSchema } } } },
   responses: {
@@ -235,6 +252,40 @@ registry.registerPath({
     },
     400: {
       description: "Invalid merge (same user, or either side already merged)",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    401: {
+      description: "Not authenticated",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    403: {
+      description: "Insufficient permissions",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    404: {
+      description: "Not found",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/users/{id}/role",
+  tags: ["Users"],
+  summary: "Change a user's role — the only way to grant/revoke OPERATOR (admin only)",
+  security: [{ cookieAuth: [] }],
+  request: {
+    params: userIdParamSchema,
+    body: { content: { "application/json": { schema: updateUserRoleSchema } } },
+  },
+  responses: {
+    200: {
+      description: "Updated",
+      content: { "application/json": { schema: z.object({ user: adminUserResponseSchema }) } },
+    },
+    400: {
+      description: "Cannot change your own role",
       content: { "application/json": { schema: errorResponseSchema } },
     },
     401: {

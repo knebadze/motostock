@@ -20,16 +20,26 @@ import {
 
 export const bulkDiscountsRouter = Router();
 
-bulkDiscountsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
+// Per-route (not a blanket `.use()`) — both GETs (view-only) grant OPERATOR
+// too; only POST /apply actually creates discounts and stays ADMIN-only.
 bulkDiscountsRouter.get(
   "/candidates",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(bulkDiscountCandidatesQuerySchema, "query"),
   bulkDiscountsController.listCandidates,
 );
-bulkDiscountsRouter.post("/apply", validate(bulkApplyDiscountsSchema), bulkDiscountsController.apply);
+bulkDiscountsRouter.post(
+  "/apply",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  validate(bulkApplyDiscountsSchema),
+  bulkDiscountsController.apply,
+);
 bulkDiscountsRouter.get(
   "/discounts",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(listDiscountHistoryQuerySchema, "query"),
   bulkDiscountsController.listDiscounts,
 );

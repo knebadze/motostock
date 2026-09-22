@@ -15,7 +15,14 @@ const ROLE_OPTIONS = [
   { value: "", label: "ყველა" },
   { value: "USER", label: "მომხმარებელი" },
   { value: "ADMIN", label: "ადმინი" },
+  { value: "OPERATOR", label: "ოპერატორი" },
 ];
+
+const ROLE_LABELS: Record<AdminUser["role"], string> = {
+  USER: "მომხმარებელი",
+  ADMIN: "ადმინი",
+  OPERATOR: "ოპერატორი",
+};
 
 const CUSTOMER_TYPE_OPTIONS = [
   { value: "", label: "ყველა" },
@@ -75,10 +82,14 @@ const columns: DataTableColumn<AdminUser>[] = [
     render: (user) => (
       <span
         className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-          user.role === "ADMIN" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+          user.role === "ADMIN"
+            ? "bg-primary/15 text-primary"
+            : user.role === "OPERATOR"
+              ? "bg-amber-500/15 text-amber-600"
+              : "bg-muted text-muted-foreground"
         }`}
       >
-        {user.role === "ADMIN" ? "ადმინი" : "მომხმარებელი"}
+        {ROLE_LABELS[user.role]}
       </span>
     ),
   },
@@ -240,7 +251,11 @@ export function UsersManager({ initialData }: { initialData: AdminUsersPage }) {
       </div>
 
       {viewingUserId != null && (
-        <UserDetailModal userId={viewingUserId} onClose={() => setViewingUserId(null)} />
+        <UserDetailModal
+          userId={viewingUserId}
+          onClose={() => setViewingUserId(null)}
+          onRoleChanged={() => loadPage(data.page)}
+        />
       )}
     </div>
   );

@@ -43,6 +43,11 @@ export type AdminNavItem = {
   label: string;
   href: string;
   icon: ReactNode;
+  // Extra roles (beyond ADMIN, which always sees everything) allowed to see
+  // this item — omitted means ADMIN-only. See AdminSidebar.tsx's filtering
+  // and the (protected) layout's matching page-level allow-list, which must
+  // be kept in sync with whatever's marked visible here.
+  allowedRoles?: "OPERATOR"[];
 };
 
 export type AdminNavSection = {
@@ -54,13 +59,23 @@ export const adminNav: AdminNavSection[] = [
   {
     label: "მთავარი",
     items: [
-      { label: "დეშბორდი", href: "/admin", icon: dashboardIcon },
+      { label: "დეშბორდი", href: "/admin", icon: dashboardIcon, allowedRoles: ["OPERATOR"] },
       { label: "ვიზიტორები", href: "/admin/visitors", icon: visitorsIcon },
-      { label: "ანალიტიკა", href: "/admin/analytics", icon: analyticsIcon },
-      { label: "შეკვეთები", href: "/admin/orders", icon: ordersIcon },
-      { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon },
+      {
+        label: "ანალიტიკა",
+        href: "/admin/analytics",
+        icon: analyticsIcon,
+        allowedRoles: ["OPERATOR"],
+      },
+      { label: "შეკვეთები", href: "/admin/orders", icon: ordersIcon, allowedRoles: ["OPERATOR"] },
+      { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon, allowedRoles: ["OPERATOR"] },
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },
-      { label: "FINA სინქრონიზაცია", href: "/admin/fina-sync", icon: finaSyncIcon },
+      {
+        label: "FINA სინქრონიზაცია",
+        href: "/admin/fina-sync",
+        icon: finaSyncIcon,
+        allowedRoles: ["OPERATOR"],
+      },
       { label: "ავტომატური დავალებები", href: "/admin/scheduled-jobs", icon: scheduledJobsIcon },
     ],
   },
@@ -70,7 +85,12 @@ export const adminNav: AdminNavSection[] = [
       { label: "მარკები", href: "/admin/brands", icon: brandsIcon },
       { label: "მოდელები", href: "/admin/models", icon: modelsIcon },
       { label: "ტექნიკის კატალოგი", href: "/admin/vehicle-catalog", icon: vehicleCatalogIcon },
-      { label: "გასაყიდი ტექნიკა", href: "/admin/vehicle-listings", icon: listingIcon },
+      {
+        label: "გასაყიდი ტექნიკა",
+        href: "/admin/vehicle-listings",
+        icon: listingIcon,
+        allowedRoles: ["OPERATOR"],
+      },
       {
         label: "ტრანსპორტის ფილტრები",
         href: "/admin/vehicle-category-filters",
@@ -81,12 +101,22 @@ export const adminNav: AdminNavSection[] = [
   {
     label: "პროდუქტები",
     items: [
-      { label: "პროდუქტები", href: "/admin/products", icon: productsIcon },
+      { label: "პროდუქტები", href: "/admin/products", icon: productsIcon, allowedRoles: ["OPERATOR"] },
       { label: "ბრენდები", href: "/admin/product-brands", icon: brandsIcon },
       { label: "მახასიათებლები", href: "/admin/attributes", icon: attributesIcon },
       { label: "კატეგორიის ფილტრები", href: "/admin/category-filters", icon: filtersIcon },
-      { label: "თავსებადობა", href: "/admin/compatibility", icon: compatibilityIcon },
-      { label: "ერთად შეძენა", href: "/admin/buy-together", icon: buyTogetherIcon },
+      {
+        label: "თავსებადობა",
+        href: "/admin/compatibility",
+        icon: compatibilityIcon,
+        allowedRoles: ["OPERATOR"],
+      },
+      {
+        label: "ერთად შეძენა",
+        href: "/admin/buy-together",
+        icon: buyTogetherIcon,
+        allowedRoles: ["OPERATOR"],
+      },
     ],
   },
   {
@@ -101,8 +131,18 @@ export const adminNav: AdminNavSection[] = [
     label: "მარკეტინგი",
     items: [
       { label: "მთავარი გვერდის სერვისი", href: "/admin/hero-slides", icon: heroSlidesIcon },
-      { label: "მასობრივი ფასდაკლებები", href: "/admin/bulk-discounts", icon: discountRulesIcon },
-      { label: "პრომოკოდები", href: "/admin/promo-codes", icon: promoCodesIcon },
+      {
+        label: "მასობრივი ფასდაკლებები",
+        href: "/admin/bulk-discounts",
+        icon: discountRulesIcon,
+        allowedRoles: ["OPERATOR"],
+      },
+      {
+        label: "პრომოკოდები",
+        href: "/admin/promo-codes",
+        icon: promoCodesIcon,
+        allowedRoles: ["OPERATOR"],
+      },
       { label: "Newsletter", href: "/admin/newsletter", icon: newsletterIcon },
     ],
   },
@@ -114,7 +154,12 @@ export const adminNav: AdminNavSection[] = [
     label: "სახელოსნო",
     items: [
       { label: "სერვისების ტიპები", href: "/admin/service-types", icon: serviceTypesIcon },
-      { label: "სერვისის ისტორია", href: "/admin/service-history", icon: serviceHistoryIcon },
+      {
+        label: "სერვისის ისტორია",
+        href: "/admin/service-history",
+        icon: serviceHistoryIcon,
+        allowedRoles: ["OPERATOR"],
+      },
     ],
   },
   {

@@ -12,7 +12,12 @@ import { toResponse as toCartItemResponse } from "../cart/cart.service.js";
 import { sessionRepository } from "../auth/session.repository.js";
 import { rolesRepository } from "../roles/roles.repository.js";
 import { usersRepository } from "./users.repository.js";
-import type { ChangePasswordInput, CreateWalkInUserInput, ListUsersQuery } from "./users.schema.js";
+import type {
+  ChangePasswordInput,
+  CreateWalkInUserInput,
+  ListUsersQuery,
+  UpdateUserRoleInput,
+} from "./users.schema.js";
 
 export async function getUserById(id: number) {
   const user = await usersRepository.findById(id);
@@ -200,5 +205,28 @@ export async function mergeUserInto(fromUserId: number, targetUserId: number) {
 
   await garageRepository.reassignOwner(fromUserId, targetUserId);
   const updated = await usersRepository.setMergedInto(fromUserId, targetUserId);
+  return toAdminUserSummary(updated);
+}
+
+// The only way to grant/revoke OPERATOR (or promote/demote ADMIN) — no
+// self-registration path ever produces anything but ROLES.USER. Blocks
+// changing the caller's own role so an admin can't accidentally lock
+// themselves out of the panel with no other admin left to undo it.
+export async function updateUserRole(id: number, callerId: number, input: UpdateUserRoleInput) {
+  if (id === callerId) {
+    throw new ApiError(400, "საკუთარი როლის შეცვლა შეუძლებელია", "CANNOT_CHANGE_OWN_ROLE");
+  }
+
+  const user = await usersRepository.findById(id);
+  if (!user) {
+    throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა", "USER_NOT_FOUND");
+  }
+
+  const role = await rolesRepository.findByName(input.role);
+  if (!role) {
+    throw new ApiError(500, "როლი კონფიგურირებული არ არის", "ROLE_NOT_CONFIGURED");
+  }
+
+  const updated = await usersRepository.updateRole(id, role.id);
   return toAdminUserSummary(updated);
 }

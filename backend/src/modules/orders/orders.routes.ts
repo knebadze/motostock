@@ -57,26 +57,26 @@ ordersRouter.post(
 // used elsewhere (e.g. vehicle-listing.routes.ts).
 ordersRouter.get(
   "/",
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(listOrdersQuerySchema, "query"),
   ordersController.listAll,
 );
 ordersRouter.get(
   "/:id",
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(orderIdParamSchema, "params"),
   ordersController.getAny,
 );
 ordersRouter.patch(
   "/:id/status",
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(orderIdParamSchema, "params"),
   validate(updateOrderStatusSchema),
   ordersController.updateStatus,
 );
 ordersRouter.post(
   "/:id/fina-sync",
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(orderIdParamSchema, "params"),
   ordersController.retryFinaSync,
 );
