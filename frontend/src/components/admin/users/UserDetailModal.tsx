@@ -8,7 +8,7 @@ import { Loader } from "@/components/shared/Loader";
 import { getUser, type AdminUserDetail } from "@/lib/api/users";
 import type { WishlistItem } from "@/lib/api/wishlist";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
-import { formatDateTime, formatVehicleCatalogLabel } from "@/lib/format";
+import { formatDate, formatDateTime, formatVehicleCatalogLabel } from "@/lib/format";
 import { getCartItemDisplay } from "@/lib/cart-item-display";
 
 const cameraIcon = (
@@ -103,6 +103,16 @@ export function UserDetailModal({ userId, onClose }: { userId: number; onClose: 
               >
                 {detail.role === "ADMIN" ? "ადმინი" : "მომხმარებელი"}
               </span>
+              {detail.isWalkIn && (
+                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-600">
+                  სტუმარი
+                </span>
+              )}
+              {detail.mergedIntoUserId != null && (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+                  შერწყმულია (#{detail.mergedIntoUserId})
+                </span>
+              )}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{detail.email}</p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -117,6 +127,20 @@ export function UserDetailModal({ userId, onClose }: { userId: number; onClose: 
                   რეგისტრირებულია
                 </p>
                 <p className="mt-1 text-sm">{formatDateTime(detail.createdAt)}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  ტელეფონი
+                </p>
+                <p className="mt-1 text-sm">{detail.phone ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  დაბადების თარიღი
+                </p>
+                <p className="mt-1 text-sm">
+                  {detail.dateOfBirth ? formatDate(detail.dateOfBirth) : "—"}
+                </p>
               </div>
             </div>
           </div>

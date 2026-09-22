@@ -78,23 +78,53 @@ export async function registerUser(
   }
 
   const passwordHash = await hashPassword(input.password);
+  const dateOfBirth = new Date(input.dateOfBirth);
+
+  // Auto-merge key: a walk-in customer entered by the workshop admin (see
+  // users.repository.ts's createWalkIn) is matched here the moment a real
+  // registration arrives with the same phone. The SAME row is converted in
+  // place (isWalkIn flipped false, real email/password set) rather than a
+  // new row being created and every GarageVehicle/ServiceRecord reassigned
+  // onto it — see the plan's design-decisions note on this.
+  const walkIn = await usersRepository.findByPhone(input.phone);
+  if (walkIn && !walkIn.isWalkIn) {
+    // The phone belongs to someone else's already-registered account — same
+    // conflict shape as the email check above.
+    throw new ApiError(409, "Phone number already in use", "PHONE_ALREADY_IN_USE");
+  }
+
   let user;
   try {
-    user = await usersRepository.create({
-      email: input.email,
-      firstName: input.firstName,
-      lastName: input.lastName,
-      passwordHash,
-      roleId: userRole.id,
-    });
+    user = walkIn
+      ? await usersRepository.convertWalkInToRegistered(walkIn.id, {
+          email: input.email,
+          passwordHash,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          dateOfBirth,
+        })
+      : await usersRepository.create({
+          email: input.email,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          passwordHash,
+          roleId: userRole.id,
+          phone: input.phone,
+          dateOfBirth,
+        });
   } catch (err) {
     // A concurrent request (another password registration double-submit, or
     // an OAuth signup racing this one — see oauth.service.ts's
-    // findOrCreateOAuthUser) can pass the findByEmail check above before
-    // either commits — surface the same clean 409 the pre-check above gives
-    // the non-race case, instead of a raw 500.
-    if (!isUniqueConstraintViolation(err, "email")) throw err;
-    throw new ApiError(409, "Email already in use", "EMAIL_ALREADY_IN_USE");
+    // findOrCreateOAuthUser) can pass the findByEmail/findByPhone checks
+    // above before either commits — surface the same clean 409 the pre-check
+    // above gives the non-race case, instead of a raw 500.
+    if (isUniqueConstraintViolation(err, "email")) {
+      throw new ApiError(409, "Email already in use", "EMAIL_ALREADY_IN_USE");
+    }
+    if (isUniqueConstraintViolation(err, "phone")) {
+      throw new ApiError(409, "Phone number already in use", "PHONE_ALREADY_IN_USE");
+    }
+    throw err;
   }
 
   const session = await sessionRepository.create(user.id, { ipAddress, userAgent });

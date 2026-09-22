@@ -77,4 +77,19 @@ export const garageRepository = {
       });
     });
   },
+
+  // Admin manual-merge fallback (users.service.ts's mergeUserInto) — moves
+  // every vehicle a walk-in customer owns onto the real account they were
+  // matched to. A plain updateMany, not the claim-then-insert transaction
+  // pattern guest cart/wishlist merging uses — GarageVehicle has no
+  // per-owner uniqueness constraint a duplicate could violate, so there's
+  // nothing to race against. ServiceRecord rows need no change of their
+  // own: they key off garageVehicleId, not userId, so they move implicitly
+  // with their vehicle.
+  reassignOwner(fromUserId: number, toUserId: number) {
+    return prisma.garageVehicle.updateMany({
+      where: { userId: fromUserId },
+      data: { userId: toUserId },
+    });
+  },
 };

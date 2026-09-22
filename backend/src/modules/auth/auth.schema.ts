@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { emailSchema } from "../../lib/email.js";
+import { phoneField } from "../../lib/phone.js";
+import { dateOfBirthField } from "../../lib/date-of-birth.js";
 
 export const registerSchema = registry.register(
   "RegisterInput",
@@ -9,6 +11,11 @@ export const registerSchema = registry.register(
     lastName: z.string().min(2).max(50).openapi({ example: "Beridze" }),
     email: emailSchema.openapi({ example: "rider@motostock.ge" }),
     password: z.string().min(8).max(100).openapi({ example: "supersecret123" }),
+    // Also the walk-in-customer auto-merge key — see auth.service.ts's
+    // register for why this is required here (unlike User.phone, which is
+    // nullable on the model for pre-existing rows and OAuth signups).
+    phone: phoneField,
+    dateOfBirth: dateOfBirthField,
   }),
 );
 export type RegisterInput = z.infer<typeof registerSchema>;

@@ -8,6 +8,13 @@ export type AdminUser = {
   id: number;
   email: string;
   name: string;
+  phone: string | null;
+  dateOfBirth: string | null;
+  // A workshop-entered customer with no login of their own.
+  isWalkIn: boolean;
+  // Set once an admin manually links this (walk-in) row onto a real
+  // account — the row is kept, not deleted, and stays visible in the list.
+  mergedIntoUserId: number | null;
   role: "USER" | "ADMIN";
   hasPassword: boolean;
   hasGoogle: boolean;
@@ -45,5 +52,31 @@ export async function listUsers(
 
 export async function getUser(id: number): Promise<AdminUserDetail> {
   const { data } = await apiClient.get<{ user: AdminUserDetail }>(`/users/${id}`);
+  return data.user;
+}
+
+export type CreateWalkInUserInput = {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  dateOfBirth: string;
+};
+
+// Workshop "+ ახალი სტუმარი მომხმარებელი" action — creates a real User row
+// with no login (synthetic email, no password); it converts in place the
+// moment the same phone number registers for real (see auth.service.ts's
+// registerUser).
+export async function createWalkInUser(input: CreateWalkInUserInput): Promise<AdminUser> {
+  const { data } = await apiClient.post<{ user: AdminUser }>("/users/walk-in", input);
+  return data.user;
+}
+
+// Admin manual-merge fallback — for two already-separate rows (typically a
+// walk-in and a real account) the automatic phone-match on registration
+// couldn't connect on its own.
+export async function mergeUserInto(id: number, targetUserId: number): Promise<AdminUser> {
+  const { data } = await apiClient.post<{ user: AdminUser }>(
+    `/users/${id}/merge-into/${targetUserId}`,
+  );
   return data.user;
 }

@@ -2,14 +2,17 @@ import { ApiError } from "../../lib/ApiError.js";
 import { comparePassword, hashPassword } from "../../lib/password.js";
 import { resolvePage } from "../../lib/pagination.js";
 import { signJwt } from "../../lib/jwt.js";
-import type { RoleName } from "../../lib/roles.js";
+import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
+import { ROLES, type RoleName } from "../../lib/roles.js";
 import { toAddressResponse } from "../addresses/addresses.service.js";
 import { toResponse as toGarageVehicleResponse } from "../garage/garage.service.js";
+import { garageRepository } from "../garage/garage.repository.js";
 import { toResponse as toWishlistItemResponse } from "../wishlist/wishlist.service.js";
 import { toResponse as toCartItemResponse } from "../cart/cart.service.js";
 import { sessionRepository } from "../auth/session.repository.js";
+import { rolesRepository } from "../roles/roles.repository.js";
 import { usersRepository } from "./users.repository.js";
-import type { ChangePasswordInput, ListUsersQuery } from "./users.schema.js";
+import type { ChangePasswordInput, CreateWalkInUserInput, ListUsersQuery } from "./users.schema.js";
 
 export async function getUserById(id: number) {
   const user = await usersRepository.findById(id);
@@ -25,6 +28,37 @@ export async function getUserById(id: number) {
     createdAt: user.createdAt,
     role: user.role.name,
     emailVerified: user.emailVerifiedAt != null,
+  };
+}
+
+function toAdminUserSummary(user: {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  dateOfBirth: Date | null;
+  isWalkIn: boolean;
+  mergedIntoUserId: number | null;
+  role: { name: string };
+  passwordHash: string | null;
+  googleId: string | null;
+  facebookId: string | null;
+  createdAt: Date;
+}) {
+  return {
+    id: user.id,
+    email: user.email,
+    name: `${user.firstName} ${user.lastName}`,
+    phone: user.phone,
+    dateOfBirth: user.dateOfBirth,
+    isWalkIn: user.isWalkIn,
+    mergedIntoUserId: user.mergedIntoUserId,
+    role: user.role.name,
+    hasPassword: user.passwordHash != null,
+    hasGoogle: user.googleId != null,
+    hasFacebook: user.facebookId != null,
+    createdAt: user.createdAt,
   };
 }
 
@@ -83,14 +117,7 @@ export async function getUserDetail(id: number) {
   }
 
   return {
-    id: user.id,
-    email: user.email,
-    name: `${user.firstName} ${user.lastName}`,
-    role: user.role.name,
-    hasPassword: user.passwordHash != null,
-    hasGoogle: user.googleId != null,
-    hasFacebook: user.facebookId != null,
-    createdAt: user.createdAt,
+    ...toAdminUserSummary(user),
     addresses: user.addresses.map(toAddressResponse),
     garage: user.garageVehicles.map(toGarageVehicleResponse),
     wishlist: await Promise.all(user.wishlistItems.map(toWishlistItemResponse)),
@@ -107,18 +134,70 @@ export async function listUsers(query: ListUsersQuery) {
   ]);
 
   return {
-    users: users.map((user) => ({
-      id: user.id,
-      email: user.email,
-      name: `${user.firstName} ${user.lastName}`,
-      role: user.role.name,
-      hasPassword: user.passwordHash != null,
-      hasGoogle: user.googleId != null,
-      hasFacebook: user.facebookId != null,
-      createdAt: user.createdAt,
-    })),
+    users: users.map(toAdminUserSummary),
     total,
     page,
     pageSize,
   };
+}
+
+// Admin workshop "+ ახალი სტუმარი მომხმარებელი" action — creates a real User
+// row with no login (synthetic email, no password), so garage/service-record
+// creation can attach to a real id right away. Converted in place (not
+// replaced) the moment a matching registration arrives — see
+// auth.service.ts's registerUser.
+export async function createWalkInUser(input: CreateWalkInUserInput) {
+  const existingPhone = await usersRepository.findByPhone(input.phone);
+  if (existingPhone) {
+    throw new ApiError(409, "ამ ტელეფონის ნომრით მომხმარებელი უკვე არსებობს", "PHONE_ALREADY_IN_USE");
+  }
+
+  const userRole = await rolesRepository.findByName(ROLES.USER);
+  if (!userRole) {
+    throw new ApiError(500, "Default role is not configured", "INTERNAL_CONFIG_ERROR");
+  }
+
+  try {
+    const user = await usersRepository.createWalkIn({
+      firstName: input.firstName,
+      lastName: input.lastName,
+      phone: input.phone,
+      dateOfBirth: new Date(input.dateOfBirth),
+      roleId: userRole.id,
+    });
+    return toAdminUserSummary(user);
+  } catch (err) {
+    if (!isUniqueConstraintViolation(err, "phone")) throw err;
+    throw new ApiError(409, "ამ ტელეფონის ნომრით მომხმარებელი უკვე არსებობს", "PHONE_ALREADY_IN_USE");
+  }
+}
+
+// Admin manual-merge fallback — for two already-separate rows (a walk-in W
+// and a real account R the admin knows are the same person) that the
+// automatic phone-match couldn't connect on its own (e.g. W's phone differs
+// from R's, or R signed up via Google/Facebook, which collects no phone at
+// all). W is kept, not deleted (no delete-user feature exists) — just
+// flagged so the admin list can show "შერწყმულია".
+export async function mergeUserInto(fromUserId: number, targetUserId: number) {
+  if (fromUserId === targetUserId) {
+    throw new ApiError(400, "მომხმარებლის თავად თავისთან შერწყმა შეუძლებელია", "MERGE_SAME_USER");
+  }
+
+  const [fromUser, targetUser] = await Promise.all([
+    usersRepository.findById(fromUserId),
+    usersRepository.findById(targetUserId),
+  ]);
+  if (!fromUser || !targetUser) {
+    throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა", "USER_NOT_FOUND");
+  }
+  if (fromUser.mergedIntoUserId != null) {
+    throw new ApiError(400, "მომხმარებელი უკვე შერწყმულია", "USER_ALREADY_MERGED");
+  }
+  if (targetUser.mergedIntoUserId != null) {
+    throw new ApiError(400, "სამიზნე მომხმარებელი უკვე შერწყმულია სხვასთან", "TARGET_USER_ALREADY_MERGED");
+  }
+
+  await garageRepository.reassignOwner(fromUserId, targetUserId);
+  const updated = await usersRepository.setMergedInto(fromUserId, targetUserId);
+  return toAdminUserSummary(updated);
 }

@@ -1,13 +1,7 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
-
-const phoneField = z
-  .string()
-  .trim()
-  .min(9, "ტელეფონის ნომერი არასწორია")
-  .max(20, "ტელეფონის ნომერი არასწორია")
-  .openapi({ example: "+995555123456" });
+import { phoneField } from "../../lib/phone.js";
 
 export const createAddressSchema = registry.register(
   "CreateAddressInput",

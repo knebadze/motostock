@@ -14,6 +14,8 @@ export async function registerUser(input: {
   lastName: string;
   email: string;
   password: string;
+  phone: string;
+  dateOfBirth: string;
 }): Promise<User> {
   const { data } = await apiClient.post<{ user: User }>("/auth/register", input);
   return data.user;

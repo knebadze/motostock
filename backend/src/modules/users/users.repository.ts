@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { Prisma } from "../../generated/prisma/index.js";
 import { prisma } from "../../config/prisma.js";
 import { addressInclude } from "../addresses/addresses.repository.js";
@@ -15,6 +16,7 @@ function searchWhere(search?: string): Prisma.UserWhereInput | undefined {
           { firstName: { contains: search, mode: "insensitive" } },
           { lastName: { contains: search, mode: "insensitive" } },
           { email: { contains: search, mode: "insensitive" } },
+          { phone: { contains: search, mode: "insensitive" } },
         ],
       }
     : undefined;
@@ -76,8 +78,60 @@ export const usersRepository = {
     lastName: string;
     passwordHash: string;
     roleId: number;
+    phone?: string | null;
+    dateOfBirth?: Date | null;
   }) {
     return prisma.user.create({ data, include: { role: true } });
+  },
+
+  // The walk-in auto-merge key (auth.service.ts's registerUser) — only
+  // matches rows that haven't already been converted/merged away, since a
+  // phone is unique across all users regardless of walk-in status.
+  findByPhone(phone: string) {
+    return prisma.user.findUnique({ where: { phone }, include: { role: true } });
+  },
+
+  // Admin workshop "+ ახალი სტუმარი მომხმარებელი" action — synthetic email so
+  // the unique/non-null constraint on User.email stays untouched; no
+  // passwordHash, since a walk-in never logs in as itself.
+  createWalkIn(data: { firstName: string; lastName: string; phone: string; dateOfBirth: Date; roleId: number }) {
+    return prisma.user.create({
+      data: {
+        email: `walkin+${randomUUID()}@walkin.internal`,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        dateOfBirth: data.dateOfBirth,
+        roleId: data.roleId,
+        isWalkIn: true,
+      },
+      include: { role: true },
+    });
+  },
+
+  // Converts an existing isWalkIn row into a real account in place (same id,
+  // so GarageVehicle/ServiceRecord need no reassignment) — see
+  // auth.service.ts's registerUser.
+  convertWalkInToRegistered(
+    id: number,
+    data: { email: string; passwordHash: string; firstName: string; lastName: string; dateOfBirth: Date },
+  ) {
+    return prisma.user.update({
+      where: { id },
+      data: { ...data, isWalkIn: false },
+      include: { role: true },
+    });
+  },
+
+  // Admin manual-merge fallback (users.service.ts's mergeUserInto) — the
+  // walk-in row is kept, not deleted (no delete-user feature exists), just
+  // flagged so the admin list can show "შერწყმულია".
+  setMergedInto(id: number, targetUserId: number) {
+    return prisma.user.update({
+      where: { id },
+      data: { mergedIntoUserId: targetUserId },
+      include: { role: true },
+    });
   },
 
   createOAuthUser(data: {

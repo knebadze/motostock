@@ -30,9 +30,32 @@ function methodBadges(user: AdminUser) {
   );
 }
 
+function nameWithStatusBadges(user: AdminUser) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span>{user.name}</span>
+      {user.isWalkIn && (
+        <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-600">
+          სტუმარი
+        </span>
+      )}
+      {user.mergedIntoUserId != null && (
+        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+          შერწყმულია
+        </span>
+      )}
+    </div>
+  );
+}
+
 const columns: DataTableColumn<AdminUser>[] = [
-  { header: "სახელი", render: (user) => user.name },
+  { header: "სახელი", render: (user) => nameWithStatusBadges(user) },
   { header: "ელფოსტა", render: (user) => user.email, cellClassName: "text-muted-foreground" },
+  {
+    header: "ტელეფონი",
+    render: (user) => user.phone ?? "—",
+    cellClassName: "text-muted-foreground",
+  },
   {
     header: "როლი",
     render: (user) => (

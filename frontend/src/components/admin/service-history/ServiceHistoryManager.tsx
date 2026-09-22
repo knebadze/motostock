@@ -8,6 +8,7 @@ import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Loader } from "@/components/shared/Loader";
 import { getUser, listUsers, type AdminUser } from "@/lib/api/users";
 import type { GarageVehicle } from "@/lib/api/garage";
+import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 import {
   deleteServiceRecord,
   listServiceRecordsForVehicle,
@@ -18,6 +19,9 @@ import type { TeamMember } from "@/lib/api/team-members";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { formatDate, formatPrice, formatVehicleCatalogLabel } from "@/lib/format";
 import { ServiceRecordFormModal } from "./ServiceRecordFormModal";
+import { AddWalkInCustomerModal } from "./AddWalkInCustomerModal";
+import { AddGarageVehicleModal } from "./AddGarageVehicleModal";
+import { LinkExistingUserModal } from "./LinkExistingUserModal";
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -56,9 +60,11 @@ function serviceRecordDetail(record: ServiceRecord): string | null {
 export function ServiceHistoryManager({
   initialServiceTypes,
   teamMembers,
+  vehicleCatalog,
 }: {
   initialServiceTypes: ServiceType[];
   teamMembers: TeamMember[];
+  vehicleCatalog: VehicleCatalogEntry[];
 }) {
   const [serviceTypes] = useState(initialServiceTypes);
 
@@ -82,6 +88,9 @@ export function ServiceHistoryManager({
   const [formOpen, setFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<ServiceRecord | null>(null);
   const [deletingRecord, setDeletingRecord] = useState<ServiceRecord | null>(null);
+  const [addWalkInOpen, setAddWalkInOpen] = useState(false);
+  const [addVehicleOpen, setAddVehicleOpen] = useState(false);
+  const [linkUserOpen, setLinkUserOpen] = useState(false);
 
   useEffect(() => {
     const query = userQuery.trim();
@@ -162,6 +171,18 @@ export function ServiceHistoryManager({
       .finally(() => {
         if (recordsRequestSeqRef.current === requestSeq) setLoadingRecords(false);
       });
+  }
+
+  function handleVehicleCreated(vehicle: GarageVehicle) {
+    setGarageVehicles((prev) => [vehicle, ...prev]);
+    selectVehicle(vehicle);
+  }
+
+  function handleMerged(merged: AdminUser) {
+    // The walk-in's GarageVehicle rows just moved onto the target account —
+    // refresh from the server rather than assuming an empty list, in case
+    // this exact row somehow still owns something.
+    selectUser(merged);
   }
 
   function openCreateModal() {
@@ -248,35 +269,79 @@ export function ServiceHistoryManager({
           {!searchingUsers && userQuery.trim() && userResults.length === 0 && (
             <p className="mt-3 text-sm text-muted-foreground">მომხმარებელი ვერ მოიძებნა</p>
           )}
+
+          <button
+            type="button"
+            onClick={() => setAddWalkInOpen(true)}
+            className="mt-4 rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+          >
+            + ახალი სტუმარი მომხმარებელი
+          </button>
         </div>
       ) : (
         <div className="mt-6">
           <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
             <div>
-              <p className="font-semibold text-foreground">{selectedUser.name}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold text-foreground">{selectedUser.name}</p>
+                {selectedUser.isWalkIn && (
+                  <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-600">
+                    სტუმარი
+                  </span>
+                )}
+                {selectedUser.mergedIntoUserId != null && (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+                    შერწყმულია
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">{selectedUser.email}</p>
+              {selectedUser.phone && (
+                <p className="text-xs text-muted-foreground">{selectedUser.phone}</p>
+              )}
             </div>
+            <div className="flex items-center gap-2">
+              {selectedUser.isWalkIn && selectedUser.mergedIntoUserId == null && (
+                <button
+                  type="button"
+                  onClick={() => setLinkUserOpen(true)}
+                  className="rounded-full px-3 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                >
+                  დაკავშირება არსებულ მომხმარებელთან
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={changeUser}
+                className="rounded-full px-3 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              >
+                მომხმარებლის შეცვლა
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">ტრანსპორტი</h2>
             <button
               type="button"
-              onClick={changeUser}
-              className="rounded-full px-3 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              onClick={() => setAddVehicleOpen(true)}
+              className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
             >
-              მომხმარებლის შეცვლა
+              + ტრანსპორტის დამატება
             </button>
           </div>
 
           {loadingGarage ? (
-            <div className="mt-6 flex justify-center">
+            <div className="mt-3 flex justify-center">
               <Loader size="lg" />
             </div>
           ) : garageVehicles.length === 0 ? (
-            <p className="mt-6 rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+            <p className="mt-3 rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
               ამ მომხმარებლის გარაჟი ცარიელია
             </p>
           ) : (
-            <div className="mt-6">
-              <h2 className="text-sm font-semibold">ტრანსპორტი</h2>
-              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            <div className="mt-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {garageVehicles.map((vehicle) => {
                   const photoUrl = resolveMediaUrl(vehicle.imageUrl);
                   return (
@@ -397,6 +462,31 @@ export function ServiceHistoryManager({
           refreshRecords(selectedVehicle.id);
         }}
       />
+
+      <AddWalkInCustomerModal
+        open={addWalkInOpen}
+        onClose={() => setAddWalkInOpen(false)}
+        onCreated={selectUser}
+      />
+
+      {selectedUser && (
+        <AddGarageVehicleModal
+          open={addVehicleOpen}
+          onClose={() => setAddVehicleOpen(false)}
+          onCreated={handleVehicleCreated}
+          userId={selectedUser.id}
+          vehicleCatalog={vehicleCatalog}
+        />
+      )}
+
+      {selectedUser && (
+        <LinkExistingUserModal
+          open={linkUserOpen}
+          onClose={() => setLinkUserOpen(false)}
+          sourceUser={selectedUser}
+          onMerged={handleMerged}
+        />
+      )}
     </div>
   );
 }

@@ -21,6 +21,8 @@ export function RegisterForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -36,6 +38,8 @@ export function RegisterForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
       firstName,
       lastName,
       email,
+      phone,
+      dateOfBirth,
       password,
       confirmPassword,
       agreedToTerms,
@@ -117,6 +121,36 @@ export function RegisterForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
           <FieldError message={errors.email} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="phone" className="text-sm font-medium">
+            {t("phoneLabel")}
+          </label>
+          <input
+            id="phone"
+            type="tel"
+            autoComplete="tel"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.phone} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="date-of-birth" className="text-sm font-medium">
+            {t("dateOfBirthLabel")}
+          </label>
+          <input
+            id="date-of-birth"
+            type="date"
+            autoComplete="bday"
+            value={dateOfBirth}
+            onChange={(event) => setDateOfBirth(event.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <FieldError message={errors.dateOfBirth} />
         </div>
 
         <div className="flex flex-col gap-1.5">

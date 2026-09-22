@@ -10,8 +10,14 @@ import { garageVehicleResponseSchema } from "../garage/garage.schema.js";
 import { wishlistItemResponseSchema } from "../wishlist/wishlist.schema.js";
 import { cartItemResponseSchema } from "../cart/cart.schema.js";
 import { ROLES } from "../../lib/roles.js";
-import { changePassword, getOne, list, me } from "./users.controller.js";
-import { changePasswordSchema, listUsersQuerySchema, userIdParamSchema } from "./users.schema.js";
+import { changePassword, createWalkIn, getOne, list, me, merge } from "./users.controller.js";
+import {
+  changePasswordSchema,
+  createWalkInUserSchema,
+  listUsersQuerySchema,
+  mergeUserParamsSchema,
+  userIdParamSchema,
+} from "./users.schema.js";
 
 export const usersRouter = Router();
 
@@ -42,6 +48,20 @@ usersRouter.get(
   requireRole(ROLES.ADMIN),
   validate(userIdParamSchema, "params"),
   getOne,
+);
+usersRouter.post(
+  "/walk-in",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  validate(createWalkInUserSchema),
+  createWalkIn,
+);
+usersRouter.post(
+  "/:id/merge-into/:targetUserId",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  validate(mergeUserParamsSchema, "params"),
+  merge,
 );
 
 registry.registerPath({
@@ -88,6 +108,15 @@ const adminUserResponseSchema = registry.register(
     id: z.int().openapi({ example: 1 }),
     email: z.email().openapi({ example: "rider@motostock.ge" }),
     name: z.string().openapi({ example: "Nika Beridze" }),
+    phone: z.string().nullable(),
+    dateOfBirth: z.iso.datetime().nullable(),
+    // A workshop-entered customer with no login of their own — see
+    // users.service.ts's createWalkInUser.
+    isWalkIn: z.boolean(),
+    // Set once an admin manually links this (walk-in) row onto a real
+    // account — the row is kept, not deleted, and stays visible in the
+    // admin list, per the "მაინც უნდა ჩანდეს" requirement.
+    mergedIntoUserId: z.int().nullable(),
     role: z.enum(["USER", "ADMIN"]),
     hasPassword: z.boolean(),
     hasGoogle: z.boolean(),
@@ -149,6 +178,64 @@ registry.registerPath({
     200: {
       description: "User detail",
       content: { "application/json": { schema: z.object({ user: adminUserDetailResponseSchema }) } },
+    },
+    401: {
+      description: "Not authenticated",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    403: {
+      description: "Insufficient permissions",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    404: {
+      description: "Not found",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/users/walk-in",
+  tags: ["Users"],
+  summary: "Create a walk-in customer with no site login (admin only, workshop screen)",
+  security: [{ cookieAuth: [] }],
+  request: { body: { content: { "application/json": { schema: createWalkInUserSchema } } } },
+  responses: {
+    201: {
+      description: "Created",
+      content: { "application/json": { schema: z.object({ user: adminUserResponseSchema }) } },
+    },
+    401: {
+      description: "Not authenticated",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    403: {
+      description: "Insufficient permissions",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    409: {
+      description: "Phone number already in use",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/users/{id}/merge-into/{targetUserId}",
+  tags: ["Users"],
+  summary: "Manually merge one user (typically a walk-in) into another (admin only)",
+  security: [{ cookieAuth: [] }],
+  request: { params: mergeUserParamsSchema },
+  responses: {
+    200: {
+      description: "Merged",
+      content: { "application/json": { schema: z.object({ user: adminUserResponseSchema }) } },
+    },
+    400: {
+      description: "Invalid merge (same user, or either side already merged)",
+      content: { "application/json": { schema: errorResponseSchema } },
     },
     401: {
       description: "Not authenticated",

@@ -45,3 +45,21 @@ export async function uploadGarageVehicleImage(id: number, file: File): Promise<
 export async function deleteGarageVehicle(id: number): Promise<void> {
   await apiClient.delete(`/users/me/garage/${id}`);
 }
+
+// Admin-scoped variants (workshop screen — add/list a vehicle for any
+// customer, walk-in or registered).
+export async function listGarageForUser(userId: number): Promise<GarageVehicle[]> {
+  const { data } = await apiClient.get<{ items: GarageVehicle[] }>(`/users/${userId}/garage`);
+  return data.items;
+}
+
+export async function createGarageVehicleForUser(
+  userId: number,
+  input: GarageVehicleInput,
+): Promise<GarageVehicle> {
+  const { data } = await apiClient.post<{ item: GarageVehicle }>(
+    `/users/${userId}/garage`,
+    input,
+  );
+  return data.item;
+}

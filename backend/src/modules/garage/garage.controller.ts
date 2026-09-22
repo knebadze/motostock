@@ -64,3 +64,20 @@ export async function remove(req: Request, res: Response) {
   await garageService.deleteGarageVehicle(req.user.sub, Number(req.params.id));
   res.status(204).send();
 }
+
+// Admin-scoped variants (workshop screen — add/list a vehicle for ANY
+// customer, walk-in or registered) — same service functions as the /me
+// routes above, just with an admin-supplied userId instead of the caller's
+// own. requireRole(ADMIN) is applied at the router level.
+export async function adminList(req: Request<{ userId: string }>, res: Response) {
+  const items = await garageService.listMyGarage(Number(req.params.userId));
+  res.status(200).json({ items });
+}
+
+export async function adminCreate(
+  req: Request<{ userId: string }, unknown, CreateGarageVehicleInput>,
+  res: Response,
+) {
+  const item = await garageService.createGarageVehicle(Number(req.params.userId), req.body);
+  res.status(201).json({ item });
+}

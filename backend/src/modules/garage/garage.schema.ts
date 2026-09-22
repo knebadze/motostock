@@ -19,6 +19,12 @@ export const garageVehicleIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+// Admin-scoped garage routes (workshop "+ ტრანსპორტის დამატება" for any
+// customer, walk-in or registered) — see garage.routes.ts.
+export const garageUserIdParamSchema = z.object({
+  userId: z.coerce.number().int().positive(),
+});
+
 export const garageVehicleResponseSchema = registry.register(
   "GarageVehicle",
   z.object({
