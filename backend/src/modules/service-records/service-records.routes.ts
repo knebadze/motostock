@@ -8,7 +8,9 @@ import { ROLES } from "../../lib/roles.js";
 import * as serviceRecordsController from "./service-records.controller.js";
 import {
   createServiceRecordSchema,
+  listServiceRecordsAdminQuerySchema,
   listServiceRecordsQuerySchema,
+  serviceRecordAdminResponseSchema,
   serviceRecordIdParamSchema,
   serviceRecordResponseSchema,
   updateServiceRecordSchema,
@@ -26,6 +28,16 @@ serviceRecordsRouter.get(
   requireAuth,
   validate(listServiceRecordsQuerySchema, "query"),
   serviceRecordsController.list,
+);
+
+// Workshop "სერვისის ისტორია" screen's admin-wide overview table — view-only,
+// so OPERATOR gets it too (same as the per-vehicle GET above).
+serviceRecordsRouter.get(
+  "/admin",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(listServiceRecordsAdminQuerySchema, "query"),
+  serviceRecordsController.listAdmin,
 );
 
 serviceRecordsRouter.post(
@@ -66,6 +78,30 @@ registry.registerPath({
     200: { description: "Service records", content: { "application/json": { schema: listResponse } } },
     403: { description: "Not the vehicle's owner", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Vehicle not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/service-records/admin",
+  tags: ["ServiceRecords"],
+  summary: "List recently performed services across every customer/vehicle, filterable and paginated (admin/operator)",
+  security,
+  request: { query: listServiceRecordsAdminQuerySchema },
+  responses: {
+    200: {
+      description: "Service records",
+      content: {
+        "application/json": {
+          schema: z.object({
+            items: z.array(serviceRecordAdminResponseSchema),
+            total: z.int(),
+            page: z.int(),
+            pageSize: z.int(),
+          }),
+        },
+      },
+    },
   },
 });
 

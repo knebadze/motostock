@@ -1,4 +1,5 @@
 import {
+  getServiceRecordsAdminFromServer,
   getServiceTypesFromServer,
   getTeamMembersFromServer,
   getVehicleCatalogFromServer,
@@ -6,10 +7,11 @@ import {
 import { ServiceHistoryManager } from "@/components/admin/service-history/ServiceHistoryManager";
 
 export default async function ServiceHistoryPage() {
-  const [serviceTypes, teamMembers, vehicleCatalog] = await Promise.all([
+  const [serviceTypes, teamMembers, vehicleCatalog, recentServiceRecords] = await Promise.all([
     getServiceTypesFromServer(),
     getTeamMembersFromServer(),
     getVehicleCatalogFromServer(),
+    getServiceRecordsAdminFromServer(),
   ]);
 
   return (
@@ -17,6 +19,7 @@ export default async function ServiceHistoryPage() {
       initialServiceTypes={serviceTypes}
       teamMembers={teamMembers}
       vehicleCatalog={vehicleCatalog}
+      initialRecentServiceRecords={recentServiceRecords}
     />
   );
 }

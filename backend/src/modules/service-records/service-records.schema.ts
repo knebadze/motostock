@@ -2,6 +2,7 @@ import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
 import { MAX_DECIMAL_10_2 } from "../../lib/money.js";
+import { vehicleCatalogResponseSchema } from "../vehicle-catalog/vehicle-catalog.schema.js";
 
 const servicePositionSchema = z.enum(["FRONT", "REAR", "BOTH"]);
 
@@ -56,6 +57,22 @@ export const listServiceRecordsQuerySchema = z.object({
 });
 export type ListServiceRecordsQuery = z.infer<typeof listServiceRecordsQuerySchema>;
 
+// Workshop "სერვისის ისტორია" screen's admin-wide overview table (recently
+// performed services across every customer/vehicle) — distinct from the
+// per-vehicle query above, which always needs a garageVehicleId already
+// picked. Same optional-page/pageSize shape as error-logs.schema.ts's
+// errorLogsQuerySchema.
+export const listServiceRecordsAdminQuerySchema = z.object({
+  search: z.string().trim().min(1).max(200).optional(),
+  serviceTypeId: z.coerce.number().int().positive().optional(),
+  mechanicId: z.coerce.number().int().positive().optional(),
+  performedFrom: z.iso.date().optional(),
+  performedTo: z.iso.date().optional(),
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
+});
+export type ListServiceRecordsAdminQuery = z.infer<typeof listServiceRecordsAdminQuerySchema>;
+
 export const serviceRecordResponseSchema = registry.register(
   "ServiceRecord",
   z.object({
@@ -85,5 +102,20 @@ export const serviceRecordResponseSchema = registry.register(
     // mileage looks out of order next to this vehicle's other records, not a
     // validation error. Absent on a plain list/get response.
     mileageWarning: z.string().nullable().optional(),
+  }),
+);
+
+// The admin-wide overview table's row shape — everything the per-vehicle
+// response has, plus who the vehicle belongs to and which vehicle it is,
+// since this list spans every customer at once (the per-vehicle response
+// above omits both, since the caller already knows them from having picked
+// the vehicle first).
+export const serviceRecordAdminResponseSchema = registry.register(
+  "ServiceRecordAdmin",
+  serviceRecordResponseSchema.extend({
+    customerId: z.int(),
+    customerName: z.string(),
+    garageVehicleYear: z.int(),
+    vehicleCatalog: vehicleCatalogResponseSchema,
   }),
 );

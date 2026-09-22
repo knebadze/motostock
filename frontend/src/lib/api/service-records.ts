@@ -1,5 +1,6 @@
 import { apiClient } from "./client";
 import type { LocalizedString } from "./categories";
+import type { VehicleCatalogEntry } from "./vehicle-catalog";
 
 export type ServicePosition = "FRONT" | "REAR" | "BOTH";
 
@@ -59,6 +60,42 @@ export async function listServiceRecordsForVehicle(garageVehicleId: number): Pro
     params: { garageVehicleId },
   });
   return data.items;
+}
+
+// Workshop "სერვისის ისტორია" screen's admin-wide overview table — every
+// customer's recent services at once, not scoped to one already-picked
+// vehicle (see the plain listServiceRecordsForVehicle above).
+export type AdminServiceRecord = ServiceRecord & {
+  customerId: number;
+  customerName: string;
+  garageVehicleYear: number;
+  vehicleCatalog: VehicleCatalogEntry;
+};
+
+export type ListServiceRecordsAdminFilters = {
+  search?: string;
+  serviceTypeId?: number;
+  mechanicId?: number;
+  performedFrom?: string;
+  performedTo?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type ServiceRecordsAdminPage = {
+  items: AdminServiceRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export async function listServiceRecordsAdmin(
+  filters: ListServiceRecordsAdminFilters = {},
+): Promise<ServiceRecordsAdminPage> {
+  const { data } = await apiClient.get<ServiceRecordsAdminPage>("/service-records/admin", {
+    params: filters,
+  });
+  return data;
 }
 
 export async function createServiceRecord(input: CreateServiceRecordInput): Promise<ServiceRecord> {

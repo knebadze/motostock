@@ -13,6 +13,7 @@ import {
   deleteServiceRecord,
   listServiceRecordsForVehicle,
   type ServiceRecord,
+  type ServiceRecordsAdminPage,
 } from "@/lib/api/service-records";
 import type { ServiceType } from "@/lib/api/service-types";
 import type { TeamMember } from "@/lib/api/team-members";
@@ -23,6 +24,7 @@ import { ServiceRecordFormModal } from "./ServiceRecordFormModal";
 import { AddWalkInCustomerModal } from "./AddWalkInCustomerModal";
 import { AddGarageVehicleModal } from "./AddGarageVehicleModal";
 import { LinkExistingUserModal } from "./LinkExistingUserModal";
+import { RecentServiceRecordsPanel } from "./RecentServiceRecordsPanel";
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -62,10 +64,12 @@ export function ServiceHistoryManager({
   initialServiceTypes,
   teamMembers,
   vehicleCatalog,
+  initialRecentServiceRecords,
 }: {
   initialServiceTypes: ServiceType[];
   teamMembers: TeamMember[];
   vehicleCatalog: VehicleCatalogEntry[];
+  initialRecentServiceRecords: ServiceRecordsAdminPage;
 }) {
   const role = useAdminRole();
   const isOperator = role === "OPERATOR";
@@ -439,6 +443,14 @@ export function ServiceHistoryManager({
           )}
         </div>
       )}
+
+      <div className="mt-8 border-t border-border pt-8">
+        <RecentServiceRecordsPanel
+          initialData={initialRecentServiceRecords}
+          serviceTypes={serviceTypes}
+          teamMembers={teamMembers}
+        />
+      </div>
 
       {selectedVehicle && (
         <ServiceRecordFormModal
