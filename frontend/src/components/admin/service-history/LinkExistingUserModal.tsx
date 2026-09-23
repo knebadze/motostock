@@ -56,9 +56,14 @@ export function LinkExistingUserModal({
   async function handleMerge(target: AdminUser) {
     setMergingId(target.id);
     try {
-      const merged = await mergeUserInto(sourceUser.id, target.id);
+      // mergeUserInto's response is the SOURCE row (now flagged as merged
+      // away, its garage emptied onto `target`) — not useful to re-select.
+      // `target` is the real account the admin just picked from the search
+      // results above, already known in full here, so it's what the panel
+      // should switch to.
+      await mergeUserInto(sourceUser.id, target.id);
       toast.success("მომხმარებლები გაერთიანდა");
-      onMerged(merged);
+      onMerged(target);
       handleClose();
     } catch (error) {
       const message = error instanceof ApiRequestError ? error.message : "გაერთიანება ვერ მოხერხდა";

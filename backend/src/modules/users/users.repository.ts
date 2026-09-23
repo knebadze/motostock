@@ -151,16 +151,28 @@ export const usersRepository = {
 
   // Converts an existing isWalkIn row into a real account in place (same id,
   // so GarageVehicle/ServiceRecord need no reassignment) — see
-  // auth.service.ts's registerUser.
-  convertWalkInToRegistered(
+  // auth.service.ts's registerUser. The WHERE re-checks isWalkIn: true (not
+  // just id) so that two concurrent registrations racing on the same shared
+  // phone number can't both "win": a plain update-by-id would let both
+  // UPDATEs succeed (no unique constraint fires on a shared phone that's
+  // already claimed by this same row), silently overwriting whichever
+  // registrant committed first with the second one's email/password/name —
+  // destroying the first registrant's account with no error raised anywhere.
+  // With this guard, only the first UPDATE actually matches a row (count 1);
+  // the second sees isWalkIn already false and gets count 0, signaling the
+  // caller to treat it as a conflict instead of silently "succeeding".
+  async convertWalkInToRegistered(
     id: number,
     data: { email: string; passwordHash: string; firstName: string; lastName: string; dateOfBirth: Date },
   ) {
-    return prisma.user.update({
-      where: { id },
+    const { count } = await prisma.user.updateMany({
+      where: { id, isWalkIn: true },
       data: { ...data, isWalkIn: false },
-      include: { role: true },
     });
+    if (count === 0) {
+      return null;
+    }
+    return prisma.user.findUniqueOrThrow({ where: { id }, include: { role: true } });
   },
 
   // Admin manual-merge fallback (users.service.ts's mergeUserInto) — the

@@ -18,32 +18,47 @@ import {
 
 export const productBrandsRouter = Router();
 
-productBrandsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
+productBrandsRouter.use(requireAuth);
 
+// GET routes widened to OPERATOR — the Products page's brand filter dropdown
+// (getProductBrandsFromServer) needs this to not silently show empty for
+// that role (its `fallback: []` was swallowing the 403 with no visible
+// error). Writes stay ADMIN-only, same split as every other un-blanketed
+// router this session.
 productBrandsRouter.get(
   "/",
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(productBrandListQuerySchema, "query"),
   productBrandsController.list,
 );
 productBrandsRouter.get(
   "/:id",
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(productBrandIdParamSchema, "params"),
   productBrandsController.getOne,
 );
-productBrandsRouter.post("/", validate(createProductBrandSchema), productBrandsController.create);
+productBrandsRouter.post(
+  "/",
+  requireRole(ROLES.ADMIN),
+  validate(createProductBrandSchema),
+  productBrandsController.create,
+);
 productBrandsRouter.patch(
   "/:id",
+  requireRole(ROLES.ADMIN),
   validate(productBrandIdParamSchema, "params"),
   validate(updateProductBrandSchema),
   productBrandsController.update,
 );
 productBrandsRouter.delete(
   "/:id",
+  requireRole(ROLES.ADMIN),
   validate(productBrandIdParamSchema, "params"),
   productBrandsController.remove,
 );
 productBrandsRouter.post(
   "/:id/logo",
+  requireRole(ROLES.ADMIN),
   uploadRateLimit,
   validate(productBrandIdParamSchema, "params"),
   imageUpload().single("logo"),

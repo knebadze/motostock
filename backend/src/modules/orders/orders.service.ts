@@ -20,7 +20,7 @@ import {
   getDeliveryExpressPrice,
   getDeliveryExpressTime,
   getAdminNotificationEmail,
-  getUsdToGelRate,
+  getUsdToGelRateOrThrow,
 } from "../settings/settings.service.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
@@ -293,7 +293,16 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
   // (never re-derived later), so this is the only place this conversion
   // needs to happen. A same-currency VehicleListingDiscount.discountPrice
   // gets the identical conversion.
-  const usdToGelRate = (await getUsdToGelRate()) ?? 1;
+  //
+  // Uses the throwing variant, not `?? 1` — this is the one place that
+  // actually charges the customer, so a rate that's never been fetched yet
+  // (fresh install, or between a Settings wipe and the next scheduled-job
+  // run) must fail the checkout loudly instead of silently billing a
+  // USD-priced listing as if 1 USD = 1 GEL (an ~2.7x undercharge). Only
+  // fetched at all when the cart actually has a USD item, so a GEL-only
+  // order never depends on this rate being available.
+  const hasUsdVehicleListing = cartRows.some((row) => row.vehicleListing?.priceCurrency === "USD");
+  const usdToGelRate = hasUsdVehicleListing ? await getUsdToGelRateOrThrow() : 1;
 
   const items = cartRows.map((row, index) => {
     const rate = row.vehicleListing?.priceCurrency === "USD" ? usdToGelRate : 1;

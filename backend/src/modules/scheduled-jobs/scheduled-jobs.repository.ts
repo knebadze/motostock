@@ -1,6 +1,8 @@
 import { prisma } from "../../config/prisma.js";
 import type { Prisma, ScheduledJobKey, ScheduledJobStatus, ScheduledJobTrigger } from "../../generated/prisma/index.js";
 
+type DbClient = typeof prisma | Prisma.TransactionClient;
+
 // User has no `name` column (only firstName/lastName) — same reasoning as
 // fina-sync.repository.ts's triggeredBySelect/withTriggeredByName.
 const triggeredBySelect = { id: true, firstName: true, lastName: true } as const;
@@ -19,13 +21,25 @@ function withTriggeredByName<
 export const scheduledJobsRepository = {
   // Written up front, before the job itself runs — see
   // scheduled-jobs.service.ts's runScheduledJob and ScheduledJobStatus's own
-  // RUNNING comment.
-  async createRunningRun(data: { jobKey: ScheduledJobKey; trigger: ScheduledJobTrigger; triggeredById: number | null }) {
-    const row = await prisma.scheduledJobRun.create({
+  // RUNNING comment. Takes an optional `db` so runScheduledJob's
+  // already-running check + this create can happen atomically inside one
+  // advisory-locked transaction (defaults to the plain client for every
+  // other caller).
+  async createRunningRun(
+    data: { jobKey: ScheduledJobKey; trigger: ScheduledJobTrigger; triggeredById: number | null },
+    db: DbClient = prisma,
+  ) {
+    const row = await db.scheduledJobRun.create({
       data: { ...data, status: "RUNNING", finishedAt: null },
       include: { triggeredBy: { select: triggeredBySelect } },
     });
     return withTriggeredByName(row);
+  },
+
+  // scheduled-jobs.service.ts's runScheduledJob overlap guard — is there
+  // already an unfinished run of this exact job.
+  findRunningRun(jobKey: ScheduledJobKey, db: DbClient = prisma) {
+    return db.scheduledJobRun.findFirst({ where: { jobKey, status: "RUNNING" } });
   },
 
   async finishRun(

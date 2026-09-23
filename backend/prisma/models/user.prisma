@@ -76,5 +76,9 @@ model User {
   updatedAt               DateTime                 @updatedAt
 
   @@index([roleId])
+  // users.repository.ts's admin filter (customerType === "MERGED") and the
+  // mergedInto self-relation's reverse side (mergedFrom) both filter/join on
+  // this column.
+  @@index([mergedIntoUserId])
   @@schema("dbo")
 }

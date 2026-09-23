@@ -34,7 +34,7 @@ import {
   withAttributeDefaults,
   toAttributeValueInputs,
 } from "./product-form-attributes";
-import { saveProductForm, PRODUCT_FORM_SAVE_WARNING_MESSAGES } from "./product-form-save";
+import { saveProductForm, PRODUCT_FORM_SAVE_WARNING_MESSAGES, formatVariantSaveWarning } from "./product-form-save";
 
 function toNullableHtml(html: string): string | null {
   const isBlank = html.replace(/<[^>]*>/g, "").trim() === "";
@@ -389,6 +389,8 @@ export function ProductForm({
 
       if (result.ok) {
         toast.success(isEditing ? "პროდუქტი განახლდა" : "პროდუქტი დაემატა");
+      } else if (result.warning === "variants") {
+        toast.error(formatVariantSaveWarning(result.failedVariantLabels));
       } else {
         toast.error(PRODUCT_FORM_SAVE_WARNING_MESSAGES[result.warning]);
       }

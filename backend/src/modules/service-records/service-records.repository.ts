@@ -36,6 +36,13 @@ function buildAdminWhere(filters: AdminServiceRecordFilters): Prisma.ServiceReco
         { customServiceName: { contains: filters.search, mode: "insensitive" } },
         { garageVehicle: { user: { firstName: { contains: filters.search, mode: "insensitive" } } } },
         { garageVehicle: { user: { lastName: { contains: filters.search, mode: "insensitive" } } } },
+        // customServiceName only covers a free-typed one-off service — the
+        // common case is a templated ServiceType (e.g. "ზეთის შეცვლა"), whose
+        // name lived only on the joined row and wasn't searchable at all
+        // before this branch.
+        { serviceType: { nameKa: { contains: filters.search, mode: "insensitive" } } },
+        { serviceType: { nameEn: { contains: filters.search, mode: "insensitive" } } },
+        { serviceType: { nameRu: { contains: filters.search, mode: "insensitive" } } },
       ],
     });
   }

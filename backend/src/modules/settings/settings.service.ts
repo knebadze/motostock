@@ -457,6 +457,29 @@ export async function getUsdToGelRate(): Promise<number | null> {
   });
 }
 
+// For the one call site that actually charges real money — orders.service.ts's
+// checkout-total computation — silently treating "no rate fetched yet" as
+// `?? 1` (1 USD = 1 GEL) would undercharge a USD-priced vehicle listing by
+// roughly the real exchange rate's full amount (~2.7x). That's only reachable
+// in the narrow window between a fresh install/Settings wipe and the first
+// successful FETCH_USD_GEL_RATE run (which also fires once on every process
+// boot, so in practice it closes within seconds) — but a checkout happening
+// in that exact window must fail loudly, not quietly mischarge. Display-only
+// call sites (cart preview, vehicle-listing filter/sort) are lower-stakes and
+// keep the softer `?? 1`/`?? undefined` fallback instead — see their own
+// comments.
+export async function getUsdToGelRateOrThrow(): Promise<number> {
+  const rate = await getUsdToGelRate();
+  if (rate == null) {
+    throw new ApiError(
+      503,
+      "ვალუტის კურსი ჯერ არ არის მოტანილი — სცადეთ რამდენიმე წუთში ხელახლა",
+      "USD_GEL_RATE_UNAVAILABLE",
+    );
+  }
+  return rate;
+}
+
 export async function getUsdToGelRateUpdatedAt(): Promise<string | null> {
   return cached(USD_TO_GEL_RATE_UPDATED_AT_KEY, async () => {
     const setting = await settingsRepository.findByKey(USD_TO_GEL_RATE_UPDATED_AT_KEY);

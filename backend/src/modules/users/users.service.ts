@@ -196,6 +196,28 @@ export async function mergeUserInto(fromUserId: number, targetUserId: number) {
   if (!fromUser || !targetUser) {
     throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა", "USER_NOT_FOUND");
   }
+  // This endpoint exists only to fold a walk-in's history onto a real
+  // account (see this function's own doc comment above) — without these two
+  // checks it could be called directly (bypassing the UI's own isWalkIn
+  // gate) to merge two already-real accounts together, permanently
+  // reassigning one customer's garage/service history onto another with no
+  // legitimate reason to. Also covers the auto-merge race: a walk-in that
+  // registerUser has already converted in place (isWalkIn now false) is no
+  // longer a valid merge source either.
+  if (!fromUser.isWalkIn) {
+    throw new ApiError(
+      400,
+      "წყარო მომხმარებელი არ არის სტუმარი — შერწყმა შესაძლებელია მხოლოდ სტუმარი მომხმარებლის რეალურ ანგარიშთან დაკავშირებისას",
+      "SOURCE_USER_NOT_WALK_IN",
+    );
+  }
+  if (targetUser.isWalkIn) {
+    throw new ApiError(
+      400,
+      "სამიზნე მომხმარებელი თავად სტუმარია — აირჩიეთ რეგისტრირებული ანგარიში",
+      "TARGET_USER_IS_WALK_IN",
+    );
+  }
   if (fromUser.mergedIntoUserId != null) {
     throw new ApiError(400, "მომხმარებელი უკვე შერწყმულია", "USER_ALREADY_MERGED");
   }

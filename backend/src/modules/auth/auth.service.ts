@@ -95,23 +95,33 @@ export async function registerUser(
 
   let user;
   try {
-    user = walkIn
-      ? await usersRepository.convertWalkInToRegistered(walkIn.id, {
-          email: input.email,
-          passwordHash,
-          firstName: input.firstName,
-          lastName: input.lastName,
-          dateOfBirth,
-        })
-      : await usersRepository.create({
-          email: input.email,
-          firstName: input.firstName,
-          lastName: input.lastName,
-          passwordHash,
-          roleId: userRole.id,
-          phone: input.phone,
-          dateOfBirth,
-        });
+    if (walkIn) {
+      const converted = await usersRepository.convertWalkInToRegistered(walkIn.id, {
+        email: input.email,
+        passwordHash,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        dateOfBirth,
+      });
+      // A concurrent registration on this same phone won the race and
+      // already converted this row (see convertWalkInToRegistered's guard) —
+      // the phone is no longer a walk-in to merge onto, so this is now a
+      // genuine conflict, not a retryable transient error.
+      if (!converted) {
+        throw new ApiError(409, "Phone number already in use", "PHONE_ALREADY_IN_USE");
+      }
+      user = converted;
+    } else {
+      user = await usersRepository.create({
+        email: input.email,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        passwordHash,
+        roleId: userRole.id,
+        phone: input.phone,
+        dateOfBirth,
+      });
+    }
   } catch (err) {
     // A concurrent request (another password registration double-submit, or
     // an OAuth signup racing this one — see oauth.service.ts's

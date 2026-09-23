@@ -170,12 +170,15 @@ export function DateInput({
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node;
       if (containerRef.current?.contains(target) || panelRef.current?.contains(target)) return;
-      // The month/year Select's own dropdown (and its search box, for the
-      // year one) portals to document.body as a sibling, not a descendant
-      // of panelRef — without this, picking a month/year, or clicking into
-      // the year search box, would look like an "outside" click and close
-      // the whole calendar before the selection ever registers.
-      if (target instanceof Element && target.closest('[role="listbox"], [role="option"], [role="combobox"]')) {
+      // The month/year Select's own dropdown portals to document.body as a
+      // sibling, not a descendant of panelRef — without this, picking a
+      // month/year, or clicking anywhere in that nested dropdown that isn't
+      // exactly the listbox/option/search-input itself (e.g. the panel's own
+      // padding, or the search input's wrapper div), would look like an
+      // "outside" click and close the whole calendar before the selection
+      // ever registers. data-select-panel (Select.tsx) covers that whole
+      // panel in one match instead of enumerating every role inside it.
+      if (target instanceof Element && target.closest('[data-select-panel], [role="listbox"], [role="option"], [role="combobox"]')) {
         return;
       }
       setOpen(false);

@@ -185,11 +185,12 @@ export function ServiceHistoryManager({
     selectVehicle(vehicle);
   }
 
-  function handleMerged(merged: AdminUser) {
-    // The walk-in's GarageVehicle rows just moved onto the target account —
-    // refresh from the server rather than assuming an empty list, in case
-    // this exact row somehow still owns something.
-    selectUser(merged);
+  function handleMerged(target: AdminUser) {
+    // LinkExistingUserModal passes the MERGE TARGET here (not the walk-in
+    // source, which the backend's own merge response describes and which is
+    // now empty) — switch the panel to it since that's where the walk-in's
+    // garage/service history just moved.
+    selectUser(target);
   }
 
   function openCreateModal() {

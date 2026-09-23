@@ -389,6 +389,13 @@ export function Select(props: SelectProps) {
         createPortal(
           <div
             ref={panelRef}
+            // Lets a caller nesting this Select inside its own portaled
+            // popup (e.g. DateInput.tsx's month/year pickers) reliably
+            // recognize "a click landed somewhere in this whole panel" —
+            // role="listbox"/"option"/"combobox" alone only cover the list
+            // and search input, missing this outer div's own padding and
+            // the tag-list/search-input wrapper divs around them.
+            data-select-panel
             style={{
               position: "fixed",
               ...(position.direction === "up" ? { bottom: position.bottom } : { top: position.top }),

@@ -32,9 +32,15 @@ export type ProductFormSaveResult =
   // follow-up steps failed — the caller still navigates away (nothing left
   // to retry in this form), just with a warning toast pointing at where to
   // finish up instead of the generic success one. Only the step that failed
-  // is reported; later steps are skipped, matching the pre-refactor
-  // early-return behavior exactly.
-  | { ok: false; product: Product; warning: "image" | "variants" | "fitments" };
+  // is reported; later steps (fitments, after variants) are skipped, matching
+  // the pre-refactor early-return behavior exactly.
+  | { ok: false; product: Product; warning: "image" | "fitments" }
+  // Variants are independent of each other (unlike image/fitments, which are
+  // single all-or-nothing steps) — one draft's finaId/sku uniqueness conflict
+  // shouldn't silently doom every other draft to being skipped, and the admin
+  // needs to know exactly WHICH one(s) failed to fix them from the edit
+  // screen, not just that "something" did.
+  | { ok: false; product: Product; warning: "variants"; failedVariantLabels: string[] };
 
 // Runs the multi-step "save a product" pipeline: create/update the product
 // row, then (create-flow only) the variant matrix + its image/discount, then
@@ -56,8 +62,15 @@ export async function saveProductForm(input: ProductFormSaveInput): Promise<Prod
   }
 
   if (!input.isEditing && input.draftVariants.length > 0) {
-    try {
-      for (const draft of input.draftVariants) {
+    const failedVariantLabels: string[] = [];
+
+    for (const [index, draft] of input.draftVariants.entries()) {
+      // Each draft is attempted independently — a unique-constraint conflict
+      // (e.g. a duplicate finaId/sku) on one draft has no bearing on the
+      // others, so it's recorded and the loop moves on instead of abandoning
+      // every remaining draft.
+      const label = draft.sku.trim() || `ვარიანტი #${index + 1}`;
+      try {
         const variant = await createProductVariant({
           productId: product.id,
           sizeId: draft.sizeId,
@@ -83,9 +96,13 @@ export async function saveProductForm(input: ProductFormSaveInput): Promise<Prod
             endDate: draft.discountEndDate,
           });
         }
+      } catch {
+        failedVariantLabels.push(label);
       }
-    } catch {
-      return { ok: false, product, warning: "variants" };
+    }
+
+    if (failedVariantLabels.length > 0) {
+      return { ok: false, product, warning: "variants", failedVariantLabels };
     }
   }
 
@@ -102,8 +119,13 @@ export async function saveProductForm(input: ProductFormSaveInput): Promise<Prod
   return { ok: true, product };
 }
 
-export const PRODUCT_FORM_SAVE_WARNING_MESSAGES: Record<"image" | "variants" | "fitments", string> = {
+export const PRODUCT_FORM_SAVE_WARNING_MESSAGES: Record<"image" | "fitments", string> = {
   image: "პროდუქტი შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა",
-  variants: "პროდუქტი შენახულია, მაგრამ ვარიანტების დამატება ვერ მოხერხდა — დაამატეთ რედაქტირებიდან",
   fitments: "პროდუქტი შენახულია, მაგრამ თავსებადობის დამატება ვერ მოხერხდა — დაამატეთ რედაქტირებიდან",
 };
+
+// Names the specific draft(s) that failed, instead of one generic "something
+// about the variants failed" toast — see saveProductForm's per-draft loop.
+export function formatVariantSaveWarning(failedVariantLabels: string[]): string {
+  return `პროდუქტი შენახულია, მაგრამ ეს ვარიანტ(ებ)ი ვერ დაემატა: ${failedVariantLabels.join(", ")} — დაამატეთ რედაქტირებიდან`;
+}
