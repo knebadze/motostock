@@ -8,6 +8,7 @@ import { useRouter } from "@/i18n/navigation";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
+import { generateUuid } from "@/lib/uuid";
 import { EmailVerificationBanner } from "@/components/shared/EmailVerificationBanner";
 import {
   placeOrder,
@@ -83,7 +84,7 @@ export function CheckoutManager({
   // that error means the backend already placed an order under this key and
   // is refusing to silently attach it to a cart that's since changed, so a
   // real *new* attempt needs a key of its own.
-  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+  const [idempotencyKey, setIdempotencyKey] = useState(() => generateUuid());
 
   const requiresAddress = fulfillmentMethod !== "PICKUP";
   const requiresBank = fulfillmentMethod === "CARD";
@@ -219,7 +220,7 @@ export function CheckoutManager({
         // mint a fresh key so the next click is a genuine new attempt, and
         // refresh so the displayed cart/preview reflect what's actually in
         // it now.
-        setIdempotencyKey(crypto.randomUUID());
+        setIdempotencyKey(generateUuid());
         toast.error(resolveApiErrorMessage(error, tErrors, t("placeError")));
         router.refresh();
       } else {
