@@ -117,9 +117,13 @@ export function VehicleListingCard({
             {listing.vehicleCatalog.model.name}
           </span>
           <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
-            {listing.isCustomsCleared && (
+            {listing.isCustomsCleared ? (
               <span className="rounded-full bg-green-500/10 px-2 py-0.5 font-medium text-green-600">
                 {t("customsCleared")}
+              </span>
+            ) : (
+              <span className="rounded-full bg-amber-500/10 px-2 py-0.5 font-medium text-amber-600">
+                {t("customsNotCleared")}
               </span>
             )}
             <span className="rounded-full border border-border px-2 py-0.5">

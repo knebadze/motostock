@@ -79,6 +79,7 @@
     "lowStock": "Only {count} left",
     "discountBadge": "Sale",
     "customsCleared": "Customs cleared",
+    "customsNotCleared": "Not customs cleared",
     "toggleCurrency": "Toggle currency (₾/$)",
     "emptyState": "No results found",
     "loadProductsError": "Failed to load products",
