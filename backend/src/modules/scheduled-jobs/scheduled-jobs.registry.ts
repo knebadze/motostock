@@ -11,10 +11,13 @@ import type { ScheduledJobKey } from "./scheduled-jobs.schema.js";
 // FETCH_USD_GEL_RATE's fetched-date value.
 export type JobResult = { itemsAffected: number; detail?: Record<string, number | string> };
 
-// The shared slot every job defaults to unless it overrides `cron` below —
-// server.ts schedules one node-cron task per job using its own `cron` field,
-// so several jobs landing on the same expression (the common case) is just
-// several `cron.schedule()` calls with identical args, not a special case.
+// The fallback slot for a job with no explicit `cron` below (currently none
+// — every job now sets its own, staggered a couple minutes apart starting
+// here, so they don't all fire in the same instant and open a burst of DB
+// connections at once; see each job's own `cron` comment). Kept as a real
+// fallback (not deleted) since server.ts and scheduled-jobs.service.ts both
+// still read `job.cron ?? DEFAULT_JOB_CRON` — a job added later without its
+// own `cron` lands here.
 export const DEFAULT_JOB_CRON = "0 3 * * *";
 
 export type JobDefinition = {
@@ -47,6 +50,9 @@ export const JOB_DEFINITIONS: JobDefinition[] = [
   {
     key: "DAILY_PRUNE_VISITOR_DATA",
     labelKa: "ვიზიტორთა მონაცემების გასუფთავება",
+    // Base slot — every other prune/fetch job below is offset a couple
+    // minutes past this one (see DEFAULT_JOB_CRON's comment).
+    cron: "0 3 * * *",
     run: async () => {
       const { presenceDeleted, visitsDeleted } = await pruneStaleVisitorData();
       return { itemsAffected: presenceDeleted + visitsDeleted, detail: { presenceDeleted, visitsDeleted } };
@@ -55,6 +61,7 @@ export const JOB_DEFINITIONS: JobDefinition[] = [
   {
     key: "DAILY_PRUNE_AUTH_ARTIFACTS",
     labelKa: "სესიების და ტოკენების გასუფთავება",
+    cron: "2 3 * * *",
     run: async () => {
       const { sessionsDeleted, passwordResetTokensDeleted, emailVerificationTokensDeleted } =
         await pruneStaleAuthArtifacts();
@@ -67,25 +74,34 @@ export const JOB_DEFINITIONS: JobDefinition[] = [
   {
     key: "DAILY_PRUNE_GUEST_PRODUCT_VIEWS",
     labelKa: "სტუმრების პროდუქტის ნახვების გასუფთავება",
+    cron: "4 3 * * *",
     run: async () => ({ itemsAffected: await pruneStaleGuestProductViews() }),
   },
   {
     key: "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS",
     labelKa: "სტუმრების ტექნიკის განცხადებების ნახვების გასუფთავება",
+    cron: "6 3 * * *",
     run: async () => ({ itemsAffected: await pruneStaleGuestVehicleListingViews() }),
-  },
-  {
-    key: "DAILY_PRUNE_RICH_TEXT_IMAGES",
-    labelKa: "მიტოვებული სურათების გასუფთავება",
-    run: async () => ({ itemsAffected: await pruneOrphanedRichTextImages() }),
   },
   {
     key: "FETCH_USD_GEL_RATE",
     labelKa: "USD/GEL კურსის განახლება (ეროვნული ბანკი)",
+    cron: "8 3 * * *",
     run: async () => {
       const { rate, fetchedAt } = await fetchNbgUsdToGelRate();
       return { itemsAffected: 1, detail: { rate, fetchedAt: fetchedAt.toISOString() } };
     },
+  },
+  {
+    key: "DAILY_PRUNE_RICH_TEXT_IMAGES",
+    labelKa: "მიტოვებული სურათების გასუფთავება",
+    // Last and furthest offset — this is the one genuinely heavier job here
+    // (full-table scans across Product/VehicleCatalog/VehicleListing/Faq/
+    // EmailTemplate description columns, see media.service.ts's
+    // pruneOrphanedRichTextImages), so it runs after every lighter indexed
+    // delete above has already finished.
+    cron: "10 3 * * *",
+    run: async () => ({ itemsAffected: await pruneOrphanedRichTextImages() }),
   },
   {
     key: "BIRTHDAY_EMAIL",
