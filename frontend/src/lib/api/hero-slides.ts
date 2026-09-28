@@ -1,7 +1,7 @@
 import { apiClient } from "./client";
 import type { LocalizedString } from "./categories";
 
-export type HeroSlideType = "CTA" | "VEHICLE_SEARCH" | "INFO" | "CATEGORY_FILTER" | "DISCOUNT";
+export type HeroSlideType = "CTA" | "VEHICLE_SEARCH" | "INFO" | "CATEGORY_FILTER" | "DISCOUNT" | "POSTER";
 export type HeroSlideTextPosition = "LEFT" | "CENTER" | "RIGHT";
 export type HeroSlideVerticalPosition = "TOP" | "MIDDLE" | "BOTTOM";
 

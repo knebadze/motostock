@@ -247,77 +247,83 @@ export function HeroSlideFormModal({
             <FieldError message={errors["title.ru"]} />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="hero-text-position" className="text-sm font-medium">
-              ტექსტის ჰორიზონტალური პოზიცია
-            </label>
-            <Select
-              id="hero-text-position"
-              options={TEXT_POSITION_OPTIONS}
-              value={textPosition}
-              onChange={(value) => setTextPosition(value as HeroSlideTextPosition)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="hero-vertical-position" className="text-sm font-medium">
-              ტექსტის ვერტიკალური პოზიცია
-            </label>
-            <Select
-              id="hero-vertical-position"
-              options={VERTICAL_POSITION_OPTIONS}
-              value={verticalPosition}
-              onChange={(value) => setVerticalPosition(value as HeroSlideVerticalPosition)}
-            />
-          </div>
+          {type !== "POSTER" && (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="hero-text-position" className="text-sm font-medium">
+                  ტექსტის ჰორიზონტალური პოზიცია
+                </label>
+                <Select
+                  id="hero-text-position"
+                  options={TEXT_POSITION_OPTIONS}
+                  value={textPosition}
+                  onChange={(value) => setTextPosition(value as HeroSlideTextPosition)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="hero-vertical-position" className="text-sm font-medium">
+                  ტექსტის ვერტიკალური პოზიცია
+                </label>
+                <Select
+                  id="hero-vertical-position"
+                  options={VERTICAL_POSITION_OPTIONS}
+                  value={verticalPosition}
+                  onChange={(value) => setVerticalPosition(value as HeroSlideVerticalPosition)}
+                />
+              </div>
+            </>
+          )}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label htmlFor="hero-subtitle-ka" className="text-sm font-medium">
-                ქვესათაური (ქართულად)
-              </label>
-              <CharCount value={subtitleKa} max={HERO_SLIDE_SUBTITLE_MAX_LENGTH} />
+        {type !== "POSTER" && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label htmlFor="hero-subtitle-ka" className="text-sm font-medium">
+                  ქვესათაური (ქართულად)
+                </label>
+                <CharCount value={subtitleKa} max={HERO_SLIDE_SUBTITLE_MAX_LENGTH} />
+              </div>
+              <input
+                id="hero-subtitle-ka"
+                value={subtitleKa}
+                maxLength={HERO_SLIDE_SUBTITLE_MAX_LENGTH}
+                onChange={(event) => setSubtitleKa(event.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              />
             </div>
-            <input
-              id="hero-subtitle-ka"
-              value={subtitleKa}
-              maxLength={HERO_SLIDE_SUBTITLE_MAX_LENGTH}
-              onChange={(event) => setSubtitleKa(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label htmlFor="hero-subtitle-en" className="text-sm font-medium">
-                ქვესათაური (ინგლისურად)
-              </label>
-              <CharCount value={subtitleEn} max={HERO_SLIDE_SUBTITLE_MAX_LENGTH} />
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label htmlFor="hero-subtitle-en" className="text-sm font-medium">
+                  ქვესათაური (ინგლისურად)
+                </label>
+                <CharCount value={subtitleEn} max={HERO_SLIDE_SUBTITLE_MAX_LENGTH} />
+              </div>
+              <input
+                id="hero-subtitle-en"
+                value={subtitleEn}
+                maxLength={HERO_SLIDE_SUBTITLE_MAX_LENGTH}
+                onChange={(event) => setSubtitleEn(event.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              />
             </div>
-            <input
-              id="hero-subtitle-en"
-              value={subtitleEn}
-              maxLength={HERO_SLIDE_SUBTITLE_MAX_LENGTH}
-              onChange={(event) => setSubtitleEn(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label htmlFor="hero-subtitle-ru" className="text-sm font-medium">
-                ქვესათაური (რუსულად)
-              </label>
-              <CharCount value={subtitleRu} max={HERO_SLIDE_SUBTITLE_MAX_LENGTH} />
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label htmlFor="hero-subtitle-ru" className="text-sm font-medium">
+                  ქვესათაური (რუსულად)
+                </label>
+                <CharCount value={subtitleRu} max={HERO_SLIDE_SUBTITLE_MAX_LENGTH} />
+              </div>
+              <input
+                id="hero-subtitle-ru"
+                value={subtitleRu}
+                maxLength={HERO_SLIDE_SUBTITLE_MAX_LENGTH}
+                onChange={(event) => setSubtitleRu(event.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+              />
             </div>
-            <input
-              id="hero-subtitle-ru"
-              value={subtitleRu}
-              maxLength={HERO_SLIDE_SUBTITLE_MAX_LENGTH}
-              onChange={(event) => setSubtitleRu(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
           </div>
-        </div>
+        )}
 
         {(type === "CTA" || type === "DISCOUNT") && (
           <>

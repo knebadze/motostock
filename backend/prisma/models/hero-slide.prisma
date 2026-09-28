@@ -14,6 +14,13 @@ enum HeroSlideType {
   // that campaign's own page instead (see HeroSlider.tsx's buildDiscountLink
   // — bulk event checked first, promo code second).
   DISCOUNT
+  // Just the image — no gradient overlay, no title/subtitle/button/form
+  // rendered on the storefront (see HeroSlider.tsx). For admin-supplied
+  // poster/banner images that already carry their own text baked in. title
+  // is still required at the DB level (same as every other type) but is
+  // purely an internal label for identifying the slide in the admin list —
+  // never shown to a site visitor for this type.
+  POSTER
 
   @@schema("dbo")
 }

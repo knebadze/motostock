@@ -10,6 +10,7 @@ export const heroSlideTypeSchema = z.enum([
   "INFO",
   "CATEGORY_FILTER",
   "DISCOUNT",
+  "POSTER",
 ]);
 export type HeroSlideTypeInput = z.infer<typeof heroSlideTypeSchema>;
 
