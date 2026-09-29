@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
+import { visitorPingRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { ROLES } from "../../lib/roles.js";
 import * as visitorsController from "./visitors.controller.js";
@@ -11,7 +12,9 @@ export const visitorsRouter = Router();
 // periodically (see the frontend's VisitorPingBeacon) to keep their
 // presence row fresh. Same "passive, unconditional, no Settings gate"
 // reasoning as product-views.middleware.ts's resolveProductViewOwner.
-visitorsRouter.post("/ping", visitorsController.ping);
+// Its own dedicated rate limit, not the shared global one — see
+// rateLimit.middleware.ts's globalRateLimit/visitorPingRateLimit comments.
+visitorsRouter.post("/ping", visitorPingRateLimit, visitorsController.ping);
 
 visitorsRouter.get("/overview", requireAuth, requireRole(ROLES.ADMIN), visitorsController.overview);
 

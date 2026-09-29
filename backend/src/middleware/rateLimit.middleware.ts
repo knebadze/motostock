@@ -4,9 +4,35 @@ import rateLimit from "express-rate-limit";
 // enough that a real page load's burst of parallel calls never trips it, low
 // enough to blunt scripted scraping/flooding. authRateLimit below stacks on
 // top of this with a much tighter budget for the sensitive auth endpoints.
+//
+// /visitors/ping is explicitly skipped here — it's a silent, no-side-effect-
+// if-dropped background heartbeat (VisitorPingBeacon.tsx) that has no
+// business sharing this budget with a page's actual API calls at all: on a
+// long, active session (many page loads/navigations, several tabs open —
+// exactly what a live dev/testing session looks like) this shared 300/min
+// bucket can fill up on ordinary browsing alone, and a ping that gets
+// silently 429'd right when it happens to fire is still a real (if low-
+// stakes) loss of that heartbeat. It gets its own separate, generous budget
+// instead — see visitorPingRateLimit below, applied directly on that route.
 export const globalRateLimit = rateLimit({
   windowMs: 60 * 1000,
   limit: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === "/visitors/ping",
+  message: { error: { message: "Too many requests, please slow down" } },
+});
+
+// See globalRateLimit's comment above for why this exists as its own budget
+// instead of just relying on the shared one. Generous — each browser tab
+// pings once every 2 minutes (PING_INTERVAL_MS) plus once immediately on
+// mount, so even a dozen tabs open at once from the same IP stays far under
+// this; the two DB writes per call (visitorsRepository.touchPresence/
+// recordVisit) are cheap idempotent upserts, so there's no real abuse cost
+// to worry about even at this budget's ceiling.
+export const visitorPingRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 60,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: { message: "Too many requests, please slow down" } },
