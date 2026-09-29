@@ -2,7 +2,6 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Select } from "./Select";
 
 type Locale = "ka" | "en" | "ru";
 
@@ -10,8 +9,17 @@ type Locale = "ka" | "en" | "ru";
 // — the native picker's own popup content (month grid, "today" styling, …)
 // can't be restyled via CSS at all, so re-skinning only the closed field
 // left the actual dropdown looking like every other site's default browser
-// widget. This renders the whole thing itself, matching Select.tsx's own
-// portal-positioned dropdown so the two feel like one design system.
+// widget. This renders the whole thing itself.
+//
+// Month/year picking is an in-panel VIEW SWITCH (see `panelView` below), not
+// a nested dropdown — an earlier version used two <Select>s here, but a
+// Select sized to fit next to the prev/next-month arrows is far too narrow
+// for a full month name ("სექტემბერი", "September") and ended up with both
+// a horizontal AND a vertical scrollbar inside its own tiny listbox. Tapping
+// the month/year label now swaps the WHOLE panel's content for a same-size
+// grid where every option's full name is visible at once (months) or a
+// vertically-scrollable grid (years — up to 111 of them can't all fit
+// without scrolling regardless of layout, but at least never horizontally).
 const MONTH_NAMES: Record<Locale, string[]> = {
   ka: [
     "იანვარი", "თებერვალი", "მარტი", "აპრილი", "მაისი", "ივნისი",
@@ -34,18 +42,63 @@ const WEEKDAY_NAMES: Record<Locale, string[]> = {
   ru: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
 };
 
-const COPY: Record<Locale, { placeholder: string; today: string; clear: string; month: string; year: string }> = {
-  ka: { placeholder: "აირჩიეთ თარიღი", today: "დღეს", clear: "გასუფთავება", month: "თვე", year: "წელი" },
-  en: { placeholder: "Select date", today: "Today", clear: "Clear", month: "Month", year: "Year" },
-  ru: { placeholder: "Выберите дату", today: "Сегодня", clear: "Очистить", month: "Месяц", year: "Год" },
+const COPY: Record<
+  Locale,
+  {
+    placeholder: string;
+    today: string;
+    clear: string;
+    month: string;
+    year: string;
+    prevMonth: string;
+    nextMonth: string;
+    pickMonth: string;
+    pickYear: string;
+  }
+> = {
+  ka: {
+    placeholder: "აირჩიეთ თარიღი",
+    today: "დღეს",
+    clear: "გასუფთავება",
+    month: "თვე",
+    year: "წელი",
+    prevMonth: "წინა თვე",
+    nextMonth: "შემდეგი თვე",
+    pickMonth: "აირჩიეთ თვე",
+    pickYear: "აირჩიეთ წელი",
+  },
+  en: {
+    placeholder: "Select date",
+    today: "Today",
+    clear: "Clear",
+    month: "Month",
+    year: "Year",
+    prevMonth: "Previous month",
+    nextMonth: "Next month",
+    pickMonth: "Select month",
+    pickYear: "Select year",
+  },
+  ru: {
+    placeholder: "Выберите дату",
+    today: "Сегодня",
+    clear: "Очистить",
+    month: "Месяц",
+    year: "Год",
+    prevMonth: "Предыдущий месяц",
+    nextMonth: "Следующий месяц",
+    pickMonth: "Выберите месяц",
+    pickYear: "Выберите год",
+  },
 };
 
 const PANEL_WIDTH_PX = 288;
 const ESTIMATED_PANEL_HEIGHT_PX = 372;
 const CURRENT_YEAR = new Date().getFullYear();
-// A generous static span either side of today covers every real use of this
-// field (date of birth, service/discount/order dates) without needing to
-// compute per-caller bounds.
+// The outer fallback span when a caller passes no min/max — generous enough
+// for every real use of this field (100 years back for date-of-birth, 10
+// years forward for scheduling a discount/promo far out). A caller that DOES
+// pass min/max (e.g. a date-of-birth field capped at today) gets that
+// narrower range instead — see effectiveYearMin/effectiveYearMax below.
 const YEAR_MIN = CURRENT_YEAR - 100;
 const YEAR_MAX = CURRENT_YEAR + 10;
 
@@ -120,6 +173,8 @@ type PanelPosition = { left: number; width: number } & (
   | { direction: "up"; bottom: number }
 );
 
+type PanelView = "days" | "months" | "years";
+
 export function DateInput({
   id,
   value,
@@ -136,7 +191,12 @@ export function DateInput({
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
-  // ISO "YYYY-MM-DD" bounds — out-of-range days render disabled in the grid.
+  // ISO "YYYY-MM-DD" bounds — out-of-range days render disabled in the grid,
+  // AND (see clampView below) the year/month pickers and prev/next-month
+  // buttons are constrained to never navigate somewhere entirely out of
+  // range in the first place — a date-of-birth field capped at today
+  // shouldn't let you browse into 2030 just to find every day disabled once
+  // you get there.
   min?: string;
   max?: string;
   ariaLabel?: string;
@@ -144,18 +204,38 @@ export function DateInput({
 }) {
   const copy = COPY[locale];
   const [open, setOpen] = useState(false);
+  const [panelView, setPanelView] = useState<PanelView>("days");
   const [viewYear, setViewYear] = useState(CURRENT_YEAR);
   const [viewMonth, setViewMonth] = useState(0);
   const [position, setPosition] = useState<PanelPosition | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const selectedYearButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Pulls (y, m) back inside [min, max] (whichever of those two props are
+  // actually set) — used everywhere the visible month can change (opening
+  // the panel, the prev/next buttons, and picking a month/year) so none of
+  // those paths can land the view on a month with no selectable day at all.
+  function clampView(y: number, m: number): { y: number; m: number } {
+    if (max != null) {
+      const bound = parseIso(max)!;
+      if (y > bound.y || (y === bound.y && m > bound.m)) return { y: bound.y, m: bound.m };
+    }
+    if (min != null) {
+      const bound = parseIso(min)!;
+      if (y < bound.y || (y === bound.y && m < bound.m)) return { y: bound.y, m: bound.m };
+    }
+    return { y, m };
+  }
 
   function openPanel() {
     const parsed = parseIso(value);
     const now = new Date();
-    setViewYear(parsed?.y ?? now.getFullYear());
-    setViewMonth(parsed?.m ?? now.getMonth());
+    const clamped = clampView(parsed?.y ?? now.getFullYear(), parsed?.m ?? now.getMonth());
+    setViewYear(clamped.y);
+    setViewMonth(clamped.m);
+    setPanelView("days");
     setOpen(true);
   }
 
@@ -170,17 +250,6 @@ export function DateInput({
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node;
       if (containerRef.current?.contains(target) || panelRef.current?.contains(target)) return;
-      // The month/year Select's own dropdown portals to document.body as a
-      // sibling, not a descendant of panelRef — without this, picking a
-      // month/year, or clicking anywhere in that nested dropdown that isn't
-      // exactly the listbox/option/search-input itself (e.g. the panel's own
-      // padding, or the search input's wrapper div), would look like an
-      // "outside" click and close the whole calendar before the selection
-      // ever registers. data-select-panel (Select.tsx) covers that whole
-      // panel in one match instead of enumerating every role inside it.
-      if (target instanceof Element && target.closest('[data-select-panel], [role="listbox"], [role="option"], [role="combobox"]')) {
-        return;
-      }
       setOpen(false);
     }
 
@@ -223,18 +292,25 @@ export function DateInput({
     };
   }, [open]);
 
-  const monthOptions = useMemo(
-    () => MONTH_NAMES[locale].map((name, index) => ({ value: String(index), label: name })),
-    [locale],
+  // Narrowed to whichever of min/max's own year is tighter than the generous
+  // default span — a date-of-birth field capped at today has no business
+  // offering 2030 in this grid just because some other, uncapped caller
+  // (service/discount/order dates) needs the full range.
+  const effectiveYearMin = min != null ? Math.max(YEAR_MIN, parseIso(min)!.y) : YEAR_MIN;
+  const effectiveYearMax = max != null ? Math.min(YEAR_MAX, parseIso(max)!.y) : YEAR_MAX;
+  const years = useMemo(
+    () => Array.from({ length: effectiveYearMax - effectiveYearMin + 1 }, (_, i) => effectiveYearMax - i),
+    [effectiveYearMin, effectiveYearMax],
   );
-  const yearOptions = useMemo(
-    () =>
-      Array.from({ length: YEAR_MAX - YEAR_MIN + 1 }, (_, i) => YEAR_MAX - i).map((year) => ({
-        value: String(year),
-        label: String(year),
-      })),
-    [],
-  );
+
+  // Scrolls the currently-viewed year into the middle of the grid the moment
+  // it opens — with up to 111 entries, landing on the one already selected
+  // beats always starting scrolled to the newest (or oldest) end of the list.
+  useEffect(() => {
+    if (open && panelView === "years") {
+      selectedYearButtonRef.current?.scrollIntoView({ block: "center" });
+    }
+  }, [open, panelView]);
 
   const gridDays = useMemo(() => buildGridDays(viewYear, viewMonth), [viewYear, viewMonth]);
   const todayIso = useMemo(() => {
@@ -246,10 +322,54 @@ export function DateInput({
     return (min != null && iso < min) || (max != null && iso > max);
   }
 
+  // A given (year, month) combination is entirely out of [min, max] — used to
+  // disable individual cells in the month grid (all 12 always render, in a
+  // stable layout; out-of-range ones just aren't pickable) rather than
+  // shrinking the grid itself.
+  function isMonthOutOfRange(y: number, m: number): boolean {
+    if (max != null) {
+      const bound = parseIso(max)!;
+      if (y > bound.y || (y === bound.y && m > bound.m)) return true;
+    }
+    if (min != null) {
+      const bound = parseIso(min)!;
+      if (y < bound.y || (y === bound.y && m < bound.m)) return true;
+    }
+    return false;
+  }
+
+  // Disables the prev/next buttons once the view is already sitting on the
+  // exact boundary month — clicking again would just clamp back to the same
+  // place, so there's nothing left for that direction to do.
+  const atMaxBound = max != null && (() => {
+    const bound = parseIso(max)!;
+    return viewYear === bound.y && viewMonth === bound.m;
+  })();
+  const atMinBound = min != null && (() => {
+    const bound = parseIso(min)!;
+    return viewYear === bound.y && viewMonth === bound.m;
+  })();
+
   function changeMonth(delta: number) {
     const next = new Date(viewYear, viewMonth + delta, 1);
-    setViewYear(next.getFullYear());
-    setViewMonth(next.getMonth());
+    const clamped = clampView(next.getFullYear(), next.getMonth());
+    setViewYear(clamped.y);
+    setViewMonth(clamped.m);
+  }
+
+  function pickMonth(index: number) {
+    if (isMonthOutOfRange(viewYear, index)) return;
+    const clamped = clampView(viewYear, index);
+    setViewYear(clamped.y);
+    setViewMonth(clamped.m);
+    setPanelView("days");
+  }
+
+  function pickYear(year: number) {
+    const clamped = clampView(year, viewMonth);
+    setViewYear(clamped.y);
+    setViewMonth(clamped.m);
+    setPanelView("days");
   }
 
   function selectDay(iso: string) {
@@ -262,6 +382,18 @@ export function DateInput({
     if (isDisabledIso(todayIso)) return;
     onChange(todayIso);
     closePanel();
+  }
+
+  function handlePanelKeyDown(event: React.KeyboardEvent) {
+    if (event.key !== "Escape") return;
+    // Back out of the month/year picker first, matching common date-picker
+    // convention — only closes the whole calendar once already on the day
+    // grid.
+    if (panelView !== "days") {
+      setPanelView("days");
+    } else {
+      closePanel();
+    }
   }
 
   return (
@@ -293,9 +425,7 @@ export function DateInput({
             ref={panelRef}
             role="dialog"
             aria-modal="true"
-            onKeyDown={(event) => {
-              if (event.key === "Escape") closePanel();
-            }}
+            onKeyDown={handlePanelKeyDown}
             style={{
               position: "fixed",
               ...(position.direction === "up" ? { bottom: position.bottom } : { top: position.top }),
@@ -308,93 +438,156 @@ export function DateInput({
               <button
                 type="button"
                 onClick={() => changeMonth(-1)}
-                aria-label="წინა თვე"
-                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                disabled={atMinBound || panelView !== "days"}
+                aria-label={copy.prevMonth}
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
               >
                 {chevronLeft}
               </button>
-              <div className="flex flex-1 gap-1.5">
-                <div className="flex-1">
-                  <Select
-                    ariaLabel={copy.month}
-                    options={monthOptions}
-                    value={String(viewMonth)}
-                    onChange={(next) => setViewMonth(Number(next))}
-                  />
-                </div>
-                <div className="w-24 shrink-0">
-                  <Select
-                    ariaLabel={copy.year}
-                    searchable
-                    options={yearOptions}
-                    value={String(viewYear)}
-                    onChange={(next) => setViewYear(Number(next))}
-                  />
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => setPanelView(panelView === "months" ? "days" : "months")}
+                aria-haspopup="true"
+                aria-expanded={panelView === "months"}
+                aria-label={copy.pickMonth}
+                className="flex-1 truncate rounded-lg px-2 py-1 text-center text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              >
+                {MONTH_NAMES[locale][viewMonth]}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPanelView(panelView === "years" ? "days" : "years")}
+                aria-haspopup="true"
+                aria-expanded={panelView === "years"}
+                aria-label={copy.pickYear}
+                className="rounded-lg px-2 py-1 text-center text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              >
+                {viewYear}
+              </button>
               <button
                 type="button"
                 onClick={() => changeMonth(1)}
-                aria-label="შემდეგი თვე"
-                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                disabled={atMaxBound || panelView !== "days"}
+                aria-label={copy.nextMonth}
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
               >
                 {chevronRight}
               </button>
             </div>
 
-            <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground">
-              {WEEKDAY_NAMES[locale].map((label) => (
-                <div key={label}>{label}</div>
-              ))}
-            </div>
+            {panelView === "days" && (
+              <>
+                <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground">
+                  {WEEKDAY_NAMES[locale].map((label) => (
+                    <div key={label}>{label}</div>
+                  ))}
+                </div>
 
-            <div className="grid grid-cols-7 gap-1">
-              {gridDays.map((cell) => {
-                const isSelected = cell.iso === value;
-                const isToday = cell.iso === todayIso;
-                const isDisabled = isDisabledIso(cell.iso);
-                return (
+                <div className="grid grid-cols-7 gap-1">
+                  {gridDays.map((cell) => {
+                    const isSelected = cell.iso === value;
+                    const isToday = cell.iso === todayIso;
+                    const isDisabled = isDisabledIso(cell.iso);
+                    return (
+                      <button
+                        key={cell.iso}
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() => selectDay(cell.iso)}
+                        className={`flex aspect-square items-center justify-center rounded-lg text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
+                          isSelected
+                            ? "bg-primary font-semibold text-primary-foreground"
+                            : cell.inMonth
+                              ? "text-foreground hover:bg-muted"
+                              : "text-muted-foreground/50 hover:bg-muted"
+                        } ${isToday && !isSelected ? "ring-1 ring-inset ring-primary/50" : ""}`}
+                      >
+                        {cell.d}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-between border-t border-border pt-2 text-xs font-semibold">
                   <button
-                    key={cell.iso}
                     type="button"
-                    disabled={isDisabled}
-                    onClick={() => selectDay(cell.iso)}
-                    className={`flex aspect-square items-center justify-center rounded-lg text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
-                      isSelected
-                        ? "bg-primary font-semibold text-primary-foreground"
-                        : cell.inMonth
-                          ? "text-foreground hover:bg-muted"
-                          : "text-muted-foreground/50 hover:bg-muted"
-                    } ${isToday && !isSelected ? "ring-1 ring-inset ring-primary/50" : ""}`}
+                    onClick={selectToday}
+                    disabled={isDisabledIso(todayIso)}
+                    className="text-primary-text transition-colors hover:underline disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    {cell.d}
+                    {copy.today}
                   </button>
-                );
-              })}
-            </div>
+                  {value && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onChange("");
+                        closePanel();
+                      }}
+                      className="text-muted-foreground transition-colors hover:text-primary-text"
+                    >
+                      {copy.clear}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
 
-            <div className="flex items-center justify-between border-t border-border pt-2 text-xs font-semibold">
-              <button
-                type="button"
-                onClick={selectToday}
-                disabled={isDisabledIso(todayIso)}
-                className="text-primary-text transition-colors hover:underline disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {copy.today}
-              </button>
-              {value && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onChange("");
-                    closePanel();
-                  }}
-                  className="text-muted-foreground transition-colors hover:text-primary-text"
-                >
-                  {copy.clear}
-                </button>
-              )}
-            </div>
+            {panelView === "months" && (
+              // 2 columns, not a cramped single Select — every full month
+              // name (up to "სექტემბერი"/"September") fits with room to
+              // spare, and all 12 are visible at once with no scrolling at
+              // all, unlike the old inline dropdown.
+              <div className="grid grid-cols-2 gap-1.5">
+                {MONTH_NAMES[locale].map((name, index) => {
+                  const isSelected = index === viewMonth;
+                  const isDisabled = isMonthOutOfRange(viewYear, index);
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      disabled={isDisabled}
+                      onClick={() => pickMonth(index)}
+                      className={`truncate rounded-lg px-2 py-2.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
+                        isSelected
+                          ? "bg-primary font-semibold text-primary-foreground"
+                          : "text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {panelView === "years" && (
+              // 4 columns, vertically scrollable (capped to roughly the same
+              // height the day grid occupies) — a 111-year span can't all be
+              // on screen at once no matter the layout, but this never
+              // scrolls sideways, and opens already centered on the current
+              // selection (see the scrollIntoView effect above).
+              <div className="grid max-h-64 grid-cols-4 gap-1.5 overflow-y-auto">
+                {years.map((year) => {
+                  const isSelected = year === viewYear;
+                  return (
+                    <button
+                      key={year}
+                      ref={isSelected ? selectedYearButtonRef : undefined}
+                      type="button"
+                      onClick={() => pickYear(year)}
+                      className={`rounded-lg px-2 py-2 text-sm transition-colors ${
+                        isSelected
+                          ? "bg-primary font-semibold text-primary-foreground"
+                          : "text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {year}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>,
           document.body,
         )}

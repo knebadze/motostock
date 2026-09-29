@@ -11,6 +11,7 @@ import { OAuthButtons, type OAuthStatus } from "@/components/shared/OAuthButtons
 import { PasswordInput } from "@/components/shared/PasswordInput";
 import { DateInput } from "@/components/shared/DateInput";
 import { FieldError } from "@/components/shared/FieldError";
+import { toTbilisiDateOnly } from "@/lib/format";
 import { TermsModal } from "@/components/shared/TermsModal";
 import { createRegisterFormSchema } from "@/lib/validation/auth";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
@@ -144,7 +145,12 @@ export function RegisterForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
             <label htmlFor="date-of-birth" className="text-sm font-medium">
               {t("dateOfBirthLabel")}
             </label>
-            <DateInput id="date-of-birth" value={dateOfBirth} onChange={setDateOfBirth} />
+            <DateInput
+              id="date-of-birth"
+              value={dateOfBirth}
+              onChange={setDateOfBirth}
+              max={toTbilisiDateOnly(new Date().toISOString())}
+            />
             <FieldError message={errors.dateOfBirth} />
           </div>
 

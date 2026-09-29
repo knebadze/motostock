@@ -14,7 +14,7 @@ import {
   type ServiceRecordsAdminPage,
 } from "@/lib/api/service-records";
 import { ApiRequestError } from "@/lib/api/client";
-import { formatDate, formatPrice, formatVehicleCatalogLabel } from "@/lib/format";
+import { formatDate, formatPrice, formatVehicleCatalogLabel, toTbilisiDateOnly } from "@/lib/format";
 import type { ServiceType } from "@/lib/api/service-types";
 import type { TeamMember } from "@/lib/api/team-members";
 
@@ -165,11 +165,11 @@ export function RecentServiceRecordsPanel({
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">თარიღი (დან)</label>
-          <DateInput value={performedFrom} onChange={setPerformedFrom} />
+          <DateInput value={performedFrom} onChange={setPerformedFrom} max={toTbilisiDateOnly(new Date().toISOString())} />
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">თარიღი (მდე)</label>
-          <DateInput value={performedTo} onChange={setPerformedTo} />
+          <DateInput value={performedTo} onChange={setPerformedTo} max={toTbilisiDateOnly(new Date().toISOString())} />
         </div>
         <button
           type="button"

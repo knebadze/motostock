@@ -265,11 +265,11 @@ export function OrdersManager({
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">თარიღი (დან)</label>
-          <DateInput value={createdFrom} onChange={setCreatedFrom} />
+          <DateInput value={createdFrom} onChange={setCreatedFrom} max={toTbilisiDateOnly(new Date().toISOString())} />
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">თარიღი (მდე)</label>
-          <DateInput value={createdTo} onChange={setCreatedTo} />
+          <DateInput value={createdTo} onChange={setCreatedTo} max={toTbilisiDateOnly(new Date().toISOString())} />
         </div>
         <label className="flex items-center gap-2 pb-2 text-sm font-medium text-foreground">
           <input

@@ -15,6 +15,7 @@ import {
 import type { ServiceType } from "@/lib/api/service-types";
 import type { TeamMember } from "@/lib/api/team-members";
 import { ApiRequestError } from "@/lib/api/client";
+import { toTbilisiDateOnly } from "@/lib/format";
 
 const OTHER_VALUE = "__other__";
 
@@ -241,6 +242,7 @@ export function ServiceRecordFormModal({
               id="service-record-date"
               value={performedAt}
               onChange={setPerformedAt}
+              max={toTbilisiDateOnly(new Date().toISOString())}
             />
           </div>
         </div>

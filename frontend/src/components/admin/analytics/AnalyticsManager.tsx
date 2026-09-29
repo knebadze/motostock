@@ -6,7 +6,7 @@ import { DataTable } from "@/components/shared/DataTable";
 import { DateInput } from "@/components/shared/DateInput";
 import { ApiRequestError } from "@/lib/api/client";
 import { getAnalytics, type AnalyticsOverview } from "@/lib/api/analytics";
-import { formatDate, formatDateTime, formatPrice } from "@/lib/format";
+import { formatDate, formatDateTime, formatPrice, toTbilisiDateOnly } from "@/lib/format";
 import { OrderStatusChart } from "@/components/admin/dashboard/OrderStatusChart";
 import { RevenueTrendChart } from "./RevenueTrendChart";
 import { CancellationReasonChart } from "./CancellationReasonChart";
@@ -56,11 +56,11 @@ export function AnalyticsManager({ initialData }: { initialData: AnalyticsOvervi
       <div className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4">
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">თარიღი (დან)</label>
-          <DateInput value={dateFrom} onChange={setDateFrom} />
+          <DateInput value={dateFrom} onChange={setDateFrom} max={toTbilisiDateOnly(new Date().toISOString())} />
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">თარიღი (მდე)</label>
-          <DateInput value={dateTo} onChange={setDateTo} />
+          <DateInput value={dateTo} onChange={setDateTo} max={toTbilisiDateOnly(new Date().toISOString())} />
         </div>
         <button
           type="button"

@@ -10,6 +10,7 @@ import { createWalkInUser, type AdminUser } from "@/lib/api/users";
 import { ApiRequestError } from "@/lib/api/client";
 import { walkInUserFormSchema } from "@/lib/validation/workshop";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+import { toTbilisiDateOnly } from "@/lib/format";
 
 export function AddWalkInCustomerModal({
   open,
@@ -111,6 +112,7 @@ export function AddWalkInCustomerModal({
             id="walkin-dob"
             value={dateOfBirth}
             onChange={setDateOfBirth}
+            max={toTbilisiDateOnly(new Date().toISOString())}
           />
           <FieldError message={errors.dateOfBirth} />
         </div>
