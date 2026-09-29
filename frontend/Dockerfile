@@ -12,8 +12,13 @@ COPY . .
 # they must be real here, not supplied later via `docker run -e`.
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_SITE_URL
+# Optional — empty/unset until the client has their own GA4 property (see
+# components/shared/GoogleAnalytics.tsx and proxy.ts's CSP gating, both of
+# which stay fully inert when this is unset).
+ARG NEXT_PUBLIC_GA_MEASUREMENT_ID
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_GA_MEASUREMENT_ID=$NEXT_PUBLIC_GA_MEASUREMENT_ID
 RUN npm run build
 
 FROM node:22-slim AS runner

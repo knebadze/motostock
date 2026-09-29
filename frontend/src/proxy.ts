@@ -20,6 +20,12 @@ function resolveApiOrigin(): string {
 
 const apiOrigin = resolveApiOrigin();
 const siteIsHttps = (process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https://");
+// Unset until the client's own Google Analytics property exists (see
+// components/shared/GoogleAnalytics.tsx) — CSP stays exactly as strict as
+// today until then; adding the env var later is the only step needed to
+// both turn on the script (that component's own check) and widen the CSP
+// here to allow it.
+const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 // OPERATOR is a limited staff/cashier role — view-only across products/
 // vehicle-listings/service-history/fina-sync, plus order status changes.
@@ -80,9 +86,20 @@ async function isOperatorSession(request: NextRequest): Promise<boolean> {
 // means browsers that support nonces ignore host-based script-src entries
 // entirely (only nonce/hash matter), so no script host allowlist is needed.
 function buildCspHeader(nonce: string): string {
+  // 'strict-dynamic' already lets a nonced <script> (GoogleAnalytics.tsx's
+  // gtag.js tag) load further scripts from anywhere, so googletagmanager.com
+  // doesn't strictly need adding to script-src itself — added anyway as a
+  // harmless fallback for the rare browser that honors host lists but not
+  // strict-dynamic. connect-src DOES need the explicit hosts: gtag.js sends
+  // its actual hit/beacon requests via fetch, which strict-dynamic has no
+  // say over.
+  const gaScriptSrc = gaMeasurementId ? " https://www.googletagmanager.com" : "";
+  const gaConnectSrc = gaMeasurementId
+    ? " https://www.google-analytics.com https://www.googletagmanager.com"
+    : "";
   const directives = [
     `default-src 'self'`,
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}${gaScriptSrc}`,
     // Inline style="" attributes are pervasive (chart widths, computed
     // dropdown offsets, the hero background-image) and can't practically be
     // nonced the way <script> tags can — CSS alone can't execute script, so
@@ -91,7 +108,7 @@ function buildCspHeader(nonce: string): string {
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' blob: data: ${apiOrigin} https://res.cloudinary.com`,
     `font-src 'self'`,
-    `connect-src 'self' ${apiOrigin}`,
+    `connect-src 'self' ${apiOrigin}${gaConnectSrc}`,
     // The contact page's embedded store-location map (app/[locale]/(guest)/
     // contact/page.tsx).
     `frame-src https://www.google.com`,

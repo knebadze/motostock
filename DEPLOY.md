@@ -39,6 +39,11 @@ NEXT_PUBLIC_API_URL=http://<VPS_IP>/api
 NEXT_PUBLIC_SITE_URL=http://<VPS_IP>
 ```
 
+**Google Analytics (არასავალდებულო)** — `NEXT_PUBLIC_GA_MEASUREMENT_ID`-ს დაცლილს/კომენტარში
+ტოვებთ, სანამ საიტს არ ექნება საკუთარი GA4 property. როცა გექნებათ Measurement ID
+(`G-XXXXXXXXXX` ფორმატის), დაამატეთ `.env`-ში და გადააშენეთ (`docker compose build frontend &&
+docker compose up -d`) — მეტი ცვლილება არ სჭირდება, კოდი უკვე მზადაა.
+
 **`backend/.env`** — შეავსეთ `JWT_SECRET` (32+ სიმბოლო, შემთხვევითი),
 `FRONTEND_ORIGIN=http://<VPS_IP>`, `BACKEND_PUBLIC_URL=http://<VPS_IP>`, `NODE_ENV=production`,
 და დანარჩენი (SMTP, FINA, OAuth credentials და ა.შ.) რაც გაქტიურებული გინდათ ტესტირებისთვის —
