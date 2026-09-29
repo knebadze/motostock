@@ -118,11 +118,17 @@ export function VehicleListingCard({
           </span>
           <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
             {listing.isCustomsCleared ? (
-              <span className="rounded-full bg-green-500/10 px-2 py-0.5 font-medium text-green-600">
+              // text-*-600 measured at ~3.2-3.3:1 against this badge's own
+              // tinted background in light mode — short of the 4.5:1 AA
+              // minimum. -800 gives a comfortable light-mode margin (~6.5:1),
+              // but is nearly invisible in dark mode (~1.9:1) against the
+              // same tint over the dark card color, hence the dark: override
+              // back to a lighter shade (~6:1 there).
+              <span className="rounded-full bg-green-500/10 px-2 py-0.5 font-medium text-green-800 dark:text-green-500">
                 {t("customsCleared")}
               </span>
             ) : (
-              <span className="rounded-full bg-amber-500/10 px-2 py-0.5 font-medium text-amber-600">
+              <span className="rounded-full bg-amber-500/10 px-2 py-0.5 font-medium text-amber-800 dark:text-amber-500">
                 {t("customsNotCleared")}
               </span>
             )}
