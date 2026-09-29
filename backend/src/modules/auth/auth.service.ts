@@ -87,9 +87,22 @@ export async function registerUser(
   // new row being created and every GarageVehicle/ServiceRecord reassigned
   // onto it — see the plan's design-decisions note on this.
   const walkIn = await usersRepository.findByPhone(input.phone);
-  if (walkIn && !walkIn.isWalkIn) {
-    // The phone belongs to someone else's already-registered account — same
-    // conflict shape as the email check above.
+  // A walk-in the admin already manually merged into a real account (see
+  // users.service.ts's mergeUserInto) is kept around on purpose — flagged
+  // via mergedIntoUserId, but its own isWalkIn is deliberately left true
+  // (the row itself never stopped being a walk-in, it just also now points
+  // at where its history moved). Without this check, someone registering
+  // with that same phone later (a reused number, or the original person
+  // registering directly instead of via the OAuth account they were merged
+  // onto) would pass straight through and resurrect this already-merged row
+  // as their own brand-new account — permanently and incorrectly flagged as
+  // "merged into" someone else, which also silently blocks them from ever
+  // adding a garage vehicle (garage.service.ts's createGarageVehicle checks
+  // exactly this field).
+  if (walkIn && (!walkIn.isWalkIn || walkIn.mergedIntoUserId != null)) {
+    // The phone belongs to someone else's already-registered account (or an
+    // already-merged-away walk-in) — same conflict shape as the email check
+    // above.
     throw new ApiError(409, "Phone number already in use", "PHONE_ALREADY_IN_USE");
   }
 

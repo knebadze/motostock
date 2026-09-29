@@ -161,12 +161,18 @@ export const usersRepository = {
   // With this guard, only the first UPDATE actually matches a row (count 1);
   // the second sees isWalkIn already false and gets count 0, signaling the
   // caller to treat it as a conflict instead of silently "succeeding".
+  // mergedIntoUserId: null is defense in depth alongside registerUser's own
+  // pre-check — a walk-in the admin already manually merged into a real
+  // account (users.service.ts's mergeUserInto) keeps isWalkIn: true by
+  // design (see that function's comment) but must never be resurrected as
+  // someone's fresh registration; this row-level check makes that structurally
+  // impossible even if a future caller forgets the pre-check.
   async convertWalkInToRegistered(
     id: number,
     data: { email: string; passwordHash: string; firstName: string; lastName: string; dateOfBirth: Date },
   ) {
     const { count } = await prisma.user.updateMany({
-      where: { id, isWalkIn: true },
+      where: { id, isWalkIn: true, mergedIntoUserId: null },
       data: { ...data, isWalkIn: false },
     });
     if (count === 0) {
