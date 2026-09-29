@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
 import { removeFromCompare, type CompareItem } from "@/lib/api/compare";
+import { useUsdToGelRate } from "@/lib/useUsdToGelRate";
 import { formatValue } from "@/components/shop/product-detail/ProductSpecs";
 import { buildVehicleSpecRows } from "@/components/shop/vehicle-listing-detail/VehicleSpecs";
 import type { Product } from "@/lib/api/products";
@@ -90,6 +91,10 @@ export function CompareManager({ initialItems }: { initialItems: CompareItem[] }
   const tVehicle = useTranslations("VehicleListingDetail");
   const locale = useLocale() as Locale;
   const [items, setItems] = useState(initialItems);
+  // Vehicle listings can be priced in USD or GEL (see
+  // useVehiclePriceDisplay.ts) — the price row below needs this to convert
+  // everything to one currency before deciding which listing is cheaper.
+  const { rate: usdToGelRate } = useUsdToGelRate();
 
   async function handleRemove(id: number) {
     setItems((current) => current.filter((item) => item.id !== id));
@@ -311,7 +316,26 @@ export function CompareManager({ initialItems }: { initialItems: CompareItem[] }
                         ? item.vehicleListing.activeDiscount.discountPrice
                         : item.vehicleListing.price,
                     );
-                    const priceClasses = comparisonClasses(priceValues, "lowerIsBetter");
+                    // Highlighting ("cheapest"/"most expensive") must compare
+                    // like-for-like — converting each price to GEL first
+                    // (same normalization orders.service.ts uses at
+                    // checkout). If the listings mix currencies and the live
+                    // rate isn't available yet, skip highlighting entirely
+                    // (all nulls) rather than comparing raw USD/GEL numbers
+                    // as if equivalent — see useVehiclePriceDisplay.ts's own
+                    // "showing an unconverted number would be actively
+                    // wrong" reasoning.
+                    const mixedCurrencies =
+                      new Set(vehicleItems.map((item) => item.vehicleListing.priceCurrency)).size > 1;
+                    const comparableValues =
+                      mixedCurrencies && usdToGelRate == null
+                        ? vehicleItems.map(() => null)
+                        : priceValues.map((price, index) =>
+                            vehicleItems[index].vehicleListing.priceCurrency === "USD"
+                              ? price * (usdToGelRate ?? 1)
+                              : price,
+                          );
+                    const priceClasses = comparisonClasses(comparableValues, "lowerIsBetter");
                     return vehicleItems.map((item, index) => (
                       <td
                         key={item.id}
@@ -319,7 +343,7 @@ export function CompareManager({ initialItems }: { initialItems: CompareItem[] }
                           priceClasses[index] ?? "text-primary"
                         }`}
                       >
-                        {formatPrice(priceValues[index])}
+                        {formatPrice(priceValues[index], item.vehicleListing.priceCurrency)}
                       </td>
                     ));
                   })()}
