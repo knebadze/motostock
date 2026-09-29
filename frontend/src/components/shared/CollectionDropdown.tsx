@@ -124,7 +124,7 @@ export function CollectionDropdown({
         aria-label={tHeader(headerLabelKey)}
         aria-haspopup="true"
         aria-expanded={open}
-        className="relative flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-9"
+        className="relative flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-10"
       >
         {icon}
         {count > 0 && (

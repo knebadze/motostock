@@ -18,7 +18,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
-    return <div className={compact ? "size-3.5" : "size-8 shrink-0 rounded-full sm:size-9"} aria-hidden />;
+    return <div className={compact ? "size-3.5" : "size-9 shrink-0 rounded-full sm:size-10"} aria-hidden />;
   }
 
   const isDark = resolvedTheme === "dark";
@@ -32,7 +32,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
       className={
         compact
           ? "flex items-center justify-center text-muted-foreground transition-colors hover:text-primary-text"
-          : "flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-9"
+          : "flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-10"
       }
     >
       {isDark ? (

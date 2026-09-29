@@ -353,7 +353,7 @@ export function Header({
             aria-expanded={isOpen}
             aria-controls="mobile-nav"
             aria-label={isOpen ? tHeader("closeMenu") : tHeader("openMenu")}
-            className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-9 lg:hidden"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-10 lg:hidden"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

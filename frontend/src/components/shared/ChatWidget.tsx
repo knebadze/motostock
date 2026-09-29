@@ -48,7 +48,12 @@ function WhatsAppThread({ messages }: { messages: WhatsAppChatMessage[] }) {
   }, [messages.length]);
 
   return (
-    <div className="flex flex-col gap-2">
+    // aria-live so a reply that arrives while the panel is open (polled
+    // every POLL_INTERVAL_MS) gets announced — without this, a screen-reader
+    // user had no way to know a new message landed short of closing and
+    // reopening the panel to re-read the whole thread. "additions" only,
+    // not the whole thread re-announced on every poll tick.
+    <div className="flex flex-col gap-2" aria-live="polite" aria-relevant="additions">
       {messages.map((message) => {
         if (message.sender === "SYSTEM") {
           return (
