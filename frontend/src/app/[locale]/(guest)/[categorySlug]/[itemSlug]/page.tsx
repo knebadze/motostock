@@ -69,7 +69,13 @@ export async function generateMetadata({
   const product = await getProductDetailFromServer(itemSlug);
   if (!product) return {};
 
-  const title = `${product.name[locale]} — ${siteConfig.name}`;
+  // metaTitle is the FULL page title, not just the product name — the admin
+  // form's auto-fill already bakes in "| siteConfig.name" within its 70-char
+  // budget (ProductForm.tsx's handleNameChange), same as metaDescription
+  // below is used as-is rather than wrapped in more text. Without this `??`,
+  // an admin-authored meta title was silently discarded and this generic
+  // fallback used instead, no matter what the SEO tab had saved.
+  const title = product.metaTitle ?? `${product.name[locale]} — ${siteConfig.name}`;
   const rawDescription =
     product.metaDescription ??
     (locale === "en" ? product.descriptionEn : locale === "ru" ? product.descriptionRu : product.descriptionKa);
