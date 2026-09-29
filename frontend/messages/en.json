@@ -551,6 +551,7 @@
     },
     "orders": {
       "empty": "You haven't placed any orders yet.",
+      "invoiceDownload": "Download invoice",
       "reorderButton": "Buy again",
       "reorderLoading": "Working...",
       "reorderAllAdded": "All items added to cart",

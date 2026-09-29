@@ -551,6 +551,7 @@
     },
     "orders": {
       "empty": "Вы ещё не оформили ни одного заказа.",
+      "invoiceDownload": "Скачать счёт",
       "reorderButton": "Повторить заказ",
       "reorderLoading": "Обработка...",
       "reorderAllAdded": "Все товары добавлены в корзину",

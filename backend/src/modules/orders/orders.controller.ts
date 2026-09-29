@@ -2,9 +2,21 @@ import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
 import { getClientIp } from "../../lib/request-ip.js";
 import { previewCheckout, placeOrder } from "./orders.service.js";
-import { listMyOrders, getMyOrder, reorderOrder, listAllOrders, getAnyOrder } from "./orders-query.service.js";
+import {
+  listMyOrders,
+  getMyOrder,
+  reorderOrder,
+  listAllOrders,
+  getAnyOrder,
+  getMyOrderInvoicePdf,
+} from "./orders-query.service.js";
 import { updateOrderStatus, retryOrderFinaSync } from "./orders-admin.service.js";
-import type { CheckoutInput, ListOrdersQuery, UpdateOrderStatusInput } from "./orders.schema.js";
+import type {
+  CheckoutInput,
+  DownloadInvoiceQuery,
+  ListOrdersQuery,
+  UpdateOrderStatusInput,
+} from "./orders.schema.js";
 
 // requireAuth (see orders.routes.ts) guarantees req.user is set before any
 // handler here runs — this is just the narrow structural read of it.
@@ -37,6 +49,20 @@ export async function list(req: Request, res: Response) {
 export async function getOne(req: Request, res: Response) {
   const order = await getMyOrder(requireUserId(req), Number(req.params.id));
   res.status(200).json({ order });
+}
+
+export async function downloadInvoice(
+  req: Request<{ id: string }, unknown, unknown, DownloadInvoiceQuery>,
+  res: Response,
+) {
+  const { buffer, filename } = await getMyOrderInvoicePdf(
+    requireUserId(req),
+    Number(req.params.id),
+    req.query.locale ?? "ka",
+  );
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.status(200).send(buffer);
 }
 
 export async function reorder(req: Request, res: Response) {

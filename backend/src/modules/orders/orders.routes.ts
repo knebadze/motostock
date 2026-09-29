@@ -12,6 +12,7 @@ import {
   adminOrderSummaryResponseSchema,
   checkoutInputSchema,
   checkoutPreviewResponseSchema,
+  downloadInvoiceQuerySchema,
   listOrdersQuerySchema,
   orderIdParamSchema,
   orderResponseSchema,
@@ -44,6 +45,12 @@ ordersRouter.post(
 );
 ordersRouter.get("/me", ordersController.list);
 ordersRouter.get("/me/:id", validate(orderIdParamSchema, "params"), ordersController.getOne);
+ordersRouter.get(
+  "/me/:id/invoice",
+  validate(orderIdParamSchema, "params"),
+  validate(downloadInvoiceQuerySchema, "query"),
+  ordersController.downloadInvoice,
+);
 ordersRouter.post(
   "/me/:id/reorder",
   validate(orderIdParamSchema, "params"),
@@ -145,6 +152,20 @@ registry.registerPath({
   request: { params: orderIdParamSchema },
   responses: {
     200: { description: "Order", content: { "application/json": { schema: orderResponse } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/orders/me/{id}/invoice",
+  tags: ["Orders"],
+  summary: "Download one of the caller's placed orders as a PDF invoice",
+  security,
+  request: { params: orderIdParamSchema, query: downloadInvoiceQuerySchema },
+  responses: {
+    200: { description: "PDF invoice", content: { "application/pdf": { schema: { type: "string", format: "binary" } } } },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
   },

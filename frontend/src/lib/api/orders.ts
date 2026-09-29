@@ -146,6 +146,14 @@ export async function reorderOrder(id: number): Promise<ReorderResult> {
   return data;
 }
 
+// A plain link's href, not an axios call — the browser's own top-level
+// navigation already sends the auth cookie (no CORS/fetch-blob dance
+// needed), and the backend's Content-Disposition: attachment header is what
+// actually triggers the download regardless of the anchor's own attributes.
+export function getOrderInvoiceUrl(id: number, locale: "ka" | "en" | "ru"): string {
+  return `${apiClient.defaults.baseURL}/orders/me/${id}/invoice?locale=${locale}`;
+}
+
 // Admin-only from here down — hits the requireRole(ADMIN)-gated /orders and
 // /orders/:id endpoints (not the /orders/me* ones above), so every order is
 // visible regardless of buyer, and each row/detail carries a `buyer`.

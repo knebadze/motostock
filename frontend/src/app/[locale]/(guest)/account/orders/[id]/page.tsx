@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { getMyOrderFromServer } from "@/lib/api/server";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { formatDateTime, formatPrice } from "@/lib/format";
-import type { OrderFulfillmentMethod, PaymentStatus } from "@/lib/api/orders";
+import { getOrderInvoiceUrl, type OrderFulfillmentMethod, type PaymentStatus } from "@/lib/api/orders";
 import { ReorderButton } from "@/components/shared/ReorderButton";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -45,6 +45,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 function OrderDetailPageView({ order }: { order: NonNullable<Awaited<ReturnType<typeof getMyOrderFromServer>>> }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Checkout");
+  const tOrders = useTranslations("Account.orders");
   const nameLocaleKey = locale === "ka" ? "nameKa" : locale === "ru" ? "nameRu" : "nameEn";
 
   return (
@@ -55,6 +56,14 @@ function OrderDetailPageView({ order }: { order: NonNullable<Awaited<ReturnType<
           <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground">
             {order.status[nameLocaleKey]}
           </span>
+          <a
+            href={getOrderInvoiceUrl(order.id, locale)}
+            target="_blank"
+            rel="noopener"
+            className="shrink-0 rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+          >
+            {tOrders("invoiceDownload")}
+          </a>
           <ReorderButton orderId={order.id} />
         </div>
       </div>

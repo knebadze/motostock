@@ -5,6 +5,7 @@ import { cartRepository, type CartOwner } from "../cart/cart.repository.js";
 import { addCartItem } from "../cart/cart.service.js";
 import { ordersRepository } from "./orders.repository.js";
 import { toOrderResponse, computeEstimatedDeliveryDate } from "./orders.service.js";
+import { generateOrderInvoicePdf, type InvoiceLocale } from "./invoice.service.js";
 import type { ListOrdersQuery } from "./orders.schema.js";
 
 // Customer- and admin-facing order READS (list/get/reorder) — split out of
@@ -36,6 +37,19 @@ export async function getMyOrder(userId: number, id: number) {
     throw new ApiError(404, "შეკვეთა ვერ მოიძებნა", "ORDER_NOT_FOUND");
   }
   return toOrderResponse(row);
+}
+
+// Same ownership check as getMyOrder above — the raw row (not the mapped
+// toOrderResponse shape) is what invoice.service.ts needs, since it reads a
+// few fields (order.user, order.promoCodeSnapshot) that the customer-facing
+// response never exposes.
+export async function getMyOrderInvoicePdf(userId: number, id: number, locale: InvoiceLocale) {
+  const row = await ordersRepository.findById(id);
+  if (!row || row.userId !== userId) {
+    throw new ApiError(404, "შეკვეთა ვერ მოიძებნა", "ORDER_NOT_FOUND");
+  }
+  const buffer = await generateOrderInvoicePdf(row, locale);
+  return { buffer, filename: `invoice-${row.orderCode}.pdf` };
 }
 
 // Recovers how much of *this* reorder request actually landed in the cart —

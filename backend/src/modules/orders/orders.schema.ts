@@ -303,3 +303,10 @@ export const adminOrderResponseSchema = registry.register(
     finaOutOperationId: z.int().nullable(),
   }),
 );
+
+// Defaults to "ka" in the controller (not `.default()` here) — same reason
+// as listOrdersQuerySchema's page/pageSize above.
+export const downloadInvoiceQuerySchema = z.object({
+  locale: z.enum(["ka", "en", "ru"]).optional(),
+});
+export type DownloadInvoiceQuery = z.infer<typeof downloadInvoiceQuerySchema>;
