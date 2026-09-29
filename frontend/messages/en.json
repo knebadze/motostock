@@ -113,6 +113,7 @@
   },
   "Cart": {
     "empty": "Your cart is empty.",
+    "continueShopping": "Continue shopping",
     "itemCount": "{count, plural, one {# item} other {# items}}",
     "subtotal": "Subtotal",
     "viewCart": "View cart",

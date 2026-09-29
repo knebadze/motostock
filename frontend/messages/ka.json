@@ -113,6 +113,7 @@
   },
   "Cart": {
     "empty": "კალათა ცარიელია.",
+    "continueShopping": "მაღაზიაში დაბრუნება",
     "itemCount": "{count} ერთეული",
     "subtotal": "ჯამი",
     "viewCart": "სრულად ნახვა",

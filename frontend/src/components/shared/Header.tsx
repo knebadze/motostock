@@ -464,17 +464,68 @@ export function Header({
             {topLevelCategories.map((category) => {
               const href = `/${category.slug}`;
               const isActive = pathname === href;
+              const children = categories.filter((item) => item.parentId === category.id);
+
+              // Leaf category (no children) — same plain link as before.
+              if (children.length === 0) {
+                return (
+                  <Link
+                    key={category.id}
+                    href={href}
+                    onClick={() => setIsOpen(false)}
+                    className={`rounded-lg px-3 py-2.5 transition-colors hover:bg-muted hover:text-primary-text ${
+                      isActive ? "text-primary-text" : "text-foreground"
+                    }`}
+                  >
+                    {category.name[locale]}
+                  </Link>
+                );
+              }
+
+              // Has subcategories — the desktop header reveals these via a
+              // hover mega-menu (activeChildren above), which has no mobile
+              // equivalent at all; a mobile visitor previously had no way to
+              // reach a subcategory except landing on the parent category
+              // page first. <details>/<summary> gives a free, keyboard-
+              // operable disclosure widget (Enter/Space toggles natively) —
+              // same pattern this codebase's FAQ accordion already uses —
+              // instead of hand-rolling expand/collapse state.
               return (
-                <Link
-                  key={category.id}
-                  href={href}
-                  onClick={() => setIsOpen(false)}
-                  className={`rounded-lg px-3 py-2.5 transition-colors hover:bg-muted hover:text-primary-text ${
-                    isActive ? "text-primary-text" : "text-foreground"
-                  }`}
-                >
-                  {category.name[locale]}
-                </Link>
+                <details key={category.id} className="group [&_summary::-webkit-details-marker]:hidden">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted">
+                    <Link
+                      href={href}
+                      onClick={() => setIsOpen(false)}
+                      className={`flex-1 hover:text-primary-text ${isActive ? "text-primary-text" : "text-foreground"}`}
+                    >
+                      {category.name[locale]}
+                    </Link>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </summary>
+                  <div className="ml-3 flex flex-col gap-1 border-l border-border py-1 pl-3">
+                    {children.map((child) => (
+                      <Link
+                        key={child.id}
+                        href={`/${child.slug}`}
+                        onClick={() => setIsOpen(false)}
+                        className="rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                      >
+                        {child.name[locale]}
+                      </Link>
+                    ))}
+                  </div>
+                </details>
               );
             })}
 

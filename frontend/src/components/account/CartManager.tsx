@@ -137,7 +137,17 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
   }
 
   if (cart.items.length === 0) {
-    return <p className="mt-6 text-muted-foreground">{t("empty")}</p>;
+    return (
+      <div className="mt-6 flex flex-col items-start gap-4">
+        <p className="text-muted-foreground">{t("empty")}</p>
+        <Link
+          href="/catalog"
+          className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+        >
+          {t("continueShopping")}
+        </Link>
+      </div>
+    );
   }
 
   return (

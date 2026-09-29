@@ -113,6 +113,7 @@
   },
   "Cart": {
     "empty": "Корзина пуста.",
+    "continueShopping": "Вернуться к покупкам",
     "itemCount": "{count, plural, one {# товар} few {# товара} many {# товаров} other {# товаров}}",
     "subtotal": "Итого",
     "viewCart": "Смотреть корзину",
