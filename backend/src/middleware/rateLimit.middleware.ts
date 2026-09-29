@@ -125,6 +125,25 @@ export const whatsappWebhookVerifyRateLimit = rateLimit({
   message: { error: { message: "Too many requests, please slow down" } },
 });
 
+// Authenticated (requireAuth on the route) but otherwise a plain self-service
+// write with no rate limit of its own before this — every other
+// write-with-real-side-effects endpoint in this file got its own tighter
+// limiter after a specific incident/review; this one was missed. Each
+// submission runs assertNoDuplicate plus a DB write and lands in the admin's
+// moderation queue — without this, a single account could script up to
+// globalRateLimit's full 300/min, flooding that queue with junk brand/model/
+// variant combinations. Budgeted low (this is a rare, once-in-a-while action
+// for a real customer, not something legitimate use ever needs to repeat
+// quickly) rather than matching a normal-interactive-use budget like
+// checkoutRateLimit's.
+export const vehicleCatalogSubmitRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { message: "Too many requests, please try again later" } },
+});
+
 // Image-upload routes (bank logos, etc.) sit behind requireRole(ADMIN)
 // already, so this is a second line of defense against a compromised admin
 // session being used to flood disk writes — generous enough for a normal
