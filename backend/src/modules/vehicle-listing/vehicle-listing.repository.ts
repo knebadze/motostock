@@ -49,7 +49,15 @@ const include = vehicleListingInclude;
 // vehicle-listing.service.ts's toVehicleListingResponse null-fills below
 // for this path), the full images gallery, or a listing's whole discount
 // history.
-const adminListInclude = {
+//
+// Exported — cart.repository.ts and wishlist.repository.ts reuse this exact
+// shape too. Neither VehicleListingCard.tsx (wishlist) nor cart.service.ts's
+// own price computation reads any of the 7 dropped spec-lookup relations
+// either, so there's no reason those two paths carried the full storefront-
+// detail include (7 extra joins, the whole discount history, every image)
+// when this already-proven-safe, already-null-filled-elsewhere shape covers
+// everything both of them actually use.
+export const adminListInclude = {
   vehicleCatalog: {
     include: {
       brand: { select: brandModelRefSelect },
@@ -406,6 +414,55 @@ export const vehicleListingRepository = {
 
   findById(id: number) {
     return prisma.vehicleListing.findUnique({ where: { id }, include });
+  },
+
+  // Lean projection for promo-codes.service.ts's cart-item matching —
+  // batched across every listing in the cart instead of a per-item findById
+  // pulling the full detail `include` (fuelType/transmissionType/
+  // coolingType/finalDriveType/driveType/startType/powertrainType lookup
+  // objects, images, discounts, ...), none of which that matching logic
+  // reads. Every scalar VehicleSpecField.column (vehicle-spec-fields.
+  // registry.ts) is selected directly — cheap (plain ints/booleans on the
+  // one row already being fetched), and it's simpler and just as fast as
+  // resolving only the one column a given promo code's own specField
+  // happens to need.
+  findManyForPromoMatch(ids: number[]) {
+    return prisma.vehicleListing.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        vehicleCatalog: {
+          select: {
+            brandId: true,
+            modelId: true,
+            model: { select: { categoryId: true } },
+            fuelTypeId: true,
+            transmissionTypeId: true,
+            coolingTypeId: true,
+            finalDriveTypeId: true,
+            driveTypeId: true,
+            startTypeId: true,
+            powertrainTypeId: true,
+            engineVolumeCc: true,
+            enginePowerHp: true,
+            cylinderCount: true,
+            gearCount: true,
+            seatCount: true,
+            weightKg: true,
+            seatHeightMm: true,
+            fuelTankLiters: true,
+            topSpeedKmh: true,
+            motorPowerWatt: true,
+            batteryCapacityWh: true,
+            rangeKm: true,
+            chargingTimeMinutes: true,
+            hasAbs: true,
+            hasLockingDifferential: true,
+            isCustomsCleared: true,
+          },
+        },
+      },
+    });
   },
 
   // Global counter bump — see getVehicleListing in vehicle-listing.service.ts.

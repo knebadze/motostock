@@ -38,6 +38,27 @@ type ProductVariantRow = {
   discounts: DiscountRow[];
 };
 
+// The lean adminListInclude shape (see vehicle-listing.repository.ts and
+// cart.repository.ts's cartItemInclude) — missing the 7 VehicleCatalog
+// spec-lookup relations (fuelType, transmissionType, ...) that
+// toVehicleListingResponse's full parameter type expects, null-filled back
+// in below exactly like vehicle-listing.service.ts's own admin-list branch
+// already does, purely to satisfy that shape. Nothing in the cart (this
+// file's own price computation, or VehicleListingCard.tsx rendering a
+// wishlist/cart row) ever reads those 7 relations.
+type CartVehicleListingRow = Omit<Parameters<typeof toVehicleListingResponse>[0], "vehicleCatalog"> & {
+  vehicleCatalog: Omit<
+    Parameters<typeof toVehicleListingResponse>[0]["vehicleCatalog"],
+    | "fuelType"
+    | "transmissionType"
+    | "coolingType"
+    | "finalDriveType"
+    | "driveType"
+    | "startType"
+    | "powertrainType"
+  >;
+};
+
 type CartItemRow = {
   id: number;
   userId: number | null;
@@ -45,7 +66,7 @@ type CartItemRow = {
   itemType: CartItemType;
   quantity: number;
   productVariant: ProductVariantRow | null;
-  vehicleListing: Parameters<typeof toVehicleListingResponse>[0] | null;
+  vehicleListing: CartVehicleListingRow | null;
   createdAt: Date;
 };
 
@@ -83,7 +104,23 @@ function ownerMatches(row: { userId: number | null; guestId: string | null }, ow
 // (imported there as `toResponse as toCartItemResponse`).
 export async function toResponse(row: CartItemRow) {
   const productVariant = row.productVariant ? toProductVariantCartResponse(row.productVariant) : null;
-  const vehicleListing = row.vehicleListing ? toVehicleListingResponse(row.vehicleListing) : null;
+  // Same null-fill as vehicle-listing.service.ts's admin-list branch — see
+  // CartVehicleListingRow's comment above for why.
+  const vehicleListing = row.vehicleListing
+    ? toVehicleListingResponse({
+        ...row.vehicleListing,
+        vehicleCatalog: {
+          ...row.vehicleListing.vehicleCatalog,
+          fuelType: null,
+          transmissionType: null,
+          coolingType: null,
+          finalDriveType: null,
+          driveType: null,
+          startType: null,
+          powertrainType: null,
+        },
+      })
+    : null;
   // The cart always displays/totals in GEL (the only currency this store
   // ever actually charges) — a USD-priced listing's own price and its
   // same-currency active discount (see vehicle-listing.prisma's

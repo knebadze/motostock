@@ -555,12 +555,25 @@ export async function resolvePromoCodeForItems(
   const matchedKeys = new Set<string>();
 
   if (promo.domain === "PRODUCT") {
+    // Batched — one query for every variant in the cart, one for every
+    // product those variants belong to, instead of 2 sequential round trips
+    // PER cart item (the previous per-item findById/findById chain).
+    const variantIds = items
+      .filter((item): item is PromoCodeMatchItem & { productVariantId: number } =>
+        item.itemType === "PRODUCT_VARIANT" && item.productVariantId != null,
+      )
+      .map((item) => item.productVariantId);
+    const variantRows = await productVariantsRepository.findProductIdsByIds(variantIds);
+    const productIdByVariantId = new Map(variantRows.map((row) => [row.id, row.productId]));
+    const productIds = [...new Set(variantRows.map((row) => row.productId))];
+    const products = await productsRepository.findManyForPromoMatch(productIds);
+    const productById = new Map(products.map((product) => [product.id, product]));
+
     for (const item of items) {
       if (item.itemType !== "PRODUCT_VARIANT" || !item.productVariantId) continue;
 
-      const variant = await productVariantsRepository.findById(item.productVariantId);
-      if (!variant) continue;
-      const product = await productsRepository.findById(variant.product.id);
+      const productId = productIdByVariantId.get(item.productVariantId);
+      const product = productId != null ? productById.get(productId) : undefined;
       if (!product) continue;
 
       if (categoryIds && !categoryIds.includes(product.categoryId)) continue;
@@ -575,14 +588,24 @@ export async function resolvePromoCodeForItems(
       matchedKeys.add(promoCodeItemKey(item));
     }
   } else {
+    // Same batching as the PRODUCT branch above — one query for every
+    // listing in the cart instead of a per-item findById.
+    const listingIds = items
+      .filter((item): item is PromoCodeMatchItem & { vehicleListingId: number } =>
+        item.itemType === "VEHICLE_LISTING" && item.vehicleListingId != null,
+      )
+      .map((item) => item.vehicleListingId);
+    const listings = await vehicleListingRepository.findManyForPromoMatch(listingIds);
+    const listingById = new Map(listings.map((listing) => [listing.id, listing]));
+
     for (const item of items) {
       if (item.itemType !== "VEHICLE_LISTING" || !item.vehicleListingId) continue;
 
-      const listing = await vehicleListingRepository.findById(item.vehicleListingId);
+      const listing = listingById.get(item.vehicleListingId);
       if (!listing) continue;
       const catalog = listing.vehicleCatalog;
 
-      if (categoryIds && !categoryIds.includes(catalog.model.category.id)) continue;
+      if (categoryIds && !categoryIds.includes(catalog.model.categoryId)) continue;
       if (promo.brandId != null && catalog.brandId !== promo.brandId) continue;
       if (promo.modelId != null && catalog.modelId !== promo.modelId) continue;
       if (promo.specField != null && promo.specLookupItemId != null) {

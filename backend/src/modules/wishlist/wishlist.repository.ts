@@ -1,6 +1,6 @@
 import { prisma } from "../../config/prisma.js";
 import { productSummaryInclude } from "../products/products.repository.js";
-import { vehicleListingInclude } from "../vehicle-listing/vehicle-listing.repository.js";
+import { adminListInclude as vehicleListingWishlistInclude } from "../vehicle-listing/vehicle-listing.repository.js";
 import type { WishlistItemType } from "../../generated/prisma/index.js";
 
 export type WishlistOwner = { userId: number } | { guestId: string };
@@ -13,7 +13,7 @@ function ownerWhere(owner: WishlistOwner) {
 // same shape under User.wishlistItems without duplicating it.
 export const wishlistItemInclude = {
   product: { include: productSummaryInclude },
-  vehicleListing: { include: vehicleListingInclude },
+  vehicleListing: { include: vehicleListingWishlistInclude },
 } as const;
 
 export const wishlistRepository = {

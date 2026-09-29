@@ -38,6 +38,19 @@ export const productVariantsRepository = {
     return prisma.productVariant.findUnique({ where: { id }, include });
   },
 
+  // Lean id -> productId lookup for promo-codes.service.ts's cart-item
+  // matching, which only ever needs to know which product a variant belongs
+  // to — batched (one query for every variant in the cart) instead of a
+  // per-item findById, and without findById's full card-shaped include
+  // (size/color/discounts/images/...), neither of which that matching logic
+  // reads at all.
+  findProductIdsByIds(ids: number[]) {
+    return prisma.productVariant.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, productId: true },
+    });
+  },
+
   findByFinaId(finaId: number) {
     return prisma.productVariant.findUnique({ where: { finaId }, select: { id: true } });
   },

@@ -659,6 +659,23 @@ export const productsRepository = {
     return prisma.product.findUnique({ where: { id }, include: adminProductSummaryInclude });
   },
 
+  // Lean projection for promo-codes.service.ts's cart-item matching — only
+  // the 3 fields that logic actually reads (category/brand/attribute-option
+  // membership), batched across every product in the cart instead of a
+  // per-item findById pulling the full admin card include (variants,
+  // prices, discounts, category/brand names, ...).
+  findManyForPromoMatch(ids: number[]) {
+    return prisma.product.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        categoryId: true,
+        productBrandId: true,
+        attributeValues: { select: { attributeId: true, optionId: true } },
+      },
+    });
+  },
+
   findBySlug(slug: string) {
     return prisma.product.findUnique({ where: { slug } });
   },

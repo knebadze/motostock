@@ -8,11 +8,32 @@ import { wishlistRepository, type WishlistOwner } from "./wishlist.repository.js
 import type { CreateWishlistItemInput } from "./wishlist.schema.js";
 import type { WishlistItemType } from "../../generated/prisma/index.js";
 
+// The lean adminListInclude shape (see vehicle-listing.repository.ts and
+// wishlist.repository.ts's wishlistItemInclude) — missing the 7
+// VehicleCatalog spec-lookup relations (fuelType, transmissionType, ...)
+// that toVehicleListingResponse's full parameter type expects, null-filled
+// back in below exactly like vehicle-listing.service.ts's own admin-list
+// branch already does, purely to satisfy that shape. VehicleListingCard.tsx
+// (what a wishlisted vehicle listing actually renders as) never reads any
+// of those 7 relations.
+type WishlistVehicleListingRow = Omit<Parameters<typeof toVehicleListingResponse>[0], "vehicleCatalog"> & {
+  vehicleCatalog: Omit<
+    Parameters<typeof toVehicleListingResponse>[0]["vehicleCatalog"],
+    | "fuelType"
+    | "transmissionType"
+    | "coolingType"
+    | "finalDriveType"
+    | "driveType"
+    | "startType"
+    | "powertrainType"
+  >;
+};
+
 type WishlistItemRow = {
   id: number;
   itemType: WishlistItemType;
   product: Parameters<typeof toProductResponse>[0] | null;
-  vehicleListing: Parameters<typeof toVehicleListingResponse>[0] | null;
+  vehicleListing: WishlistVehicleListingRow | null;
   createdAt: Date;
 };
 
@@ -23,7 +44,21 @@ export async function toResponse(row: WishlistItemRow) {
     id: row.id,
     itemType: row.itemType,
     product: row.product ? await toProductResponse(row.product) : null,
-    vehicleListing: row.vehicleListing ? toVehicleListingResponse(row.vehicleListing) : null,
+    vehicleListing: row.vehicleListing
+      ? toVehicleListingResponse({
+          ...row.vehicleListing,
+          vehicleCatalog: {
+            ...row.vehicleListing.vehicleCatalog,
+            fuelType: null,
+            transmissionType: null,
+            coolingType: null,
+            finalDriveType: null,
+            driveType: null,
+            startType: null,
+            powertrainType: null,
+          },
+        })
+      : null,
     createdAt: row.createdAt,
   };
 }

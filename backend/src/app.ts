@@ -154,7 +154,16 @@ app.use("/api", globalRateLimit);
 app.use(
   "/uploads",
   helmet.crossOriginResourcePolicy({ policy: "cross-origin" }),
-  express.static(path.resolve("uploads")),
+  // maxAge/immutable is safe here specifically because storage.ts's
+  // filenames are never reused — every upload gets its own
+  // `${Date.now()}-${random}${extension}` name, and "replacing" an image
+  // (product photo, hero slide, ...) deletes the old file and writes a new
+  // name rather than overwriting bytes at the same path (see
+  // deleteUploadedImage). Without this, every product/vehicle/hero-slide
+  // photo was re-fetched on every repeat visit instead of served from the
+  // browser's own cache — Express defaults express.static's Cache-Control
+  // to no caching at all.
+  express.static(path.resolve("uploads"), { maxAge: "1y", immutable: true }),
 );
 
 app.use("/api/auth", authRouter);

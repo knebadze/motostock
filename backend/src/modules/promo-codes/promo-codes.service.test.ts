@@ -15,15 +15,15 @@ vi.mock("./promo-codes.repository.js", () => ({
 }));
 
 vi.mock("../product-variants/product-variants.repository.js", () => ({
-  productVariantsRepository: { findById: vi.fn() },
+  productVariantsRepository: { findProductIdsByIds: vi.fn() },
 }));
 
 vi.mock("../products/products.repository.js", () => ({
-  productsRepository: { findById: vi.fn() },
+  productsRepository: { findManyForPromoMatch: vi.fn() },
 }));
 
 vi.mock("../vehicle-listing/vehicle-listing.repository.js", () => ({
-  vehicleListingRepository: { findById: vi.fn() },
+  vehicleListingRepository: { findManyForPromoMatch: vi.fn() },
 }));
 
 vi.mock("../categories/categories.service.js", async (importOriginal) => {
@@ -79,9 +79,9 @@ describe("resolvePromoCodeForItems", () => {
     vi.mocked(promoCodesRepository.findByCode).mockReset();
     vi.mocked(promoCodesRepository.hasUserUsed).mockReset().mockResolvedValue(false);
     vi.mocked(promoCodesRepository.countUsage).mockReset().mockResolvedValue(0);
-    vi.mocked(productVariantsRepository.findById).mockReset();
-    vi.mocked(productsRepository.findById).mockReset();
-    vi.mocked(vehicleListingRepository.findById).mockReset();
+    vi.mocked(productVariantsRepository.findProductIdsByIds).mockReset();
+    vi.mocked(productsRepository.findManyForPromoMatch).mockReset();
+    vi.mocked(vehicleListingRepository.findManyForPromoMatch).mockReset();
     vi.mocked(resolveCategoryAndDescendantIds).mockReset();
   });
 
@@ -148,12 +148,12 @@ describe("resolvePromoCodeForItems", () => {
   it("allows a code below its usage limit", async () => {
     vi.mocked(promoCodesRepository.findByCode).mockResolvedValue(basePromoCode({ usageLimit: 5 }));
     vi.mocked(promoCodesRepository.countUsage).mockResolvedValue(4);
-    vi.mocked(productVariantsRepository.findById).mockResolvedValue({ product: { id: 7 } } as never);
-    vi.mocked(productsRepository.findById).mockResolvedValue({
-      categoryId: 1,
-      productBrandId: null,
-      attributeValues: [],
-    } as never);
+    vi.mocked(productVariantsRepository.findProductIdsByIds).mockResolvedValue([
+      { id: 42, productId: 7 },
+    ] as never);
+    vi.mocked(productsRepository.findManyForPromoMatch).mockResolvedValue([
+      { id: 7, categoryId: 1, productBrandId: null, attributeValues: [] },
+    ] as never);
 
     const result = await resolvePromoCodeForItems("SAVE10", [PRODUCT_ITEM], 1);
     expect(result.matchedKeys.has(promoCodeItemKey(PRODUCT_ITEM))).toBe(true);
@@ -162,12 +162,12 @@ describe("resolvePromoCodeForItems", () => {
   it("matches a PRODUCT item within the promo's category scope", async () => {
     vi.mocked(promoCodesRepository.findByCode).mockResolvedValue(basePromoCode({ categoryId: 10 }));
     vi.mocked(resolveCategoryAndDescendantIds).mockResolvedValue([10]);
-    vi.mocked(productVariantsRepository.findById).mockResolvedValue({ product: { id: 7 } } as never);
-    vi.mocked(productsRepository.findById).mockResolvedValue({
-      categoryId: 10,
-      productBrandId: null,
-      attributeValues: [],
-    } as never);
+    vi.mocked(productVariantsRepository.findProductIdsByIds).mockResolvedValue([
+      { id: 42, productId: 7 },
+    ] as never);
+    vi.mocked(productsRepository.findManyForPromoMatch).mockResolvedValue([
+      { id: 7, categoryId: 10, productBrandId: null, attributeValues: [] },
+    ] as never);
 
     const result = await resolvePromoCodeForItems("SAVE10", [PRODUCT_ITEM], 1);
 
@@ -177,12 +177,12 @@ describe("resolvePromoCodeForItems", () => {
   it("rejects a PRODUCT item outside the promo's category scope", async () => {
     vi.mocked(promoCodesRepository.findByCode).mockResolvedValue(basePromoCode({ categoryId: 10 }));
     vi.mocked(resolveCategoryAndDescendantIds).mockResolvedValue([10]);
-    vi.mocked(productVariantsRepository.findById).mockResolvedValue({ product: { id: 7 } } as never);
-    vi.mocked(productsRepository.findById).mockResolvedValue({
-      categoryId: 999,
-      productBrandId: null,
-      attributeValues: [],
-    } as never);
+    vi.mocked(productVariantsRepository.findProductIdsByIds).mockResolvedValue([
+      { id: 42, productId: 7 },
+    ] as never);
+    vi.mocked(productsRepository.findManyForPromoMatch).mockResolvedValue([
+      { id: 7, categoryId: 999, productBrandId: null, attributeValues: [] },
+    ] as never);
 
     await expect(resolvePromoCodeForItems("SAVE10", [PRODUCT_ITEM], 1)).rejects.toMatchObject({
       statusCode: 400,
@@ -197,12 +197,12 @@ describe("resolvePromoCodeForItems", () => {
   it("matches a PRODUCT item on a leaf category nested under the promo's mid-level category scope", async () => {
     vi.mocked(promoCodesRepository.findByCode).mockResolvedValue(basePromoCode({ categoryId: 10 }));
     vi.mocked(resolveCategoryAndDescendantIds).mockResolvedValue([10, 11, 12]);
-    vi.mocked(productVariantsRepository.findById).mockResolvedValue({ product: { id: 7 } } as never);
-    vi.mocked(productsRepository.findById).mockResolvedValue({
-      categoryId: 11,
-      productBrandId: null,
-      attributeValues: [],
-    } as never);
+    vi.mocked(productVariantsRepository.findProductIdsByIds).mockResolvedValue([
+      { id: 42, productId: 7 },
+    ] as never);
+    vi.mocked(productsRepository.findManyForPromoMatch).mockResolvedValue([
+      { id: 7, categoryId: 11, productBrandId: null, attributeValues: [] },
+    ] as never);
 
     const result = await resolvePromoCodeForItems("SAVE10", [PRODUCT_ITEM], 1);
 
@@ -214,14 +214,12 @@ describe("resolvePromoCodeForItems", () => {
       basePromoCode({ domain: "VEHICLE", categoryId: 10 }),
     );
     vi.mocked(resolveCategoryAndDescendantIds).mockResolvedValue([10, 11, 12]);
-    vi.mocked(vehicleListingRepository.findById).mockResolvedValue({
-      vehicleCatalog: {
-        brandId: null,
-        modelId: null,
-        model: { category: { id: 11 } },
-        fuelTypeId: null,
+    vi.mocked(vehicleListingRepository.findManyForPromoMatch).mockResolvedValue([
+      {
+        id: 99,
+        vehicleCatalog: { brandId: null, modelId: null, model: { categoryId: 11 }, fuelTypeId: null },
       },
-    } as never);
+    ] as never);
 
     const result = await resolvePromoCodeForItems("SAVE10", [VEHICLE_ITEM], 1);
 
@@ -232,12 +230,12 @@ describe("resolvePromoCodeForItems", () => {
     vi.mocked(promoCodesRepository.findByCode).mockResolvedValue(
       basePromoCode({ attributeId: 5, attributeOptionId: 50 }),
     );
-    vi.mocked(productVariantsRepository.findById).mockResolvedValue({ product: { id: 7 } } as never);
-    vi.mocked(productsRepository.findById).mockResolvedValue({
-      categoryId: 1,
-      productBrandId: null,
-      attributeValues: [{ attributeId: 5, optionId: 999 }],
-    } as never);
+    vi.mocked(productVariantsRepository.findProductIdsByIds).mockResolvedValue([
+      { id: 42, productId: 7 },
+    ] as never);
+    vi.mocked(productsRepository.findManyForPromoMatch).mockResolvedValue([
+      { id: 7, categoryId: 1, productBrandId: null, attributeValues: [{ attributeId: 5, optionId: 999 }] },
+    ] as never);
 
     await expect(resolvePromoCodeForItems("SAVE10", [PRODUCT_ITEM], 1)).rejects.toMatchObject({
       statusCode: 400,
@@ -249,14 +247,12 @@ describe("resolvePromoCodeForItems", () => {
     vi.mocked(promoCodesRepository.findByCode).mockResolvedValue(
       basePromoCode({ domain: "VEHICLE", brandId: 3, modelId: 30 }),
     );
-    vi.mocked(vehicleListingRepository.findById).mockResolvedValue({
-      vehicleCatalog: {
-        brandId: 3,
-        modelId: 30,
-        model: { category: { id: 1 } },
-        fuelTypeId: null,
+    vi.mocked(vehicleListingRepository.findManyForPromoMatch).mockResolvedValue([
+      {
+        id: 99,
+        vehicleCatalog: { brandId: 3, modelId: 30, model: { categoryId: 1 }, fuelTypeId: null },
       },
-    } as never);
+    ] as never);
 
     const result = await resolvePromoCodeForItems("SAVE10", [VEHICLE_ITEM], 1);
 
@@ -267,14 +263,12 @@ describe("resolvePromoCodeForItems", () => {
     vi.mocked(promoCodesRepository.findByCode).mockResolvedValue(
       basePromoCode({ domain: "VEHICLE", brandId: 3, modelId: 30 }),
     );
-    vi.mocked(vehicleListingRepository.findById).mockResolvedValue({
-      vehicleCatalog: {
-        brandId: 3,
-        modelId: 999,
-        model: { category: { id: 1 } },
-        fuelTypeId: null,
+    vi.mocked(vehicleListingRepository.findManyForPromoMatch).mockResolvedValue([
+      {
+        id: 99,
+        vehicleCatalog: { brandId: 3, modelId: 999, model: { categoryId: 1 }, fuelTypeId: null },
       },
-    } as never);
+    ] as never);
 
     await expect(resolvePromoCodeForItems("SAVE10", [VEHICLE_ITEM], 1)).rejects.toMatchObject({
       statusCode: 400,
@@ -286,14 +280,12 @@ describe("resolvePromoCodeForItems", () => {
     vi.mocked(promoCodesRepository.findByCode).mockResolvedValue(
       basePromoCode({ domain: "VEHICLE", specField: "FUEL_TYPE", specLookupItemId: 8 }),
     );
-    vi.mocked(vehicleListingRepository.findById).mockResolvedValue({
-      vehicleCatalog: {
-        brandId: null,
-        modelId: null,
-        model: { category: { id: 1 } },
-        fuelTypeId: 8,
+    vi.mocked(vehicleListingRepository.findManyForPromoMatch).mockResolvedValue([
+      {
+        id: 99,
+        vehicleCatalog: { brandId: null, modelId: null, model: { categoryId: 1 }, fuelTypeId: 8 },
       },
-    } as never);
+    ] as never);
 
     const result = await resolvePromoCodeForItems("SAVE10", [VEHICLE_ITEM], 1);
 
@@ -304,14 +296,12 @@ describe("resolvePromoCodeForItems", () => {
     vi.mocked(promoCodesRepository.findByCode).mockResolvedValue(
       basePromoCode({ domain: "VEHICLE", specField: "FUEL_TYPE", specLookupItemId: 8 }),
     );
-    vi.mocked(vehicleListingRepository.findById).mockResolvedValue({
-      vehicleCatalog: {
-        brandId: null,
-        modelId: null,
-        model: { category: { id: 1 } },
-        fuelTypeId: 3,
+    vi.mocked(vehicleListingRepository.findManyForPromoMatch).mockResolvedValue([
+      {
+        id: 99,
+        vehicleCatalog: { brandId: null, modelId: null, model: { categoryId: 1 }, fuelTypeId: 3 },
       },
-    } as never);
+    ] as never);
 
     await expect(resolvePromoCodeForItems("SAVE10", [VEHICLE_ITEM], 1)).rejects.toMatchObject({
       statusCode: 400,
