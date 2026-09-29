@@ -9,7 +9,7 @@ import { useVehiclePriceDisplay } from "@/lib/useVehiclePriceDisplay";
 import { WishlistButton } from "@/components/shared/WishlistButton";
 import { CompareButton } from "@/components/shared/CompareButton";
 import { CurrencyToggleButton } from "./CurrencyToggleButton";
-import type { VehicleListing } from "@/lib/api/vehicle-listings";
+import { buildVehicleListingSlug, type VehicleListing } from "@/lib/api/vehicle-listings";
 import type { ViewMode } from "./ViewModeToggle";
 
 export function VehicleListingCard({
@@ -56,7 +56,7 @@ export function VehicleListingCard({
       }`}
     >
       <Link
-        href={`/${listing.vehicleCatalog.category.slug}/${listing.id}`}
+        href={`/${listing.vehicleCatalog.category.slug}/${buildVehicleListingSlug(listing)}`}
         aria-label={vehicleLabel}
         className="absolute inset-0"
       />

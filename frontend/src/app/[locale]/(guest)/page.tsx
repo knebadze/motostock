@@ -189,12 +189,21 @@ export default async function HomePage({
   return (
     <>
       {slides.length > 0 ? (
-        <HeroSlider
-          slides={slides}
-          vehicleCatalog={vehicleCatalog}
-          garageVehicles={garageVehicles}
-          categories={allCategories}
-        />
+        <>
+          {/* HeroSlider's own per-slide heading is an <h2> now, not <h1> —
+              a POSTER-type slide intentionally renders no heading of its own
+              at all (see HeroSlider.tsx), which used to leave the whole
+              homepage with zero <h1> whenever an admin picked one as the
+              first/only slide. This one is always present regardless of
+              which slide is showing or what type it is. */}
+          <h1 className="sr-only">{t.rich("heroTitle", { hl: (chunks) => chunks })}</h1>
+          <HeroSlider
+            slides={slides}
+            vehicleCatalog={vehicleCatalog}
+            garageVehicles={garageVehicles}
+            categories={allCategories}
+          />
+        </>
       ) : (
         // Fallback for before any slide is configured (or all disabled) — the
         // original static hero, unchanged, so the homepage is never empty.

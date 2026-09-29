@@ -11,6 +11,7 @@ import {
   getVehicleListingsFromServer,
   getViewedTogetherFromServer,
 } from "@/lib/api/server";
+import { buildVehicleListingSlug, parseVehicleListingIdFromSlug } from "@/lib/api/vehicle-listings";
 import { getAncestorChain, isVehicleCategory } from "@/lib/categories-tree";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { resolveMediaUrl } from "@/lib/api/client";
@@ -41,8 +42,8 @@ export async function generateMetadata({
   const { locale, categorySlug, itemSlug } = await params;
 
   if (await resolveIsVehicleCategory(categorySlug)) {
-    const id = Number(itemSlug);
-    const listing = Number.isInteger(id) ? await getVehicleListingFromServer(id) : null;
+    const id = parseVehicleListingIdFromSlug(itemSlug);
+    const listing = id != null ? await getVehicleListingFromServer(id) : null;
     if (!listing) return {};
 
     const title = [listing.vehicleCatalog.brand.name, listing.vehicleCatalog.model.name]
@@ -52,7 +53,12 @@ export async function generateMetadata({
     const rawDescription =
       locale === "en" ? listing.descriptionEn : locale === "ru" ? listing.descriptionRu : listing.descriptionKa;
     const description = rawDescription ? stripHtml(rawDescription).slice(0, 200) : fullTitle;
-    const pathname = `/${listing.vehicleCatalog.category.slug}/${listing.id}`;
+    // Always the canonical slugged form (see buildVehicleListingSlug), even
+    // when this exact request came in on the older bare-id URL — that's what
+    // makes the canonical tag below actually do its job of pointing crawlers
+    // at the one preferred URL instead of leaving both live paths as
+    // equally-valid duplicates.
+    const pathname = `/${listing.vehicleCatalog.category.slug}/${buildVehicleListingSlug(listing)}`;
     const image = resolveMediaUrl(listing.images[0]?.imageUrl ?? listing.vehicleCatalog.imageUrl);
 
     return {
@@ -62,7 +68,28 @@ export async function generateMetadata({
         canonical: buildCanonicalUrl(pathname, locale),
         languages: getAlternateLanguages(pathname),
       },
-      openGraph: { title: fullTitle, description, images: image ? [image] : undefined },
+      // siteName/locale/type explicitly repeated (not just title/description/
+      // images) — Next.js doesn't deep-merge a per-page openGraph into the
+      // root layout's, it replaces the whole object, so without these a
+      // shared social link for this page silently lost them.
+      openGraph: {
+        title: fullTitle,
+        description,
+        siteName: siteConfig.name,
+        locale,
+        type: "website",
+        images: image ? [image] : undefined,
+      },
+      // No per-page twitter block existed before, so every product/vehicle
+      // page shared on X/Twitter rendered the generic site-wide card (from
+      // the root layout) with no real photo — summary_large_image matters
+      // here specifically because these pages always have a real photo.
+      twitter: {
+        card: "summary_large_image",
+        title: fullTitle,
+        description,
+        images: image ? [image] : undefined,
+      },
     };
   }
 
@@ -90,7 +117,19 @@ export async function generateMetadata({
       canonical: buildCanonicalUrl(pathname, locale),
       languages: getAlternateLanguages(pathname),
     },
+    // siteName/locale/type repeated here too — see the vehicle-listing
+    // branch above's comment on why (Next.js replaces, not merges, a
+    // per-page openGraph against the root layout's).
     openGraph: {
+      title,
+      description,
+      siteName: siteConfig.name,
+      locale,
+      type: "website",
+      images: image ? [image] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
       title,
       description,
       images: image ? [image] : undefined,
@@ -110,8 +149,8 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
   const tNav = await getTranslations({ locale, namespace: "Nav" });
 
   if (isVehicleCategory(categories, category.id)) {
-    const id = Number(itemSlug);
-    const listing = Number.isInteger(id) ? await getVehicleListingFromServer(id) : null;
+    const id = parseVehicleListingIdFromSlug(itemSlug);
+    const listing = id != null ? await getVehicleListingFromServer(id) : null;
     if (!listing) {
       notFound();
     }
@@ -123,7 +162,7 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
     const title = [listing.vehicleCatalog.brand.name, listing.vehicleCatalog.model.name]
       .filter(Boolean)
       .join(" ");
-    const pathname = `/${listing.vehicleCatalog.category.slug}/${listing.id}`;
+    const pathname = `/${listing.vehicleCatalog.category.slug}/${buildVehicleListingSlug(listing)}`;
     const canonicalUrl = getAlternateLanguages(pathname)[locale];
     const images = listing.images
       .map((image) => resolveMediaUrl(image.imageUrl))

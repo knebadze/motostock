@@ -6,6 +6,7 @@ import {
   getVehicleListingsFromServer,
 } from "@/lib/api/server";
 import { getAlternateLanguages } from "@/lib/seo";
+import { buildVehicleListingSlug } from "@/lib/api/vehicle-listings";
 import { routing } from "@/i18n/routing";
 
 // Admin/auth/account pages are deliberately excluded — they're not public
@@ -57,7 +58,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   for (const listing of vehicleListings) {
-    const languages = getAlternateLanguages(`/${listing.vehicleCatalog.category.slug}/${listing.id}`);
+    const languages = getAlternateLanguages(
+      `/${listing.vehicleCatalog.category.slug}/${buildVehicleListingSlug(listing)}`,
+    );
     for (const locale of routing.locales) {
       entries.push({
         url: languages[locale],

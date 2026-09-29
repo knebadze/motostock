@@ -9,6 +9,7 @@ import { resolveMediaUrl } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import type { CollectionItem } from "@/lib/api/collection-api";
+import { buildVehicleListingSlug } from "@/lib/api/vehicle-listings";
 import { usePopoverMenu } from "./usePopoverMenu";
 
 const PREVIEW_LIMIT = 4;
@@ -26,7 +27,7 @@ function itemDisplay(item: CollectionItem, locale: "ka" | "en" | "ru") {
   if (item.itemType === "VEHICLE_LISTING" && item.vehicleListing) {
     const { vehicleListing } = item;
     return {
-      href: `/${vehicleListing.vehicleCatalog.category.slug}/${vehicleListing.id}`,
+      href: `/${vehicleListing.vehicleCatalog.category.slug}/${buildVehicleListingSlug(vehicleListing)}`,
       name: `${vehicleListing.vehicleCatalog.brand.name} ${vehicleListing.vehicleCatalog.model.name}`,
       imageUrl: resolveMediaUrl(
         vehicleListing.images[0]?.imageUrl ?? vehicleListing.vehicleCatalog.imageUrl,

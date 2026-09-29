@@ -1,5 +1,6 @@
 import { resolveMediaUrl } from "./api/client";
 import { pickLookupName } from "./format";
+import { buildVehicleListingSlug } from "./api/vehicle-listings";
 import type { Cart, CartItem } from "./api/cart";
 
 // Shared by CartManager and the header's CartDropdown — both recompute
@@ -33,7 +34,7 @@ export function getCartItemDisplay(item: CartItem, locale: "ka" | "en" | "ru") {
   if (item.vehicleListing) {
     const listing = item.vehicleListing;
     return {
-      href: `/${listing.vehicleCatalog.category.slug}/${listing.id}`,
+      href: `/${listing.vehicleCatalog.category.slug}/${buildVehicleListingSlug(listing)}`,
       title: `${listing.vehicleCatalog.brand.name} ${listing.vehicleCatalog.model.name}`,
       subtitle: `${pickLookupName(listing.color, locale)} · ${listing.year}`,
       imageUrl: resolveMediaUrl(listing.images[0]?.imageUrl ?? listing.vehicleCatalog.imageUrl),

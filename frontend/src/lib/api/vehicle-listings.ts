@@ -53,6 +53,33 @@ export type VehicleListing = {
   stockConflict?: boolean;
 };
 
+// Human-readable URL slug ("honda-cbr600-2020-4821") instead of a bare
+// numeric id — the id is kept as a trailing suffix rather than stored as its
+// own DB column, so this needs no migration and no backend change at all:
+// the id is still what every lookup actually keys on (see
+// parseVehicleListingIdFromSlug below), the brand/model/year prefix is purely
+// cosmetic/SEO. brand.slug/model.slug (not the raw name) are reused so this
+// never needs its own slugify pass or drifts from whatever normalization
+// those already went through.
+export function buildVehicleListingSlug(listing: {
+  id: number;
+  year: number;
+  vehicleCatalog: { brand: { slug: string }; model: { slug: string } };
+}): string {
+  return `${listing.vehicleCatalog.brand.slug}-${listing.vehicleCatalog.model.slug}-${listing.year}-${listing.id}`;
+}
+
+// The inverse of buildVehicleListingSlug — reads the trailing numeric id back
+// out. Also accepts a bare numeric string with no slug prefix at all, so
+// every link ever shared/bookmarked before this change keeps working
+// unchanged.
+export function parseVehicleListingIdFromSlug(itemSlug: string): number | null {
+  const match = /(\d+)$/.exec(itemSlug);
+  if (!match) return null;
+  const id = Number(match[1]);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
 export type VehicleListingInput = {
   vehicleCatalogId: number;
   conditionId: number;

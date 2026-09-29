@@ -169,9 +169,13 @@ export function HeroSlider({
             <div
               className={`mx-auto flex w-full max-w-6xl flex-col gap-4 ${TEXT_POSITION_CLASSES[slide.textPosition]}`}
             >
-              <h1 className="max-w-2xl text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
+              {/* h2, not h1 — the page itself now always renders its own
+                  stable <h1> (see [locale]/page.tsx), since this per-slide
+                  heading is conditional (absent entirely for POSTER slides)
+                  and changes with whichever slide is currently showing. */}
+              <h2 className="max-w-2xl text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
                 {slide.title[locale]}
-              </h1>
+              </h2>
               {slide.type === "DISCOUNT" && slide.bulkDiscountEvent && (
                 <span className="w-fit rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground">
                   {t("discountBadge", {

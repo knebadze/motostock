@@ -11,7 +11,7 @@ import { useUsdToGelRate } from "@/lib/useUsdToGelRate";
 import { formatValue } from "@/components/shop/product-detail/ProductSpecs";
 import { buildVehicleSpecRows } from "@/components/shop/vehicle-listing-detail/VehicleSpecs";
 import type { Product } from "@/lib/api/products";
-import type { VehicleListing } from "@/lib/api/vehicle-listings";
+import { buildVehicleListingSlug, type VehicleListing } from "@/lib/api/vehicle-listings";
 
 type Locale = "ka" | "en" | "ru";
 type Direction = "higherIsBetter" | "lowerIsBetter";
@@ -278,7 +278,7 @@ export function CompareManager({ initialItems }: { initialItems: CompareItem[] }
                             ✕
                           </button>
                           <Link
-                            href={`/${listing.vehicleCatalog.category.slug}/${listing.id}`}
+                            href={`/${listing.vehicleCatalog.category.slug}/${buildVehicleListingSlug(listing)}`}
                             className="flex flex-col items-center gap-2"
                           >
                             <div className="relative size-20 overflow-hidden rounded-xl bg-muted">
