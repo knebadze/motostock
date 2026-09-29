@@ -9,6 +9,7 @@ import { Link } from "@/i18n/navigation";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import { getCartItemDisplay, recomputeCart } from "@/lib/cart-item-display";
+import { dispatchCartItemChanged } from "@/lib/cart-events";
 import { getMyCart, removeFromCart, updateCartItemQuantity, type Cart, type CartItem } from "@/lib/api/cart";
 import { usePopoverMenu } from "./usePopoverMenu";
 import { QuantityStepper } from "./QuantityStepper";
@@ -57,12 +58,18 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
 
   async function handleQuantityChange(item: CartItem, nextQuantity: number) {
     setPendingId(item.id);
+    // The variant's/listing's own id — what AddToCartButton keys its
+    // `itemId` prop on, not this cart row's own id — see cart-events.ts.
+    const itemId = item.productVariant?.id ?? item.vehicleListing?.id;
     try {
       if (nextQuantity < 1) {
         await removeFromCart(item.id);
         setCart((current) =>
           current ? recomputeCart(current.items.filter((existing) => existing.id !== item.id)) : current,
         );
+        if (itemId != null) {
+          dispatchCartItemChanged({ itemType: item.itemType, itemId, cartItem: null });
+        }
       } else {
         const updated = await updateCartItemQuantity(item.id, nextQuantity);
         setCart((current) =>
@@ -70,6 +77,13 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
             ? recomputeCart(current.items.map((existing) => (existing.id === item.id ? updated : existing)))
             : current,
         );
+        if (itemId != null) {
+          dispatchCartItemChanged({
+            itemType: item.itemType,
+            itemId,
+            cartItem: { id: updated.id, quantity: updated.quantity },
+          });
+        }
       }
       router.refresh();
     } catch (error) {

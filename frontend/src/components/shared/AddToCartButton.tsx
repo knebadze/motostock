@@ -8,6 +8,7 @@ import { ApiRequestError } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { isKnownAuthState } from "@/lib/api/auth-state";
 import { isGuestCartKnownEnabled } from "@/lib/api/guest-feature-state";
+import { CART_ITEM_CHANGED_EVENT, dispatchCartItemChanged, type CartItemChangedDetail } from "@/lib/cart-events";
 import { QuantityStepper } from "@/components/shared/QuantityStepper";
 import {
   addToCart,
@@ -89,6 +90,25 @@ export function AddToCartButton({
     };
   }, [itemType, id]);
 
+  // Syncs with a mutation of this exact item made somewhere else on the page
+  // — most importantly the header's CartDropdown, which has no shared React
+  // state with this component. Without this, removing the item via the
+  // dropdown left this button stuck showing a −/qty/+ stepper pointing at a
+  // cart row id that no longer existed, until a full page reload re-ran the
+  // checkStatus effect above. See cart-events.ts's own comment for the full
+  // picture (CartDropdown already handles the reverse direction itself, by
+  // dropping its cached cart on close and refetching on next open).
+  useEffect(() => {
+    function handleCartItemChanged(event: Event) {
+      const { detail } = event as CustomEvent<CartItemChangedDetail>;
+      if (detail.itemType !== itemType || detail.itemId !== id) return;
+      setCartItem(detail.cartItem);
+    }
+
+    window.addEventListener(CART_ITEM_CHANGED_EVENT, handleCartItemChanged);
+    return () => window.removeEventListener(CART_ITEM_CHANGED_EVENT, handleCartItemChanged);
+  }, [itemType, id]);
+
   async function handleAdd() {
     if (disabled || status === "loading") return;
 
@@ -101,6 +121,7 @@ export function AddToCartButton({
       );
       setCartItem({ id: item.id, quantity: item.quantity });
       setStatus("added");
+      dispatchCartItemChanged({ itemType, itemId: id, cartItem: { id: item.id, quantity: item.quantity } });
       // Refreshes server components (the header's cart-count badge is
       // fetched there) without a full page reload.
       router.refresh();
@@ -123,9 +144,11 @@ export function AddToCartButton({
       if (nextQuantity < 1) {
         await removeFromCart(cartItem.id);
         setCartItem(null);
+        dispatchCartItemChanged({ itemType, itemId: id, cartItem: null });
       } else {
         const updated = await updateCartItemQuantity(cartItem.id, nextQuantity);
         setCartItem({ id: updated.id, quantity: updated.quantity });
+        dispatchCartItemChanged({ itemType, itemId: id, cartItem: { id: updated.id, quantity: updated.quantity } });
       }
       router.refresh();
     } catch (error) {
