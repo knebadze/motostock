@@ -123,7 +123,7 @@ export function AdminFilterPanel({
       <summary className="flex cursor-pointer items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         ფილტრი
         {hasActiveValues && (
-          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium normal-case text-primary">
+          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium normal-case text-primary-text">
             აქტიური
           </span>
         )}
@@ -226,7 +226,7 @@ export function AdminFilterPanel({
               type="button"
               onClick={handleClear}
               disabled={applying}
-              className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+              className="text-xs font-medium text-primary-text hover:underline disabled:opacity-50"
             >
               გაწმენდა
             </button>

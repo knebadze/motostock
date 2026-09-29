@@ -40,7 +40,7 @@ function OrdersPageView({ orders }: { orders: Awaited<ReturnType<typeof getMyOrd
                 <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground">
                   {order.status[statusLabelKey]}
                 </span>
-                <span className="font-semibold text-primary">{formatPrice(order.total)}</span>
+                <span className="font-semibold text-primary-text">{formatPrice(order.total)}</span>
                 <ReorderButton orderId={order.id} />
               </div>
             </li>

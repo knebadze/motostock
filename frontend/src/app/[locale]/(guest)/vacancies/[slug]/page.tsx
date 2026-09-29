@@ -59,7 +59,7 @@ function VacancyDetailPageView({ vacancy }: { vacancy: Vacancy }) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-      <Link href="/vacancies" className="text-sm font-semibold text-primary hover:underline">
+      <Link href="/vacancies" className="text-sm font-semibold text-primary-text hover:underline">
         ← {t("backToList")}
       </Link>
 
@@ -68,7 +68,7 @@ function VacancyDetailPageView({ vacancy }: { vacancy: Vacancy }) {
       </h1>
 
       <div
-        className="mt-6 text-sm leading-6 text-muted-foreground [&_a]:text-primary [&_a]:underline [&_li]:ml-5 [&_ol]:list-decimal [&_p:last-child]:mb-0 [&_p]:mb-3 [&_ul]:list-disc"
+        className="mt-6 text-sm leading-6 text-muted-foreground [&_a]:text-primary-text [&_a]:underline [&_li]:ml-5 [&_ol]:list-decimal [&_p:last-child]:mb-0 [&_p]:mb-3 [&_ul]:list-disc"
         dangerouslySetInnerHTML={{
           __html: sanitizeRichText(vacancy.description[locale] || vacancy.description.ka),
         }}

@@ -267,7 +267,7 @@ export function FitmentRulesEditor({
           type="button"
           onClick={handleAddRule}
           disabled={adding}
-          className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+          className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text disabled:opacity-50"
         >
           + წესის დამატება
         </button>

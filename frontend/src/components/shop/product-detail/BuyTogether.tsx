@@ -46,7 +46,7 @@ function BuyTogetherCard({ product }: { product: Product }) {
         )}
       </div>
       <span className="line-clamp-2 text-xs font-medium text-foreground">{product.name[locale]}</span>
-      <span className="text-sm font-semibold text-primary">{formatPrice(effectivePrice(product))}</span>
+      <span className="text-sm font-semibold text-primary-text">{formatPrice(effectivePrice(product))}</span>
     </Link>
   );
 }
@@ -134,7 +134,7 @@ export function BuyTogether({ product }: { product: ProductDetail }) {
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">{t("buyTogetherTotalLabel")}</span>
-          <span className="text-lg font-bold text-primary">{formatPrice(total)}</span>
+          <span className="text-lg font-bold text-primary-text">{formatPrice(total)}</span>
         </div>
         <button
           type="button"

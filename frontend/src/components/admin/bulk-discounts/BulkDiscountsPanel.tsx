@@ -366,7 +366,7 @@ export function BulkProductDiscountsPanel({ categories }: { categories: Category
               <button
                 type="button"
                 onClick={() => selectVisible(filteredCandidates.map((candidate) => candidate.variantId))}
-                className="text-primary hover:underline"
+                className="text-primary-text hover:underline"
               >
                 ხილულის მონიშვნა
               </button>
@@ -914,7 +914,7 @@ export function BulkVehicleListingDiscountsPanel({ categories }: { categories: C
                 onClick={() =>
                   selectVisible(filteredCandidates.map((candidate) => candidate.vehicleListingId))
                 }
-                className="text-primary hover:underline"
+                className="text-primary-text hover:underline"
               >
                 ხილულის მონიშვნა
               </button>

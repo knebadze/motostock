@@ -26,7 +26,7 @@ export function ResetPasswordForm() {
         <p className="mt-4 text-sm text-muted-foreground">{t("resetPasswordMissingToken")}</p>
         <Link
           href="/forgot-password"
-          className="mt-6 inline-block font-semibold text-primary hover:underline"
+          className="mt-6 inline-block font-semibold text-primary-text hover:underline"
         >
           {t("backToForgotPassword")}
         </Link>

@@ -233,7 +233,7 @@ export function PromoCodesManager({
                             ? "სლაიდის რედაქტირება"
                             : "სლაიდის შექმნა"
                       }
-                      className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:pointer-events-none disabled:opacity-40"
+                      className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text disabled:pointer-events-none disabled:opacity-40"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -260,7 +260,7 @@ export function PromoCodesManager({
                           ? "ვადაგასულია — მეილი ვეღარ გაიგზავნება"
                           : "მეილის გაგზავნა"
                       }
-                      className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:pointer-events-none disabled:opacity-40"
+                      className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text disabled:pointer-events-none disabled:opacity-40"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"

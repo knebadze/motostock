@@ -22,7 +22,7 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
           </button>
           <Link
             href="/admin"
-            className="rounded-full border border-border px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+            className="rounded-full border border-border px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
           >
             ადმინ პანელზე დაბრუნება
           </Link>

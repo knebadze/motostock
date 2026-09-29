@@ -93,7 +93,7 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
         aria-label={tHeader("cart")}
         aria-haspopup="true"
         aria-expanded={open}
-        className="relative flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9"
+        className="relative flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-9"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -137,7 +137,7 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
                       <Link
                         href={href}
                         onClick={() => setOpen(false)}
-                        className="flex items-center gap-3 transition-colors hover:text-primary"
+                        className="flex items-center gap-3 transition-colors hover:text-primary-text"
                       >
                         <div className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-muted">
                           {imageUrl ? (
@@ -163,7 +163,7 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
                           increaseLabel={tCart("increaseQuantity")}
                           size="sm"
                         />
-                        <span className="text-sm font-semibold text-primary">{formatPrice(item.lineTotal)}</span>
+                        <span className="text-sm font-semibold text-primary-text">{formatPrice(item.lineTotal)}</span>
                       </div>
                     </li>
                   );
@@ -179,7 +179,7 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
               <div className="border-t border-border p-3">
                 <div className="flex items-center justify-between text-sm font-semibold text-foreground">
                   <span>{tCart("subtotal")}</span>
-                  <span className="text-primary">{formatPrice(cart.subtotal)}</span>
+                  <span className="text-primary-text">{formatPrice(cart.subtotal)}</span>
                 </div>
                 <Link
                   href="/cart"

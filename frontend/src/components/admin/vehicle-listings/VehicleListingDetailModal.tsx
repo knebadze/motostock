@@ -203,7 +203,7 @@ function DescriptionTab({ listing }: { listing: VehicleListingDetailAdmin }) {
               {section.label}
             </p>
             <div
-              className="mt-1.5 text-sm [&_a]:text-primary [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+              className="mt-1.5 text-sm [&_a]:text-primary-text [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
               dangerouslySetInnerHTML={{ __html: sanitizeRichText(section.html) }}
             />
           </div>

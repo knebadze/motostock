@@ -47,7 +47,7 @@ export function AdminSidebar({
           type="button"
           onClick={onToggleCollapsed}
           aria-label={collapsed ? "მენიუს გაშლა" : "მენიუს აკეცვა"}
-          className="absolute -right-3.5 top-8 hidden size-7 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-md transition-colors hover:border-primary/50 hover:text-primary md:flex"
+          className="absolute -right-3.5 top-8 hidden size-7 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-md transition-colors hover:border-primary/50 hover:text-primary-text md:flex"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -96,7 +96,7 @@ export function AdminSidebar({
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-primary font-semibold text-primary-foreground shadow-sm"
-                        : "text-foreground hover:bg-muted hover:text-primary"
+                        : "text-foreground hover:bg-muted hover:text-primary-text"
                     } ${collapsed ? "md:justify-center md:px-2" : ""}`}
                   >
                     {item.icon}

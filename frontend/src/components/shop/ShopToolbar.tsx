@@ -41,7 +41,7 @@ export function ShopToolbar({
         <button
           type="button"
           onClick={onFilterClick}
-          className="flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary md:hidden"
+          className="flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary-text md:hidden"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

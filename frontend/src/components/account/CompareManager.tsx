@@ -159,7 +159,7 @@ export function CompareManager({ initialItems }: { initialItems: CompareItem[] }
                             type="button"
                             onClick={() => handleRemove(item.id)}
                             aria-label={t("removeLabel")}
-                            className="self-end text-muted-foreground transition-colors hover:text-primary"
+                            className="self-end text-muted-foreground transition-colors hover:text-primary-text"
                           >
                             ✕
                           </button>
@@ -206,7 +206,7 @@ export function CompareManager({ initialItems }: { initialItems: CompareItem[] }
                       <td
                         key={item.id}
                         className={`border-b border-border p-3 text-center font-semibold ${
-                          priceClasses[index] ?? "text-primary"
+                          priceClasses[index] ?? "text-primary-text"
                         }`}
                       >
                         {priceValues[index] != null ? formatPrice(priceValues[index]) : "—"}
@@ -273,7 +273,7 @@ export function CompareManager({ initialItems }: { initialItems: CompareItem[] }
                             type="button"
                             onClick={() => handleRemove(item.id)}
                             aria-label={t("removeLabel")}
-                            className="self-end text-muted-foreground transition-colors hover:text-primary"
+                            className="self-end text-muted-foreground transition-colors hover:text-primary-text"
                           >
                             ✕
                           </button>
@@ -340,7 +340,7 @@ export function CompareManager({ initialItems }: { initialItems: CompareItem[] }
                       <td
                         key={item.id}
                         className={`border-b border-border p-3 text-center font-semibold ${
-                          priceClasses[index] ?? "text-primary"
+                          priceClasses[index] ?? "text-primary-text"
                         }`}
                       >
                         {formatPrice(priceValues[index], item.vehicleListing.priceCurrency)}

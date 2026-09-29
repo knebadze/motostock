@@ -138,7 +138,7 @@ export function DiscountEventsPanel() {
                     rel="noreferrer"
                     aria-label="ნახვა მაღაზიაში"
                     title="ნახვა მაღაზიაში"
-                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                    className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -169,7 +169,7 @@ export function DiscountEventsPanel() {
                               ? "სლაიდის რედაქტირება"
                               : "სლაიდის შექმნა"
                         }
-                        className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:pointer-events-none disabled:opacity-40"
+                        className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text disabled:pointer-events-none disabled:opacity-40"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -196,7 +196,7 @@ export function DiscountEventsPanel() {
                             ? "ვადაგასულია — მეილი ვეღარ გაიგზავნება"
                             : "მეილის გაგზავნა"
                         }
-                        className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:pointer-events-none disabled:opacity-40"
+                        className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text disabled:pointer-events-none disabled:opacity-40"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -217,7 +217,7 @@ export function DiscountEventsPanel() {
                         onClick={() => setRepeatingEvent(event)}
                         aria-label="გამეორება"
                         title="გამეორება"
-                        className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                        className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"

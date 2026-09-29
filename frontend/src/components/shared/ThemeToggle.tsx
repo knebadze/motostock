@@ -31,8 +31,8 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
       aria-label={isDark ? t("switchToLight") : t("switchToDark")}
       className={
         compact
-          ? "flex items-center justify-center text-muted-foreground transition-colors hover:text-primary"
-          : "flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9"
+          ? "flex items-center justify-center text-muted-foreground transition-colors hover:text-primary-text"
+          : "flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-9"
       }
     >
       {isDark ? (

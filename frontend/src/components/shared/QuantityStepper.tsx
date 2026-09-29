@@ -48,7 +48,7 @@ export function QuantityStepper({
         onClick={onDecrease}
         disabled={decrementDisabled}
         aria-label={decreaseLabel}
-        className={`flex items-center justify-center text-foreground transition-colors hover:text-primary disabled:opacity-40 ${sizeClasses.button}`}
+        className={`flex items-center justify-center text-foreground transition-colors hover:text-primary-text disabled:opacity-40 ${sizeClasses.button}`}
       >
         −
       </button>
@@ -58,7 +58,7 @@ export function QuantityStepper({
         onClick={onIncrease}
         disabled={incrementDisabled}
         aria-label={increaseLabel}
-        className={`flex items-center justify-center text-foreground transition-colors hover:text-primary disabled:opacity-40 ${sizeClasses.button}`}
+        className={`flex items-center justify-center text-foreground transition-colors hover:text-primary-text disabled:opacity-40 ${sizeClasses.button}`}
       >
         +
       </button>

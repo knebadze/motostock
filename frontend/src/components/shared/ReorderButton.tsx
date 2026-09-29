@@ -41,7 +41,7 @@ export function ReorderButton({ orderId }: { orderId: number }) {
       type="button"
       onClick={handleReorder}
       disabled={loading}
-      className="shrink-0 rounded-full border border-primary/40 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+      className="shrink-0 rounded-full border border-primary/40 px-4 py-2 text-sm font-semibold text-primary-text transition-colors hover:bg-primary/10 disabled:opacity-50"
     >
       {loading ? t("reorderLoading") : t("reorderButton")}
     </button>

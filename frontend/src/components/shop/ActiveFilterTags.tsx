@@ -23,14 +23,14 @@ export function ActiveFilterTags({
         {tags.map((tag) => (
           <span
             key={tag.key}
-            className="flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary"
+            className="flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary-text"
           >
             {tag.label}
             <button
               type="button"
               onClick={tag.onRemove}
               aria-label={tag.label}
-              className="text-primary/70 hover:text-primary"
+              className="text-primary-text/70 hover:text-primary-text"
             >
               ×
             </button>
@@ -40,7 +40,7 @@ export function ActiveFilterTags({
       <button
         type="button"
         onClick={onClearAll}
-        className="self-start text-xs font-semibold text-muted-foreground transition-colors hover:text-primary"
+        className="self-start text-xs font-semibold text-muted-foreground transition-colors hover:text-primary-text"
       >
         {clearAllLabel}
       </button>

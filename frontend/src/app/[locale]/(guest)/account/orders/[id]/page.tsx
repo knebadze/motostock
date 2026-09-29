@@ -166,7 +166,7 @@ function OrderDetailPageView({ order }: { order: NonNullable<Awaited<ReturnType<
             )}
             <div className="mt-1 flex items-center justify-between text-lg font-bold text-foreground">
               <span>{t("total")}</span>
-              <span className="text-primary">{formatPrice(order.total)}</span>
+              <span className="text-primary-text">{formatPrice(order.total)}</span>
             </div>
           </div>
         </div>

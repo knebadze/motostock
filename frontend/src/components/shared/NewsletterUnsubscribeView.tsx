@@ -42,7 +42,7 @@ export function NewsletterUnsubscribeView() {
             : t("unsubscribeError")}
       </p>
       {status !== "loading" && (
-        <Link href="/" className="mt-6 inline-block font-semibold text-primary hover:underline">
+        <Link href="/" className="mt-6 inline-block font-semibold text-primary-text hover:underline">
           {t("backToHome")}
         </Link>
       )}

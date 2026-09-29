@@ -53,7 +53,7 @@ export function Carousel<T>({
           type="button"
           onClick={() => scrollByPage(-1)}
           aria-label={t("prev")}
-          className="absolute -left-4 top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md transition-colors hover:border-primary hover:text-primary sm:flex"
+          className="absolute -left-4 top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md transition-colors hover:border-primary hover:text-primary-text sm:flex"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -86,7 +86,7 @@ export function Carousel<T>({
           type="button"
           onClick={() => scrollByPage(1)}
           aria-label={t("next")}
-          className="absolute -right-4 top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md transition-colors hover:border-primary hover:text-primary sm:flex"
+          className="absolute -right-4 top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md transition-colors hover:border-primary hover:text-primary-text sm:flex"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

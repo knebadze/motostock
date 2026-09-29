@@ -69,7 +69,7 @@ export default async function DashboardPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             FINA სინქრონიზაცია — ბოლო გაშვებები
           </h2>
-          <Link href="/admin/fina-sync" className="text-sm font-medium text-primary hover:underline">
+          <Link href="/admin/fina-sync" className="text-sm font-medium text-primary-text hover:underline">
             ყველას ნახვა
           </Link>
         </div>

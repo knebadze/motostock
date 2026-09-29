@@ -120,12 +120,12 @@ export function ProductCard({
             <span className="text-sm text-muted-foreground line-through">
               {formatPrice(activeDiscount.price)}
             </span>
-            <span className="text-lg font-bold text-primary">
+            <span className="text-lg font-bold text-primary-text">
               {formatPrice(activeDiscount.discountPrice)}
             </span>
           </div>
         ) : (
-          <span className="text-lg font-bold text-primary">
+          <span className="text-lg font-bold text-primary-text">
             {product.minPrice != null ? formatPrice(product.minPrice) : "—"}
           </span>
         )}

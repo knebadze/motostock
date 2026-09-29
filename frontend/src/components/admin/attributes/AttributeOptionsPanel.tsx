@@ -199,7 +199,7 @@ export function AttributeOptionsPanel({ attributeId }: { attributeId: number }) 
             type="button"
             onClick={handleSubmit}
             disabled={saving}
-            className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+            className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text disabled:opacity-50"
           >
             {editingId !== null ? "შენახვა" : "+ დამატება"}
           </button>

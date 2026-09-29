@@ -201,7 +201,7 @@ export function ProductsManager({
                   disabled={syncingProductId === product.id}
                   aria-label="FINA სინქრონიზაცია"
                   title="FINA სინქრონიზაცია"
-                  className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:opacity-50"
+                  className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text disabled:opacity-50"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

@@ -61,7 +61,7 @@ const columns: DataTableColumn<VehicleListing>[] = [
           <span className="text-xs text-muted-foreground line-through">
             {formatPrice(listing.price, listing.priceCurrency)}
           </span>
-          <span className="font-semibold text-primary">
+          <span className="font-semibold text-primary-text">
             {formatPrice(listing.activeDiscount.discountPrice, listing.priceCurrency)}
           </span>
         </span>
@@ -85,7 +85,7 @@ const columns: DataTableColumn<VehicleListing>[] = [
       <span
         className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
           listing.isActive
-            ? "bg-primary/15 text-primary"
+            ? "bg-primary/15 text-primary-text"
             : "bg-muted text-muted-foreground"
         }`}
       >

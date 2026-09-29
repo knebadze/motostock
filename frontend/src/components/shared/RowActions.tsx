@@ -29,7 +29,7 @@ export function RowActions({
           onClick={onView}
           aria-label="სრულად ნახვა"
           title="სრულად ნახვა"
-          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -52,7 +52,7 @@ export function RowActions({
           onClick={onEdit}
           aria-label="რედაქტირება"
           title="რედაქტირება"
-          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

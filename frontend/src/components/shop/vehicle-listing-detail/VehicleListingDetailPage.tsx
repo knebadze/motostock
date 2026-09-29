@@ -64,7 +64,7 @@ export function VehicleListingDetailPage({
                 <span className="text-lg text-muted-foreground line-through">
                   {formatPrice(priceDisplay.convert(listing.price), priceDisplay.displayCurrency)}
                 </span>
-                <span className="text-2xl font-bold text-primary">
+                <span className="text-2xl font-bold text-primary-text">
                   {formatPrice(
                     priceDisplay.convert(listing.activeDiscount.discountPrice),
                     priceDisplay.displayCurrency,
@@ -72,7 +72,7 @@ export function VehicleListingDetailPage({
                 </span>
               </>
             ) : (
-              <span className="text-2xl font-bold text-primary">
+              <span className="text-2xl font-bold text-primary-text">
                 {formatPrice(priceDisplay.convert(listing.price), priceDisplay.displayCurrency)}
               </span>
             )}

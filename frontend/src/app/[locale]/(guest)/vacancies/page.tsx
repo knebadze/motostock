@@ -66,7 +66,7 @@ function VacanciesPageView({ vacancies }: { vacancies: Vacancy[] }) {
               >
                 <p className="font-semibold text-foreground">{title}</p>
                 {excerpt && <p className="mt-2 text-sm text-muted-foreground">{excerpt}</p>}
-                <span className="mt-3 inline-block text-sm font-semibold text-primary">
+                <span className="mt-3 inline-block text-sm font-semibold text-primary-text">
                   {t("viewDetails")}
                 </span>
               </Link>

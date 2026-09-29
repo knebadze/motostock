@@ -31,7 +31,7 @@ function ToolbarButton({
       title={label}
       aria-pressed={active}
       className={`flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-sm font-semibold transition-colors hover:bg-muted disabled:opacity-50 ${
-        active ? "bg-muted text-primary" : "text-foreground"
+        active ? "bg-muted text-primary-text" : "text-foreground"
       }`}
     >
       {children}
@@ -215,7 +215,7 @@ export function RichTextEditor({
     editorProps: {
       attributes: {
         class:
-          "min-h-[120px] px-3 py-2 text-sm outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1 [&_a]:text-primary [&_a]:underline",
+          "min-h-[120px] px-3 py-2 text-sm outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1 [&_a]:text-primary-text [&_a]:underline",
       },
     },
   });

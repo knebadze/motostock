@@ -93,7 +93,7 @@ export function DraftFitmentEditor({
         <button
           type="button"
           onClick={handleAdd}
-          className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+          className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
         >
           + დამატება
         </button>

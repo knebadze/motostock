@@ -184,7 +184,7 @@ export function RecentServiceRecordsPanel({
             type="button"
             onClick={handleClearFilters}
             disabled={loading}
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary disabled:opacity-50"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text disabled:opacity-50"
           >
             გაწმენდა
           </button>

@@ -72,7 +72,7 @@ export function CookieNotice() {
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-3 sm:flex-row sm:justify-between">
         <p className="text-sm text-muted-foreground">
           {t("message")}{" "}
-          <Link href="/terms" className="font-medium text-primary hover:underline">
+          <Link href="/terms" className="font-medium text-primary-text hover:underline">
             {t("linkLabel")}
           </Link>
         </p>

@@ -197,7 +197,7 @@ export function GarageManager({
                   )}
 
                   <label
-                    className={`absolute bottom-2.5 right-2.5 flex size-9 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:text-primary ${
+                    className={`absolute bottom-2.5 right-2.5 flex size-9 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:text-primary-text ${
                       uploading ? "pointer-events-none" : "cursor-pointer"
                     }`}
                   >
@@ -235,7 +235,7 @@ export function GarageManager({
                   <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3">
                     <Link
                       href={`/compatible-products/${vehicle.vehicleCatalog.id}`}
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
                     >
                       {searchIcon}
                       {t("searchButton")}
@@ -243,7 +243,7 @@ export function GarageManager({
                     <button
                       type="button"
                       onClick={() => setHistoryTarget(vehicle)}
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
                     >
                       {historyIcon}
                       {t("serviceHistoryButton")}

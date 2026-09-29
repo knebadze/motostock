@@ -202,7 +202,7 @@ export default async function HomePage({
           <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-24 sm:px-6 lg:px-8">
             <h1 className="max-w-2xl text-4xl font-extrabold tracking-tight sm:text-5xl">
               {t.rich("heroTitle", {
-                hl: (chunks) => <span className="text-primary">{chunks}</span>,
+                hl: (chunks) => <span className="text-primary-text">{chunks}</span>,
               })}
             </h1>
             <p className="max-w-xl text-lg text-muted-foreground">

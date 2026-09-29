@@ -49,7 +49,7 @@ export function HomeInfoCardsSection() {
               <button
                 type="button"
                 onClick={() => setOpenCard(card.key)}
-                className="self-start text-sm font-semibold text-primary hover:underline"
+                className="self-start text-sm font-semibold text-primary-text hover:underline"
               >
                 {t("readMore")}
               </button>

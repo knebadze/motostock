@@ -181,7 +181,7 @@ export function RegisterForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
               type="checkbox"
               checked={agreedToTerms}
               onChange={(event) => setAgreedToTerms(event.target.checked)}
-              className="mt-0.5 size-4 shrink-0 rounded border-border text-primary focus:ring-primary"
+              className="mt-0.5 size-4 shrink-0 rounded border-border text-primary-text focus:ring-primary"
             />
             <span>
               {t.rich("termsAgreement", {
@@ -196,7 +196,7 @@ export function RegisterForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
                       event.stopPropagation();
                       setTermsModalOpen(true);
                     }}
-                    className="font-semibold text-primary hover:underline"
+                    className="font-semibold text-primary-text hover:underline"
                   >
                     {chunks}
                   </button>
@@ -219,7 +219,7 @@ export function RegisterForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
 
         <p className="text-center text-sm text-muted-foreground">
           {t("haveAccount")}{" "}
-          <Link href="/login" className="font-semibold text-primary hover:underline">
+          <Link href="/login" className="font-semibold text-primary-text hover:underline">
             {t("goToLogin")}
           </Link>
         </p>

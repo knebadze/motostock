@@ -263,7 +263,7 @@ export function ProductVariantsPanel({
         variant.activeDiscount ? (
           <span className="flex items-center gap-2">
             <span className="text-muted-foreground line-through">{formatPrice(variant.price)}</span>
-            <span className="font-semibold text-primary">
+            <span className="font-semibold text-primary-text">
               {formatPrice(variant.activeDiscount.discountPrice)}
             </span>
           </span>
@@ -283,7 +283,7 @@ export function ProductVariantsPanel({
       render: (variant) => (
         <span
           className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-            variant.isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+            variant.isActive ? "bg-primary/15 text-primary-text" : "bg-muted text-muted-foreground"
           }`}
         >
           {variant.isActive ? "აქტიური" : "გამორთული"}
@@ -328,7 +328,7 @@ export function ProductVariantsPanel({
               <button
                 type="button"
                 onClick={() => setManagingVariant(variant)}
-                className="rounded-full px-3 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+                className="rounded-full px-3 py-1 text-xs font-semibold text-primary-text transition-colors hover:bg-primary/10"
               >
                 სურათები/ფასდაკლება
               </button>

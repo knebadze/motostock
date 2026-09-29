@@ -333,7 +333,7 @@ export function GarageVehicleFormModal({
                 type="button"
                 onClick={handleFillFromVin}
                 disabled={decodingVin || vin.trim().length !== 17}
-                className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+                className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary-text transition-colors hover:bg-primary/10 disabled:opacity-50"
               >
                 {decodingVin && <Loader size="xs" label={tCommon("loader.loading")} />}
                 {decodingVin ? t("vinDecoding") : t("fillWithVin")}
@@ -379,7 +379,7 @@ export function GarageVehicleFormModal({
             <button
               type="button"
               onClick={() => setMode("submit")}
-              className="self-start text-sm font-medium text-primary hover:underline"
+              className="self-start text-sm font-medium text-primary-text hover:underline"
             >
               {t("cantFindMine")}
             </button>
@@ -432,7 +432,7 @@ export function GarageVehicleFormModal({
                       key={entry.id}
                       type="button"
                       onClick={() => selectSuggestedEntry(entry)}
-                      className="rounded-full border border-primary/40 bg-card px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+                      className="rounded-full border border-primary/40 bg-card px-3 py-1.5 text-sm font-medium text-primary-text transition-colors hover:bg-primary/10"
                     >
                       {formatVehicleCatalogLabel(entry)}
                     </button>
@@ -559,7 +559,7 @@ export function GarageVehicleFormModal({
             <button
               type="button"
               onClick={() => setMode("pick")}
-              className="self-start text-sm font-medium text-primary hover:underline"
+              className="self-start text-sm font-medium text-primary-text hover:underline"
             >
               {t("backToCatalog")}
             </button>

@@ -22,7 +22,7 @@ export function AdminHeader({
           onClick={onMenuClick}
           aria-expanded={sidebarOpen}
           aria-label={sidebarOpen ? "მენიუს დახურვა" : "მენიუს გახსნა"}
-          className="relative z-60 flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary md:hidden"
+          className="relative z-60 flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text md:hidden"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

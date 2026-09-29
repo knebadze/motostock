@@ -107,7 +107,7 @@ export function LoginForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
           />
           <Link
             href="/forgot-password"
-            className="self-end text-xs font-medium text-primary hover:underline"
+            className="self-end text-xs font-medium text-primary-text hover:underline"
           >
             {t("forgotPasswordLink")}
           </Link>
@@ -125,7 +125,7 @@ export function LoginForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
 
         <p className="text-center text-sm text-muted-foreground">
           {t("noAccount")}{" "}
-          <Link href="/register" className="font-semibold text-primary hover:underline">
+          <Link href="/register" className="font-semibold text-primary-text hover:underline">
             {t("goToRegister")}
           </Link>
         </p>

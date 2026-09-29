@@ -52,8 +52,8 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
         aria-label={t("language")}
         className={
           compact
-            ? "flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
-            : "flex h-8 shrink-0 items-center justify-center gap-1 rounded-full border border-border px-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary sm:h-9 sm:px-3"
+            ? "flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-primary-text"
+            : "flex h-8 shrink-0 items-center justify-center gap-1 rounded-full border border-border px-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary-text sm:h-9 sm:px-3"
         }
       >
         {CODES[locale]}
@@ -102,8 +102,8 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
                   });
                   window.location.href = `${targetPath}${window.location.search}`;
                 }}
-                className={`flex w-full items-center px-3 py-2 text-sm transition-colors hover:bg-muted hover:text-primary ${
-                  code === locale ? "text-primary" : "text-foreground"
+                className={`flex w-full items-center px-3 py-2 text-sm transition-colors hover:bg-muted hover:text-primary-text ${
+                  code === locale ? "text-primary-text" : "text-foreground"
                 }`}
               >
                 {LABELS[code]}

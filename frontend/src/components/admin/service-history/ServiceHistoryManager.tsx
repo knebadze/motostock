@@ -281,7 +281,7 @@ export function ServiceHistoryManager({
           <button
             type="button"
             onClick={() => setAddWalkInOpen(true)}
-            className="mt-4 rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+            className="mt-4 rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
           >
             + ახალი სტუმარი მომხმარებელი
           </button>
@@ -334,7 +334,7 @@ export function ServiceHistoryManager({
               <button
                 type="button"
                 onClick={() => setAddVehicleOpen(true)}
-                className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+                className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
               >
                 + ტრანსპორტის დამატება
               </button>

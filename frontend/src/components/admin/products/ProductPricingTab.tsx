@@ -133,7 +133,7 @@ function DraftVariantRow({
             type="button"
             onClick={onToggleExpanded}
             className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors hover:bg-muted ${
-              hasExtras ? "text-primary" : "text-foreground"
+              hasExtras ? "text-primary-text" : "text-foreground"
             }`}
           >
             სურათები/ფასდაკლება {expanded ? "▲" : "▼"}
@@ -473,7 +473,7 @@ export function ProductPricingTab({
       <button
         type="button"
         onClick={onGenerateDraftVariants}
-        className="w-fit rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+        className="w-fit rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
       >
         + ვარიანტების გენერაცია
       </button>

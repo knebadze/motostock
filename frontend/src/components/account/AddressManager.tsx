@@ -77,7 +77,7 @@ export function AddressManager({
                 <button
                   type="button"
                   onClick={() => openEditModal(address)}
-                  className="text-sm font-medium text-primary hover:underline"
+                  className="text-sm font-medium text-primary-text hover:underline"
                 >
                   {t("editButton")}
                 </button>

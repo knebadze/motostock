@@ -368,14 +368,14 @@ export function Select(props: SelectProps) {
           ? selectedOptions.map((option) => (
               <span
                 key={option.value}
-                className="flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary"
+                className="flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary-text"
               >
                 {option.label}
                 <span
                   role="button"
                   tabIndex={-1}
                   onClick={(event) => removeTag(option.value, event)}
-                  className="cursor-pointer text-primary/70 hover:text-primary"
+                  className="cursor-pointer text-primary-text/70 hover:text-primary-text"
                 >
                   ×
                 </span>
@@ -410,14 +410,14 @@ export function Select(props: SelectProps) {
                 {selectedOptions.map((option) => (
                   <span
                     key={option.value}
-                    className="flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary"
+                    className="flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary-text"
                   >
                     {option.label}
                     <span
                       role="button"
                       tabIndex={-1}
                       onClick={(event) => removeTag(option.value, event)}
-                      className="cursor-pointer text-primary/70 hover:text-primary"
+                      className="cursor-pointer text-primary-text/70 hover:text-primary-text"
                     >
                       ×
                     </span>
@@ -429,7 +429,7 @@ export function Select(props: SelectProps) {
                     event.stopPropagation();
                     props.onChange([]);
                   }}
-                  className="ml-auto shrink-0 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
+                  className="ml-auto shrink-0 text-xs font-medium text-muted-foreground transition-colors hover:text-primary-text"
                 >
                   {clearLabel}
                 </button>
@@ -479,9 +479,9 @@ export function Select(props: SelectProps) {
                       onMouseEnter={() => setActiveIndex(index)}
                       role="option"
                       aria-selected={isSelected}
-                      className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-muted hover:text-primary ${
+                      className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-muted hover:text-primary-text ${
                         isActive ? "bg-muted" : ""
-                      } ${isSelected ? "text-primary" : "text-foreground"}`}
+                      } ${isSelected ? "text-primary-text" : "text-foreground"}`}
                     >
                       {option.label}
                       {isSelected && <span>✓</span>}

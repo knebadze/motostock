@@ -309,7 +309,7 @@ export function DateInput({
                 type="button"
                 onClick={() => changeMonth(-1)}
                 aria-label="წინა თვე"
-                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
               >
                 {chevronLeft}
               </button>
@@ -336,7 +336,7 @@ export function DateInput({
                 type="button"
                 onClick={() => changeMonth(1)}
                 aria-label="შემდეგი თვე"
-                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
               >
                 {chevronRight}
               </button>
@@ -378,7 +378,7 @@ export function DateInput({
                 type="button"
                 onClick={selectToday}
                 disabled={isDisabledIso(todayIso)}
-                className="text-primary transition-colors hover:underline disabled:cursor-not-allowed disabled:opacity-40"
+                className="text-primary-text transition-colors hover:underline disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {copy.today}
               </button>
@@ -389,7 +389,7 @@ export function DateInput({
                     onChange("");
                     closePanel();
                   }}
-                  className="text-muted-foreground transition-colors hover:text-primary"
+                  className="text-muted-foreground transition-colors hover:text-primary-text"
                 >
                   {copy.clear}
                 </button>

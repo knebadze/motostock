@@ -29,9 +29,9 @@ function AccountDashboardView({ name }: { name: string }) {
           <Link
             key={item.href}
             href={item.href}
-            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-colors hover:border-primary hover:text-primary"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-colors hover:border-primary hover:text-primary-text"
           >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-text">
               {item.icon}
             </span>
             <span className="font-medium">{t(`nav.${item.labelKey}`)}</span>

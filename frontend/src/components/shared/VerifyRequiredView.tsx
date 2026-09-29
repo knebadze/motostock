@@ -38,7 +38,7 @@ export function VerifyRequiredView({ email }: { email: string }) {
       <button
         type="button"
         onClick={handleLogout}
-        className="mt-6 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary"
+        className="mt-6 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary-text"
       >
         {t("verifyRequiredLogout")}
       </button>

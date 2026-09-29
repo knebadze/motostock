@@ -266,7 +266,7 @@ export function ProductVariantImagesPanel({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex size-28 flex-col items-center justify-center gap-1 rounded-lg border border-border text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+          className="flex size-28 flex-col items-center justify-center gap-1 rounded-lg border border-border text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary-text disabled:opacity-50"
         >
           <span className="text-2xl leading-none">+</span>
           {uploading ? "იტვირთება..." : "სურათის დამატება"}

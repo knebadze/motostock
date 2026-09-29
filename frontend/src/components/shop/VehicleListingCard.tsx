@@ -140,12 +140,12 @@ export function VehicleListingCard({
               <span className="text-sm text-muted-foreground line-through">
                 {formatPrice(priceDisplay.convert(listing.price), priceDisplay.displayCurrency)}
               </span>
-              <span className="text-lg font-bold text-primary">
+              <span className="text-lg font-bold text-primary-text">
                 {formatPrice(priceDisplay.convert(activeDiscount.discountPrice), priceDisplay.displayCurrency)}
               </span>
             </>
           ) : (
-            <span className="text-lg font-bold text-primary">
+            <span className="text-lg font-bold text-primary-text">
               {formatPrice(priceDisplay.convert(listing.price), priceDisplay.displayCurrency)}
             </span>
           )}

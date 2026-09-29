@@ -141,7 +141,7 @@ export function UserDetailModal({
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                     detail.role === "ADMIN"
-                      ? "bg-primary/15 text-primary"
+                      ? "bg-primary/15 text-primary-text"
                       : detail.role === "OPERATOR"
                         ? "bg-amber-500/15 text-amber-600"
                         : "bg-muted text-muted-foreground"

@@ -143,12 +143,12 @@ export function ProductDetailPage({
                     <span className="text-lg text-muted-foreground line-through">
                       {formatPrice(selectedVariant.price)}
                     </span>
-                    <span className="text-2xl font-bold text-primary">
+                    <span className="text-2xl font-bold text-primary-text">
                       {formatPrice(selectedVariant.activeDiscount.discountPrice)}
                     </span>
                   </>
                 ) : (
-                  <span className="text-2xl font-bold text-primary">
+                  <span className="text-2xl font-bold text-primary-text">
                     {formatPrice(selectedVariant.price)}
                   </span>
                 )}
@@ -159,7 +159,7 @@ export function ProductDetailPage({
                 )}
               </div>
               {!outOfStock && selectedVariant.lowStockQuantity != null && (
-                <span className="flex items-center gap-1.5 text-sm font-medium text-primary">
+                <span className="flex items-center gap-1.5 text-sm font-medium text-primary-text">
                   <span className="size-1.5 rounded-full bg-primary" />
                   {t("lowStock", { count: selectedVariant.lowStockQuantity })}
                 </span>
@@ -215,7 +215,7 @@ export function ProductDetailPage({
                 {product.fitmentRules.map((rule) => (
                   <li
                     key={`rule-${rule.id}`}
-                    className="rounded-full border border-primary/40 bg-primary/5 px-3 py-1 text-primary"
+                    className="rounded-full border border-primary/40 bg-primary/5 px-3 py-1 text-primary-text"
                   >
                     {fitmentRuleLabel(rule, locale, t("compatibleAllVehicles"))}
                   </li>

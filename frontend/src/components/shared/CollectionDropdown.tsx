@@ -123,7 +123,7 @@ export function CollectionDropdown({
         aria-label={tHeader(headerLabelKey)}
         aria-haspopup="true"
         aria-expanded={open}
-        className="relative flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9"
+        className="relative flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-9"
       >
         {icon}
         {count > 0 && (
@@ -153,7 +153,7 @@ export function CollectionDropdown({
                       <Link
                         href={href}
                         onClick={() => setOpen(false)}
-                        className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:text-primary"
+                        className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:text-primary-text"
                       >
                         <div className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-muted">
                           {imageUrl ? (
@@ -165,7 +165,7 @@ export function CollectionDropdown({
                         <div className="flex min-w-0 flex-1 flex-col">
                           <span className="truncate text-sm font-medium text-foreground">{name}</span>
                           {price != null && (
-                            <span className="text-xs font-semibold text-primary">{formatPrice(price)}</span>
+                            <span className="text-xs font-semibold text-primary-text">{formatPrice(price)}</span>
                           )}
                         </div>
                       </Link>
@@ -173,7 +173,7 @@ export function CollectionDropdown({
                         type="button"
                         onClick={() => handleRemove(item.id)}
                         aria-label={t("removeLabel")}
-                        className="shrink-0 text-muted-foreground transition-colors hover:text-primary"
+                        className="shrink-0 text-muted-foreground transition-colors hover:text-primary-text"
                       >
                         ✕
                       </button>

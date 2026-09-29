@@ -121,7 +121,7 @@ function SectionRow({
               onClick={() => onMove("up")}
               disabled={isFirst}
               aria-label="ზემოთ აწევა"
-              className="rounded p-0.5 text-muted-foreground transition-colors hover:text-primary disabled:opacity-30"
+              className="rounded p-0.5 text-muted-foreground transition-colors hover:text-primary-text disabled:opacity-30"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -141,7 +141,7 @@ function SectionRow({
               onClick={() => onMove("down")}
               disabled={isLast}
               aria-label="ქვემოთ ჩამოწევა"
-              className="rounded p-0.5 text-muted-foreground transition-colors hover:text-primary disabled:opacity-30"
+              className="rounded p-0.5 text-muted-foreground transition-colors hover:text-primary-text disabled:opacity-30"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

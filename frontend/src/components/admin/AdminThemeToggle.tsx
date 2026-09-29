@@ -22,7 +22,7 @@ export function AdminThemeToggle() {
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={isDark ? "ღია თემაზე გადართვა" : "მუქ თემაზე გადართვა"}
-      className="flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary"
+      className="flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text"
     >
       {isDark ? (
         <svg

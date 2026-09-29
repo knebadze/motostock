@@ -130,7 +130,7 @@ export function UserMenu({ userName }: { userName: string }) {
                 href="/admin/settings"
                 onClick={() => setOpen(false)}
                 role="menuitem"
-                className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+                className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary-text"
               >
                 პარამეტრები
               </Link>
@@ -142,7 +142,7 @@ export function UserMenu({ userName }: { userName: string }) {
               onClick={handleSyncNow}
               disabled={syncing}
               role="menuitem"
-              className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary disabled:opacity-50"
+              className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary-text disabled:opacity-50"
             >
               {syncing ? "სინქრონიზაცია..." : "FINA სინქრონიზაცია ახლავე"}
             </button>
@@ -152,7 +152,7 @@ export function UserMenu({ userName }: { userName: string }) {
               href="/admin/change-password"
               onClick={() => setOpen(false)}
               role="menuitem"
-              className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               პაროლის შეცვლა
             </Link>
@@ -164,7 +164,7 @@ export function UserMenu({ userName }: { userName: string }) {
                 onClick={handleClearCache}
                 disabled={clearingCache}
                 role="menuitem"
-                className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary disabled:opacity-50"
+                className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary-text disabled:opacity-50"
               >
                 {clearingCache ? "იწმინდება..." : "ქეშის გასუფთავება"}
               </button>
@@ -175,7 +175,7 @@ export function UserMenu({ userName }: { userName: string }) {
               type="button"
               onClick={handleLogout}
               role="menuitem"
-              className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               გასვლა
             </button>

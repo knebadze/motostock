@@ -138,7 +138,7 @@ export function BuyTogetherManager({
             type="button"
             onClick={handleClearFilters}
             disabled={loading}
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary disabled:opacity-50"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text disabled:opacity-50"
           >
             გაწმენდა
           </button>
@@ -156,7 +156,7 @@ export function BuyTogetherManager({
               <button
                 type="button"
                 onClick={() => setViewingProductId(item.product.id)}
-                className="text-sm font-medium text-primary hover:underline"
+                className="text-sm font-medium text-primary-text hover:underline"
               >
                 ნახვა
               </button>

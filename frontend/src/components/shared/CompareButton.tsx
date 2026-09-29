@@ -126,8 +126,8 @@ export function CompareButton({
         disabled={loading}
         className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-60 ${
           active
-            ? "border-primary bg-primary/10 text-primary"
-            : "border-border text-foreground hover:border-primary hover:text-primary"
+            ? "border-primary bg-primary/10 text-primary-text"
+            : "border-border text-foreground hover:border-primary hover:text-primary-text"
         } ${className}`}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4">
@@ -145,8 +145,8 @@ export function CompareButton({
       disabled={loading}
       aria-label={active ? resolvedLabelAdded : resolvedLabelAdd}
       aria-pressed={active}
-      className={`flex size-8 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:text-primary disabled:opacity-60 ${
-        active ? "text-primary" : ""
+      className={`flex size-8 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:text-primary-text disabled:opacity-60 ${
+        active ? "text-primary-text" : ""
       } ${className}`}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4">

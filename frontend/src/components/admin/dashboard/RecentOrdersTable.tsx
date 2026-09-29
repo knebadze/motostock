@@ -14,7 +14,7 @@ const columns: DataTableColumn<RecentOrder>[] = [
   {
     header: "თანხა",
     render: (order) => formatPrice(order.total),
-    cellClassName: "font-semibold text-primary",
+    cellClassName: "font-semibold text-primary-text",
   },
   {
     header: "თარიღი",

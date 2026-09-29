@@ -252,7 +252,7 @@ export function CheckoutManager({
               <button
                 type="button"
                 onClick={() => setAddressModalOpen(true)}
-                className="text-sm font-medium text-primary hover:underline"
+                className="text-sm font-medium text-primary-text hover:underline"
               >
                 {t("addAddressButton")}
               </button>
@@ -506,7 +506,7 @@ export function CheckoutManager({
                   type="button"
                   onClick={handleApplyPromoCode}
                   disabled={promoApplying || !promoCodeInput.trim() || (displayPreview?.promoCodeBlocked ?? false)}
-                  className="rounded-full border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                  className="rounded-full border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary-text disabled:opacity-50"
                 >
                   {t("applyPromo")}
                 </button>
@@ -539,7 +539,7 @@ export function CheckoutManager({
             )}
             <div className="mt-1 flex items-center justify-between text-lg font-bold text-foreground">
               <span>{t("total")}</span>
-              <span className="text-primary">{formatPrice(displayPreview?.total ?? 0)}</span>
+              <span className="text-primary-text">{formatPrice(displayPreview?.total ?? 0)}</span>
             </div>
           </div>
 

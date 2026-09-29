@@ -29,7 +29,7 @@ const MEGA_MENU_CLOSE_DELAY_MS = 150;
 // text color) so they read as small badges against the label text instead
 // of blending into it.
 const phoneIcon = (
-  <span className="text-primary">
+  <span className="text-primary-text">
     <svg
       viewBox="0 0 24 24"
       fill="none"
@@ -45,7 +45,7 @@ const phoneIcon = (
 );
 
 const mailIcon = (
-  <span className="text-primary">
+  <span className="text-primary-text">
     <svg
       viewBox="0 0 24 24"
       fill="none"
@@ -174,7 +174,7 @@ export function Header({
             {companyInfo?.phone && (
               <a
                 href={`tel:${companyInfo.phone}`}
-                className="flex items-center gap-1.5 transition-colors hover:text-primary"
+                className="flex items-center gap-1.5 transition-colors hover:text-primary-text"
               >
                 {phoneIcon}
                 {companyInfo.phone}
@@ -183,7 +183,7 @@ export function Header({
             {companyInfo?.email && (
               <a
                 href={`mailto:${companyInfo.email}`}
-                className="flex items-center gap-1.5 transition-colors hover:text-primary"
+                className="flex items-center gap-1.5 transition-colors hover:text-primary-text"
               >
                 {mailIcon}
                 {companyInfo.email}
@@ -200,7 +200,7 @@ export function Header({
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={social.label}
-                      className="text-primary transition-opacity hover:opacity-70 [&>svg]:size-4"
+                      className="text-primary-text transition-opacity hover:opacity-70 [&>svg]:size-4"
                     >
                       {social.icon}
                     </a>
@@ -211,19 +211,19 @@ export function Header({
           </div>
           <div className="flex items-center gap-3">
             <nav className="flex items-center gap-4">
-              <Link href="/about" className="transition-colors hover:text-primary">
+              <Link href="/about" className="transition-colors hover:text-primary-text">
                 {tFooter("aboutUs")}
               </Link>
-              <Link href="/contact" className="transition-colors hover:text-primary">
+              <Link href="/contact" className="transition-colors hover:text-primary-text">
                 {tFooter("contactTitle")}
               </Link>
-              <Link href="/vacancies" className="transition-colors hover:text-primary">
+              <Link href="/vacancies" className="transition-colors hover:text-primary-text">
                 {tFooter("vacanciesTitle")}
               </Link>
-              <Link href="/terms" className="transition-colors hover:text-primary">
+              <Link href="/terms" className="transition-colors hover:text-primary-text">
                 {tFooter("termsTitle")}
               </Link>
-              <Link href="/privacy" className="transition-colors hover:text-primary">
+              <Link href="/privacy" className="transition-colors hover:text-primary-text">
                 {tFooter("privacyTitle")}
               </Link>
             </nav>
@@ -251,8 +251,8 @@ export function Header({
               <div key={category.id} onMouseEnter={() => openMegaMenu(category.id)}>
                 <Link
                   href={href}
-                  className={`transition-colors hover:text-primary ${
-                    isActive ? "text-primary" : "text-foreground"
+                  className={`transition-colors hover:text-primary-text ${
+                    isActive ? "text-primary-text" : "text-foreground"
                   }`}
                 >
                   {category.name[locale]}
@@ -302,7 +302,7 @@ export function Header({
                         href="/admin"
                         onClick={() => setAccountMenuOpen(false)}
                         role="menuitem"
-                        className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+                        className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                       >
                         {tHeader("adminPanel")}
                       </NextLink>
@@ -311,7 +311,7 @@ export function Header({
                         href="/account"
                         onClick={() => setAccountMenuOpen(false)}
                         role="menuitem"
-                        className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+                        className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                       >
                         {tHeader("myAccount")}
                       </Link>
@@ -322,7 +322,7 @@ export function Header({
                       type="button"
                       onClick={handleLogout}
                       role="menuitem"
-                      className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+                      className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                     >
                       {tHeader("logout")}
                     </button>
@@ -334,7 +334,7 @@ export function Header({
             <div className="hidden items-center gap-2 lg:flex">
               <Link
                 href="/register"
-                className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+                className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
               >
                 {tHeader("register")}
               </Link>
@@ -353,7 +353,7 @@ export function Header({
             aria-expanded={isOpen}
             aria-controls="mobile-nav"
             aria-label={isOpen ? tHeader("closeMenu") : tHeader("openMenu")}
-            className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9 lg:hidden"
+            className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-9 lg:hidden"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -446,7 +446,7 @@ export function Header({
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={social.label}
-                      className="text-primary transition-opacity hover:opacity-70 [&>svg]:size-4"
+                      className="text-primary-text transition-opacity hover:opacity-70 [&>svg]:size-4"
                     >
                       {social.icon}
                     </a>
@@ -469,8 +469,8 @@ export function Header({
                   key={category.id}
                   href={href}
                   onClick={() => setIsOpen(false)}
-                  className={`rounded-lg px-3 py-2.5 transition-colors hover:bg-muted hover:text-primary ${
-                    isActive ? "text-primary" : "text-foreground"
+                  className={`rounded-lg px-3 py-2.5 transition-colors hover:bg-muted hover:text-primary-text ${
+                    isActive ? "text-primary-text" : "text-foreground"
                   }`}
                 >
                   {category.name[locale]}
@@ -483,7 +483,7 @@ export function Header({
             <Link
               href="/about"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tFooter("aboutUs")}
             </Link>
@@ -491,7 +491,7 @@ export function Header({
             <Link
               href="/contact"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tFooter("contactTitle")}
             </Link>
@@ -499,7 +499,7 @@ export function Header({
             <Link
               href="/vacancies"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tFooter("vacanciesTitle")}
             </Link>
@@ -507,7 +507,7 @@ export function Header({
             <Link
               href="/terms"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tFooter("termsTitle")}
             </Link>
@@ -515,7 +515,7 @@ export function Header({
             <Link
               href="/privacy"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tFooter("privacyTitle")}
             </Link>
@@ -525,7 +525,7 @@ export function Header({
             <Link
               href="/wishlist"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tHeader("wishlist")}
               {wishlistCount > 0 && <span className="text-muted-foreground"> ({wishlistCount})</span>}
@@ -534,7 +534,7 @@ export function Header({
             <Link
               href="/compare"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tHeader("compare")}
               {compareCount > 0 && <span className="text-muted-foreground"> ({compareCount})</span>}
@@ -543,7 +543,7 @@ export function Header({
             <Link
               href="/cart"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tHeader("cart")}
               {cartCount > 0 && <span className="text-muted-foreground"> ({cartCount})</span>}
@@ -555,7 +555,7 @@ export function Header({
                   <NextLink
                     href="/admin"
                     onClick={() => setIsOpen(false)}
-                    className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+                    className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                   >
                     {tHeader("adminPanel")}
                   </NextLink>
@@ -563,7 +563,7 @@ export function Header({
                   <Link
                     href="/account"
                     onClick={() => setIsOpen(false)}
-                    className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+                    className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                   >
                     {tHeader("myAccount")}
                   </Link>
@@ -581,7 +581,7 @@ export function Header({
                 <Link
                   href="/register"
                   onClick={() => setIsOpen(false)}
-                  className="mt-2 rounded-lg border border-border px-3 py-2.5 text-center font-semibold text-foreground transition-colors hover:bg-muted hover:text-primary"
+                  className="mt-2 rounded-lg border border-border px-3 py-2.5 text-center font-semibold text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                 >
                   {tHeader("register")}
                 </Link>

@@ -226,7 +226,7 @@ export function NewsletterManager({
           </div>
           <div className="rounded-2xl border border-border bg-card p-5">
             <p className="text-sm text-muted-foreground">დადასტურებული გამომწერი</p>
-            <p className="mt-1 text-2xl font-bold text-primary">{counts.confirmed}</p>
+            <p className="mt-1 text-2xl font-bold text-primary-text">{counts.confirmed}</p>
           </div>
           <div className="rounded-2xl border border-border bg-card p-5">
             <p className="text-sm text-muted-foreground">გამოწერილი აღარ არის</p>
@@ -259,7 +259,7 @@ export function NewsletterManager({
                   <button
                     type="button"
                     onClick={() => setConfirmSendCampaign(campaign)}
-                    className="rounded-full border border-primary/40 px-3 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+                    className="rounded-full border border-primary/40 px-3 py-1 text-xs font-semibold text-primary-text transition-colors hover:bg-primary/10"
                   >
                     გაგზავნა
                   </button>

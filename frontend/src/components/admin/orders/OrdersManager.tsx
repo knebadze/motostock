@@ -105,7 +105,7 @@ const columns: DataTableColumn<AdminOrderSummary>[] = [
   {
     header: "თანხა",
     render: (order) => formatPrice(order.total),
-    cellClassName: "font-semibold text-primary",
+    cellClassName: "font-semibold text-primary-text",
   },
   {
     header: "თარიღი",
@@ -293,7 +293,7 @@ export function OrdersManager({
             type="button"
             onClick={handleClearFilters}
             disabled={loading}
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary disabled:opacity-50"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text disabled:opacity-50"
           >
             გაწმენდა
           </button>
@@ -313,7 +313,7 @@ export function OrdersManager({
                 onClick={() => setViewingOrderId(order.id)}
                 aria-label="სრულად ნახვა"
                 title="სრულად ნახვა"
-                className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

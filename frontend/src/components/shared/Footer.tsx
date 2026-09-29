@@ -76,7 +76,7 @@ function FooterView({
           <h3 className="text-sm font-semibold">{tFooter("catalogTitle")}</h3>
           <ul className="mt-4 flex flex-col gap-2.5 text-sm text-muted-foreground">
             <li>
-              <Link href="/catalog" className="font-medium transition-colors hover:text-primary">
+              <Link href="/catalog" className="font-medium transition-colors hover:text-primary-text">
                 {tFooter("viewCatalog")}
               </Link>
             </li>
@@ -84,7 +84,7 @@ function FooterView({
               <li key={category.id}>
                 <Link
                   href={`/${category.slug}`}
-                  className="transition-colors hover:text-primary"
+                  className="transition-colors hover:text-primary-text"
                 >
                   {category.name[locale]}
                 </Link>
@@ -97,32 +97,32 @@ function FooterView({
           <h3 className="text-sm font-semibold">{tFooter("companyTitle")}</h3>
           <ul className="mt-4 flex flex-col gap-2.5 text-sm text-muted-foreground">
             <li>
-              <Link href="/about" className="transition-colors hover:text-primary">
+              <Link href="/about" className="transition-colors hover:text-primary-text">
                 {tFooter("aboutUs")}
               </Link>
             </li>
             <li>
-              <Link href="/contact" className="transition-colors hover:text-primary">
+              <Link href="/contact" className="transition-colors hover:text-primary-text">
                 {tFooter("contactTitle")}
               </Link>
             </li>
             <li>
-              <Link href="/terms" className="transition-colors hover:text-primary">
+              <Link href="/terms" className="transition-colors hover:text-primary-text">
                 {tFooter("termsTitle")}
               </Link>
             </li>
             <li>
-              <Link href="/privacy" className="transition-colors hover:text-primary">
+              <Link href="/privacy" className="transition-colors hover:text-primary-text">
                 {tFooter("privacyTitle")}
               </Link>
             </li>
             <li>
-              <Link href="/faq" className="transition-colors hover:text-primary">
+              <Link href="/faq" className="transition-colors hover:text-primary-text">
                 {tFooter("faqTitle")}
               </Link>
             </li>
             <li>
-              <Link href="/vacancies" className="transition-colors hover:text-primary">
+              <Link href="/vacancies" className="transition-colors hover:text-primary-text">
                 {tFooter("vacanciesTitle")}
               </Link>
             </li>
@@ -152,7 +152,7 @@ function FooterView({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={social.label}
-                  className="flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                  className="flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary-text"
                 >
                   {social.icon}
                 </a>

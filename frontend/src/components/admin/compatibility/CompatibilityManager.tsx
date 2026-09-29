@@ -29,7 +29,7 @@ const KIND_LABELS: Record<CompatibilityItem["kind"], string> = {
 };
 
 const KIND_BADGE_CLASSES: Record<CompatibilityItem["kind"], string> = {
-  FITMENT: "bg-primary/15 text-primary",
+  FITMENT: "bg-primary/15 text-primary-text",
   RULE_ALL: "bg-green-500/15 text-green-600",
   RULE_CATEGORY: "bg-blue-500/15 text-blue-600",
   RULE_SPEC: "bg-amber-500/15 text-amber-600",
@@ -170,7 +170,7 @@ function AllCompatibilityTab({
             type="button"
             onClick={handleClearFilters}
             disabled={loading}
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary disabled:opacity-50"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text disabled:opacity-50"
           >
             გაწმენდა
           </button>
@@ -188,7 +188,7 @@ function AllCompatibilityTab({
               <button
                 type="button"
                 onClick={() => setViewingProductId(item.product.id)}
-                className="text-sm font-medium text-primary hover:underline"
+                className="text-sm font-medium text-primary-text hover:underline"
               >
                 ნახვა
               </button>
@@ -274,8 +274,8 @@ function CompatibilityCheckTab({
           onClick={() => handleModeChange("vehicle")}
           className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
             mode === "vehicle"
-              ? "border-primary bg-primary/10 text-primary"
-              : "border-border text-foreground hover:border-primary hover:text-primary"
+              ? "border-primary bg-primary/10 text-primary-text"
+              : "border-border text-foreground hover:border-primary hover:text-primary-text"
           }`}
         >
           ტრანსპორტით
@@ -285,8 +285,8 @@ function CompatibilityCheckTab({
           onClick={() => handleModeChange("product")}
           className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
             mode === "product"
-              ? "border-primary bg-primary/10 text-primary"
-              : "border-border text-foreground hover:border-primary hover:text-primary"
+              ? "border-primary bg-primary/10 text-primary-text"
+              : "border-border text-foreground hover:border-primary hover:text-primary-text"
           }`}
         >
           პროდუქტით

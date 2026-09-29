@@ -111,7 +111,7 @@ export function AdminOrderNotifications() {
       }}
       aria-label={unseenCount > 0 ? `${unseenCount} ახალი შეკვეთა` : "შეკვეთები"}
       title="შეკვეთები"
-      className="relative flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary"
+      className="relative flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text"
     >
       {bellIcon()}
       {unseenCount > 0 && (

@@ -83,7 +83,7 @@ const columns: DataTableColumn<AdminUser>[] = [
       <span
         className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
           user.role === "ADMIN"
-            ? "bg-primary/15 text-primary"
+            ? "bg-primary/15 text-primary-text"
             : user.role === "OPERATOR"
               ? "bg-amber-500/15 text-amber-600"
               : "bg-muted text-muted-foreground"
@@ -208,7 +208,7 @@ export function UsersManager({ initialData }: { initialData: AdminUsersPage }) {
             type="button"
             onClick={handleClearFilters}
             disabled={loading}
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary disabled:opacity-50"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text disabled:opacity-50"
           >
             გაწმენდა
           </button>
@@ -228,7 +228,7 @@ export function UsersManager({ initialData }: { initialData: AdminUsersPage }) {
                 onClick={() => setViewingUserId(user.id)}
                 aria-label="სრულად ნახვა"
                 title="სრულად ნახვა"
-                className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

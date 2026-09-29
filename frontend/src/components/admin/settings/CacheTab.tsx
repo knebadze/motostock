@@ -114,7 +114,7 @@ export function CacheTab({
           type="button"
           onClick={load}
           disabled={loading}
-          className="shrink-0 rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+          className="shrink-0 rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary-text disabled:opacity-50"
         >
           {loading ? "იტვირთება..." : "განახლება"}
         </button>
@@ -144,7 +144,7 @@ export function CacheTab({
                         className={
                           entry.expiresAt - now <= 0
                             ? "text-muted-foreground"
-                            : "font-medium text-primary"
+                            : "font-medium text-primary-text"
                         }
                       >
                         {formatRemaining(entry.expiresAt, now)}

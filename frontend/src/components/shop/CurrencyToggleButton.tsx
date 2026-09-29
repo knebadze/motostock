@@ -26,7 +26,7 @@ export function CurrencyToggleButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className={`inline-flex h-6 shrink-0 items-center gap-1 rounded-full border border-border px-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 ${className ?? ""}`}
+      className={`inline-flex h-6 shrink-0 items-center gap-1 rounded-full border border-border px-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary-text disabled:cursor-not-allowed disabled:opacity-40 ${className ?? ""}`}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

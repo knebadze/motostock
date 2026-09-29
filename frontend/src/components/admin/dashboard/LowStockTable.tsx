@@ -30,7 +30,7 @@ const columns: DataTableColumn<LowStockItem>[] = [
   {
     header: "დასახელება",
     render: (item) => (
-      <Link href={itemHref(item)} className="font-medium text-foreground hover:text-primary hover:underline">
+      <Link href={itemHref(item)} className="font-medium text-foreground hover:text-primary-text hover:underline">
         {item.label}
       </Link>
     ),
