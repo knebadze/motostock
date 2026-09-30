@@ -12,8 +12,9 @@ export const visitorsRouter = Router();
 // periodically (see the frontend's VisitorPingBeacon) to keep their
 // presence row fresh. Same "passive, unconditional, no Settings gate"
 // reasoning as product-views.middleware.ts's resolveProductViewOwner.
-// Its own dedicated rate limit, not the shared global one — see
-// rateLimit.middleware.ts's globalRateLimit/visitorPingRateLimit comments.
+// Its own dedicated rate limit, not either shared global one — see
+// rateLimit.middleware.ts's globalReadRateLimit/globalWriteRateLimit/
+// visitorPingRateLimit comments.
 visitorsRouter.post("/ping", visitorPingRateLimit, visitorsController.ping);
 
 visitorsRouter.get("/overview", requireAuth, requireRole(ROLES.ADMIN), visitorsController.overview);

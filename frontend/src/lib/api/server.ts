@@ -1,6 +1,7 @@
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
-import { apiClient } from "./client";
+import { apiClient, ApiRequestError } from "./client";
 import type { PagedResult } from "@/components/shared/Pagination";
 import type { User } from "./auth";
 import type { Category } from "./categories";
@@ -83,33 +84,55 @@ async function fetchFromServer<TResponse, TResult>(
   try {
     const { data } = await apiClient.get<TResponse>(path, { headers, params: options.params });
     return options.extract(data);
-  } catch {
+  } catch (error) {
+    // Server components must never throw just because the backend call
+    // failed, but silently returning the fallback with zero trace makes a
+    // real outage (backend down, DB pool exhausted, timeout) indistinguishable
+    // from an ordinary, expected condition — every one of those previously
+    // showed up as nothing at all in either the browser console/network tabs
+    // (this runs server-side, during SSR) or this terminal. Logged here, not
+    // in the axios interceptor, so it carries the actual request path.
+    //
+    // Only a missing status (the request never got an HTTP response at all —
+    // connection refused, timeout, DNS) or a 5xx counts as worth surfacing.
+    // Every 4xx is an ordinary application response `requireAuth` callers
+    // already expect on every single guest page load (a guest has SOME
+    // cookie — locale/theme/guest-id — so `authHeaders()` still sends a
+    // Cookie header, and the backend correctly 401s `/users/me` etc. for
+    // them) or a deliberate "not found" (e.g. getVacancyBySlugFromServer) —
+    // logging those would fire on nearly every request and both drown out
+    // the real signal and trip Next.js dev overlay's console.error capture.
+    const status = error instanceof ApiRequestError ? error.status : undefined;
+    if (status === undefined || status >= 500) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`[fetchFromServer] GET ${path} failed${status ? ` (${status})` : ""}: ${message}`);
+    }
     return options.fallback;
   }
 }
 
-export async function getCurrentUserFromServer(): Promise<User | null> {
+export const getCurrentUserFromServer = cache(async (): Promise<User | null> => {
   return fetchFromServer<{ user: User }, User | null>("/users/me", {
     fallback: null,
     extract: (data) => data.user,
     requireAuth: true,
   });
-}
+});
 
 // Backs the account-page newsletter toggle's initial render — "NOT_SUBSCRIBED"
 // fallback matches what the endpoint itself returns for an account whose
 // email has no NewsletterSubscriber row (see newsletter.service.ts's
 // getMyStatus), so a fetch failure degrades to the same state as "never
 // subscribed" rather than a distinct error state.
-export async function getMyNewsletterStatusFromServer(): Promise<MyNewsletterStatus> {
+export const getMyNewsletterStatusFromServer = cache(async (): Promise<MyNewsletterStatus> => {
   return fetchFromServer<{ status: MyNewsletterStatus }, MyNewsletterStatus>("/newsletter/my-status", {
     fallback: "NOT_SUBSCRIBED",
     extract: (data) => data.status,
     requireAuth: true,
   });
-}
+});
 
-export async function getOAuthStatusFromServer(): Promise<{ google: boolean; facebook: boolean }> {
+export const getOAuthStatusFromServer = cache(async (): Promise<{ google: boolean; facebook: boolean }> => {
   // Public endpoint (the login/register pages read this for every guest) —
   // lets OAuthButtons hide a provider's button instead of showing one
   // that's guaranteed to fail. Fails closed: a failed fetch hides both
@@ -118,9 +141,9 @@ export async function getOAuthStatusFromServer(): Promise<{ google: boolean; fac
     "/auth/oauth-status",
     { fallback: { google: false, facebook: false }, extract: (data) => data },
   );
-}
+});
 
-export async function getCategoriesFromServer(): Promise<Category[]> {
+export const getCategoriesFromServer = cache(async (): Promise<Category[]> => {
   // Public endpoint (guest storefront navigation reads this too) — unlike
   // the admin-only getXFromServer helpers below, this must not bail out just
   // because there's no admin session cookie.
@@ -128,7 +151,7 @@ export async function getCategoriesFromServer(): Promise<Category[]> {
     fallback: [],
     extract: (data) => data.categories,
   });
-}
+});
 
 const SETTINGS_FALLBACK: Settings = {
   useCloudStorage: false,
@@ -181,30 +204,29 @@ const SETTINGS_FALLBACK: Settings = {
   homepageCacheTtlMinutes: 5,
 };
 
-export async function getSettingsFromServer(): Promise<Settings> {
+export const getSettingsFromServer = cache(async (): Promise<Settings> => {
   return fetchFromServer<{ settings: Settings }, Settings>("/settings", {
     fallback: SETTINGS_FALLBACK,
     extract: (data) => data.settings,
     requireAuth: true,
   });
-}
+});
 
-export async function getVinDecodeStatusFromServer(): Promise<{
-  enabled: boolean;
-  provider: VinDecodeProvider;
-}> {
-  return fetchFromServer<
-    { enabled: boolean; provider: VinDecodeProvider },
-    { enabled: boolean; provider: VinDecodeProvider }
-  >("/settings/vin-decode-status", {
-    fallback: { enabled: false, provider: "nhtsa" },
-    extract: (data) => data,
-  });
-}
+export const getVinDecodeStatusFromServer = cache(
+  async (): Promise<{ enabled: boolean; provider: VinDecodeProvider }> => {
+    return fetchFromServer<
+      { enabled: boolean; provider: VinDecodeProvider },
+      { enabled: boolean; provider: VinDecodeProvider }
+    >("/settings/vin-decode-status", {
+      fallback: { enabled: false, provider: "nhtsa" },
+      extract: (data) => data,
+    });
+  },
+);
 
 export type GuestFeatureStatus = { guestWishlistEnabled: boolean; guestCartEnabled: boolean };
 
-export async function getGuestFeatureStatusFromServer(): Promise<GuestFeatureStatus> {
+export const getGuestFeatureStatusFromServer = cache(async (): Promise<GuestFeatureStatus> => {
   return fetchFromServer<GuestFeatureStatus, GuestFeatureStatus>("/settings/guest-feature-status", {
     // Fails closed: if this lookup itself fails, WishlistButton/
     // AddToCartButton just fall back to always attempting their status
@@ -212,16 +234,16 @@ export async function getGuestFeatureStatusFromServer(): Promise<GuestFeatureSta
     fallback: { guestWishlistEnabled: false, guestCartEnabled: false },
     extract: (data) => data,
   });
-}
+});
 
-export async function getUsersFromServer(): Promise<AdminUsersPage> {
+export const getUsersFromServer = cache(async (): Promise<AdminUsersPage> => {
   return fetchFromServer<AdminUsersPage, AdminUsersPage>("/users", {
     params: { page: 1, pageSize: 20 },
     fallback: { users: [], total: 0, page: 1, pageSize: 20 },
     extract: (data) => data,
     requireAuth: true,
   });
-}
+});
 
 const WEEK_DAYS: WeekDay[] = [
   "MONDAY",
@@ -262,14 +284,14 @@ const COMPANY_INFO_FALLBACK: CompanyInfo = {
 // load too) — unlike the admin-only getXFromServer helpers, this must not
 // bail out just because there's no admin session cookie (see
 // getCategoriesFromServer's identical reasoning above).
-export async function getCompanyInfoFromServer(): Promise<CompanyInfo> {
+export const getCompanyInfoFromServer = cache(async (): Promise<CompanyInfo> => {
   return fetchFromServer<{ companyInfo: CompanyInfo }, CompanyInfo>("/company-info", {
     fallback: COMPANY_INFO_FALLBACK,
     extract: (data) => data.companyInfo,
   });
-}
+});
 
-export async function getTermsFromServer(): Promise<Terms> {
+export const getTermsFromServer = cache(async (): Promise<Terms> => {
   // Public endpoint (the guest /terms page reads this) — must not bail out
   // just because there's no admin session cookie, same fix as
   // getCategoriesFromServer.
@@ -277,9 +299,9 @@ export async function getTermsFromServer(): Promise<Terms> {
     fallback: { id: 0, content: { ka: "", en: "", ru: "" }, updatedAt: new Date(0).toISOString() },
     extract: (data) => data.terms,
   });
-}
+});
 
-export async function getPrivacyPolicyFromServer(): Promise<PrivacyPolicy> {
+export const getPrivacyPolicyFromServer = cache(async (): Promise<PrivacyPolicy> => {
   // Public endpoint (the guest /privacy page reads this) — must not bail out
   // just because there's no admin session cookie, same fix as
   // getCategoriesFromServer.
@@ -287,127 +309,127 @@ export async function getPrivacyPolicyFromServer(): Promise<PrivacyPolicy> {
     fallback: { id: 0, content: { ka: "", en: "", ru: "" }, updatedAt: new Date(0).toISOString() },
     extract: (data) => data.privacyPolicy,
   });
-}
+});
 
 // Public endpoint (the guest /faq page reads this) — must not bail out just
 // because there's no admin session cookie, same fix as getCategoriesFromServer.
-export async function getFaqListFromServer(): Promise<Faq[]> {
+export const getFaqListFromServer = cache(async (): Promise<Faq[]> => {
   return fetchFromServer<{ items: Faq[] }, Faq[]>("/faq/public", {
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
 // Admin — every FAQ entry, including inactive ones (see the admin FAQ
 // manager). Distinct from getFaqListFromServer's public/active-only list,
 // same split as getBanksFromServer vs getPublicBanksFromServer.
-export async function getAllFaqsFromServer(): Promise<Faq[]> {
+export const getAllFaqsFromServer = cache(async (): Promise<Faq[]> => {
   return fetchFromServer<{ items: Faq[] }, Faq[]>("/faq", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
 // Public endpoint (the guest /vacancies page reads this) — must not bail
 // out just because there's no admin session cookie, same fix as
 // getCategoriesFromServer.
-export async function getVacancyListFromServer(): Promise<Vacancy[]> {
+export const getVacancyListFromServer = cache(async (): Promise<Vacancy[]> => {
   return fetchFromServer<{ items: Vacancy[] }, Vacancy[]>("/vacancies/public", {
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
 // Public endpoint (the guest /vacancies/[slug] detail page) — an inactive or
 // missing vacancy both 404, which fetchFromServer's catch collapses to this
 // same `null` fallback, so the page can call notFound() either way.
-export async function getVacancyBySlugFromServer(slug: string): Promise<Vacancy | null> {
+export const getVacancyBySlugFromServer = cache(async (slug: string): Promise<Vacancy | null> => {
   return fetchFromServer<{ item: Vacancy }, Vacancy | null>(`/vacancies/by-slug/${slug}`, {
     fallback: null,
     extract: (data) => data.item,
   });
-}
+});
 
 // Admin — every vacancy, including inactive ones (see the admin vacancies
 // manager). Distinct from getVacancyListFromServer's public/active-only
 // list, same split as getFaqListFromServer vs getAllFaqsFromServer.
-export async function getAllVacanciesFromServer(): Promise<Vacancy[]> {
+export const getAllVacanciesFromServer = cache(async (): Promise<Vacancy[]> => {
   return fetchFromServer<{ items: Vacancy[] }, Vacancy[]>("/vacancies", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
-export async function getEmailTemplatesFromServer(): Promise<EmailTemplate[]> {
+export const getEmailTemplatesFromServer = cache(async (): Promise<EmailTemplate[]> => {
   return fetchFromServer<{ items: EmailTemplate[] }, EmailTemplate[]>("/email-templates", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
-export async function getOrderStatusesFromServer(): Promise<OrderStatusItem[]> {
+export const getOrderStatusesFromServer = cache(async (): Promise<OrderStatusItem[]> => {
   // Public endpoint (same reasoning as getCategoriesFromServer) — ordered
   // by sortOrder server-side, so callers don't need to re-sort.
   return fetchFromServer<{ items: OrderStatusItem[] }, OrderStatusItem[]>("/order-statuses", {
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
-export async function getFinaSyncRunsFromServer(): Promise<FinaSyncRun[]> {
+export const getFinaSyncRunsFromServer = cache(async (): Promise<FinaSyncRun[]> => {
   return fetchFromServer<{ runs: FinaSyncRun[] }, FinaSyncRun[]>("/fina-sync/runs", {
     fallback: [],
     extract: (data) => data.runs,
     requireAuth: true,
   });
-}
+});
 
-export async function getScheduledJobsFromServer(): Promise<ScheduledJobDefinition[]> {
+export const getScheduledJobsFromServer = cache(async (): Promise<ScheduledJobDefinition[]> => {
   return fetchFromServer<{ jobs: ScheduledJobDefinition[] }, ScheduledJobDefinition[]>("/scheduled-jobs", {
     fallback: [],
     extract: (data) => data.jobs,
     requireAuth: true,
   });
-}
+});
 
-export async function getScheduledJobRunsFromServer(): Promise<ScheduledJobRunsPage> {
+export const getScheduledJobRunsFromServer = cache(async (): Promise<ScheduledJobRunsPage> => {
   return fetchFromServer<ScheduledJobRunsPage, ScheduledJobRunsPage>("/scheduled-jobs/runs", {
     params: { page: 1, pageSize: 20 },
     fallback: { runs: [], total: 0, page: 1, pageSize: 20 },
     extract: (data) => data,
     requireAuth: true,
   });
-}
+});
 
-export async function getErrorLogsFromServer(): Promise<ErrorLogsPage> {
+export const getErrorLogsFromServer = cache(async (): Promise<ErrorLogsPage> => {
   return fetchFromServer<ErrorLogsPage, ErrorLogsPage>("/error-logs", {
     params: { page: 1, pageSize: 25 },
     fallback: { logs: [], total: 0, page: 1, pageSize: 25 },
     extract: (data) => data,
     requireAuth: true,
   });
-}
+});
 
-export async function getBrandsFromServer(): Promise<Brand[]> {
+export const getBrandsFromServer = cache(async (): Promise<Brand[]> => {
   return fetchFromServer<{ brands: Brand[] }, Brand[]>("/brands", {
     fallback: [],
     extract: (data) => data.brands,
     requireAuth: true,
   });
-}
+});
 
-export async function getModelsFromServer(): Promise<Model[]> {
+export const getModelsFromServer = cache(async (): Promise<Model[]> => {
   return fetchFromServer<{ models: Model[] }, Model[]>("/models", {
     fallback: [],
     extract: (data) => data.models,
     requireAuth: true,
   });
-}
+});
 
-export async function getLookupItemsFromServer(type: LookupTypeSlug): Promise<LookupItem[]> {
+export const getLookupItemsFromServer = cache(async (type: LookupTypeSlug): Promise<LookupItem[]> => {
   // Public endpoint (guest-facing forms, e.g. the address form's city
   // dropdown, read this too) — must not bail out just because there's no
   // admin session cookie, same fix as getCategoriesFromServer.
@@ -415,9 +437,9 @@ export async function getLookupItemsFromServer(type: LookupTypeSlug): Promise<Lo
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
-export async function getVehicleCatalogFromServer(): Promise<VehicleCatalogEntry[]> {
+export const getVehicleCatalogFromServer = cache(async (): Promise<VehicleCatalogEntry[]> => {
   // Public endpoint (garage "pick from catalog" flow reads this too) — must
   // not bail out just because there's no admin session cookie, same fix as
   // getCategoriesFromServer.
@@ -425,26 +447,26 @@ export async function getVehicleCatalogFromServer(): Promise<VehicleCatalogEntry
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
 // Paginated variant for the admin catalog list screen's initial load —
 // distinct from getVehicleCatalogFromServer above, which every other page
 // (fitment pickers, garage, homepage, ...) still uses to fetch every row.
-export async function getVehicleCatalogPageFromServer(
+export const getVehicleCatalogPageFromServer = cache(async (
   page = 1,
   pageSize = 20,
-): Promise<VehicleCatalogPage> {
+): Promise<VehicleCatalogPage> => {
   return fetchFromServer<VehicleCatalogPage, VehicleCatalogPage>("/vehicle-catalog", {
     params: { page, pageSize },
     fallback: { items: [], total: 0, page, pageSize },
     extract: (data) => data,
     requireAuth: true,
   });
-}
+});
 
-export async function getVehicleCatalogEntryFromServer(
+export const getVehicleCatalogEntryFromServer = cache(async (
   id: number,
-): Promise<VehicleCatalogEntry | null> {
+): Promise<VehicleCatalogEntry | null> => {
   // Public endpoint (the garage's "compatible products" page reads this by
   // id) — must not bail out just because there's no admin session cookie,
   // same fix as getCategoriesFromServer.
@@ -452,12 +474,12 @@ export async function getVehicleCatalogEntryFromServer(
     `/vehicle-catalog/${id}`,
     { fallback: null, extract: (data) => data.item },
   );
-}
+});
 
-export async function getVehicleListingsFromServer(
+export const getVehicleListingsFromServer = cache(async (
   categoryId?: number,
   bulkDiscountEventId?: number,
-): Promise<VehicleListing[]> {
+): Promise<VehicleListing[]> => {
   // Public endpoint (guest shop page reads this too) — must not bail out just
   // because there's no admin session cookie, same fix as getCategoriesFromServer.
   return fetchFromServer<{ items: VehicleListing[] }, VehicleListing[]>("/vehicle-listings", {
@@ -465,7 +487,7 @@ export async function getVehicleListingsFromServer(
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
 export type AdminListPage<T> = { items: T[]; total: number; page: number; pageSize: number };
 
@@ -475,12 +497,12 @@ export type AdminListPage<T> = { items: T[]; total: number; page: number; pageSi
 // server-side pagination/sorting instead of an unbounded fetch).
 // VehicleShopPage.tsx re-fetches subsequent pages/sorts itself via
 // listVehicleListingsPage.
-export async function getVehicleListingsPageFromServer(
+export const getVehicleListingsPageFromServer = cache(async (
   categoryId: number,
   page: number,
   sortBy: "newest" | "year-desc" | "price-asc" | "price-desc",
   bulkDiscountEventId?: number,
-): Promise<AdminListPage<VehicleListing>> {
+): Promise<AdminListPage<VehicleListing>> => {
   return fetchFromServer<AdminListPage<VehicleListing>, AdminListPage<VehicleListing>>(
     "/vehicle-listings",
     {
@@ -489,7 +511,7 @@ export async function getVehicleListingsPageFromServer(
       extract: (data) => data,
     },
   );
-}
+});
 
 const ADMIN_LIST_INITIAL_PAGE_SIZE = 20;
 const EMPTY_ADMIN_LIST_PAGE = { items: [], total: 0, page: 1, pageSize: ADMIN_LIST_INITIAL_PAGE_SIZE };
@@ -499,7 +521,7 @@ const EMPTY_ADMIN_LIST_PAGE = { items: [], total: 0, page: 1, pageSize: ADMIN_LI
 // `adminFilters=[]`, not an omitted param, is what gets the backend's lean
 // admin-list projection from the very first render. Fetches only page 1 —
 // VehicleListingsManager.tsx re-fetches subsequent pages itself.
-export async function getAdminVehicleListingsFromServer(): Promise<AdminListPage<VehicleListing>> {
+export const getAdminVehicleListingsFromServer = cache(async (): Promise<AdminListPage<VehicleListing>> => {
   return fetchFromServer<AdminListPage<VehicleListing>, AdminListPage<VehicleListing>>(
     "/vehicle-listings",
     {
@@ -509,46 +531,46 @@ export async function getAdminVehicleListingsFromServer(): Promise<AdminListPage
       requireAuth: true,
     },
   );
-}
+});
 
-export async function getVehicleListingFromServer(id: number): Promise<VehicleListing | null> {
+export const getVehicleListingFromServer = cache(async (id: number): Promise<VehicleListing | null> => {
   // Public endpoint (guest vehicle detail page) — must not bail out just
   // because there's no admin session cookie, same fix as getCategoriesFromServer.
   return fetchFromServer<{ item: VehicleListing }, VehicleListing | null>(
     `/vehicle-listings/${id}`,
     { fallback: null, extract: (data) => data.item },
   );
-}
+});
 
 // Homepage "discounted vehicles" slider.
-export async function getOnSaleVehicleListingsFromServer(limit: number): Promise<VehicleListing[]> {
+export const getOnSaleVehicleListingsFromServer = cache(async (limit: number): Promise<VehicleListing[]> => {
   return fetchFromServer<{ items: VehicleListing[] }, VehicleListing[]>("/vehicle-listings", {
     params: { onSale: true, limit },
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
 // Homepage "New Arrivals" mixed slider (FEATURED_MIXED) — a plain
 // admin-curated flag, not a discount/popularity computation.
-export async function getFeaturedVehicleListingsFromServer(limit: number): Promise<VehicleListing[]> {
+export const getFeaturedVehicleListingsFromServer = cache(async (limit: number): Promise<VehicleListing[]> => {
   return fetchFromServer<{ items: VehicleListing[] }, VehicleListing[]>("/vehicle-listings", {
     params: { featured: true, limit },
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
 // Homepage "popular vehicles" slider.
-export async function getPopularVehicleListingsFromServer(limit: number): Promise<VehicleListing[]> {
+export const getPopularVehicleListingsFromServer = cache(async (limit: number): Promise<VehicleListing[]> => {
   return fetchFromServer<{ items: VehicleListing[] }, VehicleListing[]>("/vehicle-listings/popular", {
     params: { limit },
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
-export async function getCategoryFiltersFromServer(categoryId: number): Promise<CategoryFilter[]> {
+export const getCategoryFiltersFromServer = cache(async (categoryId: number): Promise<CategoryFilter[]> => {
   // Public endpoint (guest shop filter sidebar reads this too) — must not
   // bail out just because there's no admin session cookie, same fix as
   // getCategoriesFromServer.
@@ -557,11 +579,11 @@ export async function getCategoryFiltersFromServer(categoryId: number): Promise<
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
-export async function getVehicleCategoryFiltersFromServer(
+export const getVehicleCategoryFiltersFromServer = cache(async (
   categoryId: number,
-): Promise<VehicleCategoryFilter[]> {
+): Promise<VehicleCategoryFilter[]> => {
   // Public endpoint (guest shop filter sidebar reads this too) — must not
   // bail out just because there's no admin session cookie, same fix as
   // getCategoriesFromServer.
@@ -569,107 +591,107 @@ export async function getVehicleCategoryFiltersFromServer(
     "/vehicle-category-filters",
     { params: { categoryId }, fallback: [], extract: (data) => data.items },
   );
-}
+});
 
-export async function getMyAddressesFromServer(): Promise<Address[]> {
+export const getMyAddressesFromServer = cache(async (): Promise<Address[]> => {
   return fetchFromServer<{ addresses: Address[] }, Address[]>("/users/me/addresses", {
     fallback: [],
     extract: (data) => data.addresses,
     requireAuth: true,
   });
-}
+});
 
-export async function getMyGarageFromServer(): Promise<GarageVehicle[]> {
+export const getMyGarageFromServer = cache(async (): Promise<GarageVehicle[]> => {
   return fetchFromServer<{ items: GarageVehicle[] }, GarageVehicle[]>("/users/me/garage", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
-export async function getMyWishlistFromServer(): Promise<WishlistItem[]> {
+export const getMyWishlistFromServer = cache(async (): Promise<WishlistItem[]> => {
   return fetchFromServer<{ items: WishlistItem[] }, WishlistItem[]>("/users/me/wishlist", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
 // Lightweight — just the header badge count, not the full wishlist with
 // every nested product/vehicle detail. Same reasoning as
 // getMyCartCountFromServer.
-export async function getMyWishlistCountFromServer(): Promise<number> {
+export const getMyWishlistCountFromServer = cache(async (): Promise<number> => {
   return fetchFromServer<{ count: number }, number>("/users/me/wishlist/count", {
     fallback: 0,
     extract: (data) => data.count,
     requireAuth: true,
   });
-}
+});
 
-export async function getMyCompareFromServer(): Promise<CompareItem[]> {
+export const getMyCompareFromServer = cache(async (): Promise<CompareItem[]> => {
   return fetchFromServer<{ items: CompareItem[] }, CompareItem[]>("/users/me/compare", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
 // Lightweight — just the header badge count, not the full comparison list
 // with every nested product/vehicle detail. Same reasoning as
 // getMyCartCountFromServer.
-export async function getMyCompareCountFromServer(): Promise<number> {
+export const getMyCompareCountFromServer = cache(async (): Promise<number> => {
   return fetchFromServer<{ count: number }, number>("/users/me/compare/count", {
     fallback: 0,
     extract: (data) => data.count,
     requireAuth: true,
   });
-}
+});
 
 const EMPTY_CART: Cart = { items: [], subtotal: 0, itemCount: 0 };
 
-export async function getMyCartFromServer(): Promise<Cart> {
+export const getMyCartFromServer = cache(async (): Promise<Cart> => {
   return fetchFromServer<Cart, Cart>("/users/me/cart", {
     fallback: EMPTY_CART,
     extract: (data) => data,
     requireAuth: true,
   });
-}
+});
 
 // Lightweight — just the header badge count, not the full cart with every
 // nested product/vehicle detail. Safe to call on every page load (see
 // (guest)/layout.tsx), unlike getMyCartFromServer.
-export async function getMyCartCountFromServer(): Promise<number> {
+export const getMyCartCountFromServer = cache(async (): Promise<number> => {
   return fetchFromServer<{ count: number }, number>("/users/me/cart/count", {
     fallback: 0,
     extract: (data) => data.count,
     requireAuth: true,
   });
-}
+});
 
-export async function getMyOrdersFromServer(): Promise<OrderSummary[]> {
+export const getMyOrdersFromServer = cache(async (): Promise<OrderSummary[]> => {
   return fetchFromServer<{ orders: OrderSummary[] }, OrderSummary[]>("/orders/me", {
     fallback: [],
     extract: (data) => data.orders,
     requireAuth: true,
   });
-}
+});
 
-export async function getMyOrderFromServer(id: number): Promise<Order | null> {
+export const getMyOrderFromServer = cache(async (id: number): Promise<Order | null> => {
   return fetchFromServer<{ order: Order }, Order | null>(`/orders/me/${id}`, {
     fallback: null,
     extract: (data) => data.order,
     requireAuth: true,
   });
-}
+});
 
-export async function getOrdersFromServer(): Promise<AdminOrdersPage> {
+export const getOrdersFromServer = cache(async (): Promise<AdminOrdersPage> => {
   return fetchFromServer<AdminOrdersPage, AdminOrdersPage>("/orders", {
     params: { page: 1, pageSize: 20 },
     fallback: { orders: [], total: 0, page: 1, pageSize: 20 },
     extract: (data) => data,
     requireAuth: true,
   });
-}
+});
 
 const EMPTY_DASHBOARD_STATS: DashboardStats = {
   counts: {
@@ -686,13 +708,13 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
   lowStockItems: [],
 };
 
-export async function getDashboardStatsFromServer(): Promise<DashboardStats> {
+export const getDashboardStatsFromServer = cache(async (): Promise<DashboardStats> => {
   return fetchFromServer<DashboardStats, DashboardStats>("/dashboard/stats", {
     fallback: EMPTY_DASHBOARD_STATS,
     extract: (data) => data,
     requireAuth: true,
   });
-}
+});
 
 const EMPTY_ANALYTICS_OVERVIEW: AnalyticsOverview = {
   range: { from: "", to: "" },
@@ -704,61 +726,61 @@ const EMPTY_ANALYTICS_OVERVIEW: AnalyticsOverview = {
   cancellations: { reasonBreakdown: [], recentOrders: [] },
 };
 
-export async function getAnalyticsFromServer(filters: AnalyticsFilters = {}): Promise<AnalyticsOverview> {
+export const getAnalyticsFromServer = cache(async (filters: AnalyticsFilters = {}): Promise<AnalyticsOverview> => {
   return fetchFromServer<AnalyticsOverview, AnalyticsOverview>("/analytics/overview", {
     params: { dateFrom: filters.dateFrom || undefined, dateTo: filters.dateTo || undefined },
     fallback: EMPTY_ANALYTICS_OVERVIEW,
     extract: (data) => data,
     requireAuth: true,
   });
-}
+});
 
-export async function getCompatibilityFromServer(): Promise<CompatibilityPage> {
+export const getCompatibilityFromServer = cache(async (): Promise<CompatibilityPage> => {
   return fetchFromServer<CompatibilityPage, CompatibilityPage>("/compatibility", {
     params: { page: 1, pageSize: 20 },
     fallback: { items: [], total: 0, page: 1, pageSize: 20 },
     extract: (data) => data,
     requireAuth: true,
   });
-}
+});
 
-export async function getProductBuyTogetherFromServer(): Promise<ProductBuyTogetherPage> {
+export const getProductBuyTogetherFromServer = cache(async (): Promise<ProductBuyTogetherPage> => {
   return fetchFromServer<ProductBuyTogetherPage, ProductBuyTogetherPage>("/product-buy-together", {
     params: { page: 1, pageSize: 20 },
     fallback: { items: [], total: 0, page: 1, pageSize: 20 },
     extract: (data) => data,
     requireAuth: true,
   });
-}
+});
 
-export async function getAttributesFromServer(): Promise<Attribute[]> {
+export const getAttributesFromServer = cache(async (): Promise<Attribute[]> => {
   return fetchFromServer<{ items: Attribute[] }, Attribute[]>("/attributes", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
-export async function getProductBrandsFromServer(): Promise<ProductBrand[]> {
+export const getProductBrandsFromServer = cache(async (): Promise<ProductBrand[]> => {
   return fetchFromServer<{ items: ProductBrand[] }, ProductBrand[]>("/product-brands", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
-export async function getUnitsFromServer(): Promise<Unit[]> {
+export const getUnitsFromServer = cache(async (): Promise<Unit[]> => {
   return fetchFromServer<{ items: Unit[] }, Unit[]>("/units", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
-export async function getProductsFromServer(
+export const getProductsFromServer = cache(async (
   categoryId?: number,
   vehicleCatalogId?: number,
-): Promise<Product[]> {
+): Promise<Product[]> => {
   // Public endpoint (guest shop page reads this too) — must not bail out just
   // because there's no admin session cookie, same fix as getCategoriesFromServer.
   return fetchFromServer<{ items: Product[] }, Product[]>("/products", {
@@ -766,7 +788,7 @@ export async function getProductsFromServer(
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
 const SHOP_PAGE_SIZE = 20;
 
@@ -778,18 +800,18 @@ const SHOP_PAGE_SIZE = 20;
 // whole category's catalog to the browser to sort/paginate itself.
 // ProductShopPage.tsx re-fetches subsequent pages/sorts itself via
 // listProductsPage.
-export async function getProductsPageFromServer(
+export const getProductsPageFromServer = cache(async (
   categoryId: number,
   page: number,
   sortBy: "newest" | "price-asc" | "price-desc",
   vehicleCatalogId?: number,
-): Promise<AdminListPage<Product>> {
+): Promise<AdminListPage<Product>> => {
   return fetchFromServer<AdminListPage<Product>, AdminListPage<Product>>("/products", {
     params: { categoryId, vehicleCatalogId, page, pageSize: SHOP_PAGE_SIZE, sortBy },
     fallback: { items: [], total: 0, page: 1, pageSize: SHOP_PAGE_SIZE },
     extract: (data) => data,
   });
-}
+});
 
 // Admin products list's initial (server-rendered) load specifically —
 // unlike getProductsFromServer above (shared with the storefront/sitemap/
@@ -800,47 +822,47 @@ export async function getProductsPageFromServer(
 // products.service.ts's listProducts and lib/api/products.ts's listProducts
 // for why an explicit `[]`, not an omitted param, is what signals this).
 // Fetches only page 1 — ProductsManager.tsx re-fetches subsequent pages.
-export async function getAdminProductsFromServer(): Promise<AdminListPage<Product>> {
+export const getAdminProductsFromServer = cache(async (): Promise<AdminListPage<Product>> => {
   return fetchFromServer<AdminListPage<Product>, AdminListPage<Product>>("/products", {
     params: { adminFilters: "[]", page: 1, pageSize: ADMIN_LIST_INITIAL_PAGE_SIZE },
     fallback: EMPTY_ADMIN_LIST_PAGE,
     extract: (data) => data,
     requireAuth: true,
   });
-}
+});
 
 // Homepage "discounted products" slider.
-export async function getOnSaleProductsFromServer(limit: number): Promise<Product[]> {
+export const getOnSaleProductsFromServer = cache(async (limit: number): Promise<Product[]> => {
   return fetchFromServer<{ items: Product[] }, Product[]>("/products", {
     params: { onSale: true, limit },
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
 // Homepage "New Arrivals" mixed slider (FEATURED_MIXED) — a plain
 // admin-curated flag, not a discount/popularity computation.
-export async function getFeaturedProductsFromServer(limit: number): Promise<Product[]> {
+export const getFeaturedProductsFromServer = cache(async (limit: number): Promise<Product[]> => {
   return fetchFromServer<{ items: Product[] }, Product[]>("/products", {
     params: { featured: true, limit },
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
 // Homepage "popular products" slider.
-export async function getPopularProductsFromServer(limit: number): Promise<Product[]> {
+export const getPopularProductsFromServer = cache(async (limit: number): Promise<Product[]> => {
   return fetchFromServer<{ items: Product[] }, Product[]>("/products/popular", {
     params: { limit },
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
-export async function getProductDetailFromServer(
+export const getProductDetailFromServer = cache(async (
   slug: string,
   vehicleCatalogId?: string,
-): Promise<ProductDetail | null> {
+): Promise<ProductDetail | null> => {
   // Public endpoint (guest product view page) — must not bail out just
   // because there's no admin session cookie, same fix as getCategoriesFromServer.
   return fetchFromServer<{ item: ProductDetail }, ProductDetail | null>(`/products/by-slug/${slug}`, {
@@ -848,16 +870,16 @@ export async function getProductDetailFromServer(
     fallback: null,
     extract: (data) => data.item,
   });
-}
+});
 
 // Product detail page's "similar products" section — replaces the old
 // naive "everything else in the same category" slice with the algorithmic,
 // fitment-overlap-ranked list (see recommendations.service.ts).
-export async function getSimilarProductsFromServer(
+export const getSimilarProductsFromServer = cache(async (
   productId: number,
   vehicleCatalogId?: string,
   limit?: number,
-): Promise<Product[]> {
+): Promise<Product[]> => {
   return fetchFromServer<{ items: Product[] }, Product[]>(
     `/products/${productId}/recommendations/similar`,
     {
@@ -866,16 +888,16 @@ export async function getSimilarProductsFromServer(
       extract: (data) => data.items,
     },
   );
-}
+});
 
 // Product detail page's algorithmic "frequently bought together" — a
 // fallback shown when the admin hasn't curated a buyTogether list for this
 // product (see FrequentlyBoughtTogether.tsx).
-export async function getFrequentlyBoughtTogetherFromServer(
+export const getFrequentlyBoughtTogetherFromServer = cache(async (
   productId: number,
   vehicleCatalogId?: string,
   limit?: number,
-): Promise<Product[]> {
+): Promise<Product[]> => {
   return fetchFromServer<{ items: Product[] }, Product[]>(
     `/products/${productId}/recommendations/frequently-bought-together`,
     {
@@ -884,15 +906,15 @@ export async function getFrequentlyBoughtTogetherFromServer(
       extract: (data) => data.items,
     },
   );
-}
+});
 
 // Product detail page's algorithmic "customers who viewed this also
 // viewed" — view-based co-occurrence, independent of buyTogether/FBT.
-export async function getViewedTogetherFromServer(
+export const getViewedTogetherFromServer = cache(async (
   productId: number,
   vehicleCatalogId?: string,
   limit?: number,
-): Promise<Product[]> {
+): Promise<Product[]> => {
   return fetchFromServer<{ items: Product[] }, Product[]>(
     `/products/${productId}/recommendations/viewed-together`,
     {
@@ -901,58 +923,58 @@ export async function getViewedTogetherFromServer(
       extract: (data) => data.items,
     },
   );
-}
+});
 
 // Homepage "recently viewed" section (RECENTLY_VIEWED) — works for guests
 // too (the backend always resolves an owner, minting a guest-id cookie if
 // needed), unlike getRecommendedForMeFromServer's auth-only gate.
-export async function getRecentlyViewedFromServer(limit?: number): Promise<Product[]> {
+export const getRecentlyViewedFromServer = cache(async (limit?: number): Promise<Product[]> => {
   return fetchFromServer<{ items: Product[] }, Product[]>("/users/me/recently-viewed", {
     params: { limit },
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
 // Homepage "popular for your vehicle" section (POPULAR_FOR_VEHICLE) — the
 // caller skips this entirely when there's no SELECTED_VEHICLE_COOKIE, same
 // as it does for getProductDetailFromServer's vehicleCatalogId.
-export async function getPopularForVehicleFromServer(
+export const getPopularForVehicleFromServer = cache(async (
   vehicleCatalogId: string,
   limit?: number,
-): Promise<Product[]> {
+): Promise<Product[]> => {
   return fetchFromServer<{ items: Product[] }, Product[]>("/recommendations/popular-for-vehicle", {
     params: { vehicleCatalogId, limit },
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
 // Homepage "recommended for you" section (RECOMMENDED_FOR_YOU) — auth-gated
 // like getMyGarageFromServer; guests never even reach the API call.
-export async function getRecommendedForMeFromServer(limit?: number): Promise<Product[]> {
+export const getRecommendedForMeFromServer = cache(async (limit?: number): Promise<Product[]> => {
   return fetchFromServer<{ items: Product[] }, Product[]>("/recommendations/for-me", {
     params: { limit },
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
-export async function getProductFromServer(id: number): Promise<Product | null> {
+export const getProductFromServer = cache(async (id: number): Promise<Product | null> => {
   return fetchFromServer<{ item: Product }, Product | null>(`/products/${id}`, {
     fallback: null,
     extract: (data) => data.item,
     requireAuth: true,
   });
-}
+});
 
-export async function getShopProductsFromServer(filters: {
+export const getShopProductsFromServer = cache(async (filters: {
   categoryId?: number;
   brandIds?: number[];
   onSale?: boolean;
   bulkDiscountEventId?: number;
-}): Promise<Product[]> {
+}): Promise<Product[]> => {
   // Public endpoint (the /shop page) — must not bail out just because there
   // is no admin session cookie, same fix as getCategoriesFromServer. Kept
   // unbounded — ShopAllProductsPage.tsx uses this only to derive its
@@ -969,18 +991,18 @@ export async function getShopProductsFromServer(filters: {
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
 // /shop page's initial (server-rendered) grid load specifically — real
 // server-side pagination/sorting (see products.service.ts's listProducts),
 // unlike getShopProductsFromServer above. ShopAllProductsPage.tsx re-fetches
 // subsequent pages/filters/sorts itself via listProductsPage.
-export async function getShopProductsPageFromServer(filters: {
+export const getShopProductsPageFromServer = cache(async (filters: {
   categoryId?: number;
   brandIds?: number[];
   onSale?: boolean;
   bulkDiscountEventId?: number;
-}): Promise<AdminListPage<Product>> {
+}): Promise<AdminListPage<Product>> => {
   return fetchFromServer<AdminListPage<Product>, AdminListPage<Product>>("/products", {
     params: {
       categoryId: filters.categoryId,
@@ -994,66 +1016,66 @@ export async function getShopProductsPageFromServer(filters: {
     fallback: { items: [], total: 0, page: 1, pageSize: SHOP_PAGE_SIZE },
     extract: (data) => data,
   });
-}
+});
 
-export async function getHeroSlidesFromServer(): Promise<HeroSlide[]> {
+export const getHeroSlidesFromServer = cache(async (): Promise<HeroSlide[]> => {
   return fetchFromServer<{ items: HeroSlide[] }, HeroSlide[]>("/hero-slides", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
-export async function getPromoCodesFromServer(domain: PromoCodeDomain): Promise<PromoCode[]> {
+export const getPromoCodesFromServer = cache(async (domain: PromoCodeDomain): Promise<PromoCode[]> => {
   return fetchFromServer<{ items: PromoCode[] }, PromoCode[]>("/promo-codes", {
     params: { domain },
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
 // Public endpoint (the homepage hero) — must not bail out just because
 // there's no admin session cookie, same fix as getCategoriesFromServer.
-export async function getPublicHeroSlidesFromServer(): Promise<HeroSlide[]> {
+export const getPublicHeroSlidesFromServer = cache(async (): Promise<HeroSlide[]> => {
   return fetchFromServer<{ items: HeroSlide[] }, HeroSlide[]>("/hero-slides/public", {
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
-export async function getTeamMembersFromServer(): Promise<TeamMember[]> {
+export const getTeamMembersFromServer = cache(async (): Promise<TeamMember[]> => {
   return fetchFromServer<{ items: TeamMember[] }, TeamMember[]>("/team-members", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
 // Public endpoint (the /about page) — must not bail out just because
 // there's no admin session cookie, same fix as getCategoriesFromServer.
-export async function getPublicTeamMembersFromServer(): Promise<TeamMember[]> {
+export const getPublicTeamMembersFromServer = cache(async (): Promise<TeamMember[]> => {
   return fetchFromServer<{ items: TeamMember[] }, TeamMember[]>("/team-members/public", {
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
-export async function getBanksFromServer(): Promise<Bank[]> {
+export const getBanksFromServer = cache(async (): Promise<Bank[]> => {
   return fetchFromServer<{ items: Bank[] }, Bank[]>("/banks", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
-export async function getServiceTypesFromServer(): Promise<ServiceType[]> {
+export const getServiceTypesFromServer = cache(async (): Promise<ServiceType[]> => {
   return fetchFromServer<{ items: ServiceType[] }, ServiceType[]>("/service-types", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
 const EMPTY_SERVICE_RECORDS_ADMIN_PAGE: ServiceRecordsAdminPage = {
   items: [],
@@ -1065,51 +1087,51 @@ const EMPTY_SERVICE_RECORDS_ADMIN_PAGE: ServiceRecordsAdminPage = {
 // Workshop "სერვისის ისტორია" screen's admin-wide overview table's initial
 // (server-rendered) load — RecentServiceRecordsPanel.tsx re-fetches
 // subsequent pages/filters itself.
-export async function getServiceRecordsAdminFromServer(): Promise<ServiceRecordsAdminPage> {
+export const getServiceRecordsAdminFromServer = cache(async (): Promise<ServiceRecordsAdminPage> => {
   return fetchFromServer<ServiceRecordsAdminPage, ServiceRecordsAdminPage>("/service-records/admin", {
     params: { page: 1, pageSize: 20 },
     fallback: EMPTY_SERVICE_RECORDS_ADMIN_PAGE,
     extract: (data) => data,
     requireAuth: true,
   });
-}
+});
 
 // Public endpoint (the checkout page's bank picker) — must not bail out
 // just because there's no admin session cookie, same fix as
 // getPublicHeroSlidesFromServer.
-export async function getPublicBanksFromServer(): Promise<PublicBank[]> {
+export const getPublicBanksFromServer = cache(async (): Promise<PublicBank[]> => {
   return fetchFromServer<{ items: PublicBank[] }, PublicBank[]>("/banks/public", {
     fallback: [],
     extract: (data) => data.items,
   });
-}
+});
 
-export async function getHomepageSectionsFromServer(): Promise<HomepageSection[]> {
+export const getHomepageSectionsFromServer = cache(async (): Promise<HomepageSection[]> => {
   return fetchFromServer<{ items: HomepageSection[] }, HomepageSection[]>("/homepage-sections", {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,
   });
-}
+});
 
 // Public endpoint (the homepage reads this) — must not bail out just
 // because there's no admin session cookie, same fix as
 // getCategoriesFromServer.
-export async function getPublicHomepageSectionsFromServer(): Promise<HomepageSection[]> {
+export const getPublicHomepageSectionsFromServer = cache(async (): Promise<HomepageSection[]> => {
   return fetchFromServer<{ items: HomepageSection[] }, HomepageSection[]>(
     "/homepage-sections/public",
     { fallback: [], extract: (data) => data.items },
   );
-}
+});
 
-export async function getNewsletterCampaignsFromServer(): Promise<NewsletterCampaign[]> {
+export const getNewsletterCampaignsFromServer = cache(async (): Promise<NewsletterCampaign[]> => {
   return fetchFromServer<{ items: NewsletterCampaign[] }, NewsletterCampaign[]>(
     "/newsletter-campaigns",
     { fallback: [], extract: (data) => data.items, requireAuth: true },
   );
-}
+});
 
-export async function getNewsletterSubscribersFromServer(): Promise<PagedResult<NewsletterSubscriber>> {
+export const getNewsletterSubscribersFromServer = cache(async (): Promise<PagedResult<NewsletterSubscriber>> => {
   return fetchFromServer<PagedResult<NewsletterSubscriber>, PagedResult<NewsletterSubscriber>>(
     "/newsletter/subscribers",
     {
@@ -1119,9 +1141,9 @@ export async function getNewsletterSubscribersFromServer(): Promise<PagedResult<
       requireAuth: true,
     },
   );
-}
+});
 
-export async function getNewsletterSubscriberCountsFromServer(): Promise<NewsletterSubscriberCounts> {
+export const getNewsletterSubscriberCountsFromServer = cache(async (): Promise<NewsletterSubscriberCounts> => {
   return fetchFromServer<NewsletterSubscriberCounts, NewsletterSubscriberCounts>(
     "/newsletter/subscribers/counts",
     {
@@ -1130,9 +1152,9 @@ export async function getNewsletterSubscriberCountsFromServer(): Promise<Newslet
       requireAuth: true,
     },
   );
-}
+});
 
-export async function getSuspiciousLoginActivityFromServer(): Promise<SuspiciousLoginActivity> {
+export const getSuspiciousLoginActivityFromServer = cache(async (): Promise<SuspiciousLoginActivity> => {
   return fetchFromServer<SuspiciousLoginActivity, SuspiciousLoginActivity>(
     "/fraud/suspicious-logins",
     {
@@ -1141,21 +1163,21 @@ export async function getSuspiciousLoginActivityFromServer(): Promise<Suspicious
       requireAuth: true,
     },
   );
-}
+});
 
-export async function getSessionsFromServer(): Promise<PagedResult<Session>> {
+export const getSessionsFromServer = cache(async (): Promise<PagedResult<Session>> => {
   return fetchFromServer<PagedResult<Session>, PagedResult<Session>>("/sessions", {
     params: { page: 1, pageSize: 20 },
     fallback: { items: [], total: 0, page: 1, pageSize: 20 },
     extract: (data) => data,
     requireAuth: true,
   });
-}
+});
 
-export async function getVisitorOverviewFromServer(): Promise<VisitorOverview> {
+export const getVisitorOverviewFromServer = cache(async (): Promise<VisitorOverview> => {
   return fetchFromServer<VisitorOverview, VisitorOverview>("/visitors/overview", {
     fallback: { activeNow: 0, todayVisitors: 0, weekVisitors: 0, dailySeries: [] },
     extract: (data) => data,
     requireAuth: true,
   });
-}
+});

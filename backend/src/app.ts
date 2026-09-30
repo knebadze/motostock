@@ -80,7 +80,7 @@ import { visitorsRouter } from "./modules/visitors/visitors.routes.js";
 import { whatsappChatRouter } from "./modules/whatsapp-chat/whatsapp-chat.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
-import { globalRateLimit } from "./middleware/rateLimit.middleware.js";
+import { globalReadRateLimit, globalWriteRateLimit } from "./middleware/rateLimit.middleware.js";
 import { ROLES } from "./lib/roles.js";
 
 export const app = express();
@@ -147,9 +147,12 @@ app.get("/api/health", (_req, res) => {
 });
 
 // Applied to every /api route (uploads/static assets are exempt — browsers
-// legitimately fetch many images per page). Auth routes stack an additional,
-// much tighter authRateLimit on top of this (see auth.routes.ts).
-app.use("/api", globalRateLimit);
+// legitimately fetch many images per page). Each middleware only acts on its
+// own half of the split (GET/HEAD vs everything else — see
+// rateLimit.middleware.ts's comment), so exactly one of the two actually
+// counts a given request. Auth routes stack an additional, much tighter
+// authRateLimit on top of the write budget (see auth.routes.ts).
+app.use("/api", globalReadRateLimit, globalWriteRateLimit);
 
 app.use(
   "/uploads",

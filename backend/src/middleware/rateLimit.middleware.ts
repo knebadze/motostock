@@ -1,30 +1,49 @@
 import rateLimit from "express-rate-limit";
 
-// Baseline DoS/abuse guard applied to every /api request (see app.ts) — high
-// enough that a real page load's burst of parallel calls never trips it, low
-// enough to blunt scripted scraping/flooding. authRateLimit below stacks on
-// top of this with a much tighter budget for the sensitive auth endpoints.
+// Baseline DoS/abuse guard applied to every /api request (see app.ts),
+// split into a generous read budget and a tighter write budget instead of
+// one shared bucket for both. A single page load's server-rendered layout +
+// homepage-section fan-out alone can be a dozen-plus GETs (categories,
+// company-info, hero slides, several homepage sections, badge counts, ...),
+// and in dev, React Strict Mode double-invokes client effects that also
+// fetch — a shared 300/min budget covering both reads and writes was
+// tripping after just a handful of ordinary page refreshes, nowhere near
+// actual scraping/abuse. Reads carry no mutation risk on their own (this is
+// a public storefront's catalog data), so they get a much higher ceiling
+// here; writes keep the original tighter budget as a backstop for whichever
+// mutating endpoint doesn't already have its own specific limiter (see
+// checkoutRateLimit/uploadRateLimit/etc. below, which stack on top of this
+// for the more sensitive ones). authRateLimit below stacks on top of the
+// write budget for the sensitive auth endpoints specifically.
 //
-// /visitors/ping is explicitly skipped here — it's a silent, no-side-effect-
-// if-dropped background heartbeat (VisitorPingBeacon.tsx) that has no
-// business sharing this budget with a page's actual API calls at all: on a
-// long, active session (many page loads/navigations, several tabs open —
-// exactly what a live dev/testing session looks like) this shared 300/min
-// bucket can fill up on ordinary browsing alone, and a ping that gets
-// silently 429'd right when it happens to fire is still a real (if low-
-// stakes) loss of that heartbeat. It gets its own separate, generous budget
-// instead — see visitorPingRateLimit below, applied directly on that route.
-export const globalRateLimit = rateLimit({
+// /visitors/ping is explicitly skipped from both — it's a silent, no-side-
+// effect-if-dropped background heartbeat (VisitorPingBeacon.tsx) that has no
+// business sharing either budget with a page's actual API calls. It gets its
+// own separate, generous budget instead — see visitorPingRateLimit below,
+// applied directly on that route.
+const isPingRoute = (req: { path: string }) => req.path === "/visitors/ping";
+const isReadRequest = (req: { method: string }) => req.method === "GET" || req.method === "HEAD";
+
+export const globalReadRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => isPingRoute(req) || !isReadRequest(req),
+  message: { error: { message: "Too many requests, please slow down" } },
+});
+
+export const globalWriteRateLimit = rateLimit({
   windowMs: 60 * 1000,
   limit: 300,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.path === "/visitors/ping",
+  skip: (req) => isPingRoute(req) || isReadRequest(req),
   message: { error: { message: "Too many requests, please slow down" } },
 });
 
-// See globalRateLimit's comment above for why this exists as its own budget
-// instead of just relying on the shared one. Generous — each browser tab
+// See globalReadRateLimit/globalWriteRateLimit's comment above for why this
+// exists as its own budget instead of just relying on the shared ones. Generous — each browser tab
 // pings once every 2 minutes (PING_INTERVAL_MS) plus once immediately on
 // mount, so even a dozen tabs open at once from the same IP stays far under
 // this; the two DB writes per call (visitorsRepository.touchPresence/
@@ -71,7 +90,7 @@ export const changePasswordRateLimit = createAuthRateLimit();
 
 // Checkout preview/place both accept a free-typed promoCode — without this,
 // a logged-in account could brute-force short/guessable codes at
-// globalRateLimit's full 300/min. Budgeted for real interactive use
+// globalWriteRateLimit's full 300/min. Budgeted for real interactive use
 // (toggling fulfillment method/address/bank/delivery speed each re-fires a
 // preview) while still meaningfully capping scripted guessing.
 export const checkoutRateLimit = rateLimit({
@@ -94,7 +113,7 @@ export const resendVerificationRateLimit = rateLimit({
 
 // Public, unauthenticated, and triggers an outbound email per call — without
 // this, POST /newsletter/subscribe could be used to spam arbitrary inboxes
-// with confirmation emails at globalRateLimit's full 300/min.
+// with confirmation emails at globalWriteRateLimit's full 300/min.
 export const newsletterRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -108,7 +127,7 @@ export const newsletterRateLimit = rateLimit({
 // Vincario (vin-decode.providers.ts), the latter a keyed, presumably
 // billed-per-lookup API, with no per-VIN caching. Without this, any
 // authenticated account — including a freshly self-registered one — could
-// script up to globalRateLimit's full 300/min per IP, indefinitely across
+// script up to globalWriteRateLimit's full 300/min per IP, indefinitely across
 // IPs, racking up provider billing and/or getting the server's outbound IP
 // rate-limited by NHTSA. Same reasoning as oauthRateLimit/newsletterRateLimit
 // above (both cap an endpoint specifically because it triggers an outbound
@@ -126,7 +145,7 @@ export const vinDecodeRateLimit = rateLimit({
 // Public (guest or authenticated), and every call relays a real WhatsApp
 // message to the support rep's own phone via the Cloud API — without this,
 // POST /whatsapp-chat/messages could be scripted to flood the rep's
-// WhatsApp at globalRateLimit's full 300/min, same reasoning as
+// WhatsApp at globalWriteRateLimit's full 300/min, same reasoning as
 // newsletterRateLimit above.
 export const whatsappChatRateLimit = rateLimit({
   windowMs: 10 * 60 * 1000,
@@ -139,8 +158,8 @@ export const whatsappChatRateLimit = rateLimit({
 // Public, Meta-facing GET used only for the webhook verification handshake
 // (whatsapp-chat.controller.ts's verifyWebhook) — without this, anyone who
 // discovers the webhook URL could script unlimited guesses at
-// WHATSAPP_WEBHOOK_VERIFY_TOKEN against globalRateLimit's full 300/min
-// instead of a budget of its own. Meta itself only calls this a handful of
+// WHATSAPP_WEBHOOK_VERIFY_TOKEN against globalReadRateLimit's full 1000/min
+// (this is a GET) instead of a budget of its own. Meta itself only calls this a handful of
 // times (initial setup, and whenever the webhook config is re-saved), so
 // this stays well clear of legitimate use.
 export const whatsappWebhookVerifyRateLimit = rateLimit({
@@ -157,7 +176,7 @@ export const whatsappWebhookVerifyRateLimit = rateLimit({
 // limiter after a specific incident/review; this one was missed. Each
 // submission runs assertNoDuplicate plus a DB write and lands in the admin's
 // moderation queue — without this, a single account could script up to
-// globalRateLimit's full 300/min, flooding that queue with junk brand/model/
+// globalWriteRateLimit's full 300/min, flooding that queue with junk brand/model/
 // variant combinations. Budgeted low (this is a rare, once-in-a-while action
 // for a real customer, not something legitimate use ever needs to repeat
 // quickly) rather than matching a normal-interactive-use budget like
