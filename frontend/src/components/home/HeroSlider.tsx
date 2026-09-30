@@ -148,7 +148,18 @@ export function HeroSlider({
       className="relative aspect-4/3 w-full overflow-hidden border-b border-border sm:aspect-video lg:aspect-21/9 lg:max-h-130"
     >
       {imageUrl ? (
-        <Image src={imageUrl} alt="" fill priority={index === 0} className="object-cover" />
+        <Image
+          src={imageUrl}
+          alt=""
+          fill
+          priority={index === 0}
+          // Full viewport width at every breakpoint (this section has no
+          // max-width wrapper) — without this, Next.js defaults to treating
+          // the image as if it could be as wide as the *source* image and
+          // serves an oversized variant on mobile, directly inflating LCP.
+          sizes="100vw"
+          className="object-cover"
+        />
       ) : (
         <div className="size-full bg-muted" />
       )}

@@ -60,5 +60,10 @@ export function createCollectionApi(basePath: string) {
     return data;
   }
 
-  return { list, add, remove, getStatus };
+  async function getCount(): Promise<number> {
+    const { data } = await apiClient.get<{ count: number }>(`${basePath}/count`);
+    return data.count;
+  }
+
+  return { list, add, remove, getStatus, getCount };
 }

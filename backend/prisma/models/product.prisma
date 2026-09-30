@@ -49,6 +49,10 @@ model Product {
   @@index([categoryId])
   @@index([productBrandId])
   @@index([isFeaturedOnHomepage])
+  // The default customer-facing sort (products.repository.ts's findMany,
+  // unfiltered/no-search) orders by this — same reasoning as order.prisma's
+  // identical index.
+  @@index([createdAt])
   // pg_trgm GIN indexes — products.repository.ts's buildWhere searches these
   // three columns with `ILIKE '%term%'` (leading wildcard), which a plain
   // btree index can't accelerate at all; without these, that search does a

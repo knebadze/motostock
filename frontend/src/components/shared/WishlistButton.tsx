@@ -9,10 +9,12 @@ import { isKnownAuthState } from "@/lib/api/auth-state";
 import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
 import {
   addToWishlist,
+  getWishlistCount,
   getWishlistStatus,
   removeFromWishlist,
   type WishlistItemType,
 } from "@/lib/api/wishlist";
+import { dispatchCountChanged, WISHLIST_COUNT_CHANGED_EVENT } from "@/lib/badge-count-events";
 
 const heartPath =
   "M12 21s-6.7-4.35-9.33-8.2C1.02 10.6 1.6 7.2 4.3 5.6c2.2-1.3 4.9-.8 6.3 1.1l1.4 1.9 1.4-1.9c1.4-1.9 4.1-2.4 6.3-1.1 2.7 1.6 3.28 5 1.63 7.2C18.7 16.65 12 21 12 21Z";
@@ -127,12 +129,11 @@ export function WishlistButton({
         setWishlistItemId(item.id);
         onChange?.(true);
       }
-      // Refreshes server components (the header's wishlist-count badge is
-      // fetched there) without a full page reload — same fix
-      // AddToCartButton.tsx's handleAdd/handleQuantityChange already apply;
-      // this button previously never called it at all, leaving the header
-      // badge stale until something else happened to trigger a refresh.
-      router.refresh();
+      // Tells the header's WishlistDropdown its fresh count directly,
+      // instead of a `router.refresh()` that would re-run this entire
+      // route's whole server component tree (every product/filter fetch on
+      // the page) just to update one integer.
+      dispatchCountChanged(WISHLIST_COUNT_CHANGED_EVENT, await getWishlistCount());
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 401) {
         router.push({ pathname: "/login", query: { redirect: pathname } });

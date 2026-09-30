@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import {
   addToCompare,
+  getCompareCount,
   getCompareStatus,
   removeFromCompare,
   type CompareItemType,
 } from "@/lib/api/compare";
+import { dispatchCountChanged, COMPARE_COUNT_CHANGED_EVENT } from "@/lib/badge-count-events";
 
 // A "compare scales" glyph — two bars of unequal height on a shared base,
 // distinct from WishlistButton's heart at a glance.
@@ -49,7 +50,6 @@ export function CompareButton({
   // full refetch.
   onChange?: (compared: boolean) => void;
 }) {
-  const router = useRouter();
   const t = useTranslations("Common.compareButton");
   const tErrors = useTranslations("ApiErrors");
   const resolvedLabelAdd = labelAdd ?? t("add");
@@ -120,12 +120,10 @@ export function CompareButton({
         setCompareItemId(item.id);
         onChange?.(true);
       }
-      // Refreshes server components (the header's compare-count badge is
-      // fetched there) without a full page reload — same fix
-      // AddToCartButton.tsx's handleAdd already applies; this button
-      // previously never called it at all, leaving the header badge stale
-      // until something else happened to trigger a refresh.
-      router.refresh();
+      // Tells the header's CompareDropdown its fresh count directly, instead
+      // of a `router.refresh()` that would re-run this entire route's whole
+      // server component tree just to update one integer.
+      dispatchCountChanged(COMPARE_COUNT_CHANGED_EVENT, await getCompareCount());
     } catch (error) {
       toast.error(resolveApiErrorMessage(error, tErrors, t("error")));
     } finally {

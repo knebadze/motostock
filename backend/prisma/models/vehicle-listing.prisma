@@ -79,5 +79,11 @@ model VehicleListing {
   @@index([colorId])
   @@index([isFeaturedOnHomepage])
   @@index([isCustomsCleared])
+  // isActive is ANDed into every single customer-facing query
+  // (vehicle-listing.repository.ts's findMany/count/findByIds) — composite
+  // with createdAt (the tiebreaker in resolveOrderBy's default sort) rather
+  // than isActive alone, since a plain boolean column has poor selectivity
+  // by itself (most rows are active).
+  @@index([isActive, createdAt])
   @@schema("dbo")
 }

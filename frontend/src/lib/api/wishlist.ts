@@ -12,3 +12,4 @@ export const listMyWishlist = wishlistApi.list;
 export const addToWishlist = wishlistApi.add;
 export const removeFromWishlist = wishlistApi.remove;
 export const getWishlistStatus = wishlistApi.getStatus;
+export const getWishlistCount = wishlistApi.getCount;

@@ -5,12 +5,18 @@ import { env } from "./env.js";
 import { logger } from "../lib/logger.js";
 
 // Constructed explicitly (rather than handing @prisma/adapter-pg a bare
-// connection string) purely so the pool itself is observable — pg.Pool's
-// undocumented-by-Prisma default is `max: 10`, otherwise silent. A query
-// stuck with `waitingCount > 0` means every connection is already checked
-// out — the exact signature of a connection leak (something acquiring a
-// client and never releasing it back), as opposed to an ordinary slow query.
-export const pool = new Pool({ connectionString: env.DATABASE_URL });
+// connection string) so the pool itself is both observable and tunable —
+// pg.Pool's undocumented-by-Prisma default is `max: 10`, otherwise silent.
+// Raised to 30: a single storefront page load (homepage's hero+sections
+// fan-out, or a category page's parallel product/facet/filter calls) can
+// already need 10-15 concurrent connections on its own, so the old default
+// left barely any headroom for more than one visitor at a time before
+// queries start queuing. A query stuck with `waitingCount > 0` means every
+// connection is already checked out — the exact signature of a connection
+// leak (something acquiring a client and never releasing it back), as
+// opposed to an ordinary slow query; the monitor below watches for that
+// regardless of how high `max` is set.
+export const pool = new Pool({ connectionString: env.DATABASE_URL, max: 30 });
 
 setInterval(() => {
   if (pool.waitingCount > 0) {

@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { cookies } from "next/headers";
 import { apiClient, ApiRequestError } from "./client";
 import type { PagedResult } from "@/components/shared/Pagination";
@@ -111,6 +112,44 @@ async function fetchFromServer<TResponse, TResult>(
   }
 }
 
+// For the handful of endpoints that are genuinely public with no auth-
+// dependent response at all (categories, company-info, faq/public, terms,
+// privacy-policy — each confirmed at its own backend route: registered
+// before that module's `requireAuth` gate, same response for every caller)
+// AND rarely change (admin-edited, not customer actions), so they're worth
+// caching across requests, not just within one (see fetchFromServer's own
+// per-request-only `cache()` wrapping above). Deliberately does NOT call
+// authHeaders()/cookies() — cacheWrapped below wraps this in unstable_cache,
+// and Next.js disallows calling cookies() inside a function cached that way;
+// these endpoints never needed the cookie forwarded anyway (unlike
+// fetchFromServer's callers, which include admin-only ones sharing this same
+// helper's shape).
+async function fetchPublicCacheable<TResponse, TResult>(
+  path: string,
+  options: { fallback: TResult; extract: (data: TResponse) => TResult },
+): Promise<TResult> {
+  try {
+    const { data } = await apiClient.get<TResponse>(path);
+    return options.extract(data);
+  } catch (error) {
+    const status = error instanceof ApiRequestError ? error.status : undefined;
+    if (status === undefined || status >= 500) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`[fetchPublicCacheable] GET ${path} failed${status ? ` (${status})` : ""}: ${message}`);
+    }
+    return options.fallback;
+  }
+}
+
+// 5 minutes — admin-edited content (a category rename, a new FAQ entry, a
+// terms update) takes up to this long to show on the storefront instead of
+// instantly; there's no Next.js Route Handler in this admin's save path to
+// hook an on-demand revalidateTag() into (admin forms write straight to the
+// Express backend, not through Next.js), so a short TTL is the safe,
+// low-complexity middle ground the alternative (no cross-request caching at
+// all) was costing a real backend round-trip for on every single page load.
+const PUBLIC_STATIC_CACHE_SECONDS = 300;
+
 export const getCurrentUserFromServer = cache(async (): Promise<User | null> => {
   return fetchFromServer<{ user: User }, User | null>("/users/me", {
     fallback: null,
@@ -143,15 +182,21 @@ export const getOAuthStatusFromServer = cache(async (): Promise<{ google: boolea
   );
 });
 
-export const getCategoriesFromServer = cache(async (): Promise<Category[]> => {
-  // Public endpoint (guest storefront navigation reads this too) — unlike
-  // the admin-only getXFromServer helpers below, this must not bail out just
-  // because there's no admin session cookie.
-  return fetchFromServer<{ categories: Category[] }, Category[]>("/categories", {
-    fallback: [],
-    extract: (data) => data.categories,
-  });
-});
+// Guest storefront navigation reads this on literally every page — cached
+// across requests (see PUBLIC_STATIC_CACHE_SECONDS/fetchPublicCacheable's
+// comments above), unlike the admin-only getXFromServer helpers below, which
+// still must not bail out just because there's no admin session cookie
+// (this one never even looks for one).
+const getCachedCategories = unstable_cache(
+  () =>
+    fetchPublicCacheable<{ categories: Category[] }, Category[]>("/categories", {
+      fallback: [],
+      extract: (data) => data.categories,
+    }),
+  ["categories"],
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS },
+);
+export const getCategoriesFromServer = cache(getCachedCategories);
 
 const SETTINGS_FALLBACK: Settings = {
   useCloudStorage: false,
@@ -280,45 +325,57 @@ const COMPANY_INFO_FALLBACK: CompanyInfo = {
   updatedAt: new Date(0).toISOString(),
 };
 
-// Public endpoint (the Footer and Contact page read this on every guest page
-// load too) — unlike the admin-only getXFromServer helpers, this must not
-// bail out just because there's no admin session cookie (see
-// getCategoriesFromServer's identical reasoning above).
-export const getCompanyInfoFromServer = cache(async (): Promise<CompanyInfo> => {
-  return fetchFromServer<{ companyInfo: CompanyInfo }, CompanyInfo>("/company-info", {
-    fallback: COMPANY_INFO_FALLBACK,
-    extract: (data) => data.companyInfo,
-  });
-});
+// The Footer and Contact page read this on every guest page load — cached
+// across requests, same reasoning as getCategoriesFromServer above.
+const getCachedCompanyInfo = unstable_cache(
+  () =>
+    fetchPublicCacheable<{ companyInfo: CompanyInfo }, CompanyInfo>("/company-info", {
+      fallback: COMPANY_INFO_FALLBACK,
+      extract: (data) => data.companyInfo,
+    }),
+  ["company-info"],
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS },
+);
+export const getCompanyInfoFromServer = cache(getCachedCompanyInfo);
 
-export const getTermsFromServer = cache(async (): Promise<Terms> => {
-  // Public endpoint (the guest /terms page reads this) — must not bail out
-  // just because there's no admin session cookie, same fix as
-  // getCategoriesFromServer.
-  return fetchFromServer<{ terms: Terms }, Terms>("/terms", {
-    fallback: { id: 0, content: { ka: "", en: "", ru: "" }, updatedAt: new Date(0).toISOString() },
-    extract: (data) => data.terms,
-  });
-});
+// The guest /terms page reads this on every load — cached across requests,
+// same reasoning as getCategoriesFromServer above.
+const getCachedTerms = unstable_cache(
+  () =>
+    fetchPublicCacheable<{ terms: Terms }, Terms>("/terms", {
+      fallback: { id: 0, content: { ka: "", en: "", ru: "" }, updatedAt: new Date(0).toISOString() },
+      extract: (data) => data.terms,
+    }),
+  ["terms"],
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS },
+);
+export const getTermsFromServer = cache(getCachedTerms);
 
-export const getPrivacyPolicyFromServer = cache(async (): Promise<PrivacyPolicy> => {
-  // Public endpoint (the guest /privacy page reads this) — must not bail out
-  // just because there's no admin session cookie, same fix as
-  // getCategoriesFromServer.
-  return fetchFromServer<{ privacyPolicy: PrivacyPolicy }, PrivacyPolicy>("/privacy-policy", {
-    fallback: { id: 0, content: { ka: "", en: "", ru: "" }, updatedAt: new Date(0).toISOString() },
-    extract: (data) => data.privacyPolicy,
-  });
-});
+// The guest /privacy page reads this on every load — cached across requests,
+// same reasoning as getCategoriesFromServer above.
+const getCachedPrivacyPolicy = unstable_cache(
+  () =>
+    fetchPublicCacheable<{ privacyPolicy: PrivacyPolicy }, PrivacyPolicy>("/privacy-policy", {
+      fallback: { id: 0, content: { ka: "", en: "", ru: "" }, updatedAt: new Date(0).toISOString() },
+      extract: (data) => data.privacyPolicy,
+    }),
+  ["privacy-policy"],
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS },
+);
+export const getPrivacyPolicyFromServer = cache(getCachedPrivacyPolicy);
 
-// Public endpoint (the guest /faq page reads this) — must not bail out just
-// because there's no admin session cookie, same fix as getCategoriesFromServer.
-export const getFaqListFromServer = cache(async (): Promise<Faq[]> => {
-  return fetchFromServer<{ items: Faq[] }, Faq[]>("/faq/public", {
-    fallback: [],
-    extract: (data) => data.items,
-  });
-});
+// The guest /faq page reads this on every load — cached across requests,
+// same reasoning as getCategoriesFromServer above.
+const getCachedFaqList = unstable_cache(
+  () =>
+    fetchPublicCacheable<{ items: Faq[] }, Faq[]>("/faq/public", {
+      fallback: [],
+      extract: (data) => data.items,
+    }),
+  ["faq-public"],
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS },
+);
+export const getFaqListFromServer = cache(getCachedFaqList);
 
 // Admin — every FAQ entry, including inactive ones (see the admin FAQ
 // manager). Distinct from getFaqListFromServer's public/active-only list,

@@ -12,3 +12,4 @@ export const listMyCompare = compareApi.list;
 export const addToCompare = compareApi.add;
 export const removeFromCompare = compareApi.remove;
 export const getCompareStatus = compareApi.getStatus;
+export const getCompareCount = compareApi.getCount;

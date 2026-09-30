@@ -13,10 +13,12 @@ import { QuantityStepper } from "@/components/shared/QuantityStepper";
 import {
   addToCart,
   getCartStatus,
+  getMyCartCount,
   removeFromCart,
   updateCartItemQuantity,
   type CartItemType,
 } from "@/lib/api/cart";
+import { dispatchCountChanged, CART_COUNT_CHANGED_EVENT } from "@/lib/badge-count-events";
 
 export function AddToCartButton({
   itemType,
@@ -122,9 +124,10 @@ export function AddToCartButton({
       setCartItem({ id: item.id, quantity: item.quantity });
       setStatus("added");
       dispatchCartItemChanged({ itemType, itemId: id, cartItem: { id: item.id, quantity: item.quantity } });
-      // Refreshes server components (the header's cart-count badge is
-      // fetched there) without a full page reload.
-      router.refresh();
+      // Tells the header's CartDropdown its fresh count directly, instead of
+      // a `router.refresh()` that would re-run this entire route's whole
+      // server component tree just to update one integer.
+      dispatchCountChanged(CART_COUNT_CHANGED_EVENT, await getMyCartCount());
       setTimeout(() => setStatus("idle"), 2000);
     } catch (error) {
       setStatus("idle");
@@ -150,7 +153,8 @@ export function AddToCartButton({
         setCartItem({ id: updated.id, quantity: updated.quantity });
         dispatchCartItemChanged({ itemType, itemId: id, cartItem: { id: updated.id, quantity: updated.quantity } });
       }
-      router.refresh();
+      // Same reasoning as handleAdd above.
+      dispatchCountChanged(CART_COUNT_CHANGED_EVENT, await getMyCartCount());
     } catch (error) {
       toast.error(resolveApiErrorMessage(error, tErrors, errorMessage));
     } finally {
