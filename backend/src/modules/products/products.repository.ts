@@ -426,6 +426,59 @@ export const productsRepository = {
     });
   },
 
+  // Backs ShopAllProductsPage.tsx's category-checkbox facet list. Same
+  // where-shape as findMany above (so the facets shown always match the
+  // exact set findMany itself would return), but returns one row per
+  // DISTINCT category instead of one row per product, selecting only the
+  // ~5 scalar category ref fields — not full product rows with 3-locale
+  // descriptions/metaTitle/attributeValues, which findMany's unbounded call
+  // was being used for previously purely to let the client re-derive this
+  // same distinct-category list itself.
+  async findDistinctCategoryFacets(filters: {
+    categoryIds?: number[];
+    brandIds?: number[];
+    priceMin?: number;
+    priceMax?: number;
+    onSale?: boolean;
+    bulkDiscountEventId?: number;
+    featured?: boolean;
+  }) {
+    const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
+    const rows = await prisma.product.findMany({
+      where: {
+        AND: [
+          ...(structuredWhere ? [structuredWhere] : []),
+          { variants: { some: { isActive: true } } },
+        ],
+      },
+      select: { category: { select: namedRefSelect } },
+      distinct: ["categoryId"],
+    });
+    return rows.map((row) => row.category);
+  },
+
+  // Backs ProductShopPage.tsx's brand-checkbox facet list — same reasoning
+  // as findDistinctCategoryFacets above, applied to productBrand instead of
+  // category. Products with no brand (productBrandId null) are excluded —
+  // ProductShopPage's own facet derivation already skipped those too.
+  async findDistinctBrandFacets(filters: { categoryIds?: number[] }) {
+    const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
+    const rows = await prisma.product.findMany({
+      where: {
+        AND: [
+          ...(structuredWhere ? [structuredWhere] : []),
+          { variants: { some: { isActive: true } } },
+          { productBrandId: { not: null } },
+        ],
+      },
+      select: { productBrand: { select: brandModelRefSelect } },
+      distinct: ["productBrandId"],
+    });
+    return rows
+      .map((row) => row.productBrand)
+      .filter((brand): brand is NonNullable<typeof brand> => brand != null);
+  },
+
   // See adminListInclude above for why this is a separate method rather
   // than just findMany with a different include — no `searchIds` param,
   // since the admin panel never sends one (it always fetches the filtered

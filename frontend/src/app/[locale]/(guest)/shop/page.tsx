@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import {
   getMyGarageFromServer,
-  getShopProductsFromServer,
+  getShopCategoryFacetsFromServer,
   getShopProductsPageFromServer,
 } from "@/lib/api/server";
 import { ShopAllProductsPage } from "@/components/shop/ShopAllProductsPage";
@@ -28,8 +28,8 @@ export default async function ShopRoutePage({
   // control, same treatment as initialOnSale below.
   const parsedEventId = eventId ? Number(eventId) : undefined;
 
-  const [products, productsPage, garageVehicles] = await Promise.all([
-    getShopProductsFromServer({
+  const [categories, productsPage, garageVehicles] = await Promise.all([
+    getShopCategoryFacetsFromServer({
       categoryId: parsedCategoryId,
       brandIds: parsedBrandIds,
       onSale: initialOnSale,
@@ -46,7 +46,7 @@ export default async function ShopRoutePage({
 
   return (
     <ShopAllProductsPage
-      products={products}
+      categories={categories}
       initialData={productsPage}
       garageVehicles={garageVehicles}
       initialOnSale={initialOnSale}

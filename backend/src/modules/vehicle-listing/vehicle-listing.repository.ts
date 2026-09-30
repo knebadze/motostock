@@ -271,12 +271,20 @@ export const vehicleListingRepository = {
   }) {
     const structuredWhere = buildWhere(filters);
     const suppressPagination = !filters.paginate && filters.searchIds != null;
+    // adminListInclude, not the full 7-join `include` — this is the
+    // card-rendering storefront browse/search path (shop/category grid,
+    // search), same reasoning as adminListInclude's own comment above (and
+    // the identical fix already applied to cart/wishlist): a card never
+    // reads the 7 VehicleCatalog spec-lookup joins, the full discount
+    // history, or the full image gallery. vehicle-listing.service.ts
+    // null-fills the 7 dropped lookups after the fetch, same as its
+    // existing admin-list branch.
     return prisma.vehicleListing.findMany({
       // Customer-facing path only (findManyForAdmin below is the admin
       // equivalent) — a listing an admin has pulled from sale must not
       // appear in storefront browsing/search.
       where: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] },
-      include,
+      include: adminListInclude,
       orderBy: resolveOrderBy(filters.sortBy),
       skip: suppressPagination ? undefined : filters.skip,
       take: suppressPagination ? undefined : filters.limit,
@@ -356,6 +364,26 @@ export const vehicleListingRepository = {
     return prisma.vehicleListing.count({ where: buildWhere(filters) });
   },
 
+  // Backs VehicleShopPage.tsx's brand-checkbox facet list — the distinct
+  // brands among listings matching these filters, same where-shape as
+  // findMany (including the isActive exclusion), but one lean ref row per
+  // brand instead of every matching listing's full card data (same fix as
+  // findDistinctCategoryFacets in products.repository.ts).
+  findDistinctBrandFacets(filters: { categoryIds?: number[]; bulkDiscountEventId?: number }) {
+    const structuredWhere = buildWhere(filters);
+    return prisma.vehicleListing
+      .findMany({
+        where: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] },
+        select: { vehicleCatalog: { select: { brand: { select: brandModelRefSelect } } } },
+        distinct: ["vehicleCatalogId"],
+      })
+      .then((rows) => {
+        const byId = new Map<number, (typeof rows)[number]["vehicleCatalog"]["brand"]>();
+        for (const row of rows) byId.set(row.vehicleCatalog.brand.id, row.vehicleCatalog.brand);
+        return Array.from(byId.values());
+      });
+  },
+
   // Typo-tolerant, relevance-ranked search across brand/model name — see
   // products.repository.ts's findSearchRankedIds for the full pg_trgm
   // word_similarity rationale (identical reasoning, applied here to the
@@ -386,11 +414,12 @@ export const vehicleListingRepository = {
 
   // Customer-facing only (vehicle-listing.service.ts's
   // listPopularVehicleListings) — excludes a listing an admin has since
-  // deactivated, same reasoning as findMany above.
+  // deactivated, same reasoning as findMany above. adminListInclude, not the
+  // full include, for the same card-rendering reasoning as findMany above.
   findByIds(ids: number[]) {
     return prisma.vehicleListing.findMany({
       where: { id: { in: ids }, isActive: true },
-      include,
+      include: adminListInclude,
     });
   },
 

@@ -477,6 +477,38 @@ function isCacheableOnSaleQuery(query: ProductListQuery): boolean {
 // sent page/pageSize. Every other caller (homepage sliders, recommendations,
 // any `limit`-only request) gets total = items.length, page = 1, so the
 // shape stays uniform without carrying real pagination info there.
+// Backs ShopAllProductsPage.tsx's category-checkbox facet list — the same
+// 4 filters getShopProductsFromServer is called with today, but this
+// replaces that unbounded full-product-row fetch (used only to re-derive
+// this exact distinct-category list client-side) with a query that returns
+// one lean ref row per category directly.
+export async function listProductCategoryFacets(query: {
+  categoryId?: number;
+  brandIds?: number[];
+  onSale?: boolean;
+  bulkDiscountEventId?: number;
+}) {
+  const categoryIds =
+    query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
+  const rows = await productsRepository.findDistinctCategoryFacets({
+    categoryIds,
+    brandIds: query.brandIds,
+    onSale: query.onSale,
+    bulkDiscountEventId: query.bulkDiscountEventId,
+  });
+  return rows.map(toNamedRef);
+}
+
+// Backs ProductShopPage.tsx's brand-checkbox facet list — the single filter
+// getProductsFromServer(category.id) is called with today (per-category
+// browse, unlike ShopAllProductsPage's cross-category one above), replacing
+// that unbounded full-product-row fetch with a lean per-brand query.
+export async function listProductBrandFacets(query: { categoryId?: number }) {
+  const categoryIds =
+    query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
+  return productsRepository.findDistinctBrandFacets({ categoryIds });
+}
+
 export async function listProducts(query: ProductListQuery) {
   const cacheKey = isCacheableOnSaleQuery(query) ? `products:onSale:${query.limit ?? "all"}` : null;
   if (cacheKey) {

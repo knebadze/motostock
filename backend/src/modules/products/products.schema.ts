@@ -86,6 +86,27 @@ const brandIdsQuerySchema = z
   )
   .optional();
 
+// Backs ShopAllProductsPage.tsx's category-checkbox facet list — the exact
+// same filter set as the storefront browse/search endpoint above, minus
+// everything (search/pagination/sort/attribute filters) that endpoint needs
+// but a distinct-category list doesn't.
+export const productCategoryFacetsQuerySchema = z.object({
+  categoryId: z.coerce.number().int().positive().optional(),
+  brandIds: brandIdsQuerySchema,
+  onSale: z.coerce.boolean().optional(),
+  bulkDiscountEventId: z.coerce.number().int().positive().optional(),
+});
+export type ProductCategoryFacetsQuery = z.infer<typeof productCategoryFacetsQuerySchema>;
+
+// Backs ProductShopPage.tsx's brand-checkbox facet list — the single filter
+// getProductsFromServer(category.id) is called with today (per-category
+// browse), unlike productCategoryFacetsQuerySchema above (the cross-category
+// /shop page's facet).
+export const productBrandFacetsQuerySchema = z.object({
+  categoryId: z.coerce.number().int().positive().optional(),
+});
+export type ProductBrandFacetsQuery = z.infer<typeof productBrandFacetsQuerySchema>;
+
 export const productListQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
   // Cross-category "browse everything" page's category-checkbox facet
@@ -201,8 +222,16 @@ export const checkCompatibilityResponseSchema = registry.register(
   }),
 );
 
-const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
-const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
+// Exported for productCategoryFacetsResponseSchema below (products.routes.ts
+// registers that one for the OpenAPI doc, so this needs to be reachable
+// there too).
+export const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
+// Exported for productBrandFacetsResponseSchema below, same reason as
+// namedRefSchema above.
+export const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
+
+export const productCategoryFacetsResponseSchema = z.object({ items: z.array(namedRefSchema) });
+export const productBrandFacetsResponseSchema = z.object({ items: z.array(brandModelRefSchema) });
 
 const unitRefSchema = z.object({
   id: z.int(),

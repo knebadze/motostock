@@ -7,6 +7,8 @@ import type {
   CheckCompatibilityInput,
   CreateProductInput,
   PopularProductsQuery,
+  ProductBrandFacetsQuery,
+  ProductCategoryFacetsQuery,
   ProductDetailQuery,
   ProductListQuery,
   ProductSlugParam,
@@ -16,6 +18,22 @@ import type {
 export async function list(req: Request<unknown, unknown, unknown, ProductListQuery>, res: Response) {
   const result = await productsService.listProducts(req.query);
   res.status(200).json(result);
+}
+
+export async function getCategoryFacets(
+  req: Request<unknown, unknown, unknown, ProductCategoryFacetsQuery>,
+  res: Response,
+) {
+  const items = await productsService.listProductCategoryFacets(req.query);
+  res.status(200).json({ items });
+}
+
+export async function getBrandFacets(
+  req: Request<unknown, unknown, unknown, ProductBrandFacetsQuery>,
+  res: Response,
+) {
+  const items = await productsService.listProductBrandFacets(req.query);
+  res.status(200).json({ items });
 }
 
 export async function getPopular(

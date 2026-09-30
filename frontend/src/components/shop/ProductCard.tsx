@@ -20,13 +20,15 @@ export function ProductCard({
 }: {
   product: Product;
   layout: ViewMode;
-  // Passed by WishlistManager, which already knows every card here is
-  // wishlisted — skips the status lookup and lets the card announce
-  // removal so it can drop itself from that list.
-  wishlistItemId?: number;
+  // Passed by WishlistManager (every card there is wishlisted by
+  // definition) or by a grid using useCollectionStatusMap to batch the
+  // lookup across every card at once — see WishlistButton's own prop
+  // comment for what each possible value means.
+  wishlistItemId?: number | null | "pending";
   onWishlistChange?: (wishlisted: boolean) => void;
-  // Same idea as wishlistItemId/onWishlistChange, passed by CompareManager.
-  compareItemId?: number;
+  // Same idea as wishlistItemId/onWishlistChange, passed by CompareManager
+  // or a batching grid.
+  compareItemId?: number | null | "pending";
   onCompareChange?: (compared: boolean) => void;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";

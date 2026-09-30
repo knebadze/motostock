@@ -13,9 +13,14 @@ import { ShopItemGrid } from "./ShopItemGrid";
 import { ProductCard } from "./ProductCard";
 import type { ViewMode } from "./ViewModeToggle";
 import { listProductsPage, type Product } from "@/lib/api/products";
-import type { GarageVehicle } from "@/lib/api/vehicle-catalog";
+import type { GarageVehicle, NamedRef } from "@/lib/api/vehicle-catalog";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatVehicleCatalogLabel } from "@/lib/format";
+import { getWishlistStatus } from "@/lib/api/wishlist";
+import { getCompareStatus } from "@/lib/api/compare";
+import { isKnownAuthState } from "@/lib/api/auth-state";
+import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
+import { useCollectionStatusMap, lookupProductStatus } from "@/components/shared/useCollectionStatusMap";
 
 type SortBy = "newest" | "price-asc" | "price-desc";
 const SORT_VALUES: SortBy[] = ["newest", "price-asc", "price-desc"];
@@ -32,7 +37,7 @@ function parseSortBy(value: string): SortBy {
 // server-side together (see listProductsPage) — any change refetches
 // (debounced) page 1, same pattern as ProductShopPage.tsx.
 export function ShopAllProductsPage({
-  products,
+  categories,
   initialData,
   garageVehicles,
   initialOnSale,
@@ -40,9 +45,12 @@ export function ShopAllProductsPage({
   initialBrandIds,
   initialEventId,
 }: {
-  // Unbounded — feeds the category-checkbox facet list, which needs to see
-  // every category present, not just the current page's.
-  products: Product[];
+  // The distinct categories present among matching products — feeds the
+  // category-checkbox facet list. Computed server-side by a lean, dedicated
+  // query (getShopCategoryFacetsFromServer) instead of shipping every
+  // matching product's full card data just to re-derive this list here (a
+  // full, unbounded product fetch, previously used only for this).
+  categories: NamedRef[];
   // Real server pagination — feeds the actual grid.
   initialData: PagedResult<Product>;
   garageVehicles: GarageVehicle[];
@@ -66,6 +74,19 @@ export function ShopAllProductsPage({
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const { data, totalPages, loading, load } = useServerPagination(initialData);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+
+  // One batched wishlist/compare status check for the current page's grid
+  // instead of each ProductCard's own WishlistButton/CompareButton checking
+  // individually — re-runs whenever the visible page/filter set changes
+  // (see useCollectionStatusMap's own comment).
+  const visibleProductIds = useMemo(() => data.items.map((product) => product.id), [data.items]);
+  const wishlistStatus = useCollectionStatusMap(
+    getWishlistStatus,
+    visibleProductIds,
+    [],
+    () => isKnownAuthState() || isGuestWishlistKnownEnabled(),
+  );
+  const compareStatus = useCollectionStatusMap(getCompareStatus, visibleProductIds, [], () => true);
 
   function fetchPage(page: number) {
     return load(
@@ -118,15 +139,10 @@ export function ShopAllProductsPage({
     })),
   ];
 
-  const categoryOptions = useMemo(() => {
-    const byId = new Map<number, Product["category"]>();
-    for (const product of products) {
-      if (!byId.has(product.category.id)) byId.set(product.category.id, product.category);
-    }
-    return Array.from(byId.values()).sort((a, b) =>
-      a.name[locale].localeCompare(b.name[locale]),
-    );
-  }, [products, locale]);
+  const categoryOptions = useMemo(
+    () => [...categories].sort((a, b) => a.name[locale].localeCompare(b.name[locale])),
+    [categories, locale],
+  );
 
   function toggleCategory(categoryId: number) {
     setSelectedCategoryIds((current) =>
@@ -280,7 +296,14 @@ export function ShopAllProductsPage({
                 layout={viewMode}
                 getKey={(product) => product.id}
                 emptyMessage={t("emptyState")}
-                renderItem={(product, layout) => <ProductCard product={product} layout={layout} />}
+                renderItem={(product, layout) => (
+                  <ProductCard
+                    product={product}
+                    layout={layout}
+                    wishlistItemId={lookupProductStatus(wishlistStatus, product.id)}
+                    compareItemId={lookupProductStatus(compareStatus, product.id)}
+                  />
+                )}
                 loading={loading}
               />
 

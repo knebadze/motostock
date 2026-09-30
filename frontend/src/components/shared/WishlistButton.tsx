@@ -36,9 +36,15 @@ export function WishlistButton({
   labelSave?: string;
   labelSaved?: string;
   className?: string;
-  // Skips the status lookup when the caller already knows it (e.g. the
-  // account wishlist page, where every card is wishlisted by definition).
-  initialWishlistItemId?: number | null;
+  // Skips the individual status lookup when the caller already knows it:
+  // a definite number/null (the account wishlist page, where every card is
+  // wishlisted by definition, or a grid that already resolved a batched
+  // lookup — see useCollectionStatusMap.ts) or the "pending" sentinel (a
+  // grid's batched lookup is still in flight — wait for the real answer
+  // instead of also firing this button's own redundant request). Omitted
+  // entirely (undefined) means no parent is managing this — check for
+  // ourselves, same as before batching existed.
+  initialWishlistItemId?: number | null | "pending";
   // Fired after a successful add/remove — lets a parent list (e.g. the
   // wishlist page) drop the card immediately instead of waiting for a
   // full refetch.
@@ -49,16 +55,28 @@ export function WishlistButton({
   const t = useTranslations("Common.wishlistButton");
   const resolvedLabelSave = labelSave ?? t("save");
   const resolvedLabelSaved = labelSaved ?? t("saved");
-  // The wishlist row's own id (needed for DELETE) — not just a boolean —
-  // since it's fetched lazily per button rather than batched across a
-  // whole grid. Fine at current catalog size; worth batching later if a
-  // page ever renders dozens of these at once.
+  // The wishlist row's own id (needed for DELETE) — not just a boolean.
   const [wishlistItemId, setWishlistItemId] = useState<number | null>(
-    initialWishlistItemId ?? null,
+    typeof initialWishlistItemId === "number" ? initialWishlistItemId : null,
   );
   const [loading, setLoading] = useState(false);
 
+  // Adopts a batched answer once a parent's useCollectionStatusMap lookup
+  // resolves (initialWishlistItemId transitioning from "pending"/undefined
+  // to a definite number|null) — without this, a card whose parent is still
+  // waiting on the batch at mount time would never learn the real answer.
   useEffect(() => {
+    if (initialWishlistItemId === "pending" || initialWishlistItemId === undefined) return;
+    // Syncing to a value owned by a parent (see the comment above) — same
+    // established pattern as ThemeToggle.tsx's mount-sync effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setWishlistItemId(initialWishlistItemId);
+  }, [initialWishlistItemId]);
+
+  useEffect(() => {
+    // A parent has taken ownership of this lookup (a definite value, or
+    // "pending" while its own batched call is in flight) — never also fire
+    // our own individual request in either case.
     if (initialWishlistItemId !== undefined) return;
     // A logged-out visitor whose session Header already knows isn't
     // authenticated, on a site where the admin hasn't turned on guest
@@ -87,8 +105,7 @@ export function WishlistButton({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemType, id]);
+  }, [itemType, id, initialWishlistItemId]);
 
   async function toggle(event: React.MouseEvent) {
     event.preventDefault();

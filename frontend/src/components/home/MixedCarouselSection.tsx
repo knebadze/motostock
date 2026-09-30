@@ -1,8 +1,18 @@
 "use client";
 
+import { useMemo } from "react";
 import { Carousel } from "@/components/shared/Carousel";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { VehicleListingCard } from "@/components/shop/VehicleListingCard";
+import { getWishlistStatus } from "@/lib/api/wishlist";
+import { getCompareStatus } from "@/lib/api/compare";
+import { isKnownAuthState } from "@/lib/api/auth-state";
+import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
+import {
+  useCollectionStatusMap,
+  lookupProductStatus,
+  lookupVehicleListingStatus,
+} from "@/components/shared/useCollectionStatusMap";
 import type { Product } from "@/lib/api/products";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 
@@ -24,6 +34,19 @@ export function MixedCarouselSection({
     ...listings.map((listing): MixedItem => ({ kind: "vehicle", key: `v${listing.id}`, listing })),
   ];
 
+  // One batched wishlist/compare call covering BOTH products and listings at
+  // once (getWishlistStatus/getCompareStatus already accept both id arrays
+  // together) instead of each card's own button checking individually.
+  const productIds = useMemo(() => products.map((product) => product.id), [products]);
+  const listingIds = useMemo(() => listings.map((listing) => listing.id), [listings]);
+  const wishlistStatus = useCollectionStatusMap(
+    getWishlistStatus,
+    productIds,
+    listingIds,
+    () => isKnownAuthState() || isGuestWishlistKnownEnabled(),
+  );
+  const compareStatus = useCollectionStatusMap(getCompareStatus, productIds, listingIds, () => true);
+
   if (items.length === 0) return null;
 
   return (
@@ -35,9 +58,19 @@ export function MixedCarouselSection({
           getKey={(item) => item.key}
           renderItem={(item) =>
             item.kind === "product" ? (
-              <ProductCard product={item.product} layout="grid" />
+              <ProductCard
+                product={item.product}
+                layout="grid"
+                wishlistItemId={lookupProductStatus(wishlistStatus, item.product.id)}
+                compareItemId={lookupProductStatus(compareStatus, item.product.id)}
+              />
             ) : (
-              <VehicleListingCard listing={item.listing} layout="grid" />
+              <VehicleListingCard
+                listing={item.listing}
+                layout="grid"
+                wishlistItemId={lookupVehicleListingStatus(wishlistStatus, item.listing.id)}
+                compareItemId={lookupVehicleListingStatus(compareStatus, item.listing.id)}
+              />
             )
           }
         />

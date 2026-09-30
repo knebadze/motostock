@@ -1,5 +1,6 @@
 import { randomInt } from "node:crypto";
 import { ApiError } from "../../lib/ApiError.js";
+import { logger } from "../../lib/logger.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { Prisma, type OrderDeliverySpeed, type OrderFulfillmentMethod } from "../../generated/prisma/index.js";
@@ -684,31 +685,42 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
         cartItemIds: breakdown.cartItemIds,
       });
 
-      await sendEmailTemplate("ORDER_PLACED", order.user.email, {
+      // Fired without awaiting the response — the customer's browser was
+      // blocking on 2 SMTP round-trips and a FINA API call for a checkout
+      // response that carries zero information back from any of them (all
+      // three are documented best-effort/never-throw and already log their
+      // own failures internally). `.catch()` here is defense-in-depth, not
+      // a sign they actually reject: now that these run detached from the
+      // request's own try/catch, an unexpected rejection would otherwise
+      // become a process-crashing unhandledRejection (see server.ts)
+      // instead of just failing this one request as it used to.
+      void sendEmailTemplate("ORDER_PLACED", order.user.email, {
         customerName: `${order.user.firstName} ${order.user.lastName}`.trim(),
         orderCode: order.orderCode,
         total: Number(order.total).toFixed(2),
-      });
+      }).catch((err: unknown) => logger.error({ err, orderId: order.id }, "ORDER_PLACED email failed"));
 
-      const adminNotificationEmail = await getAdminNotificationEmail();
-      if (adminNotificationEmail) {
-        await sendEmailTemplate("NEW_ORDER_ADMIN", adminNotificationEmail, {
-          customerName: `${order.user.firstName} ${order.user.lastName}`.trim(),
-          orderCode: order.orderCode,
-          total: Number(order.total).toFixed(2),
-        });
-      }
+      void getAdminNotificationEmail()
+        .then((adminNotificationEmail) => {
+          if (!adminNotificationEmail) return;
+          return sendEmailTemplate("NEW_ORDER_ADMIN", adminNotificationEmail, {
+            customerName: `${order.user.firstName} ${order.user.lastName}`.trim(),
+            orderCode: order.orderCode,
+            total: Number(order.total).toFixed(2),
+          });
+        })
+        .catch((err: unknown) => logger.error({ err, orderId: order.id }, "NEW_ORDER_ADMIN email failed"));
 
       // Never throws (see fraud.service.ts) — safe to await inline without
-      // its own try/catch here.
+      // its own try/catch here. Kept awaited (unlike the two above): its
+      // result has no external side effect to race against, and it's a pure
+      // DB check, not a slow outbound network call.
       await evaluateOrderRisk(
         { id: order.id, userId, total: Number(order.total), promoCodeId, ipAddress },
         user.createdAt,
       );
 
-      // Never throws (see fina-sync.service.ts) — best-effort, same as
-      // evaluateOrderRisk above.
-      await pushOrderSale({
+      void pushOrderSale({
         id: order.id,
         orderCode: order.orderCode,
         items: order.items.map((item) => ({
@@ -716,7 +728,7 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
           quantity: item.quantity,
           unitPrice: Number(item.unitPrice),
         })),
-      });
+      }).catch((err: unknown) => logger.error({ err, orderId: order.id }, "FINA sale push failed"));
 
       return toOrderResponse(order);
     } catch (error) {

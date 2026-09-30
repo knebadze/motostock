@@ -10,7 +10,7 @@ import type { Brand } from "./brands";
 import type { Model } from "./models";
 import type { LookupItem } from "./lookups";
 import type { LookupTypeSlug } from "@/config/lookup-types";
-import type { VehicleCatalogEntry, VehicleCatalogPage } from "./vehicle-catalog";
+import type { BrandModelRef, NamedRef, VehicleCatalogEntry, VehicleCatalogPage } from "./vehicle-catalog";
 import type { VehicleListing } from "./vehicle-listings";
 import type { Attribute } from "./attributes";
 import type { CategoryFilter } from "./category-filters";
@@ -489,6 +489,22 @@ export const getVehicleListingsFromServer = cache(async (
   });
 });
 
+// VehicleShopPage.tsx's brand-checkbox facet list — a dedicated lean
+// endpoint (one ref row per brand) rather than an unbounded
+// getVehicleListingsFromServer call used only to re-derive this same
+// distinct-brand list client-side (same fix as getShopCategoryFacetsFromServer
+// above, applied to the per-category vehicle shop page's brand facet).
+export const getVehicleBrandFacetsFromServer = cache(async (
+  categoryId?: number,
+  bulkDiscountEventId?: number,
+): Promise<BrandModelRef[]> => {
+  return fetchFromServer<{ items: BrandModelRef[] }, BrandModelRef[]>("/vehicle-listings/brand-facets", {
+    params: { categoryId, bulkDiscountEventId },
+    fallback: [],
+    extract: (data) => data.items,
+  });
+});
+
 export type AdminListPage<T> = { items: T[]; total: number; page: number; pageSize: number };
 
 // Vehicle category shop page's initial (server-rendered) load specifically —
@@ -790,6 +806,21 @@ export const getProductsFromServer = cache(async (
   });
 });
 
+// ProductShopPage.tsx's brand-checkbox facet list — a dedicated lean
+// endpoint (one ref row per brand) rather than an unbounded
+// getProductsFromServer(category.id) call used only to re-derive this same
+// distinct-brand list client-side (same fix as getShopCategoryFacetsFromServer
+// above, applied to the per-category product shop page's brand facet).
+export const getProductBrandFacetsFromServer = cache(async (
+  categoryId?: number,
+): Promise<BrandModelRef[]> => {
+  return fetchFromServer<{ items: BrandModelRef[] }, BrandModelRef[]>("/products/brand-facets", {
+    params: { categoryId },
+    fallback: [],
+    extract: (data) => data.items,
+  });
+});
+
 const SHOP_PAGE_SIZE = 20;
 
 // Category shop page's initial (server-rendered) load specifically — unlike
@@ -969,19 +1000,22 @@ export const getProductFromServer = cache(async (id: number): Promise<Product | 
   });
 });
 
-export const getShopProductsFromServer = cache(async (filters: {
+// /shop page's category-checkbox facet list — the distinct categories among
+// products matching these filters. A dedicated lean endpoint (one ref row
+// per category) rather than the unbounded full-product-row fetch this used
+// to be (getShopProductsFromServer, now removed): that fetch shipped every
+// matching product's full card data (3-locale descriptions, metaTitle,
+// attributeValues, ...) purely to re-derive this same distinct-category list
+// client-side.
+export const getShopCategoryFacetsFromServer = cache(async (filters: {
   categoryId?: number;
   brandIds?: number[];
   onSale?: boolean;
   bulkDiscountEventId?: number;
-}): Promise<Product[]> => {
+}): Promise<NamedRef[]> => {
   // Public endpoint (the /shop page) — must not bail out just because there
-  // is no admin session cookie, same fix as getCategoriesFromServer. Kept
-  // unbounded — ShopAllProductsPage.tsx uses this only to derive its
-  // category-checkbox facet list (needs to see every category present, not
-  // just the current page's); getShopProductsPageFromServer below feeds the
-  // actual grid.
-  return fetchFromServer<{ items: Product[] }, Product[]>("/products", {
+  // is no admin session cookie, same fix as getCategoriesFromServer.
+  return fetchFromServer<{ items: NamedRef[] }, NamedRef[]>("/products/category-facets", {
     params: {
       categoryId: filters.categoryId,
       brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
@@ -994,9 +1028,9 @@ export const getShopProductsFromServer = cache(async (filters: {
 });
 
 // /shop page's initial (server-rendered) grid load specifically — real
-// server-side pagination/sorting (see products.service.ts's listProducts),
-// unlike getShopProductsFromServer above. ShopAllProductsPage.tsx re-fetches
-// subsequent pages/filters/sorts itself via listProductsPage.
+// server-side pagination/sorting (see products.service.ts's listProducts).
+// ShopAllProductsPage.tsx re-fetches subsequent pages/filters/sorts itself
+// via listProductsPage.
 export const getShopProductsPageFromServer = cache(async (filters: {
   categoryId?: number;
   brandIds?: number[];

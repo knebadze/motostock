@@ -93,6 +93,42 @@ function toNamedRef(row: NamedRefRow) {
   return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
 }
 
+// Rows fetched via vehicleListingRepository's adminListInclude (the admin
+// list, and — since the storefront browse/search N+1 fix below — every
+// customer-facing list/carousel path too) drop the 7 VehicleCatalog
+// spec-lookup joins entirely. Null-filled right after the fetch purely to
+// satisfy toVehicleListingResponse's shape — no card (admin table row or
+// storefront ProductCard-equivalent) ever renders these; only the single-
+// item detail page (vehicleListingRepository.findById, still the full
+// include) actually reads them.
+function nullFillVehicleCatalogSpecs<T extends { vehicleCatalog: object }>(
+  row: T,
+): T & {
+  vehicleCatalog: T["vehicleCatalog"] & {
+    fuelType: null;
+    transmissionType: null;
+    coolingType: null;
+    finalDriveType: null;
+    driveType: null;
+    startType: null;
+    powertrainType: null;
+  };
+} {
+  return {
+    ...row,
+    vehicleCatalog: {
+      ...row.vehicleCatalog,
+      fuelType: null,
+      transmissionType: null,
+      coolingType: null,
+      finalDriveType: null,
+      driveType: null,
+      startType: null,
+      powertrainType: null,
+    },
+  };
+}
+
 export function toVehicleListingResponse(row: VehicleListingRow) {
   const activeDiscount = findActiveDiscount(row.discounts);
 
@@ -248,6 +284,24 @@ export async function getUsdToGelExchangeRate() {
   return { rate, updatedAt };
 }
 
+// Backs VehicleShopPage.tsx's brand-checkbox facet list — the same 2 filters
+// getVehicleListingsFromServer is called with today (categoryId,
+// bulkDiscountEventId), but replaces that unbounded full-listing-row fetch
+// (used only to re-derive this exact distinct-brand list client-side) with a
+// query that returns one lean ref row per brand directly (same fix as
+// products.service.ts's listProductCategoryFacets/listProductBrandFacets).
+export async function listVehicleListingBrandFacets(query: {
+  categoryId?: number;
+  bulkDiscountEventId?: number;
+}) {
+  const categoryIds =
+    query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
+  return vehicleListingRepository.findDistinctBrandFacets({
+    categoryIds,
+    bulkDiscountEventId: query.bulkDiscountEventId,
+  });
+}
+
 // total/page/pageSize are real (DB-backed) whenever the caller is paginated
 // — the admin list (always) or a storefront browse/search that explicitly
 // sent page/pageSize. Every other caller (homepage sliders, any `limit`-only
@@ -308,19 +362,7 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       vehicleListingRepository.findManyForAdmin({ ...adminCountFilters, skip, take }),
       vehicleListingRepository.countForAdmin(adminCountFilters),
     ]);
-    const rows = adminRows.map((row) => ({
-      ...row,
-      vehicleCatalog: {
-        ...row.vehicleCatalog,
-        fuelType: null,
-        transmissionType: null,
-        coolingType: null,
-        finalDriveType: null,
-        driveType: null,
-        startType: null,
-        powertrainType: null,
-      },
-    }));
+    const rows = adminRows.map(nullFillVehicleCatalogSpecs);
     const result = rows.map(toVehicleListingResponse);
     return { items: result, total: adminTotal, page, pageSize };
   }
@@ -361,7 +403,7 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
           : effectivePrice(b) - effectivePrice(a),
       );
       const pageRows = sorted.slice(skip, skip + take);
-      const result = pageRows.map(toVehicleListingResponse);
+      const result = pageRows.map(nullFillVehicleCatalogSpecs).map(toVehicleListingResponse);
       return { items: result, total: rows.length, page, pageSize };
     }
 
@@ -380,7 +422,7 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       }),
       vehicleListingRepository.count(filters),
     ]);
-    const result = rows.map(toVehicleListingResponse);
+    const result = rows.map(nullFillVehicleCatalogSpecs).map(toVehicleListingResponse);
     return { items: result, total, page, pageSize };
   }
 
@@ -404,16 +446,16 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
 
   let result: ReturnType<typeof toVehicleListingResponse>[];
   if (searchIds == null) {
-    result = rows.map(toVehicleListingResponse);
+    result = rows.map(nullFillVehicleCatalogSpecs).map(toVehicleListingResponse);
   } else {
     // See products.service.ts's listProducts for why this re-sort/slice
     // step is needed (findMany's `id: {in: [...]}` doesn't preserve rank
     // order).
     const rankById = new Map(searchIds.map((id, index) => [id, index]));
     const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
-    result = (query.limit != null ? ranked.slice(0, query.limit) : ranked).map(
-      toVehicleListingResponse,
-    );
+    result = (query.limit != null ? ranked.slice(0, query.limit) : ranked)
+      .map(nullFillVehicleCatalogSpecs)
+      .map(toVehicleListingResponse);
   }
 
   if (cacheKey) cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
@@ -438,7 +480,7 @@ export async function listPopularVehicleListings(limit: number) {
   const result = rankedIds
     .map((id) => rowById.get(id))
     .filter((row): row is NonNullable<typeof row> => row != null)
-    .map((row) => toVehicleListingResponse(row));
+    .map((row) => toVehicleListingResponse(nullFillVehicleCatalogSpecs(row)));
 
   cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
   return result;

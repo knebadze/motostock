@@ -14,6 +14,11 @@ import type { Product } from "@/lib/api/products";
 import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 import { persistSelectedVehicleCookie } from "@/lib/vehicle-selection";
+import { getWishlistStatus } from "@/lib/api/wishlist";
+import { getCompareStatus } from "@/lib/api/compare";
+import { isKnownAuthState } from "@/lib/api/auth-state";
+import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
+import { useCollectionStatusMap, lookupProductStatus } from "@/components/shared/useCollectionStatusMap";
 
 type SortBy = "newest" | "price-asc" | "price-desc";
 const SORT_VALUES: SortBy[] = ["newest", "price-asc", "price-desc"];
@@ -94,6 +99,18 @@ export function CompatibleProductsPage({
   }, [filtered, sortBy]);
 
   const { page, setPage, pageItems, totalPages } = usePagination(sorted);
+
+  // One batched wishlist/compare status check for the current page's grid
+  // instead of each ProductCard's own WishlistButton/CompareButton checking
+  // individually — see useCollectionStatusMap's own comment.
+  const visibleProductIds = useMemo(() => pageItems.map((product) => product.id), [pageItems]);
+  const wishlistStatus = useCollectionStatusMap(
+    getWishlistStatus,
+    visibleProductIds,
+    [],
+    () => isKnownAuthState() || isGuestWishlistKnownEnabled(),
+  );
+  const compareStatus = useCollectionStatusMap(getCompareStatus, visibleProductIds, [], () => true);
 
   const sortOptions: SelectOption[] = [
     { value: "newest", label: t("sortNewest") },
@@ -205,7 +222,14 @@ export function CompatibleProductsPage({
                 layout={viewMode}
                 getKey={(product) => product.id}
                 emptyMessage={t("emptyState")}
-                renderItem={(product, layout) => <ProductCard product={product} layout={layout} />}
+                renderItem={(product, layout) => (
+                  <ProductCard
+                    product={product}
+                    layout={layout}
+                    wishlistItemId={lookupProductStatus(wishlistStatus, product.id)}
+                    compareItemId={lookupProductStatus(compareStatus, product.id)}
+                  />
+                )}
               />
 
               <Pagination

@@ -13,6 +13,10 @@ import {
   checkCompatibilityResponseSchema,
   createProductSchema,
   popularProductsQuerySchema,
+  productBrandFacetsQuerySchema,
+  productBrandFacetsResponseSchema,
+  productCategoryFacetsQuerySchema,
+  productCategoryFacetsResponseSchema,
   productDetailAdminResponseSchema,
   productDetailQuerySchema,
   productDetailResponseSchema,
@@ -33,6 +37,18 @@ productsRouter.get(
   "/popular",
   validate(popularProductsQuerySchema, "query"),
   productsController.getPopular,
+);
+// Registered before /:id for the same reason as /popular above (a literal
+// path segment ahead of the :id param route).
+productsRouter.get(
+  "/category-facets",
+  validate(productCategoryFacetsQuerySchema, "query"),
+  productsController.getCategoryFacets,
+);
+productsRouter.get(
+  "/brand-facets",
+  validate(productBrandFacetsQuerySchema, "query"),
+  productsController.getBrandFacets,
 );
 productsRouter.get(
   "/by-slug/:slug",
@@ -129,6 +145,34 @@ registry.registerPath({
   request: { query: popularProductsQuerySchema },
   responses: {
     200: { description: "Popular products", content: { "application/json": { schema: listResponse } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/products/category-facets",
+  tags: ["Products"],
+  summary: "Distinct categories among products matching the given filters (public — shop page's category-checkbox facet list)",
+  request: { query: productCategoryFacetsQuerySchema },
+  responses: {
+    200: {
+      description: "Category refs",
+      content: { "application/json": { schema: productCategoryFacetsResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/products/brand-facets",
+  tags: ["Products"],
+  summary: "Distinct brands among products matching the given category (public — category shop page's brand-checkbox facet list)",
+  request: { query: productBrandFacetsQuerySchema },
+  responses: {
+    200: {
+      description: "Brand refs",
+      content: { "application/json": { schema: productBrandFacetsResponseSchema } },
+    },
   },
 });
 

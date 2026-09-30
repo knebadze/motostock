@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -145,7 +146,14 @@ export default async function LocaleLayout({
 
   return (
     <RootShell lang={locale}>
-      <LocalBusinessJsonLd locale={locale} />
+      {/* company-info fetch (rarely changes) previously blocked every single
+          page's initial render (this layout wraps every storefront route).
+          Suspense lets the rest of the page stream ahead of it instead —
+          `fallback={null}` since this renders no visible UI of its own, only
+          a JSON-LD <script> tag. */}
+      <Suspense fallback={null}>
+        <LocalBusinessJsonLd locale={locale} />
+      </Suspense>
       <GoogleAnalytics />
       <VisitorPingBeacon />
       <NextIntlClientProvider>{children}</NextIntlClientProvider>

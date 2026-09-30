@@ -179,7 +179,21 @@ export const popularVehicleListingsQuerySchema = z.object({
 export type PopularVehicleListingsQuery = z.infer<typeof popularVehicleListingsQuerySchema>;
 
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
-const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
+// Exported for vehicleListingBrandFacetsResponseSchema below (vehicle-listing
+// routes register that one for the OpenAPI doc, so this needs to be
+// reachable there too).
+export const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
+
+// Backs VehicleShopPage.tsx's brand-checkbox facet list — the exact same
+// filter set as the storefront browse/search endpoint above, minus
+// everything (search/pagination/sort/spec filters) that endpoint needs but a
+// distinct-brand list doesn't.
+export const vehicleListingBrandFacetsQuerySchema = z.object({
+  categoryId: z.coerce.number().int().positive().optional(),
+  bulkDiscountEventId: z.coerce.number().int().positive().optional(),
+});
+export type VehicleListingBrandFacetsQuery = z.infer<typeof vehicleListingBrandFacetsQuerySchema>;
+export const vehicleListingBrandFacetsResponseSchema = z.object({ items: z.array(brandModelRefSchema) });
 
 export const vehicleListingResponseSchema = registry.register(
   "VehicleListing",

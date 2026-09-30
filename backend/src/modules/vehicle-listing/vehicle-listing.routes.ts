@@ -10,6 +10,8 @@ import {
   createVehicleListingSchema,
   popularVehicleListingsQuerySchema,
   updateVehicleListingSchema,
+  vehicleListingBrandFacetsQuerySchema,
+  vehicleListingBrandFacetsResponseSchema,
   vehicleListingDetailAdminResponseSchema,
   vehicleListingIdParamSchema,
   vehicleListingListQuerySchema,
@@ -32,6 +34,13 @@ vehicleListingRouter.get(
   vehicleListingController.getPopular,
 );
 vehicleListingRouter.get("/exchange-rate/usd-gel", vehicleListingController.getExchangeRate);
+// Registered before /:id for the same reason as /popular above (a literal
+// path segment ahead of the :id param route).
+vehicleListingRouter.get(
+  "/brand-facets",
+  validate(vehicleListingBrandFacetsQuerySchema, "query"),
+  vehicleListingController.getBrandFacets,
+);
 vehicleListingRouter.get(
   "/:id",
   validate(vehicleListingIdParamSchema, "params"),
@@ -108,6 +117,20 @@ registry.registerPath({
   request: { query: popularVehicleListingsQuerySchema },
   responses: {
     200: { description: "Popular vehicle listings", content: { "application/json": { schema: listResponse } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-listings/brand-facets",
+  tags: ["VehicleListings"],
+  summary: "Distinct brands among vehicle listings matching the given filters (public — shop page's brand-checkbox facet list)",
+  request: { query: vehicleListingBrandFacetsQuerySchema },
+  responses: {
+    200: {
+      description: "Brand refs",
+      content: { "application/json": { schema: vehicleListingBrandFacetsResponseSchema } },
+    },
   },
 });
 

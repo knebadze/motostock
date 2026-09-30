@@ -6,6 +6,7 @@ import type {
   CreateVehicleListingInput,
   PopularVehicleListingsQuery,
   UpdateVehicleListingInput,
+  VehicleListingBrandFacetsQuery,
   VehicleListingListQuery,
 } from "./vehicle-listing.schema.js";
 
@@ -15,6 +16,14 @@ export async function list(
 ) {
   const result = await vehicleListingService.listVehicleListings(req.query);
   res.status(200).json(result);
+}
+
+export async function getBrandFacets(
+  req: Request<unknown, unknown, unknown, VehicleListingBrandFacetsQuery>,
+  res: Response,
+) {
+  const items = await vehicleListingService.listVehicleListingBrandFacets(req.query);
+  res.status(200).json({ items });
 }
 
 export async function getPopular(

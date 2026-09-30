@@ -5,10 +5,10 @@ import {
   getCategoriesFromServer,
   getCategoryFiltersFromServer,
   getMyGarageFromServer,
-  getProductsFromServer,
+  getProductBrandFacetsFromServer,
   getProductsPageFromServer,
+  getVehicleBrandFacetsFromServer,
   getVehicleCategoryFiltersFromServer,
-  getVehicleListingsFromServer,
   getVehicleListingsPageFromServer,
 } from "@/lib/api/server";
 import { isVehicleCategory, getAncestorChain } from "@/lib/categories-tree";
@@ -136,11 +136,12 @@ export default async function CategoryShopPage({
 
   if (isVehicle) {
     const vehicleSortBy = parseVehicleSortBy(initialSort);
-    // `listings` (unbounded) feeds the brand-checkbox facet list, which needs
-    // to see every brand present in the category, not just the current
-    // page's — `listingsPage` (real server pagination) feeds the actual grid.
-    const [listings, listingsPage, vehicleFilters] = await Promise.all([
-      getVehicleListingsFromServer(category.id, parsedEventId),
+    // `brandFacets` — the distinct brands present in this category — feeds
+    // the brand-checkbox facet list, via a lean dedicated endpoint rather
+    // than an unbounded full-listing fetch just to re-derive it client-side.
+    // `listingsPage` (real server pagination) feeds the actual grid.
+    const [brandFacets, listingsPage, vehicleFilters] = await Promise.all([
+      getVehicleBrandFacetsFromServer(category.id, parsedEventId),
       getVehicleListingsPageFromServer(category.id, initialPage, vehicleSortBy, parsedEventId),
       getVehicleCategoryFiltersFromServer(category.id),
     ]);
@@ -151,7 +152,7 @@ export default async function CategoryShopPage({
           category={category}
           breadcrumbChain={ancestorChain}
           subcategories={subcategories}
-          listings={listings}
+          brands={brandFacets}
           initialData={listingsPage}
           filters={vehicleFilters}
           initialSort={vehicleSortBy}
@@ -164,11 +165,11 @@ export default async function CategoryShopPage({
   // The garage/session vehicle is deliberately never used to pre-filter this
   // list — it only takes effect once the shopper explicitly picks it from
   // the MY_VEHICLE filter on this page (see ProductFilters/ProductShopPage).
-  // `products` (unbounded) feeds the brand-checkbox facet list, same
-  // reasoning as `listings` above; `productsPage` feeds the actual grid.
+  // `brandFacets` feeds the brand-checkbox facet list, same reasoning as the
+  // vehicle branch above; `productsPage` feeds the actual grid.
   const productSortBy = parseProductSortBy(initialSort);
-  const [products, productsPage, filters, garageVehicles] = await Promise.all([
-    getProductsFromServer(category.id),
+  const [brandFacets, productsPage, filters, garageVehicles] = await Promise.all([
+    getProductBrandFacetsFromServer(category.id),
     getProductsPageFromServer(category.id, initialPage, productSortBy),
     getCategoryFiltersFromServer(category.id),
     getMyGarageFromServer(),
@@ -180,7 +181,7 @@ export default async function CategoryShopPage({
         category={category}
         breadcrumbChain={ancestorChain}
         subcategories={subcategories}
-        products={products}
+        brands={brandFacets}
         initialData={productsPage}
         filters={filters}
         garageVehicles={garageVehicles}
