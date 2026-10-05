@@ -10,9 +10,9 @@ import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import { addToCart } from "@/lib/api/cart";
 import { getProductBySlug } from "@/lib/api/products";
-import type { Product, ProductDetail, ProductVariantDetail } from "@/lib/api/products";
+import type { ProductDetail, ProductListItem, ProductVariantDetail } from "@/lib/api/products";
 
-function effectivePrice(product: Product): number {
+function effectivePrice(product: ProductListItem): number {
   return product.activeDiscount ? product.activeDiscount.discountPrice : (product.minPrice ?? 0);
 }
 
@@ -23,7 +23,7 @@ function resolveDefaultVariant(variants: ProductVariantDetail[]): ProductVariant
   return variants.find((variant) => variant.stockQuantity > 0) ?? variants[0] ?? null;
 }
 
-function BuyTogetherCard({ product }: { product: Product }) {
+function BuyTogetherCard({ product }: { product: ProductListItem }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const imageUrl = resolveMediaUrl(product.imageUrl);
 

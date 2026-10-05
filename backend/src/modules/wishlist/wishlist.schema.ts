@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
-import { productResponseSchema } from "../products/products.schema.js";
+import { productCardResponseSchema } from "../products/products.schema.js";
 import { vehicleListingResponseSchema } from "../vehicle-listing/vehicle-listing.schema.js";
 
 export const wishlistItemTypeSchema = z.enum(["PRODUCT", "VEHICLE_LISTING"]);
@@ -41,7 +41,7 @@ export const wishlistItemResponseSchema = registry.register(
   z.object({
     id: z.int().openapi({ example: 1 }),
     itemType: wishlistItemTypeSchema,
-    product: productResponseSchema.nullable(),
+    product: productCardResponseSchema.nullable(),
     vehicleListing: vehicleListingResponseSchema.nullable(),
     createdAt: z.iso.datetime(),
   }),

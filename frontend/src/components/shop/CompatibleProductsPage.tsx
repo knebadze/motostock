@@ -10,7 +10,7 @@ import { ShopToolbar } from "./ShopToolbar";
 import { ShopItemGrid } from "./ShopItemGrid";
 import { ProductCard } from "./ProductCard";
 import type { ViewMode } from "./ViewModeToggle";
-import type { Product } from "@/lib/api/products";
+import type { ProductListItem } from "@/lib/api/products";
 import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 import { persistSelectedVehicleCookie } from "@/lib/vehicle-selection";
@@ -32,7 +32,7 @@ export function CompatibleProductsPage({
   products,
 }: {
   vehicle: VehicleCatalogEntry;
-  products: Product[];
+  products: ProductListItem[];
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
@@ -58,7 +58,7 @@ export function CompatibleProductsPage({
   // shop page — search/category filtering here narrows the already-fetched
   // list client-side instead of round-tripping to the server per keystroke.
   const categoryOptions = useMemo(() => {
-    const byId = new Map<number, Product["category"]>();
+    const byId = new Map<number, ProductListItem["category"]>();
     for (const product of products) {
       if (!byId.has(product.category.id)) byId.set(product.category.id, product.category);
     }

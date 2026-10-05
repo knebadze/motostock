@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
-import { productResponseSchema } from "../products/products.schema.js";
+import { productCardResponseSchema } from "../products/products.schema.js";
 
 export const productBuyTogetherProductIdParamSchema = z.object({
   productId: z.coerce.number().int().positive(),
@@ -25,7 +25,7 @@ export const productBuyTogetherResponseSchema = registry.register(
   z.object({
     id: z.int().openapi({ example: 1 }),
     productId: z.int(),
-    relatedProduct: productResponseSchema,
+    relatedProduct: productCardResponseSchema,
     createdAt: z.iso.datetime(),
   }),
 );

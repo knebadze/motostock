@@ -9,13 +9,13 @@ import { getCompareStatus } from "@/lib/api/compare";
 import { isKnownAuthState } from "@/lib/api/auth-state";
 import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
 import { useCollectionStatusMap, lookupProductStatus } from "@/components/shared/useCollectionStatusMap";
-import type { Product } from "@/lib/api/products";
+import type { ProductListItem } from "@/lib/api/products";
 
 // View-based co-occurrence ("customers who viewed this also viewed") —
 // independent of both BuyTogether (admin-curated) and
 // FrequentlyBoughtTogether (order co-occurrence); views vastly outnumber
 // orders, so this stays useful even while order history is still thin.
-export function ViewedTogether({ products }: { products: Product[] }) {
+export function ViewedTogether({ products }: { products: ProductListItem[] }) {
   const t = useTranslations("ProductDetail");
 
   // One batched wishlist/compare status check for the whole carousel instead

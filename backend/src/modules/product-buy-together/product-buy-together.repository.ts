@@ -1,8 +1,8 @@
 import { prisma } from "../../config/prisma.js";
-import { productSummaryInclude } from "../products/products.repository.js";
+import { productCardSelect } from "../products/products.repository.js";
 import type { Prisma } from "../../generated/prisma/index.js";
 
-const include = { relatedProduct: { include: productSummaryInclude } } as const;
+const include = { relatedProduct: { select: productCardSelect } } as const;
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
 const productRefSelect = { ...namedRefSelect, category: { select: namedRefSelect } } as const;

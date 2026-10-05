@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FormActions } from "@/components/shared/FormActions";
 import { Tabs } from "@/components/shared/Tabs";
-import type { Product } from "@/lib/api/products";
+import type { Product, ProductListItem } from "@/lib/api/products";
 import { siteConfig } from "@/config/site";
 import type { Attribute } from "@/lib/api/attributes";
 import type { Category } from "@/lib/api/categories";
@@ -66,7 +66,7 @@ export function ProductForm({
   statuses: LookupItem[];
   vehicleCatalog: VehicleCatalogEntry[];
   vehicleSpecLookups: VehicleSpecLookupMap;
-  allProducts: Product[];
+  allProducts: ProductListItem[];
   product: Product | null;
 }) {
   const router = useRouter();

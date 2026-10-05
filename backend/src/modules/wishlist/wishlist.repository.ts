@@ -1,5 +1,5 @@
 import { prisma } from "../../config/prisma.js";
-import { productSummaryInclude } from "../products/products.repository.js";
+import { productCardSelect } from "../products/products.repository.js";
 import { adminListInclude as vehicleListingWishlistInclude } from "../vehicle-listing/vehicle-listing.repository.js";
 import type { WishlistItemType } from "../../generated/prisma/index.js";
 
@@ -12,7 +12,7 @@ function ownerWhere(owner: WishlistOwner) {
 // Exported so users.repository.ts's admin "full detail" view can nest the
 // same shape under User.wishlistItems without duplicating it.
 export const wishlistItemInclude = {
-  product: { include: productSummaryInclude },
+  product: { select: productCardSelect },
   vehicleListing: { include: vehicleListingWishlistInclude },
 } as const;
 

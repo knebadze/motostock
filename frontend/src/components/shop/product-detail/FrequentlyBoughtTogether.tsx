@@ -9,7 +9,7 @@ import { getCompareStatus } from "@/lib/api/compare";
 import { isKnownAuthState } from "@/lib/api/auth-state";
 import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
 import { useCollectionStatusMap, lookupProductStatus } from "@/components/shared/useCollectionStatusMap";
-import type { Product } from "@/lib/api/products";
+import type { ProductListItem } from "@/lib/api/products";
 
 // Algorithmic (co-purchase-count-based) companion list — a plain browsing
 // carousel, unlike BuyTogether's "add the whole bundle" widget, since a
@@ -17,7 +17,7 @@ import type { Product } from "@/lib/api/products";
 // pairing and shouldn't be presented as a ready-made bundle. Only ever
 // rendered as a fallback when the admin hasn't curated a buyTogether list
 // for this product (see the item detail page).
-export function FrequentlyBoughtTogether({ products }: { products: Product[] }) {
+export function FrequentlyBoughtTogether({ products }: { products: ProductListItem[] }) {
   const t = useTranslations("ProductDetail");
 
   // One batched wishlist/compare status check for the whole carousel instead

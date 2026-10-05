@@ -1,7 +1,7 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { productsRepository } from "../products/products.repository.js";
-import { toResponse as toProductResponse } from "../products/products.service.js";
+import { toCardResponse as toProductResponse } from "../products/products.service.js";
 import { vehicleListingRepository } from "../vehicle-listing/vehicle-listing.repository.js";
 import { toVehicleListingResponse } from "../vehicle-listing/vehicle-listing.service.js";
 import { wishlistRepository, type WishlistOwner } from "./wishlist.repository.js";

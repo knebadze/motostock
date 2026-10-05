@@ -33,6 +33,7 @@ import type {
   UpdateProductInput,
 } from "./products.schema.js";
 import type {
+  productCardResponseSchema,
   productDetailAdminResponseSchema,
   productDetailResponseSchema,
   productResponseSchema,
@@ -105,40 +106,44 @@ function findCardActiveDiscount(
   return cheapest;
 }
 
-type ProductRow = {
+// What every card query selects (productsRepository's productCardSelect).
+type ProductCardRow = {
   id: number;
   category: NamedRefRow;
   productBrand: BrandModelRefRow | null;
   nameKa: string;
   nameEn: string;
   nameRu: string;
+  imageUrl: string | null;
+  slug: string;
+  viewCount: number;
+  isFeaturedOnHomepage: boolean;
+  variants: VariantSummaryRow[];
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type ProductRow = ProductCardRow & {
   descriptionKa: string | null;
   descriptionEn: string | null;
   descriptionRu: string | null;
-  imageUrl: string | null;
-  slug: string;
   metaTitleKa: string | null;
   metaTitleEn: string | null;
   metaTitleRu: string | null;
   metaDescriptionKa: string | null;
   metaDescriptionEn: string | null;
   metaDescriptionRu: string | null;
-  viewCount: number;
-  isFeaturedOnHomepage: boolean;
   attributeValues: AttributeValueRow[];
-  variants: VariantSummaryRow[];
-  createdAt: Date;
-  updatedAt: Date;
 };
 
 function toNamedRef(row: NamedRefRow) {
   return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
 }
 
-// Exported for reuse by product-buy-together.service.ts, which maps related
-// Product rows (fetched via productsRepository) through this same "product
-// card" response shape.
-export async function toResponse(row: ProductRow) {
+// The lean "product card" response (products.schema.ts's
+// productCardResponseSchema) — every grid/slider/list surface, here and in
+// wishlist/product-views/product-buy-together/recommendations.
+export async function toCardResponse(row: ProductCardRow) {
   const totalStock = row.variants.reduce((sum, v) => sum + v.stockQuantity, 0);
   return {
     id: row.id,
@@ -146,6 +151,24 @@ export async function toResponse(row: ProductRow) {
     productBrand: row.productBrand,
     name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu },
     slug: row.slug,
+    imageUrl: row.imageUrl,
+    variantCount: row.variants.length,
+    minPrice: row.variants.length > 0 ? Math.min(...row.variants.map((v) => Number(v.price))) : null,
+    totalStock,
+    lowStockQuantity: await computeLowStockQuantity(totalStock, row.category.lowStockBadgeEnabled),
+    activeDiscount: findCardActiveDiscount(row.variants),
+    viewCount: row.viewCount,
+    isFeaturedOnHomepage: row.isFeaturedOnHomepage,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+// The full Product (card + descriptions, SEO meta, attribute values) — the
+// product page, admin detail/edit and compare.
+export async function toResponse(row: ProductRow) {
+  return {
+    ...(await toCardResponse(row)),
     metaTitleKa: row.metaTitleKa,
     metaTitleEn: row.metaTitleEn,
     metaTitleRu: row.metaTitleRu,
@@ -155,7 +178,6 @@ export async function toResponse(row: ProductRow) {
     descriptionKa: row.descriptionKa,
     descriptionEn: row.descriptionEn,
     descriptionRu: row.descriptionRu,
-    imageUrl: row.imageUrl,
     attributeValues: row.attributeValues.map((value) => ({
       attributeId: value.attributeId,
       attributeName: {
@@ -190,15 +212,6 @@ export async function toResponse(row: ProductRow) {
           }
         : null,
     })),
-    variantCount: row.variants.length,
-    minPrice: row.variants.length > 0 ? Math.min(...row.variants.map((v) => Number(v.price))) : null,
-    totalStock,
-    lowStockQuantity: await computeLowStockQuantity(totalStock, row.category.lowStockBadgeEnabled),
-    activeDiscount: findCardActiveDiscount(row.variants),
-    viewCount: row.viewCount,
-    isFeaturedOnHomepage: row.isFeaturedOnHomepage,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
   };
 }
 
@@ -241,7 +254,7 @@ type ProductDetailRow = Omit<ProductRow, "variants"> & {
   variants: VariantDetailRow[];
   fitments: FitmentRow[];
   fitmentRules: FitmentRuleRow[];
-  buyTogether: { relatedProduct: ProductRow }[];
+  buyTogether: { relatedProduct: ProductCardRow }[];
 };
 
 async function toVariantDetailResponse(row: VariantDetailRow, lowStockBadgeEnabled: boolean) {
@@ -316,7 +329,7 @@ export async function toDetailResponse(row: ProductDetailRow) {
       model: fitment.vehicleCatalog.model,
     })),
     fitmentRules: await Promise.all(row.fitmentRules.map(toFitmentRuleResponse)),
-    buyTogether: await Promise.all(row.buyTogether.map((link) => toResponse(link.relatedProduct))),
+    buyTogether: await Promise.all(row.buyTogether.map((link) => toCardResponse(link.relatedProduct))),
   };
 }
 
@@ -533,7 +546,7 @@ export async function listProductBrandFacets(query: { categoryId?: number }) {
 export async function listProducts(query: ProductListQuery) {
   const cacheKey = isCacheableOnSaleQuery(query) ? `products:onSale:${query.limit ?? "all"}` : null;
   if (cacheKey) {
-    const cached = cache.get<Awaited<ReturnType<typeof toResponse>>[]>(cacheKey);
+    const cached = cache.get<Awaited<ReturnType<typeof toCardResponse>>[]>(cacheKey);
     if (cached) return { items: cached, total: cached.length, page: 1, pageSize: cached.length || 1 };
   }
 
@@ -561,11 +574,10 @@ export async function listProducts(query: ProductListQuery) {
   // fetches one server-paginated page (page/pageSize below) of the filtered
   // result set — see productsRepository.findManyForAdmin's comment for why
   // that path uses a lean projection instead of the storefront card
-  // include. attributeValues/each variant's discounts are backfilled as
-  // empty right after the fetch purely to satisfy toResponse's shape —
-  // nothing reads those two fields off an admin-list row (the admin detail
-  // modal fetches full per-product data separately), so activeDiscount
-  // ending up null and attributeValues empty here is harmless.
+  // select. Each variant's discounts are backfilled as empty right after the
+  // fetch purely to satisfy toCardResponse's shape — nothing reads
+  // activeDiscount off an admin-list row (the admin detail modal fetches
+  // full per-product data separately), so it ending up null is harmless.
   const isAdminList = query.adminFilters != null;
   // The storefront shop pages (see frontend's useServerPagination callers)
   // opt into real pagination by sending page/pageSize; every other
@@ -593,13 +605,12 @@ export async function listProducts(query: ProductListQuery) {
     ]);
     const rows = adminRows.map((row) => ({
       ...row,
-      attributeValues: [] as AttributeValueRow[],
       variants: row.variants.map((variant) => ({
         ...variant,
         discounts: [] as DiscountSummaryRow[],
       })),
     }));
-    const result = await Promise.all(rows.map(toResponse));
+    const result = await Promise.all(rows.map(toCardResponse));
     return { items: result, total: adminTotal, page, pageSize };
   }
 
@@ -636,7 +647,7 @@ export async function listProducts(query: ProductListQuery) {
         query.sortBy === "price-asc" ? priceOf(a) - priceOf(b) : priceOf(b) - priceOf(a),
       );
       const pageRows = sorted.slice(skip, skip + take);
-      const result = await Promise.all(pageRows.map(toResponse));
+      const result = await Promise.all(pageRows.map(toCardResponse));
       return { items: result, total: rows.length, page, pageSize };
     }
 
@@ -649,7 +660,7 @@ export async function listProducts(query: ProductListQuery) {
       productsRepository.findMany({ ...filters, skip, limit: take, paginate: true }),
       productsRepository.count(filters),
     ]);
-    const result = await Promise.all(rows.map(toResponse));
+    const result = await Promise.all(rows.map(toCardResponse));
     return { items: result, total, page, pageSize };
   }
 
@@ -669,9 +680,9 @@ export async function listProducts(query: ProductListQuery) {
     limit: query.limit,
   });
 
-  let result: Awaited<ReturnType<typeof toResponse>>[];
+  let result: Awaited<ReturnType<typeof toCardResponse>>[];
   if (searchIds == null) {
-    result = await Promise.all(rows.map(toResponse));
+    result = await Promise.all(rows.map(toCardResponse));
   } else {
     // findMany's `id: {in: searchIds}` doesn't preserve searchIds' relevance
     // order — restore it, then apply the limit here (findMany skipped `take`
@@ -679,7 +690,7 @@ export async function listProducts(query: ProductListQuery) {
     const rankById = new Map(searchIds.map((id, index) => [id, index]));
     const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
     result = await Promise.all(
-      (query.limit != null ? ranked.slice(0, query.limit) : ranked).map(toResponse),
+      (query.limit != null ? ranked.slice(0, query.limit) : ranked).map(toCardResponse),
     );
   }
 
@@ -694,7 +705,7 @@ export async function listProducts(query: ProductListQuery) {
 // reason as listProducts' on-sale path above.
 export async function listPopularProducts(limit: number) {
   const cacheKey = `products:popular:${limit}`;
-  const cached = cache.get<Awaited<ReturnType<typeof toResponse>>[]>(cacheKey);
+  const cached = cache.get<Awaited<ReturnType<typeof toCardResponse>>[]>(cacheKey);
   if (cached) return cached;
 
   const rankedIds = await productsRepository.findPopularProductIds(limit);
@@ -706,7 +717,7 @@ export async function listPopularProducts(limit: number) {
     rankedIds
       .map((id) => rowById.get(id))
       .filter((row): row is NonNullable<typeof row> => row != null)
-      .map((row) => toResponse(row)),
+      .map((row) => toCardResponse(row)),
   );
 
   cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
@@ -942,6 +953,10 @@ export async function deleteProduct(id: number) {
 // Contract checks: the mappers above must return exactly what
 // products.schema.ts documents — the frontend's Product/ProductDetail types
 // are generated from those schemas (see lib/response-contract.ts).
+type _ProductCardResponseContract = Expect<ResponseMatches<
+  Awaited<ReturnType<typeof toCardResponse>>,
+  z.infer<typeof productCardResponseSchema>
+>>;
 type _ProductResponseContract = Expect<ResponseMatches<
   Awaited<ReturnType<typeof toResponse>>,
   z.infer<typeof productResponseSchema>

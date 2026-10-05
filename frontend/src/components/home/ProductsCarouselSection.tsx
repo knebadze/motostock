@@ -8,14 +8,14 @@ import { getCompareStatus } from "@/lib/api/compare";
 import { isKnownAuthState } from "@/lib/api/auth-state";
 import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
 import { useCollectionStatusMap, lookupProductStatus } from "@/components/shared/useCollectionStatusMap";
-import type { Product } from "@/lib/api/products";
+import type { ProductListItem } from "@/lib/api/products";
 
 export function ProductsCarouselSection({
   title,
   products,
 }: {
   title: string;
-  products: Product[];
+  products: ProductListItem[];
 }) {
   // One batched wishlist/compare status check for the whole carousel instead
   // of each ProductCard's own WishlistButton/CompareButton checking

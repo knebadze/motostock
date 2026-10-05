@@ -5999,7 +5999,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            items: components["schemas"]["Product"][];
+                            items: components["schemas"]["ProductCard"][];
                             total?: number;
                             page?: number;
                             pageSize?: number;
@@ -6077,7 +6077,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            items: components["schemas"]["Product"][];
+                            items: components["schemas"]["ProductCard"][];
                             total?: number;
                             page?: number;
                             pageSize?: number;
@@ -14685,7 +14685,7 @@ export interface components {
         CheckCompatibilityResponse: {
             compatibleProductIds: number[];
         };
-        Product: {
+        ProductCard: {
             /** @example 1 */
             id: number;
             category: {
@@ -14708,6 +14708,30 @@ export interface components {
                 ru: string;
             };
             slug: string;
+            imageUrl: string | null;
+            /** @example 2 */
+            variantCount: number;
+            /** @example 199.99 */
+            minPrice: number | null;
+            /** @example 5 */
+            totalStock: number;
+            /** @example null */
+            lowStockQuantity: number | null;
+            activeDiscount: {
+                /** @example 199.99 */
+                price: number;
+                /** @example 159.99 */
+                discountPrice: number;
+            } | null;
+            /** @example 0 */
+            viewCount: number;
+            isFeaturedOnHomepage: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        Product: components["schemas"]["ProductCard"] & {
             metaTitleKa: string | null;
             metaTitleEn: string | null;
             metaTitleRu: string | null;
@@ -14717,7 +14741,6 @@ export interface components {
             descriptionKa: string | null;
             descriptionEn: string | null;
             descriptionRu: string | null;
-            imageUrl: string | null;
             attributeValues: {
                 attributeId: number;
                 attributeName: {
@@ -14753,27 +14776,6 @@ export interface components {
                     };
                 } | null;
             }[];
-            /** @example 2 */
-            variantCount: number;
-            /** @example 199.99 */
-            minPrice: number | null;
-            /** @example 5 */
-            totalStock: number;
-            /** @example null */
-            lowStockQuantity: number | null;
-            activeDiscount: {
-                /** @example 199.99 */
-                price: number;
-                /** @example 159.99 */
-                discountPrice: number;
-            } | null;
-            /** @example 0 */
-            viewCount: number;
-            isFeaturedOnHomepage: boolean;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
         };
         ProductDetail: components["schemas"]["Product"] & {
             variants: {
@@ -14832,7 +14834,7 @@ export interface components {
                 } | null;
                 specValue: components["schemas"]["LookupItem"] | null;
             }[];
-            buyTogether: components["schemas"]["Product"][];
+            buyTogether: components["schemas"]["ProductCard"][];
         };
         ProductDetailAdmin: components["schemas"]["ProductDetail"] & {
             sales: {
@@ -15117,7 +15119,7 @@ export interface components {
             id: number;
             /** @enum {string} */
             itemType: "PRODUCT" | "VEHICLE_LISTING";
-            product: components["schemas"]["Product"] | null;
+            product: components["schemas"]["ProductCard"] | null;
             vehicleListing: components["schemas"]["VehicleListing"] | null;
             /** Format: date-time */
             createdAt: string;
@@ -15267,7 +15269,7 @@ export interface components {
             };
         };
         RecentlyViewedList: {
-            items: components["schemas"]["Product"][];
+            items: components["schemas"]["ProductCard"][];
         };
         CreateCompareItemInput: {
             /** @enum {string} */
@@ -15280,7 +15282,7 @@ export interface components {
             id: number;
             /** @enum {string} */
             itemType: "PRODUCT" | "VEHICLE_LISTING";
-            product: components["schemas"]["Product"] | null;
+            product: components["schemas"]["Product"];
             vehicleListing: components["schemas"]["VehicleListing"] | null;
             /** Format: date-time */
             createdAt: string;
@@ -15932,7 +15934,7 @@ export interface components {
             /** @example 1 */
             id: number;
             productId: number;
-            relatedProduct: components["schemas"]["Product"];
+            relatedProduct: components["schemas"]["ProductCard"];
             /** Format: date-time */
             createdAt: string;
         };
@@ -17000,7 +17002,7 @@ export interface components {
             yearTo: number | null;
         };
         RecommendationsList: {
-            items: components["schemas"]["Product"][];
+            items: components["schemas"]["ProductCard"][];
         };
         NewsletterSubscribeInput: {
             /** @example rider@motostock.ge */

@@ -7,7 +7,7 @@ import { resolveMediaUrl } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
 import { WishlistButton } from "@/components/shared/WishlistButton";
 import { CompareButton } from "@/components/shared/CompareButton";
-import type { Product } from "@/lib/api/products";
+import type { ProductListItem } from "@/lib/api/products";
 import type { ViewMode } from "./ViewModeToggle";
 
 export function ProductCard({
@@ -18,7 +18,7 @@ export function ProductCard({
   compareItemId,
   onCompareChange,
 }: {
-  product: Product;
+  product: ProductListItem;
   layout: ViewMode;
   // Passed by WishlistManager (every card there is wishlisted by
   // definition) or by a grid using useCollectionStatusMap to batch the

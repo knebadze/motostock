@@ -93,6 +93,36 @@ export const productSummaryInclude = {
   },
 } as const;
 
+// The "product card" projection (see products.schema.ts's
+// productCardResponseSchema) — an explicit scalar `select` rather than
+// `include`, because `include` also pulls every scalar column, i.e. the three
+// HTML descriptions and six SEO meta strings that no card ever shows.
+// Variants are the same active-only, discount-ordered selection as
+// productSummaryInclude (needed for the price/stock/discount badge).
+const productCardScalarSelect = {
+  id: true,
+  // Not in the card response — recommendations.service.ts ranks card rows
+  // by category/brand affinity.
+  categoryId: true,
+  productBrandId: true,
+  nameKa: true,
+  nameEn: true,
+  nameRu: true,
+  slug: true,
+  imageUrl: true,
+  viewCount: true,
+  isFeaturedOnHomepage: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+export const productCardSelect = {
+  ...productCardScalarSelect,
+  category: productSummaryInclude.category,
+  productBrand: productSummaryInclude.productBrand,
+  variants: productSummaryInclude.variants,
+} as const;
+
 // Unfiltered counterpart to productSummaryInclude above — every variant,
 // active or not, for the handful of admin-only call sites (findById's
 // create/update/updateImage response, so an admin who just deactivated a
@@ -124,7 +154,8 @@ const adminProductSummaryInclude = {
 // brand/price-range/stock/variant-count/view-count, never attributeValues
 // or a discount badge (the admin detail modal fetches full per-product data
 // separately when actually needed).
-const adminListInclude = {
+const adminListSelect = {
+  ...productCardScalarSelect,
   category: { select: namedRefSelect },
   productBrand: { select: brandModelRefSelect },
   variants: { select: { price: true, stockQuantity: true } },
@@ -168,7 +199,7 @@ const detailIncludeBase = {
   // the public detail endpoint can surface them in one query, same as
   // fitments/fitmentRules above.
   buyTogether: {
-    include: { relatedProduct: { include: productSummaryInclude } },
+    include: { relatedProduct: { select: productCardSelect } },
     orderBy: { createdAt: "asc" },
   },
 } as const;
@@ -396,7 +427,7 @@ export const productsRepository = {
           { variants: { some: { isActive: true } } },
         ],
       },
-      include: productSummaryInclude,
+      select: productCardSelect,
       orderBy: { createdAt: "desc" },
       skip: suppressPagination ? undefined : filters.skip,
       take: suppressPagination ? undefined : filters.limit,
@@ -504,7 +535,7 @@ export const productsRepository = {
   }) {
     return prisma.product.findMany({
       where: await buildWhere(filters),
-      include: adminListInclude,
+      select: adminListSelect,
       orderBy: { createdAt: "desc" },
       skip: filters.skip,
       take: filters.take,
@@ -579,7 +610,7 @@ export const productsRepository = {
   findByIds(ids: number[]) {
     return prisma.product.findMany({
       where: { id: { in: ids }, variants: { some: { isActive: true } } },
-      include: productSummaryInclude,
+      select: productCardSelect,
     });
   },
 
@@ -590,7 +621,7 @@ export const productsRepository = {
   findManyRaw(where: Prisma.ProductWhereInput, limit: number) {
     return prisma.product.findMany({
       where: { AND: [where, { variants: { some: { isActive: true } } }] },
-      include: productSummaryInclude,
+      select: productCardSelect,
       orderBy: { createdAt: "desc" },
       take: limit,
     });

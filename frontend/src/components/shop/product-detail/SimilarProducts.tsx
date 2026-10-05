@@ -9,9 +9,9 @@ import { getCompareStatus } from "@/lib/api/compare";
 import { isKnownAuthState } from "@/lib/api/auth-state";
 import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
 import { useCollectionStatusMap, lookupProductStatus } from "@/components/shared/useCollectionStatusMap";
-import type { Product } from "@/lib/api/products";
+import type { ProductListItem } from "@/lib/api/products";
 
-export function SimilarProducts({ products }: { products: Product[] }) {
+export function SimilarProducts({ products }: { products: ProductListItem[] }) {
   const t = useTranslations("ProductDetail");
 
   // One batched wishlist/compare status check for the whole carousel instead

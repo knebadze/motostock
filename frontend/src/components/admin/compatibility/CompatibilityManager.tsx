@@ -17,7 +17,7 @@ import {
   type CompatibleVehicle,
   type ListCompatibilityFilters,
 } from "@/lib/api/compatibility";
-import { listProducts, type Product } from "@/lib/api/products";
+import { listProducts, type ProductListItem } from "@/lib/api/products";
 import type { Category } from "@/lib/api/categories";
 import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
 
@@ -35,7 +35,7 @@ const KIND_BADGE_CLASSES: Record<CompatibilityItem["kind"], string> = {
   RULE_SPEC: "bg-amber-500/15 text-amber-600",
 };
 
-function productLabel(product: Product): string {
+function productLabel(product: ProductListItem): string {
   return `${product.name.ka} — ${product.category.name.ka}`;
 }
 
@@ -209,14 +209,14 @@ function CompatibilityCheckTab({
   products,
   vehicleCatalog,
 }: {
-  products: Product[];
+  products: ProductListItem[];
   vehicleCatalog: VehicleCatalogEntry[];
 }) {
   const [mode, setMode] = useState<"vehicle" | "product">("vehicle");
   const [vehicleCatalogId, setVehicleCatalogId] = useState("");
   const [productId, setProductId] = useState("");
   const [loading, setLoading] = useState(false);
-  const [matchedProducts, setMatchedProducts] = useState<Product[] | null>(null);
+  const [matchedProducts, setMatchedProducts] = useState<ProductListItem[] | null>(null);
   const [matchedVehicles, setMatchedVehicles] = useState<CompatibleVehicle[] | null>(null);
 
   const vehicleOptions = vehicleCatalog.map((entry) => ({
@@ -321,15 +321,15 @@ function CompatibilityCheckTab({
         {!loading && mode === "vehicle" && matchedProducts && (
           <DataTable
             columns={[
-              { header: "პროდუქტი", render: (product: Product) => product.name.ka },
+              { header: "პროდუქტი", render: (product: ProductListItem) => product.name.ka },
               {
                 header: "კატეგორია",
-                render: (product: Product) => product.category.name.ka,
+                render: (product: ProductListItem) => product.category.name.ka,
                 cellClassName: "text-muted-foreground",
               },
               {
                 header: "ფასი",
-                render: (product: Product) => (product.minPrice != null ? formatPrice(product.minPrice) : "—"),
+                render: (product: ProductListItem) => (product.minPrice != null ? formatPrice(product.minPrice) : "—"),
               },
             ]}
             data={matchedProducts}
@@ -364,7 +364,7 @@ export function CompatibilityManager({
 }: {
   initialData: CompatibilityPage;
   categories: Category[];
-  products: Product[];
+  products: ProductListItem[];
   vehicleCatalog: VehicleCatalogEntry[];
 }) {
   return (

@@ -13,11 +13,11 @@ import {
   lookupProductStatus,
   lookupVehicleListingStatus,
 } from "@/components/shared/useCollectionStatusMap";
-import type { Product } from "@/lib/api/products";
+import type { ProductListItem } from "@/lib/api/products";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 
 type MixedItem =
-  | { kind: "product"; key: string; product: Product }
+  | { kind: "product"; key: string; product: ProductListItem }
   | { kind: "vehicle"; key: string; listing: VehicleListing };
 
 export function MixedCarouselSection({
@@ -26,7 +26,7 @@ export function MixedCarouselSection({
   listings,
 }: {
   title: string;
-  products: Product[];
+  products: ProductListItem[];
   listings: VehicleListing[];
 }) {
   const items: MixedItem[] = [

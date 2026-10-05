@@ -22,6 +22,7 @@ import {
   productDetailResponseSchema,
   productIdParamSchema,
   productListQuerySchema,
+  productCardResponseSchema,
   productResponseSchema,
   productSlugParamSchema,
   updateProductSchema,
@@ -119,7 +120,7 @@ const security = [{ cookieAuth: [] }];
 // present) — the storefront/popular paths never send page/pageSize and their
 // responses omit these three fields, so they stay optional here.
 const listResponse = z.object({
-  items: z.array(productResponseSchema),
+  items: z.array(productCardResponseSchema),
   total: z.number().int().nonnegative().optional(),
   page: z.number().int().positive().optional(),
   pageSize: z.number().int().positive().optional(),

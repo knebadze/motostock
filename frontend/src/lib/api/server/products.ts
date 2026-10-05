@@ -2,17 +2,17 @@ import "server-only";
 import { cache } from "react";
 import { ADMIN_LIST_INITIAL_PAGE_SIZE, type AdminListPage, EMPTY_ADMIN_LIST_PAGE, fetchFromServer } from "./core";
 import type { BrandModelRef, NamedRef } from "../vehicle-catalog";
-import type { Product, ProductDetail } from "../products";
+import type { Product, ProductListItem, ProductDetail } from "../products";
 
 // Storefront and admin product reads, including recommendations and shop listing pages.
 
 export const getProductsFromServer = cache(async (
   categoryId?: number,
   vehicleCatalogId?: number,
-): Promise<Product[]> => {
+): Promise<ProductListItem[]> => {
   // Public endpoint (guest shop page reads this too) — must not bail out just
   // because there's no admin session cookie, same fix as getCategoriesFromServer.
-  return fetchFromServer<{ items: Product[] }, Product[]>("/products", {
+  return fetchFromServer<{ items: ProductListItem[] }, ProductListItem[]>("/products", {
     params: { categoryId: categoryId || undefined, vehicleCatalogId: vehicleCatalogId || undefined },
     fallback: [],
     extract: (data) => data.items,
@@ -49,8 +49,8 @@ export const getProductsPageFromServer = cache(async (
   page: number,
   sortBy: "newest" | "price-asc" | "price-desc",
   vehicleCatalogId?: number,
-): Promise<AdminListPage<Product>> => {
-  return fetchFromServer<AdminListPage<Product>, AdminListPage<Product>>("/products", {
+): Promise<AdminListPage<ProductListItem>> => {
+  return fetchFromServer<AdminListPage<ProductListItem>, AdminListPage<ProductListItem>>("/products", {
     params: { categoryId, vehicleCatalogId, page, pageSize: SHOP_PAGE_SIZE, sortBy },
     fallback: { items: [], total: 0, page: 1, pageSize: SHOP_PAGE_SIZE },
     extract: (data) => data,
@@ -66,8 +66,8 @@ export const getProductsPageFromServer = cache(async (
 // products.service.ts's listProducts and lib/api/products.ts's listProducts
 // for why an explicit `[]`, not an omitted param, is what signals this).
 // Fetches only page 1 — ProductsManager.tsx re-fetches subsequent pages.
-export const getAdminProductsFromServer = cache(async (): Promise<AdminListPage<Product>> => {
-  return fetchFromServer<AdminListPage<Product>, AdminListPage<Product>>("/products", {
+export const getAdminProductsFromServer = cache(async (): Promise<AdminListPage<ProductListItem>> => {
+  return fetchFromServer<AdminListPage<ProductListItem>, AdminListPage<ProductListItem>>("/products", {
     params: { adminFilters: "[]", page: 1, pageSize: ADMIN_LIST_INITIAL_PAGE_SIZE },
     fallback: EMPTY_ADMIN_LIST_PAGE,
     extract: (data) => data,
@@ -76,8 +76,8 @@ export const getAdminProductsFromServer = cache(async (): Promise<AdminListPage<
 });
 
 // Homepage "discounted products" slider.
-export const getOnSaleProductsFromServer = cache(async (limit: number): Promise<Product[]> => {
-  return fetchFromServer<{ items: Product[] }, Product[]>("/products", {
+export const getOnSaleProductsFromServer = cache(async (limit: number): Promise<ProductListItem[]> => {
+  return fetchFromServer<{ items: ProductListItem[] }, ProductListItem[]>("/products", {
     params: { onSale: true, limit },
     fallback: [],
     extract: (data) => data.items,
@@ -86,8 +86,8 @@ export const getOnSaleProductsFromServer = cache(async (limit: number): Promise<
 
 // Homepage "New Arrivals" mixed slider (FEATURED_MIXED) — a plain
 // admin-curated flag, not a discount/popularity computation.
-export const getFeaturedProductsFromServer = cache(async (limit: number): Promise<Product[]> => {
-  return fetchFromServer<{ items: Product[] }, Product[]>("/products", {
+export const getFeaturedProductsFromServer = cache(async (limit: number): Promise<ProductListItem[]> => {
+  return fetchFromServer<{ items: ProductListItem[] }, ProductListItem[]>("/products", {
     params: { featured: true, limit },
     fallback: [],
     extract: (data) => data.items,
@@ -95,8 +95,8 @@ export const getFeaturedProductsFromServer = cache(async (limit: number): Promis
 });
 
 // Homepage "popular products" slider.
-export const getPopularProductsFromServer = cache(async (limit: number): Promise<Product[]> => {
-  return fetchFromServer<{ items: Product[] }, Product[]>("/products/popular", {
+export const getPopularProductsFromServer = cache(async (limit: number): Promise<ProductListItem[]> => {
+  return fetchFromServer<{ items: ProductListItem[] }, ProductListItem[]>("/products/popular", {
     params: { limit },
     fallback: [],
     extract: (data) => data.items,
@@ -133,8 +133,8 @@ export const getSimilarProductsFromServer = cache(async (
   productId: number,
   vehicleCatalogId?: string,
   limit?: number,
-): Promise<Product[]> => {
-  return fetchFromServer<{ items: Product[] }, Product[]>(
+): Promise<ProductListItem[]> => {
+  return fetchFromServer<{ items: ProductListItem[] }, ProductListItem[]>(
     `/products/${productId}/recommendations/similar`,
     {
       params: { vehicleCatalogId: vehicleCatalogId || undefined, limit },
@@ -151,8 +151,8 @@ export const getFrequentlyBoughtTogetherFromServer = cache(async (
   productId: number,
   vehicleCatalogId?: string,
   limit?: number,
-): Promise<Product[]> => {
-  return fetchFromServer<{ items: Product[] }, Product[]>(
+): Promise<ProductListItem[]> => {
+  return fetchFromServer<{ items: ProductListItem[] }, ProductListItem[]>(
     `/products/${productId}/recommendations/frequently-bought-together`,
     {
       params: { vehicleCatalogId: vehicleCatalogId || undefined, limit },
@@ -168,8 +168,8 @@ export const getViewedTogetherFromServer = cache(async (
   productId: number,
   vehicleCatalogId?: string,
   limit?: number,
-): Promise<Product[]> => {
-  return fetchFromServer<{ items: Product[] }, Product[]>(
+): Promise<ProductListItem[]> => {
+  return fetchFromServer<{ items: ProductListItem[] }, ProductListItem[]>(
     `/products/${productId}/recommendations/viewed-together`,
     {
       params: { vehicleCatalogId: vehicleCatalogId || undefined, limit },
@@ -182,8 +182,8 @@ export const getViewedTogetherFromServer = cache(async (
 // Homepage "recently viewed" section (RECENTLY_VIEWED) — works for guests
 // too (the backend always resolves an owner, minting a guest-id cookie if
 // needed), unlike getRecommendedForMeFromServer's auth-only gate.
-export const getRecentlyViewedFromServer = cache(async (limit?: number): Promise<Product[]> => {
-  return fetchFromServer<{ items: Product[] }, Product[]>("/users/me/recently-viewed", {
+export const getRecentlyViewedFromServer = cache(async (limit?: number): Promise<ProductListItem[]> => {
+  return fetchFromServer<{ items: ProductListItem[] }, ProductListItem[]>("/users/me/recently-viewed", {
     params: { limit },
     fallback: [],
     extract: (data) => data.items,
@@ -196,8 +196,8 @@ export const getRecentlyViewedFromServer = cache(async (limit?: number): Promise
 export const getPopularForVehicleFromServer = cache(async (
   vehicleCatalogId: string,
   limit?: number,
-): Promise<Product[]> => {
-  return fetchFromServer<{ items: Product[] }, Product[]>("/recommendations/popular-for-vehicle", {
+): Promise<ProductListItem[]> => {
+  return fetchFromServer<{ items: ProductListItem[] }, ProductListItem[]>("/recommendations/popular-for-vehicle", {
     params: { vehicleCatalogId, limit },
     fallback: [],
     extract: (data) => data.items,
@@ -206,8 +206,8 @@ export const getPopularForVehicleFromServer = cache(async (
 
 // Homepage "recommended for you" section (RECOMMENDED_FOR_YOU) — auth-gated
 // like getMyGarageFromServer; guests never even reach the API call.
-export const getRecommendedForMeFromServer = cache(async (limit?: number): Promise<Product[]> => {
-  return fetchFromServer<{ items: Product[] }, Product[]>("/recommendations/for-me", {
+export const getRecommendedForMeFromServer = cache(async (limit?: number): Promise<ProductListItem[]> => {
+  return fetchFromServer<{ items: ProductListItem[] }, ProductListItem[]>("/recommendations/for-me", {
     params: { limit },
     fallback: [],
     extract: (data) => data.items,
@@ -259,8 +259,8 @@ export const getShopProductsPageFromServer = cache(async (filters: {
   brandIds?: number[];
   onSale?: boolean;
   bulkDiscountEventId?: number;
-}): Promise<AdminListPage<Product>> => {
-  return fetchFromServer<AdminListPage<Product>, AdminListPage<Product>>("/products", {
+}): Promise<AdminListPage<ProductListItem>> => {
+  return fetchFromServer<AdminListPage<ProductListItem>, AdminListPage<ProductListItem>>("/products", {
     params: {
       categoryId: filters.categoryId,
       brandIds: filters.brandIds?.length ? filters.brandIds : undefined,

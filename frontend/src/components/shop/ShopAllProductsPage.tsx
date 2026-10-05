@@ -12,7 +12,7 @@ import { ShopToolbar } from "./ShopToolbar";
 import { ShopItemGrid } from "./ShopItemGrid";
 import { ProductCard } from "./ProductCard";
 import type { ViewMode } from "./ViewModeToggle";
-import { listProductsPage, type Product } from "@/lib/api/products";
+import { listProductsPage, type ProductListItem } from "@/lib/api/products";
 import type { GarageVehicle, NamedRef } from "@/lib/api/vehicle-catalog";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatVehicleCatalogLabel } from "@/lib/format";
@@ -52,7 +52,7 @@ export function ShopAllProductsPage({
   // full, unbounded product fetch, previously used only for this).
   categories: NamedRef[];
   // Real server pagination — feeds the actual grid.
-  initialData: PagedResult<Product>;
+  initialData: PagedResult<ProductListItem>;
   garageVehicles: GarageVehicle[];
   initialOnSale: boolean;
   initialCategoryId?: number;

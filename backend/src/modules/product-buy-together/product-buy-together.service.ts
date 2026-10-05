@@ -1,7 +1,7 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { productsRepository } from "../products/products.repository.js";
-import { toResponse as toProductResponse } from "../products/products.service.js";
+import { toCardResponse as toProductResponse } from "../products/products.service.js";
 import { productFitmentRepository } from "../product-fitment/product-fitment.repository.js";
 import { productFitmentRulesRepository } from "../product-fitment-rules/product-fitment-rules.repository.js";
 import { getCompatibleVehiclesForProduct } from "../compatibility/compatibility.service.js";

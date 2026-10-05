@@ -8,6 +8,11 @@ import type { AdminFilterEntry } from "./admin-filters";
 // silently. Names stay the same, so consumers didn't change.
 type Schemas = components["schemas"];
 
+// What every product list endpoint returns (shop, homepage sliders,
+// recommendations, wishlist, recently viewed, buy-together, admin list) —
+// Product minus descriptions, SEO meta and attributeValues. The full
+// Product is only returned by the single-product endpoints.
+export type ProductListItem = Schemas["ProductCard"];
 export type Product = Schemas["Product"];
 export type ProductAttributeValue = Product["attributeValues"][number];
 
@@ -83,7 +88,7 @@ function isEmptyAttributeFilters(filters: ProductAttributeFilters): boolean {
   );
 }
 
-type ProductListResponse = { items: Product[]; total: number; page: number; pageSize: number };
+type ProductListResponse = { items: ProductListItem[]; total: number; page: number; pageSize: number };
 
 async function fetchProductsList(filters: ProductListFilters): Promise<ProductListResponse> {
   const { data } = await apiClient.get<ProductListResponse>("/products", {
@@ -119,7 +124,7 @@ async function fetchProductsList(filters: ProductListFilters): Promise<ProductLi
   return data;
 }
 
-export async function listProducts(filters: ProductListFilters = {}): Promise<Product[]> {
+export async function listProducts(filters: ProductListFilters = {}): Promise<ProductListItem[]> {
   const { items } = await fetchProductsList(filters);
   return items;
 }
@@ -138,8 +143,8 @@ export async function listProductsPage(
 
 // Homepage "popular products" slider — ranked by total sold quantity
 // (Order/OrderItem), not a filter on the regular /products list.
-export async function listPopularProducts(limit?: number): Promise<Product[]> {
-  const { data } = await apiClient.get<{ items: Product[] }>("/products/popular", {
+export async function listPopularProducts(limit?: number): Promise<ProductListItem[]> {
+  const { data } = await apiClient.get<{ items: ProductListItem[] }>("/products/popular", {
     params: { limit },
   });
   return data.items;

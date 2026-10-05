@@ -1,7 +1,7 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { cache } from "../../lib/cache.js";
 import { productsRepository } from "../products/products.repository.js";
-import { toResponse as toProductResponse, buildVehicleCompatibilityWhere } from "../products/products.service.js";
+import { toCardResponse as toProductResponse, buildVehicleCompatibilityWhere } from "../products/products.service.js";
 import { productFitmentRepository } from "../product-fitment/product-fitment.repository.js";
 import { productViewsRepository } from "../product-views/product-views.repository.js";
 import {

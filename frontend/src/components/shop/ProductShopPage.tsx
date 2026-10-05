@@ -8,7 +8,7 @@ import type { SelectOption } from "@/components/shared/Select";
 import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
-import { listProductsPage, type Product, type ProductAttributeFilters } from "@/lib/api/products";
+import { listProductsPage, type ProductListItem, type ProductAttributeFilters } from "@/lib/api/products";
 import type { Category } from "@/lib/api/categories";
 import type { CategoryFilter, CategoryFilterAttribute } from "@/lib/api/category-filters";
 import type { BrandModelRef, GarageVehicle } from "@/lib/api/vehicle-catalog";
@@ -62,7 +62,7 @@ export function ProductShopPage({
   // matching product's full card data just to re-derive this list here.
   brands: BrandModelRef[];
   // Real server pagination — feeds the actual grid.
-  initialData: PagedResult<Product>;
+  initialData: PagedResult<ProductListItem>;
   filters: CategoryFilter[];
   garageVehicles: GarageVehicle[];
   initialSort?: string;

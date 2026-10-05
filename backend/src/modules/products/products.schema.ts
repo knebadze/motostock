@@ -264,25 +264,22 @@ const productCardDiscountSchema = z.object({
   discountPrice: z.number().openapi({ example: 159.99 }),
 });
 
-export const productResponseSchema = registry.register(
-  "Product",
+// The lean "product card" shape — every product grid/slider/list surface
+// (shop, homepage, recommendations, wishlist, recently viewed, buy-together,
+// admin list). Deliberately omits the three HTML descriptions, the six SEO
+// meta strings and attributeValues: a card never shows them, yet they were
+// the bulk of each row's payload (and attributeValues cost three joins per
+// value). The full Product below is for the product page, admin detail/edit
+// and compare.
+export const productCardResponseSchema = registry.register(
+  "ProductCard",
   z.object({
     id: z.int().openapi({ example: 1 }),
     category: namedRefSchema,
     productBrand: brandModelRefSchema.nullable(),
     name: localizedStringSchema,
     slug: z.string(),
-    metaTitleKa: z.string().nullable(),
-    metaTitleEn: z.string().nullable(),
-    metaTitleRu: z.string().nullable(),
-    metaDescriptionKa: z.string().nullable(),
-    metaDescriptionEn: z.string().nullable(),
-    metaDescriptionRu: z.string().nullable(),
-    descriptionKa: z.string().nullable(),
-    descriptionEn: z.string().nullable(),
-    descriptionRu: z.string().nullable(),
     imageUrl: z.string().nullable(),
-    attributeValues: z.array(productAttributeValueResponseSchema),
     variantCount: z.int().openapi({ example: 2 }),
     minPrice: z.number().nullable().openapi({ example: 199.99 }),
     totalStock: z.int().openapi({ example: 5 }),
@@ -300,6 +297,22 @@ export const productResponseSchema = registry.register(
     isFeaturedOnHomepage: z.boolean(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
+  }),
+);
+
+export const productResponseSchema = registry.register(
+  "Product",
+  productCardResponseSchema.extend({
+    metaTitleKa: z.string().nullable(),
+    metaTitleEn: z.string().nullable(),
+    metaTitleRu: z.string().nullable(),
+    metaDescriptionKa: z.string().nullable(),
+    metaDescriptionEn: z.string().nullable(),
+    metaDescriptionRu: z.string().nullable(),
+    descriptionKa: z.string().nullable(),
+    descriptionEn: z.string().nullable(),
+    descriptionRu: z.string().nullable(),
+    attributeValues: z.array(productAttributeValueResponseSchema),
   }),
 );
 
@@ -357,7 +370,7 @@ export const productDetailResponseSchema = registry.register(
     variants: z.array(productVariantDetailResponseSchema),
     fitments: z.array(compatibleVehicleSchema),
     fitmentRules: z.array(fitmentRuleSchema),
-    buyTogether: z.array(productResponseSchema),
+    buyTogether: z.array(productCardResponseSchema),
   }),
 );
 

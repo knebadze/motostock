@@ -8,7 +8,7 @@ import { WishlistButton } from "@/components/shared/WishlistButton";
 import { CompareButton } from "@/components/shared/CompareButton";
 import { AddToCartButton } from "@/components/shared/AddToCartButton";
 import type {
-  Product,
+  ProductListItem,
   ProductDetail,
   ProductFitmentRuleSummary,
   ProductVariantDetail,
@@ -88,9 +88,9 @@ export function ProductDetailPage({
 }: {
   product: ProductDetail;
   breadcrumbChain: Category[];
-  similarProducts: Product[];
-  frequentlyBoughtTogether: Product[];
-  viewedTogether: Product[];
+  similarProducts: ProductListItem[];
+  frequentlyBoughtTogether: ProductListItem[];
+  viewedTogether: ProductListItem[];
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("ProductDetail");

@@ -1,5 +1,5 @@
 import { prisma } from "../../config/prisma.js";
-import { productSummaryInclude } from "../products/products.repository.js";
+import { productCardSelect } from "../products/products.repository.js";
 
 export type ProductViewOwner = { userId: number } | { guestId: string };
 
@@ -27,7 +27,7 @@ export const productViewsRepository = {
   findByOwner(owner: ProductViewOwner, limit: number) {
     return prisma.productView.findMany({
       where: ownerWhere(owner),
-      include: { product: { include: productSummaryInclude } },
+      include: { product: { select: productCardSelect } },
       orderBy: { updatedAt: "desc" },
       take: limit,
     });
