@@ -56,6 +56,24 @@ export const usersRepository = {
   // Admin "full details" view — pulls in the address and garage alongside
   // the base account fields, so the admin panel can show everything about a
   // user in one modal without extra round-trips.
+  // Admin user-detail "orders" block: lifetime totals (cancelled orders
+  // excluded from the money, same rule as the dashboard's revenue). The
+  // full list lives in the separate order-history modal (paginated
+  // /orders?userId=). Cheap indexed aggregates on Order.userId.
+  findOrderSummary(userId: number) {
+    return Promise.all([
+      prisma.order.aggregate({
+        where: { userId },
+        _count: { _all: true },
+        _max: { createdAt: true },
+      }),
+      prisma.order.aggregate({
+        where: { userId, status: { key: { not: "CANCELLED" } } },
+        _sum: { total: true },
+      }),
+    ]);
+  },
+
   findByIdWithDetails(id: number) {
     return prisma.user.findUnique({
       where: { id },

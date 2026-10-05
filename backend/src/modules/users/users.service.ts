@@ -116,7 +116,10 @@ export async function changePassword(
 }
 
 export async function getUserDetail(id: number) {
-  const user = await usersRepository.findByIdWithDetails(id);
+  const [user, [orderCountAgg, spentAgg]] = await Promise.all([
+    usersRepository.findByIdWithDetails(id),
+    usersRepository.findOrderSummary(id),
+  ]);
   if (!user) {
     throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა");
   }
@@ -127,6 +130,11 @@ export async function getUserDetail(id: number) {
     garage: user.garageVehicles.map(toGarageVehicleResponse),
     wishlist: await Promise.all(user.wishlistItems.map(toWishlistItemResponse)),
     cart: await Promise.all(user.cartItems.map(toCartItemResponse)),
+    orderStats: {
+      orderCount: orderCountAgg._count._all,
+      totalSpent: Number(spentAgg._sum.total ?? 0),
+      lastOrderAt: orderCountAgg._max.createdAt,
+    },
   };
 }
 

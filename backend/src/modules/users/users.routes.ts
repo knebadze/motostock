@@ -181,6 +181,12 @@ const adminUserDetailResponseSchema = registry.register(
     garage: z.array(garageVehicleResponseSchema),
     wishlist: z.array(wishlistItemResponseSchema),
     cart: z.array(cartItemResponseSchema),
+    // Lifetime totals; totalSpent excludes cancelled orders.
+    orderStats: z.object({
+      orderCount: z.int(),
+      totalSpent: z.number(),
+      lastOrderAt: z.iso.datetime().nullable(),
+    }),
   }),
 );
 

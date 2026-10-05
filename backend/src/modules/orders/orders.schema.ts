@@ -252,6 +252,8 @@ export const listOrdersQuerySchema = z.object({
   // Narrows to orders whose FINA push failed — the dashboard's "needs
   // action" tile links here (see dashboard.service.ts).
   finaFailedOnly: z.coerce.boolean().optional(),
+  // One customer's orders — the admin user-detail modal's "all orders" link.
+  userId: z.coerce.number().int().positive().optional(),
   // Real server-side pagination (skip/take), same pattern as
   // error-logs.schema.ts — both optional, no `.default()` (defaults are
   // applied in the controller instead, see that file's comment for why: an

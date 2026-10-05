@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
@@ -10,7 +10,8 @@ import { getUser, updateUserRole, type AdminUser, type AdminUserDetail } from "@
 import type { WishlistItem } from "@/lib/api/wishlist";
 import { useAdminRole } from "@/components/admin/AdminRoleContext";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
-import { formatDate, formatDateTime, formatVehicleCatalogLabel } from "@/lib/format";
+import { formatDate, formatDateTime, formatPrice, formatVehicleCatalogLabel } from "@/lib/format";
+import { CustomerOrdersModal } from "./CustomerOrdersModal";
 import { getCartItemDisplay } from "@/lib/cart-item-display";
 
 const cameraIcon = (
@@ -84,6 +85,9 @@ export function UserDetailModal({
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [changingRole, setChangingRole] = useState(false);
+  const [ordersOpen, setOrdersOpen] = useState(false);
+  // Stable identity — CustomerOrdersModal's load effect depends on onClose.
+  const closeOrders = useCallback(() => setOrdersOpen(false), []);
 
   async function handleRoleChange(nextRole: string) {
     if (!detail || nextRole === detail.role) return;
@@ -203,6 +207,42 @@ export function UserDetailModal({
           </div>
 
           <div>
+            <div className="flex items-center justify-between gap-3">
+              <h4 className="text-sm font-semibold">შეკვეთები</h4>
+              {detail.orderStats.orderCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setOrdersOpen(true)}
+                  className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
+                >
+                  შეკვეთების ისტორია
+                </button>
+              )}
+            </div>
+            {detail.orderStats.orderCount === 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">შეკვეთა ჯერ არ გაუკეთებია</p>
+            ) : (
+              <div className="mt-2 grid grid-cols-3 gap-3">
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground">შეკვეთები</p>
+                  <p className="mt-1 text-lg font-bold">{detail.orderStats.orderCount}</p>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-3">
+                  {/* Cancelled orders excluded — see users.service.ts. */}
+                  <p className="text-xs text-muted-foreground">დახარჯული</p>
+                  <p className="mt-1 text-lg font-bold">{formatPrice(detail.orderStats.totalSpent)}</p>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground">ბოლო შეკვეთა</p>
+                  <p className="mt-1 text-sm font-semibold">
+                    {detail.orderStats.lastOrderAt ? formatDate(detail.orderStats.lastOrderAt) : "—"}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
             <h4 className="text-sm font-semibold">მისამართები</h4>
             {detail.addresses.length === 0 ? (
               <p className="mt-2 text-sm text-muted-foreground">მისამართი არ არის მითითებული</p>
@@ -314,6 +354,9 @@ export function UserDetailModal({
             )}
           </div>
         </div>
+      )}
+      {ordersOpen && detail && (
+        <CustomerOrdersModal userId={detail.id} userName={detail.name} onClose={closeOrders} />
       )}
     </Modal>
   );

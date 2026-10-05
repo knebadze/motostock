@@ -28,6 +28,8 @@ export type AdminUserDetail = AdminUser & {
   garage: GarageVehicle[];
   wishlist: WishlistItem[];
   cart: CartItem[];
+  // Lifetime totals; totalSpent excludes cancelled orders.
+  orderStats: { orderCount: number; totalSpent: number; lastOrderAt: string | null };
 };
 
 export type AdminUsersPage = {

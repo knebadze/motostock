@@ -220,6 +220,7 @@ export type ListOrdersFilters = {
   createdTo?: string;
   flaggedOnly?: boolean;
   finaFailedOnly?: boolean;
+  userId?: number;
   page?: number;
   pageSize?: number;
 };

@@ -47,8 +47,13 @@ function buildAdminWhere(filters: {
   createdTo?: string;
   flaggedOnly?: boolean;
   finaFailedOnly?: boolean;
+  userId?: number;
 }): Prisma.OrderWhereInput | undefined {
   const and: Prisma.OrderWhereInput[] = [];
+
+  if (filters.userId != null) {
+    and.push({ userId: filters.userId });
+  }
 
   if (filters.flaggedOnly) {
     and.push({ riskFlags: { some: {} } });
