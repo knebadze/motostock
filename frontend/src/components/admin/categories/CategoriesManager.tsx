@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { deleteCategory, listCategories, type Category } from "@/lib/api/categories";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 import type { AdminFilterEntry } from "@/lib/api/admin-filters";
 import { flattenTree, type CategoryNode } from "@/lib/categories-tree";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -76,6 +77,11 @@ export function CategoriesManager({
       const fresh = await listCategories();
       setAllCategories(fresh);
       setDisplayedCategories(adminFilters.length > 0 ? await listCategories(adminFilters) : fresh);
+      // Covers both create/edit (CategoryFormModal's onSaved below) and
+      // delete (ConfirmDialog's onConfirm below) in one place — both call
+      // this. The public getCategoriesFromServer() cache (storefront nav,
+      // shop filters, ...) needs to drop immediately, not wait out its TTL.
+      await revalidatePublicCache("categories");
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";

@@ -194,7 +194,7 @@ const getCachedCategories = unstable_cache(
       extract: (data) => data.categories,
     }),
   ["categories"],
-  { revalidate: PUBLIC_STATIC_CACHE_SECONDS },
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["categories"] },
 );
 export const getCategoriesFromServer = cache(getCachedCategories);
 
@@ -334,7 +334,7 @@ const getCachedCompanyInfo = unstable_cache(
       extract: (data) => data.companyInfo,
     }),
   ["company-info"],
-  { revalidate: PUBLIC_STATIC_CACHE_SECONDS },
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["company-info"] },
 );
 export const getCompanyInfoFromServer = cache(getCachedCompanyInfo);
 
@@ -347,7 +347,7 @@ const getCachedTerms = unstable_cache(
       extract: (data) => data.terms,
     }),
   ["terms"],
-  { revalidate: PUBLIC_STATIC_CACHE_SECONDS },
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["terms"] },
 );
 export const getTermsFromServer = cache(getCachedTerms);
 
@@ -360,7 +360,7 @@ const getCachedPrivacyPolicy = unstable_cache(
       extract: (data) => data.privacyPolicy,
     }),
   ["privacy-policy"],
-  { revalidate: PUBLIC_STATIC_CACHE_SECONDS },
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["privacy-policy"] },
 );
 export const getPrivacyPolicyFromServer = cache(getCachedPrivacyPolicy);
 
@@ -373,7 +373,7 @@ const getCachedFaqList = unstable_cache(
       extract: (data) => data.items,
     }),
   ["faq-public"],
-  { revalidate: PUBLIC_STATIC_CACHE_SECONDS },
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["faq-public"] },
 );
 export const getFaqListFromServer = cache(getCachedFaqList);
 

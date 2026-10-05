@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { RichTextEditor } from "@/components/shared/RichTextEditor";
 import { updatePrivacyPolicy, type PrivacyPolicy } from "@/lib/api/privacy-policy";
 import { ApiRequestError } from "@/lib/api/client";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 
 export function PrivacyPolicyManager({ initialPrivacyPolicy }: { initialPrivacyPolicy: PrivacyPolicy }) {
   const [contentKa, setContentKa] = useState(initialPrivacyPolicy.content.ka);
@@ -20,6 +21,7 @@ export function PrivacyPolicyManager({ initialPrivacyPolicy }: { initialPrivacyP
       await updatePrivacyPolicy({
         content: { ka: contentKa, en: contentEn, ru: contentRu },
       });
+      await revalidatePublicCache("privacy-policy");
       toast.success("კონფიდენციალობის პოლიტიკა განახლდა");
     } catch (error) {
       toast.error(error instanceof ApiRequestError ? error.message : "შენახვა ვერ მოხერხდა");

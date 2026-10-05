@@ -14,6 +14,7 @@ import {
 } from "@/lib/api/company-info";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import type { LookupItem } from "@/lib/api/lookups";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 
 const WEEK_DAY_LABELS: Record<WeekDay, string> = {
   MONDAY: "ორშაბათი",
@@ -98,11 +99,13 @@ export function CompanyInfoManager({
           resetLogoPreview(resolveMediaUrl(withLogo.logoUrl));
         } catch {
           toast.error("ინფორმაცია შენახულია, მაგრამ ლოგოს ატვირთვა ვერ მოხერხდა");
+          await revalidatePublicCache("company-info");
           setSaving(false);
           return;
         }
       }
 
+      await revalidatePublicCache("company-info");
       toast.success("კომპანიის ინფორმაცია განახლდა");
     } catch (error) {
       toast.error(error instanceof ApiRequestError ? error.message : "შენახვა ვერ მოხერხდა");

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { RichTextEditor } from "@/components/shared/RichTextEditor";
 import { updateTerms, type Terms } from "@/lib/api/terms";
 import { ApiRequestError } from "@/lib/api/client";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 
 export function TermsManager({ initialTerms }: { initialTerms: Terms }) {
   const [contentKa, setContentKa] = useState(initialTerms.content.ka);
@@ -20,6 +21,7 @@ export function TermsManager({ initialTerms }: { initialTerms: Terms }) {
       await updateTerms({
         content: { ka: contentKa, en: contentEn, ru: contentRu },
       });
+      await revalidatePublicCache("terms");
       toast.success("წესები და პირობები განახლდა");
     } catch (error) {
       toast.error(error instanceof ApiRequestError ? error.message : "შენახვა ვერ მოხერხდა");
