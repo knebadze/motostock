@@ -1,155 +1,31 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
-import type { BrandModelRef, NamedRef } from "./vehicle-catalog";
-import type { AttributeValueType } from "./attributes";
-import type { LookupItem } from "./lookups";
-import type { ProductVariantImage } from "./product-variant-images";
-import type { ProductVariantDiscount } from "./product-variant-discounts";
+import type { components } from "./generated/schema";
 import type { AdminFilterEntry } from "./admin-filters";
-import type { ProductFitmentRuleType } from "./product-fitment-rules";
-import type { VehicleSpecField } from "./vehicle-category-filters";
 
-export type ProductAttributeValue = {
-  attributeId: number;
-  attributeName: LocalizedString;
-  valueType: AttributeValueType;
-  unit: { id: number; name: LocalizedString; abbreviation: LocalizedString } | null;
-  valueText: string | null;
-  valueNumber: number | null;
-  valueBoolean: boolean | null;
-  option: { id: number; key: string; label: LocalizedString } | null;
-};
+// Response/input shapes are generated from the backend's OpenAPI document
+// (npm run api:types → generated/schema.d.ts), not hand-written — a backend
+// schema change now surfaces here as a type error instead of drifting
+// silently. Names stay the same, so consumers didn't change.
+type Schemas = components["schemas"];
 
-export type ProductAttributeValueInput = {
-  attributeId: number;
-  valueText?: string | null;
-  valueNumber?: number | null;
-  valueBoolean?: boolean | null;
-  optionId?: number | null;
-};
+export type Product = Schemas["Product"];
+export type ProductAttributeValue = Product["attributeValues"][number];
 
-export type Product = {
-  id: number;
-  category: NamedRef;
-  productBrand: BrandModelRef | null;
-  name: LocalizedString;
-  slug: string;
-  // Per-locale SEO overrides; null = fall back to that locale's name /
-  // description (see the product page's generateMetadata).
-  metaTitleKa: string | null;
-  metaTitleEn: string | null;
-  metaTitleRu: string | null;
-  metaDescriptionKa: string | null;
-  metaDescriptionEn: string | null;
-  metaDescriptionRu: string | null;
-  descriptionKa: string | null;
-  descriptionEn: string | null;
-  descriptionRu: string | null;
-  imageUrl: string | null;
-  attributeValues: ProductAttributeValue[];
-  variantCount: number;
-  minPrice: number | null;
-  totalStock: number;
-  // "Only N left" storefront urgency badge — null when disabled for the
-  // category, out of stock, or stock is above the low-stock threshold.
-  lowStockQuantity: number | null;
-  activeDiscount: { price: number; discountPrice: number } | null;
-  // Detail-page view counter — an admin-facing interest signal, separate
-  // from the Order-based "most sold" ranking used by the popular-products
-  // homepage slider (see listPopularProducts).
-  viewCount: number;
-  // Admin-curated membership in the homepage's manually-curated "New
-  // Arrivals" mixed slider — a plain checkbox, not computed.
-  isFeaturedOnHomepage: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
+export type ProductInput = Schemas["CreateProductInput"];
+export type ProductAttributeValueInput = NonNullable<ProductInput["attributeValues"]>[number];
 
-export type ProductInput = {
-  categoryId: number;
-  productBrandId?: number | null;
-  name: LocalizedString;
-  slug: string;
-  metaTitleKa?: string | null;
-  metaTitleEn?: string | null;
-  metaTitleRu?: string | null;
-  metaDescriptionKa?: string | null;
-  metaDescriptionEn?: string | null;
-  metaDescriptionRu?: string | null;
-  descriptionKa?: string | null;
-  descriptionEn?: string | null;
-  descriptionRu?: string | null;
-  attributeValues?: ProductAttributeValueInput[];
-  isFeaturedOnHomepage?: boolean;
-};
-
-export type ProductVariantDetail = {
-  id: number;
-  sku: string | null;
-  price: number;
-  stockQuantity: number;
-  lowStockQuantity: number | null;
-  isActive: boolean;
-  size: LookupItem | null;
-  color: LookupItem | null;
-  condition: LookupItem | null;
-  status: LookupItem | null;
-  images: ProductVariantImage[];
-  discounts: ProductVariantDiscount[];
-  // Narrower than a full ProductVariantDiscount — may be derived from a
-  // rule-based bulk discount (no real DB row of its own). Only
-  // discountPrice is ever read; the crossed-out original price always comes
-  // from the variant's own `price`.
-  activeDiscount: { discountPrice: number } | null;
-};
-
-export type CompatibleVehicle = {
-  id: number;
-  brand: BrandModelRef;
-  model: BrandModelRef;
-};
-
+export type ProductDetail = Schemas["ProductDetail"];
+export type ProductVariantDetail = ProductDetail["variants"][number];
+export type CompatibleVehicle = ProductDetail["fitments"][number];
 // Summarized, not enumerated — an "all vehicles" rule would otherwise mean
 // listing hundreds of catalog rows on the product page.
-export type ProductFitmentRuleSummary = {
-  id: number;
-  type: ProductFitmentRuleType;
-  category: NamedRef | null;
-  specField: VehicleSpecField | null;
-  specFieldLabel: LocalizedString | null;
-  specValue: LookupItem | null;
-};
-
-export type ProductDetail = Product & {
-  variants: ProductVariantDetail[];
-  fitments: CompatibleVehicle[];
-  fitmentRules: ProductFitmentRuleSummary[];
-  buyTogether: Product[];
-};
-
-export type ProductSaleOrder = {
-  orderId: number;
-  orderCode: string;
-  createdAt: string;
-  buyerName: string;
-  buyerEmail: string;
-  quantity: number;
-  lineTotal: number;
-  status: string;
-};
-
-export type ProductSalesSummary = {
-  totalQuantitySold: number;
-  totalRevenue: number;
-  orderCount: number;
-  recentOrders: ProductSaleOrder[];
-};
+export type ProductFitmentRuleSummary = ProductDetail["fitmentRules"][number];
 
 // Admin-only detail — same as ProductDetail plus sales history, returned by
 // the admin "full view" endpoint (see getProductDetailAdmin below).
-export type ProductDetailAdmin = ProductDetail & {
-  sales: ProductSalesSummary;
-};
+export type ProductDetailAdmin = Schemas["ProductDetailAdmin"];
+export type ProductSalesSummary = ProductDetailAdmin["sales"];
+export type ProductSaleOrder = ProductSalesSummary["recentOrders"][number];
 
 export async function getProductBySlug(slug: string): Promise<ProductDetail> {
   const { data } = await apiClient.get<{ item: ProductDetail }>(`/products/by-slug/${slug}`);

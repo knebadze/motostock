@@ -1,4 +1,6 @@
+import type { z } from "zod";
 import { ApiError } from "../../lib/ApiError.js";
+import type { Expect, ResponseMatches } from "../../lib/response-contract.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { cache } from "../../lib/cache.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
@@ -30,7 +32,13 @@ import type {
   ProductListQuery,
   UpdateProductInput,
 } from "./products.schema.js";
-import type { Prisma, VehicleSpecField } from "../../generated/prisma/index.js";
+import type {
+  productDetailAdminResponseSchema,
+  productDetailResponseSchema,
+  productResponseSchema,
+} from "./products.schema.js";
+import type { AttributeValueType, Prisma, VehicleSpecField } from "../../generated/prisma/index.js";
+import type { VehicleSpecFieldInput } from "../product-fitment-rules/product-fitment-rules.schema.js";
 
 type NamedRefRow = {
   id: number;
@@ -58,7 +66,7 @@ type AttributeValueRow = {
     nameKa: string;
     nameEn: string;
     nameRu: string;
-    valueType: string;
+    valueType: AttributeValueType;
     unit: UnitRefRow | null;
   };
   valueText: string | null;
@@ -282,7 +290,12 @@ async function toFitmentRuleResponse(rule: FitmentRuleRow) {
     id: rule.id,
     type: rule.type,
     category: rule.category ? toNamedRef(rule.category) : null,
-    specField: rule.specField,
+    // The column is the full VehicleSpecField enum (shared with the numeric
+    // vehicle filters), but a fitment rule can only ever be written with one
+    // of the lookup-backed fields — product-fitment-rules.schema.ts's
+    // vehicleSpecFieldSchema rejects the rest — which is exactly what the
+    // documented response type promises.
+    specField: rule.specField as VehicleSpecFieldInput | null,
     specFieldLabel,
     specValue,
   };
@@ -925,3 +938,19 @@ export async function deleteProduct(id: number) {
     void deleteUploadedImage(image.imageUrl);
   }
 }
+
+// Contract checks: the mappers above must return exactly what
+// products.schema.ts documents — the frontend's Product/ProductDetail types
+// are generated from those schemas (see lib/response-contract.ts).
+type _ProductResponseContract = Expect<ResponseMatches<
+  Awaited<ReturnType<typeof toResponse>>,
+  z.infer<typeof productResponseSchema>
+>>;
+type _ProductDetailResponseContract = Expect<ResponseMatches<
+  Awaited<ReturnType<typeof getProductDetail>>,
+  z.infer<typeof productDetailResponseSchema>
+>>;
+type _ProductDetailAdminResponseContract = Expect<ResponseMatches<
+  Awaited<ReturnType<typeof getProductDetailAdmin>>,
+  z.infer<typeof productDetailAdminResponseSchema>
+>>;
