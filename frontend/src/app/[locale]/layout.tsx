@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { RootShell } from "@/components/shared/RootShell";
 import { VisitorPingBeacon } from "@/components/shared/VisitorPingBeacon";
@@ -14,6 +14,24 @@ import { getCompanyInfoFromServer } from "@/lib/api/server";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { localizedLookupName } from "@/lib/api/lookups";
 import type { WeekDay } from "@/lib/api/company-info";
+
+// Translation namespaces only ever read by SERVER components (via
+// getTranslations, or useTranslations in a non-client component) — they get
+// their messages from the request config, never from NextIntlClientProvider,
+// so shipping them to the browser on every page was pure payload. Listed as
+// an exclusion (not a list of client namespaces) so a namespace added later
+// reaches client components by default; only list one here after checking
+// no "use client" module (or anything it imports) reads it.
+const SERVER_ONLY_NAMESPACES = [
+  "Metadata",
+  "About",
+  "Contact",
+  "Catalog",
+  "PrivacyPolicy",
+  "Faq",
+  "Vacancies",
+  "NotFound",
+] as const;
 
 const DAY_OF_WEEK_SCHEMA: Record<WeekDay, string> = {
   MONDAY: "https://schema.org/Monday",
@@ -143,6 +161,12 @@ export default async function LocaleLayout({
   }
 
   setRequestLocale(locale);
+  const messages = await getMessages();
+  const clientMessages = Object.fromEntries(
+    Object.entries(messages).filter(
+      ([namespace]) => !(SERVER_ONLY_NAMESPACES as readonly string[]).includes(namespace),
+    ),
+  );
 
   return (
     <RootShell lang={locale}>
@@ -156,7 +180,7 @@ export default async function LocaleLayout({
       </Suspense>
       <GoogleAnalytics />
       <VisitorPingBeacon />
-      <NextIntlClientProvider>{children}</NextIntlClientProvider>
+      <NextIntlClientProvider messages={clientMessages}>{children}</NextIntlClientProvider>
     </RootShell>
   );
 }
