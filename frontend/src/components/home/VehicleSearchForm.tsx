@@ -4,7 +4,7 @@ import { useId, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Select } from "@/components/shared/Select";
-import type { GarageVehicle, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { GarageVehicle, VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 import { ManualVehicleSelect } from "./ManualVehicleSelect";
 
@@ -16,7 +16,7 @@ export function VehicleSearchForm({
   vehicleCatalog,
   garageVehicles,
 }: {
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   garageVehicles: GarageVehicle[];
 }) {
   const t = useTranslations("Home");

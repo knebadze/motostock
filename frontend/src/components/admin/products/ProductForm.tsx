@@ -11,7 +11,7 @@ import type { Attribute } from "@/lib/api/attributes";
 import type { Category } from "@/lib/api/categories";
 import { listProductBrands, type ProductBrand } from "@/lib/api/product-brands";
 import type { LookupItem } from "@/lib/api/lookups";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { flattenTree, isVehicleCategory, slugify } from "@/lib/categories-tree";
 import { generateVariantCombinations } from "@/lib/variant-matrix";
@@ -64,7 +64,7 @@ export function ProductForm({
   colors: LookupItem[];
   conditions: LookupItem[];
   statuses: LookupItem[];
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   vehicleSpecLookups: VehicleSpecLookupMap;
   allProducts: ProductListItem[];
   product: Product | null;

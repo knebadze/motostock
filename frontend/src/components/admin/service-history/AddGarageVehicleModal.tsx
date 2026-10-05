@@ -7,12 +7,12 @@ import { Select } from "@/components/shared/Select";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { createGarageVehicleForUser } from "@/lib/api/garage";
-import type { VehicleCatalogEntry, GarageVehicle } from "@/lib/api/vehicle-catalog";
+import type { VehicleCatalogOption, GarageVehicle } from "@/lib/api/vehicle-catalog";
 import { ApiRequestError } from "@/lib/api/client";
 import { workshopGarageVehicleFormSchema } from "@/lib/validation/workshop";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
-function vehicleCatalogLabel(entry: VehicleCatalogEntry): string {
+function vehicleCatalogLabel(entry: VehicleCatalogOption): string {
   const year =
     entry.yearFrom || entry.yearTo ? ` (${entry.yearFrom ?? "?"}–${entry.yearTo ?? "?"})` : "";
   return `${entry.brand.name} ${entry.model.name}${year}`;
@@ -29,7 +29,7 @@ export function AddGarageVehicleModal({
   onClose: () => void;
   onCreated: (vehicle: GarageVehicle) => void;
   userId: number;
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
 }) {
   const [vehicleCatalogId, setVehicleCatalogId] = useState("");
   const [year, setYear] = useState("");

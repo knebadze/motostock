@@ -12,7 +12,7 @@ import { createGarageVehicle } from "@/lib/api/garage";
 import {
   submitVehicleCatalogEntry,
   type GarageVehicle,
-  type VehicleCatalogEntry,
+  type VehicleCatalogOption,
 } from "@/lib/api/vehicle-catalog";
 import { decodeVin } from "@/lib/api/vin-decode";
 import type { Model } from "@/lib/api/models";
@@ -41,7 +41,7 @@ export function GarageVehicleFormModal({
   open: boolean;
   onClose: () => void;
   onSaved: (vehicle: GarageVehicle) => void;
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   models: Model[];
   fuelTypes: LookupItem[];
   transmissionTypes: LookupItem[];
@@ -92,7 +92,7 @@ export function GarageVehicleFormModal({
     setModelId("");
   }
 
-  function selectSuggestedEntry(entry: VehicleCatalogEntry) {
+  function selectSuggestedEntry(entry: VehicleCatalogOption) {
     setMode("pick");
     setVehicleCatalogId(String(entry.id));
     if (!pickYear && submitYear) setPickYear(submitYear);

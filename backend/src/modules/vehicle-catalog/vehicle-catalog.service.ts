@@ -1,3 +1,6 @@
+import type { z } from "zod";
+import type { Expect, ResponseMatches } from "../../lib/response-contract.js";
+import type { vehicleCatalogOptionResponseSchema } from "./vehicle-catalog.schema.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation, runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
@@ -191,6 +194,19 @@ export async function listVehicleCatalog(query: VehicleCatalogListQuery = {}) {
     vehicleCatalogRepository.count(where),
   ]);
   return { items: rows.map(toVehicleCatalogResponse), total, page, pageSize };
+}
+
+export async function listVehicleCatalogOptions() {
+  const rows = await vehicleCatalogRepository.findOptions();
+  return rows.map((row) => ({
+    id: row.id,
+    category: toNamedRef(row.model.category),
+    brand: row.brand,
+    model: { id: row.model.id, name: row.model.name, slug: row.model.slug },
+    variant: row.variant,
+    yearFrom: row.yearFrom,
+    yearTo: row.yearTo,
+  }));
 }
 
 export async function getVehicleCatalogEntry(id: number) {
@@ -401,3 +417,12 @@ export async function deleteVehicleCatalogEntry(id: number) {
   }
   void deleteUploadedImage(existing.imageUrl);
 }
+
+// Contract check: the picker mapper must return exactly what
+// vehicleCatalogOptionResponseSchema documents (the frontend's
+// VehicleCatalogOption type is generated from it — see
+// lib/response-contract.ts).
+type _VehicleCatalogOptionContract = Expect<ResponseMatches<
+  Awaited<ReturnType<typeof listVehicleCatalogOptions>>[number],
+  z.infer<typeof vehicleCatalogOptionResponseSchema>
+>>;

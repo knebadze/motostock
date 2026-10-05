@@ -11,21 +11,21 @@ import {
   listProductFitments,
   type ProductFitment,
 } from "@/lib/api/product-fitment";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import type { Category } from "@/lib/api/categories";
 import { ApiRequestError } from "@/lib/api/client";
 import { FitmentRulesEditor, type VehicleSpecLookupMap } from "./FitmentRulesEditor";
 
 export type { VehicleSpecLookupMap };
 
-export function vehicleCatalogLabel(entry: VehicleCatalogEntry): string {
+export function vehicleCatalogLabel(entry: VehicleCatalogOption): string {
   const year =
     entry.yearFrom || entry.yearTo ? ` (${entry.yearFrom ?? "?"}–${entry.yearTo ?? "?"})` : "";
   const variant = entry.variant ? ` — ${entry.variant}` : "";
   return `${entry.brand.name} ${entry.model.name}${variant}${year}`;
 }
 
-// fitment.vehicleCatalog is a narrower shape than VehicleCatalogEntry (no
+// fitment.vehicleCatalog is a narrower shape than VehicleCatalogOption (no
 // category/spec fields), so it can't just be passed to vehicleCatalogLabel
 // above — same formatting, kept as its own function instead of duplicating
 // the string-building inline a second time (once for the table column, once
@@ -51,7 +51,7 @@ export function ProductFitmentPanel({
   vehicleSpecLookups,
 }: {
   productId: number;
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   categories: Category[];
   vehicleSpecLookups: VehicleSpecLookupMap;
 }) {

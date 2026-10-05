@@ -15,7 +15,7 @@ import {
 import type { AdminListPage } from "@/lib/api/server";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import type { AdminFilterEntry } from "@/lib/api/admin-filters";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import type { LookupItem } from "@/lib/api/lookups";
 import { formatPrice } from "@/lib/format";
 import { buildVehicleListingFilterFields } from "@/config/admin-filters/vehicle-listing-filters";
@@ -103,7 +103,7 @@ export function VehicleListingsManager({
   colors,
 }: {
   initialData: AdminListPage<VehicleListing>;
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   conditions: LookupItem[];
   statuses: LookupItem[];
   colors: LookupItem[];

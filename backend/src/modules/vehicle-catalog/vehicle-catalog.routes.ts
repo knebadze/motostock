@@ -15,6 +15,7 @@ import {
   updateVehicleCatalogSchema,
   vehicleCatalogIdParamSchema,
   vehicleCatalogListQuerySchema,
+  vehicleCatalogOptionResponseSchema,
   vehicleCatalogResponseSchema,
 } from "./vehicle-catalog.schema.js";
 import { garageVehicleResponseSchema } from "../garage/garage.schema.js";
@@ -26,6 +27,9 @@ vehicleCatalogRouter.get(
   validate(vehicleCatalogListQuerySchema, "query"),
   vehicleCatalogController.list,
 );
+// Public, like GET / — registered before /:id so the literal "options"
+// segment isn't swallowed by the :id param route.
+vehicleCatalogRouter.get("/options", vehicleCatalogController.listOptions);
 vehicleCatalogRouter.get(
   "/:id",
   validate(vehicleCatalogIdParamSchema, "params"),
@@ -92,6 +96,19 @@ registry.registerPath({
   request: { query: vehicleCatalogListQuerySchema },
   responses: {
     200: { description: "Vehicle catalog list", content: { "application/json": { schema: listResponse } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-catalog/options",
+  tags: ["VehicleCatalog"],
+  summary: "Every catalog entry in the lean picker shape (id, category, brand, model, variant, years) — public",
+  responses: {
+    200: {
+      description: "Vehicle catalog options",
+      content: { "application/json": { schema: z.object({ items: z.array(vehicleCatalogOptionResponseSchema) }) } },
+    },
   },
 });
 

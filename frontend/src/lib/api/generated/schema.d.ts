@@ -3618,6 +3618,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicle-catalog/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every catalog entry in the lean picker shape (id, category, brand, model, variant, years) — public */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Vehicle catalog options */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["VehicleCatalogOption"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicle-catalog/{id}": {
         parameters: {
             query?: never;
@@ -14407,6 +14445,31 @@ export interface components {
                 message: string | null;
                 id: number | null;
             }[];
+        };
+        VehicleCatalogOption: {
+            id: number;
+            category: {
+                id: number;
+                name: {
+                    ka: string;
+                    en: string;
+                    ru: string;
+                };
+                slug: string;
+            };
+            brand: {
+                id: number;
+                name: string;
+                slug: string;
+            };
+            model: {
+                id: number;
+                name: string;
+                slug: string;
+            };
+            variant: string;
+            yearFrom: number | null;
+            yearTo: number | null;
         };
         VehicleCatalog: {
             /** @example 1 */

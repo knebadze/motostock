@@ -19,7 +19,7 @@ import {
 } from "@/lib/api/compatibility";
 import { listProducts, type ProductListItem } from "@/lib/api/products";
 import type { Category } from "@/lib/api/categories";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 
 const KIND_LABELS: Record<CompatibilityItem["kind"], string> = {
   FITMENT: "ცალკეული ტრანსპორტი",
@@ -210,7 +210,7 @@ function CompatibilityCheckTab({
   vehicleCatalog,
 }: {
   products: ProductListItem[];
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
 }) {
   const [mode, setMode] = useState<"vehicle" | "product">("vehicle");
   const [vehicleCatalogId, setVehicleCatalogId] = useState("");
@@ -365,7 +365,7 @@ export function CompatibilityManager({
   initialData: CompatibilityPage;
   categories: Category[];
   products: ProductListItem[];
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
 }) {
   return (
     <div>

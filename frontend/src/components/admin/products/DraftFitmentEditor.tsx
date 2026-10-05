@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Select } from "@/components/shared/Select";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import { vehicleCatalogLabel } from "./ProductFitmentPanel";
 
 export type DraftFitment = { vehicleCatalogId: number };
@@ -21,7 +21,7 @@ export function DraftFitmentEditor({
   onAdd,
   onRemove,
 }: {
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   fitments: DraftFitment[];
   onAdd: (vehicleCatalogId: number) => void;
   onRemove: (vehicleCatalogId: number) => void;
@@ -40,9 +40,9 @@ export function DraftFitmentEditor({
 
   const rows = fitments
     .map((fitment) => vehicleCatalog.find((entry) => entry.id === fitment.vehicleCatalogId))
-    .filter((entry): entry is VehicleCatalogEntry => entry !== undefined);
+    .filter((entry): entry is VehicleCatalogOption => entry !== undefined);
 
-  const draftColumns: DataTableColumn<VehicleCatalogEntry>[] = [
+  const draftColumns: DataTableColumn<VehicleCatalogOption>[] = [
     { header: "ტექნიკა", render: (entry) => vehicleCatalogLabel(entry) },
   ];
 

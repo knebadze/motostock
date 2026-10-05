@@ -8,7 +8,7 @@ import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Loader } from "@/components/shared/Loader";
 import { getUser, listUsers, type AdminUser } from "@/lib/api/users";
 import type { GarageVehicle } from "@/lib/api/garage";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import {
   deleteServiceRecord,
   listServiceRecordsForVehicle,
@@ -68,7 +68,7 @@ export function ServiceHistoryManager({
 }: {
   initialServiceTypes: ServiceType[];
   teamMembers: TeamMember[];
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   initialRecentServiceRecords: ServiceRecordsAdminPage;
 }) {
   const role = useAdminRole();

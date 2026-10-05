@@ -18,7 +18,7 @@ import {
 } from "@/lib/api/vehicle-listings";
 import { useUsdToGelRate } from "@/lib/useUsdToGelRate";
 import { uploadVehicleListingImages } from "@/lib/api/vehicle-listing-images";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import type { LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError } from "@/lib/api/client";
 import { VehicleListingDiscountsPanel } from "./VehicleListingDiscountsPanel";
@@ -26,7 +26,7 @@ import { VehicleListingImagesPanel } from "./VehicleListingImagesPanel";
 import { vehicleListingFormSchema } from "@/lib/validation/vehicle-listing";
 import { MAX_DECIMAL_10_2, getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
-function vehicleCatalogLabel(entry: VehicleCatalogEntry): string {
+function vehicleCatalogLabel(entry: VehicleCatalogOption): string {
   const year =
     entry.yearFrom || entry.yearTo ? ` (${entry.yearFrom ?? "?"}–${entry.yearTo ?? "?"})` : "";
   return `${entry.brand.name} ${entry.model.name}${year}`;
@@ -50,7 +50,7 @@ export function VehicleListingFormModal({
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   conditions: LookupItem[];
   statuses: LookupItem[];
   colors: LookupItem[];

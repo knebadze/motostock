@@ -5,7 +5,7 @@ import type { Brand } from "../brands";
 import type { Model } from "../models";
 import type { LookupItem } from "../lookups";
 import type { LookupTypeSlug } from "@/config/lookup-types";
-import type { VehicleCatalogEntry, VehicleCatalogPage } from "../vehicle-catalog";
+import type { VehicleCatalogEntry, VehicleCatalogOption, VehicleCatalogPage } from "../vehicle-catalog";
 import type { Attribute } from "../attributes";
 import type { CategoryFilter } from "../category-filters";
 import type { VehicleCategoryFilter } from "../vehicle-category-filters";
@@ -40,11 +40,11 @@ export const getLookupItemsFromServer = cache(async (type: LookupTypeSlug): Prom
   });
 });
 
-export const getVehicleCatalogFromServer = cache(async (): Promise<VehicleCatalogEntry[]> => {
+export const getVehicleCatalogFromServer = cache(async (): Promise<VehicleCatalogOption[]> => {
   // Public endpoint (garage "pick from catalog" flow reads this too) — must
   // not bail out just because there's no admin session cookie, same fix as
   // getCategoriesFromServer.
-  return fetchFromServer<{ items: VehicleCatalogEntry[] }, VehicleCatalogEntry[]>("/vehicle-catalog", {
+  return fetchFromServer<{ items: VehicleCatalogOption[] }, VehicleCatalogOption[]>("/vehicle-catalog/options", {
     fallback: [],
     extract: (data) => data.items,
   });

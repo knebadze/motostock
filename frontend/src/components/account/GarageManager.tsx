@@ -12,7 +12,7 @@ import { ServiceHistoryModal } from "./ServiceHistoryModal";
 import { deleteGarageVehicle, uploadGarageVehicleImage } from "@/lib/api/garage";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
-import type { GarageVehicle, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { GarageVehicle, VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import type { Model } from "@/lib/api/models";
 import type { LookupItem } from "@/lib/api/lookups";
 import { formatVehicleCatalogLabel } from "@/lib/format";
@@ -117,7 +117,7 @@ export function GarageManager({
   vinDecodeEnabled,
 }: {
   initialGarage: GarageVehicle[];
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   models: Model[];
   fuelTypes: LookupItem[];
   transmissionTypes: LookupItem[];

@@ -61,6 +61,23 @@ export const vehicleCatalogRepository = {
   // paginated path — compatibility.service.ts's fitment-matching calls (and
   // any other full-list caller) pass neither, so they keep getting every
   // matching row, same as before.
+  // Picker options (see vehicleCatalogOptionResponseSchema) — same rows and
+  // order as findMany's unpaginated call, just the handful of columns a
+  // picker reads and no spec-lookup joins.
+  findOptions() {
+    return prisma.vehicleCatalog.findMany({
+      select: {
+        id: true,
+        variant: true,
+        yearFrom: true,
+        yearTo: true,
+        brand: { select: brandModelRefSelect },
+        model: { select: { ...brandModelRefSelect, category: { select: namedRefSelect } } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  },
+
   findMany(where?: Prisma.VehicleCatalogWhereInput, skip?: number, take?: number) {
     return prisma.vehicleCatalog.findMany({
       where,

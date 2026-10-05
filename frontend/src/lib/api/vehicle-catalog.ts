@@ -22,6 +22,9 @@ export type BrandModelRef = {
 };
 
 export type VehicleCatalogEntry = Schemas["VehicleCatalog"];
+// The lean picker shape (GET /vehicle-catalog/options) — everything a "pick a
+// vehicle" UI reads, without the 30+ spec columns of a full entry.
+export type VehicleCatalogOption = Schemas["VehicleCatalogOption"];
 
 export type VehicleCatalogInput = Schemas["CreateVehicleCatalogInput"];
 

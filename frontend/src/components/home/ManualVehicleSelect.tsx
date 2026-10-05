@@ -3,7 +3,7 @@
 import { useId, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Select } from "@/components/shared/Select";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 
 // Pure presentational brand→model→year cascade — all state lives in the
 // parent (VehicleSearchForm), which also owns the "garage vs manual" choice
@@ -18,7 +18,7 @@ export function ManualVehicleSelect({
   onYearChange,
   disabled,
 }: {
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   brandId: string;
   modelId: string;
   year: string;
@@ -35,7 +35,7 @@ export function ManualVehicleSelect({
   const yearSelectId = useId();
 
   const brandOptions = useMemo(() => {
-    const byId = new Map<number, VehicleCatalogEntry["brand"]>();
+    const byId = new Map<number, VehicleCatalogOption["brand"]>();
     for (const entry of vehicleCatalog) {
       if (!byId.has(entry.brand.id)) byId.set(entry.brand.id, entry.brand);
     }
@@ -45,7 +45,7 @@ export function ManualVehicleSelect({
   }, [vehicleCatalog, locale]);
 
   const modelOptions = useMemo(() => {
-    const byId = new Map<number, VehicleCatalogEntry["model"]>();
+    const byId = new Map<number, VehicleCatalogOption["model"]>();
     for (const entry of vehicleCatalog) {
       if (String(entry.brand.id) !== brandId) continue;
       if (!byId.has(entry.model.id)) byId.set(entry.model.id, entry.model);

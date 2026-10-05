@@ -8,7 +8,7 @@ import { ManualVehicleSelect } from "@/components/home/ManualVehicleSelect";
 import { checkProductsCompatibility } from "@/lib/api/products";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatVehicleCatalogLabel } from "@/lib/format";
-import type { GarageVehicle, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { GarageVehicle, VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import type { LocalizedString } from "@/lib/api/categories";
 
 // Same "garage vehicle vs pick brand/model/year by hand" resolution as
@@ -22,7 +22,7 @@ export function CompatibilityChecker({
   garageVehicles,
   products,
 }: {
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   garageVehicles: GarageVehicle[];
   products: { id: number; name: LocalizedString }[];
 }) {

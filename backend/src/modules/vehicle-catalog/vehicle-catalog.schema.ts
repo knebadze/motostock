@@ -140,6 +140,24 @@ export const bulkImportVehicleCatalogResponseSchema = registry.register(
   }),
 );
 
+// Lean picker shape — GET /vehicle-catalog/options. Every "pick a vehicle"
+// UI (homepage vehicle search, garage, checkout compatibility, admin fitment/
+// listing/service-history pickers) only reads these fields, yet used to load
+// the full entry (30+ spec columns, three descriptions, eight joins) for the
+// whole catalog.
+export const vehicleCatalogOptionResponseSchema = registry.register(
+  "VehicleCatalogOption",
+  z.object({
+    id: z.int(),
+    category: namedRefSchema,
+    brand: brandModelRefSchema,
+    model: brandModelRefSchema,
+    variant: z.string(),
+    yearFrom: z.int().nullable(),
+    yearTo: z.int().nullable(),
+  }),
+);
+
 export const vehicleCatalogResponseSchema = registry.register(
   "VehicleCatalog",
   z.object({

@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
 import type { HeroSlide, HeroSlideTextPosition, HeroSlideVerticalPosition } from "@/lib/api/hero-slides";
-import type { GarageVehicle, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { GarageVehicle, VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import type { Category } from "@/lib/api/categories";
 import { VEHICLE_ROOT_CATEGORY_SLUG } from "@/lib/categories-tree";
 import { formatDate } from "@/lib/format";
@@ -90,7 +90,7 @@ export function HeroSlider({
   categories,
 }: {
   slides: HeroSlide[];
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   garageVehicles: GarageVehicle[];
   categories: Category[];
 }) {
