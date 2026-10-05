@@ -189,7 +189,11 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
       brand: { "@type": "Brand", name: listing.vehicleCatalog.brand.name },
       offers: {
         "@type": "Offer",
-        priceCurrency: "GEL",
+        // price/discountPrice are stored in the listing's own currency (an
+        // admin can price a listing in GEL or USD), so the currency must come
+        // from the listing too — a hardcoded "GEL" told Google a $8,000 bike
+        // cost ₾8,000.
+        priceCurrency: listing.priceCurrency,
         price: listing.activeDiscount?.discountPrice ?? listing.price,
         availability:
           listing.stockQuantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
