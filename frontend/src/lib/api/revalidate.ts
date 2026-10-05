@@ -1,6 +1,6 @@
 // Calls this app's own /api/revalidate Route Handler (not the Express
 // backend) right after an admin save, so the public cross-request cache on
-// the corresponding getXFromServer() in lib/api/server.ts (categories,
+// the corresponding getXFromServer() in lib/api/server/content.ts (categories,
 // company-info, terms, privacy-policy, faq-public) drops immediately instead
 // of waiting out its TTL (see PUBLIC_STATIC_CACHE_SECONDS there).
 export type RevalidatableTag = "categories" | "company-info" | "terms" | "privacy-policy" | "faq-public";

@@ -1,4 +1,4 @@
-// Base URL for API calls made from the Next.js server (SSR in lib/api/server.ts,
+// Base URL for API calls made from the Next.js server (SSR in lib/api/server/,
 // proxy.ts's admin role check) — never from the browser. In Docker this is
 // INTERNAL_API_URL (http://backend:4000/api, see docker-compose.yml), so SSR
 // talks to the backend container directly over the compose network instead

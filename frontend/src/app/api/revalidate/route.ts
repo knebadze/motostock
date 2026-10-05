@@ -5,7 +5,7 @@ import { getCurrentUserFromServer } from "@/lib/api/server";
 // Lets the admin panel force an instant refresh of the handful of
 // unstable_cache-wrapped public endpoints (getCategoriesFromServer/
 // getCompanyInfoFromServer/getTermsFromServer/getPrivacyPolicyFromServer/
-// getFaqListFromServer — see lib/api/server.ts's PUBLIC_STATIC_CACHE_SECONDS
+// getFaqListFromServer — see lib/api/server/core.ts's PUBLIC_STATIC_CACHE_SECONDS
 // comment) right after an admin save, instead of making every visitor wait
 // out the 5-minute TTL. There's no Next.js Server Action/Route Handler in
 // the admin save path itself to hook revalidateTag() into directly — admin

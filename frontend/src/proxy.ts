@@ -67,7 +67,7 @@ async function isOperatorSession(request: NextRequest): Promise<boolean> {
 
   try {
     // Server-to-server: internal URL + forwarded visitor IP, same as
-    // lib/api/server.ts (see lib/api/internal.ts for why). apiOrigin above
+    // lib/api/server/core.ts (see lib/api/internal.ts for why). apiOrigin above
     // stays the public origin — it's for the browser-facing CSP.
     const response = await fetch(`${getServerApiBaseUrl()}/users/me`, {
       headers: { cookie, ...forwardedForHeader(request.headers.get("x-forwarded-for")) },
