@@ -7,6 +7,7 @@ import swaggerUi from "swagger-ui-express";
 import { pinoHttp } from "pino-http";
 import { corsAllowedOrigins, env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
+import { ApiError } from "./lib/ApiError.js";
 import { generateOpenApiDocument } from "./docs/openapi.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { oauthRouter } from "./modules/oauth/oauth.routes.js";
@@ -123,7 +124,11 @@ app.use(
         callback(null, true);
         return;
       }
-      callback(new Error("Not allowed by CORS"));
+      // ApiError (403), not a plain Error — a plain Error reached
+      // error.middleware.ts as a 500 and was persisted to ErrorLog, so any
+      // request with a forged Origin header (even a GET) wrote a row.
+      // Still rejected outright, same as before, just without the log.
+      callback(new ApiError(403, "Not allowed by CORS"));
     },
     credentials: true,
   }),

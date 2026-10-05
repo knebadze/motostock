@@ -5,6 +5,7 @@ import { pruneStaleGuestVehicleListingViews } from "../vehicle-listing-views/veh
 import { pruneOrphanedRichTextImages } from "../media/media.service.js";
 import { fetchNbgUsdToGelRate } from "../vehicle-listing/exchange-rate.service.js";
 import { sendBirthdayEmails } from "../users/birthday-email.service.js";
+import { pruneOldErrorLogs } from "../error-logs/error-logs.service.js";
 import type { ScheduledJobKey } from "./scheduled-jobs.schema.js";
 
 // number for count-style detail (every existing prune job), string for
@@ -102,6 +103,14 @@ export const JOB_DEFINITIONS: JobDefinition[] = [
     // delete above has already finished.
     cron: "10 3 * * *",
     run: async () => ({ itemsAffected: await pruneOrphanedRichTextImages() }),
+  },
+  {
+    key: "DAILY_PRUNE_ERROR_LOGS",
+    labelKa: "შეცდომების ლოგის გასუფთავება (30 დღეზე ძველი)",
+    // Light indexed delete (ErrorLog.createdAt) — slotted after the heavier
+    // rich-text scan above rather than squeezed between the others.
+    cron: "12 3 * * *",
+    run: async () => ({ itemsAffected: await pruneOldErrorLogs() }),
   },
   {
     key: "BIRTHDAY_EMAIL",

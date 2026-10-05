@@ -14,6 +14,9 @@ enum ScheduledJobKey {
   // just on the shared daily cron) by checking for an already-SUCCESSful run
   // on today's Tbilisi calendar date before doing any work.
   BIRTHDAY_EMAIL
+  // Deletes ErrorLog rows older than the retention window — see
+  // error-logs.service.ts's pruneOldErrorLogs.
+  DAILY_PRUNE_ERROR_LOGS
 
   @@schema("dbo")
 }
