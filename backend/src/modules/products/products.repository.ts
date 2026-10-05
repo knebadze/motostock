@@ -1,5 +1,5 @@
 import { prisma } from "../../config/prisma.js";
-import type { Prisma } from "../../generated/prisma/index.js";
+import { Prisma } from "../../generated/prisma/index.js";
 import { applyProductAdminFilters } from "../filters/product/product-admin-filter-registry.js";
 import type { FilterEntry } from "../filters/filter-request.schema.js";
 import { getSalesSummaryLimit, getSearchResultCap } from "../settings/settings.service.js";
@@ -432,6 +432,88 @@ export const productsRepository = {
       skip: suppressPagination ? undefined : filters.skip,
       take: suppressPagination ? undefined : filters.limit,
     });
+  },
+
+  // Ids only, same where-shape as findMany/count — step one of the
+  // price-sorted storefront page (see findIdsOrderedByMinPrice and
+  // products.service.ts's listProducts): cheap enough to fetch for the whole
+  // filtered set, unlike full card rows.
+  async findIds(filters: {
+    categoryIds?: number[];
+    vehicleCompatibilityWhere?: Prisma.ProductWhereInput;
+    searchIds?: number[];
+    brandIds?: number[];
+    priceMin?: number;
+    priceMax?: number;
+    onSale?: boolean;
+    bulkDiscountEventId?: number;
+    featured?: boolean;
+    attributeFilters?: AttributeFilterInput;
+  }): Promise<number[]> {
+    const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
+    const rows = await prisma.product.findMany({
+      where: {
+        AND: [
+          ...(structuredWhere ? [structuredWhere] : []),
+          { variants: { some: { isActive: true } } },
+        ],
+      },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  },
+
+  // One page of `ids`, ordered in Postgres by the price the product card
+  // actually shows (products.service.ts's toCardResponse + the frontend's
+  // ProductCard): the cheapest currently-active discount price among its
+  // active variants if any variant is on sale (findCardActiveDiscount), else
+  // the cheapest active variant's regular price (minPrice). A variant's
+  // active discount is the one whose [startDate, endDate] contains `now`,
+  // latest-starting first — same as lib/discounts.ts's findActiveDiscount
+  // over the startDate-desc rows productCardSelect loads. Ties go
+  // newest-first, then by id so pages never overlap. Prisma's relation
+  // orderBy only supports `_count`, hence the raw query; every id here
+  // already passed findIds' filters.
+  async findIdsOrderedByDisplayedPrice(
+    ids: number[],
+    direction: "asc" | "desc",
+    skip: number,
+    take: number,
+  ): Promise<number[]> {
+    if (ids.length === 0) return [];
+    const order = direction === "asc" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+    // DateTime columns are stored as UTC wall time in `timestamp` (no zone);
+    // casting the ISO string to ::timestamp compares in that same frame,
+    // independent of the DB session's timezone.
+    const now = new Date().toISOString();
+    const rows = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT p."id"
+      FROM "dbo"."Product" p
+      WHERE p."id" = ANY(${ids}::int[])
+      ORDER BY COALESCE(
+        (
+          SELECT MIN((
+            SELECT d."discountPrice"
+            FROM "dbo"."ProductVariantDiscount" d
+            WHERE d."productVariantId" = v."id"
+              AND d."startDate" <= ${now}::timestamp
+              AND ${now}::timestamp <= d."endDate"
+            ORDER BY d."startDate" DESC
+            LIMIT 1
+          ))
+          FROM "dbo"."ProductVariant" v
+          WHERE v."productId" = p."id" AND v."isActive" = true
+        ),
+        (
+          SELECT MIN(v."price")
+          FROM "dbo"."ProductVariant" v
+          WHERE v."productId" = p."id" AND v."isActive" = true
+        )
+      ) ${order} NULLS LAST, p."createdAt" DESC, p."id" DESC
+      OFFSET ${skip}
+      LIMIT ${take}
+    `;
+    return rows.map((row) => row.id);
   },
 
   // Paired with findMany above — same where-shape (including the

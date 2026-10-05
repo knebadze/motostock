@@ -628,27 +628,26 @@ export async function listProducts(query: ProductListQuery) {
       attributeFilters: query.attributeFilters,
     };
 
-    // Price sort orders by each product's cheapest ACTIVE variant — not a
-    // plain column, so there's no Postgres ORDER BY for it (Prisma's
-    // relation-aggregate orderBy only supports `_count`, not `_min`/`_max`).
-    // Fetching every filtered match and sorting in JS is the pragmatic
-    // tradeoff here: this store's per-category (or even whole, on-sale)
-    // catalog is realistically small enough that this doesn't cost what an
-    // unbounded query against a huge table would — a true fix would need
-    // either a raw SQL query duplicating buildWhere, or a denormalized
-    // "cheapest active variant price" column kept in sync on every variant
-    // write, both bigger changes than this shop-page sort control warrants
-    // today. `total` is exact (the full matched set, not an estimate).
+    // Price sort orders by the price the card shows (discounted if on sale
+    // — see findIdsOrderedByDisplayedPrice), not the bare regular price, so
+    // the list reads as sorted to the shopper. Ids of the whole filtered set
+    // (cheap), Postgres orders them and returns just this page, and only that
+    // page's ~pageSize card rows are loaded. `total` stays exact.
     if (query.sortBy === "price-asc" || query.sortBy === "price-desc") {
-      const rows = await productsRepository.findMany(filters);
-      const priceOf = (row: (typeof rows)[number]) =>
-        row.variants.length > 0 ? Math.min(...row.variants.map((v) => Number(v.price))) : Infinity;
-      const sorted = [...rows].sort((a, b) =>
-        query.sortBy === "price-asc" ? priceOf(a) - priceOf(b) : priceOf(b) - priceOf(a),
+      const matchingIds = await productsRepository.findIds(filters);
+      const pageIds = await productsRepository.findIdsOrderedByDisplayedPrice(
+        matchingIds,
+        query.sortBy === "price-asc" ? "asc" : "desc",
+        skip,
+        take,
       );
-      const pageRows = sorted.slice(skip, skip + take);
+      const rows = await productsRepository.findByIds(pageIds);
+      const rowById = new Map(rows.map((row) => [row.id, row]));
+      const pageRows = pageIds
+        .map((id) => rowById.get(id))
+        .filter((row): row is NonNullable<typeof row> => row != null);
       const result = await Promise.all(pageRows.map(toCardResponse));
-      return { items: result, total: rows.length, page, pageSize };
+      return { items: result, total: matchingIds.length, page, pageSize };
     }
 
     // Default ("newest") sort: a plain DB skip/take + a matching count(),
