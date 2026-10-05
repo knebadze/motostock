@@ -8,7 +8,14 @@ import { Loader } from "@/components/shared/Loader";
 import { Select } from "@/components/shared/Select";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { formatDateTime, formatPrice } from "@/lib/format";
-import { getAnyOrder, updateOrderStatus, retryOrderFinaSync, type AdminOrder } from "@/lib/api/orders";
+import {
+  getAdminOrderInvoiceUrl,
+  getAdminOrderPackingSlipUrl,
+  getAnyOrder,
+  updateOrderStatus,
+  retryOrderFinaSync,
+  type AdminOrder,
+} from "@/lib/api/orders";
 import { syncOrderStock, type OrderStockSyncItem } from "@/lib/api/fina-sync";
 import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
 import { FinaSyncBadge } from "./FinaSyncBadge";
@@ -158,6 +165,24 @@ export function OrderDetailModal({
             <div>
               <h3 className="text-lg font-semibold">{order.orderCode}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{formatDateTime(order.createdAt)}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <a
+                  href={getAdminOrderInvoiceUrl(order.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
+                >
+                  ინვოისის ბეჭდვა
+                </a>
+                <a
+                  href={getAdminOrderPackingSlipUrl(order.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
+                >
+                  შეფუთვის ფურცელი
+                </a>
+              </div>
             </div>
             {order.status.key === "CANCELLED" ? (
               <p className="text-sm text-muted-foreground">

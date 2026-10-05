@@ -153,6 +153,19 @@ export const ordersRepository = {
     return prisma.order.findUnique({ where: { id }, include: orderItemsInclude });
   },
 
+  // Packing-slip-only extras (see invoice.service.ts's
+  // generateOrderPackingSlipPdf) — kept out of orderItemsInclude so the
+  // regular order responses don't start carrying them.
+  findPackingSlipExtras(userId: number, variantIds: number[]) {
+    return Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { phone: true } }),
+      prisma.productVariant.findMany({
+        where: { id: { in: variantIds } },
+        select: { id: true, sku: true, size: { select: { nameKa: true } }, color: { select: { nameKa: true } } },
+      }),
+    ]);
+  },
+
   // Idempotency-key lookup — see orders.service.ts's placeOrder, which
   // returns this instead of creating a second order on a retried request.
   findByIdempotencyKey(idempotencyKey: string) {

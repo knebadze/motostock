@@ -193,92 +193,139 @@ function formatDate(date: Date): string {
   return `${pad(shifted.getUTCDate())}.${pad(shifted.getUTCMonth() + 1)}.${shifted.getUTCFullYear()} ${pad(shifted.getUTCHours())}:${pad(shifted.getUTCMinutes())}`;
 }
 
-export async function generateOrderInvoicePdf(order: OrderRow, locale: InvoiceLocale = "ka"): Promise<Buffer> {
-  const company = await getCompanyInfo();
-  const L = LABELS[locale];
+type PdfDoc = InstanceType<typeof PDFDocument>;
+type DrawOptions = { bold?: boolean; size?: number; color?: string; width?: number; align?: "left" | "right" };
 
+// The script-aware text primitives every document here is built from —
+// shared by the invoice and the admin packing slip so both get the same
+// mixed Georgian/Latin/Cyrillic handling (see FONT_FILES/splitIntoRuns).
+function createPdfWriter(doc: PdfDoc) {
+  for (const [name, file] of Object.entries(FONT_FILES)) {
+    doc.registerFont(name, file);
+  }
+
+  function fontFor(script: Script, bold: boolean): string {
+    return bold ? `${script}-Bold` : script;
+  }
+
+  function widthOf(text: string, bold = false): number {
+    return splitIntoRuns(text).reduce((sum, run) => {
+      doc.font(fontFor(run.script, bold));
+      return sum + doc.widthOfString(run.text);
+    }, 0);
+  }
+
+  // Draws a single line of (possibly script-mixed) text at explicit
+  // coordinates, one script-run at a time — see splitIntoRuns/FONT_FILES's
+  // comment for why this is necessary instead of one doc.text() call.
+  function drawRuns(text: string, x: number, y: number, opts: DrawOptions = {}) {
+    const { bold = false, size = 10, color = "#000", width, align = "left" } = opts;
+    doc.fontSize(size).fillColor(color);
+    const runs = splitIntoRuns(text);
+    let cursorX = align === "right" && width != null ? x + width - widthOf(text, bold) : x;
+    for (const run of runs) {
+      doc.font(fontFor(run.script, bold));
+      doc.text(run.text, cursorX, y, { lineBreak: false });
+      cursorX += doc.widthOfString(run.text);
+    }
+  }
+
+  // Item names are free-typed admin text and the one field long enough to
+  // need a fit check — shortened with an ellipsis (kept to one line, no
+  // wrap) rather than measured per multi-line layout, since real product
+  // names in this catalog are short and this only ever triggers as a rare
+  // safety net.
+  function truncateToWidth(text: string, maxWidth: number): string {
+    if (widthOf(text) <= maxWidth) return text;
+    let truncated = text;
+    while (truncated.length > 0 && widthOf(`${truncated}…`) > maxWidth) {
+      truncated = truncated.slice(0, -1);
+    }
+    return truncated.length > 0 ? `${truncated}…` : "…";
+  }
+
+  return { drawRuns, truncateToWidth };
+}
+
+type PdfWriter = ReturnType<typeof createPdfWriter>;
+
+function renderPdf(build: (doc: PdfDoc, writer: PdfWriter) => void): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: "A4", margin: 50 });
     const chunks: Buffer[] = [];
     doc.on("data", (chunk: Buffer) => chunks.push(chunk));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
+    build(doc, createPdfWriter(doc));
+    doc.end();
+  });
+}
 
-    for (const [name, file] of Object.entries(FONT_FILES)) {
-      doc.registerFont(name, file);
-    }
+type CompanyInfo = Awaited<ReturnType<typeof getCompanyInfo>>;
 
-    function fontFor(script: Script, bold: boolean): string {
-      return bold ? `${script}-Bold` : script;
-    }
+// Business info (left) + document title/code/date (right), then a rule.
+// Returns the y position the body should start at.
+function drawDocumentHeader(
+  doc: PdfDoc,
+  { drawRuns }: PdfWriter,
+  args: { company: CompanyInfo; title: string; order: OrderRow; locale: InvoiceLocale; orderCodeLabel: string; dateLabel: string },
+): number {
+  const { company, title, order, locale, orderCodeLabel, dateLabel } = args;
+  drawRuns(company.name, 50, 50, { bold: true, size: 16 });
+  const companyLines = [
+    [company.city ? trilingualName(company.city, locale) : null, company.street].filter(Boolean).join(", "),
+    company.phone,
+    company.email,
+  ].filter((line): line is string => Boolean(line));
+  let companyY = 72;
+  for (const line of companyLines) {
+    drawRuns(line, 50, companyY, { size: 9, color: "#555" });
+    companyY += 13;
+  }
 
-    function widthOf(text: string, bold = false): number {
-      return splitIntoRuns(text).reduce((sum, run) => {
-        doc.font(fontFor(run.script, bold));
-        return sum + doc.widthOfString(run.text);
-      }, 0);
-    }
+  drawRuns(title, 300, 50, { bold: true, size: 20, width: 245, align: "right" });
+  drawRuns(`${orderCodeLabel}: ${order.orderCode}`, 300, 78, { size: 10, color: "#333", width: 245, align: "right" });
+  drawRuns(`${dateLabel}: ${formatDate(order.createdAt)}`, 300, 93, {
+    size: 10,
+    color: "#333",
+    width: 245,
+    align: "right",
+  });
 
-    // Draws a single line of (possibly script-mixed) text at explicit
-    // coordinates, one script-run at a time — see splitIntoRuns/FONT_FILES's
-    // comment for why this is necessary instead of one doc.text() call.
-    function drawRuns(
-      text: string,
-      x: number,
-      y: number,
-      opts: { bold?: boolean; size?: number; color?: string; width?: number; align?: "left" | "right" } = {},
-    ) {
-      const { bold = false, size = 10, color = "#000", width, align = "left" } = opts;
-      doc.fontSize(size).fillColor(color);
-      const runs = splitIntoRuns(text);
-      let cursorX = align === "right" && width != null ? x + width - widthOf(text, bold) : x;
-      for (const run of runs) {
-        doc.font(fontFor(run.script, bold));
-        doc.text(run.text, cursorX, y, { lineBreak: false });
-        cursorX += doc.widthOfString(run.text);
-      }
-    }
+  doc.moveTo(50, 130).lineTo(545, 130).strokeColor("#ddd").stroke();
+  return 145;
+}
 
-    // Item names are free-typed admin text and the one field long enough to
-    // need a fit check — shortened with an ellipsis (kept to one line, no
-    // wrap) rather than measured per multi-line layout, since real product
-    // names in this catalog are short and this only ever triggers as a rare
-    // safety net.
-    function truncateToWidth(text: string, maxWidth: number): string {
-      if (widthOf(text) <= maxWidth) return text;
-      let truncated = text;
-      while (truncated.length > 0 && widthOf(`${truncated}…`) > maxWidth) {
-        truncated = truncated.slice(0, -1);
-      }
-      return truncated.length > 0 ? `${truncated}…` : "…";
-    }
+type ShippingSnapshot = {
+  phone: string;
+  city: { nameKa: string; nameEn: string; nameRu: string };
+  street: string;
+  building: string | null;
+  apartment: string | null;
+};
 
-    // Header: business info (left) + invoice title/code/date (right).
-    drawRuns(company.name, 50, 50, { bold: true, size: 16 });
-    const companyLines = [
-      [company.city ? trilingualName(company.city, locale) : null, company.street].filter(Boolean).join(", "),
-      company.phone,
-      company.email,
-    ].filter((line): line is string => Boolean(line));
-    let companyY = 72;
-    for (const line of companyLines) {
-      drawRuns(line, 50, companyY, { size: 9, color: "#555" });
-      companyY += 13;
-    }
+function formatShippingAddress(shipping: ShippingSnapshot, locale: InvoiceLocale): string {
+  return [trilingualName(shipping.city, locale), shipping.street, shipping.building, shipping.apartment]
+    .filter(Boolean)
+    .join(", ");
+}
 
-    drawRuns(L.title, 300, 50, { bold: true, size: 20, width: 245, align: "right" });
-    drawRuns(`${L.orderCode}: ${order.orderCode}`, 300, 78, { size: 10, color: "#333", width: 245, align: "right" });
-    drawRuns(`${L.date}: ${formatDate(order.createdAt)}`, 300, 93, {
-      size: 10,
-      color: "#333",
-      width: 245,
-      align: "right",
+export async function generateOrderInvoicePdf(order: OrderRow, locale: InvoiceLocale = "ka"): Promise<Buffer> {
+  const company = await getCompanyInfo();
+  const L = LABELS[locale];
+
+  return renderPdf((doc, writer) => {
+    const { drawRuns, truncateToWidth } = writer;
+    let y = drawDocumentHeader(doc, writer, {
+      company,
+      title: L.title,
+      order,
+      locale,
+      orderCodeLabel: L.orderCode,
+      dateLabel: L.date,
     });
 
-    doc.moveTo(50, 130).lineTo(545, 130).strokeColor("#ddd").stroke();
-
     // Buyer + delivery info.
-    let y = 145;
     drawRuns(L.buyer, 50, y, { bold: true, size: 11 });
     y += 16;
     drawRuns(`${order.user.firstName} ${order.user.lastName}`, 50, y, { size: 10, color: "#333" });
@@ -287,17 +334,8 @@ export async function generateOrderInvoicePdf(order: OrderRow, locale: InvoiceLo
     y += 14;
 
     if (order.shippingSnapshot) {
-      const shipping = order.shippingSnapshot as {
-        phone: string;
-        city: { nameKa: string; nameEn: string; nameRu: string };
-        street: string;
-        building: string | null;
-        apartment: string | null;
-      };
-      const addressParts = [trilingualName(shipping.city, locale), shipping.street, shipping.building, shipping.apartment]
-        .filter(Boolean)
-        .join(", ");
-      drawRuns(`${shipping.phone} · ${addressParts}`, 50, y, { size: 10, color: "#333" });
+      const shipping = order.shippingSnapshot as ShippingSnapshot;
+      drawRuns(`${shipping.phone} · ${formatShippingAddress(shipping, locale)}`, 50, y, { size: 10, color: "#333" });
       y += 14;
     }
 
@@ -357,7 +395,107 @@ export async function generateOrderInvoicePdf(order: OrderRow, locale: InvoiceLo
     }
     y += 4;
     totalsLine(L.totalDue, formatMoney(Number(order.total)), true);
+  });
+}
 
-    doc.end();
+// Per-item picking details the order snapshot doesn't carry (OrderItem only
+// snapshots name/price) — read live from the variant. Null when the variant
+// was since deleted (OrderItem.productVariantId is SetNull), in which case
+// the slip just shows the snapshotted name.
+export type PackingSlipVariantInfo = { sku: string | null; size: string | null; color: string | null };
+
+const PACKING_SLIP_PAGE_BOTTOM = 770;
+
+// Staff-facing (Georgian-only, like the rest of the admin) document for
+// picking/packing a courier order or handing over a pickup: what to pull off
+// the shelf (SKU, size, color, quantity, a tick box per line), who it goes
+// to, and a signature line. Deliberately no prices — it travels inside the
+// parcel / gets handed to the customer, and the invoice covers the money.
+export async function generateOrderPackingSlipPdf(
+  order: OrderRow,
+  extras: { customerPhone: string | null; variants: Map<number, PackingSlipVariantInfo> },
+): Promise<Buffer> {
+  const company = await getCompanyInfo();
+  const locale: InvoiceLocale = "ka";
+  const L = LABELS.ka;
+
+  return renderPdf((doc, writer) => {
+    const { drawRuns, truncateToWidth } = writer;
+    let y = drawDocumentHeader(doc, writer, {
+      company,
+      title: "შეფუთვის ფურცელი",
+      order,
+      locale,
+      orderCodeLabel: L.orderCode,
+      dateLabel: L.date,
+    });
+
+    // Recipient — the courier/pickup counterpart needs the phone first.
+    drawRuns("მიმღები", 50, y, { bold: true, size: 11 });
+    drawRuns("მიწოდების ტიპი", 330, y, { bold: true, size: 11 });
+    y += 16;
+    const shipping = order.shippingSnapshot as ShippingSnapshot | null;
+    drawRuns(`${order.user.firstName} ${order.user.lastName}`, 50, y, { size: 10, color: "#333" });
+    drawRuns(L.fulfillment[order.fulfillmentMethod], 330, y, { size: 10, color: "#333" });
+    y += 14;
+    const phone = shipping?.phone ?? extras.customerPhone;
+    if (phone) {
+      drawRuns(`ტელ: ${phone}`, 50, y, { size: 10, color: "#333" });
+      y += 14;
+    }
+    if (shipping) {
+      drawRuns(truncateToWidth(formatShippingAddress(shipping, locale), 270), 50, y, { size: 10, color: "#333" });
+      y += 14;
+    }
+    y += 16;
+
+    // Items table — tick box, item (with SKU/size/color underneath), qty.
+    const col = { check: 50, name: 72, sku: 350, qty: 480 };
+    const drawTableHeader = () => {
+      drawRuns("დასახელება", col.name, y, { bold: true });
+      drawRuns("SKU", col.sku, y, { bold: true });
+      drawRuns("რაოდ.", col.qty, y, { bold: true, width: 65, align: "right" });
+      doc.moveTo(50, y + 16).lineTo(545, y + 16).strokeColor("#ddd").stroke();
+      y += 24;
+    };
+    drawTableHeader();
+
+    let totalQuantity = 0;
+    for (const item of order.items) {
+      if (y > PACKING_SLIP_PAGE_BOTTOM) {
+        doc.addPage();
+        y = 50;
+        drawTableHeader();
+      }
+      const variant = item.productVariantId != null ? extras.variants.get(item.productVariantId) : undefined;
+      const details = [variant?.size, variant?.color].filter(Boolean).join(" · ");
+
+      doc.rect(col.check, y, 11, 11).strokeColor("#888").stroke();
+      drawRuns(truncateToWidth(item.itemNameKa, 265), col.name, y);
+      drawRuns(variant?.sku ?? "—", col.sku, y, { size: 9, color: "#333" });
+      drawRuns(String(item.quantity), col.qty, y, { bold: true, width: 65, align: "right" });
+      if (details) {
+        drawRuns(details, col.name, y + 13, { size: 9, color: "#555" });
+        y += 13;
+      }
+      y += 22;
+      totalQuantity += item.quantity;
+    }
+
+    doc.moveTo(50, y).lineTo(545, y).strokeColor("#ddd").stroke();
+    y += 10;
+    drawRuns(`სულ ერთეული: ${totalQuantity}`, 330, y, { bold: true, width: 215, align: "right" });
+    y += 50;
+
+    if (y > PACKING_SLIP_PAGE_BOTTOM - 40) {
+      doc.addPage();
+      y = 80;
+    }
+    // Hand-over signatures — staff who packed it, and the customer/courier
+    // who received it.
+    doc.moveTo(50, y).lineTo(250, y).strokeColor("#888").stroke();
+    doc.moveTo(345, y).lineTo(545, y).strokeColor("#888").stroke();
+    drawRuns("შეფუთა (სახელი, ხელმოწერა)", 50, y + 6, { size: 9, color: "#555" });
+    drawRuns("ჩაიბარა (სახელი, ხელმოწერა)", 345, y + 6, { size: 9, color: "#555" });
   });
 }

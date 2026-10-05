@@ -74,6 +74,19 @@ ordersRouter.get(
   validate(orderIdParamSchema, "params"),
   ordersController.getAny,
 );
+ordersRouter.get(
+  "/:id/invoice",
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(orderIdParamSchema, "params"),
+  validate(downloadInvoiceQuerySchema, "query"),
+  ordersController.downloadAnyInvoice,
+);
+ordersRouter.get(
+  "/:id/packing-slip",
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(orderIdParamSchema, "params"),
+  ordersController.downloadAnyPackingSlip,
+);
 ordersRouter.patch(
   "/:id/status",
   requireRole(ROLES.ADMIN, ROLES.OPERATOR),
@@ -247,5 +260,35 @@ registry.registerPath({
     403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
     502: { description: "FINA API call failed", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/orders/{id}/invoice",
+  tags: ["Orders"],
+  summary: "Any order's PDF invoice, opened inline for printing (admin/operator)",
+  security,
+  request: { params: orderIdParamSchema, query: downloadInvoiceQuerySchema },
+  responses: {
+    200: { description: "PDF invoice", content: { "application/pdf": { schema: { type: "string", format: "binary" } } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Not an admin/operator", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Order not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/orders/{id}/packing-slip",
+  tags: ["Orders"],
+  summary: "Any order's PDF packing slip (items, SKU, size/color, no prices), opened inline for printing (admin/operator)",
+  security,
+  request: { params: orderIdParamSchema },
+  responses: {
+    200: { description: "PDF packing slip", content: { "application/pdf": { schema: { type: "string", format: "binary" } } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Not an admin/operator", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Order not found", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

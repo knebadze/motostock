@@ -154,6 +154,18 @@ export function getOrderInvoiceUrl(id: number, locale: "ka" | "en" | "ru"): stri
   return `${apiClient.defaults.baseURL}/orders/me/${id}/invoice?locale=${locale}`;
 }
 
+// Staff print views (ADMIN/OPERATOR) — opened in a new tab; the backend
+// serves them `inline` so the browser's PDF viewer shows them ready to print.
+// A plain link works because it's a top-level GET navigation, which carries
+// the SameSite=Lax session cookie to the (same-site) API origin.
+export function getAdminOrderInvoiceUrl(id: number): string {
+  return `${apiClient.defaults.baseURL}/orders/${id}/invoice?locale=ka`;
+}
+
+export function getAdminOrderPackingSlipUrl(id: number): string {
+  return `${apiClient.defaults.baseURL}/orders/${id}/packing-slip`;
+}
+
 // Admin-only from here down — hits the requireRole(ADMIN)-gated /orders and
 // /orders/:id endpoints (not the /orders/me* ones above), so every order is
 // visible regardless of buyer, and each row/detail carries a `buyer`.

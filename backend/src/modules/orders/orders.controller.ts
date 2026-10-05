@@ -9,6 +9,8 @@ import {
   listAllOrders,
   getAnyOrder,
   getMyOrderInvoicePdf,
+  getAnyOrderInvoicePdf,
+  getAnyOrderPackingSlipPdf,
 } from "./orders-query.service.js";
 import { updateOrderStatus, retryOrderFinaSync } from "./orders-admin.service.js";
 import type {
@@ -63,6 +65,25 @@ export async function downloadInvoice(
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
   res.status(200).send(buffer);
+}
+
+// Staff print views — `inline` (not `attachment` like the customer download
+// above) so the PDF opens in a browser tab ready to print.
+function sendInlinePdf(res: Response, { buffer, filename }: { buffer: Buffer; filename: string }) {
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+  res.status(200).send(buffer);
+}
+
+export async function downloadAnyInvoice(
+  req: Request<{ id: string }, unknown, unknown, DownloadInvoiceQuery>,
+  res: Response,
+) {
+  sendInlinePdf(res, await getAnyOrderInvoicePdf(Number(req.params.id), req.query.locale ?? "ka"));
+}
+
+export async function downloadAnyPackingSlip(req: Request<{ id: string }>, res: Response) {
+  sendInlinePdf(res, await getAnyOrderPackingSlipPdf(Number(req.params.id)));
 }
 
 export async function reorder(req: Request, res: Response) {

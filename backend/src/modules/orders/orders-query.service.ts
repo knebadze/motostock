@@ -5,7 +5,12 @@ import { cartRepository, type CartOwner } from "../cart/cart.repository.js";
 import { addCartItem } from "../cart/cart.service.js";
 import { ordersRepository } from "./orders.repository.js";
 import { toOrderResponse, computeEstimatedDeliveryDate } from "./orders.service.js";
-import { generateOrderInvoicePdf, type InvoiceLocale } from "./invoice.service.js";
+import {
+  generateOrderInvoicePdf,
+  generateOrderPackingSlipPdf,
+  type InvoiceLocale,
+  type PackingSlipVariantInfo,
+} from "./invoice.service.js";
 import type { ListOrdersQuery } from "./orders.schema.js";
 
 // Customer- and admin-facing order READS (list/get/reorder) — split out of
@@ -50,6 +55,37 @@ export async function getMyOrderInvoicePdf(userId: number, id: number, locale: I
   }
   const buffer = await generateOrderInvoicePdf(row, locale);
   return { buffer, filename: `invoice-${row.orderCode}.pdf` };
+}
+
+// Staff (ADMIN/OPERATOR) counterparts of getMyOrderInvoicePdf — any order,
+// no ownership check (the route's requireRole is the gate). Used for
+// printing at pickup hand-over / when packing a courier parcel.
+export async function getAnyOrderInvoicePdf(id: number, locale: InvoiceLocale) {
+  const row = await ordersRepository.findById(id);
+  if (!row) {
+    throw new ApiError(404, "შეკვეთა ვერ მოიძებნა", "ORDER_NOT_FOUND");
+  }
+  const buffer = await generateOrderInvoicePdf(row, locale);
+  return { buffer, filename: `invoice-${row.orderCode}.pdf` };
+}
+
+export async function getAnyOrderPackingSlipPdf(id: number) {
+  const row = await ordersRepository.findById(id);
+  if (!row) {
+    throw new ApiError(404, "შეკვეთა ვერ მოიძებნა", "ORDER_NOT_FOUND");
+  }
+  const variantIds = row.items
+    .map((item) => item.productVariantId)
+    .filter((variantId): variantId is number => variantId != null);
+  const [user, variants] = await ordersRepository.findPackingSlipExtras(row.userId, variantIds);
+  const variantInfo = new Map<number, PackingSlipVariantInfo>(
+    variants.map((variant) => [
+      variant.id,
+      { sku: variant.sku, size: variant.size?.nameKa ?? null, color: variant.color?.nameKa ?? null },
+    ]),
+  );
+  const buffer = await generateOrderPackingSlipPdf(row, { customerPhone: user?.phone ?? null, variants: variantInfo });
+  return { buffer, filename: `packing-slip-${row.orderCode}.pdf` };
 }
 
 // Recovers how much of *this* reorder request actually landed in the cart —
