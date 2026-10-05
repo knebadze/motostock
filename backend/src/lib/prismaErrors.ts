@@ -67,3 +67,27 @@ export async function runUniqueCheckedWrite<T>(
     throw error;
   }
 }
+
+// Central safety net for error.middleware.ts — maps the known Prisma request
+// errors that escaped every service-level handler (the helpers above are
+// still preferred: they run first and give a field-specific message) to the
+// right client-facing status instead of a logged 500. Typical sources are
+// races the services don't guard: two admins editing the same row while one
+// deletes it (P2025), a delete that a relation still references (P2003),
+// a concurrent duplicate on a unique column with no pre-check (P2002).
+// `code` lets the storefront translate the message (ApiErrors.* keys).
+const PRISMA_ERROR_MAP: Record<string, { status: number; message: string; code: string }> = {
+  P2002: { status: 409, message: "ასეთი ჩანაწერი უკვე არსებობს", code: "RECORD_CONFLICT" },
+  P2003: {
+    status: 409,
+    message: "ჩანაწერი გამოიყენება სხვა მონაცემებში, ამიტომ ამ მოქმედების შესრულება შეუძლებელია",
+    code: "RECORD_IN_USE",
+  },
+  P2025: { status: 404, message: "ჩანაწერი ვერ მოიძებნა", code: "RECORD_NOT_FOUND" },
+};
+
+export function mapKnownPrismaError(error: unknown): ApiError | null {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return null;
+  const mapped = PRISMA_ERROR_MAP[error.code];
+  return mapped ? new ApiError(mapped.status, mapped.message, mapped.code) : null;
+}

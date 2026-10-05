@@ -3,6 +3,7 @@ import multer from "multer";
 import { ZodError } from "zod";
 import { ApiError } from "../lib/ApiError.js";
 import { logger } from "../lib/logger.js";
+import { mapKnownPrismaError } from "../lib/prismaErrors.js";
 
 export function errorMiddleware(
   err: unknown,
@@ -31,6 +32,19 @@ export function errorMiddleware(
 
   if (err instanceof ApiError) {
     res.status(err.statusCode).json({ error: { message: err.message, code: err.code, params: err.params } });
+    return;
+  }
+
+  // Known Prisma request errors no service handled (P2002/P2003/P2025 — see
+  // mapKnownPrismaError) are a conflict or a missing row, not a server bug:
+  // answered with 409/404 and logged at warn level only, so they don't land
+  // in the admin ErrorLog (which persists logger.error calls).
+  const prismaMapped = mapKnownPrismaError(err);
+  if (prismaMapped) {
+    logger.warn({ err }, "Unhandled Prisma request error mapped to a client response");
+    res
+      .status(prismaMapped.statusCode)
+      .json({ error: { message: prismaMapped.message, code: prismaMapped.code } });
     return;
   }
 

@@ -625,6 +625,9 @@
     "backHome": "Back to homepage"
   },
   "ApiErrors": {
+    "RECORD_CONFLICT": "This record already exists",
+    "RECORD_IN_USE": "This action can't be completed — the record is used elsewhere",
+    "RECORD_NOT_FOUND": "Record not found — it may have been removed",
     "NOT_AUTHENTICATED": "Please sign in",
     "PRODUCT_NOT_FOUND": "Product not found",
     "PRODUCT_VARIANT_NOT_FOUND": "The selected variant was not found",
