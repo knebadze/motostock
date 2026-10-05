@@ -34,8 +34,14 @@ export type Product = {
   productBrand: BrandModelRef | null;
   name: LocalizedString;
   slug: string;
-  metaTitle: string | null;
-  metaDescription: string | null;
+  // Per-locale SEO overrides; null = fall back to that locale's name /
+  // description (see the product page's generateMetadata).
+  metaTitleKa: string | null;
+  metaTitleEn: string | null;
+  metaTitleRu: string | null;
+  metaDescriptionKa: string | null;
+  metaDescriptionEn: string | null;
+  metaDescriptionRu: string | null;
   descriptionKa: string | null;
   descriptionEn: string | null;
   descriptionRu: string | null;
@@ -64,8 +70,12 @@ export type ProductInput = {
   productBrandId?: number | null;
   name: LocalizedString;
   slug: string;
-  metaTitle?: string | null;
-  metaDescription?: string | null;
+  metaTitleKa?: string | null;
+  metaTitleEn?: string | null;
+  metaTitleRu?: string | null;
+  metaDescriptionKa?: string | null;
+  metaDescriptionEn?: string | null;
+  metaDescriptionRu?: string | null;
   descriptionKa?: string | null;
   descriptionEn?: string | null;
   descriptionRu?: string | null;

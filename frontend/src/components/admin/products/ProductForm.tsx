@@ -27,7 +27,7 @@ import { ProductBuyTogetherPanel } from "./ProductBuyTogetherPanel";
 import { ProductBasicInfoTab } from "./ProductBasicInfoTab";
 import { ProductDescriptionTab } from "./ProductDescriptionTab";
 import { ProductImageTab } from "./ProductImageTab";
-import { ProductSeoTab } from "./ProductSeoTab";
+import { ProductSeoTab, type LocalizedMeta, type SeoLocale } from "./ProductSeoTab";
 import { ProductPricingTab, type DraftVariant } from "./ProductPricingTab";
 import {
   toAttributeFieldValues,
@@ -39,6 +39,13 @@ import { saveProductForm, PRODUCT_FORM_SAVE_WARNING_MESSAGES, formatVariantSaveW
 function toNullableHtml(html: string): string | null {
   const isBlank = html.replace(/<[^>]*>/g, "").trim() === "";
   return isBlank ? null : html;
+}
+
+const SEO_LOCALES: SeoLocale[] = ["ka", "en", "ru"];
+
+function toNullableText(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
 }
 
 export function ProductForm({
@@ -81,12 +88,26 @@ export function ProductForm({
   const [nameRu, setNameRu] = useState(product?.name.ru ?? "");
   const [slug, setSlug] = useState(product?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(false);
-  const [metaTitle, setMetaTitle] = useState(product?.metaTitle ?? "");
-  const [metaTitleTouched, setMetaTitleTouched] = useState((product?.metaTitle ?? "") !== "");
-  const [metaDescription, setMetaDescription] = useState(product?.metaDescription ?? "");
-  const [metaDescriptionTouched, setMetaDescriptionTouched] = useState(
-    (product?.metaDescription ?? "") !== "",
-  );
+  const [metaTitle, setMetaTitle] = useState<LocalizedMeta>(() => ({
+    ka: product?.metaTitleKa ?? "",
+    en: product?.metaTitleEn ?? "",
+    ru: product?.metaTitleRu ?? "",
+  }));
+  const [metaTitleTouched, setMetaTitleTouched] = useState<Record<SeoLocale, boolean>>(() => ({
+    ka: Boolean(product?.metaTitleKa),
+    en: Boolean(product?.metaTitleEn),
+    ru: Boolean(product?.metaTitleRu),
+  }));
+  const [metaDescription, setMetaDescription] = useState<LocalizedMeta>(() => ({
+    ka: product?.metaDescriptionKa ?? "",
+    en: product?.metaDescriptionEn ?? "",
+    ru: product?.metaDescriptionRu ?? "",
+  }));
+  const [metaDescriptionTouched, setMetaDescriptionTouched] = useState<Record<SeoLocale, boolean>>(() => ({
+    ka: Boolean(product?.metaDescriptionKa),
+    en: Boolean(product?.metaDescriptionEn),
+    ru: Boolean(product?.metaDescriptionRu),
+  }));
   const [isFeaturedOnHomepage, setIsFeaturedOnHomepage] = useState(
     product?.isFeaturedOnHomepage ?? false,
   );
@@ -160,25 +181,45 @@ export function ProductForm({
   // "touched" convention as slug: stops overriding as soon as the admin
   // edits the meta field directly, and never overwrites a value a product
   // already had when this form opened (see the touched-state initializers).
+  // Per locale — each language's meta follows that language's own name.
   function handleNameChange(next: { ka: string; en: string; ru: string }) {
     setNameKa(next.ka);
     setNameEn(next.en);
     setNameRu(next.ru);
-    if (!metaTitleTouched && next.ka) {
-      setMetaTitle(`${next.ka} | ${siteConfig.name}`.slice(0, 70));
-    }
+    setMetaTitle((current) => {
+      const updated = { ...current };
+      for (const locale of SEO_LOCALES) {
+        if (!metaTitleTouched[locale] && next[locale]) {
+          updated[locale] = `${next[locale]} | ${siteConfig.name}`.slice(0, 70);
+        }
+      }
+      return updated;
+    });
   }
 
   function handleEnglishNameChange(value: string) {
     if (!slugTouched) setSlug(slugify(value));
   }
 
+  function syncMetaDescription(locale: SeoLocale, html: string) {
+    if (metaDescriptionTouched[locale]) return;
+    const plainText = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    setMetaDescription((current) => ({ ...current, [locale]: plainText.slice(0, 160) }));
+  }
+
   function handleDescriptionKaChange(html: string) {
     setDescriptionKa(html);
-    if (!metaDescriptionTouched) {
-      const plainText = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-      setMetaDescription(plainText.slice(0, 160));
-    }
+    syncMetaDescription("ka", html);
+  }
+
+  function handleDescriptionEnChange(html: string) {
+    setDescriptionEn(html);
+    syncMetaDescription("en", html);
+  }
+
+  function handleDescriptionRuChange(html: string) {
+    setDescriptionRu(html);
+    syncMetaDescription("ru", html);
   }
 
   function handleSlugChange(value: string) {
@@ -186,14 +227,14 @@ export function ProductForm({
     setSlug(value);
   }
 
-  function handleMetaTitleChange(value: string) {
-    setMetaTitleTouched(true);
-    setMetaTitle(value);
+  function handleMetaTitleChange(locale: SeoLocale, value: string) {
+    setMetaTitleTouched((current) => ({ ...current, [locale]: true }));
+    setMetaTitle((current) => ({ ...current, [locale]: value }));
   }
 
-  function handleMetaDescriptionChange(value: string) {
-    setMetaDescriptionTouched(true);
-    setMetaDescription(value);
+  function handleMetaDescriptionChange(locale: SeoLocale, value: string) {
+    setMetaDescriptionTouched((current) => ({ ...current, [locale]: true }));
+    setMetaDescription((current) => ({ ...current, [locale]: value }));
   }
 
   // Product brands are category-scoped (with tree inheritance, resolved
@@ -321,8 +362,12 @@ export function ProductForm({
       categoryId,
       name: { ka: nameKa, en: nameEn, ru: nameRu },
       slug,
-      metaTitle: metaTitle || undefined,
-      metaDescription: metaDescription || undefined,
+      metaTitleKa: metaTitle.ka || undefined,
+      metaTitleEn: metaTitle.en || undefined,
+      metaTitleRu: metaTitle.ru || undefined,
+      metaDescriptionKa: metaDescription.ka || undefined,
+      metaDescriptionEn: metaDescription.en || undefined,
+      metaDescriptionRu: metaDescription.ru || undefined,
     });
     const attributeResult = buildAttributeValuesSchema(categoryAttributes).safeParse(
       withAttributeDefaults(attributeValues, categoryAttributes),
@@ -369,8 +414,12 @@ export function ProductForm({
         productBrandId: productBrandId ? Number(productBrandId) : null,
         name: { ka: nameKa.trim(), en: nameEn.trim(), ru: nameRu.trim() },
         slug: slug.trim(),
-        metaTitle: metaTitle.trim() ? metaTitle.trim() : null,
-        metaDescription: metaDescription.trim() ? metaDescription.trim() : null,
+        metaTitleKa: toNullableText(metaTitle.ka),
+        metaTitleEn: toNullableText(metaTitle.en),
+        metaTitleRu: toNullableText(metaTitle.ru),
+        metaDescriptionKa: toNullableText(metaDescription.ka),
+        metaDescriptionEn: toNullableText(metaDescription.en),
+        metaDescriptionRu: toNullableText(metaDescription.ru),
         descriptionKa: toNullableHtml(descriptionKa),
         descriptionEn: toNullableHtml(descriptionEn),
         descriptionRu: toNullableHtml(descriptionRu),
@@ -448,9 +497,9 @@ export function ProductForm({
           descriptionKa={descriptionKa}
           onDescriptionKaChange={handleDescriptionKaChange}
           descriptionEn={descriptionEn}
-          onDescriptionEnChange={setDescriptionEn}
+          onDescriptionEnChange={handleDescriptionEnChange}
           descriptionRu={descriptionRu}
-          onDescriptionRuChange={setDescriptionRu}
+          onDescriptionRuChange={handleDescriptionRuChange}
         />
       ),
     },
@@ -470,7 +519,7 @@ export function ProductForm({
           onMetaTitleChange={handleMetaTitleChange}
           metaDescription={metaDescription}
           onMetaDescriptionChange={handleMetaDescriptionChange}
-          errors={{ slug: errors.slug, metaTitle: errors.metaTitle, metaDescription: errors.metaDescription }}
+          errors={errors}
         />
       ),
     },

@@ -2,12 +2,20 @@ import { z } from "zod";
 import { localizedNameSchema, requiredSelectString, slugSchema } from "./common";
 import type { Attribute } from "@/lib/api/attributes";
 
+// Mirrors products.schema.ts's per-locale meta limits.
+const metaTitleField = z.string().max(70, "მაქს. 70 სიმბოლო").optional();
+const metaDescriptionField = z.string().max(200, "მაქს. 200 სიმბოლო").optional();
+
 export const productFormSchema = z.object({
   categoryId: requiredSelectString("აირჩიეთ კატეგორია"),
   name: localizedNameSchema,
   slug: slugSchema,
-  metaTitle: z.string().max(70, "მაქს. 70 სიმბოლო").optional(),
-  metaDescription: z.string().max(200, "მაქს. 200 სიმბოლო").optional(),
+  metaTitleKa: metaTitleField,
+  metaTitleEn: metaTitleField,
+  metaTitleRu: metaTitleField,
+  metaDescriptionKa: metaDescriptionField,
+  metaDescriptionEn: metaDescriptionField,
+  metaDescriptionRu: metaDescriptionField,
 });
 
 // Attribute inputs are rendered dynamically per category (see

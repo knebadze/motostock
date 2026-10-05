@@ -109,8 +109,12 @@ type ProductRow = {
   descriptionRu: string | null;
   imageUrl: string | null;
   slug: string;
-  metaTitle: string | null;
-  metaDescription: string | null;
+  metaTitleKa: string | null;
+  metaTitleEn: string | null;
+  metaTitleRu: string | null;
+  metaDescriptionKa: string | null;
+  metaDescriptionEn: string | null;
+  metaDescriptionRu: string | null;
   viewCount: number;
   isFeaturedOnHomepage: boolean;
   attributeValues: AttributeValueRow[];
@@ -134,8 +138,12 @@ export async function toResponse(row: ProductRow) {
     productBrand: row.productBrand,
     name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu },
     slug: row.slug,
-    metaTitle: row.metaTitle,
-    metaDescription: row.metaDescription,
+    metaTitleKa: row.metaTitleKa,
+    metaTitleEn: row.metaTitleEn,
+    metaTitleRu: row.metaTitleRu,
+    metaDescriptionKa: row.metaDescriptionKa,
+    metaDescriptionEn: row.metaDescriptionEn,
+    metaDescriptionRu: row.metaDescriptionRu,
     descriptionKa: row.descriptionKa,
     descriptionEn: row.descriptionEn,
     descriptionRu: row.descriptionRu,
@@ -785,8 +793,12 @@ export async function createProduct(input: CreateProductInput) {
         nameEn: input.name.en,
         nameRu: input.name.ru,
         slug: input.slug,
-        metaTitle: input.metaTitle ?? null,
-        metaDescription: input.metaDescription ?? null,
+        metaTitleKa: input.metaTitleKa ?? null,
+        metaTitleEn: input.metaTitleEn ?? null,
+        metaTitleRu: input.metaTitleRu ?? null,
+        metaDescriptionKa: input.metaDescriptionKa ?? null,
+        metaDescriptionEn: input.metaDescriptionEn ?? null,
+        metaDescriptionRu: input.metaDescriptionRu ?? null,
         descriptionKa: input.descriptionKa ?? null,
         descriptionEn: input.descriptionEn ?? null,
         descriptionRu: input.descriptionRu ?? null,
@@ -851,8 +863,12 @@ export async function updateProduct(id: number, input: UpdateProductInput) {
           ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
           : {}),
         ...(input.slug !== undefined ? { slug: input.slug } : {}),
-        ...(input.metaTitle !== undefined ? { metaTitle: input.metaTitle } : {}),
-        ...(input.metaDescription !== undefined ? { metaDescription: input.metaDescription } : {}),
+        ...(input.metaTitleKa !== undefined ? { metaTitleKa: input.metaTitleKa } : {}),
+        ...(input.metaTitleEn !== undefined ? { metaTitleEn: input.metaTitleEn } : {}),
+        ...(input.metaTitleRu !== undefined ? { metaTitleRu: input.metaTitleRu } : {}),
+        ...(input.metaDescriptionKa !== undefined ? { metaDescriptionKa: input.metaDescriptionKa } : {}),
+        ...(input.metaDescriptionEn !== undefined ? { metaDescriptionEn: input.metaDescriptionEn } : {}),
+        ...(input.metaDescriptionRu !== undefined ? { metaDescriptionRu: input.metaDescriptionRu } : {}),
         ...(input.descriptionKa !== undefined ? { descriptionKa: input.descriptionKa } : {}),
         ...(input.descriptionEn !== undefined ? { descriptionEn: input.descriptionEn } : {}),
         ...(input.descriptionRu !== undefined ? { descriptionRu: input.descriptionRu } : {}),

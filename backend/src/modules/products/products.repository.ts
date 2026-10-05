@@ -197,8 +197,12 @@ type ProductWriteData = {
   descriptionEn?: string | null;
   descriptionRu?: string | null;
   slug: string;
-  metaTitle?: string | null;
-  metaDescription?: string | null;
+  metaTitleKa?: string | null;
+  metaTitleEn?: string | null;
+  metaTitleRu?: string | null;
+  metaDescriptionKa?: string | null;
+  metaDescriptionEn?: string | null;
+  metaDescriptionRu?: string | null;
   isFeaturedOnHomepage?: boolean;
 };
 

@@ -106,9 +106,19 @@ export async function generateMetadata({
   // below is used as-is rather than wrapped in more text. Without this `??`,
   // an admin-authored meta title was silently discarded and this generic
   // fallback used instead, no matter what the SEO tab had saved.
-  const title = product.metaTitle ?? `${product.name[locale]} — ${siteConfig.name}`;
+  // Per-locale meta (each language's page gets its own), falling back to
+  // that locale's name/description — never to another language's meta.
+  const localizedMetaTitle =
+    locale === "en" ? product.metaTitleEn : locale === "ru" ? product.metaTitleRu : product.metaTitleKa;
+  const localizedMetaDescription =
+    locale === "en"
+      ? product.metaDescriptionEn
+      : locale === "ru"
+        ? product.metaDescriptionRu
+        : product.metaDescriptionKa;
+  const title = localizedMetaTitle ?? `${product.name[locale]} — ${siteConfig.name}`;
   const rawDescription =
-    product.metaDescription ??
+    localizedMetaDescription ??
     (locale === "en" ? product.descriptionEn : locale === "ru" ? product.descriptionRu : product.descriptionKa);
   const description = rawDescription ? stripHtml(rawDescription).slice(0, 200) : title;
   const pathname = `/${product.category.slug}/${itemSlug}`;

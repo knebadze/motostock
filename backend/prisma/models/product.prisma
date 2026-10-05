@@ -18,8 +18,15 @@ model Product {
   descriptionRu   String?
   imageUrl        String?
   slug            String                  @unique
-  metaTitle       String?
-  metaDescription String?
+  // Per-locale SEO overrides, same Ka/En/Ru split as name/description —
+  // each null falls back to that locale's own name/description on the
+  // storefront ([categorySlug]/[itemSlug]/page.tsx's generateMetadata).
+  metaTitleKa       String?
+  metaTitleEn       String?
+  metaTitleRu       String?
+  metaDescriptionKa String?
+  metaDescriptionEn String?
+  metaDescriptionRu String?
   // Incremented once per product-detail-page view (see
   // products.service.ts's getProductDetail) — a simple popularity/interest
   // signal shown to admins, separate from the Order-based "most sold"

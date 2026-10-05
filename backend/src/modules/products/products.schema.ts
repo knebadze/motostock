@@ -25,6 +25,11 @@ export const productAttributeValueInputSchema = z.object({
 });
 export type ProductAttributeValueInput = z.infer<typeof productAttributeValueInputSchema>;
 
+// Per-locale SEO overrides — null/omitted means "use this locale's name /
+// description" on the storefront.
+const metaTitleField = z.string().max(70).nullable().optional();
+const metaDescriptionField = z.string().max(200).nullable().optional();
+
 export const createProductSchema = registry.register(
   "CreateProductInput",
   z.object({
@@ -32,8 +37,12 @@ export const createProductSchema = registry.register(
     productBrandId: z.int().positive().nullable().optional(),
     name: localizedStringSchema,
     slug: slugField,
-    metaTitle: z.string().max(70).nullable().optional(),
-    metaDescription: z.string().max(200).nullable().optional(),
+    metaTitleKa: metaTitleField,
+    metaTitleEn: metaTitleField,
+    metaTitleRu: metaTitleField,
+    metaDescriptionKa: metaDescriptionField,
+    metaDescriptionEn: metaDescriptionField,
+    metaDescriptionRu: metaDescriptionField,
     descriptionKa: optionalDescription,
     descriptionEn: optionalDescription,
     descriptionRu: optionalDescription,
@@ -263,8 +272,12 @@ export const productResponseSchema = registry.register(
     productBrand: brandModelRefSchema.nullable(),
     name: localizedStringSchema,
     slug: z.string(),
-    metaTitle: z.string().nullable(),
-    metaDescription: z.string().nullable(),
+    metaTitleKa: z.string().nullable(),
+    metaTitleEn: z.string().nullable(),
+    metaTitleRu: z.string().nullable(),
+    metaDescriptionKa: z.string().nullable(),
+    metaDescriptionEn: z.string().nullable(),
+    metaDescriptionRu: z.string().nullable(),
     descriptionKa: z.string().nullable(),
     descriptionEn: z.string().nullable(),
     descriptionRu: z.string().nullable(),
