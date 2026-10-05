@@ -1,8 +1,9 @@
 import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { cookies } from "next/headers";
+import { cookies, headers as requestHeaders } from "next/headers";
 import { apiClient, ApiRequestError } from "./client";
+import { forwardedForHeader, getServerApiBaseUrl } from "./internal";
 import type { PagedResult } from "@/components/shared/Pagination";
 import type { User } from "./auth";
 import type { Category } from "./categories";
@@ -79,11 +80,19 @@ async function fetchFromServer<TResponse, TResult>(
     requireAuth?: boolean;
   },
 ): Promise<TResult> {
-  const headers = await authHeaders();
-  if (options.requireAuth && !headers) return options.fallback;
+  const cookieHeaders = await authHeaders();
+  if (options.requireAuth && !cookieHeaders) return options.fallback;
+  const headers = {
+    ...cookieHeaders,
+    ...forwardedForHeader((await requestHeaders()).get("x-forwarded-for")),
+  };
 
   try {
-    const { data } = await apiClient.get<TResponse>(path, { headers, params: options.params });
+    const { data } = await apiClient.get<TResponse>(path, {
+      baseURL: getServerApiBaseUrl(),
+      headers,
+      params: options.params,
+    });
     return options.extract(data);
   } catch (error) {
     // Server components must never throw just because the backend call
@@ -129,7 +138,11 @@ async function fetchPublicCacheable<TResponse, TResult>(
   options: { fallback: TResult; extract: (data: TResponse) => TResult },
 ): Promise<TResult> {
   try {
-    const { data } = await apiClient.get<TResponse>(path);
+    // No visitor IP to forward here — this runs inside unstable_cache
+    // (shared across visitors, and headers() is disallowed there), so these
+    // few calls come from the frontend container itself; at most one per
+    // endpoint per PUBLIC_STATIC_CACHE_SECONDS, nowhere near the limit.
+    const { data } = await apiClient.get<TResponse>(path, { baseURL: getServerApiBaseUrl() });
     return options.extract(data);
   } catch (error) {
     const status = error instanceof ApiRequestError ? error.status : undefined;

@@ -1,6 +1,7 @@
 import createMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { routing } from "@/i18n/routing";
+import { forwardedForHeader, getServerApiBaseUrl } from "@/lib/api/internal";
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -65,8 +66,11 @@ async function isOperatorSession(request: NextRequest): Promise<boolean> {
   if (!cookie) return false;
 
   try {
-    const response = await fetch(`${apiOrigin}/api/users/me`, {
-      headers: { cookie },
+    // Server-to-server: internal URL + forwarded visitor IP, same as
+    // lib/api/server.ts (see lib/api/internal.ts for why). apiOrigin above
+    // stays the public origin — it's for the browser-facing CSP.
+    const response = await fetch(`${getServerApiBaseUrl()}/users/me`, {
+      headers: { cookie, ...forwardedForHeader(request.headers.get("x-forwarded-for")) },
       cache: "no-store",
     });
     if (!response.ok) return false;

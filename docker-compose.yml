@@ -89,6 +89,12 @@ services:
       # below (and Caddy's reverse_proxy) see ECONNREFUSED even though the
       # server logs "Ready".
       HOSTNAME: "0.0.0.0"
+      # Server-side (SSR) API calls go straight to the backend container over
+      # the compose network instead of out through the public URL and back in
+      # via Caddy — see frontend/src/lib/api/internal.ts. Runtime-only (not a
+      # build arg): it's never exposed to the browser. The browser keeps using
+      # NEXT_PUBLIC_API_URL.
+      INTERNAL_API_URL: http://backend:4000/api
     depends_on:
       backend:
         condition: service_healthy
