@@ -103,7 +103,7 @@ export async function receiveWebhook(req: Request, res: Response) {
     for (const message of messages) {
       const body = message.text?.body;
       if (!body) continue;
-      await handleInboundStaffReply({ body, contextMessageId: message.context?.id });
+      await handleInboundStaffReply({ from: message.from, body, contextMessageId: message.context?.id });
     }
   } catch (err) {
     logger.error({ err }, "Failed to process an inbound WhatsApp webhook payload");
