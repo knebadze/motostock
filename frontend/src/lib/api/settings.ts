@@ -1,57 +1,13 @@
 import { apiClient } from "./client";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type VinDecodeProvider = "nhtsa" | "vincario";
 
-export type Settings = {
-  useCloudStorage: boolean;
-  vinDecodeEnabled: boolean;
-  vinDecodeProvider: VinDecodeProvider;
-  guestWishlistEnabled: boolean;
-  guestCartEnabled: boolean;
-  promoStackingEnabled: boolean;
-  whatsappSupportPhoneNumber: string | null;
-  adminNotificationEmail: string | null;
-  deliveryTbilisiPrice: number;
-  deliveryTbilisiTime: string;
-  deliveryRegionsPrice: number;
-  deliveryRegionsTime: string;
-  deliveryExpressPrice: number;
-  deliveryExpressTime: string;
-  fraudVelocityOrderCount: number;
-  fraudVelocityWindowMinutes: number;
-  fraudNewAccountWindowHours: number;
-  fraudHighValueThreshold: number;
-  fraudFailedLoginThreshold: number;
-  fraudFailedLoginWindowMinutes: number;
-  finaWebCustomerId: number | null;
-  finaWebUserId: number | null;
-  cartMaxQuantity: number;
-  compareMaxItems: number;
-  analyticsDefaultWindowDays: number;
-  dashboardDemandCandidateLimit: number;
-  dashboardRecentCancelledLimit: number;
-  dashboardRecentOrdersLimit: number;
-  dashboardLowStockLimit: number;
-  dashboardRecentActivityWindowDays: number;
-  lowStockThreshold: number;
-  searchResultCap: number;
-  salesSummaryLimit: number;
-  recommendationsDefaultLimit: number;
-  recommendationsCacheTtlMinutes: number;
-  recommendationOrderWeight: number;
-  recommendationWishlistWeight: number;
-  recommendationViewWeight: number;
-  recentlyViewedLimit: number;
-  sessionIdleTtlMinutes: number;
-  sessionAbsoluteTtlDays: number;
-  resetTokenTtlMinutes: number;
-  verificationTokenTtlHours: number;
-  guestIdCookieMaxAgeDays: number;
-  imageMaxDimensionPx: number;
-  imageWebpQuality: number;
-  finaSyncIntervalMinutes: number;
-  homepageCacheTtlMinutes: number;
-};
+export type Settings = Schemas["Settings"];
 
 export async function getSettings(): Promise<Settings> {
   const { data } = await apiClient.get<{ settings: Settings }>("/settings");

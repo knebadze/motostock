@@ -10,6 +10,7 @@ import {
   finaSyncRunResponseSchema,
   orderIdParamSchema,
   orderStockSyncResultSchema,
+  orderStockSyncWithOrderResultSchema,
   productIdParamSchema,
 } from "./fina-sync.schema.js";
 
@@ -77,7 +78,7 @@ registry.registerPath({
   security,
   request: { params: orderIdParamSchema },
   responses: {
-    200: { description: "Sync result", content: { "application/json": { schema: orderStockSyncResultSchema } } },
+    200: { description: "Sync result", content: { "application/json": { schema: orderStockSyncWithOrderResultSchema } } },
     400: { description: "FINA not configured", content: { "application/json": { schema: errorResponseSchema } } },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
     403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },

@@ -1,30 +1,15 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
-import type { NamedRef } from "./vehicle-catalog";
-import type { LookupItem } from "./lookups";
-import type { VehicleSpecField } from "./vehicle-category-filters";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type ProductFitmentRuleType = "CATEGORY" | "SPEC" | "ALL";
 
-export type ProductFitmentRule = {
-  id: number;
-  productId: number;
-  type: ProductFitmentRuleType;
-  // Only present when type is "CATEGORY".
-  category: NamedRef | null;
-  // Only present when type is "SPEC".
-  specField: VehicleSpecField | null;
-  specFieldLabel: LocalizedString | null;
-  specValue: LookupItem | null;
-  createdAt: string;
-};
+export type ProductFitmentRule = Schemas["ProductFitmentRule"];
 
-export type ProductFitmentRuleInput = {
-  type: ProductFitmentRuleType;
-  categoryId?: number | null;
-  specField?: VehicleSpecField | null;
-  specLookupItemId?: number | null;
-};
+export type ProductFitmentRuleInput = Schemas["CreateProductFitmentRuleInput"];
 
 export async function listProductFitmentRules(productId: number): Promise<ProductFitmentRule[]> {
   const { data } = await apiClient.get<{ items: ProductFitmentRule[] }>(

@@ -149,6 +149,9 @@ export const vehicleCatalogResponseSchema = registry.register(
     model: brandModelRefSchema,
     submittedBy: submitterRefSchema.nullable(),
     variant: z.string(),
+    // How many garages hold this catalog entry — ranks the garage/vehicle
+    // pickers (see garage.repository.ts's popularity bump).
+    popularity: z.int(),
     yearFrom: z.int().nullable(),
     yearTo: z.int().nullable(),
     engineVolumeCc: z.int().nullable(),

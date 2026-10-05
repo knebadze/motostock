@@ -1,21 +1,13 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
+import type { components } from "./generated/schema";
 
-export type ProductBrand = {
-  id: number;
-  category: { id: number; name: LocalizedString; slug: string };
-  name: string;
-  slug: string;
-  logoUrl: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
-export type ProductBrandInput = {
-  categoryId: number;
-  name: string;
-  slug: string;
-};
+export type ProductBrand = Schemas["ProductBrand"];
+
+export type ProductBrandInput = Schemas["CreateProductBrandInput"];
 
 export async function listProductBrands(categoryId?: number): Promise<ProductBrand[]> {
   const { data } = await apiClient.get<{ items: ProductBrand[] }>("/product-brands", {

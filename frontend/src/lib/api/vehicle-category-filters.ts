@@ -1,6 +1,10 @@
 import { apiClient } from "./client";
 import type { LocalizedString } from "./categories";
-import type { NamedRef } from "./vehicle-catalog";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type VehicleCategoryFilterType = "PRICE" | "YEAR" | "BRAND" | "SPEC";
 
@@ -33,27 +37,9 @@ export type SpecFieldKind = "LOOKUP" | "NUMBER" | "BOOLEAN";
 
 export type VehicleCategoryFilterLookupOption = { id: number; key: string; label: LocalizedString };
 
-export type VehicleCategoryFilter = {
-  id: number;
-  categoryId: number;
-  // The row's own defining category — differs from the browsed/managed
-  // category when this filter was inherited from a parent category.
-  category: NamedRef;
-  filterType: VehicleCategoryFilterType;
-  sortOrder: number;
-  // Only present when filterType is "SPEC".
-  specField: VehicleSpecField | null;
-  specFieldLabel: LocalizedString | null;
-  specFieldKind: SpecFieldKind | null;
-  // Only present when filterType is "SPEC" and specFieldKind is "LOOKUP".
-  lookupOptions: VehicleCategoryFilterLookupOption[] | null;
-};
+export type VehicleCategoryFilter = Schemas["VehicleCategoryFilterConfig"];
 
-export type VehicleCategoryFilterInput = {
-  categoryId: number;
-  filterType: VehicleCategoryFilterType;
-  specField?: VehicleSpecField | null;
-};
+export type VehicleCategoryFilterInput = Schemas["CreateVehicleCategoryFilterInput"];
 
 export async function listVehicleCategoryFilters(
   categoryId: number,

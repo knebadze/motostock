@@ -7,6 +7,7 @@ import swaggerUi from "swagger-ui-express";
 import { pinoHttp } from "pino-http";
 import { corsAllowedOrigins, env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
+import { responseValidationMiddleware } from "./middleware/response-validation.middleware.js";
 import { ApiError } from "./lib/ApiError.js";
 import { generateOpenApiDocument } from "./docs/openapi.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
@@ -146,6 +147,13 @@ app.use(
   }),
 );
 app.use(pinoHttp({ logger }));
+
+// Dev-only: warns when a JSON response doesn't match its documented OpenAPI
+// schema (the frontend's types are generated from those docs) — see
+// response-validation.middleware.ts.
+if (env.NODE_ENV !== "production") {
+  app.use(responseValidationMiddleware);
+}
 
 app.get("/api/health", (_req, res) => {
   res.status(200).json({ status: "ok" });

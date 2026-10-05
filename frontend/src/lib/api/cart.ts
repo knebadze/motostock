@@ -1,46 +1,18 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
-import type { NamedRef } from "./vehicle-catalog";
-import type { LookupItem } from "./lookups";
-import type { ProductVariantImage } from "./product-variant-images";
-import type { ProductVariantDiscount } from "./product-variant-discounts";
-import type { VehicleListing } from "./vehicle-listings";
+import type { components } from "./generated/schema";
+import type { ApiResponse } from "./generated-helpers";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type CartItemType = "PRODUCT_VARIANT" | "VEHICLE_LISTING";
 
-export type CartProductVariant = {
-  id: number;
-  product: {
-    id: number;
-    name: LocalizedString;
-    slug: string;
-    imageUrl: string | null;
-    category: NamedRef;
-  };
-  size: LookupItem | null;
-  color: LookupItem | null;
-  price: number;
-  stockQuantity: number;
-  images: ProductVariantImage[];
-  activeDiscount: ProductVariantDiscount | null;
-};
+export type CartProductVariant = Schemas["CartProductVariant"];
 
-export type CartItem = {
-  id: number;
-  itemType: CartItemType;
-  quantity: number;
-  unitPrice: number;
-  lineTotal: number;
-  productVariant: CartProductVariant | null;
-  vehicleListing: VehicleListing | null;
-  createdAt: string;
-};
+export type CartItem = Schemas["CartItem"];
 
-export type Cart = {
-  items: CartItem[];
-  subtotal: number;
-  itemCount: number;
-};
+export type Cart = Schemas["Cart"];
 
 export async function getMyCart(): Promise<Cart> {
   const { data } = await apiClient.get<Cart>("/users/me/cart");
@@ -70,12 +42,7 @@ export async function removeFromCart(id: number): Promise<void> {
   await apiClient.delete(`/users/me/cart/${id}`);
 }
 
-export type CartStatusItem = {
-  id: number;
-  productVariantId: number | null;
-  vehicleListingId: number | null;
-  quantity: number;
-};
+export type CartStatusItem = ApiResponse<"/users/me/cart/status", "get">["items"][number];
 
 export async function getCartStatus(
   productVariantIds: number[],

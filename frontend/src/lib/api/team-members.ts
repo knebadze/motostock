@@ -1,25 +1,13 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
+import type { components } from "./generated/schema";
 
-export type TeamMember = {
-  id: number;
-  name: LocalizedString;
-  positionId: number;
-  // Denormalized from the linked Position classifier (see @/lib/api/lookups
-  // "positions" type) — for display without a second lookup.
-  role: LocalizedString;
-  imageUrl: string | null;
-  isActive: boolean;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
-export type TeamMemberInput = {
-  name: LocalizedString;
-  positionId: number;
-  isActive?: boolean;
-};
+export type TeamMember = Schemas["TeamMember"];
+
+export type TeamMemberInput = Schemas["CreateTeamMemberInput"];
 
 export async function listTeamMembers(): Promise<TeamMember[]> {
   const { data } = await apiClient.get<{ items: TeamMember[] }>("/team-members");

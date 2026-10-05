@@ -1,7 +1,12 @@
 import { createDiscountCollectionApi } from "./collection-discount-api";
-import type { CollectionDiscountBase, CollectionDiscountInput } from "./collection-discount-api";
+import type { CollectionDiscountInput } from "./collection-discount-api";
+import type { components } from "./generated/schema";
 
-export type VehicleListingDiscount = CollectionDiscountBase & { vehicleListingId: number };
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
+
+export type VehicleListingDiscount = Schemas["VehicleListingDiscount"];
 export type VehicleListingDiscountInput = CollectionDiscountInput;
 
 const vehicleListingDiscountsApi = createDiscountCollectionApi<VehicleListingDiscount>(

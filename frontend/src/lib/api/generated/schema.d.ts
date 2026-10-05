@@ -7752,7 +7752,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["OrderStockSyncResult"];
+                        "application/json": components["schemas"]["OrderStockSyncWithOrderResult"];
                     };
                 };
                 /** @description FINA not configured */
@@ -8186,7 +8186,9 @@ export interface paths {
                                 id: number;
                                 message: string;
                                 stack: string | null;
-                                context?: unknown;
+                                context: {
+                                    [key: string]: unknown;
+                                } | null;
                                 /** Format: date-time */
                                 createdAt: string;
                             }[];
@@ -14433,6 +14435,7 @@ export interface components {
                 name: string;
             } | null;
             variant: string;
+            popularity: number;
             yearFrom: number | null;
             yearTo: number | null;
             engineVolumeCc: number | null;
@@ -16032,6 +16035,172 @@ export interface components {
             updatedAt: string;
             stockConflict?: boolean;
         };
+        CheckoutInput: {
+            /** @enum {string} */
+            fulfillmentMethod: "CARD" | "COURIER" | "PICKUP";
+            addressId?: number;
+            /** @enum {string} */
+            deliverySpeed?: "STANDARD" | "EXPRESS";
+            promoCode?: string;
+            bankId?: number;
+            idempotencyKey: string;
+        };
+        UpdateOrderStatusInput: {
+            statusId: number;
+            cancellationReasonId?: number;
+            cancellationNote?: string;
+        };
+        OrderItem: {
+            id: number | null;
+            /** @enum {string} */
+            itemType: "PRODUCT_VARIANT" | "VEHICLE_LISTING";
+            productVariantId: number | null;
+            itemName: {
+                ka: string;
+                en: string;
+                ru: string;
+            };
+            imageUrl: string | null;
+            quantity: number;
+            /** @example 89.99 */
+            unitPrice: number;
+            /** @example 179.98 */
+            lineTotal: number;
+        };
+        CheckoutPreview: {
+            items: (components["schemas"]["OrderItem"] & {
+                inStock: boolean;
+                availableQuantity: number;
+            })[];
+            subtotal: number;
+            discountTotal: number;
+            /** @enum {string|null} */
+            deliverySpeed: "STANDARD" | "EXPRESS" | null;
+            deliveryCost: number;
+            deliveryTimeSnapshot: string | null;
+            total: number;
+            promoCode: {
+                code: string;
+                discountPercent: number;
+            } | null;
+            promoCodeBlocked: boolean;
+            hasStockIssues: boolean;
+        };
+        Order: {
+            /** @example 1 */
+            id: number;
+            /** @example 4K7QRX9P */
+            orderCode: string;
+            status: components["schemas"]["LookupItem"];
+            /** @enum {string} */
+            fulfillmentMethod: "CARD" | "COURIER" | "PICKUP";
+            shippingSnapshot: {
+                phone: string;
+                city: {
+                    id: number;
+                    key: string;
+                    nameKa: string;
+                    nameEn: string;
+                    nameRu: string;
+                    isTbilisi: boolean;
+                };
+                street: string;
+                building: string | null;
+                apartment: string | null;
+                postalCode: string | null;
+            } | null;
+            promoCode: {
+                code: string;
+                discountPercent: number;
+            } | null;
+            bank: {
+                id: number;
+                key: string;
+                name: {
+                    ka: string;
+                    en: string;
+                    ru: string;
+                };
+                logoUrl: string | null;
+            } | null;
+            /** @enum {string} */
+            paymentStatus: "NOT_APPLICABLE" | "AWAITING_PAYMENT" | "PAID" | "FAILED" | "REFUNDED";
+            paymentTransactionId: string | null;
+            /** Format: date-time */
+            paidAt: string | null;
+            paymentPlanLabel: string | null;
+            items: components["schemas"]["OrderItem"][];
+            subtotal: number;
+            discountTotal: number;
+            /** @enum {string|null} */
+            deliverySpeed: "STANDARD" | "EXPRESS" | null;
+            deliveryCost: number;
+            deliveryTimeSnapshot: string | null;
+            total: number;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        OrderSummary: {
+            id: number;
+            orderCode: string;
+            status: components["schemas"]["LookupItem"];
+            total: number;
+            itemCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            estimatedDeliveryDate: string | null;
+        };
+        ReorderItemResult: {
+            itemName: {
+                ka: string;
+                en: string;
+                ru: string;
+            };
+            requestedQuantity: number;
+            addedQuantity: number;
+            /** @enum {string} */
+            status: "ADDED" | "PARTIAL" | "UNAVAILABLE";
+        };
+        ReorderResult: {
+            items: components["schemas"]["ReorderItemResult"][];
+        };
+        OrderRiskFlag: {
+            /** @enum {string} */
+            type: "NEW_ACCOUNT_HIGH_VALUE" | "ORDER_VELOCITY" | "PROMO_CODE_MULTI_ACCOUNT" | "SHARED_IP_MULTIPLE_ACCOUNTS";
+            detail: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AdminOrderSummary: components["schemas"]["OrderSummary"] & {
+            /** @enum {string} */
+            fulfillmentMethod: "CARD" | "COURIER" | "PICKUP";
+            buyer: {
+                id: number;
+                firstName: string;
+                lastName: string;
+                /** Format: email */
+                email: string;
+            };
+            hasRiskFlags: boolean;
+            /** @enum {string} */
+            finaSyncStatus: "NOT_APPLICABLE" | "SYNCED" | "FAILED";
+        };
+        AdminOrder: components["schemas"]["Order"] & {
+            buyer: {
+                id: number;
+                firstName: string;
+                lastName: string;
+                /** Format: email */
+                email: string;
+            };
+            riskFlags: components["schemas"]["OrderRiskFlag"][];
+            cancellationReason: components["schemas"]["LookupItem"] | null;
+            cancellationNote: string | null;
+            /** @enum {string} */
+            finaSyncStatus: "NOT_APPLICABLE" | "SYNCED" | "FAILED";
+            finaOutOperationId: number | null;
+        };
         FinaSyncRun: {
             id: number;
             /** @enum {string} */
@@ -16058,6 +16227,9 @@ export interface components {
                 previousStock: number;
                 newStock: number | null;
             }[];
+        };
+        OrderStockSyncWithOrderResult: components["schemas"]["OrderStockSyncResult"] & {
+            order: components["schemas"]["AdminOrder"];
         };
         UpdateCompanyInfoInput: {
             /** @example MotoStock 22 */
@@ -16753,172 +16925,6 @@ export interface components {
             computedStatus: "ACTIVE" | "SCHEDULED" | "EXPIRED";
             /** Format: date-time */
             createdAt: string;
-        };
-        CheckoutInput: {
-            /** @enum {string} */
-            fulfillmentMethod: "CARD" | "COURIER" | "PICKUP";
-            addressId?: number;
-            /** @enum {string} */
-            deliverySpeed?: "STANDARD" | "EXPRESS";
-            promoCode?: string;
-            bankId?: number;
-            idempotencyKey: string;
-        };
-        UpdateOrderStatusInput: {
-            statusId: number;
-            cancellationReasonId?: number;
-            cancellationNote?: string;
-        };
-        OrderItem: {
-            id: number | null;
-            /** @enum {string} */
-            itemType: "PRODUCT_VARIANT" | "VEHICLE_LISTING";
-            productVariantId: number | null;
-            itemName: {
-                ka: string;
-                en: string;
-                ru: string;
-            };
-            imageUrl: string | null;
-            quantity: number;
-            /** @example 89.99 */
-            unitPrice: number;
-            /** @example 179.98 */
-            lineTotal: number;
-        };
-        CheckoutPreview: {
-            items: (components["schemas"]["OrderItem"] & {
-                inStock: boolean;
-                availableQuantity: number;
-            })[];
-            subtotal: number;
-            discountTotal: number;
-            /** @enum {string|null} */
-            deliverySpeed: "STANDARD" | "EXPRESS" | null;
-            deliveryCost: number;
-            deliveryTimeSnapshot: string | null;
-            total: number;
-            promoCode: {
-                code: string;
-                discountPercent: number;
-            } | null;
-            promoCodeBlocked: boolean;
-            hasStockIssues: boolean;
-        };
-        Order: {
-            /** @example 1 */
-            id: number;
-            /** @example 4K7QRX9P */
-            orderCode: string;
-            status: components["schemas"]["LookupItem"];
-            /** @enum {string} */
-            fulfillmentMethod: "CARD" | "COURIER" | "PICKUP";
-            shippingSnapshot: {
-                phone: string;
-                city: {
-                    id: number;
-                    key: string;
-                    nameKa: string;
-                    nameEn: string;
-                    nameRu: string;
-                    isTbilisi: boolean;
-                };
-                street: string;
-                building: string | null;
-                apartment: string | null;
-                postalCode: string | null;
-            } | null;
-            promoCode: {
-                code: string;
-                discountPercent: number;
-            } | null;
-            bank: {
-                id: number;
-                key: string;
-                name: {
-                    ka: string;
-                    en: string;
-                    ru: string;
-                };
-                logoUrl: string | null;
-            } | null;
-            /** @enum {string} */
-            paymentStatus: "NOT_APPLICABLE" | "AWAITING_PAYMENT" | "PAID" | "FAILED" | "REFUNDED";
-            paymentTransactionId: string | null;
-            /** Format: date-time */
-            paidAt: string | null;
-            paymentPlanLabel: string | null;
-            items: components["schemas"]["OrderItem"][];
-            subtotal: number;
-            discountTotal: number;
-            /** @enum {string|null} */
-            deliverySpeed: "STANDARD" | "EXPRESS" | null;
-            deliveryCost: number;
-            deliveryTimeSnapshot: string | null;
-            total: number;
-            /** Format: date-time */
-            createdAt: string;
-        };
-        OrderSummary: {
-            id: number;
-            orderCode: string;
-            status: components["schemas"]["LookupItem"];
-            total: number;
-            itemCount: number;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            estimatedDeliveryDate: string | null;
-        };
-        ReorderItemResult: {
-            itemName: {
-                ka: string;
-                en: string;
-                ru: string;
-            };
-            requestedQuantity: number;
-            addedQuantity: number;
-            /** @enum {string} */
-            status: "ADDED" | "PARTIAL" | "UNAVAILABLE";
-        };
-        ReorderResult: {
-            items: components["schemas"]["ReorderItemResult"][];
-        };
-        OrderRiskFlag: {
-            /** @enum {string} */
-            type: "NEW_ACCOUNT_HIGH_VALUE" | "ORDER_VELOCITY" | "PROMO_CODE_MULTI_ACCOUNT" | "SHARED_IP_MULTIPLE_ACCOUNTS";
-            detail: string | null;
-            /** Format: date-time */
-            createdAt: string;
-        };
-        AdminOrderSummary: components["schemas"]["OrderSummary"] & {
-            /** @enum {string} */
-            fulfillmentMethod: "CARD" | "COURIER" | "PICKUP";
-            buyer: {
-                id: number;
-                firstName: string;
-                lastName: string;
-                /** Format: email */
-                email: string;
-            };
-            hasRiskFlags: boolean;
-            /** @enum {string} */
-            finaSyncStatus: "NOT_APPLICABLE" | "SYNCED" | "FAILED";
-        };
-        AdminOrder: components["schemas"]["Order"] & {
-            buyer: {
-                id: number;
-                firstName: string;
-                lastName: string;
-                /** Format: email */
-                email: string;
-            };
-            riskFlags: components["schemas"]["OrderRiskFlag"][];
-            cancellationReason: components["schemas"]["LookupItem"] | null;
-            cancellationNote: string | null;
-            /** @enum {string} */
-            finaSyncStatus: "NOT_APPLICABLE" | "SYNCED" | "FAILED";
-            finaOutOperationId: number | null;
         };
         CompatibilityItem: {
             /** @example fitment-1 */

@@ -1,15 +1,13 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
+import type { components } from "./generated/schema";
 
-export type PrivacyPolicy = {
-  id: number;
-  content: LocalizedString;
-  updatedAt: string;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
-export type UpdatePrivacyPolicyInput = {
-  content: LocalizedString;
-};
+export type PrivacyPolicy = Schemas["PrivacyPolicy"];
+
+export type UpdatePrivacyPolicyInput = Schemas["UpdatePrivacyPolicyInput"];
 
 export async function getPrivacyPolicy(): Promise<PrivacyPolicy> {
   const { data } = await apiClient.get<{ privacyPolicy: PrivacyPolicy }>("/privacy-policy");

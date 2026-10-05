@@ -1,27 +1,13 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
+import type { components } from "./generated/schema";
 
-export type ServiceType = {
-  id: number;
-  name: LocalizedString;
-  hasPositionOption: boolean;
-  hasFilterOption: boolean;
-  // Pre-fills a new ServiceRecord's price when this template is picked —
-  // a starting point, still editable per record.
-  defaultPrice: number | null;
-  isActive: boolean;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
-export type ServiceTypeInput = {
-  name: LocalizedString;
-  hasPositionOption?: boolean;
-  hasFilterOption?: boolean;
-  defaultPrice?: number | null;
-  isActive?: boolean;
-};
+export type ServiceType = Schemas["ServiceType"];
+
+export type ServiceTypeInput = Schemas["CreateServiceTypeInput"];
 
 export async function listServiceTypes(): Promise<ServiceType[]> {
   const { data } = await apiClient.get<{ items: ServiceType[] }>("/service-types");

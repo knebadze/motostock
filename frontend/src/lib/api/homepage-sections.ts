@@ -1,5 +1,9 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type HomepageSectionType =
   | "DISCOUNTED_PRODUCTS"
@@ -14,30 +18,9 @@ export type HomepageSectionType =
   | "RECOMMENDED_FOR_YOU"
   | "RECENTLY_VIEWED";
 
-export type HomepageSection = {
-  id: number;
-  type: HomepageSectionType;
-  title: LocalizedString;
-  isActive: boolean;
-  sortOrder: number;
-  itemCount: number;
-  // Only set for DISCOUNTED_MIXED/POPULAR_MIXED — those combine products
-  // and vehicle listings in one carousel and need separate counts instead
-  // of the shared itemCount above.
-  productItemCount: number | null;
-  vehicleItemCount: number | null;
-  createdAt: string;
-  updatedAt: string;
-};
+export type HomepageSection = Schemas["HomepageSection"];
 
-export type HomepageSectionInput = {
-  title?: LocalizedString;
-  isActive?: boolean;
-  sortOrder?: number;
-  itemCount?: number;
-  productItemCount?: number;
-  vehicleItemCount?: number;
-};
+export type HomepageSectionInput = Schemas["UpdateHomepageSectionInput"];
 
 export async function listHomepageSections(): Promise<HomepageSection[]> {
   const { data } = await apiClient.get<{ items: HomepageSection[] }>("/homepage-sections");

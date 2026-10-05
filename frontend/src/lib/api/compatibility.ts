@@ -1,29 +1,16 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
-import type { BrandModelRef, NamedRef } from "./vehicle-catalog";
-import type { LookupItem } from "./lookups";
+import type { components } from "./generated/schema";
+import type { ApiResponse } from "./generated-helpers";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type CompatibilityItemKind = "FITMENT" | "RULE_ALL" | "RULE_CATEGORY" | "RULE_SPEC";
 
-export type CompatibleVehicle = {
-  id: number;
-  brand: BrandModelRef;
-  model: BrandModelRef;
-  variant: string;
-  yearFrom: number | null;
-  yearTo: number | null;
-};
+export type CompatibleVehicle = Schemas["CompatibleVehicle"];
 
-export type CompatibilityItem = {
-  id: string;
-  kind: CompatibilityItemKind;
-  product: { id: number; name: LocalizedString; slug: string; category: NamedRef };
-  vehicle: CompatibleVehicle | null;
-  category: NamedRef | null;
-  specFieldLabel: LocalizedString | null;
-  specValue: LookupItem | null;
-  createdAt: string;
-};
+export type CompatibilityItem = Schemas["CompatibilityItem"];
 
 export type ListCompatibilityFilters = {
   search?: string;
@@ -33,12 +20,7 @@ export type ListCompatibilityFilters = {
   pageSize?: number;
 };
 
-export type CompatibilityPage = {
-  items: CompatibilityItem[];
-  total: number;
-  page: number;
-  pageSize: number;
-};
+export type CompatibilityPage = ApiResponse<"/compatibility", "get">;
 
 // Real server-side pagination (skip/take on the merged, sorted rows), not
 // client-side slicing — mirrors error-logs.ts's getErrorLogs.

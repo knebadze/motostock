@@ -1,22 +1,13 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
+import type { components } from "./generated/schema";
 
-export type Vacancy = {
-  id: number;
-  title: LocalizedString;
-  description: LocalizedString;
-  slug: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
-export type VacancyInput = {
-  title: LocalizedString;
-  description: LocalizedString;
-  slug: string;
-  isActive?: boolean;
-};
+export type Vacancy = Schemas["Vacancy"];
+
+export type VacancyInput = Schemas["CreateVacancyInput"];
 
 export async function listVacancies(): Promise<Vacancy[]> {
   const { data } = await apiClient.get<{ items: Vacancy[] }>("/vacancies");

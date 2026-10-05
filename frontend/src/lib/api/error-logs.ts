@@ -1,23 +1,12 @@
 import { apiClient } from "./client";
+import type { ApiResponse } from "./generated-helpers";
 
 // Backend persists every logger.error(...) call here (see backend's
 // lib/logger.ts pino hook) — not just request errors, but background/
 // best-effort failures (FINA push, guest-cart merge, mail send...) that
 // would otherwise only ever show up in `docker compose logs`.
-export type ErrorLog = {
-  id: number;
-  message: string;
-  stack: string | null;
-  context: Record<string, unknown> | null;
-  createdAt: string;
-};
-
-export type ErrorLogsPage = {
-  logs: ErrorLog[];
-  total: number;
-  page: number;
-  pageSize: number;
-};
+export type ErrorLogsPage = ApiResponse<"/error-logs", "get">;
+export type ErrorLog = ErrorLogsPage["logs"][number];
 
 // Real server-side pagination (skip/take), not the client-side slicing most
 // other admin lists use — this table has no natural cap the way a category

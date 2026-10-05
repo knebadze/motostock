@@ -1,24 +1,11 @@
 import { apiClient } from "./client";
-import type { AdminOrder } from "./orders";
+import type { components } from "./generated/schema";
 
-export type FinaSyncRun = {
-  id: number;
-  // CHECKOUT is only ever FAILED — a live per-item stock check during
-  // checkout that couldn't reach FINA (see backend's syncVariantStockByIds).
-  // A successful checkout-time check isn't logged here at all, to avoid a
-  // row per shopper visit.
-  trigger: "SCHEDULED" | "MANUAL" | "CHECKOUT";
-  // RUNNING is a run still in progress or, if it never got resolved, one
-  // that crashed before finishing (finishedAt stays null either way) — see
-  // backend's FinaSyncStatus.RUNNING comment.
-  status: "RUNNING" | "SUCCESS" | "FAILED" | "PARTIAL";
-  startedAt: string;
-  finishedAt: string | null;
-  variantsChecked: number;
-  variantsUpdated: number;
-  errorMessage: string | null;
-  triggeredBy: { id: number; name: string } | null;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
+
+export type FinaSyncRun = Schemas["FinaSyncRun"];
 
 export async function getFinaSyncRuns(): Promise<FinaSyncRun[]> {
   const { data } = await apiClient.get<{ runs: FinaSyncRun[] }>("/fina-sync/runs");
@@ -30,24 +17,13 @@ export async function triggerFinaSync(): Promise<FinaSyncRun> {
   return data.run;
 }
 
-export type OrderStockSyncItem = {
-  productVariantId: number;
-  previousStock: number;
-  // null means this variant's finaId wasn't found in FINA's response at all
-  // (distinct from a genuine 0 stock).
-  newStock: number | null;
-};
+// newStock null means this variant's finaId wasn't found in FINA's response
+// at all (distinct from a genuine 0 stock).
+export type OrderStockSyncItem = Schemas["OrderStockSyncResult"]["items"][number];
 
-export type OrderStockSyncResult = {
-  checked: number;
-  updated: number;
-  items: OrderStockSyncItem[];
-  // Non-null when every linked item was confirmed and the order was PENDING
-  // (so this check just auto-confirmed it — see backend's
-  // confirmOrderAfterFinaCheck) — the caller should replace its order state
-  // with this instead of just the stock items above.
-  order: AdminOrder | null;
-};
+// `order` is non-null when every linked item was confirmed and a PENDING
+// order just got auto-confirmed — the caller swaps in that order.
+export type OrderStockSyncResult = Schemas["OrderStockSyncWithOrderResult"];
 
 // Admin order-detail action — re-checks live FINA stock for just this
 // order's FINA-linked products (see OrderDetailModal.tsx), not the whole
@@ -61,7 +37,7 @@ export async function syncOrderStock(orderId: number): Promise<OrderStockSyncRes
 // (that concept doesn't apply to a bare product) — admin products-list
 // per-row action (see ProductsManager.tsx), re-checks just this product's
 // own FINA-linked variants.
-export type ProductStockSyncResult = Omit<OrderStockSyncResult, "order">;
+export type ProductStockSyncResult = Schemas["OrderStockSyncResult"];
 
 export async function syncProductStock(productId: number): Promise<ProductStockSyncResult> {
   const { data } = await apiClient.post<ProductStockSyncResult>(`/fina-sync/products/${productId}`);

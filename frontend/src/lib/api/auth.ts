@@ -1,16 +1,11 @@
 import { apiClient } from "./client";
+import type { components } from "./generated/schema";
 
-export type User = {
-  id: number;
-  email: string;
-  name: string;
-  // OPERATOR is a limited staff/cashier role — view-only across most admin
-  // screens plus order status changes; see AdminRoleContext.tsx for how the
-  // admin panel gates on it.
-  role: "USER" | "ADMIN" | "OPERATOR";
-  createdAt: string;
-  emailVerified: boolean;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
+
+export type User = Schemas["User"];
 
 export async function registerUser(input: {
   firstName: string;

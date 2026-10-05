@@ -1,11 +1,11 @@
 import { apiClient } from "./client";
+import type { components } from "./generated/schema";
 
-export type VisitorOverview = {
-  activeNow: number;
-  todayVisitors: number;
-  weekVisitors: number;
-  dailySeries: { date: string; visitors: number }[];
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
+
+export type VisitorOverview = Schemas["VisitorOverview"];
 
 // Public, no auth — fire-and-forget heartbeat (see VisitorPingBeacon.tsx),
 // works for both logged-in users and guests via the shared guest-id cookie.

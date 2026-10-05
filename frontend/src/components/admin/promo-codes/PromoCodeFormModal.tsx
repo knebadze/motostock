@@ -23,7 +23,6 @@ import { listAttributeOptions, type AttributeOption } from "@/lib/api/attribute-
 import { listBrands, type Brand } from "@/lib/api/brands";
 import { listModels, type Model } from "@/lib/api/models";
 import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
-import type { VehicleSpecField } from "@/lib/api/vehicle-category-filters";
 import { ApiRequestError } from "@/lib/api/client";
 import { toTbilisiDateOnly } from "@/lib/format";
 import { flattenTree, isVehicleCategory } from "@/lib/categories-tree";
@@ -233,7 +232,8 @@ export function PromoCodeFormModal({
       attributeOptionId: domain === "PRODUCT" && attributeOptionId ? Number(attributeOptionId) : null,
       brandId: domain === "VEHICLE" && brandId ? Number(brandId) : null,
       modelId: domain === "VEHICLE" && modelId ? Number(modelId) : null,
-      specField: domain === "VEHICLE" && specField ? (specField as VehicleSpecField) : null,
+      specField:
+        domain === "VEHICLE" && specField ? (specField as NonNullable<PromoCodeInput["specField"]>) : null,
       specLookupItemId: domain === "VEHICLE" && specLookupItemId ? Number(specLookupItemId) : null,
       discountPercent: Number(discountPercent),
       usageLimit: usageLimit.trim() ? Number(usageLimit) : null,

@@ -1,47 +1,21 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
-import type { CartItemType } from "./cart";
-import type { LookupItem } from "./lookups";
+import type { components } from "./generated/schema";
+import type { ApiResponse } from "./generated-helpers";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type OrderFulfillmentMethod = "CARD" | "COURIER" | "PICKUP";
 export type OrderDeliverySpeed = "STANDARD" | "EXPRESS";
 
-export type CheckoutInput = {
-  fulfillmentMethod: OrderFulfillmentMethod;
-  addressId?: number;
-  deliverySpeed?: OrderDeliverySpeed;
-  promoCode?: string;
-  bankId?: number;
-  // Generated once per checkout session (see CheckoutManager.tsx) and resent
-  // unchanged on every retry — lets the backend recognize a double-click or
-  // timeout-retry and return the original order instead of creating a
-  // second one.
-  idempotencyKey: string;
-};
+export type CheckoutInput = Schemas["CheckoutInput"];
 
-export type OrderItem = {
-  id: number | null;
-  itemType: CartItemType;
-  // Only set for product items (null for vehicle listings) — lets the admin
-  // order-detail view match a FINA stock-sync result back to this line.
-  productVariantId: number | null;
-  itemName: LocalizedString;
-  imageUrl: string | null;
-  quantity: number;
-  unitPrice: number;
-  lineTotal: number;
-};
+export type OrderItem = Schemas["OrderItem"];
 
-export type OrderShippingSnapshot = {
-  phone: string;
-  city: LookupItem & { isTbilisi: boolean };
-  street: string;
-  building: string | null;
-  apartment: string | null;
-  postalCode: string | null;
-};
+export type OrderShippingSnapshot = NonNullable<Order["shippingSnapshot"]>;
 
-export type OrderPromoCode = { code: string; discountPercent: number };
+export type OrderPromoCode = NonNullable<Order["promoCode"]>;
 
 // Only meaningful in a fresh (FINA-synced) preview — a placed order's items
 // (OrderItem below) don't carry live stock status, since nothing re-checks
@@ -51,61 +25,13 @@ export type CheckoutPreviewItem = OrderItem & {
   availableQuantity: number;
 };
 
-export type CheckoutPreview = {
-  items: CheckoutPreviewItem[];
-  subtotal: number;
-  discountTotal: number;
-  deliverySpeed: OrderDeliverySpeed | null;
-  deliveryCost: number;
-  deliveryTimeSnapshot: string | null;
-  total: number;
-  promoCode: OrderPromoCode | null;
-  // True when every cart item already has an active discount and
-  // promo-stacking is off — no promo code could change any item's price in
-  // this state, so CheckoutManager.tsx disables the promo input instead of
-  // letting the customer spend a one-time code for zero benefit.
-  promoCodeBlocked: boolean;
-  // True if any item's requested quantity exceeds live stock — block order
-  // placement while this is true (see CheckoutManager.tsx).
-  hasStockIssues: boolean;
-};
+export type CheckoutPreview = Schemas["CheckoutPreview"];
 
-export type OrderBank = { id: number; key: string; name: LocalizedString; logoUrl: string | null };
+export type OrderBank = NonNullable<Order["bank"]>;
 
-export type Order = {
-  id: number;
-  orderCode: string;
-  status: LookupItem;
-  fulfillmentMethod: OrderFulfillmentMethod;
-  shippingSnapshot: OrderShippingSnapshot | null;
-  createdAt: string;
-  items: OrderItem[];
-  subtotal: number;
-  discountTotal: number;
-  deliverySpeed: OrderDeliverySpeed | null;
-  deliveryCost: number;
-  deliveryTimeSnapshot: string | null;
-  total: number;
-  promoCode: OrderPromoCode | null;
-  bank: OrderBank | null;
-  paymentStatus: PaymentStatus;
-  paymentTransactionId: string | null;
-  paidAt: string | null;
-  paymentPlanLabel: string | null;
-};
+export type Order = Schemas["Order"];
 
-export type OrderSummary = {
-  id: number;
-  orderCode: string;
-  status: LookupItem;
-  total: number;
-  itemCount: number;
-  createdAt: string;
-  // Estimated from the delivery time text, not a hard commitment — null for
-  // PICKUP orders or if the admin's delivery-time text has no parseable
-  // number (see backend's computeEstimatedDeliveryDate).
-  estimatedDeliveryDate: string | null;
-};
+export type OrderSummary = Schemas["OrderSummary"];
 
 export async function previewCheckout(input: CheckoutInput): Promise<CheckoutPreview> {
   const { data } = await apiClient.post<CheckoutPreview>("/orders/checkout/preview", input);
@@ -129,14 +55,9 @@ export async function getMyOrder(id: number): Promise<Order> {
 
 export type ReorderItemStatus = "ADDED" | "PARTIAL" | "UNAVAILABLE";
 
-export type ReorderItemResult = {
-  itemName: LocalizedString;
-  requestedQuantity: number;
-  addedQuantity: number;
-  status: ReorderItemStatus;
-};
+export type ReorderItemResult = Schemas["ReorderItemResult"];
 
-export type ReorderResult = { items: ReorderItemResult[] };
+export type ReorderResult = Schemas["ReorderResult"];
 
 // Re-adds a past order's items to the caller's current cart, best-effort
 // per item — see ReorderItemResult.status for which ones didn't fully make
@@ -169,7 +90,7 @@ export function getAdminOrderPackingSlipUrl(id: number): string {
 // Admin-only from here down — hits the requireRole(ADMIN)-gated /orders and
 // /orders/:id endpoints (not the /orders/me* ones above), so every order is
 // visible regardless of buyer, and each row/detail carries a `buyer`.
-export type OrderBuyer = { id: number; firstName: string; lastName: string; email: string };
+export type OrderBuyer = AdminOrder["buyer"];
 
 export type OrderRiskFlagType =
   | "NEW_ACCOUNT_HIGH_VALUE"
@@ -177,11 +98,7 @@ export type OrderRiskFlagType =
   | "PROMO_CODE_MULTI_ACCOUNT"
   | "SHARED_IP_MULTIPLE_ACCOUNTS";
 
-export type OrderRiskFlag = {
-  type: OrderRiskFlagType;
-  detail: string | null;
-  createdAt: string;
-};
+export type OrderRiskFlag = Schemas["OrderRiskFlag"];
 
 // See backend's FinaOrderSyncStatus — whether this order's current state (a
 // placed sale, or its return once cancelled) is actually reflected in FINA.
@@ -196,21 +113,9 @@ export type FinaOrderSyncStatus = "NOT_APPLICABLE" | "SYNCED" | "FAILED";
 // does.
 export type PaymentStatus = "NOT_APPLICABLE" | "AWAITING_PAYMENT" | "PAID" | "FAILED" | "REFUNDED";
 
-export type AdminOrderSummary = OrderSummary & {
-  fulfillmentMethod: OrderFulfillmentMethod;
-  buyer: OrderBuyer;
-  hasRiskFlags: boolean;
-  finaSyncStatus: FinaOrderSyncStatus;
-};
+export type AdminOrderSummary = Schemas["AdminOrderSummary"];
 
-export type AdminOrder = Order & {
-  buyer: OrderBuyer;
-  riskFlags: OrderRiskFlag[];
-  cancellationReason: LookupItem | null;
-  cancellationNote: string | null;
-  finaSyncStatus: FinaOrderSyncStatus;
-  finaOutOperationId: number | null;
-};
+export type AdminOrder = Schemas["AdminOrder"];
 
 export type ListOrdersFilters = {
   search?: string;
@@ -225,12 +130,7 @@ export type ListOrdersFilters = {
   pageSize?: number;
 };
 
-export type AdminOrdersPage = {
-  orders: AdminOrderSummary[];
-  total: number;
-  page: number;
-  pageSize: number;
-};
+export type AdminOrdersPage = ApiResponse<"/orders", "get">;
 
 // Real server-side pagination (skip/take), not the client-side slicing most
 // other admin lists use — the order table has no natural cap the way a

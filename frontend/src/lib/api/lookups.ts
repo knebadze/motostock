@@ -1,13 +1,12 @@
 import { apiClient } from "./client";
 import type { LookupTypeSlug } from "@/config/lookup-types";
+import type { components } from "./generated/schema";
 
-export type LookupItem = {
-  id: number;
-  key: string;
-  nameKa: string;
-  nameEn: string;
-  nameRu: string;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
+
+export type LookupItem = Schemas["LookupItem"];
 
 // Shared field-picker for this flat nameKa/nameEn/nameRu shape (unlike a
 // LocalizedString's nested {ka,en,ru}) — used wherever a LookupItem-shaped
@@ -25,12 +24,7 @@ export function localizedLookupName(
   return item.nameEn;
 }
 
-export type LookupItemInput = {
-  key: string;
-  nameKa: string;
-  nameEn: string;
-  nameRu: string;
-};
+export type LookupItemInput = Schemas["CreateLookupItemInput"];
 
 export async function listLookupItems(type: LookupTypeSlug): Promise<LookupItem[]> {
   const { data } = await apiClient.get<{ items: LookupItem[] }>(`/lookups/${type}`);

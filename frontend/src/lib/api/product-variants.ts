@@ -1,50 +1,13 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
-import type { LookupItem } from "./lookups";
-import type { ProductVariantDiscount } from "./product-variant-discounts";
-import type { ProductVariantImage } from "./product-variant-images";
+import type { components } from "./generated/schema";
 
-export type ProductVariant = {
-  id: number;
-  product: { id: number; name: LocalizedString };
-  sku: string | null;
-  finaId: number | null;
-  size: LookupItem | null;
-  color: LookupItem | null;
-  price: number;
-  stockQuantity: number;
-  condition: LookupItem | null;
-  status: LookupItem | null;
-  isActive: boolean;
-  images: ProductVariantImage[];
-  discounts: ProductVariantDiscount[];
-  activeDiscount: ProductVariantDiscount | null;
-  createdAt: string;
-  updatedAt: string;
-  // Only ever present in an update response, and only when stockQuantity
-  // was part of the request — see ProductVariantInput's previousStockQuantity.
-  stockConflict?: boolean;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
-export type ProductVariantInput = {
-  productId: number;
-  sku?: string | null;
-  finaId?: number | null;
-  sizeId?: number | null;
-  colorId?: number | null;
-  price: number;
-  stockQuantity?: number;
-  // The stockQuantity this variant had when the admin's edit form was
-  // populated — required alongside stockQuantity on an update so the
-  // backend can apply it as a delta against whatever's actually in the DB
-  // now instead of an absolute overwrite that could silently undo a
-  // concurrent order's stock change. Omit both fields together if stock
-  // wasn't touched (see ProductVariantsPanel.tsx's handleSaveEdit).
-  previousStockQuantity?: number;
-  conditionId?: number | null;
-  statusId?: number | null;
-  isActive?: boolean;
-};
+export type ProductVariant = Schemas["ProductVariant"];
+
+export type ProductVariantInput = Schemas["CreateProductVariantInput"];
 
 export async function listProductVariants(productId?: number): Promise<ProductVariant[]> {
   const { data } = await apiClient.get<{ items: ProductVariant[] }>("/product-variants", {

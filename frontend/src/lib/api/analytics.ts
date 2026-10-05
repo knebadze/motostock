@@ -1,5 +1,9 @@
 import { apiClient } from "./client";
-import type { LookupItem } from "./lookups";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type AnalyticsDemandRow = {
   id: number;
@@ -10,43 +14,16 @@ export type AnalyticsDemandRow = {
   revenue: number;
 };
 
-export type AnalyticsProductDemandRow = AnalyticsDemandRow & { nameKa: string };
-export type AnalyticsVehicleListingDemandRow = AnalyticsDemandRow & { label: string };
+export type AnalyticsProductDemandRow = AnalyticsOverview["topProducts"][number];
+export type AnalyticsVehicleListingDemandRow = AnalyticsOverview["topVehicleListings"][number];
 
-export type AnalyticsOrderStatusCount = { status: LookupItem; count: number };
+export type AnalyticsOrderStatusCount = AnalyticsOverview["ordersByStatus"][number];
 
-export type AnalyticsCancellationReasonCount = { reason: LookupItem | null; count: number };
+export type AnalyticsCancellationReasonCount = AnalyticsOverview["cancellations"]["reasonBreakdown"][number];
 
-export type AnalyticsRecentCancelledOrder = {
-  id: number;
-  orderCode: string;
-  buyerName: string;
-  buyerEmail: string;
-  total: number;
-  reason: LookupItem | null;
-  note: string | null;
-  // When the order was cancelled, not when it was placed.
-  cancelledAt: string;
-};
+export type AnalyticsRecentCancelledOrder = AnalyticsOverview["cancellations"]["recentOrders"][number];
 
-export type AnalyticsOverview = {
-  range: { from: string; to: string };
-  financial: {
-    revenue: number;
-    orderCount: number;
-    cancelledCount: number;
-    cancellationRate: number;
-    lostRevenue: number;
-  };
-  revenueSeries: { date: string; revenue: number }[];
-  ordersByStatus: AnalyticsOrderStatusCount[];
-  topProducts: AnalyticsProductDemandRow[];
-  topVehicleListings: AnalyticsVehicleListingDemandRow[];
-  cancellations: {
-    reasonBreakdown: AnalyticsCancellationReasonCount[];
-    recentOrders: AnalyticsRecentCancelledOrder[];
-  };
-};
+export type AnalyticsOverview = Schemas["AnalyticsOverview"];
 
 export type AnalyticsFilters = {
   dateFrom?: string;

@@ -1,13 +1,14 @@
 import { apiClient } from "./client";
 import type { GarageVehicle } from "./vehicle-catalog";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type { GarageVehicle } from "./vehicle-catalog";
 
-export type GarageVehicleInput = {
-  vehicleCatalogId: number;
-  year: number;
-  vin?: string | null;
-};
+export type GarageVehicleInput = Schemas["CreateGarageVehicleInput"];
 
 export async function listMyGarage(): Promise<GarageVehicle[]> {
   const { data } = await apiClient.get<{ items: GarageVehicle[] }>("/users/me/garage");

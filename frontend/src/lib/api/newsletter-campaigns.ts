@@ -1,23 +1,15 @@
 import { apiClient } from "./client";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type NewsletterCampaignStatus = "DRAFT" | "SENDING" | "SENT" | "FAILED";
 
-export type NewsletterCampaign = {
-  id: number;
-  subject: string;
-  body: string;
-  status: NewsletterCampaignStatus;
-  recipientCount: number;
-  failedCount: number;
-  sentAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+export type NewsletterCampaign = Schemas["NewsletterCampaign"];
 
-export type NewsletterCampaignInput = {
-  subject: string;
-  body: string;
-};
+export type NewsletterCampaignInput = Schemas["CreateNewsletterCampaignInput"];
 
 export async function listNewsletterCampaigns(): Promise<NewsletterCampaign[]> {
   const { data } = await apiClient.get<{ items: NewsletterCampaign[] }>("/newsletter-campaigns");

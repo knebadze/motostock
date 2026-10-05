@@ -1,5 +1,9 @@
 import { apiClient } from "./client";
-import type { LookupItem } from "./lookups";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type WeekDay =
   | "MONDAY"
@@ -10,52 +14,11 @@ export type WeekDay =
   | "SATURDAY"
   | "SUNDAY";
 
-export type CompanyWorkingHour = {
-  dayOfWeek: WeekDay;
-  isClosed: boolean;
-  openTime: string | null;
-  closeTime: string | null;
-};
+export type CompanyWorkingHour = Schemas["CompanyWorkingHour"];
 
-export type CompanyInfo = {
-  id: number;
-  name: string;
-  logoUrl: string | null;
-  city: LookupItem | null;
-  street: string | null;
-  phone: string | null;
-  email: string | null;
-  facebookUrl: string | null;
-  instagramUrl: string | null;
-  youtubeUrl: string | null;
-  tiktokUrl: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  workingHours: CompanyWorkingHour[];
-  // Computed server-side (Tbilisi-timezone-aware) on every read, not cached
-  // alongside the rest of this object — see backend's company-info.service.ts.
-  isOpenNow: boolean;
-  // True only once an admin has set a WhatsApp support number AND the
-  // WhatsApp Cloud API env vars are configured — gates the ChatWidget's
-  // WhatsApp option.
-  whatsappChatEnabled: boolean;
-  updatedAt: string;
-};
+export type CompanyInfo = Schemas["CompanyInfo"];
 
-export type UpdateCompanyInfoInput = {
-  name: string;
-  cityId?: number | null;
-  street?: string | null;
-  phone?: string | null;
-  email?: string | null;
-  facebookUrl?: string | null;
-  instagramUrl?: string | null;
-  youtubeUrl?: string | null;
-  tiktokUrl?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  workingHours?: CompanyWorkingHour[];
-};
+export type UpdateCompanyInfoInput = Schemas["UpdateCompanyInfoInput"];
 
 export async function getCompanyInfo(): Promise<CompanyInfo> {
   const { data } = await apiClient.get<{ companyInfo: CompanyInfo }>("/company-info");

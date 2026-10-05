@@ -1,13 +1,11 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
-import type { BrandModelRef } from "./vehicle-catalog";
-import type { AttributeValueType } from "./attributes";
-import type { LookupItem } from "./lookups";
-import type { VehicleSpecField } from "./vehicle-category-filters";
-import type { ProductVariantDiscount } from "./product-variant-discounts";
-import type { VehicleListingDiscount } from "./vehicle-listing-discounts";
-import type { BulkDiscountEventInput, BulkDiscountEventTargetType } from "./bulk-discount-events";
-import type { VehicleListingCurrency } from "./vehicle-listings";
+import type { BulkDiscountEventTargetType } from "./bulk-discount-events";
+import type { components } from "./generated/schema";
+import type { ApiResponse } from "./generated-helpers";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 // One client module for both PRODUCT and VEHICLE_LISTING bulk discounts —
 // the apply/date/event-grouping request shape is identical between the two
@@ -18,89 +16,19 @@ export type BulkDiscountTargetType = BulkDiscountEventTargetType;
 
 // ---- PRODUCT candidates/history ----
 
-export type BulkDiscountCandidateAttributeValue = {
-  attributeId: number;
-  attributeName: LocalizedString;
-  valueType: AttributeValueType;
-  valueText: string | null;
-  valueNumber: number | null;
-  valueBoolean: boolean | null;
-  option: { id: number; key: string; label: LocalizedString } | null;
-};
+export type BulkDiscountCandidateAttributeValue = BulkDiscountCandidate["attributeValues"][number];
 
-export type BulkDiscountCandidate = {
-  variantId: number;
-  productId: number;
-  productName: LocalizedString;
-  productSlug: string;
-  brand: BrandModelRef | null;
-  attributeValues: BulkDiscountCandidateAttributeValue[];
-  sku: string | null;
-  size: LookupItem | null;
-  color: LookupItem | null;
-  price: number;
-  activeDiscount: { discountPercent: number | null; startDate: string; endDate: string } | null;
-};
+export type BulkDiscountCandidate = Schemas["BulkDiscountCandidate"];
 
-export type ProductDiscountHistoryRow = {
-  id: number;
-  variantId: number;
-  productId: number;
-  productName: LocalizedString;
-  productSlug: string;
-  brand: BrandModelRef | null;
-  sku: string | null;
-  size: LookupItem | null;
-  color: LookupItem | null;
-  price: number;
-  discountPrice: number;
-  discountPercent: number | null;
-  startDate: string;
-  endDate: string;
-  computedStatus: DiscountStatus;
-  createdAt: string;
-};
+export type ProductDiscountHistoryRow = Schemas["ProductDiscountHistoryRow"];
 
 // ---- VEHICLE_LISTING candidates/history ----
 
-export type BulkVehicleDiscountCandidateSpecValue = {
-  field: VehicleSpecField;
-  fieldLabel: LocalizedString;
-  value: LookupItem;
-};
+export type BulkVehicleDiscountCandidateSpecValue = BulkVehicleDiscountCandidate["specValues"][number];
 
-export type BulkVehicleDiscountCandidate = {
-  vehicleListingId: number;
-  brand: BrandModelRef;
-  model: BrandModelRef;
-  variant: string;
-  year: number;
-  condition: LookupItem;
-  color: LookupItem;
-  specValues: BulkVehicleDiscountCandidateSpecValue[];
-  price: number;
-  priceCurrency: VehicleListingCurrency;
-  activeDiscount: { discountPercent: number | null; startDate: string; endDate: string } | null;
-};
+export type BulkVehicleDiscountCandidate = Schemas["BulkVehicleDiscountCandidate"];
 
-export type VehicleDiscountHistoryRow = {
-  id: number;
-  vehicleListingId: number;
-  brand: BrandModelRef;
-  model: BrandModelRef;
-  variant: string;
-  year: number;
-  condition: LookupItem;
-  color: LookupItem;
-  price: number;
-  priceCurrency: VehicleListingCurrency;
-  discountPrice: number;
-  discountPercent: number | null;
-  startDate: string;
-  endDate: string;
-  computedStatus: DiscountStatus;
-  createdAt: string;
-};
+export type VehicleDiscountHistoryRow = Schemas["VehicleDiscountHistoryRow"];
 
 export type DiscountStatus = "ACTIVE" | "SCHEDULED" | "EXPIRED";
 
@@ -162,25 +90,9 @@ export async function listDiscountHistory(
 
 // ---- apply ----
 
-export type BulkApplyDiscountsInput = {
-  targetType: BulkDiscountTargetType;
-  itemIds: number[];
-  discountPercent: number;
-  startDate: string;
-  endDate: string;
-  // Optional — grouping this batch under a named event is opt-in, never
-  // required. Omitted, the request/response is unchanged from before this
-  // field existed.
-  event?: BulkDiscountEventInput;
-};
+export type BulkApplyDiscountsInput = Schemas["BulkApplyDiscountsInput"];
 
-export type BulkApplyDiscountsResult = {
-  items: (ProductVariantDiscount | VehicleListingDiscount)[];
-  // Non-null only when input.event was supplied — the id of the newly
-  // created BulkDiscountEvent, so the caller can follow up with
-  // uploadBulkDiscountEventImage if an image file was picked.
-  eventId: number | null;
-};
+export type BulkApplyDiscountsResult = ApiResponse<"/bulk-discounts/apply", "post">;
 
 export async function applyBulkDiscounts(input: BulkApplyDiscountsInput): Promise<BulkApplyDiscountsResult> {
   const { data } = await apiClient.post<BulkApplyDiscountsResult>("/bulk-discounts/apply", input);

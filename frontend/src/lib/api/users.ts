@@ -1,43 +1,16 @@
 import { apiClient } from "./client";
-import type { Address } from "./addresses";
-import type { GarageVehicle } from "./vehicle-catalog";
-import type { WishlistItem } from "./wishlist";
-import type { CartItem } from "./cart";
+import type { components } from "./generated/schema";
+import type { ApiResponse } from "./generated-helpers";
 
-export type AdminUser = {
-  id: number;
-  email: string;
-  name: string;
-  phone: string | null;
-  dateOfBirth: string | null;
-  // A workshop-entered customer with no login of their own.
-  isWalkIn: boolean;
-  // Set once an admin manually links this (walk-in) row onto a real
-  // account — the row is kept, not deleted, and stays visible in the list.
-  mergedIntoUserId: number | null;
-  // OPERATOR is a limited staff/cashier role — see AdminRoleContext.tsx.
-  role: "USER" | "ADMIN" | "OPERATOR";
-  hasPassword: boolean;
-  hasGoogle: boolean;
-  hasFacebook: boolean;
-  createdAt: string;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
-export type AdminUserDetail = AdminUser & {
-  addresses: Address[];
-  garage: GarageVehicle[];
-  wishlist: WishlistItem[];
-  cart: CartItem[];
-  // Lifetime totals; totalSpent excludes cancelled orders.
-  orderStats: { orderCount: number; totalSpent: number; lastOrderAt: string | null };
-};
+export type AdminUser = Schemas["AdminUser"];
 
-export type AdminUsersPage = {
-  users: AdminUser[];
-  total: number;
-  page: number;
-  pageSize: number;
-};
+export type AdminUserDetail = Schemas["AdminUserDetail"];
+
+export type AdminUsersPage = ApiResponse<"/users", "get">;
 
 export type ListUsersFilters = {
   search?: string;
@@ -66,12 +39,7 @@ export async function getUser(id: number): Promise<AdminUserDetail> {
   return data.user;
 }
 
-export type CreateWalkInUserInput = {
-  firstName: string;
-  lastName: string;
-  phone: string;
-  dateOfBirth: string;
-};
+export type CreateWalkInUserInput = Schemas["CreateWalkInUserInput"];
 
 // Workshop "+ ახალი სტუმარი მომხმარებელი" action — creates a real User row
 // with no login (synthetic email, no password); it converts in place the

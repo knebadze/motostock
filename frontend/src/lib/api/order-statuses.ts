@@ -1,20 +1,13 @@
 import { apiClient } from "./client";
+import type { components } from "./generated/schema";
 
-export type OrderStatusItem = {
-  id: number;
-  key: string;
-  nameKa: string;
-  nameEn: string;
-  nameRu: string;
-  sortOrder: number;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
-export type OrderStatusItemInput = {
-  key: string;
-  nameKa: string;
-  nameEn: string;
-  nameRu: string;
-};
+export type OrderStatusItem = Schemas["OrderStatusItem"];
+
+export type OrderStatusItemInput = Schemas["CreateOrderStatusInput"];
 
 export async function listOrderStatuses(): Promise<OrderStatusItem[]> {
   const { data } = await apiClient.get<{ items: OrderStatusItem[] }>("/order-statuses");

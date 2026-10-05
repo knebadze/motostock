@@ -1,59 +1,17 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
-import type { BrandModelRef, NamedRef } from "./vehicle-catalog";
-import type { LookupItem } from "./lookups";
-import type { VehicleSpecField } from "./vehicle-category-filters";
 import type { HeroSlide } from "./hero-slides";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type PromoCodeDomain = "PRODUCT" | "VEHICLE";
 export type PromoCodeStatus = "ACTIVE" | "SCHEDULED" | "EXPIRED" | "DISABLED";
 
-export type PromoCode = {
-  id: number;
-  code: string;
-  domain: PromoCodeDomain;
-  category: NamedRef | null;
-  productBrand: BrandModelRef | null;
-  attribute: { id: number; name: LocalizedString } | null;
-  attributeOption: { id: number; key: string; label: LocalizedString } | null;
-  brand: BrandModelRef | null;
-  model: BrandModelRef | null;
-  specField: VehicleSpecField | null;
-  specFieldLabel: LocalizedString | null;
-  specValue: LookupItem | null;
-  discountPercent: number;
-  // Total redemptions allowed across every customer — null means unlimited.
-  usageLimit: number | null;
-  usageCount: number;
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
-  computedStatus: PromoCodeStatus;
-  // Non-null once the "სლაიდი" action has created this code's homepage
-  // hero-slider slide — lets the admin table render that action as
-  // create-vs-edit without a separate round trip.
-  heroSlideId: number | null;
-  createdAt: string;
-  updatedAt: string;
-};
+export type PromoCode = Schemas["PromoCode"];
 
-export type PromoCodeInput = {
-  domain: PromoCodeDomain;
-  code: string;
-  categoryId?: number | null;
-  productBrandId?: number | null;
-  attributeId?: number | null;
-  attributeOptionId?: number | null;
-  brandId?: number | null;
-  modelId?: number | null;
-  specField?: VehicleSpecField | null;
-  specLookupItemId?: number | null;
-  discountPercent: number;
-  usageLimit?: number | null;
-  startDate: string;
-  endDate: string;
-  isActive?: boolean;
-};
+export type PromoCodeInput = Schemas["CreatePromoCodeInput"];
 
 export type PromoCodeFilters = {
   domain: PromoCodeDomain;
@@ -93,11 +51,7 @@ export async function deletePromoCode(id: number): Promise<void> {
 
 // ---- homepage hero-slider slide ----
 
-export type PromoCodeHeroSlideInput = {
-  title: { ka: string; en: string; ru: string };
-  subtitle?: { ka: string; en: string; ru: string } | null;
-  buttonLabel: { ka: string; en: string; ru: string };
-};
+export type PromoCodeHeroSlideInput = Schemas["PromoCodeHeroSlideInput"];
 
 export async function getPromoCodeHeroSlide(promoCodeId: number): Promise<HeroSlide> {
   const { data } = await apiClient.get<{ item: HeroSlide }>(`/promo-codes/${promoCodeId}/hero-slide`);

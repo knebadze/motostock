@@ -1,57 +1,17 @@
 import { apiClient } from "./client";
-import type { VehicleCatalogEntry } from "./vehicle-catalog";
-import type { LookupItem } from "./lookups";
-import type { VehicleListingDiscount } from "./vehicle-listing-discounts";
-import type { VehicleListingImage } from "./vehicle-listing-images";
 import type { VehicleSpecField } from "./vehicle-category-filters";
 import type { AdminFilterEntry } from "./admin-filters";
+import type { components } from "./generated/schema";
+import type { ApiResponse } from "./generated-helpers";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type WarrantyUnit = "YEAR" | "MONTH";
 export type VehicleListingCurrency = "GEL" | "USD";
 
-export type VehicleListing = {
-  id: number;
-  // Was a 35-field inline copy of VehicleCatalogEntry, drifting silently
-  // whenever a new spec field was added there (nothing forced this shape to
-  // keep up) — this Omit derives it instead, so it can never fall behind.
-  vehicleCatalog: Omit<VehicleCatalogEntry, "submittedBy" | "popularity" | "createdAt" | "updatedAt">;
-  condition: LookupItem;
-  status: LookupItem;
-  color: LookupItem;
-  year: number;
-  mileageKm: number | null;
-  warrantyValue: number | null;
-  warrantyUnit: WarrantyUnit | null;
-  isActive: boolean;
-  // Most vehicles here are actually priced as a USD amount converted to GEL
-  // at sale time using the day's National Bank of Georgia rate — see
-  // useUsdToGelRate.ts and the storefront card/detail page's currency toggle.
-  priceCurrency: VehicleListingCurrency;
-  price: number;
-  stockQuantity: number;
-  descriptionKa: string | null;
-  descriptionEn: string | null;
-  descriptionRu: string | null;
-  images: VehicleListingImage[];
-  discounts: VehicleListingDiscount[];
-  // Narrower than a full VehicleListingDiscount — may be derived from a
-  // rule-based bulk discount (no real DB row of its own). Only
-  // discountPrice is ever read; the crossed-out original price always comes
-  // from the listing's own `price`.
-  activeDiscount: { discountPrice: number } | null;
-  viewCount: number;
-  // Admin-curated membership in the homepage's manually-curated "New
-  // Arrivals" mixed slider — a plain checkbox, not computed.
-  isFeaturedOnHomepage: boolean;
-  // Admin-set customs-clearance status for this specific imported unit —
-  // shown on the storefront and filterable on the shop grid.
-  isCustomsCleared: boolean;
-  createdAt: string;
-  updatedAt: string;
-  // Same "update-response-only" flag as ProductVariant's identical field —
-  // see VehicleListingInput's previousStockQuantity.
-  stockConflict?: boolean;
-};
+export type VehicleListing = Schemas["VehicleListing"];
 
 // Human-readable URL slug ("honda-cbr600-2020-4821") instead of a bare
 // numeric id — the id is kept as a trailing suffix rather than stored as its
@@ -80,29 +40,7 @@ export function parseVehicleListingIdFromSlug(itemSlug: string): number | null {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-export type VehicleListingInput = {
-  vehicleCatalogId: number;
-  conditionId: number;
-  statusId: number;
-  colorId: number;
-  year: number;
-  mileageKm?: number | null;
-  warrantyValue?: number | null;
-  warrantyUnit?: WarrantyUnit | null;
-  isActive?: boolean;
-  priceCurrency?: VehicleListingCurrency;
-  price: number;
-  stockQuantity?: number;
-  // Same "delta against the live DB value, not an absolute overwrite"
-  // reasoning as ProductVariantInput's identical field — see
-  // VehicleListingFormModal.tsx's handleSubmit.
-  previousStockQuantity?: number;
-  descriptionKa?: string | null;
-  descriptionEn?: string | null;
-  descriptionRu?: string | null;
-  isFeaturedOnHomepage?: boolean;
-  isCustomsCleared?: boolean;
-};
+export type VehicleListingInput = Schemas["CreateVehicleListingInput"];
 
 export type VehicleSpecFilters = {
   lookupFilters?: { field: VehicleSpecField; ids: number[] }[];
@@ -217,29 +155,13 @@ export async function getVehicleListing(id: number): Promise<VehicleListing> {
   return data.item;
 }
 
-export type VehicleListingSaleOrder = {
-  orderId: number;
-  orderCode: string;
-  createdAt: string;
-  buyerName: string;
-  buyerEmail: string;
-  quantity: number;
-  lineTotal: number;
-  status: string;
-};
+export type VehicleListingSaleOrder = VehicleListingSalesSummary["recentOrders"][number];
 
-export type VehicleListingSalesSummary = {
-  totalQuantitySold: number;
-  totalRevenue: number;
-  orderCount: number;
-  recentOrders: VehicleListingSaleOrder[];
-};
+export type VehicleListingSalesSummary = VehicleListingDetailAdmin["sales"];
 
 // Admin-only detail — same as VehicleListing plus sales history, returned
 // by the admin "full view" endpoint (see getVehicleListingDetailAdmin).
-export type VehicleListingDetailAdmin = VehicleListing & {
-  sales: VehicleListingSalesSummary;
-};
+export type VehicleListingDetailAdmin = Schemas["VehicleListingDetailAdmin"];
 
 export async function getVehicleListingDetailAdmin(id: number): Promise<VehicleListingDetailAdmin> {
   const { data } = await apiClient.get<{ item: VehicleListingDetailAdmin }>(
@@ -270,7 +192,7 @@ export async function deleteVehicleListing(id: number): Promise<void> {
   await apiClient.delete(`/vehicle-listings/${id}`);
 }
 
-export type UsdToGelExchangeRate = { rate: number | null; updatedAt: string | null };
+export type UsdToGelExchangeRate = ApiResponse<"/vehicle-listings/exchange-rate/usd-gel", "get">;
 
 // Public — backs the storefront's GEL⇄USD toggle (see useUsdToGelRate.ts)
 // and the admin listing form's "today's rate" hint.

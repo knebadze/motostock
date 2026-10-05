@@ -1,76 +1,17 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type HeroSlideType = "CTA" | "VEHICLE_SEARCH" | "INFO" | "CATEGORY_FILTER" | "DISCOUNT" | "POSTER";
 export type HeroSlideTextPosition = "LEFT" | "CENTER" | "RIGHT";
 export type HeroSlideVerticalPosition = "TOP" | "MIDDLE" | "BOTTOM";
 
-export type HeroSlide = {
-  id: number;
-  type: HeroSlideType;
-  title: LocalizedString;
-  subtitle: LocalizedString | null;
-  imageUrl: string | null;
-  buttonLabel: LocalizedString | null;
-  buttonLink: string | null;
-  discountCategoryId: number | null;
-  discountProductBrandId: number | null;
-  // DISCOUNT-only, mutually exclusive with discountCategoryId/
-  // discountProductBrandId in practice — set only via the bulk-discount-events
-  // module's own create/edit-slide flow, never through this module's own
-  // create/update. Wins over category/brand targeting when present — see
-  // HeroSlider.tsx's buildDiscountLink.
-  bulkDiscountEvent: {
-    id: number;
-    targetType: "PRODUCT" | "VEHICLE_LISTING";
-    // Rendered as a "-X% | start – end" line under the slide's title (see
-    // HeroSlider.tsx) — always the event's own live values, never hand-typed
-    // into title/subtitle, so the slide can't drift out of sync with what
-    // the linked campaign actually is.
-    discountPercent: number;
-    startDate: string;
-    endDate: string;
-  } | null;
-  // DISCOUNT-only, same mutual-exclusivity/precedence rules as
-  // bulkDiscountEvent above — set only via the promo-codes module's own
-  // create/edit-slide flow. buildDiscountLink checks bulkDiscountEvent
-  // first, this second.
-  promoCode: {
-    id: number;
-    code: string;
-    domain: "PRODUCT" | "VEHICLE";
-    discountPercent: number;
-    startDate: string;
-    endDate: string;
-    // The code's own scope — null means "applies to everything in its
-    // domain." Used both to build a correctly scoped (non-onSale) shop link
-    // and to show the scope as text — see HeroSlider.tsx's buildDiscountLink
-    // and its scope-text rendering (never /shop?onSale=true: a promo code
-    // creates no discount rows, so that filter would show whatever else
-    // happens to be discounted, not what this code actually applies to).
-    category: { id: number; name: LocalizedString; slug: string } | null;
-    productBrand: { id: number; name: string; slug: string } | null;
-  } | null;
-  textPosition: HeroSlideTextPosition;
-  verticalPosition: HeroSlideVerticalPosition;
-  isActive: boolean;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-};
+export type HeroSlide = Schemas["HeroSlide"];
 
-export type HeroSlideInput = {
-  type: HeroSlideType;
-  title: LocalizedString;
-  subtitle?: LocalizedString | null;
-  buttonLabel?: LocalizedString | null;
-  buttonLink?: string | null;
-  discountCategoryId?: number | null;
-  discountProductBrandId?: number | null;
-  textPosition?: HeroSlideTextPosition;
-  verticalPosition?: HeroSlideVerticalPosition;
-  isActive?: boolean;
-};
+export type HeroSlideInput = Schemas["CreateHeroSlideInput"];
 
 export async function listHeroSlides(): Promise<HeroSlide[]> {
   const { data } = await apiClient.get<{ items: HeroSlide[] }>("/hero-slides");

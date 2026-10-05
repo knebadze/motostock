@@ -1,5 +1,10 @@
 import { apiClient } from "./client";
 import type { AdminFilterEntry } from "./admin-filters";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type LocalizedString = {
   ka: string;
@@ -7,30 +12,9 @@ export type LocalizedString = {
   ru: string;
 };
 
-export type Category = {
-  id: number;
-  name: LocalizedString;
-  slug: string;
-  imageUrl: string | null;
-  bannerImageUrl: string | null;
-  sortOrder: number;
-  // Storefront "only N left" urgency badge on this category's products —
-  // admin-controllable since it's meaningless noise on categories where
-  // stock is typically ~1 unit per item.
-  lowStockBadgeEnabled: boolean;
-  parentId: number | null;
-  parent: { id: number; name: LocalizedString } | null;
-  createdAt: string;
-  updatedAt: string;
-};
+export type Category = Schemas["Category"];
 
-export type CategoryInput = {
-  name: LocalizedString;
-  slug: string;
-  parentId: number | null;
-  sortOrder: number;
-  lowStockBadgeEnabled?: boolean;
-};
+export type CategoryInput = Schemas["CreateCategoryInput"];
 
 export async function listCategories(adminFilters?: AdminFilterEntry[]): Promise<Category[]> {
   const { data } = await apiClient.get<{ categories: Category[] }>("/categories", {

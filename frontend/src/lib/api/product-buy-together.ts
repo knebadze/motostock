@@ -1,25 +1,18 @@
 import { apiClient } from "./client";
-import type { Product } from "./products";
-import type { LocalizedString } from "./categories";
-import type { NamedRef } from "./vehicle-catalog";
+import type { components } from "./generated/schema";
+import type { ApiResponse } from "./generated-helpers";
 
-export type ProductBuyTogether = {
-  id: number;
-  productId: number;
-  relatedProduct: Product;
-  createdAt: string;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
+
+export type ProductBuyTogether = Schemas["ProductBuyTogether"];
 
 // Admin-only unified overview (see /admin/buy-together) — lighter than the
 // full Product shape above, only what the cross-product table needs.
-export type ProductBuyTogetherRef = { id: number; name: LocalizedString; slug: string; category: NamedRef };
+export type ProductBuyTogetherRef = AdminProductBuyTogether["product"];
 
-export type AdminProductBuyTogether = {
-  id: number;
-  product: ProductBuyTogetherRef;
-  relatedProduct: ProductBuyTogetherRef;
-  createdAt: string;
-};
+export type AdminProductBuyTogether = Schemas["AdminProductBuyTogether"];
 
 export type ListProductBuyTogetherFilters = {
   search?: string;
@@ -28,12 +21,7 @@ export type ListProductBuyTogetherFilters = {
   pageSize?: number;
 };
 
-export type ProductBuyTogetherPage = {
-  items: AdminProductBuyTogether[];
-  total: number;
-  page: number;
-  pageSize: number;
-};
+export type ProductBuyTogetherPage = ApiResponse<"/product-buy-together", "get">;
 
 // Real server-side pagination (skip/take), not the client-side slicing most
 // other admin lists use — this table spans every product pair project-wide

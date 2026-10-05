@@ -1,10 +1,15 @@
 import { createCollectionApi } from "./collection-api";
-import type { CollectionItem, CollectionItemType, CollectionStatus, CollectionStatusItem } from "./collection-api";
+import type { CollectionItemType, CollectionStatusItem } from "./collection-api";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type WishlistItemType = CollectionItemType;
-export type WishlistItem = CollectionItem;
+export type WishlistItem = Schemas["WishlistItem"];
 export type WishlistStatusItem = CollectionStatusItem;
-export type WishlistStatus = CollectionStatus;
+export type WishlistStatus = Schemas["WishlistStatus"];
 
 const wishlistApi = createCollectionApi("/users/me/wishlist");
 
