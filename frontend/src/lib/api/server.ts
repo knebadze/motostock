@@ -960,10 +960,7 @@ export const getPopularProductsFromServer = cache(async (limit: number): Promise
   });
 });
 
-export const getProductDetailFromServer = cache(async (
-  slug: string,
-  vehicleCatalogId?: string,
-): Promise<ProductDetail | null> => {
+const getCachedProductDetail = cache(async (slug: string, vehicleCatalogId: string): Promise<ProductDetail | null> => {
   // Public endpoint (guest product view page) — must not bail out just
   // because there's no admin session cookie, same fix as getCategoriesFromServer.
   return fetchFromServer<{ item: ProductDetail }, ProductDetail | null>(`/products/by-slug/${slug}`, {
@@ -972,6 +969,19 @@ export const getProductDetailFromServer = cache(async (
     extract: (data) => data.item,
   });
 });
+
+// The product page calls this twice per request — generateMetadata and the
+// page body — and the backend's by-slug endpoint is NOT a pure read: it
+// increments Product.viewCount and records a product view. React cache()
+// keys on the exact argument list, so `(slug)` and `(slug, undefined)` were
+// two different entries — every page view ran the heavy detail query twice
+// and counted as two views, doubling popularity/analytics. Normalizing to a
+// fixed two-argument key here makes both calls hit the same cache entry
+// (callers must still pass the same vehicleCatalogId — see the page's
+// generateMetadata).
+export function getProductDetailFromServer(slug: string, vehicleCatalogId?: string): Promise<ProductDetail | null> {
+  return getCachedProductDetail(slug, vehicleCatalogId ?? "");
+}
 
 // Product detail page's "similar products" section — replaces the old
 // naive "everything else in the same category" slice with the algorithmic,

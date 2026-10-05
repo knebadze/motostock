@@ -93,7 +93,11 @@ export async function generateMetadata({
     };
   }
 
-  const product = await getProductDetailFromServer(itemSlug);
+  // Same vehicleCatalogId as the page body below, so both calls share one
+  // cached request — see getProductDetailFromServer for why that matters
+  // (the endpoint counts a view per call).
+  const selectedVehicleCatalogId = (await cookies()).get(SELECTED_VEHICLE_COOKIE)?.value;
+  const product = await getProductDetailFromServer(itemSlug, selectedVehicleCatalogId);
   if (!product) return {};
 
   // metaTitle is the FULL page title, not just the product name — the admin
