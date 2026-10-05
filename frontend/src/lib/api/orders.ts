@@ -219,6 +219,7 @@ export type ListOrdersFilters = {
   createdFrom?: string;
   createdTo?: string;
   flaggedOnly?: boolean;
+  finaFailedOnly?: boolean;
   page?: number;
   pageSize?: number;
 };

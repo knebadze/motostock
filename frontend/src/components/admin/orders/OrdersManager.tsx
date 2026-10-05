@@ -137,9 +137,13 @@ const columns: DataTableColumn<AdminOrderSummary>[] = [
 export function OrdersManager({
   initialData,
   statuses,
+  initialFilters = {},
 }: {
   initialData: AdminOrdersPage;
   statuses: LookupItem[];
+  // Pre-applied from the page URL (dashboard deep links) — initialData was
+  // already fetched with these, so the controls just need to reflect them.
+  initialFilters?: ListOrdersFilters;
 }) {
   const { data, totalPages, loading, load } = useServerPagination<AdminOrderSummary>({
     items: initialData.orders,
@@ -148,11 +152,12 @@ export function OrdersManager({
     pageSize: initialData.pageSize,
   });
   const [search, setSearch] = useState("");
-  const [statusIds, setStatusIds] = useState<string[]>([]);
+  const [statusIds, setStatusIds] = useState<string[]>(() => (initialFilters.statusIds ?? []).map(String));
   const [fulfillmentMethods, setFulfillmentMethods] = useState<string[]>([]);
   const [createdFrom, setCreatedFrom] = useState("");
   const [createdTo, setCreatedTo] = useState("");
-  const [flaggedOnly, setFlaggedOnly] = useState(false);
+  const [flaggedOnly, setFlaggedOnly] = useState(initialFilters.flaggedOnly ?? false);
+  const [finaFailedOnly, setFinaFailedOnly] = useState(initialFilters.finaFailedOnly ?? false);
   const [viewingOrderId, setViewingOrderId] = useState<number | null>(null);
 
   const statusOptions = statuses.map((status) => ({ value: String(status.id), label: status.nameKa }));
@@ -162,7 +167,8 @@ export function OrdersManager({
     fulfillmentMethods.length > 0 ||
     createdFrom !== "" ||
     createdTo !== "" ||
-    flaggedOnly;
+    flaggedOnly ||
+    finaFailedOnly;
 
   function currentFilters(): ListOrdersFilters {
     return {
@@ -173,6 +179,7 @@ export function OrdersManager({
       createdFrom: createdFrom || undefined,
       createdTo: createdTo || undefined,
       flaggedOnly: flaggedOnly || undefined,
+      finaFailedOnly: finaFailedOnly || undefined,
     };
   }
 
@@ -204,6 +211,7 @@ export function OrdersManager({
     setCreatedFrom("");
     setCreatedTo("");
     setFlaggedOnly(false);
+    setFinaFailedOnly(false);
     load(() => fetchOrdersPage({}, 1), onLoadError);
   }
 
@@ -279,6 +287,15 @@ export function OrdersManager({
             className="size-4 accent-primary"
           />
           მხოლოდ დროშიანი (რისკის სიგნალი)
+        </label>
+        <label className="flex items-center gap-2 pb-2 text-sm font-medium text-foreground">
+          <input
+            type="checkbox"
+            checked={finaFailedOnly}
+            onChange={(event) => setFinaFailedOnly(event.target.checked)}
+            className="size-4 accent-primary"
+          />
+          მხოლოდ FINA შეცდომით
         </label>
         <button
           type="button"

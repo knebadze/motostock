@@ -249,6 +249,9 @@ export const listOrdersQuerySchema = z.object({
   // fraud.service.ts's evaluateOrderRisk (admin-only, flag-for-review, never
   // an automatic block).
   flaggedOnly: z.coerce.boolean().optional(),
+  // Narrows to orders whose FINA push failed — the dashboard's "needs
+  // action" tile links here (see dashboard.service.ts).
+  finaFailedOnly: z.coerce.boolean().optional(),
   // Real server-side pagination (skip/take), same pattern as
   // error-logs.schema.ts — both optional, no `.default()` (defaults are
   // applied in the controller instead, see that file's comment for why: an

@@ -35,7 +35,7 @@ import type { WishlistItem } from "./wishlist";
 import type { MyNewsletterStatus } from "./newsletter";
 import type { CompareItem } from "./compare";
 import type { Cart } from "./cart";
-import type { AdminOrdersPage, Order, OrderSummary } from "./orders";
+import type { AdminOrdersPage, ListOrdersFilters, Order, OrderSummary } from "./orders";
 import type { DashboardStats } from "./dashboard";
 import type { AnalyticsFilters, AnalyticsOverview } from "./analytics";
 import type { CompatibilityPage } from "./compatibility";
@@ -770,9 +770,11 @@ export const getMyOrderFromServer = cache(async (id: number): Promise<Order | nu
   });
 });
 
-export const getOrdersFromServer = cache(async (): Promise<AdminOrdersPage> => {
+// `filters` comes from the orders page's URL (the dashboard's "needs action"
+// tiles link there pre-filtered) — see admin/(protected)/orders/page.tsx.
+export const getOrdersFromServer = cache(async (filters: ListOrdersFilters = {}): Promise<AdminOrdersPage> => {
   return fetchFromServer<AdminOrdersPage, AdminOrdersPage>("/orders", {
-    params: { page: 1, pageSize: 20 },
+    params: { ...filters, page: 1, pageSize: 20 },
     fallback: { orders: [], total: 0, page: 1, pageSize: 20 },
     extract: (data) => data,
     requireAuth: true,
@@ -789,6 +791,9 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
     lowStockCount: 0,
   },
   revenueLast30Days: 0,
+  salesToday: { revenue: 0, orderCount: 0 },
+  salesThisWeek: { revenue: 0, orderCount: 0 },
+  needsAction: { pendingOrders: 0, confirmedOrders: 0, finaFailedOrders: 0, flaggedPendingOrders: 0 },
   ordersByStatus: [],
   recentOrders: [],
   lowStockItems: [],

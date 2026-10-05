@@ -33,6 +33,12 @@ const dashboardLowStockItemSchema = z.object({
   stockQuantity: z.int(),
 });
 
+// Non-cancelled orders placed since the period's Tbilisi-local start.
+const dashboardSalesSummarySchema = z.object({
+  revenue: z.number(),
+  orderCount: z.int(),
+});
+
 export const dashboardStatsResponseSchema = registry.register(
   "DashboardStats",
   z.object({
@@ -45,6 +51,16 @@ export const dashboardStatsResponseSchema = registry.register(
       lowStockCount: z.int().openapi({ example: 5 }),
     }),
     revenueLast30Days: z.number().openapi({ example: 4520.5 }),
+    salesToday: dashboardSalesSummarySchema,
+    // Week starts Monday (Tbilisi time).
+    salesThisWeek: dashboardSalesSummarySchema,
+    // All-time counts of orders waiting on staff — see dashboard.service.ts.
+    needsAction: z.object({
+      pendingOrders: z.int(),
+      confirmedOrders: z.int(),
+      finaFailedOrders: z.int(),
+      flaggedPendingOrders: z.int(),
+    }),
     // Same window as revenueLast30Days above (see
     // dashboard.service.ts's getDashboardRecentActivityWindowDays) — a
     // recent-activity snapshot, not a lifetime per-status tally.

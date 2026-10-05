@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma.js";
+import { shiftDateOnly, startOfDayTbilisi, toTbilisiDateOnly } from "../../lib/tbilisi-dates.js";
 import {
   getDashboardRecentOrdersLimit,
   getDashboardLowStockLimit,
@@ -10,6 +11,26 @@ type StatusRow = { id: number; key: string; nameKa: string; nameEn: string; name
 
 function toStatusLookup(status: StatusRow) {
   return { id: status.id, key: status.key, nameKa: status.nameKa, nameEn: status.nameEn, nameRu: status.nameRu };
+}
+
+// "Today" and "this week" are Tbilisi calendar boundaries (the server runs
+// in UTC — see lib/tbilisi-dates.ts), with the week starting on Monday as
+// it does in Georgia.
+function tbilisiPeriodStarts(now: Date): { todayStart: Date; weekStart: Date } {
+  const today = toTbilisiDateOnly(now);
+  const dayOfWeek = new Date(`${today}T00:00:00.000Z`).getUTCDay(); // 0 = Sunday
+  const daysSinceMonday = (dayOfWeek + 6) % 7;
+  return {
+    todayStart: startOfDayTbilisi(today),
+    weekStart: startOfDayTbilisi(shiftDateOnly(today, -daysSinceMonday)),
+  };
+}
+
+// Same "cancelled orders aren't sales" rule as revenueLast30Days below.
+const NOT_CANCELLED = { status: { key: { not: "CANCELLED" } } } as const;
+
+function toSalesSummary(agg: { _sum: { total: unknown }; _count: { _all: number } }) {
+  return { revenue: Number(agg._sum.total ?? 0), orderCount: agg._count._all };
 }
 
 // Everything here is either a cheap indexed count/aggregate or a
@@ -29,6 +50,7 @@ export async function getDashboardStats() {
   recentActivityWindowStart.setDate(recentActivityWindowStart.getDate() - recentActivityWindowDays);
 
   const lowStockWhere = { stockQuantity: { lte: lowStockThreshold }, isActive: true };
+  const { todayStart, weekStart } = tbilisiPeriodStarts(now);
 
   const [
     totalOrders,
@@ -44,6 +66,12 @@ export async function getDashboardStats() {
     lowStockListingCount,
     lowStockVariants,
     lowStockListings,
+    salesTodayAgg,
+    salesThisWeekAgg,
+    pendingOrders,
+    confirmedOrders,
+    finaFailedOrders,
+    flaggedPendingOrders,
   ] = await Promise.all([
     prisma.order.count(),
     prisma.user.count(),
@@ -109,6 +137,25 @@ export async function getDashboardStats() {
         },
       },
     }),
+    prisma.order.aggregate({
+      _sum: { total: true },
+      _count: { _all: true },
+      where: { createdAt: { gte: todayStart }, ...NOT_CANCELLED },
+    }),
+    prisma.order.aggregate({
+      _sum: { total: true },
+      _count: { _all: true },
+      where: { createdAt: { gte: weekStart }, ...NOT_CANCELLED },
+    }),
+    // "Needs action" — all-time, not windowed: an order still waiting is
+    // waiting no matter how old it is (an old one is the most urgent).
+    // PENDING = new, nobody has looked at it yet; CONFIRMED = accepted but
+    // not yet shipped / handed over.
+    prisma.order.count({ where: { status: { key: "PENDING" } } }),
+    prisma.order.count({ where: { status: { key: "CONFIRMED" } } }),
+    prisma.order.count({ where: { finaSyncStatus: "FAILED" } }),
+    // Risk-flagged orders only matter while they can still be stopped.
+    prisma.order.count({ where: { status: { key: "PENDING" }, riskFlags: { some: {} } } }),
   ]);
 
   const ordersByStatus = orderStatuses.map((status) => ({
@@ -161,6 +208,9 @@ export async function getDashboardStats() {
       lowStockCount: lowStockVariantCount + lowStockListingCount,
     },
     revenueLast30Days: Number(revenueAgg._sum.total ?? 0),
+    salesToday: toSalesSummary(salesTodayAgg),
+    salesThisWeek: toSalesSummary(salesThisWeekAgg),
+    needsAction: { pendingOrders, confirmedOrders, finaFailedOrders, flaggedPendingOrders },
     ordersByStatus,
     recentOrders,
     lowStockItems,

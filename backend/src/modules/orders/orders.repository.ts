@@ -46,11 +46,16 @@ function buildAdminWhere(filters: {
   createdFrom?: string;
   createdTo?: string;
   flaggedOnly?: boolean;
+  finaFailedOnly?: boolean;
 }): Prisma.OrderWhereInput | undefined {
   const and: Prisma.OrderWhereInput[] = [];
 
   if (filters.flaggedOnly) {
     and.push({ riskFlags: { some: {} } });
+  }
+
+  if (filters.finaFailedOnly) {
+    and.push({ finaSyncStatus: "FAILED" });
   }
 
   if (filters.search) {
