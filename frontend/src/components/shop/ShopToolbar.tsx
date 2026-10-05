@@ -37,11 +37,15 @@ export function ShopToolbar({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 shadow-sm">
       <p className="text-sm text-muted-foreground">{resultCountLabel}</p>
-      <div className="flex items-center gap-3">
+      {/* Full-width row below sm with the sort select flexing to fill the
+          gap — a fixed w-48 select plus the filter button and view toggle
+          added up to ~385px, wider than a 360–375px phone, and this row
+          didn't wrap, so the whole page scrolled sideways. */}
+      <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-3">
         <button
           type="button"
           onClick={onFilterClick}
-          className="flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary-text md:hidden"
+          className="flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary-text md:hidden"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -62,7 +66,7 @@ export function ShopToolbar({
           </svg>
           {filterButtonLabel}
         </button>
-        <div className="w-48">
+        <div className="min-w-0 flex-1 sm:w-48 sm:flex-none">
           <Select options={sortOptions} value={sortValue} onChange={onSortChange} ariaLabel={sortLabel} />
         </div>
         <ViewModeToggle

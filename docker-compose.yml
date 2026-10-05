@@ -1,7 +1,16 @@
+# Docker's default json-file log driver never rotates, so container logs
+# grow until the disk fills. Applied to every service below.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -19,7 +28,12 @@ services:
       context: ./backend
       target: runner
     restart: unless-stopped
+    logging: *default-logging
     env_file: ./backend/.env
+    # Caps a runaway process (e.g. a huge image decode) so it gets OOM-killed
+    # and restarted on its own instead of starving Postgres and the frontend
+    # on the same VPS. Adjust to the VPS's RAM.
+    mem_limit: 1g
     environment:
       # Overrides whatever DATABASE_URL is sitting in backend/.env — inside
       # the compose network the DB is always reachable at host "db", never
@@ -68,6 +82,11 @@ services:
     volumes:
       - backend_uploads:/app/uploads
     command: ["npx", "prisma", "migrate", "deploy"]
+    # Same unprivileged user as the backend — the seed writes images into the
+    # shared backend_uploads volume, and root-owned folders there would block
+    # the backend (running as node) from writing into them later.
+    user: node
+    logging: *default-logging
     profiles: ["tools"]
 
   frontend:
@@ -80,6 +99,7 @@ services:
         # frontend/Dockerfile's matching ARG comment.
         NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID}
     restart: unless-stopped
+    logging: *default-logging
     environment:
       # Next's standalone server.js only binds every interface when HOSTNAME
       # is explicitly set — left unset, it binds to a single resolution of
@@ -95,6 +115,8 @@ services:
       # build arg): it's never exposed to the browser. The browser keeps using
       # NEXT_PUBLIC_API_URL.
       INTERNAL_API_URL: http://backend:4000/api
+    # See the backend's mem_limit comment.
+    mem_limit: 768m
     depends_on:
       backend:
         condition: service_healthy
@@ -114,6 +136,7 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "80:80"
       - "443:443"

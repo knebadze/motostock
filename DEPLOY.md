@@ -108,6 +108,19 @@ build`-ით** — `migrate`-ს `docker-compose.yml`-ში აქვს `prof
 `docker compose run --rm migrate` მაშინ ძველ, ქეშირებულ image-ს გამოიყენებს ახალი მიგრაციების
 დანახვის მაგივრად — build სწრაფად (წამებში) დასრულდება, ეს ნიშანია, რომ ეს რეალურად მოხდა.
 
+### ერთჯერადი ნაბიჯი: კონტეინერები root-ის გარეშე (2026-10-05)
+
+backend, frontend და migrate კონტეინერები ახლა უპრივილეგიო `node` მომხმარებლით ეშვება და აღარ
+იყენებს root-ს. ახალ სერვერზე არაფერია გასაკეთებელი. **არსებულ სერვერზე** კი `backend_uploads`
+volume-ში არსებული ფაილები ჯერ კიდევ root-ის საკუთრებაშია და backend მათ ვერ შეცვლის. ამიტომ
+ახალი build-ის შემდეგ, **`up -d`-მდე**, ერთხელ გაუშვით:
+
+```bash
+docker compose run --rm --user root --entrypoint "" backend chown -R node:node /app/uploads
+```
+
+თუ ამას გამოტოვებთ, სურათის ატვირთვა/წაშლა ადმინში `EACCES` შეცდომით ჩავარდება.
+
 ## სარეზერვო ასლი
 
 მონაცემები (`pgdata` volume) და ატვირთული სურათები (`backend_uploads` volume) გადარჩება
@@ -131,10 +144,12 @@ credentials-ს არაფერი ეხება:
 
    ```
    example.com, www.example.com {
+       encode zstd gzip
        reverse_proxy frontend:3000
    }
 
    api.example.com {
+       encode zstd gzip
        reverse_proxy backend:4000
    }
    ```

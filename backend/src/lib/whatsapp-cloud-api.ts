@@ -15,6 +15,11 @@ export function normalizePhoneForWhatsApp(phone: string): string {
 
 const GRAPH_API_VERSION = "v21.0";
 
+// Same reasoning as FINA's own timeout (fina-client.ts): without one, a
+// hung Meta endpoint holds the request (and graceful shutdown) open for
+// minutes. Callers already treat a failed send as best-effort.
+const REQUEST_TIMEOUT_MS = 10_000;
+
 // Sends a plain-text WhatsApp message from the business's Cloud-API number
 // to `to` (E.164, digits only, no leading +) and returns the WhatsApp
 // message id Meta assigns it — callers store this id so a later "Reply"
@@ -34,6 +39,7 @@ export async function sendWhatsAppTextMessage(to: string, body: string): Promise
       type: "text",
       text: { body },
     }),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 
   if (!response.ok) {

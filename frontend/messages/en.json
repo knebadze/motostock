@@ -5,6 +5,8 @@
     "categoryTitle": "{category} — {siteName}",
     "categoryTitleWithPage": "{category} — Page {page} — {siteName}",
     "categoryDescription": "{category} — best selection and prices at {siteName}.",
+    "compatibleProductsTitle": "{vehicle} — Parts & Accessories | {siteName}",
+    "compatibleProductsDescription": "Parts, accessories and gear that fit the {vehicle} at {siteName} — {count} products.",
     "aboutTitle": "About Us — {siteName}",
     "aboutDescription": "Learn about {siteName} — your trusted store for motorcycle gear, apparel, and parts in Georgia.",
     "faqTitle": "Frequently Asked Questions — {siteName}",
@@ -409,7 +411,10 @@
   "CookieNotice": {
     "message": "This site only uses strictly necessary cookies (sign-in, cart, wishlist) to work properly.",
     "linkLabel": "Learn more",
-    "acceptLabel": "Got it"
+    "acceptLabel": "Got it",
+    "analyticsMessage": "Besides strictly necessary cookies, with your consent we use analytics cookies (Google Analytics) to understand how the site is used and improve it.",
+    "acceptAllLabel": "Accept",
+    "rejectLabel": "Reject"
   },
   "ScrollToTop": {
     "label": "Scroll to top"

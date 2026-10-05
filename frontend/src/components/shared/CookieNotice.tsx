@@ -3,8 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import {
+  ANALYTICS_CONSENT_STORAGE_KEY,
+  GA_ENABLED,
+  saveAnalyticsConsent,
+  type AnalyticsConsent,
+} from "@/lib/analytics-consent";
 
-export const COOKIE_NOTICE_STORAGE_KEY = "motostock_cookie_notice_dismissed";
+// Presence of this key = "banner already answered" (ChatWidget and
+// ScrollToTopButton read it too, to know whether to sit clear of the bar).
+// With GA on, it's the consent choice itself — so a visitor who dismissed
+// the old necessary-only notice before analytics existed still gets asked.
+export const COOKIE_NOTICE_STORAGE_KEY = GA_ENABLED
+  ? ANALYTICS_CONSENT_STORAGE_KEY
+  : "motostock_cookie_notice_dismissed";
 // Same-tab localStorage writes don't fire a "storage" event (that only
 // fires in *other* tabs) — ScrollToTopButton listens for this to know when
 // to drop back down instead of staying clear of the dismissed banner.
@@ -17,12 +29,11 @@ export const COOKIE_NOTICE_DISMISSED_EVENT = "motostock:cookie-notice-dismissed"
 // below the footer if the banner were a normal in-flow element.
 const COOKIE_NOTICE_HEIGHT_VAR = "--cookie-notice-height";
 
-// Every cookie this site sets (auth session, guest cart/wishlist/compare
-// identity, OAuth CSRF state) is strictly necessary — there's no
-// tracking/marketing cookie to gate behind an accept/reject choice, so this
-// is a plain dismissible notice, not a consent manager. Dismissal is
-// remembered in localStorage, not a cookie — no need to spend one just to
-// remember "seen the cookie notice".
+// Without GA, every cookie this site sets (auth session, guest cart/
+// wishlist/compare identity, OAuth CSRF state) is strictly necessary, so
+// this is a plain dismissible notice. With GA on, it becomes an accept/
+// reject consent banner (Consent Mode v2 — see GoogleAnalytics.tsx), with
+// rejecting as easy as accepting. Remembered in localStorage, not a cookie.
 export function CookieNotice() {
   const t = useTranslations("CookieNotice");
   const [visible, setVisible] = useState(false);
@@ -56,8 +67,12 @@ export function CookieNotice() {
     };
   }, [visible]);
 
-  function dismiss() {
-    window.localStorage.setItem(COOKIE_NOTICE_STORAGE_KEY, "1");
+  function dismiss(consent?: AnalyticsConsent) {
+    if (consent) {
+      saveAnalyticsConsent(consent);
+    } else {
+      window.localStorage.setItem(COOKIE_NOTICE_STORAGE_KEY, "1");
+    }
     setVisible(false);
     window.dispatchEvent(new Event(COOKIE_NOTICE_DISMISSED_EVENT));
   }
@@ -71,18 +86,40 @@ export function CookieNotice() {
     >
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-3 sm:flex-row sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          {t("message")}{" "}
-          <Link href="/terms" className="font-medium text-primary-text hover:underline">
+          {GA_ENABLED ? t("analyticsMessage") : t("message")}{" "}
+          <Link
+            href={GA_ENABLED ? "/privacy" : "/terms"}
+            className="font-medium text-primary-text hover:underline"
+          >
             {t("linkLabel")}
           </Link>
         </p>
-        <button
-          type="button"
-          onClick={dismiss}
-          className="shrink-0 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
-        >
-          {t("acceptLabel")}
-        </button>
+        {GA_ENABLED ? (
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={() => dismiss("denied")}
+              className="rounded-full border border-border px-5 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
+            >
+              {t("rejectLabel")}
+            </button>
+            <button
+              type="button"
+              onClick={() => dismiss("granted")}
+              className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+            >
+              {t("acceptAllLabel")}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => dismiss()}
+            className="shrink-0 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+          >
+            {t("acceptLabel")}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import { generateUuid } from "@/lib/uuid";
+import { getCartItemDisplay } from "@/lib/cart-item-display";
 import { EmailVerificationBanner } from "@/components/shared/EmailVerificationBanner";
 import {
   placeOrder,
@@ -93,6 +94,34 @@ export function CheckoutManager({
   // preview yet when a courier method has no address picked) — avoids a
   // synchronous setState-in-effect that could instead just be computed here.
   const displayPreview = canFetchPreview ? preview : null;
+
+  // The items list used to render only from the preview, which doesn't
+  // exist until a courier method has an address (and a card method a bank)
+  // picked — so "Order items" sat empty right when the shopper was deciding.
+  // Falls back to the cart's own lines (no stock check yet; the preview adds
+  // that once it can be fetched).
+  const summaryItems = displayPreview
+    ? displayPreview.items.map((item, index) => ({
+        key: item.id ?? `preview-${index}`,
+        imageUrl: resolveMediaUrl(item.imageUrl),
+        title: item.itemName[locale],
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        lineTotal: item.lineTotal,
+        stockIssue: item.inStock ? null : item.availableQuantity,
+      }))
+    : cart.items.map((item) => {
+        const display = getCartItemDisplay(item, locale);
+        return {
+          key: item.id,
+          imageUrl: display.imageUrl,
+          title: display.title,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal,
+          stockIssue: null as number | null,
+        };
+      });
 
   useEffect(() => {
     if (!canFetchPreview) return;
@@ -299,15 +328,15 @@ export function CheckoutManager({
         <section className="rounded-2xl border border-border bg-card p-5">
           <h2 className="font-semibold text-foreground">{t("itemsHeading")}</h2>
           <ul className="mt-3 flex flex-col gap-3">
-            {(displayPreview?.items ?? []).map((item, index) => {
-              const imageUrl = resolveMediaUrl(item.imageUrl);
+            {summaryItems.map((item) => {
+              const imageUrl = item.imageUrl;
               return (
-                <li key={item.id ?? index} className="flex items-center gap-3">
+                <li key={item.key} className="flex items-center gap-3">
                   <div className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-muted">
                     {imageUrl ? (
                       <Image
                         src={imageUrl}
-                        alt={item.itemName[locale]}
+                        alt={item.title}
                         fill
                         sizes="56px"
                         className="object-cover"
@@ -318,15 +347,15 @@ export function CheckoutManager({
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-sm font-medium text-foreground">
-                      {item.itemName[locale]}
+                      {item.title}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {item.quantity} × {formatPrice(item.unitPrice)}
                     </span>
-                    {!item.inStock && (
+                    {item.stockIssue != null && (
                       <span className="mt-1 text-xs font-medium text-red-600">
-                        {item.availableQuantity > 0
-                          ? t("limitedStockItem", { count: item.availableQuantity })
+                        {item.stockIssue > 0
+                          ? t("limitedStockItem", { count: item.stockIssue })
                           : t("outOfStockItem")}
                       </span>
                     )}

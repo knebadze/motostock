@@ -5,6 +5,8 @@
     "categoryTitle": "{category} — {siteName}",
     "categoryTitleWithPage": "{category} — Страница {page} — {siteName}",
     "categoryDescription": "{category} — лучший выбор и цены в {siteName}.",
+    "compatibleProductsTitle": "{vehicle} — запчасти и аксессуары | {siteName}",
+    "compatibleProductsDescription": "Запчасти, аксессуары и экипировка для {vehicle} в {siteName} — {count} товаров.",
     "aboutTitle": "О нас — {siteName}",
     "aboutDescription": "Узнайте больше о {siteName} — надёжном магазине мотоэкипировки, аксессуаров и запчастей в Грузии.",
     "faqTitle": "Часто задаваемые вопросы — {siteName}",
@@ -409,7 +411,10 @@
   "CookieNotice": {
     "message": "Сайт использует только строго необходимые файлы cookie (авторизация, корзина, избранное) для корректной работы.",
     "linkLabel": "Подробнее",
-    "acceptLabel": "Понятно"
+    "acceptLabel": "Понятно",
+    "analyticsMessage": "Помимо строго необходимых файлов cookie, с вашего согласия мы используем аналитические cookie (Google Analytics), чтобы понимать, как используется сайт, и улучшать его.",
+    "acceptAllLabel": "Принять",
+    "rejectLabel": "Отклонить"
   },
   "ScrollToTop": {
     "label": "Наверх"

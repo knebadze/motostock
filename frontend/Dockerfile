@@ -24,8 +24,11 @@ RUN npm run build
 FROM node:22-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# Owned by the unprivileged `node` user the server runs as — Next writes its
+# image-optimizer and ISR caches under .next/ at runtime.
+COPY --from=builder --chown=node:node /app/public ./public
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+USER node
 EXPOSE 3000
 CMD ["node", "server.js"]

@@ -8,6 +8,12 @@
 # "რეალურ დომენზე გადასვლა" section in DEPLOY.md for the exact swap.
 
 :80 {
+	# Compresses API JSON (product lists carry trilingual descriptions) and
+	# every proxied response — neither Express nor Next's standalone server
+	# compresses the backend's JSON on their own. Keep this line in the
+	# domain blocks too when switching over (see DEPLOY.md).
+	encode zstd gzip
+
 	handle /api/* {
 		reverse_proxy backend:4000
 	}

@@ -5,6 +5,8 @@
     "categoryTitle": "{category} — {siteName}",
     "categoryTitleWithPage": "{category} — გვერდი {page} — {siteName}",
     "categoryDescription": "{category} — საუკეთესო არჩევანი და ფასები {siteName}-ში.",
+    "compatibleProductsTitle": "{vehicle} — ნაწილები და აქსესუარები | {siteName}",
+    "compatibleProductsDescription": "{vehicle}-ზე მორგებული ნაწილები, აქსესუარები და ეკიპირება {siteName}-ში — {count} პროდუქტი.",
     "aboutTitle": "ჩვენ შესახებ — {siteName}",
     "aboutDescription": "გაიცანით {siteName} — მოტოტექნიკის აქსესუარების, ეკიპირებისა და ნაწილების სანდო მაღაზია საქართველოში.",
     "faqTitle": "ხშირად დასმული კითხვები — {siteName}",
@@ -409,7 +411,10 @@
   "CookieNotice": {
     "message": "საიტი იყენებს მხოლოდ აუცილებელ ქუქი-ფაილებს (ავტორიზაცია, კალათა, სასურველები) გამართული მუშაობისთვის.",
     "linkLabel": "დაწვრილებით",
-    "acceptLabel": "გასაგებია"
+    "acceptLabel": "გასაგებია",
+    "analyticsMessage": "აუცილებელი ქუქი-ფაილების გარდა, თქვენი თანხმობით ვიყენებთ ანალიტიკურ ქუქი-ფაილებს (Google Analytics), რომ გავიგოთ, როგორ სარგებლობენ საიტით და გავაუმჯობესოთ ის.",
+    "acceptAllLabel": "ვეთანხმები",
+    "rejectLabel": "უარი"
   },
   "ScrollToTop": {
     "label": "თავში ასვლა"

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { usePathname, useRouter } from "@/i18n/navigation";
+import { replaceUrlQueryParams } from "@/lib/url-query-state";
 import type { SelectOption } from "@/components/shared/Select";
 import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
@@ -79,8 +79,6 @@ export function VehicleShopPage({
   const t = useTranslations("Shop");
   const tCommon = useTranslations("Common");
   const tErrors = useTranslations("ApiErrors");
-  const pathname = usePathname();
-  const router = useRouter();
 
   const [search, setSearch] = useState("");
   const [selectedBrandIds, setSelectedBrandIds] = useState<number[]>([]);
@@ -217,11 +215,12 @@ export function VehicleShopPage({
   // not synced — faceted-filter combinations aren't meant to be individually
   // indexed).
   useEffect(() => {
-    const query: Record<string, string> = {};
-    if (data.page > 1) query.page = String(data.page);
-    if (sortBy !== "newest") query.sort = sortBy;
-    if (initialEventId != null) query.eventId = String(initialEventId);
-    router.replace({ pathname, query }, { scroll: false });
+    // history.replaceState, not router.replace — see url-query-state.ts.
+    replaceUrlQueryParams({
+      page: data.page > 1 ? String(data.page) : null,
+      sort: sortBy !== "newest" ? sortBy : null,
+      eventId: initialEventId != null ? String(initialEventId) : null,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.page, sortBy]);
 

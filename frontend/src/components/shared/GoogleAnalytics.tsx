@@ -1,5 +1,6 @@
 import Script from "next/script";
 import { headers } from "next/headers";
+import { ANALYTICS_CONSENT_STORAGE_KEY } from "@/lib/analytics-consent";
 
 // Renders nothing until NEXT_PUBLIC_GA_MEASUREMENT_ID is actually set — the
 // client has no Google Analytics property yet (and no delivered business
@@ -31,6 +32,23 @@ export async function GoogleAnalytics() {
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
+          window.gtag = gtag;
+          // Consent Mode v2: everything denied by default — no analytics
+          // cookies until the visitor accepts in CookieNotice.tsx (which
+          // sends a 'consent update'). A choice made on an earlier visit is
+          // applied here, before gtag.js loads. No ads on this site, so the
+          // ad_* signals stay denied permanently.
+          var analyticsConsent = 'denied';
+          try {
+            if (localStorage.getItem('${ANALYTICS_CONSENT_STORAGE_KEY}') === 'granted') analyticsConsent = 'granted';
+          } catch (e) {}
+          gtag('consent', 'default', {
+            ad_storage: 'denied',
+            ad_user_data: 'denied',
+            ad_personalization: 'denied',
+            analytics_storage: analyticsConsent,
+            wait_for_update: 500
+          });
           gtag('js', new Date());
           gtag('config', '${measurementId}');
         `}

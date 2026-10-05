@@ -40,17 +40,20 @@ serviceRecordsRouter.get(
   serviceRecordsController.listAdmin,
 );
 
+// OPERATOR (the shop's foreman) can log and correct service work — they're
+// the one actually doing it at the workshop, and previously had to ask an
+// ADMIN to type every record in. DELETE stays ADMIN-only.
 serviceRecordsRouter.post(
   "/",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(createServiceRecordSchema),
   serviceRecordsController.create,
 );
 serviceRecordsRouter.patch(
   "/:id",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(serviceRecordIdParamSchema, "params"),
   validate(updateServiceRecordSchema),
   serviceRecordsController.update,
