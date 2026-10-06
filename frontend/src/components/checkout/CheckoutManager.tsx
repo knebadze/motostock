@@ -547,29 +547,54 @@ export function CheckoutManager({
           )}
 
           <div className="mt-5 flex flex-col gap-1.5 text-sm">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span>{t("subtotal")}</span>
-              <span>{formatPrice(displayPreview?.subtotal ?? 0)}</span>
-            </div>
-            {displayPreview && displayPreview.discountTotal > 0 && (
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span>{t("discount")}</span>
-                <span>−{formatPrice(displayPreview.discountTotal)}</span>
-              </div>
+            {/* Totals come only from the server preview, which can't be
+                fetched until a courier method has an address (and a card
+                method a bank) — this used to render "0.00 ₾" as the total in
+                the meantime. Until then: the cart's own items total, plus
+                what's still missing for the full amount. */}
+            {displayPreview ? (
+              <>
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span>{t("subtotal")}</span>
+                  <span>{formatPrice(displayPreview.subtotal)}</span>
+                </div>
+                {displayPreview.discountTotal > 0 && (
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>{t("discount")}</span>
+                    <span>−{formatPrice(displayPreview.discountTotal)}</span>
+                  </div>
+                )}
+                {displayPreview.deliveryCost > 0 && (
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>
+                      {t("delivery")}
+                      {displayPreview.deliveryTimeSnapshot ? ` (${displayPreview.deliveryTimeSnapshot})` : ""}
+                    </span>
+                    <span>{formatPrice(displayPreview.deliveryCost)}</span>
+                  </div>
+                )}
+                <div className="mt-1 flex items-center justify-between text-lg font-bold text-foreground">
+                  <span>{t("total")}</span>
+                  <span className="text-primary-text">{formatPrice(displayPreview.total)}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between font-semibold text-foreground">
+                  <span>{t("itemsTotal")}</span>
+                  <span>{formatPrice(cart.subtotal)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {!canFetchPreview
+                    ? requiresAddress && addressId == null
+                      ? t("totalNeedsAddress")
+                      : t("totalNeedsBank")
+                    : previewLoading
+                      ? t("totalCalculating")
+                      : null}
+                </p>
+              </>
             )}
-            {displayPreview && displayPreview.deliveryCost > 0 && (
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span>
-                  {t("delivery")}
-                  {displayPreview.deliveryTimeSnapshot ? ` (${displayPreview.deliveryTimeSnapshot})` : ""}
-                </span>
-                <span>{formatPrice(displayPreview.deliveryCost)}</span>
-              </div>
-            )}
-            <div className="mt-1 flex items-center justify-between text-lg font-bold text-foreground">
-              <span>{t("total")}</span>
-              <span className="text-primary-text">{formatPrice(displayPreview?.total ?? 0)}</span>
-            </div>
           </div>
 
           {displayPreview?.hasStockIssues && (
