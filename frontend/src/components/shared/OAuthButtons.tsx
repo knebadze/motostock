@@ -5,8 +5,12 @@ import { API_ORIGIN } from "@/lib/api/client";
 
 export type OAuthStatus = { google: boolean; facebook: boolean };
 
-export function OAuthButtons({ status }: { status: OAuthStatus }) {
+// `redirect` (already validated by the caller via isSafeRedirectPath) is
+// handed to the backend, which re-validates it and keeps it in a cookie
+// across the provider round-trip — see oauth.controller.ts.
+export function OAuthButtons({ status, redirect }: { status: OAuthStatus; redirect?: string | null }) {
   const t = useTranslations("Auth");
+  const redirectQuery = redirect ? `?redirect=${encodeURIComponent(redirect)}` : "";
 
   // Neither provider configured — nothing to offer, so skip the divider
   // too rather than show an "or continue with" that leads nowhere.
@@ -22,7 +26,7 @@ export function OAuthButtons({ status }: { status: OAuthStatus }) {
 
       {status.google && (
         <a
-          href={`${API_ORIGIN}/api/auth/google`}
+          href={`${API_ORIGIN}/api/auth/google${redirectQuery}`}
           className="flex items-center justify-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="size-4">
@@ -49,7 +53,7 @@ export function OAuthButtons({ status }: { status: OAuthStatus }) {
 
       {status.facebook && (
         <a
-          href={`${API_ORIGIN}/api/auth/facebook`}
+          href={`${API_ORIGIN}/api/auth/facebook${redirectQuery}`}
           className="flex items-center justify-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#1877F2" className="size-4">

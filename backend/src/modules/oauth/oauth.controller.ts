@@ -18,17 +18,54 @@ import { oauthCallbackQuerySchema } from "./oauth.schema.js";
 
 const STATE_COOKIE_NAME = "oauth_state";
 const STATE_COOKIE_MAX_AGE_MS = 10 * 60 * 1000;
+// Where to send the user after the provider round-trip (e.g. /checkout when
+// login was prompted from there) — kept in its own short-lived cookie, since
+// the provider only echoes `state` back.
+const REDIRECT_COOKIE_NAME = "oauth_redirect";
+
+const shortLivedCookieOptions = {
+  httpOnly: true,
+  secure: COOKIE_SECURE,
+  sameSite: "lax" as const,
+  maxAge: STATE_COOKIE_MAX_AGE_MS,
+};
 
 function setStateCookie(res: Response, state: string) {
-  res.cookie(STATE_COOKIE_NAME, state, {
-    httpOnly: true,
-    secure: COOKIE_SECURE,
-    sameSite: "lax",
-    maxAge: STATE_COOKIE_MAX_AGE_MS,
-  });
+  res.cookie(STATE_COOKIE_NAME, state, shortLivedCookieOptions);
 }
 
-function failureRedirect(res: Response, error: unknown = null) {
+// Same rule as the frontend's lib/auth-redirect.ts: a same-site relative
+// path only — not "//host" or "/\host" (browsers read a backslash as a
+// slash, making both protocol-relative = another site), no control chars.
+// It's appended to FRONTEND_ORIGIN, so anything else would be an open
+// redirect.
+function isSafeRedirectPath(value: unknown): value is string {
+  if (typeof value !== "string" || value.length === 0 || value.length > 512) return false;
+  if (!value.startsWith("/") || value[1] === "/" || value[1] === "\\") return false;
+  for (const char of value) {
+    const code = char.charCodeAt(0);
+    if (char === "\\" || code < 0x20 || code === 0x7f) return false;
+  }
+  return true;
+}
+
+function rememberRedirect(req: Request, res: Response) {
+  const redirect = req.query.redirect;
+  if (isSafeRedirectPath(redirect)) {
+    res.cookie(REDIRECT_COOKIE_NAME, redirect, shortLivedCookieOptions);
+  } else {
+    res.clearCookie(REDIRECT_COOKIE_NAME);
+  }
+}
+
+// Reads and clears the remembered target — one use per login attempt.
+function takeRedirect(req: Request, res: Response): string | null {
+  const redirect: unknown = req.cookies?.[REDIRECT_COOKIE_NAME];
+  res.clearCookie(REDIRECT_COOKIE_NAME);
+  return isSafeRedirectPath(redirect) ? redirect : null;
+}
+
+function failureRedirect(res: Response, error: unknown = null, redirect: string | null = null) {
   // Distinguished from the generic failure so the frontend can show a
   // specific, actionable message — see oauth.service.ts's
   // findOrCreateOAuthUser and LoginForm.tsx's matching error-code handling.
@@ -36,7 +73,9 @@ function failureRedirect(res: Response, error: unknown = null) {
     error instanceof ApiError && error.message === "OAUTH_EMAIL_HAS_PASSWORD"
       ? "oauth_email_has_password"
       : "oauth_failed";
-  res.redirect(`${env.FRONTEND_ORIGIN}/login?error=${reason}`);
+  // Keep ?redirect= so a retry from the login page still returns there.
+  const redirectQuery = redirect ? `&redirect=${encodeURIComponent(redirect)}` : "";
+  res.redirect(`${env.FRONTEND_ORIGIN}/login?error=${reason}${redirectQuery}`);
 }
 
 // Hashing both sides to a fixed 32-byte digest first means
@@ -72,6 +111,7 @@ export function redirectToGoogle(req: Request, res: Response) {
   }
   const state = crypto.randomBytes(24).toString("hex");
   setStateCookie(res, state);
+  rememberRedirect(req, res);
   res.redirect(getGoogleAuthUrl(state));
 }
 
@@ -82,6 +122,7 @@ export function redirectToFacebook(req: Request, res: Response) {
   }
   const state = crypto.randomBytes(24).toString("hex");
   setStateCookie(res, state);
+  rememberRedirect(req, res);
   res.redirect(getFacebookAuthUrl(state));
 }
 
@@ -89,9 +130,10 @@ export async function handleGoogleCallback(req: Request, res: Response) {
   const parsed = oauthCallbackQuerySchema.safeParse(req.query);
   const cookieState = req.cookies?.[STATE_COOKIE_NAME];
   res.clearCookie(STATE_COOKIE_NAME);
+  const redirect = takeRedirect(req, res);
 
   if (!parsed.success || !parsed.data.code || !statesMatch(parsed.data.state, cookieState)) {
-    failureRedirect(res);
+    failureRedirect(res, null, redirect);
     return;
   }
 
@@ -104,9 +146,9 @@ export async function handleGoogleCallback(req: Request, res: Response) {
     await setAuthCookie(res, token);
     await mergeGuestDataIntoUser(req, res, user.id);
     await recordAuthEvent("LOGIN_SUCCESS", user.email, user.id, getClientIp(req));
-    res.redirect(`${env.FRONTEND_ORIGIN}/account`);
+    res.redirect(`${env.FRONTEND_ORIGIN}${redirect ?? "/account"}`);
   } catch (error) {
-    failureRedirect(res, error);
+    failureRedirect(res, error, redirect);
   }
 }
 
@@ -114,9 +156,10 @@ export async function handleFacebookCallback(req: Request, res: Response) {
   const parsed = oauthCallbackQuerySchema.safeParse(req.query);
   const cookieState = req.cookies?.[STATE_COOKIE_NAME];
   res.clearCookie(STATE_COOKIE_NAME);
+  const redirect = takeRedirect(req, res);
 
   if (!parsed.success || !parsed.data.code || !statesMatch(parsed.data.state, cookieState)) {
-    failureRedirect(res);
+    failureRedirect(res, null, redirect);
     return;
   }
 
@@ -129,8 +172,8 @@ export async function handleFacebookCallback(req: Request, res: Response) {
     await setAuthCookie(res, token);
     await mergeGuestDataIntoUser(req, res, user.id);
     await recordAuthEvent("LOGIN_SUCCESS", user.email, user.id, getClientIp(req));
-    res.redirect(`${env.FRONTEND_ORIGIN}/account`);
+    res.redirect(`${env.FRONTEND_ORIGIN}${redirect ?? "/account"}`);
   } catch (error) {
-    failureRedirect(res, error);
+    failureRedirect(res, error, redirect);
   }
 }

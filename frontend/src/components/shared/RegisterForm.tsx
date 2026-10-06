@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -8,6 +9,7 @@ import { registerUser } from "@/lib/api/auth";
 import { ApiRequestError } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { OAuthButtons, type OAuthStatus } from "@/components/shared/OAuthButtons";
+import { isSafeRedirectPath, resolveRedirectTarget } from "@/lib/auth-redirect";
 import { PasswordInput } from "@/components/shared/PasswordInput";
 import { DateInput } from "@/components/shared/DateInput";
 import { FieldError } from "@/components/shared/FieldError";
@@ -20,6 +22,12 @@ export function RegisterForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
   const t = useTranslations("Auth");
   const tErrors = useTranslations("ApiErrors");
   const router = useRouter();
+  // Same ?redirect= as LoginForm (its "register" link forwards it), so a
+  // new shopper sent to log in from checkout lands back there after signing
+  // up instead of on /account with the cart to find again.
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect");
+  const redirect = isSafeRedirectPath(redirectParam) ? redirectParam : null;
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -55,7 +63,7 @@ export function RegisterForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
     setLoading(true);
     try {
       await registerUser(result.data);
-      router.push("/account");
+      router.push(resolveRedirectTarget(redirect));
       router.refresh();
     } catch (error) {
       // The backend's auth error strings are English-only (no server-side
@@ -221,11 +229,11 @@ export function RegisterForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
           {loading ? t("registerSubmitting") : t("registerSubmit")}
         </button>
 
-        <OAuthButtons status={oauthStatus} />
+        <OAuthButtons status={oauthStatus} redirect={redirect} />
 
         <p className="text-center text-sm text-muted-foreground">
           {t("haveAccount")}{" "}
-          <Link href="/login" className="font-semibold text-primary-text hover:underline">
+          <Link href={{ pathname: "/login", query: redirect ? { redirect } : {} }} className="font-semibold text-primary-text hover:underline">
             {t("goToLogin")}
           </Link>
         </p>
