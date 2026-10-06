@@ -78,6 +78,8 @@ export const updateSettingsSchema = registry.register(
     imageWebpQuality: z.int().min(1).max(100).openapi({ example: 82 }),
     finaSyncIntervalMinutes: z.int().positive().openapi({ example: 15 }),
     homepageCacheTtlMinutes: z.int().positive().openapi({ example: 5 }),
+    // Monitoring tab — see constants/monitoring.constants.ts.
+    sentryEnabled: z.boolean().openapi({ example: false }),
   }),
 );
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
@@ -143,6 +145,8 @@ export const settingsResponseSchema = registry.register(
     imageWebpQuality: z.int().min(1).max(100).openapi({ example: 82 }),
     finaSyncIntervalMinutes: z.int().positive().openapi({ example: 15 }),
     homepageCacheTtlMinutes: z.int().positive().openapi({ example: 5 }),
+    // Monitoring tab — see constants/monitoring.constants.ts.
+    sentryEnabled: z.boolean().openapi({ example: false }),
   }),
 );
 
@@ -168,4 +172,18 @@ export const guestFeatureStatusResponseSchema = registry.register(
     guestWishlistEnabled: z.boolean().openapi({ example: false }),
     guestCartEnabled: z.boolean().openapi({ example: false }),
   }),
+);
+
+// Admin Monitoring tab's read-only status — whether SENTRY_DSN exists on
+// this server (never the value itself).
+export const monitoringStatusResponseSchema = registry.register(
+  "MonitoringStatus",
+  z.object({ sentryConfigured: z.boolean() }),
+);
+
+// Public — the frontend gates its own (browser + SSR) Sentry reporting on
+// the same admin toggle the backend uses.
+export const publicMonitoringStatusResponseSchema = registry.register(
+  "PublicMonitoringStatus",
+  z.object({ sentryEnabled: z.boolean() }),
 );

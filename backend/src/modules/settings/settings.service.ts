@@ -64,6 +64,7 @@ import {
   IMAGE_DEFAULTS,
   HOMEPAGE_CACHE_TTL_MINUTES_KEY,
   CACHE_DEFAULTS,
+  SENTRY_ENABLED_KEY,
 } from "./constants/index.js";
 import type { Prisma } from "../../generated/prisma/index.js";
 import type { UpdateSettingsInput, VinDecodeProvider } from "./settings.schema.js";
@@ -130,6 +131,18 @@ export async function isGuestCartEnabled(): Promise<boolean> {
 // already has an active ProductVariantDiscount/VehicleListingDiscount, or
 // is skipped for that item so the two discounts never combine — see
 // orders.service.ts computeCheckoutTotals.
+// Monitoring tab — off by default (see monitoring.constants.ts).
+export async function isSentryEnabled(): Promise<boolean> {
+  return cached(SENTRY_ENABLED_KEY, async () => {
+    const setting = await settingsRepository.findByKey(SENTRY_ENABLED_KEY);
+    return setting?.value === "true";
+  });
+}
+
+export function getMonitoringStatus() {
+  return { sentryConfigured: Boolean(env.SENTRY_DSN) };
+}
+
 export async function isPromoStackingEnabled(): Promise<boolean> {
   return cached(PROMO_STACKING_ENABLED_KEY, async () => {
     const setting = await settingsRepository.findByKey(PROMO_STACKING_ENABLED_KEY);
@@ -548,6 +561,7 @@ export async function getSettings() {
     imageWebpQuality: await getImageWebpQuality(),
     finaSyncIntervalMinutes: await getFinaSyncIntervalMinutes(),
     homepageCacheTtlMinutes: await getHomepageCacheTtlMinutes(),
+    sentryEnabled: await isSentryEnabled(),
   };
 }
 
@@ -589,6 +603,10 @@ export async function updateSettings(input: UpdateSettingsInput) {
       400,
       "ღრუბლოვანი შენახვის ჩართვამდე დააკონფიგურირეთ Cloudinary (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) სერვერის გარემოს ცვლადებში",
     );
+  }
+
+  if (input.sentryEnabled && !env.SENTRY_DSN) {
+    throw new ApiError(400, "Sentry-ის ჩართვამდე დააყენეთ SENTRY_DSN სერვერის გარემოს ცვლადებში");
   }
 
   if (input.vinDecodeEnabled && input.vinDecodeProvider === "vincario" && !isVincarioConfigured()) {
@@ -780,6 +798,7 @@ export async function updateSettings(input: UpdateSettingsInput) {
       String(input.homepageCacheTtlMinutes),
       tx,
     );
+    await settingsRepository.upsert(SENTRY_ENABLED_KEY, String(input.sentryEnabled), tx);
   });
 
   for (const key of ALL_SETTING_KEYS) cache.del(cacheKey(key));

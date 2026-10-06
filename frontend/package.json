@@ -10,6 +10,7 @@
     "api:types": "npm --prefix ../backend run openapi:export && openapi-typescript src/lib/api/generated/openapi.json -o src/lib/api/generated/schema.d.ts"
   },
   "dependencies": {
+    "@sentry/nextjs": "^11.4.0",
     "@tiptap/extension-image": "^3.29.0",
     "@tiptap/extension-link": "^3.29.0",
     "@tiptap/pm": "^3.29.0",

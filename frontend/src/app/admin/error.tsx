@@ -1,8 +1,16 @@
 "use client";
 
+import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 import Link from "next/link";
 
-export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  // Rendering errors never reach the server's logger — report them from
+  // here (no-op unless Sentry is built in and switched on; lib/sentry-shared.ts).
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-24 text-center">
       <div className="mx-auto max-w-md">

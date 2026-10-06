@@ -1,12 +1,20 @@
+import "./instrument.js";
 import cron, { type ScheduledTask } from "node-cron";
 import { app } from "./app.js";
 import { env } from "./config/env.js";
 import { prisma } from "./config/prisma.js";
 import { logger } from "./lib/logger.js";
+import { onLoggedError } from "./lib/error-hooks.js";
+import { captureLoggedError, flushSentry } from "./lib/sentry.js";
 import { isFinaConfigured, runSync } from "./modules/fina-sync/fina-sync.service.js";
 import { getFinaSyncIntervalMinutes } from "./modules/settings/settings.service.js";
 import { DEFAULT_JOB_CRON, JOB_DEFINITIONS } from "./modules/scheduled-jobs/scheduled-jobs.registry.js";
 import { runScheduledJob } from "./modules/scheduled-jobs/scheduled-jobs.service.js";
+
+// Every logger.error(...) (the same calls that fill the admin ErrorLog) also
+// goes to Sentry — a no-op unless SENTRY_DSN is set and the admin toggle is
+// on (see lib/sentry.ts).
+onLoggedError(captureLoggedError);
 
 const server = app.listen(env.PORT, () => {
   logger.info(`Server listening on http://localhost:${env.PORT}`);
@@ -106,6 +114,7 @@ function shutdown(signal: string) {
     } catch (disconnectErr) {
       logger.error({ err: disconnectErr }, "Error while disconnecting Prisma");
     }
+    await flushSentry(2_000);
     clearTimeout(forceExit);
     process.exit(0);
   });

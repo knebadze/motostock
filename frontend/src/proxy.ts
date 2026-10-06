@@ -28,6 +28,18 @@ const siteIsHttps = (process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https:/
 // here to allow it.
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
+// Sentry's browser SDK POSTs events to its ingest host (the DSN's origin) —
+// allowed in connect-src only when Sentry is built in (see
+// lib/sentry-shared.ts), so the CSP stays as strict as before otherwise.
+function resolveSentryIngestOrigin(): string {
+  try {
+    return process.env.NEXT_PUBLIC_SENTRY_DSN ? ` ${new URL(process.env.NEXT_PUBLIC_SENTRY_DSN).origin}` : "";
+  } catch {
+    return "";
+  }
+}
+const sentryConnectSrc = resolveSentryIngestOrigin();
+
 // OPERATOR is a limited staff/cashier role — view-only across products/
 // vehicle-listings/service-history/fina-sync, plus order status changes.
 // Checked here (middleware), not via a headers()-forwarded pathname read in
@@ -112,7 +124,7 @@ function buildCspHeader(nonce: string): string {
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' blob: data: ${apiOrigin} https://res.cloudinary.com`,
     `font-src 'self'`,
-    `connect-src 'self' ${apiOrigin}${gaConnectSrc}`,
+    `connect-src 'self' ${apiOrigin}${gaConnectSrc}${sentryConnectSrc}`,
     // The contact page's embedded store-location map (app/[locale]/(guest)/
     // contact/page.tsx).
     `frame-src https://www.google.com`,

@@ -11,6 +11,8 @@ import {
   settingsResponseSchema,
   updateSettingsSchema,
   vinDecodeStatusResponseSchema,
+  monitoringStatusResponseSchema,
+  publicMonitoringStatusResponseSchema,
 } from "./settings.schema.js";
 
 export const settingsRouter = Router();
@@ -27,9 +29,15 @@ settingsRouter.get("/vin-decode-status", settingsController.getVinDecodeStatus);
 // and relying on the resulting 401.
 settingsRouter.get("/guest-feature-status", settingsController.getGuestFeatureStatus);
 
+// Public — the frontend gates its own browser/SSR Sentry reporting on the
+// same admin toggle the backend uses (exposes only the on/off flag).
+settingsRouter.get("/monitoring-public", settingsController.getPublicMonitoringStatus);
+
 settingsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
 settingsRouter.get("/", settingsController.getOne);
+settingsRouter.get("/monitoring-status", settingsController.getMonitoringStatus);
+settingsRouter.post("/monitoring/test-sentry", settingsController.sendSentryTestEvent);
 settingsRouter.patch("/", validate(updateSettingsSchema), settingsController.update);
 
 const security = [{ cookieAuth: [] }];
@@ -86,5 +94,40 @@ registry.registerPath({
   responses: {
     200: { description: "Updated", content: { "application/json": { schema: settingsWrapperSchema } } },
     400: { description: "Invalid input or misconfigured provider", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/settings/monitoring-public",
+  tags: ["Settings"],
+  summary: "Whether Sentry reporting is switched on (public — the frontend's own Sentry SDK honors it)",
+  responses: {
+    200: { description: "Flag", content: { "application/json": { schema: publicMonitoringStatusResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/settings/monitoring-status",
+  tags: ["Settings"],
+  summary: "Whether SENTRY_DSN is configured on this server (admin only)",
+  security,
+  responses: {
+    200: { description: "Status", content: { "application/json": { schema: monitoringStatusResponseSchema } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Not an admin", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/settings/monitoring/test-sentry",
+  tags: ["Settings"],
+  summary: "Send a test event to Sentry (admin only)",
+  security,
+  responses: {
+    200: { description: "Sent", content: { "application/json": { schema: z.object({ sent: z.boolean() }) } } },
+    400: { description: "SENTRY_DSN not configured", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

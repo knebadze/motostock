@@ -19,6 +19,19 @@ ARG NEXT_PUBLIC_GA_MEASUREMENT_ID
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 ENV NEXT_PUBLIC_GA_MEASUREMENT_ID=$NEXT_PUBLIC_GA_MEASUREMENT_ID
+# Optional — Sentry. The DSN is inlined into the client bundle (empty =
+# Sentry never initializes; see lib/sentry-shared.ts). The other three only
+# enable source-map upload during `npm run build` (see next.config.ts):
+# deliberately plain ARGs, NOT ENV — they exist only in this builder stage,
+# which never ends up in the final runner image, so the auth token isn't
+# shipped with the app.
+ARG NEXT_PUBLIC_SENTRY_DSN
+ARG NEXT_PUBLIC_SENTRY_ENVIRONMENT
+ARG SENTRY_AUTH_TOKEN
+ARG SENTRY_ORG
+ARG SENTRY_PROJECT
+ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
+ENV NEXT_PUBLIC_SENTRY_ENVIRONMENT=$NEXT_PUBLIC_SENTRY_ENVIRONMENT
 RUN npm run build
 
 FROM node:22-slim AS runner

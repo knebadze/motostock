@@ -7,6 +7,7 @@ import { routing } from "@/i18n/routing";
 import { RootShell } from "@/components/shared/RootShell";
 import { VisitorPingBeacon } from "@/components/shared/VisitorPingBeacon";
 import { GoogleAnalytics } from "@/components/shared/GoogleAnalytics";
+import { SentryFlagMeta } from "@/components/shared/SentryFlagMeta";
 import { JsonLd } from "@/components/shared/JsonLd";
 import { getAlternateLanguages, getSiteUrl } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
@@ -179,6 +180,7 @@ export default async function LocaleLayout({
         <LocalBusinessJsonLd locale={locale} />
       </Suspense>
       <GoogleAnalytics />
+      <SentryFlagMeta />
       <VisitorPingBeacon />
       <NextIntlClientProvider messages={clientMessages}>{children}</NextIntlClientProvider>
     </RootShell>

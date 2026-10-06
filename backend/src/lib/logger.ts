@@ -2,6 +2,7 @@ import pino from "pino";
 import { env } from "../config/env.js";
 import { prisma } from "../config/prisma.js";
 import type { Prisma } from "../generated/prisma/index.js";
+import { emitLoggedError } from "./error-hooks.js";
 
 // Persists every logger.error(...) call to the ErrorLog table (see
 // error-log.prisma) so it's visible in the admin panel, not just stdout —
@@ -20,8 +21,11 @@ function persistErrorLog(args: unknown[]): void {
   let stack: string | null = null;
   let context: Record<string, unknown> | null = null;
 
+  let error: Error | null = null;
+
   const [first, second] = args;
   if (first instanceof Error) {
+    error = first;
     message = typeof second === "string" ? second : first.message;
     stack = first.stack ?? null;
   } else if (typeof first === "string") {
@@ -30,9 +34,15 @@ function persistErrorLog(args: unknown[]): void {
     const { err, ...rest } = first as Record<string, unknown>;
     if (typeof second === "string") message = second;
     else if (err instanceof Error) message = err.message;
-    if (err instanceof Error) stack = err.stack ?? null;
+    if (err instanceof Error) {
+      stack = err.stack ?? null;
+      error = err;
+    }
     if (Object.keys(rest).length > 0) context = rest;
   }
+
+  // Sentry capture + error-alert email digest (registered in server.ts).
+  emitLoggedError({ message, stack, context, error });
 
   prisma.errorLog
     .create({

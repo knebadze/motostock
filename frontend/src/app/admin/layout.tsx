@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { RootShell } from "@/components/shared/RootShell";
+import { SentryFlagMeta } from "@/components/shared/SentryFlagMeta";
 import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = {
@@ -15,5 +16,10 @@ export default function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <RootShell lang="ka">{children}</RootShell>;
+  return (
+    <RootShell lang="ka">
+      <SentryFlagMeta />
+      {children}
+    </RootShell>
+  );
 }

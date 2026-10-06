@@ -73,6 +73,15 @@ const envSchema = z.object({
   // webhook call so an attacker who finds the webhook URL can't inject a
   // fake "staff reply" into an arbitrary chat session.
   WHATSAPP_APP_SECRET: z.string().optional(),
+  // Sentry error monitoring (backend project's DSN, from sentry.io →
+  // Project Settings → Client Keys). Optional and dormant while unset — the
+  // admin Settings → "მონიტორინგი" toggle can only be switched on once this
+  // exists (see settings.service.ts's updateSettings). See lib/sentry.ts.
+  SENTRY_DSN: z.url().optional(),
+  // Defaults to NODE_ENV — lets a staging box report separately from prod.
+  SENTRY_ENVIRONMENT: z.string().optional(),
+  // Usually the deployed git commit; groups errors by deploy in Sentry.
+  SENTRY_RELEASE: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

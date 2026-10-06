@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
@@ -71,4 +72,24 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+// Sentry build integration. Always applied, for its tree-shaking: the
+// tracing and debug-logging code this app never uses (errors-only setup —
+// see instrumentation-client.ts) is stripped from the client bundle.
+// Source maps are uploaded only when the build has an auth token
+// (SENTRY_AUTH_TOKEN + SENTRY_ORG + SENTRY_PROJECT — build-time only, see
+// frontend/Dockerfile), so stack traces show the original code; they're
+// deleted from the build output afterwards, never served publicly.
+const sentryUploadEnabled = Boolean(
+  process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT,
+);
+
+export default withSentryConfig(withNextIntl(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  telemetry: false,
+  bundleSizeOptimizations: { excludeTracing: true, excludeDebugStatements: true },
+  webpack: { treeshake: { removeTracing: true, removeDebugLogging: true } },
+  sourcemaps: sentryUploadEnabled ? { deleteSourcemapsAfterUpload: true } : { disable: true },
+});

@@ -1,9 +1,17 @@
 "use client";
 
+import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
-export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  // Rendering errors never reach the server's logger — report them from
+  // here (no-op unless Sentry is built in and switched on; lib/sentry-shared.ts).
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   const t = useTranslations("Error");
 
   return (

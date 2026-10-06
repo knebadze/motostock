@@ -2862,6 +2862,143 @@ export interface paths {
         };
         trace?: never;
     };
+    "/settings/monitoring-public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether Sentry reporting is switched on (public — the frontend's own Sentry SDK honors it) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Flag */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PublicMonitoringStatus"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/monitoring-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether SENTRY_DSN is configured on this server (admin only) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Status */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MonitoringStatus"];
+                    };
+                };
+                /** @description Not authenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not an admin */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/monitoring/test-sentry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a test event to Sentry (admin only) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Sent */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            sent: boolean;
+                        };
+                    };
+                };
+                /** @description SENTRY_DSN not configured */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/brands": {
         parameters: {
             query?: never;
@@ -15547,6 +15684,8 @@ export interface components {
             finaSyncIntervalMinutes: number;
             /** @example 5 */
             homepageCacheTtlMinutes: number;
+            /** @example false */
+            sentryEnabled: boolean;
         };
         Settings: {
             /** @example false */
@@ -15651,6 +15790,8 @@ export interface components {
             finaSyncIntervalMinutes: number;
             /** @example 5 */
             homepageCacheTtlMinutes: number;
+            /** @example false */
+            sentryEnabled: boolean;
         };
         VinDecodeStatus: {
             /** @example false */
@@ -15666,6 +15807,12 @@ export interface components {
             guestWishlistEnabled: boolean;
             /** @example false */
             guestCartEnabled: boolean;
+        };
+        MonitoringStatus: {
+            sentryConfigured: boolean;
+        };
+        PublicMonitoringStatus: {
+            sentryEnabled: boolean;
         };
         CreateBrandInput: {
             /** @example Honda */

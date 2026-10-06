@@ -121,6 +121,26 @@ docker compose run --rm --user root --entrypoint "" backend chown -R node:node /
 
 თუ ამას გამოტოვებთ, სურათის ატვირთვა/წაშლა ადმინში `EACCES` შეცდომით ჩავარდება.
 
+## შეცდომების მონიტორინგი (Sentry) — არასავალდებულო
+
+კოდი უკვე მზადაა. გასაღებების გარეშე Sentry უბრალოდ გამორთულია და საიტზე არაფერს ცვლის.
+
+1. **sentry.io**-ზე შექმენით ორი პროექტი: `motostock-backend` (Node.js) და `motostock-frontend` (Next.js).
+2. **backend/.env** — `SENTRY_DSN=` backend პროექტის DSN (Settings → Client Keys).
+3. **.env** (repo-ს root) — `NEXT_PUBLIC_SENTRY_DSN=` frontend პროექტის DSN. სურვილისამებრ,
+   წაკითხვადი stack trace-ებისთვის: `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`
+   (Settings → Auth Tokens).
+4. გადააშენეთ და გაუშვით:
+   ```bash
+   docker compose build frontend
+   docker compose up -d
+   ```
+5. ადმინში: **პარამეტრები → მონიტორინგი** → ჩართეთ და დააჭირეთ „სატესტო შეცდომის გაგზავნა“.
+   ორივე სტატუსი უნდა იყოს ✓, ხოლო სატესტო შეცდომა რამდენიმე წამში უნდა გამოჩნდეს Sentry-ში.
+
+შეტყობინებები ელფოსტაზე მოდის თავად Sentry-დან, Sentry-ის ანგარიშის წევრებზე
+(sentry.io → Alerts). ადმინის „შეცდომების ლოგი“ ელფოსტით არ იგზავნება.
+
 ## სარეზერვო ასლი
 
 მონაცემები (`pgdata` volume) და ატვირთული სურათები (`backend_uploads` volume) გადარჩება

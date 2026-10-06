@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
-import { fetchFromServer } from "./core";
+import { unstable_cache } from "next/cache";
+import { fetchFromServer, fetchPublicCacheable } from "./core";
 import type { Settings, VinDecodeProvider } from "../settings";
 
 // Site settings and feature flags read during SSR.
@@ -54,6 +55,7 @@ const SETTINGS_FALLBACK: Settings = {
   imageWebpQuality: 82,
   finaSyncIntervalMinutes: 15,
   homepageCacheTtlMinutes: 5,
+  sentryEnabled: false,
 };
 
 export const getSettingsFromServer = cache(async (): Promise<Settings> => {
@@ -87,3 +89,17 @@ export const getGuestFeatureStatusFromServer = cache(async (): Promise<GuestFeat
     extract: (data) => data,
   });
 });
+
+// The admin Sentry on/off toggle, for SentryFlagMeta's <meta> tag (the
+// browser SDK reads it per event). Public endpoint; cached across requests
+// for a minute — a toggle change reaches the storefront within that.
+const getCachedMonitoringPublic = unstable_cache(
+  () =>
+    fetchPublicCacheable<{ sentryEnabled: boolean }, boolean>("/settings/monitoring-public", {
+      fallback: false,
+      extract: (data) => data.sentryEnabled,
+    }),
+  ["monitoring-public"],
+  { revalidate: 60 },
+);
+export const getSentryEnabledFromServer = cache(getCachedMonitoringPublic);
