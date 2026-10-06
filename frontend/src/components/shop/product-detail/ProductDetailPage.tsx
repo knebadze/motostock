@@ -118,7 +118,6 @@ export function ProductDetailPage({
 
       <div className="mt-6 grid grid-cols-1 gap-10 lg:grid-cols-2">
         <ProductGallery
-          key={selectedVariant?.id ?? "none"}
           images={images}
           preferredImage={preferredImage}
           onSelectVariant={setSelectedVariantId}
