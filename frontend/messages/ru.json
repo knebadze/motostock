@@ -293,7 +293,8 @@
     "verificationResent": "Письмо с подтверждением отправлено повторно",
     "verificationResendError": "Не удалось отправить письмо",
     "verifyRequiredTitle": "Подтвердите ваш email",
-    "verifyRequiredDescription": "Для доступа к личному кабинету необходимо подтвердить email. Ссылка для подтверждения отправлена на {email}.",
+    "verifyRequiredDescription": "Чтобы продолжить, необходимо подтвердить email. Ссылка для подтверждения отправлена на {email}.",
+    "verifyRequiredContinue": "Уже подтверждено — продолжить",
     "verifyRequiredBannerMessage": "Не получили письмо?",
     "verifyRequiredLogout": "Выйти",
     "verifyRequiredLogoutError": "Не удалось выйти"

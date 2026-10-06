@@ -26,6 +26,14 @@ export default async function CheckoutPage() {
     redirect({ href: { pathname: "/login", query: { redirect: "/checkout" } }, locale });
     return null;
   }
+  // Placing (and even previewing) an order needs a verified email — see
+  // orders.service.ts's assertEmailVerified. Checked up front instead of
+  // letting the shopper fill in the whole form only to hit a 403 at the end;
+  // /verify-required sends them back here once verified.
+  if (!user.emailVerified) {
+    redirect({ href: { pathname: "/verify-required", query: { redirect: "/checkout" } }, locale });
+    return null;
+  }
 
   const [addresses, cart, cities, banks] = await Promise.all([
     getMyAddressesFromServer(),

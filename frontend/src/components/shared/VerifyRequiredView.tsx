@@ -14,6 +14,13 @@ export function VerifyRequiredView({ email }: { email: string }) {
   const t = useTranslations("Auth");
   const router = useRouter();
 
+  // The emailed link verifies in whatever tab it opens in; this re-runs the
+  // page's server check, which redirects onward (back to checkout, when
+  // that's where the shopper came from) once the account is verified.
+  function handleContinue() {
+    router.refresh();
+  }
+
   async function handleLogout() {
     try {
       await logoutUser();
@@ -37,8 +44,16 @@ export function VerifyRequiredView({ email }: { email: string }) {
 
       <button
         type="button"
+        onClick={handleContinue}
+        className="mt-6 w-full rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+      >
+        {t("verifyRequiredContinue")}
+      </button>
+
+      <button
+        type="button"
         onClick={handleLogout}
-        className="mt-6 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary-text"
+        className="mt-4 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary-text"
       >
         {t("verifyRequiredLogout")}
       </button>

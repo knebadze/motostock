@@ -293,7 +293,8 @@
     "verificationResent": "დადასტურების წერილი ხელახლა გამოიგზავნა",
     "verificationResendError": "წერილის გაგზავნა ვერ მოხერხდა",
     "verifyRequiredTitle": "დაადასტურეთ თქვენი ელფოსტა",
-    "verifyRequiredDescription": "პროფილზე წვდომამდე საჭიროა ელფოსტის დადასტურება. დამადასტურებელი ბმული გამოგზავნილია მისამართზე {email}.",
+    "verifyRequiredDescription": "ამ მოქმედებისთვის საჭიროა ელფოსტის დადასტურება. დამადასტურებელი ბმული გამოგზავნილია მისამართზე {email}.",
+    "verifyRequiredContinue": "უკვე დავადასტურე — გაგრძელება",
     "verifyRequiredBannerMessage": "არ მიგიღიათ წერილი?",
     "verifyRequiredLogout": "გამოსვლა",
     "verifyRequiredLogoutError": "გამოსვლა ვერ მოხერხდა"
