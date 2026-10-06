@@ -7,6 +7,7 @@ import { routing } from "@/i18n/routing";
 import { RootShell } from "@/components/shared/RootShell";
 import { VisitorPingBeacon } from "@/components/shared/VisitorPingBeacon";
 import { GoogleAnalytics } from "@/components/shared/GoogleAnalytics";
+import { buildSocialMetadata } from "@/lib/share-metadata";
 import { SentryFlagMeta } from "@/components/shared/SentryFlagMeta";
 import { JsonLd } from "@/components/shared/JsonLd";
 import { getAlternateLanguages, getSiteUrl } from "@/lib/seo";
@@ -66,25 +67,10 @@ export async function generateMetadata({
       canonical: getAlternateLanguages("/")[locale],
       languages: getAlternateLanguages("/"),
     },
-    // Site-wide fallback so every page shares at least a title/description
-    // when shared on Facebook/Slack/Twitter/etc. — pages with their own
-    // content (product/vehicle/category) override this with a richer,
-    // per-item openGraph block. No default `images` here: the only brand
-    // asset on hand (public/logo.svg) is a white-on-transparent SVG that
-    // social crawlers either skip or render invisible on a light card —
-    // add a real raster (PNG/JPG) share image here once one exists.
-    openGraph: {
-      title,
-      description,
-      siteName: siteConfig.name,
-      locale,
-      type: "website",
-    },
-    twitter: {
-      card: "summary",
-      title,
-      description,
-    },
+    // Site-wide fallback for pages without their own (home included): the
+    // shop logo from admin → company info as the preview image — see
+    // lib/share-metadata.ts.
+    ...(await buildSocialMetadata({ locale, title, description, pathname: "/" })),
   };
 }
 

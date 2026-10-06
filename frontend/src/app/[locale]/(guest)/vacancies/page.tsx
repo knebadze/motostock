@@ -6,6 +6,7 @@ import { getVacancyListFromServer } from "@/lib/api/server";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 import type { Vacancy } from "@/lib/api/vacancies";
+import { buildSocialMetadata } from "@/lib/share-metadata";
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -29,7 +30,7 @@ export async function generateMetadata({
       canonical: buildCanonicalUrl(pathname, locale),
       languages: getAlternateLanguages(pathname),
     },
-    openGraph: { title, description },
+    ...(await buildSocialMetadata({ locale, title, description, pathname })),
   };
 }
 

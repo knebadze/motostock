@@ -20,6 +20,8 @@ import { SELECTED_VEHICLE_COOKIE } from "@/lib/vehicle-selection";
 import { JsonLd } from "@/components/shared/JsonLd";
 import { ProductDetailPage } from "@/components/shop/product-detail/ProductDetailPage";
 import { VehicleListingDetailPage } from "@/components/shop/vehicle-listing-detail/VehicleListingDetailPage";
+import { buildSocialMetadata } from "@/lib/share-metadata";
+import { formatPrice } from "@/lib/format";
 
 type Locale = "ka" | "en" | "ru";
 type PageParams = { locale: Locale; categorySlug: string; itemSlug: string };
@@ -59,7 +61,13 @@ export async function generateMetadata({
     // at the one preferred URL instead of leaving both live paths as
     // equally-valid duplicates.
     const pathname = `/${listing.vehicleCatalog.category.slug}/${buildVehicleListingSlug(listing)}`;
-    const image = resolveMediaUrl(listing.images[0]?.imageUrl ?? listing.vehicleCatalog.imageUrl);
+    // Link previews lead with the price (+ year in the title) — what someone
+    // sharing a bike in a chat actually wants the other person to see.
+    const shareTitle = `${title} ${listing.year} — ${siteConfig.name}`;
+    const sharePrice = formatPrice(
+      listing.activeDiscount?.discountPrice ?? listing.price,
+      listing.priceCurrency,
+    );
 
     return {
       title: fullTitle,
@@ -68,28 +76,13 @@ export async function generateMetadata({
         canonical: buildCanonicalUrl(pathname, locale),
         languages: getAlternateLanguages(pathname),
       },
-      // siteName/locale/type explicitly repeated (not just title/description/
-      // images) — Next.js doesn't deep-merge a per-page openGraph into the
-      // root layout's, it replaces the whole object, so without these a
-      // shared social link for this page silently lost them.
-      openGraph: {
-        title: fullTitle,
-        description,
-        siteName: siteConfig.name,
+      ...(await buildSocialMetadata({
         locale,
-        type: "website",
-        images: image ? [image] : undefined,
-      },
-      // No per-page twitter block existed before, so every product/vehicle
-      // page shared on X/Twitter rendered the generic site-wide card (from
-      // the root layout) with no real photo — summary_large_image matters
-      // here specifically because these pages always have a real photo.
-      twitter: {
-        card: "summary_large_image",
-        title: fullTitle,
-        description,
-        images: image ? [image] : undefined,
-      },
+        title: shareTitle,
+        description: `${sharePrice} · ${description}`,
+        pathname,
+        imageSrc: listing.images[0]?.imageUrl ?? listing.vehicleCatalog.imageUrl,
+      })),
     };
   }
 
@@ -122,7 +115,12 @@ export async function generateMetadata({
     (locale === "en" ? product.descriptionEn : locale === "ru" ? product.descriptionRu : product.descriptionKa);
   const description = rawDescription ? stripHtml(rawDescription).slice(0, 200) : title;
   const pathname = `/${product.category.slug}/${itemSlug}`;
-  const image = resolveMediaUrl(product.variants[0]?.images[0]?.imageUrl ?? product.imageUrl);
+  // Link previews lead with the price shoppers would actually pay (the
+  // cheapest active variant, discounted if on sale).
+  const lowestPrice = Math.min(
+    ...product.variants.map((variant) => variant.activeDiscount?.discountPrice ?? variant.price),
+  );
+  const shareDescription = Number.isFinite(lowestPrice) ? `${formatPrice(lowestPrice)} · ${description}` : description;
 
   return {
     title,
@@ -131,23 +129,13 @@ export async function generateMetadata({
       canonical: buildCanonicalUrl(pathname, locale),
       languages: getAlternateLanguages(pathname),
     },
-    // siteName/locale/type repeated here too — see the vehicle-listing
-    // branch above's comment on why (Next.js replaces, not merges, a
-    // per-page openGraph against the root layout's).
-    openGraph: {
-      title,
-      description,
-      siteName: siteConfig.name,
+    ...(await buildSocialMetadata({
       locale,
-      type: "website",
-      images: image ? [image] : undefined,
-    },
-    twitter: {
-      card: "summary_large_image",
       title,
-      description,
-      images: image ? [image] : undefined,
-    },
+      description: shareDescription,
+      pathname,
+      imageSrc: product.variants[0]?.images[0]?.imageUrl ?? product.imageUrl,
+    })),
   };
 }
 

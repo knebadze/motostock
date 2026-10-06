@@ -10,6 +10,7 @@ import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 import { localizedLookupName } from "@/lib/api/lookups";
 import type { CompanyInfo, WeekDay } from "@/lib/api/company-info";
+import { buildSocialMetadata } from "@/lib/share-metadata";
 
 export async function generateMetadata({
   params,
@@ -29,7 +30,7 @@ export async function generateMetadata({
       canonical: buildCanonicalUrl(pathname, locale),
       languages: getAlternateLanguages(pathname),
     },
-    openGraph: { title, description },
+    ...(await buildSocialMetadata({ locale, title, description, pathname })),
   };
 }
 

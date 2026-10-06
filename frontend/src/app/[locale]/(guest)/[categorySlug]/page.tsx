@@ -13,11 +13,11 @@ import {
 } from "@/lib/api/server";
 import { isVehicleCategory, getAncestorChain } from "@/lib/categories-tree";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
-import { resolveMediaUrl } from "@/lib/api/client";
 import { siteConfig } from "@/config/site";
 import { JsonLd } from "@/components/shared/JsonLd";
 import { ProductShopPage } from "@/components/shop/ProductShopPage";
 import { VehicleShopPage } from "@/components/shop/VehicleShopPage";
+import { buildSocialMetadata } from "@/lib/share-metadata";
 
 type Locale = "ka" | "en" | "ru";
 type PageParams = { locale: Locale; categorySlug: string };
@@ -64,7 +64,6 @@ export async function generateMetadata({
     siteName: siteConfig.name,
   });
   const pathname = `/${categorySlug}`;
-  const image = resolveMediaUrl(category.bannerImageUrl ?? category.imageUrl);
 
   return {
     title,
@@ -73,11 +72,13 @@ export async function generateMetadata({
       canonical: buildCanonicalUrl(pathname, locale, { page: pageNum }),
       languages: getAlternateLanguages(pathname),
     },
-    openGraph: {
+    ...(await buildSocialMetadata({
+      locale,
       title,
       description,
-      images: image ? [image] : undefined,
-    },
+      pathname,
+      imageSrc: category.bannerImageUrl ?? category.imageUrl,
+    })),
   };
 }
 

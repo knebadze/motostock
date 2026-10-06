@@ -7,6 +7,7 @@ import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { JsonLd } from "@/components/shared/JsonLd";
 import { siteConfig } from "@/config/site";
 import type { Faq } from "@/lib/api/faq";
+import { buildSocialMetadata } from "@/lib/share-metadata";
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -30,7 +31,7 @@ export async function generateMetadata({
       canonical: buildCanonicalUrl(pathname, locale),
       languages: getAlternateLanguages(pathname),
     },
-    openGraph: { title, description },
+    ...(await buildSocialMetadata({ locale, title, description, pathname })),
   };
 }
 

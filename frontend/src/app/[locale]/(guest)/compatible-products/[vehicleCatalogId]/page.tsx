@@ -4,9 +4,9 @@ import { getTranslations } from "next-intl/server";
 import { getProductsFromServer, getVehicleCatalogEntryFromServer } from "@/lib/api/server";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { formatVehicleCatalogLabel } from "@/lib/format";
-import { resolveMediaUrl } from "@/lib/api/client";
 import { siteConfig } from "@/config/site";
 import { CompatibleProductsPage } from "@/components/shop/CompatibleProductsPage";
+import { buildSocialMetadata } from "@/lib/share-metadata";
 
 type PageParams = { locale: "ka" | "en" | "ru"; vehicleCatalogId: string };
 
@@ -39,7 +39,6 @@ export async function generateMetadata({ params }: { params: Promise<PageParams>
     count: products.length,
   });
   const pathname = `/compatible-products/${id}`;
-  const image = resolveMediaUrl(vehicle.imageUrl);
 
   return {
     title,
@@ -49,14 +48,7 @@ export async function generateMetadata({ params }: { params: Promise<PageParams>
       canonical: buildCanonicalUrl(pathname, locale),
       languages: getAlternateLanguages(pathname),
     },
-    openGraph: {
-      title,
-      description,
-      siteName: siteConfig.name,
-      locale,
-      type: "website",
-      images: image ? [image] : undefined,
-    },
+    ...(await buildSocialMetadata({ locale, title, description, pathname, imageSrc: vehicle.imageUrl })),
   };
 }
 

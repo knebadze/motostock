@@ -7,6 +7,7 @@ import { sanitizeRichText } from "@/lib/sanitize-html";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 import type { Vacancy } from "@/lib/api/vacancies";
+import { buildSocialMetadata } from "@/lib/share-metadata";
 
 type Locale = "ka" | "en" | "ru";
 type PageParams = { locale: Locale; slug: string };
@@ -36,7 +37,7 @@ export async function generateMetadata({
       canonical: buildCanonicalUrl(pathname, locale),
       languages: getAlternateLanguages(pathname),
     },
-    openGraph: { title, description },
+    ...(await buildSocialMetadata({ locale, title, description, pathname })),
   };
 }
 

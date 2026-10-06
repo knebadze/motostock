@@ -6,6 +6,7 @@ import { getPublicTeamMembersFromServer } from "@/lib/api/server";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
+import { buildSocialMetadata } from "@/lib/share-metadata";
 
 // Static, hand-authored page (not admin/DB-driven) — heavy on images/text/
 // a slider, unlike the single admin-edited rich-text block Terms uses.
@@ -63,7 +64,7 @@ export async function generateMetadata({
       canonical: buildCanonicalUrl(pathname, locale),
       languages: getAlternateLanguages(pathname),
     },
-    openGraph: { title, description },
+    ...(await buildSocialMetadata({ locale, title, description, pathname })),
   };
 }
 
