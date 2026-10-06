@@ -30,6 +30,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
   return (
     <OrdersManager
+      // OrdersManager seeds its state from these props once (useState), so a
+      // same-route navigation — the header's new-order bell pushing
+      // /admin/orders while already here, or a dashboard tile changing only
+      // ?status= — re-ran this page with fresh data but left the old table on
+      // screen. A per-request key remounts it with the new initialData.
+      key={crypto.randomUUID()}
       initialData={initialData}
       statuses={statuses}
       initialFilters={initialFilters}
