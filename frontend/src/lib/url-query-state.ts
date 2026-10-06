@@ -15,5 +15,11 @@ export function replaceUrlQueryParams(updates: Record<string, string | null>) {
     else url.searchParams.set(key, value);
   }
   if (url.href === window.location.href) return;
-  window.history.replaceState(window.history.state, "", url);
+  // `null`, NOT window.history.state: Next's patched replaceState only syncs
+  // its router (applyUrlFromHistoryPushReplace) for state it didn't create —
+  // passing the current entry's state (which carries Next's internal `__NA`
+  // marker) made it skip that sync, so the router kept the old URL and later
+  // router commits (e.g. router.refresh()) rewrote the address bar back.
+  // With null, Next copies its own internal state and syncs, as its docs show.
+  window.history.replaceState(null, "", url);
 }

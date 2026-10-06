@@ -84,7 +84,17 @@ const envSchema = z.object({
   SENTRY_RELEASE: z.string().optional(),
 });
 
-const parsed = envSchema.safeParse(process.env);
+// `KEY=` (present but empty) is treated exactly like a missing key. The
+// .env.example files ship optional integrations as blank `KEY=` lines meant
+// to be filled in later, and dotenv turns those into "" — which an
+// `.optional()` field with a format rule (z.url(), .min(16), z.coerce.number)
+// rejects, so a server whose .env was copied from the example would refuse
+// to boot. Every consumer already treats "unset" and "empty" the same
+// (Boolean(env.X) checks), so dropping blanks changes nothing else. A
+// REQUIRED key left blank still fails, now as "missing".
+const nonEmptyEnv = Object.fromEntries(Object.entries(process.env).filter(([, value]) => value !== ""));
+
+const parsed = envSchema.safeParse(nonEmptyEnv);
 
 if (!parsed.success) {
   console.error("Invalid environment variables:", z.treeifyError(parsed.error));

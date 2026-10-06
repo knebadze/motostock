@@ -19,6 +19,13 @@ FROM deps AS builder
 COPY . .
 RUN npx prisma generate
 RUN npm run build
+# The `migrate` service (docker-compose.yml) runs this stage as `node` and is
+# usually the FIRST container to mount the backend_uploads volume on a fresh
+# server (DEPLOY.md: migrate + seed run before `up`). Docker seeds a new
+# named volume from the image's own directory at that path — without this,
+# there's none (uploads/ is .dockerignore'd), the volume root comes out
+# root-owned, and the seed (then every admin upload) fails with EACCES.
+RUN mkdir -p /app/uploads && chown node:node /app/uploads
 
 # Lean production image — no prisma CLI, no TypeScript, no test tooling.
 FROM base AS runner

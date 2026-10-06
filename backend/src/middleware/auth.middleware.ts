@@ -11,6 +11,7 @@ import type { JwtPayload } from "../lib/jwt.js";
 import type { RoleName } from "../lib/roles.js";
 import { logger } from "../lib/logger.js";
 import { sessionRepository } from "../modules/auth/session.repository.js";
+import { getSessionIdleTtlMinutes } from "../modules/settings/settings.service.js";
 
 // Throttles Session.lastSeenAt writes — without this, the admin "active
 // sessions" page's freshness would cost a DB write on literally every
@@ -22,6 +23,10 @@ const LAST_SEEN_THROTTLE_MS = 5 * 60 * 1000;
 // Minimum age before a still-valid token is re-signed for the sliding idle
 // timeout (see resolveAuthenticatedUser) — small against the idle TTL
 // (minutes to hours), large against a single page load's request burst.
+// Capped at half the idle TTL (see resolveAuthenticatedUser): an admin can
+// set the idle TTL as low as 1 minute, and a fixed 60s would then let the
+// token expire at the very moment it first became eligible for refresh,
+// logging out even an active user every minute.
 const TOKEN_REFRESH_INTERVAL_MS = 60 * 1000;
 
 // Non-throwing core of requireAuth — returns the resolved user (also
@@ -97,7 +102,9 @@ export async function resolveAuthenticatedUser(
     // role changed, so the token never lags the account.
     const issuedAtMs = (payload as JwtPayload & { iat?: number }).iat;
     const tokenAgeMs = issuedAtMs != null ? Date.now() - issuedAtMs * 1000 : Infinity;
-    if (tokenAgeMs > TOKEN_REFRESH_INTERVAL_MS || payload.role !== role) {
+    const idleTtlMs = (await getSessionIdleTtlMinutes()) * 60 * 1000;
+    const refreshAfterMs = Math.min(TOKEN_REFRESH_INTERVAL_MS, idleTtlMs / 2);
+    if (tokenAgeMs > refreshAfterMs || payload.role !== role) {
       const refreshed = await signJwt({
         sub: user.id,
         role,
