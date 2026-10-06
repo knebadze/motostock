@@ -51,7 +51,8 @@ docker compose up -d`) — მეტი ცვლილება არ სჭ�
 `DATABASE_URL`-ის დატოვება შეგიძლიათ default-ზე — docker-compose.yml ავტომატურად გადააწერს Docker
 ქსელში სწორ მისამართზე.
 
-`Caddyfile`-ის შეცვლა ამ ფაზაზე არ სჭირდება — `:80`-ზეა უკვე მორგებული, domain-ის გარეშე.
+`Caddyfile`-ის შეცვლა ამ ფაზაზე არ სჭირდება — `SITE_ADDRESS`-ის გარეშე ის `:80`-ზე, უბრალო
+HTTP-ით მუშაობს, domain-ის გარეშე.
 
 ## 4. აწყობა და გაშვება
 
@@ -151,46 +152,54 @@ docker compose run --rm --user root --entrypoint "" backend chown -R node:node /
 docker compose exec db pg_dump -U $POSTGRES_USER $POSTGRES_DB > backup-$(date +%F).sql
 ```
 
-## რეალურ დომენზე გადასვლა
+## რეალურ დომენზე გადასვლა (HTTPS)
 
-როცა დომენი მზად იქნება, ეს სამი ცვლილებაა საჭირო — ბაზას, ატვირთულ სურათებს თუ SMTP/OAuth
-credentials-ს არაფერი ეხება:
+საიტი ერთ დომენზე იმუშავებს: **`motostock22.ge`**, API — **`motostock22.ge/api`** (ისევე, როგორც
+სატესტო ფაზაში IP-ზე). ბაზას, სურათებს და SMTP/OAuth credentials-ს არაფერი ეხება. Caddy SSL
+სერტიფიკატს Let's Encrypt-იდან **თავად** იღებს და ანახლებს, HTTP-ს კი HTTPS-ზე გადაამისამართებს.
 
-1. **DNS** — ორი A ჩანაწერი, ორივე VPS-ის IP-ზე: `example.com` (+ სურვილისამებრ `www.example.com`)
-   და `api.example.com`. Caddy-ს ცალკე სჭირდება — ავტომატური SSL სერტიფიკატიც ცალკე გაიცემა
-   თითოეულისთვის.
+1. **DNS** — A ჩანაწერი `motostock22.ge` → VPS-ის IP. (სურვილისამებრ `www.motostock22.ge`-იც —
+   იხ. ნაბიჯი 4.) დაელოდეთ, სანამ ამუშავდება: `ping motostock22.ge` VPS-ის IP-ს უნდა აჩვენებდეს.
+   VPS-ზე 80 და 443 პორტი ღია უნდა იყოს (firewall).
 
-2. **`Caddyfile`** — შეცვალეთ `:80` ბლოკი ორი დომენ-ბლოკით:
-
+2. **`.env`** (root):
    ```
-   example.com, www.example.com {
-       encode zstd gzip
-       reverse_proxy frontend:3000
-   }
-
-   api.example.com {
-       encode zstd gzip
-       reverse_proxy backend:4000
-   }
+   SITE_ADDRESS=motostock22.ge
+   HSTS_MAX_AGE=300
+   NEXT_PUBLIC_API_URL=https://motostock22.ge/api
+   NEXT_PUBLIC_SITE_URL=https://motostock22.ge
+   NEXT_PUBLIC_SENTRY_ENVIRONMENT=production
    ```
 
-3. **`.env` და `backend/.env`** — `<VPS_IP>` შეცვალეთ რეალური დომენებით:
+3. **`backend/.env`**:
+   ```
+   FRONTEND_ORIGIN=https://motostock22.ge
+   BACKEND_PUBLIC_URL=https://motostock22.ge
+   ```
+   `BACKEND_PUBLIC_URL`-ის `https://`-ზე გადასვლა ავტომატურად რთავს `Secure` cookie-ებს და CSP-ის
+   `upgrade-insecure-requests`-ს — კოდში ცვლილება არ სჭირდება.
 
-   ```
-   NEXT_PUBLIC_API_URL=https://api.example.com/api
-   NEXT_PUBLIC_SITE_URL=https://example.com
-   ```
-   ```
-   FRONTEND_ORIGIN=https://example.com
-   FRONTEND_ORIGIN_ALTERNATES=https://www.example.com
-   BACKEND_PUBLIC_URL=https://api.example.com
-   ```
+4. **(არასავალდებულო) www** — თუ `www.motostock22.ge`-ის DNS ჩანაწერიც დაამატეთ, `Caddyfile`-ის
+   ბოლოში ამოაკომენტარეთ www ბლოკი (www → `motostock22.ge`-ზე გადამისამართება) და `backend/.env`-ში
+   დაამატეთ `FRONTEND_ORIGIN_ALTERNATES=https://www.motostock22.ge`.
 
-   `FRONTEND_ORIGIN_ALTERNATES` საჭიროა მხოლოდ თუ Caddyfile-ში `www.example.com`-საც
-   უშვებთ (ნაბიჯი 2-ში) — ბრაუზერისთვის `example.com` და `www.example.com` სხვადასხვა
-   origin-ია, ასე რომ CORS-მა ორივე ცალკე უნდა იცოდეს დაშვებულად. თუ მხოლოდ apex
-   დომენს იყენებთ, ცარიელი დატოვეთ.
+5. **გადააშენეთ და გაუშვით** (frontend-ს ხელახლა აწყობა სჭირდება — `NEXT_PUBLIC_*` ბილდის დროს
+   იკერება):
+   ```bash
+   docker compose build
+   docker compose up -d
+   docker compose logs -f caddy    # "certificate obtained successfully" უნდა გამოჩნდეს
+   ```
+   შეამოწმეთ: `https://motostock22.ge` იხსნება ბოქლომით, ხოლო `http://motostock22.ge`
+   ავტომატურად `https://`-ზე გადადის.
 
-შემდეგ: `docker compose build && docker compose up -d` (frontend-ს ხელახლა აწყობა სჭირდება, რადგან
-`NEXT_PUBLIC_*` ბილდის დროს იკერება ბანდლში). Google/Facebook OAuth-ს იყენებთ თუ არა — redirect
-URI-ც განაახლეთ შესაბამის Developer Console-ში ახალ `BACKEND_PUBLIC_URL`-ზე.
+6. **OAuth** — Google/Facebook Developer Console-ში redirect URI განაახლეთ:
+   `https://motostock22.ge/api/auth/google/callback` და `.../facebook/callback`.
+
+7. **HSTS ეტაპობრივად** — `.env`-ში `HSTS_MAX_AGE` გაზარდეთ, ყოველ ჯერზე `docker compose up -d caddy`:
+   - დასაწყისი: `300` (5 წუთი) — რამდენიმე დღე, სანამ დარწმუნდებით, რომ HTTPS სტაბილურად მუშაობს;
+   - შემდეგ `604800` (1 კვირა);
+   - საბოლოოდ `31536000` (1 წელი).
+
+   ⚠️ HSTS-ის „უკან დაბრუნება" რთულია: გრძელი მნიშვნელობის შემდეგ HTTPS თუ გაფუჭდა, მომხმარებლები
+   საიტზე ვერ შევლენ ვადის ამოწურვამდე. ამიტომ — ეტაპობრივად, და `includeSubDomains`-ის გარეშე.

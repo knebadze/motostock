@@ -1,18 +1,36 @@
-# No domain yet (test server, accessed by IP) — this binds to plain HTTP on
-# port 80 regardless of what Host header arrives, so no DNS/TLS setup is
-# needed to get this running. Path-routes both apps behind one origin so
-# the tester only ever needs "http://<VPS_IP>/".
+# One origin for everything — path-routed: /api and /uploads go to the
+# backend, everything else to the Next.js frontend. Same layout in both
+# phases; only the site address changes (set in the root .env, see
+# docker-compose.yml's caddy service and DEPLOY.md):
 #
-# Once a real domain is ready, replace this whole block with two domain
-# blocks (Caddy then issues Let's Encrypt certs automatically) — see the
-# "რეალურ დომენზე გადასვლა" section in DEPLOY.md for the exact swap.
+#   • Test phase (no domain, accessed by VPS IP): SITE_ADDRESS unset →
+#     ":80" — plain HTTP on port 80 for whatever Host arrives, no TLS.
+#   • Production: SITE_ADDRESS=motostock22.ge — Caddy then gets a free
+#     Let's Encrypt certificate automatically (and renews it), serves HTTPS
+#     on 443 and redirects all HTTP to HTTPS. Needs the domain's DNS A record
+#     pointing at this server first, and ports 80+443 open.
 
-:80 {
+{$SITE_ADDRESS::80} {
 	# Compresses API JSON (product lists carry trilingual descriptions) and
 	# every proxied response — neither Express nor Next's standalone server
-	# compresses the backend's JSON on their own. Keep this line in the
-	# domain blocks too when switching over (see DEPLOY.md).
+	# compresses the backend's JSON on their own.
 	encode zstd gzip
+
+	# Security headers for EVERY response (Next.js pages included, which the
+	# backend's helmet never sees). `defer` applies them after the upstream
+	# answered, overriding its own copies (helmet sends a default 1-year HSTS
+	# on API responses) so this is the single source of truth.
+	header {
+		defer
+		# HSTS — "only ever reach this site over HTTPS". Rolled out in steps
+		# via HSTS_MAX_AGE (DEPLOY.md): 0 = off (the default, and the only
+		# sensible value on plain HTTP — browsers ignore it there anyway),
+		# then 300 → 604800 → 31536000 once HTTPS is confirmed working.
+		# Hard to undo once a long value is out, hence the steps.
+		Strict-Transport-Security "max-age={$HSTS_MAX_AGE:0}"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
 
 	handle /api/* {
 		reverse_proxy backend:4000
@@ -24,3 +42,11 @@
 		reverse_proxy frontend:3000
 	}
 }
+
+# Optional, production only — send www to the bare domain. Uncomment once
+# a DNS record for www.motostock22.ge points at this server too (leaving it
+# active before that makes Caddy retry a certificate it can't get).
+#
+# www.motostock22.ge {
+# 	redir https://motostock22.ge{uri} permanent
+# }
