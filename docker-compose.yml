@@ -48,7 +48,9 @@ services:
       - backend_uploads:/app/uploads
     healthcheck:
       # No curl/wget in the slim runner image — Node's own http client avoids
-      # adding one just for this. Hits the app's existing GET /api/health.
+      # adding one just for this. Hits the app's existing GET /api/health,
+      # which also pings the database (503 when it's unreachable — see app.ts),
+      # so an outage shows up as `unhealthy` in `docker compose ps`.
       test:
         [
           "CMD",

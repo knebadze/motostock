@@ -7,6 +7,7 @@ import swaggerUi from "swagger-ui-express";
 import { pinoHttp } from "pino-http";
 import { corsAllowedOrigins, env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
+import { prisma } from "./config/prisma.js";
 import { responseValidationMiddleware } from "./middleware/response-validation.middleware.js";
 import { ApiError } from "./lib/ApiError.js";
 import { generateOpenApiDocument } from "./docs/openapi.js";
@@ -155,8 +156,28 @@ if (env.NODE_ENV !== "production") {
   app.use(responseValidationMiddleware);
 }
 
-app.get("/api/health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
+// Readiness, not just "the process is up": answers 503 when the database is
+// unreachable, so the Docker healthcheck (docker-compose.yml) and any
+// external uptime monitor see the outage instead of a cheerful "ok" from an
+// app that can't serve a single real page. Bounded by a short timeout so a
+// hung DB connection fails the check rather than hanging it. Failures log
+// at warn, not error — logger.error persists to ErrorLog and goes to Sentry,
+// and this runs every 10s while the DB is down.
+const HEALTH_DB_TIMEOUT_MS = 2_000;
+
+app.get("/api/health", async (_req, res) => {
+  try {
+    await Promise.race([
+      prisma.$queryRaw`SELECT 1`,
+      new Promise((_resolve, reject) =>
+        setTimeout(() => reject(new Error("Database health check timed out")), HEALTH_DB_TIMEOUT_MS).unref(),
+      ),
+    ]);
+    res.status(200).json({ status: "ok", db: "up" });
+  } catch (err) {
+    logger.warn({ err }, "Health check: database unreachable");
+    res.status(503).json({ status: "error", db: "down" });
+  }
 });
 
 // Applied to every /api route (uploads/static assets are exempt — browsers
