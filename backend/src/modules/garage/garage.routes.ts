@@ -62,7 +62,9 @@ garageRouter.get(
 garageRouter.post(
   "/:userId/garage",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  // OPERATOR too — a new walk-in's bike has to be added before any service
+  // record can be logged on it.
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(garageUserIdParamSchema, "params"),
   validate(createGarageVehicleSchema),
   garageController.adminCreate,
@@ -149,7 +151,7 @@ registry.registerPath({
   method: "get",
   path: "/users/{userId}/garage",
   tags: ["Garage"],
-  summary: "List a given customer's garage vehicles (admin only, workshop screen)",
+  summary: "List a given customer's garage vehicles (admin/operator, workshop screen)",
   security,
   request: { params: garageUserIdParamSchema },
   responses: {
@@ -163,7 +165,7 @@ registry.registerPath({
   method: "post",
   path: "/users/{userId}/garage",
   tags: ["Garage"],
-  summary: "Add a catalog vehicle to a given customer's garage (admin only, workshop screen)",
+  summary: "Add a catalog vehicle to a given customer's garage (admin/operator, workshop screen)",
   security,
   request: {
     params: garageUserIdParamSchema,

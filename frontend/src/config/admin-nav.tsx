@@ -153,7 +153,12 @@ export const adminNav: AdminNavSection[] = [
   {
     label: "სახელოსნო",
     items: [
-      { label: "სერვისების ტიპები", href: "/admin/service-types", icon: serviceTypesIcon },
+      {
+        label: "სერვისების ტიპები",
+        href: "/admin/service-types",
+        icon: serviceTypesIcon,
+        allowedRoles: ["OPERATOR"],
+      },
       {
         label: "სერვისის ისტორია",
         href: "/admin/service-history",

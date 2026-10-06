@@ -42,7 +42,7 @@ serviceRecordsRouter.get(
 
 // OPERATOR (the shop's foreman) can log and correct service work — they're
 // the one actually doing it at the workshop, and previously had to ask an
-// ADMIN to type every record in. DELETE stays ADMIN-only.
+// ADMIN to type every record in — including deleting a mistaken one.
 serviceRecordsRouter.post(
   "/",
   requireAuth,
@@ -61,7 +61,7 @@ serviceRecordsRouter.patch(
 serviceRecordsRouter.delete(
   "/:id",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(serviceRecordIdParamSchema, "params"),
   serviceRecordsController.remove,
 );
@@ -112,7 +112,7 @@ registry.registerPath({
   method: "post",
   path: "/service-records",
   tags: ["ServiceRecords"],
-  summary: "Log a workshop service performed on a garage vehicle (admin)",
+  summary: "Log a workshop service performed on a garage vehicle (admin/operator)",
   security,
   request: { body: { content: { "application/json": { schema: createServiceRecordSchema } } } },
   responses: {
@@ -125,7 +125,7 @@ registry.registerPath({
   method: "patch",
   path: "/service-records/{id}",
   tags: ["ServiceRecords"],
-  summary: "Update a service record (admin)",
+  summary: "Update a service record (admin/operator)",
   security,
   request: {
     params: serviceRecordIdParamSchema,
@@ -141,7 +141,7 @@ registry.registerPath({
   method: "delete",
   path: "/service-records/{id}",
   tags: ["ServiceRecords"],
-  summary: "Delete a service record (admin)",
+  summary: "Delete a service record (admin/operator)",
   security,
   request: { params: serviceRecordIdParamSchema },
   responses: {

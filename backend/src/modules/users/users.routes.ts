@@ -68,7 +68,10 @@ usersRouter.post(
 usersRouter.post(
   "/:id/merge-into/:targetUserId",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  // OPERATOR too — the workshop screen's "დაკავშირება არსებულ მომხმარებელთან".
+  // Safe to widen: mergeUserInto only ever folds a walk-in onto a real
+  // account, never two real accounts together.
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(mergeUserParamsSchema, "params"),
   merge,
 );
@@ -248,7 +251,7 @@ registry.registerPath({
   method: "post",
   path: "/users/{id}/merge-into/{targetUserId}",
   tags: ["Users"],
-  summary: "Manually merge one user (typically a walk-in) into another (admin only)",
+  summary: "Manually merge one user (typically a walk-in) into another (admin/operator, workshop screen)",
   security: [{ cookieAuth: [] }],
   request: { params: mergeUserParamsSchema },
   responses: {

@@ -16,9 +16,9 @@ import {
 
 export const serviceTypesRouter = Router();
 
-// Per-route (not a blanket `.use()`) so GET can grant OPERATOR too — the
-// workshop "სერვისის ისტორია" screen's service-type dropdown needs this
-// list; write routes stay ADMIN-only.
+// OPERATOR (the workshop foreman) gets the full "სახელოსნო" section,
+// service-type management included — it's the workshop's own price/service
+// list, not catalog/discount data.
 serviceTypesRouter.get(
   "/",
   requireAuth,
@@ -28,14 +28,14 @@ serviceTypesRouter.get(
 serviceTypesRouter.post(
   "/",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(createServiceTypeSchema),
   serviceTypesController.create,
 );
 serviceTypesRouter.patch(
   "/:id",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(serviceTypeIdParamSchema, "params"),
   validate(updateServiceTypeSchema),
   serviceTypesController.update,
@@ -43,14 +43,14 @@ serviceTypesRouter.patch(
 serviceTypesRouter.put(
   "/order",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(reorderServiceTypesSchema),
   serviceTypesController.reorder,
 );
 serviceTypesRouter.delete(
   "/:id",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(serviceTypeIdParamSchema, "params"),
   serviceTypesController.remove,
 );
@@ -63,7 +63,7 @@ registry.registerPath({
   method: "get",
   path: "/service-types",
   tags: ["ServiceTypes"],
-  summary: "List all workshop service types, including inactive ones (admin)",
+  summary: "List all workshop service types, including inactive ones (admin/operator)",
   security,
   responses: {
     200: { description: "Service types", content: { "application/json": { schema: listResponse } } },

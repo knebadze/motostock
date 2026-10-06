@@ -41,7 +41,8 @@ function resolveSentryIngestOrigin(): string {
 const sentryConnectSrc = resolveSentryIngestOrigin();
 
 // OPERATOR is a limited staff/cashier role — view-only across products/
-// vehicle-listings/service-history/fina-sync, plus order status changes.
+// vehicle-listings/fina-sync, plus order status changes and the full
+// workshop section (service-history + service-types).
 // Checked here (middleware), not via a headers()-forwarded pathname read in
 // app/admin/(protected)/layout.tsx — an earlier version tried that and hit a
 // real bug: the forwarded pathname wasn't reliably visible to the layout,
@@ -55,6 +56,7 @@ const OPERATOR_ALLOWED_PATHS = new Set([
   "/admin/products",
   "/admin/vehicle-listings",
   "/admin/service-history",
+  "/admin/service-types",
   "/admin/fina-sync",
   "/admin/orders",
   "/admin/users",
