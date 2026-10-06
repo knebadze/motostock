@@ -416,13 +416,21 @@ export function Header({
         </div>
       )}
 
+      {/* The panel scrolls on its own, capped at the viewport below the h-16
+          bar (the only header row below lg) — body scroll is locked while
+          it's open (see the overflow effect above), so without this the
+          login/cart links at the bottom were unreachable on short screens.
+          `inert` while closed: the collapsed rows are only 0px tall, not
+          hidden, so their links were still Tab-focusable (and read by
+          screen readers) when the menu was shut. */}
       <div
         id="mobile-nav"
+        inert={!isOpen}
         className={`grid overflow-hidden border-b border-border transition-[grid-template-rows] duration-200 ease-out lg:hidden ${
           isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         }`}
       >
-        <div className="min-h-0">
+        <div className="max-h-[calc(100dvh-4rem)] min-h-0 overflow-y-auto overscroll-contain">
           <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-6">
             <div className="flex flex-col gap-1 text-xs text-muted-foreground">
               {companyInfo?.phone && (
