@@ -77,6 +77,36 @@ export const getVehicleCatalogEntryFromServer = cache(async (
   );
 });
 
+// Sitemap feed — catalog entries at least one active product fits (the
+// "parts for <vehicle>" pages worth indexing).
+export const getVehicleCatalogOptionsWithCompatibleProductsFromServer = cache(
+  async (): Promise<VehicleCatalogOption[]> => {
+    return fetchFromServer<{ items: VehicleCatalogOption[] }, VehicleCatalogOption[]>(
+      "/vehicle-catalog/options/with-compatible-products",
+      { fallback: [], extract: (data) => data.items },
+    );
+  },
+);
+
+// Asked only after a slug lookup missed: the current URL parts of a product
+// / category that used to have `slug` (renamed by an admin), so the page can
+// 301 instead of 404. null = not a known old slug.
+export const getProductSlugRedirectFromServer = cache(
+  async (slug: string): Promise<{ slug: string; categorySlug: string } | null> => {
+    return fetchFromServer<{ slug: string; categorySlug: string }, { slug: string; categorySlug: string } | null>(
+      `/slug-redirects/products/${encodeURIComponent(slug)}`,
+      { fallback: null, extract: (data) => data },
+    );
+  },
+);
+
+export const getCategorySlugRedirectFromServer = cache(async (slug: string): Promise<{ slug: string } | null> => {
+  return fetchFromServer<{ slug: string }, { slug: string } | null>(
+    `/slug-redirects/categories/${encodeURIComponent(slug)}`,
+    { fallback: null, extract: (data) => data },
+  );
+});
+
 export const getCategoryFiltersFromServer = cache(async (categoryId: number): Promise<CategoryFilter[]> => {
   // Public endpoint (guest shop filter sidebar reads this too) — must not
   // bail out just because there's no admin session cookie, same fix as

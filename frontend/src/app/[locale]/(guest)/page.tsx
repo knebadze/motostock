@@ -70,7 +70,7 @@ export default async function HomePage({
               homepage with zero <h1> whenever an admin picked one as the
               first/only slide. This one is always present regardless of
               which slide is showing or what type it is. */}
-          <h1 className="sr-only">{t.rich("heroTitle", { hl: (chunks) => chunks })}</h1>
+          <h1 className="sr-only">{t("seoHeading")}</h1>
           <HeroSlider
             slides={slides}
             vehicleCatalog={vehicleCatalog}

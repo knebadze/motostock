@@ -1,0 +1,25 @@
+enum SlugRedirectEntity {
+  PRODUCT
+  CATEGORY
+
+  @@schema("dbo")
+}
+
+// A slug an entity used to have — recorded when an admin renames a product's
+// or category's slug, so links and search results pointing at the old URL
+// get a 301 to the current one instead of a 404 (see
+// slug-redirects.service.ts). Points at the entity's id, not its next slug,
+// so a chain of renames (a -> b -> c) always resolves straight to the
+// current slug. No FK (one table for two entity types): a redirect to a
+// since-deleted entity simply resolves to nothing (404).
+model SlugRedirect {
+  id         Int                @id @default(autoincrement())
+  entityType SlugRedirectEntity
+  oldSlug    String
+  entityId   Int
+  createdAt  DateTime           @default(now())
+
+  @@unique([entityType, oldSlug])
+  @@index([entityType, entityId])
+  @@schema("dbo")
+}

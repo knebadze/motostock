@@ -6,6 +6,8 @@ import type { components } from "./generated/schema";
 type Schemas = components["schemas"];
 
 export type ServiceType = Schemas["ServiceType"];
+// The storefront /service page's shape — names only.
+export type PublicServiceType = Schemas["PublicServiceType"];
 
 export type ServiceTypeInput = Schemas["CreateServiceTypeInput"];
 

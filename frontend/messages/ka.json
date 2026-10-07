@@ -1,7 +1,7 @@
 {
   "Metadata": {
-    "title": "{siteName} — მოტო აქსესუარები და ეკიპირება",
-    "description": "აქსესუარები, ჩასაცმელი, ჩაფხუტები და ნაწილები მოტოტექნიკისთვის.",
+    "title": "{siteName} — მოტოციკლები, ნაწილები და მოტოსერვისი",
+    "description": "მოტოციკლები, ნაწილები, ჩაფხუტები და ეკიპირება, მოტოციკლების სერვისი და შეკეთება. შეარჩიე შენს მოტოზე თავსებადი ნაწილები ონლაინ.",
     "categoryTitle": "{category} — {siteName}",
     "categoryTitleWithPage": "{category} — გვერდი {page} — {siteName}",
     "categoryDescription": "{category} — საუკეთესო არჩევანი და ფასები {siteName}-ში.",
@@ -20,7 +20,12 @@
     "privacyTitle": "კონფიდენციალობის პოლიტიკა — {siteName}",
     "privacyDescription": "როგორ ვაგროვებთ, ვიყენებთ და ვიცავთ თქვენს პერსონალურ მონაცემებს {siteName}-ში.",
     "catalogTitle": "კატალოგი — {siteName}",
-    "catalogDescription": "დაათვალიერეთ {siteName}-ის სრული კატალოგი კატეგორიების მიხედვით."
+    "catalogDescription": "დაათვალიერეთ {siteName}-ის სრული კატალოგი კატეგორიების მიხედვით.",
+    "titleWithCity": "{siteName} — მოტოციკლები, ნაწილები და მოტოსერვისი | {city}",
+    "descriptionWithCity": "მოტოციკლები, ნაწილები, ჩაფხუტები და ეკიპირება, მოტოციკლების სერვისი და შეკეთება — {city}. შეარჩიე შენს მოტოზე თავსებადი ნაწილები ონლაინ.",
+    "serviceTitle": "მოტოციკლების სერვისი და შეკეთება — {siteName}",
+    "serviceDescription": "მოტოციკლების სერვისი {siteName}-ში: {services}. სამუშაო საათები, მისამართი და ჩაწერა.",
+    "serviceDescriptionGeneric": "მოტოციკლების სერვისი და შეკეთება {siteName}-ში — სამუშაო საათები, მისამართი და ჩაწერა."
   },
   "Nav": {
     "home": "მთავარი",
@@ -316,7 +321,8 @@
     "searchGarageLabel": "აირჩიე შენი გარაჟიდან",
     "searchGaragePlaceholder": "აირჩიეთ თქვენი ტექნიკა",
     "searchOrDivider": "ან",
-    "searchButton": "ძებნა"
+    "searchButton": "ძებნა",
+    "seoHeading": "მოტოციკლები, ნაწილები, ეკიპირება და მოტოსერვისი"
   },
   "HomeInfoCards": {
     "heading": "გაიცანით MotoStock 22",
@@ -350,7 +356,8 @@
     "thursdayShort": "ხუთ",
     "fridayShort": "პარ",
     "saturdayShort": "შაბ",
-    "sundayShort": "კვ"
+    "sundayShort": "კვ",
+    "serviceTitle": "სერვისი"
   },
   "Catalog": {
     "title": "კატალოგი",
@@ -743,5 +750,18 @@
       "promoCodeScopeAllProducts": "ყველა პროდუქტი",
       "promoCodeScopeAllVehicles": "მთელი ტრანსპორტი"
     }
+  },
+  "Service": {
+    "title": "მოტოციკლების სერვისი",
+    "intro": "ჩვენს სერვის-ცენტრში მოტოციკლს მოემსახურებიან — რეგულარული ტექმომსახურებიდან შეკეთებამდე. ნაწილებს ადგილზევე შეარჩევთ, ხოლო ჩატარებული სერვისის ისტორია ინახება თქვენი პროფილის გარაჟში.",
+    "servicesHeading": "რას ვაკეთებთ",
+    "noServices": "სერვისების ჩამონათვალი მალე დაემატება — დეტალებისთვის დაგვიკავშირდით.",
+    "contactHeading": "ჩაწერა და კონსულტაცია",
+    "contactText": "სერვისზე ჩასაწერად ან ფასის დასაზუსტებლად დაგვირეკეთ ან გვეწვიეთ.",
+    "callButton": "დარეკვა",
+    "contactLink": "მისამართი და კონტაქტი",
+    "partsHeading": "ნაწილები შენს მოტოზე",
+    "partsText": "დაამატე მოტო გარაჟში და ნახე მხოლოდ მასზე თავსებადი ნაწილები.",
+    "partsLink": "გარაჟის გახსნა"
   }
 }

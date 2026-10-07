@@ -26,6 +26,7 @@ import {
 } from "../product-variant-discounts/product-variant-discounts.service.js";
 import { toImageResponse } from "../product-variant-images/product-variant-images.service.js";
 import { productsRepository } from "./products.repository.js";
+import { recordSlugRename } from "../slug-redirects/slug-redirects.service.js";
 import type {
   CreateProductInput,
   ProductAttributeValueInput,
@@ -902,6 +903,11 @@ export async function updateProduct(id: number, input: UpdateProductInput) {
     "slug",
     "ეს slug უკვე გამოყენებულია",
   );
+
+  // Old URL keeps working — 301 to the new slug (see slug-redirects).
+  if (input.slug !== undefined && input.slug !== existing.slug) {
+    await recordSlugRename("PRODUCT", id, existing.slug, input.slug);
+  }
 
   return getProduct(id);
 }

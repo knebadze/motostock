@@ -1,7 +1,7 @@
 {
   "Metadata": {
-    "title": "{siteName} — Moto Gear & Accessories",
-    "description": "Accessories, clothing, helmets, and parts for motorcycles.",
+    "title": "{siteName} — Motorcycles, Parts & Service",
+    "description": "Motorcycles, parts, helmets and riding gear, plus motorcycle service and repair. Find parts that fit your bike online.",
     "categoryTitle": "{category} — {siteName}",
     "categoryTitleWithPage": "{category} — Page {page} — {siteName}",
     "categoryDescription": "{category} — best selection and prices at {siteName}.",
@@ -20,7 +20,12 @@
     "privacyTitle": "Privacy Policy — {siteName}",
     "privacyDescription": "How {siteName} collects, uses, and protects your personal data.",
     "catalogTitle": "Catalog — {siteName}",
-    "catalogDescription": "Browse the full {siteName} catalog by category."
+    "catalogDescription": "Browse the full {siteName} catalog by category.",
+    "titleWithCity": "{siteName} — Motorcycles, Parts & Service in {city}",
+    "descriptionWithCity": "Motorcycles, parts, helmets and riding gear, plus motorcycle service and repair in {city}. Find parts that fit your bike online.",
+    "serviceTitle": "Motorcycle Service & Repair — {siteName}",
+    "serviceDescription": "Motorcycle service at {siteName}: {services}. Working hours, address and booking.",
+    "serviceDescriptionGeneric": "Motorcycle service and repair at {siteName} — working hours, address and booking."
   },
   "Nav": {
     "home": "Home",
@@ -316,7 +321,8 @@
     "searchGarageLabel": "Choose from your garage",
     "searchGaragePlaceholder": "Choose your vehicle",
     "searchOrDivider": "or",
-    "searchButton": "Search"
+    "searchButton": "Search",
+    "seoHeading": "Motorcycles, parts, riding gear and motorcycle service"
   },
   "HomeInfoCards": {
     "heading": "Get to know MotoStock 22",
@@ -350,7 +356,8 @@
     "thursdayShort": "Thu",
     "fridayShort": "Fri",
     "saturdayShort": "Sat",
-    "sundayShort": "Sun"
+    "sundayShort": "Sun",
+    "serviceTitle": "Service"
   },
   "Catalog": {
     "title": "Catalog",
@@ -743,5 +750,18 @@
       "promoCodeScopeAllProducts": "all products",
       "promoCodeScopeAllVehicles": "all vehicles"
     }
+  },
+  "Service": {
+    "title": "Motorcycle Service",
+    "intro": "Our service center takes care of your motorcycle — from routine maintenance to repairs. Parts are picked right on site, and the history of every service is kept in your profile's garage.",
+    "servicesHeading": "What we do",
+    "noServices": "The list of services is coming soon — contact us for details.",
+    "contactHeading": "Booking and advice",
+    "contactText": "Call or visit us to book a service or check a price.",
+    "callButton": "Call",
+    "contactLink": "Address and contact",
+    "partsHeading": "Parts for your bike",
+    "partsText": "Add your motorcycle to the garage and see only the parts that fit it.",
+    "partsLink": "Open garage"
   }
 }

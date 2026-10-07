@@ -2,18 +2,18 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getProductsFromServer, getVehicleCatalogEntryFromServer } from "@/lib/api/server";
+import { buildVehicleCatalogSlug, parseVehicleCatalogIdFromSlug } from "@/lib/api/vehicle-catalog";
+import { permanentRedirect } from "@/i18n/navigation";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 import { siteConfig } from "@/config/site";
 import { CompatibleProductsPage } from "@/components/shop/CompatibleProductsPage";
 import { buildSocialMetadata } from "@/lib/share-metadata";
 
+// The segment is the slug "honda-cbr600rr-2007-2012-123" (see
+// buildVehicleCatalogSlug) — the folder keeps its old [vehicleCatalogId]
+// name; only the trailing id is read from it.
 type PageParams = { locale: "ka" | "en" | "ru"; vehicleCatalogId: string };
-
-function parseVehicleCatalogId(raw: string): number | null {
-  const id = Number(raw);
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
 
 // Was a blanket noindex — but "parts for <brand> <model>" is exactly the
 // search this shop most wants to rank for, and this page is the answer.
@@ -23,7 +23,7 @@ function parseVehicleCatalogId(raw: string): number | null {
 // fetches are cache()'d, so the page body below reuses them.
 export async function generateMetadata({ params }: { params: Promise<PageParams> }): Promise<Metadata> {
   const { locale, vehicleCatalogId } = await params;
-  const id = parseVehicleCatalogId(vehicleCatalogId);
+  const id = parseVehicleCatalogIdFromSlug(vehicleCatalogId);
   if (id == null) return {};
 
   const vehicle = await getVehicleCatalogEntryFromServer(id);
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: { params: Promise<PageParams>
     siteName: siteConfig.name,
     count: products.length,
   });
-  const pathname = `/compatible-products/${id}`;
+  const pathname = `/compatible-products/${buildVehicleCatalogSlug(vehicle)}`;
 
   return {
     title,
@@ -55,10 +55,10 @@ export async function generateMetadata({ params }: { params: Promise<PageParams>
 export default async function VehicleCompatibleProductsPage({
   params,
 }: {
-  params: Promise<{ vehicleCatalogId: string }>;
+  params: Promise<PageParams>;
 }) {
-  const { vehicleCatalogId } = await params;
-  const id = parseVehicleCatalogId(vehicleCatalogId);
+  const { locale, vehicleCatalogId } = await params;
+  const id = parseVehicleCatalogIdFromSlug(vehicleCatalogId);
   if (id == null) {
     notFound();
   }
@@ -66,6 +66,14 @@ export default async function VehicleCompatibleProductsPage({
   const vehicle = await getVehicleCatalogEntryFromServer(id);
   if (!vehicle) {
     notFound();
+  }
+
+  // One URL per vehicle: the old bare-id links (/compatible-products/123)
+  // and any outdated slug (brand/model renamed) get a 301 to the current
+  // slugged form, so search engines consolidate on it.
+  const canonicalSlug = buildVehicleCatalogSlug(vehicle);
+  if (vehicleCatalogId !== canonicalSlug) {
+    permanentRedirect({ href: `/compatible-products/${canonicalSlug}`, locale });
   }
 
   const products = await getProductsFromServer(undefined, id);

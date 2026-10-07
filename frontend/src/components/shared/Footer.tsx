@@ -97,6 +97,11 @@ function FooterView({
           <h3 className="text-sm font-semibold">{tFooter("companyTitle")}</h3>
           <ul className="mt-4 flex flex-col gap-2.5 text-sm text-muted-foreground">
             <li>
+              <Link href="/service" className="transition-colors hover:text-primary-text">
+                {tFooter("serviceTitle")}
+              </Link>
+            </li>
+            <li>
               <Link href="/about" className="transition-colors hover:text-primary-text">
                 {tFooter("aboutUs")}
               </Link>

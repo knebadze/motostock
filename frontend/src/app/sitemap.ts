@@ -3,8 +3,10 @@ import {
   getCategoriesFromServer,
   getProductsFromServer,
   getVacancyListFromServer,
+  getVehicleCatalogOptionsWithCompatibleProductsFromServer,
   getVehicleListingsFromServer,
 } from "@/lib/api/server";
+import { buildVehicleCatalogSlug } from "@/lib/api/vehicle-catalog";
 import { getAlternateLanguages } from "@/lib/seo";
 import { buildVehicleListingSlug } from "@/lib/api/vehicle-listings";
 import { routing } from "@/i18n/routing";
@@ -12,11 +14,12 @@ import { routing } from "@/i18n/routing";
 // Admin/auth/account pages are deliberately excluded — they're not public
 // content (see robots.ts, which also disallows them from crawling).
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [categories, products, vehicleListings, vacancies] = await Promise.all([
+  const [categories, products, vehicleListings, vacancies, fitmentVehicles] = await Promise.all([
     getCategoriesFromServer(),
     getProductsFromServer(),
     getVehicleListingsFromServer(),
     getVacancyListFromServer(),
+    getVehicleCatalogOptionsWithCompatibleProductsFromServer(),
   ]);
   const entries: MetadataRoute.Sitemap = [];
 
@@ -27,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Static nav pages — no DB-backed updatedAt to source lastModified from
   // (unlike categories/products/listings below), so left unset, same as home.
-  const staticPages = ["/catalog", "/about", "/faq", "/vacancies", "/contact", "/terms", "/privacy"];
+  const staticPages = ["/catalog", "/service", "/about", "/faq", "/vacancies", "/contact", "/terms", "/privacy"];
   for (const pathname of staticPages) {
     const languages = getAlternateLanguages(pathname);
     for (const locale of routing.locales) {
@@ -67,6 +70,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         alternates: { languages },
         lastModified: listing.updatedAt,
       });
+    }
+  }
+
+  // "Parts for <vehicle>" pages — only vehicles at least one product fits
+  // (an empty one is noindex anyway).
+  for (const vehicle of fitmentVehicles) {
+    const languages = getAlternateLanguages(`/compatible-products/${buildVehicleCatalogSlug(vehicle)}`);
+    for (const locale of routing.locales) {
+      entries.push({ url: languages[locale], alternates: { languages } });
     }
   }
 

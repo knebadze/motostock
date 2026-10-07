@@ -12,6 +12,7 @@ import type { Terms } from "../terms";
 import type { PrivacyPolicy } from "../privacy-policy";
 import type { Faq } from "../faq";
 import type { Vacancy } from "../vacancies";
+import type { PublicServiceType } from "../service-types";
 
 // Admin-edited site content (categories, company info, legal pages, FAQ, vacancies, hero slides, team, homepage sections).
 
@@ -117,6 +118,19 @@ const getCachedFaqList = unstable_cache(
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["faq-public"] },
 );
 export const getFaqListFromServer = cache(getCachedFaqList);
+
+// The guest /service page's list of what the workshop does — cached across
+// requests like the other admin-edited public content above.
+const getCachedPublicServiceTypes = unstable_cache(
+  () =>
+    fetchPublicCacheable<{ items: PublicServiceType[] }, PublicServiceType[]>("/service-types/public", {
+      fallback: [],
+      extract: (data) => data.items,
+    }),
+  ["service-types-public"],
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["service-types-public"] },
+);
+export const getPublicServiceTypesFromServer = cache(getCachedPublicServiceTypes);
 
 // Admin — every FAQ entry, including inactive ones (see the admin FAQ
 // manager). Distinct from getFaqListFromServer's public/active-only list,

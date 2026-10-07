@@ -1,7 +1,7 @@
 {
   "Metadata": {
-    "title": "{siteName} — Мотоэкипировка и аксессуары",
-    "description": "Аксессуары, экипировка, шлемы и запчасти для мототехники.",
+    "title": "{siteName} — мотоциклы, запчасти и мотосервис",
+    "description": "Мотоциклы, запчасти, шлемы и экипировка, сервис и ремонт мотоциклов. Подберите совместимые с вашим мотоциклом запчасти онлайн.",
     "categoryTitle": "{category} — {siteName}",
     "categoryTitleWithPage": "{category} — Страница {page} — {siteName}",
     "categoryDescription": "{category} — лучший выбор и цены в {siteName}.",
@@ -20,7 +20,12 @@
     "privacyTitle": "Политика конфиденциальности — {siteName}",
     "privacyDescription": "Как {siteName} собирает, использует и защищает ваши персональные данные.",
     "catalogTitle": "Каталог — {siteName}",
-    "catalogDescription": "Просмотрите полный каталог {siteName} по категориям."
+    "catalogDescription": "Просмотрите полный каталог {siteName} по категориям.",
+    "titleWithCity": "{siteName} — мотоциклы, запчасти и мотосервис | {city}",
+    "descriptionWithCity": "Мотоциклы, запчасти, шлемы и экипировка, сервис и ремонт мотоциклов — {city}. Подберите совместимые с вашим мотоциклом запчасти онлайн.",
+    "serviceTitle": "Сервис и ремонт мотоциклов — {siteName}",
+    "serviceDescription": "Мотосервис {siteName}: {services}. Часы работы, адрес и запись.",
+    "serviceDescriptionGeneric": "Сервис и ремонт мотоциклов в {siteName} — часы работы, адрес и запись."
   },
   "Nav": {
     "home": "Главная",
@@ -316,7 +321,8 @@
     "searchGarageLabel": "Выбрать из вашего гаража",
     "searchGaragePlaceholder": "Выберите вашу технику",
     "searchOrDivider": "или",
-    "searchButton": "Поиск"
+    "searchButton": "Поиск",
+    "seoHeading": "Мотоциклы, запчасти, экипировка и мотосервис"
   },
   "HomeInfoCards": {
     "heading": "Познакомьтесь с MotoStock 22",
@@ -350,7 +356,8 @@
     "thursdayShort": "Чт",
     "fridayShort": "Пт",
     "saturdayShort": "Сб",
-    "sundayShort": "Вс"
+    "sundayShort": "Вс",
+    "serviceTitle": "Сервис"
   },
   "Catalog": {
     "title": "Каталог",
@@ -743,5 +750,18 @@
       "promoCodeScopeAllProducts": "все товары",
       "promoCodeScopeAllVehicles": "вся техника"
     }
+  },
+  "Service": {
+    "title": "Мотосервис",
+    "intro": "Наш сервисный центр обслужит ваш мотоцикл — от планового ТО до ремонта. Запчасти подбираются на месте, а история обслуживания хранится в гараже вашего профиля.",
+    "servicesHeading": "Что мы делаем",
+    "noServices": "Список услуг скоро появится — свяжитесь с нами для подробностей.",
+    "contactHeading": "Запись и консультация",
+    "contactText": "Позвоните или приходите, чтобы записаться на сервис или уточнить цену.",
+    "callButton": "Позвонить",
+    "contactLink": "Адрес и контакты",
+    "partsHeading": "Запчасти для вашего мотоцикла",
+    "partsText": "Добавьте мотоцикл в гараж и смотрите только подходящие к нему запчасти.",
+    "partsLink": "Открыть гараж"
   }
 }

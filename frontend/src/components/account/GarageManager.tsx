@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { buildVehicleCatalogSlug } from "@/lib/api/vehicle-catalog";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -234,7 +235,7 @@ export function GarageManager({
 
                   <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3">
                     <Link
-                      href={`/compatible-products/${vehicle.vehicleCatalog.id}`}
+                      href={`/compatible-products/${buildVehicleCatalogSlug(vehicle.vehicleCatalog)}`}
                       className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
                     >
                       {searchIcon}

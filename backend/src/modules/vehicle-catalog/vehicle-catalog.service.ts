@@ -11,6 +11,9 @@ import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { applyVehicleCatalogAdminFilters } from "../filters/vehicle-catalog/vehicle-catalog-filter-registry.js";
 import { resolvePage } from "../../lib/pagination.js";
 import { vehicleCatalogRepository } from "./vehicle-catalog.repository.js";
+import { cache } from "../../lib/cache.js";
+import { buildVehicleCompatibilityWhere } from "../products/products.service.js";
+import { productsRepository } from "../products/products.repository.js";
 import type {
   CreateVehicleCatalogInput,
   SubmitVehicleCatalogInput,
@@ -207,6 +210,31 @@ export async function listVehicleCatalogOptions() {
     yearFrom: row.yearFrom,
     yearTo: row.yearTo,
   }));
+}
+
+// Sitemap feed for the "parts for <vehicle>" pages (/compatible-products/…):
+// only vehicles at least one active product actually fits — an empty page
+// is noindex anyway (see that page's generateMetadata), so listing it would
+// just waste crawl budget. One compatibility count per catalog entry, so the
+// result is cached for an hour; the sitemap is the only caller.
+const COMPATIBLE_OPTIONS_CACHE_KEY = "vehicleCatalog:optionsWithCompatibleProducts";
+const COMPATIBLE_OPTIONS_CACHE_TTL_MS = 60 * 60 * 1000;
+
+export async function listVehicleCatalogOptionsWithCompatibleProducts() {
+  const cached = cache.get<Awaited<ReturnType<typeof listVehicleCatalogOptions>>>(COMPATIBLE_OPTIONS_CACHE_KEY);
+  if (cached) return cached;
+
+  const options = await listVehicleCatalogOptions();
+  const withProducts: typeof options = [];
+  for (const option of options) {
+    const vehicleCompatibilityWhere = await buildVehicleCompatibilityWhere(option.id);
+    if ((await productsRepository.count({ vehicleCompatibilityWhere })) > 0) {
+      withProducts.push(option);
+    }
+  }
+
+  cache.set(COMPATIBLE_OPTIONS_CACHE_KEY, withProducts, COMPATIBLE_OPTIONS_CACHE_TTL_MS);
+  return withProducts;
 }
 
 export async function getVehicleCatalogEntry(id: number) {

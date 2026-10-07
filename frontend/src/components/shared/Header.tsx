@@ -211,6 +211,9 @@ export function Header({
           </div>
           <div className="flex items-center gap-3">
             <nav className="flex items-center gap-4">
+              <Link href="/service" className="transition-colors hover:text-primary-text">
+                {tFooter("serviceTitle")}
+              </Link>
               <Link href="/about" className="transition-colors hover:text-primary-text">
                 {tFooter("aboutUs")}
               </Link>
@@ -538,6 +541,14 @@ export function Header({
             })}
 
             <div className="my-2 border-t border-border" />
+
+            <Link
+              href="/service"
+              onClick={() => setIsOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+            >
+              {tFooter("serviceTitle")}
+            </Link>
 
             <Link
               href="/about"

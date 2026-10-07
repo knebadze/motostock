@@ -56,8 +56,16 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "Metadata" });
-  const title = t("title", { siteName: siteConfig.name });
-  const description = t("description");
+  // Names what the shop is and where (motorcycles, parts, service + its
+  // city from company info) — the searches it should be found for. The city
+  // is appended rather than inflected ("| თბილისი"), so any city name reads
+  // correctly in all three languages.
+  const companyInfo = await getCompanyInfoFromServer();
+  const city = companyInfo.city ? localizedLookupName(companyInfo.city, locale) : null;
+  const title = city
+    ? t("titleWithCity", { siteName: siteConfig.name, city })
+    : t("title", { siteName: siteConfig.name });
+  const description = city ? t("descriptionWithCity", { city }) : t("description");
 
   return {
     title,

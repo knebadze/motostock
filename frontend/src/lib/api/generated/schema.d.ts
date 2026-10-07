@@ -3793,6 +3793,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicle-catalog/options/with-compatible-products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Catalog entries (lean picker shape) that at least one active product fits — sitemap feed, public */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Vehicle catalog options with compatible products */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["VehicleCatalogOption"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicle-catalog/{id}": {
         parameters: {
             query?: never;
@@ -13230,6 +13268,100 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/slug-redirects/products/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Current URL parts of a product that used to have this slug (renamed) — public */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Current slug */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProductSlugRedirect"];
+                    };
+                };
+                /** @description Not a known old slug */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/slug-redirects/categories/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Current slug of a category that used to have this slug (renamed) — public */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Current slug */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CategorySlugRedirect"];
+                    };
+                };
+                /** @description Not a known old slug */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/faq/public": {
         parameters: {
             query?: never;
@@ -13774,6 +13906,44 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/service-types/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active workshop service types, names only (storefront /service page) — public */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Public service types */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["PublicServiceType"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -17581,6 +17751,16 @@ export interface components {
         UploadRichTextImageResult: {
             url: string;
         };
+        ProductSlugRedirect: {
+            /** @example brembo-brake-pads */
+            slug: string;
+            /** @example brake-pads */
+            categorySlug: string;
+        };
+        CategorySlugRedirect: {
+            /** @example helmets */
+            slug: string;
+        };
         CreateFaqInput: {
             question: {
                 ka: string;
@@ -17692,6 +17872,14 @@ export interface components {
             /** @example 45 */
             defaultPrice?: number | null;
             isActive?: boolean;
+        };
+        PublicServiceType: {
+            id: number;
+            name: {
+                ka: string;
+                en: string;
+                ru: string;
+            };
         };
         UpdateServiceTypeInput: {
             name?: {

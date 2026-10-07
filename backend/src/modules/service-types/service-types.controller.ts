@@ -11,6 +11,11 @@ export async function list(_req: Request, res: Response) {
   res.status(200).json({ items });
 }
 
+export async function listPublic(_req: Request, res: Response) {
+  const items = await serviceTypesService.listPublicServiceTypes();
+  res.status(200).json({ items });
+}
+
 export async function create(req: Request<unknown, unknown, CreateServiceTypeInput>, res: Response) {
   const item = await serviceTypesService.createServiceType(req.body);
   res.status(201).json({ item });

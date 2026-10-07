@@ -4,6 +4,7 @@ import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { applyCategoryAdminFilters } from "../filters/category/category-filter-registry.js";
 import { categoriesRepository } from "./categories.repository.js";
+import { recordSlugRename } from "../slug-redirects/slug-redirects.service.js";
 import type {
   CategoryListQuery,
   CreateCategoryInput,
@@ -187,6 +188,11 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
     "slug",
     "ეს slug უკვე გამოყენებულია",
   );
+
+  // Old URL keeps working — 301 to the new slug (see slug-redirects).
+  if (input.slug && input.slug !== existing.slug) {
+    await recordSlugRename("CATEGORY", id, existing.slug, input.slug);
+  }
 
   return toResponse(category);
 }

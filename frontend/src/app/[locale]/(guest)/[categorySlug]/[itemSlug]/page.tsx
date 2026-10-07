@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
   getCategoriesFromServer,
+  getCategorySlugRedirectFromServer,
   getFrequentlyBoughtTogetherFromServer,
+  getProductSlugRedirectFromServer,
   getProductDetailFromServer,
   getSimilarProductsFromServer,
   getVehicleListingFromServer,
@@ -21,6 +23,7 @@ import { JsonLd } from "@/components/shared/JsonLd";
 import { ProductDetailPage } from "@/components/shop/product-detail/ProductDetailPage";
 import { VehicleListingDetailPage } from "@/components/shop/vehicle-listing-detail/VehicleListingDetailPage";
 import { buildSocialMetadata } from "@/lib/share-metadata";
+import { permanentRedirect } from "@/i18n/navigation";
 import { formatPrice } from "@/lib/format";
 
 type Locale = "ka" | "en" | "ru";
@@ -145,6 +148,12 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
   const categories = await getCategoriesFromServer();
   const category = categories.find((item) => item.slug === categorySlug);
   if (!category) {
+    // A renamed category's old URL — 301 to its current slug (the item
+    // itself is re-checked on the next request).
+    const moved = await getCategorySlugRedirectFromServer(categorySlug);
+    if (moved) {
+      permanentRedirect({ href: `/${moved.slug}/${itemSlug}`, locale });
+    }
     notFound();
   }
 
@@ -155,6 +164,16 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
     const listing = id != null ? await getVehicleListingFromServer(id) : null;
     if (!listing) {
       notFound();
+    }
+
+    // Only the id is read from the URL, so any category path or slug prefix
+    // used to render the same listing — duplicates the canonical tag only
+    // hinted at. Now one URL: everything else 301s to it (also covers old
+    // bare-id links and a renamed brand/model).
+    const canonicalCategorySlug = listing.vehicleCatalog.category.slug;
+    const canonicalItemSlug = buildVehicleListingSlug(listing);
+    if (categorySlug !== canonicalCategorySlug || itemSlug !== canonicalItemSlug) {
+      permanentRedirect({ href: `/${canonicalCategorySlug}/${canonicalItemSlug}`, locale });
     }
 
     const breadcrumbChain = getAncestorChain(categories, listing.vehicleCatalog.category.id);
@@ -242,7 +261,17 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
   const selectedVehicleCatalogId = (await cookies()).get(SELECTED_VEHICLE_COOKIE)?.value;
   const product = await getProductDetailFromServer(itemSlug, selectedVehicleCatalogId);
   if (!product) {
+    // A renamed product's old slug — 301 to its current URL.
+    const moved = await getProductSlugRedirectFromServer(itemSlug);
+    if (moved) {
+      permanentRedirect({ href: `/${moved.categorySlug}/${moved.slug}`, locale });
+    }
     notFound();
+  }
+  // Products are looked up by slug alone, so the same product used to
+  // render under any category in the path — 301 to its real one.
+  if (product.category.slug !== categorySlug) {
+    permanentRedirect({ href: `/${product.category.slug}/${product.slug}`, locale });
   }
 
   const productCategory = categories.find((item) => item.slug === product.category.slug);

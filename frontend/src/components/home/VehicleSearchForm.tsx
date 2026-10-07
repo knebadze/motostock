@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
+import { buildVehicleCatalogSlug } from "@/lib/api/vehicle-catalog";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Select } from "@/components/shared/Select";
@@ -83,7 +84,7 @@ export function VehicleSearchForm({
         (entry.yearTo == null || yearNum <= entry.yearTo),
     );
     if (!resolved) return;
-    router.push(`/compatible-products/${resolved.id}`);
+    router.push(`/compatible-products/${buildVehicleCatalogSlug(resolved)}`);
   }
 
   const canSearch = Boolean(garageVehicleId) || Boolean(brandId && modelId && year);

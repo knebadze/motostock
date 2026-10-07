@@ -2,6 +2,7 @@ import { apiClient } from "./client";
 import type { LocalizedString } from "./categories";
 import type { AdminFilterEntry } from "./admin-filters";
 import type { components } from "./generated/schema";
+import { slugify } from "../categories-tree";
 
 // Response/input shapes below aliasing `Schemas[...]` are generated from the
 // backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
@@ -27,6 +28,36 @@ export type VehicleCatalogEntry = Schemas["VehicleCatalog"];
 export type VehicleCatalogOption = Schemas["VehicleCatalogOption"];
 
 export type VehicleCatalogInput = Schemas["CreateVehicleCatalogInput"];
+
+// URL slug for a vehicle's "parts that fit" page (/compatible-products/…):
+// "honda-cbr600rr-2007-2012-123" — brand, model, variant, years, then the
+// catalog id, which is all parseVehicleCatalogIdFromSlug reads back (same
+// trailing-id scheme as vehicle listings' buildVehicleListingSlug), so a
+// renamed brand/model only changes the slug, never breaks the page.
+export function buildVehicleCatalogSlug(entry: {
+  id: number;
+  brand: { slug: string };
+  model: { slug: string };
+  variant: string;
+  yearFrom: number | null;
+  yearTo: number | null;
+}): string {
+  const parts = [entry.brand.slug, entry.model.slug, slugify(entry.variant)];
+  if (entry.yearFrom != null) parts.push(String(entry.yearFrom));
+  if (entry.yearTo != null && entry.yearTo !== entry.yearFrom) parts.push(String(entry.yearTo));
+  parts.push(String(entry.id));
+  return parts.filter(Boolean).join("-");
+}
+
+// Inverse of buildVehicleCatalogSlug — the trailing number. Also accepts the
+// old bare-id URLs (/compatible-products/123), which the page then
+// 301-redirects to the slugged form.
+export function parseVehicleCatalogIdFromSlug(slug: string): number | null {
+  const match = /(\d+)$/.exec(slug);
+  if (!match) return null;
+  const id = Number(match[1]);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
 
 export type SubmitVehicleCatalogInput = Schemas["SubmitVehicleCatalogInput"];
 

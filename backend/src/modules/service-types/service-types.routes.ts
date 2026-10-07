@@ -10,6 +10,7 @@ import {
   createServiceTypeSchema,
   reorderServiceTypesSchema,
   serviceTypeIdParamSchema,
+  publicServiceTypeResponseSchema,
   serviceTypeResponseSchema,
   updateServiceTypeSchema,
 } from "./service-types.schema.js";
@@ -19,6 +20,8 @@ export const serviceTypesRouter = Router();
 // OPERATOR (the workshop foreman) gets the full "სახელოსნო" section,
 // service-type management included — it's the workshop's own price/service
 // list, not catalog/discount data.
+// Public — the storefront /service page (names only).
+serviceTypesRouter.get("/public", serviceTypesController.listPublic);
 serviceTypesRouter.get(
   "/",
   requireAuth,
@@ -67,6 +70,19 @@ registry.registerPath({
   security,
   responses: {
     200: { description: "Service types", content: { "application/json": { schema: listResponse } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/service-types/public",
+  tags: ["ServiceTypes"],
+  summary: "Active workshop service types, names only (storefront /service page) — public",
+  responses: {
+    200: {
+      description: "Public service types",
+      content: { "application/json": { schema: z.object({ items: z.array(publicServiceTypeResponseSchema) }) } },
+    },
   },
 });
 

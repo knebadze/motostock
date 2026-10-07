@@ -30,6 +30,11 @@ vehicleCatalogRouter.get(
 // Public, like GET / — registered before /:id so the literal "options"
 // segment isn't swallowed by the :id param route.
 vehicleCatalogRouter.get("/options", vehicleCatalogController.listOptions);
+// Public sitemap feed — see listVehicleCatalogOptionsWithCompatibleProducts.
+vehicleCatalogRouter.get(
+  "/options/with-compatible-products",
+  vehicleCatalogController.listOptionsWithCompatibleProducts,
+);
 vehicleCatalogRouter.get(
   "/:id",
   validate(vehicleCatalogIdParamSchema, "params"),
@@ -107,6 +112,19 @@ registry.registerPath({
   responses: {
     200: {
       description: "Vehicle catalog options",
+      content: { "application/json": { schema: z.object({ items: z.array(vehicleCatalogOptionResponseSchema) }) } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-catalog/options/with-compatible-products",
+  tags: ["VehicleCatalog"],
+  summary: "Catalog entries (lean picker shape) that at least one active product fits — sitemap feed, public",
+  responses: {
+    200: {
+      description: "Vehicle catalog options with compatible products",
       content: { "application/json": { schema: z.object({ items: z.array(vehicleCatalogOptionResponseSchema) }) } },
     },
   },

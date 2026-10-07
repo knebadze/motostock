@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
   getCategoriesFromServer,
+  getCategorySlugRedirectFromServer,
   getCategoryFiltersFromServer,
   getMyGarageFromServer,
   getProductBrandFacetsFromServer,
@@ -18,6 +19,7 @@ import { JsonLd } from "@/components/shared/JsonLd";
 import { ProductShopPage } from "@/components/shop/ProductShopPage";
 import { VehicleShopPage } from "@/components/shop/VehicleShopPage";
 import { buildSocialMetadata } from "@/lib/share-metadata";
+import { permanentRedirect } from "@/i18n/navigation";
 
 type Locale = "ka" | "en" | "ru";
 type PageParams = { locale: Locale; categorySlug: string };
@@ -95,6 +97,15 @@ export default async function CategoryShopPage({
   const categories = await getCategoriesFromServer();
   const category = categories.find((item) => item.slug === categorySlug);
   if (!category) {
+    // A renamed category's old URL — 301 to its current slug, keeping the
+    // page/sort/event query.
+    const moved = await getCategorySlugRedirectFromServer(categorySlug);
+    if (moved) {
+      const query = Object.fromEntries(
+        Object.entries({ page, sort, eventId }).filter(([, value]) => value != null),
+      ) as Record<string, string>;
+      permanentRedirect({ href: { pathname: `/${moved.slug}`, query }, locale });
+    }
     notFound();
   }
 
