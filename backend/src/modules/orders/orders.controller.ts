@@ -12,7 +12,8 @@ import {
   getAnyOrderInvoicePdf,
   getAnyOrderPackingSlipPdf,
 } from "./orders-query.service.js";
-import { updateOrderStatus, retryOrderFinaSync } from "./orders-admin.service.js";
+import { updateOrderStatus, retryOrderFinaSync, resolveOrderFinaSync } from "./orders-admin.service.js";
+import type { ResolveFinaPushInput } from "./orders.schema.js";
 import type {
   CheckoutInput,
   DownloadInvoiceQuery,
@@ -120,5 +121,10 @@ export async function updateStatus(
 
 export async function retryFinaSync(req: Request, res: Response) {
   const order = await retryOrderFinaSync(Number(req.params.id));
+  res.status(200).json({ order });
+}
+
+export async function resolveFinaSync(req: Request, res: Response) {
+  const order = await resolveOrderFinaSync(Number(req.params.id), req.body as ResolveFinaPushInput);
   res.status(200).json({ order });
 }

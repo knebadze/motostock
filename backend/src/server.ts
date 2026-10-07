@@ -15,6 +15,7 @@ import {
   getFinaOrderPushRetryIntervalMinutes,
   getFinaSyncIntervalMinutes,
 } from "./modules/settings/settings.service.js";
+import { FINA_SYNC_DEFAULTS } from "./modules/settings/constants/index.js";
 import { DEFAULT_JOB_CRON, JOB_DEFINITIONS } from "./modules/scheduled-jobs/scheduled-jobs.registry.js";
 import {
   runScheduledJob,
@@ -49,7 +50,17 @@ if (isFinaConfigured()) {
             .finally(scheduleNext);
         }, minutes * 60_000);
       })
-      .catch((err: unknown) => logger.error({ err }, "Failed to read FINA sync interval setting"));
+      .catch((err: unknown) => {
+        // Never let one failed settings read stop the schedule for good —
+        // retry on the default interval.
+        logger.error({ err }, "Failed to read FINA sync interval setting — using the default");
+        if (finaSyncStopped) return;
+        finaSyncTimer = setTimeout(() => {
+          runSync("SCHEDULED")
+            .catch((syncErr: unknown) => logger.error({ err: syncErr }, "Scheduled FINA sync failed"))
+            .finally(scheduleNext);
+        }, FINA_SYNC_DEFAULTS.intervalMinutes * 60_000);
+      });
   };
   scheduleNext();
   logger.info("FINA scheduled sync enabled (interval configurable in Settings)");
@@ -75,9 +86,16 @@ if (isFinaConfigured()) {
             if (finaSyncStopped) return;
             finaOrderPushTimer = setTimeout(runAndScheduleNext, minutes * 60_000);
           })
-          .catch((err: unknown) =>
-            logger.error({ err }, "Failed to read FINA order-push retry interval setting"),
-          );
+          .catch((err: unknown) => {
+            // Same as the stock sync above: fall back to the default rather
+            // than silently ending the sweep until the next restart.
+            logger.error({ err }, "Failed to read FINA order-push retry interval setting — using the default");
+            if (finaSyncStopped) return;
+            finaOrderPushTimer = setTimeout(
+              runAndScheduleNext,
+              FINA_SYNC_DEFAULTS.orderPushRetryIntervalMinutes * 60_000,
+            );
+          });
       });
   };
   finaOrderPushTimer = setTimeout(runAndScheduleNext, FINA_ORDER_PUSH_FIRST_RUN_DELAY_MS);

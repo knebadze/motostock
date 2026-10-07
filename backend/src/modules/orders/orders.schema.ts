@@ -45,6 +45,21 @@ export const orderIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+// The admin's answer for a FINA push whose outcome is unknown — see
+// fina-sync.service.ts's resolveOrderFinaPush.
+export const resolveFinaPushSchema = registry.register(
+  "ResolveFinaPushInput",
+  z.discriminatedUnion("outcome", [
+    z.object({
+      outcome: z.literal("RECORDED"),
+      // Required when the outstanding document is the sale.
+      finaOperationId: z.int().positive().optional().openapi({ example: 12345 }),
+    }),
+    z.object({ outcome: z.literal("NOT_RECORDED") }),
+  ]),
+);
+export type ResolveFinaPushInput = z.infer<typeof resolveFinaPushSchema>;
+
 // Cross-field rule ("reason required when the target status is CANCELLED")
 // isn't checked here — this schema only sees statusId, not the status's
 // key, and the mapping is a DB row (OrderStatus is admin-editable, not a
@@ -309,6 +324,9 @@ export const adminOrderResponseSchema = registry.register(
     finaOutOperationId: z.int().nullable(),
     // Why the last FINA push failed (or is waiting) — see order.prisma.
     finaLastError: z.string().nullable(),
+    // FINA may or may not have the last document — the admin must check
+    // FINA and resolve (POST /orders/{id}/fina-resolve) instead of retrying.
+    finaPushUncertain: z.boolean(),
   }),
 );
 

@@ -19,6 +19,7 @@ import {
 import { syncOrderStock, type OrderStockSyncItem } from "@/lib/api/fina-sync";
 import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
 import { FinaSyncBadge } from "./FinaSyncBadge";
+import { FinaResolvePanel } from "./FinaResolvePanel";
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
 import { DELIVERY_SPEED_LABELS, FULFILLMENT_LABELS, RISK_FLAG_LABELS } from "./order-labels";
 
@@ -218,7 +219,10 @@ export function OrderDetailModal({
                   <span className="text-sm font-medium text-foreground">FINA სინქრონიზაცია:</span>
                   <FinaSyncBadge status={order.finaSyncStatus} />
                 </div>
-                {(order.finaSyncStatus === "FAILED" || order.finaSyncStatus === "PENDING") && (
+                {/* No blind retry while the outcome is unknown — the panel
+                    below resolves it instead (a retry could double it). */}
+                {(order.finaSyncStatus === "FAILED" || order.finaSyncStatus === "PENDING") &&
+                  !order.finaPushUncertain && (
                   <button
                     type="button"
                     onClick={handleRetryFinaSync}
@@ -234,6 +238,15 @@ export function OrderDetailModal({
                   checks FINA before pressing retry. */}
               {order.finaLastError && order.finaSyncStatus !== "SYNCED" && (
                 <p className="text-xs text-muted-foreground">{order.finaLastError}</p>
+              )}
+              {order.finaPushUncertain && order.finaSyncStatus !== "SYNCED" && (
+                <FinaResolvePanel
+                  order={order}
+                  onResolved={(updated) => {
+                    setOrder(updated);
+                    onStatusChanged();
+                  }}
+                />
               )}
             </div>
           )}

@@ -50,8 +50,8 @@ export const finaSyncRepository = {
   // The ONE place FINA stock is written into ProductVariant.stockQuantity
   // (scheduled/manual sync, checkout refresh, admin per-order/per-product
   // re-checks all go through here). `available` is FINA's sellable quantity
-  // for the variant (rest - reserve, see fina-sync.service.ts) as of
-  // `snapshotTakenAt` - taken BEFORE the FINA request was sent.
+  // for the variant (rest - reserve, see fina-sync.service.ts) in a snapshot
+  // requested at `snapshot.takenAt` and answered by `snapshot.finishedAt`.
   //
   // FINA's number can't simply be copied over: web orders FINA hasn't
   // recorded yet still have to count. Per FINA-tracked order touching the
@@ -60,42 +60,53 @@ export const finaSyncRepository = {
   //   - not cancelled, sale NOT in the snapshot (push pending/failed, or
   //     recorded after the snapshot was taken)        -> -quantity
   //   - cancelled, sale in the snapshot but its return NOT (return
-  //     pending/failed, or recorded after the snapshot) -> +quantity
+  //     pending/failed, or sent after the snapshot)   -> +quantity
   //   - everything else is already consistent            -> 0
-  // "In the snapshot" = recorded before snapshotTakenAt; a document whose
-  // synced-at is unknown (pushed before these columns existed) counts as in.
+  // Every borderline case errs LOW (never oversells):
+  //   - a sale counts as in the snapshot only if FINA confirmed it before the
+  //     snapshot was even requested (finaSaleSyncedAt < takenAt);
+  //   - a return counts as in it if it was SENT before the snapshot came back
+  //     (finaReturnSyncedAt holds the send time; < finishedAt) — or if its
+  //     outcome is uncertain (finaPushUncertain: FINA may well have it).
+  // A document whose time is unknown (pushed before these columns existed,
+  // or confirmed by an admin after the fact) counts as in.
   //
   // The variant rows are locked (FOR UPDATE, id order) before that
   // adjustment is computed, so an order placed concurrently either committed
   // first (and is counted) or waits for this write and then decrements the
   // new value - it can never be overwritten. placeOrder/cancel lock variants
-  // in the same id order, so the two can't deadlock.
+  // in the same id order, so the two can't deadlock. A row last written from
+  // a NEWER snapshot (finaSnapshotAt) is skipped: a slow full sync must not
+  // undo a checkout refresh's fresher numbers.
   //
   // Also flips the SOLD/AVAILABLE listing status the same way placeOrder/
   // cancel do (only those two auto-managed values - never a status an admin
   // set by hand).
   async applyFinaAvailability(
     entries: { variantId: number; available: number }[],
-    snapshotTakenAt: Date,
+    snapshot: { takenAt: Date; finishedAt: Date },
     listingStatusIds: { sold: number; available: number } | null,
   ): Promise<{ id: number; previousStock: number; newStock: number }[]> {
     if (entries.length === 0) return [];
     const availableById = new Map(entries.map((entry) => [entry.variantId, entry.available]));
     const ids = [...availableById.keys()].sort((a, b) => a - b);
     const idList = Prisma.join(ids);
+    const { takenAt, finishedAt } = snapshot;
 
     return prisma.$transaction(
       async (tx) => {
-        const locked = await tx.$queryRaw<{ id: number; stockQuantity: number }[]>`
-          SELECT id, "stockQuantity" FROM "dbo"."ProductVariant"
+        const locked = await tx.$queryRaw<{ id: number; stockQuantity: number; finaSnapshotAt: Date | null }[]>`
+          SELECT id, "stockQuantity", "finaSnapshotAt" FROM "dbo"."ProductVariant"
           WHERE id IN (${idList})
           ORDER BY id
           FOR UPDATE
         `;
-        if (locked.length === 0) return [];
+        const writable = locked.filter((row) => row.finaSnapshotAt == null || row.finaSnapshotAt <= takenAt);
+        if (writable.length === 0) return [];
+        const writableIdList = Prisma.join(writable.map((row) => row.id));
 
-        const saleInSnapshot = Prisma.sql`(o."finaOutOperationId" IS NOT NULL AND (o."finaSaleSyncedAt" IS NULL OR o."finaSaleSyncedAt" < ${snapshotTakenAt}))`;
-        const returnInSnapshot = Prisma.sql`(o."finaSyncStatus" = 'SYNCED' AND (o."finaReturnSyncedAt" IS NULL OR o."finaReturnSyncedAt" < ${snapshotTakenAt}))`;
+        const saleInSnapshot = Prisma.sql`(o."finaOutOperationId" IS NOT NULL AND (o."finaSaleSyncedAt" IS NULL OR o."finaSaleSyncedAt" < ${takenAt}))`;
+        const returnInSnapshot = Prisma.sql`(o."finaPushUncertain" OR (o."finaSyncStatus" = 'SYNCED' AND (o."finaReturnSyncedAt" IS NULL OR o."finaReturnSyncedAt" < ${finishedAt})))`;
         // The first OR-group is an index-friendly superset of the two exact
         // cases after it: every order that can be out of step is either
         // still being pushed, or had a document recorded after the snapshot.
@@ -104,12 +115,12 @@ export const finaSyncRepository = {
                  SUM(CASE WHEN o."cancelledAt" IS NULL THEN -oi.quantity ELSE oi.quantity END)::int AS adjustment
           FROM "dbo"."OrderItem" oi
           JOIN "dbo"."Order" o ON o.id = oi."orderId"
-          WHERE oi."productVariantId" IN (${idList})
+          WHERE oi."productVariantId" IN (${writableIdList})
             AND o."finaSyncStatus" <> 'NOT_APPLICABLE'
             AND (
               o."finaSyncStatus" IN ('PENDING', 'FAILED')
-              OR o."finaSaleSyncedAt" >= ${snapshotTakenAt}
-              OR o."finaReturnSyncedAt" >= ${snapshotTakenAt}
+              OR o."finaSaleSyncedAt" >= ${takenAt}
+              OR o."finaReturnSyncedAt" >= ${finishedAt}
             )
             AND (
               (o."cancelledAt" IS NULL AND NOT ${saleInSnapshot})
@@ -119,7 +130,7 @@ export const finaSyncRepository = {
         `;
         const adjustmentById = new Map(adjustments.map((row) => [row.id, row.adjustment]));
 
-        const results = locked.map((row) => ({
+        const results = writable.map((row) => ({
           id: row.id,
           previousStock: row.stockQuantity,
           newStock: Math.max(0, availableById.get(row.id)! + (adjustmentById.get(row.id) ?? 0)),
@@ -131,18 +142,19 @@ export const finaSyncRepository = {
         const values = Prisma.join(results.map((row) => Prisma.sql`(${row.id}::int, ${row.newStock}::int)`));
         await tx.$executeRaw`
           UPDATE "dbo"."ProductVariant" AS pv
-          SET "stockQuantity" = v.stock
+          SET "stockQuantity" = v.stock, "finaSnapshotAt" = ${takenAt}
           FROM (VALUES ${values}) AS v(id, stock)
           WHERE pv.id = v.id
         `;
 
         if (listingStatusIds) {
+          const writtenIds = results.map((row) => row.id);
           await tx.productVariant.updateMany({
-            where: { id: { in: ids }, statusId: listingStatusIds.sold, stockQuantity: { gt: 0 } },
+            where: { id: { in: writtenIds }, statusId: listingStatusIds.sold, stockQuantity: { gt: 0 } },
             data: { statusId: listingStatusIds.available },
           });
           await tx.productVariant.updateMany({
-            where: { id: { in: ids }, statusId: listingStatusIds.available, stockQuantity: { lte: 0 } },
+            where: { id: { in: writtenIds }, statusId: listingStatusIds.available, stockQuantity: { lte: 0 } },
             data: { statusId: listingStatusIds.sold },
           });
         }
@@ -156,26 +168,35 @@ export const finaSyncRepository = {
     );
   },
 
-  // Final outcome of a push (SYNCED after a return, or NOT_APPLICABLE when
-  // there turned out to be nothing to push) — also releases the push lease
-  // and resets the attempt counter.
+  // Final outcome of a push (NOT_APPLICABLE when there turned out to be
+  // nothing to push) — also releases the lease, resets the attempt counter
+  // and clears any error/uncertainty.
   setOrderFinaSyncStatus(orderId: number, status: FinaOrderSyncStatus) {
     return prisma.order.update({
       where: { id: orderId },
-      data: { finaSyncStatus: status, finaPushAttempts: 0, finaPushLockedUntil: null, finaLastError: null },
+      data: {
+        finaSyncStatus: status,
+        finaPushAttempts: 0,
+        finaPushLockedUntil: null,
+        finaLastError: null,
+        finaPushUncertain: false,
+      },
     });
   },
 
-  // A successful RETURN push - synced-at feeds applyFinaAvailability.
-  recordOrderReturnSynced(orderId: number) {
+  // A successful RETURN push. `sentAt` is when the request was SENT, not
+  // when FINA answered — see applyFinaAvailability for why that's the safe
+  // side for returns.
+  recordOrderReturnSynced(orderId: number, sentAt: Date) {
     return prisma.order.update({
       where: { id: orderId },
       data: {
         finaSyncStatus: "SYNCED",
-        finaReturnSyncedAt: new Date(),
+        finaReturnSyncedAt: sentAt,
         finaPushAttempts: 0,
         finaPushLockedUntil: null,
         finaLastError: null,
+        finaPushUncertain: false,
       },
     });
   },
@@ -185,33 +206,53 @@ export const finaSyncRepository = {
   // was in flight, it already re-queued the order as PENDING (see
   // orders.repository.ts's updateStatus) and marking it SYNCED here would
   // swallow the return push it now needs. The FINA operation id is stored
-  // either way — that return references it as out_id.
-  async recordOrderSaleSynced(orderId: number, finaOutOperationId: number) {
+  // either way — that return references it as out_id — and so is each
+  // line's FINA product id, which that return is built from.
+  async recordOrderSaleSynced(
+    orderId: number,
+    finaOutOperationId: number,
+    itemFinaProductIds: { itemId: number; finaProductId: number }[],
+  ) {
     const synced = {
       finaOutOperationId,
       finaSaleSyncedAt: new Date(),
       finaPushAttempts: 0,
       finaPushLockedUntil: null,
       finaLastError: null,
+      finaPushUncertain: false,
     };
-    const result = await prisma.order.updateMany({
-      where: { id: orderId, cancelledAt: null },
-      data: { ...synced, finaSyncStatus: "SYNCED" },
+    await prisma.$transaction(async (tx) => {
+      for (const item of itemFinaProductIds) {
+        await tx.orderItem.update({ where: { id: item.itemId }, data: { finaProductId: item.finaProductId } });
+      }
+      const result = await tx.order.updateMany({
+        where: { id: orderId, cancelledAt: null },
+        data: { ...synced, finaSyncStatus: "SYNCED" },
+      });
+      if (result.count === 0) {
+        await tx.order.update({ where: { id: orderId }, data: { ...synced, finaSyncStatus: "PENDING" } });
+      }
     });
-    if (result.count === 0) {
-      await prisma.order.update({ where: { id: orderId }, data: { ...synced, finaSyncStatus: "PENDING" } });
-    }
   },
 
+  // `uncertain`: FINA may have recorded the document anyway (see
+  // finaPushUncertain) — such a failure is never retried automatically.
   recordOrderPushFailure(
     orderId: number,
     status: "PENDING" | "FAILED",
     attempts: number,
     lastError: string,
+    uncertain: boolean,
   ) {
     return prisma.order.update({
       where: { id: orderId },
-      data: { finaSyncStatus: status, finaPushAttempts: attempts, finaPushLockedUntil: null, finaLastError: lastError },
+      data: {
+        finaSyncStatus: status,
+        finaPushAttempts: attempts,
+        finaPushLockedUntil: null,
+        finaLastError: lastError,
+        finaPushUncertain: uncertain,
+      },
     });
   },
 
@@ -232,23 +273,36 @@ export const finaSyncRepository = {
   // Takes the order's push lease — an atomic compare-and-set, so exactly one
   // of the immediate push / the sweep / a manual retry wins and the others
   // back off, without holding a DB connection (or an advisory lock) open for
-  // the length of the external FINA call. An expired lease (process killed
-  // mid-push) is claimable again.
+  // the length of the external FINA call.
+  //
+  // Every normal end of a push clears the lease, so a lease that is set but
+  // EXPIRED means the previous attempt died mid-call (process killed, DB
+  // down) — FINA may or may not have saved that document. Re-sending could
+  // record it twice, so such an order is NOT claimed: it's marked FAILED +
+  // uncertain for the admin to check FINA ("abandoned").
   async claimOrderPush(
     orderId: number,
     statuses: FinaOrderSyncStatus[],
     leaseMs: number,
-  ): Promise<boolean> {
+    abandonedMessage: string,
+  ): Promise<"claimed" | "abandoned" | "unavailable"> {
     const now = new Date();
-    const result = await prisma.order.updateMany({
-      where: {
-        id: orderId,
-        finaSyncStatus: { in: statuses },
-        OR: [{ finaPushLockedUntil: null }, { finaPushLockedUntil: { lt: now } }],
-      },
+    const claimed = await prisma.order.updateMany({
+      where: { id: orderId, finaSyncStatus: { in: statuses }, finaPushLockedUntil: null },
       data: { finaPushLockedUntil: new Date(now.getTime() + leaseMs) },
     });
-    return result.count === 1;
+    if (claimed.count === 1) return "claimed";
+
+    const abandoned = await prisma.order.updateMany({
+      where: { id: orderId, finaSyncStatus: { in: statuses }, finaPushLockedUntil: { lt: now } },
+      data: {
+        finaSyncStatus: "FAILED",
+        finaPushLockedUntil: null,
+        finaPushUncertain: true,
+        finaLastError: abandonedMessage,
+      },
+    });
+    return abandoned.count === 1 ? "abandoned" : "unavailable";
   },
 
   findOrderForPush(orderId: number) {
@@ -261,8 +315,54 @@ export const finaSyncRepository = {
         finaSyncStatus: true,
         finaPushAttempts: true,
         finaPushLockedUntil: true,
+        finaPushUncertain: true,
         cancelledAt: true,
-        items: { select: { productVariantId: true, quantity: true, unitPrice: true } },
+        items: {
+          select: { id: true, productVariantId: true, quantity: true, unitPrice: true, finaProductId: true },
+        },
+      },
+    });
+  },
+
+  // Admin resolution of an uncertain push (fina-sync.service.ts's
+  // resolveOrderFinaPush) — "FINA has it": the document's time is unknown,
+  // so its synced-at is left null, which stock sync reads as "already in
+  // every snapshot" (true: it was saved back when the push ran).
+  resolveSaleRecorded(
+    orderId: number,
+    finaOutOperationId: number,
+    nextStatus: "SYNCED" | "PENDING",
+    itemFinaProductIds: { itemId: number; finaProductId: number }[],
+  ) {
+    return prisma.$transaction(async (tx) => {
+      for (const item of itemFinaProductIds) {
+        await tx.orderItem.update({ where: { id: item.itemId }, data: { finaProductId: item.finaProductId } });
+      }
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          finaOutOperationId,
+          finaSaleSyncedAt: null,
+          finaSyncStatus: nextStatus,
+          finaPushAttempts: 0,
+          finaPushLockedUntil: null,
+          finaLastError: null,
+          finaPushUncertain: false,
+        },
+      });
+    });
+  },
+
+  resolveReturnRecorded(orderId: number) {
+    return prisma.order.update({
+      where: { id: orderId },
+      data: {
+        finaReturnSyncedAt: null,
+        finaSyncStatus: "SYNCED",
+        finaPushAttempts: 0,
+        finaPushLockedUntil: null,
+        finaLastError: null,
+        finaPushUncertain: false,
       },
     });
   },

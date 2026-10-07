@@ -15,6 +15,7 @@ import {
   downloadInvoiceQuerySchema,
   listOrdersQuerySchema,
   orderIdParamSchema,
+  resolveFinaPushSchema,
   orderResponseSchema,
   orderSummaryResponseSchema,
   reorderResultResponseSchema,
@@ -99,6 +100,13 @@ ordersRouter.post(
   requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(orderIdParamSchema, "params"),
   ordersController.retryFinaSync,
+);
+ordersRouter.post(
+  "/:id/fina-resolve",
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(orderIdParamSchema, "params"),
+  validate(resolveFinaPushSchema),
+  ordersController.resolveFinaSync,
 );
 
 const security = [{ cookieAuth: [] }];
@@ -243,6 +251,26 @@ registry.registerPath({
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
     403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/orders/{id}/fina-resolve",
+  tags: ["Orders"],
+  summary: "Record the admin's check of FINA for an uncertain push: the document is there (sale: with its operation id) or it isn't (re-queued) — admin/operator",
+  security,
+  request: {
+    params: orderIdParamSchema,
+    body: { content: { "application/json": { schema: resolveFinaPushSchema } } },
+  },
+  responses: {
+    200: { description: "Resolved — see the order's finaSyncStatus", content: { "application/json": { schema: adminOrderResponse } } },
+    400: { description: "Nothing to resolve, or the sale's operation id is missing", content: { "application/json": { schema: errorResponseSchema } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+    429: { description: "A push is in progress right now", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });
 

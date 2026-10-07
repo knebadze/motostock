@@ -3,7 +3,12 @@ import type { EmailTemplateKey } from "../../generated/prisma/index.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { orderStatusesRepository } from "../order-statuses/order-statuses.repository.js";
-import { processOrderFinaPush, retryOrderFinaPush } from "../fina-sync/fina-sync.service.js";
+import {
+  processOrderFinaPush,
+  resolveOrderFinaPush,
+  retryOrderFinaPush,
+} from "../fina-sync/fina-sync.service.js";
+import type { ResolveFinaPushInput } from "./orders.schema.js";
 import { sendEmailTemplate } from "../email-templates/email-templates.service.js";
 import { ordersRepository } from "./orders.repository.js";
 import {
@@ -54,6 +59,7 @@ function toOrderStatusUpdateResponse(order: OrderRow) {
     finaSyncStatus: order.finaSyncStatus,
     finaOutOperationId: order.finaOutOperationId,
     finaLastError: order.finaLastError,
+    finaPushUncertain: order.finaPushUncertain,
   };
 }
 
@@ -192,6 +198,13 @@ export async function retryOrderFinaSync(orderId: number) {
 
   await retryOrderFinaPush(order.id);
 
+  return getAnyOrder(orderId);
+}
+
+// The admin's "FINA-ში არის / არ არის" answer for an uncertain push (see
+// fina-sync.service.ts's resolveOrderFinaPush). Returns the refreshed order.
+export async function resolveOrderFinaSync(orderId: number, input: ResolveFinaPushInput) {
+  await resolveOrderFinaPush(orderId, input);
   return getAnyOrder(orderId);
 }
 

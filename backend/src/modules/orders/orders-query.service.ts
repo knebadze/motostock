@@ -238,5 +238,6 @@ export async function getAnyOrder(id: number) {
     finaSyncStatus: row.finaSyncStatus,
     finaOutOperationId: row.finaOutOperationId,
     finaLastError: row.finaLastError,
+    finaPushUncertain: row.finaPushUncertain,
   };
 }

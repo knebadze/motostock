@@ -182,6 +182,13 @@ model Order {
   // notably whether FINA may already have recorded the document (timeout /
   // no response), in which case a blind retry could double it.
   finaLastError       String?
+  // The last push attempt's outcome is unknown — FINA may or may not have
+  // recorded the document (timeout/no reply, or the process died mid-call).
+  // Never auto-retried; the admin checks FINA and resolves it (see
+  // fina-sync.service.ts's resolveOrderFinaPush). While set on a pending
+  // RETURN, stock sync assumes FINA already has it (errs low, never
+  // oversells — see fina-sync.repository.ts's applyFinaAvailability).
+  finaPushUncertain   Boolean   @default(false)
 
   // Foundation for the real bank-gateway integration (see PaymentStatus's
   // own comment) — set at placeOrder time to AWAITING_PAYMENT for a CARD

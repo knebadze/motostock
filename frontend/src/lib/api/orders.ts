@@ -173,3 +173,12 @@ export async function retryOrderFinaSync(id: number): Promise<AdminOrder> {
   const { data } = await apiClient.post<{ order: AdminOrder }>(`/orders/${id}/fina-sync`);
   return data.order;
 }
+
+export type ResolveFinaPushInput = Schemas["ResolveFinaPushInput"];
+
+// The admin's answer for an uncertain FINA push (order.finaPushUncertain) —
+// see the backend's resolveOrderFinaPush and FinaResolvePanel.tsx.
+export async function resolveOrderFinaSync(id: number, input: ResolveFinaPushInput): Promise<AdminOrder> {
+  const { data } = await apiClient.post<{ order: AdminOrder }>(`/orders/${id}/fina-resolve`, input);
+  return data.order;
+}

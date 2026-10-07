@@ -11142,6 +11142,95 @@ export interface paths {
         };
         trace?: never;
     };
+    "/orders/{id}/fina-resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record the admin's check of FINA for an uncertain push: the document is there (sale: with its operation id) or it isn't (re-queued) — admin/operator */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ResolveFinaPushInput"];
+                };
+            };
+            responses: {
+                /** @description Resolved — see the order's finaSyncStatus */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            order: components["schemas"]["AdminOrder"];
+                        };
+                    };
+                };
+                /** @description Nothing to resolve, or the sale's operation id is missing */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not authenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Insufficient permissions */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description A push is in progress right now */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/orders/{id}/fina-sync": {
         parameters: {
             query?: never;
@@ -16487,6 +16576,15 @@ export interface components {
             bankId?: number;
             idempotencyKey: string;
         };
+        ResolveFinaPushInput: {
+            /** @enum {string} */
+            outcome: "RECORDED";
+            /** @example 12345 */
+            finaOperationId?: number;
+        } | {
+            /** @enum {string} */
+            outcome: "NOT_RECORDED";
+        };
         UpdateOrderStatusInput: {
             statusId: number;
             cancellationReasonId?: number;
@@ -16643,6 +16741,7 @@ export interface components {
             finaSyncStatus: "NOT_APPLICABLE" | "PENDING" | "SYNCED" | "FAILED";
             finaOutOperationId: number | null;
             finaLastError: string | null;
+            finaPushUncertain: boolean;
         };
         FinaSyncRun: {
             id: number;

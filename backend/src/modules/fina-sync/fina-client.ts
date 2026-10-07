@@ -166,6 +166,15 @@ async function authHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
+// Statuses that mean the request was refused before anything was saved:
+// 4xx — except 408, a proxy's timeout, which may have already reached FINA —
+// and 503, what a proxy answers while FINA itself is down/unreachable (so a
+// FINA outage behind a proxy is retried automatically instead of sending
+// every order straight to "check FINA by hand"). 500/502/504 stay unknown.
+function isRefusalStatus(status: number): boolean {
+  return (status < 500 && status !== 408) || status === 503;
+}
+
 // A 4xx or an `ex` error in the envelope means FINA answered and refused —
 // nothing was recorded (safeToRetry). A 5xx or a body that isn't the
 // expected JSON envelope (e.g. a proxy's HTML error page) leaves it unknown.
@@ -181,7 +190,7 @@ async function readFinaResponse<T>(path: string, res: Response): Promise<T> {
     const detail = body?.ex ? `: ${body.ex}` : "";
     throw new FinaApiError(
       `FINA API-ის მოთხოვნა ვერ შესრულდა (${path}, ${res.status})${detail}`,
-      res.status < 500,
+      isRefusalStatus(res.status),
     );
   }
   if (!body) {
@@ -273,6 +282,18 @@ export function getProductsRestArray(prods: number[]): Promise<FinaProductRest[]
 // w_type=3 (no transport) and overlap_type=0 since a web order has no
 // waybill/driver/advance-overlap data to report; num=0/num_pfx="" let FINA
 // assign the document number itself.
+// A save reply without a usable operation id: FINA answered OK, so it most
+// likely saved the document — but without the id a later return can't
+// reference it. Treated as an uncertain outcome (never auto-retried) for the
+// admin to resolve with the id from FINA.
+function requireOperationId(response: FinaSaveDocResponse | null | undefined, path: string): number {
+  const id = response?.id;
+  if (typeof id !== "number" || !Number.isInteger(id) || id <= 0) {
+    throw new FinaApiError(`FINA-ს პასუხს დოკუმენტის ოპერაციის ნომერი აკლია (${path})`, false);
+  }
+  return id;
+}
+
 export async function saveDocProductOut(input: SaveDocProductOutInput): Promise<number> {
   const body = {
     id: 0,
@@ -317,7 +338,7 @@ export async function saveDocProductOut(input: SaveDocProductOutInput): Promise<
     services: [],
   };
   const response = await finaPost<FinaSaveDocResponse>("/api/operation/saveDocProductOut", body);
-  return response.id;
+  return requireOperationId(response, "saveDocProductOut");
 }
 
 // Records a return-from-customer in FINA (saveDocCustomerReturn) —
@@ -364,5 +385,5 @@ export async function saveDocCustomerReturn(input: SaveDocCustomerReturnInput): 
     "/api/operation/saveDocCustomerReturn",
     body,
   );
-  return response.id;
+  return requireOperationId(response, "saveDocCustomerReturn");
 }
