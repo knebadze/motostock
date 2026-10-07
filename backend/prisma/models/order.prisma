@@ -227,6 +227,9 @@ model Order {
   // analytics.repository.ts's cancellation metrics (count/lost-revenue/
   // reason-breakdown/recent-list) all range-filter on this.
   @@index([cancelledAt])
+  // fraud.repository.ts's findUserIdsForIp runs on every checkout's risk
+  // evaluation — a sequential scan of all orders without this.
+  @@index([ipAddress])
   // The PENDING-push sweep (fina-sync.repository.ts's findDueOrderPushIds)
   // runs every few minutes.
   @@index([finaSyncStatus])

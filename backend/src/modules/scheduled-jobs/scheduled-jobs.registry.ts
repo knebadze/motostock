@@ -6,6 +6,8 @@ import { pruneOrphanedRichTextImages } from "../media/media.service.js";
 import { fetchNbgUsdToGelRate } from "../vehicle-listing/exchange-rate.service.js";
 import { sendBirthdayEmails } from "../users/birthday-email.service.js";
 import { pruneOldErrorLogs } from "../error-logs/error-logs.service.js";
+import { pruneOldAuthEvents } from "../fraud/fraud.service.js";
+import { pruneStaleGuestCollections } from "./guest-collections-prune.js";
 import type { ScheduledJobKey } from "./scheduled-jobs.schema.js";
 
 // number for count-style detail (every existing prune job), string for
@@ -111,6 +113,24 @@ export const JOB_DEFINITIONS: JobDefinition[] = [
     // rich-text scan above rather than squeezed between the others.
     cron: "12 3 * * *",
     run: async () => ({ itemsAffected: await pruneOldErrorLogs() }),
+  },
+  {
+    key: "DAILY_PRUNE_GUEST_COLLECTIONS",
+    labelKa: "სტუმრების მიტოვებული კალათის, სურვილებისა და შედარების გასუფთავება",
+    cron: "14 3 * * *",
+    run: async () => {
+      const { cartDeleted, wishlistDeleted, compareDeleted } = await pruneStaleGuestCollections();
+      return {
+        itemsAffected: cartDeleted + wishlistDeleted + compareDeleted,
+        detail: { cartDeleted, wishlistDeleted, compareDeleted },
+      };
+    },
+  },
+  {
+    key: "DAILY_PRUNE_AUTH_EVENTS",
+    labelKa: "შესვლის ისტორიის გასუფთავება (180 დღეზე ძველი)",
+    cron: "16 3 * * *",
+    run: async () => ({ itemsAffected: await pruneOldAuthEvents() }),
   },
   {
     key: "BIRTHDAY_EMAIL",

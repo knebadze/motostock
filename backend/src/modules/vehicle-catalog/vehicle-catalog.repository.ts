@@ -64,6 +64,43 @@ export const vehicleCatalogRepository = {
   // Picker options (see vehicleCatalogOptionResponseSchema) — same rows and
   // order as findMany's unpaginated call, just the handful of columns a
   // picker reads and no spec-lookup joins.
+  // Everything listVehicleCatalogOptionsWithCompatibleProducts needs to
+  // decide compatibility for the WHOLE catalog in memory — the same three
+  // rules as products.service.ts's buildVehicleCompatibilityWhere (explicit
+  // fitment / CATEGORY rule on the vehicle's category or an ancestor / SPEC
+  // rule on one of its spec values / ALL), restricted to products with at
+  // least one active variant (what the storefront counts as listable).
+  // Four queries total, instead of three per catalog entry.
+  async findCompatibilityInputs() {
+    const listableProduct = { variants: { some: { isActive: true } } };
+    const [fitments, rules, specs, categories] = await Promise.all([
+      prisma.productFitment.findMany({
+        where: { product: listableProduct },
+        select: { vehicleCatalogId: true },
+        distinct: ["vehicleCatalogId"],
+      }),
+      prisma.productFitmentRule.findMany({
+        where: { product: listableProduct },
+        select: { type: true, categoryId: true, specField: true, specLookupItemId: true },
+      }),
+      prisma.vehicleCatalog.findMany({
+        select: {
+          id: true,
+          fuelTypeId: true,
+          transmissionTypeId: true,
+          coolingTypeId: true,
+          finalDriveTypeId: true,
+          driveTypeId: true,
+          startTypeId: true,
+          powertrainTypeId: true,
+          model: { select: { categoryId: true } },
+        },
+      }),
+      prisma.category.findMany({ select: { id: true, parentId: true } }),
+    ]);
+    return { fitments, rules, specs, categories };
+  },
+
   findOptions() {
     return prisma.vehicleCatalog.findMany({
       select: {

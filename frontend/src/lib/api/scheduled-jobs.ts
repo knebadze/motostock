@@ -9,7 +9,9 @@ export type ScheduledJobKey =
   | "DAILY_PRUNE_RICH_TEXT_IMAGES"
   | "FETCH_USD_GEL_RATE"
   | "BIRTHDAY_EMAIL"
-  | "DAILY_PRUNE_ERROR_LOGS";
+  | "DAILY_PRUNE_ERROR_LOGS"
+  | "DAILY_PRUNE_GUEST_COLLECTIONS"
+  | "DAILY_PRUNE_AUTH_EVENTS";
 
 export type ScheduledJobRun = ScheduledJobRunsPage["runs"][number];
 

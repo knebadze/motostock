@@ -39,6 +39,22 @@ export async function getExchangeRate(_req: Request, res: Response) {
   res.status(200).json({ rate, updatedAt });
 }
 
+export async function sitemap(_req: Request, res: Response) {
+  const rows = await vehicleListingService.listVehicleListingSitemapEntries();
+  // Same shape the frontend's buildVehicleListingSlug + category path read.
+  const items = rows.map((row) => ({
+    id: row.id,
+    year: row.year,
+    updatedAt: row.updatedAt,
+    vehicleCatalog: {
+      brand: row.vehicleCatalog.brand,
+      model: { slug: row.vehicleCatalog.model.slug },
+      category: row.vehicleCatalog.model.category,
+    },
+  }));
+  res.status(200).json({ items });
+}
+
 export async function getOne(req: Request, res: Response) {
   const item = await vehicleListingService.getVehicleListing(Number(req.params.id));
 

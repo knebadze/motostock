@@ -51,6 +51,8 @@ productsRouter.get(
   validate(productBrandFacetsQuerySchema, "query"),
   productsController.getBrandFacets,
 );
+// Public — the frontend sitemap's product URLs (lean; before /:id).
+productsRouter.get("/sitemap", productsController.sitemap);
 productsRouter.get(
   "/by-slug/:slug",
   validate(productSlugParamSchema, "params"),
@@ -126,6 +128,27 @@ const listResponse = z.object({
   pageSize: z.number().int().positive().optional(),
 });
 const itemResponse = z.object({ item: productResponseSchema });
+
+registry.registerPath({
+  method: "get",
+  path: "/products/sitemap",
+  tags: ["Products"],
+  summary: "Every listable product's URL parts (slug, category slug) and updatedAt — the frontend sitemap's feed, public",
+  responses: {
+    200: {
+      description: "Sitemap entries",
+      content: {
+        "application/json": {
+          schema: z.object({
+            items: z.array(
+              z.object({ slug: z.string(), updatedAt: z.iso.datetime(), category: z.object({ slug: z.string() }) }),
+            ),
+          }),
+        },
+      },
+    },
+  },
+});
 
 registry.registerPath({
   method: "get",

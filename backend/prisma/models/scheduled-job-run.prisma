@@ -17,6 +17,11 @@ enum ScheduledJobKey {
   // Deletes ErrorLog rows older than the retention window — see
   // error-logs.service.ts's pruneOldErrorLogs.
   DAILY_PRUNE_ERROR_LOGS
+  // Abandoned guest cart/wishlist/compare rows (guest-collections-prune.ts).
+  DAILY_PRUNE_GUEST_COLLECTIONS
+  // AuthEvent rows older than the retention window (fraud.service.ts's
+  // pruneOldAuthEvents).
+  DAILY_PRUNE_AUTH_EVENTS
 
   @@schema("dbo")
 }

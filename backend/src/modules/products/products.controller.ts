@@ -55,6 +55,11 @@ export async function checkCompatibility(
   res.status(200).json({ compatibleProductIds });
 }
 
+export async function sitemap(_req: Request, res: Response) {
+  const items = await productsService.listProductSitemapEntries();
+  res.status(200).json({ items });
+}
+
 export async function getOne(req: Request, res: Response) {
   const item = await productsService.getProduct(Number(req.params.id));
   res.status(200).json({ item });

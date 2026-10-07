@@ -166,15 +166,10 @@ export async function loginUser(
   ipAddress: string | null,
   userAgent: string | null,
 ) {
-  // The lockout check (has this email failed too many times recently?), the
-  // credential check, and recording a new failure are all done inside one
-  // lock-held critical section, scoped to this email — see fraud.service.ts's
-  // runWithAccountLockoutGuard for why (closes a TOCTOU race where a burst of
-  // concurrent attempts could otherwise all read the same pre-attack failure
-  // count and all slip through regardless of the configured threshold). IP-
-  // scoped authRateLimit (rateLimit.middleware.ts) can't catch a guessing
-  // attack spread across many IPs against one account; this closes that gap
-  // too, regardless of which IP the current attempt comes from.
+  // One attempt per email at a time, failures counted per account — see
+  // fraud.service.ts's runWithAccountLockoutGuard. IP-scoped authRateLimit
+  // (rateLimit.middleware.ts) can't catch a guessing attack spread across
+  // many IPs against one account; this covers that, whatever the IP.
   const user = await runWithAccountLockoutGuard(input.email, ipAddress, async () => {
     const candidate = await usersRepository.findByEmail(input.email);
     if (!candidate || !candidate.passwordHash) {

@@ -12,8 +12,6 @@ import { applyVehicleCatalogAdminFilters } from "../filters/vehicle-catalog/vehi
 import { resolvePage } from "../../lib/pagination.js";
 import { vehicleCatalogRepository } from "./vehicle-catalog.repository.js";
 import { cache } from "../../lib/cache.js";
-import { buildVehicleCompatibilityWhere } from "../products/products.service.js";
-import { productsRepository } from "../products/products.repository.js";
 import type {
   CreateVehicleCatalogInput,
   SubmitVehicleCatalogInput,
@@ -215,26 +213,80 @@ export async function listVehicleCatalogOptions() {
 // Sitemap feed for the "parts for <vehicle>" pages (/compatible-products/…):
 // only vehicles at least one active product actually fits — an empty page
 // is noindex anyway (see that page's generateMetadata), so listing it would
-// just waste crawl budget. One compatibility count per catalog entry, so the
-// result is cached for an hour; the sitemap is the only caller.
+// just waste crawl budget. Computed for the whole catalog in memory from four
+// queries (vehicleCatalogRepository.findCompatibilityInputs) — it used to run
+// three queries per catalog entry, tens of seconds for a bulk-imported
+// catalog — cached for an hour, and concurrent requests during a miss share
+// one computation instead of each running it.
 const COMPATIBLE_OPTIONS_CACHE_KEY = "vehicleCatalog:optionsWithCompatibleProducts";
 const COMPATIBLE_OPTIONS_CACHE_TTL_MS = 60 * 60 * 1000;
+type CatalogOption = Awaited<ReturnType<typeof listVehicleCatalogOptions>>[number];
+let compatibleOptionsInFlight: Promise<CatalogOption[]> | null = null;
 
-export async function listVehicleCatalogOptionsWithCompatibleProducts() {
-  const cached = cache.get<Awaited<ReturnType<typeof listVehicleCatalogOptions>>>(COMPATIBLE_OPTIONS_CACHE_KEY);
-  if (cached) return cached;
+// Spec rule field -> the catalog column holding that spec's lookup id.
+const SPEC_FIELD_COLUMN = {
+  FUEL_TYPE: "fuelTypeId",
+  TRANSMISSION_TYPE: "transmissionTypeId",
+  COOLING_TYPE: "coolingTypeId",
+  FINAL_DRIVE_TYPE: "finalDriveTypeId",
+  DRIVE_TYPE: "driveTypeId",
+  START_TYPE: "startTypeId",
+  POWERTRAIN_TYPE: "powertrainTypeId",
+} as const;
 
-  const options = await listVehicleCatalogOptions();
-  const withProducts: typeof options = [];
-  for (const option of options) {
-    const vehicleCompatibilityWhere = await buildVehicleCompatibilityWhere(option.id);
-    if ((await productsRepository.count({ vehicleCompatibilityWhere })) > 0) {
-      withProducts.push(option);
+async function computeOptionsWithCompatibleProducts(): Promise<CatalogOption[]> {
+  const [options, { fitments, rules, specs, categories }] = await Promise.all([
+    listVehicleCatalogOptions(),
+    vehicleCatalogRepository.findCompatibilityInputs(),
+  ]);
+  // An ALL rule on any listable product fits every vehicle.
+  if (rules.some((rule) => rule.type === "ALL")) return options;
+
+  const fittedIds = new Set(fitments.map((fitment) => fitment.vehicleCatalogId));
+  const ruleCategoryIds = new Set(
+    rules.filter((rule) => rule.type === "CATEGORY" && rule.categoryId != null).map((rule) => rule.categoryId!),
+  );
+  const ruleSpecs = new Set(
+    rules
+      .filter((rule) => rule.type === "SPEC" && rule.specField != null && rule.specLookupItemId != null)
+      .map((rule) => `${rule.specField}:${rule.specLookupItemId}`),
+  );
+  const parentIdById = new Map(categories.map((category) => [category.id, category.parentId]));
+  const categoryOrAncestorHasRule = (categoryId: number) => {
+    for (let current: number | null = categoryId; current != null; current = parentIdById.get(current) ?? null) {
+      if (ruleCategoryIds.has(current)) return true;
     }
-  }
+    return false;
+  };
+  const specById = new Map(specs.map((spec) => [spec.id, spec]));
 
-  cache.set(COMPATIBLE_OPTIONS_CACHE_KEY, withProducts, COMPATIBLE_OPTIONS_CACHE_TTL_MS);
-  return withProducts;
+  return options.filter((option) => {
+    if (fittedIds.has(option.id)) return true;
+    const spec = specById.get(option.id);
+    if (!spec) return false;
+    if (ruleCategoryIds.size > 0 && categoryOrAncestorHasRule(spec.model.categoryId)) return true;
+    if (ruleSpecs.size === 0) return false;
+    return Object.entries(SPEC_FIELD_COLUMN).some(([field, column]) => {
+      const value = spec[column];
+      return value != null && ruleSpecs.has(`${field}:${value}`);
+    });
+  });
+}
+
+export async function listVehicleCatalogOptionsWithCompatibleProducts(): Promise<CatalogOption[]> {
+  const cached = cache.get<CatalogOption[]>(COMPATIBLE_OPTIONS_CACHE_KEY);
+  if (cached) return cached;
+  if (!compatibleOptionsInFlight) {
+    compatibleOptionsInFlight = computeOptionsWithCompatibleProducts()
+      .then((result) => {
+        cache.set(COMPATIBLE_OPTIONS_CACHE_KEY, result, COMPATIBLE_OPTIONS_CACHE_TTL_MS);
+        return result;
+      })
+      .finally(() => {
+        compatibleOptionsInFlight = null;
+      });
+  }
+  return compatibleOptionsInFlight;
 }
 
 export async function getVehicleCatalogEntry(id: number) {

@@ -13,6 +13,40 @@
 type Entry = { value: unknown; expiresAt: number | null };
 const store = new Map<string, Entry>();
 
+// TTL entries are keyed by request parameters (e.g. recommendations per
+// product × vehicle × limit), so a crawler or attacker walking the
+// parameter space could create them without bound — and an expired entry
+// used to be freed only if that exact key was read again. Two bounds:
+//   - an hourly sweep drops every expired entry;
+//   - at most MAX_TTL_ENTRIES TTL entries — the oldest are evicted first
+//     (a Map iterates in insertion order).
+// Permanent (no-TTL) entries are a small fixed set (settings, lookups,
+// each invalidated explicitly) and are never evicted.
+const MAX_TTL_ENTRIES = 5000;
+const SWEEP_INTERVAL_MS = 60 * 60 * 1000;
+let ttlEntryCount = 0;
+
+function removeEntry(key: string, entry: Entry) {
+  store.delete(key);
+  if (entry.expiresAt != null) ttlEntryCount--;
+}
+
+function sweepExpired() {
+  const now = Date.now();
+  for (const [key, entry] of store) {
+    if (entry.expiresAt != null && now > entry.expiresAt) removeEntry(key, entry);
+  }
+}
+
+function evictOldestTtlEntries() {
+  for (const [key, entry] of store) {
+    if (ttlEntryCount <= MAX_TTL_ENTRIES) return;
+    if (entry.expiresAt != null) removeEntry(key, entry);
+  }
+}
+
+setInterval(sweepExpired, SWEEP_INTERVAL_MS).unref();
+
 const PREVIEW_LENGTH = 150;
 
 function previewValue(value: unknown): string {
@@ -30,22 +64,31 @@ export const cache = {
     const entry = store.get(key);
     if (!entry) return undefined;
     if (entry.expiresAt != null && Date.now() > entry.expiresAt) {
-      store.delete(key);
+      removeEntry(key, entry);
       return undefined;
     }
     return entry.value as T;
   },
 
   set<T>(key: string, value: T, ttlMs?: number): void {
-    store.set(key, { value, expiresAt: ttlMs != null ? Date.now() + ttlMs : null });
+    const existing = store.get(key);
+    if (existing) removeEntry(key, existing);
+    const expiresAt = ttlMs != null ? Date.now() + ttlMs : null;
+    store.set(key, { value, expiresAt });
+    if (expiresAt != null) {
+      ttlEntryCount++;
+      if (ttlEntryCount > MAX_TTL_ENTRIES) evictOldestTtlEntries();
+    }
   },
 
   del(key: string): void {
-    store.delete(key);
+    const existing = store.get(key);
+    if (existing) removeEntry(key, existing);
   },
 
   clear(): void {
     store.clear();
+    ttlEntryCount = 0;
   },
 
   // Admin-only introspection (see cache.controller.ts's list handler) — not
@@ -61,7 +104,7 @@ export const cache = {
     const entries: { key: string; valuePreview: string; expiresAt: number | null }[] = [];
     for (const [key, entry] of store) {
       if (entry.expiresAt != null && now > entry.expiresAt) {
-        store.delete(key);
+        removeEntry(key, entry);
         continue;
       }
       entries.push({ key, valuePreview: previewValue(entry.value), expiresAt: entry.expiresAt });

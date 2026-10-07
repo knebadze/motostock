@@ -1,3 +1,4 @@
+import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { cache } from "../../lib/cache.js";
 import { productsRepository } from "../products/products.repository.js";
@@ -113,6 +114,14 @@ async function computeFrequentlyBoughtTogether(
   return Promise.all(reorderByIds(rows, finalIds).map(toProductResponse));
 }
 
+// A vehicleCatalogId that doesn't exist matches nothing anyway — answered
+// with an empty list WITHOUT computing or caching, so walking arbitrary ids
+// can't fill the cache (see lib/cache.ts). Undefined (no vehicle) is fine.
+async function isKnownVehicle(vehicleCatalogId: number | undefined): Promise<boolean> {
+  if (vehicleCatalogId == null) return true;
+  return (await prisma.vehicleCatalog.count({ where: { id: vehicleCatalogId } })) > 0;
+}
+
 // Not personalized — same result for every visitor looking at this product
 // (optionally narrowed to the same selected vehicle), so it's cached
 // globally by (productId, vehicleCatalogId, limit) rather than per-visitor.
@@ -121,6 +130,7 @@ export async function listFrequentlyBoughtTogether(
   options: { vehicleCatalogId?: number; limit?: number },
 ) {
   await assertProductExists(productId);
+  if (!(await isKnownVehicle(options.vehicleCatalogId))) return [];
   const limit = options.limit ?? (await getRecommendationsDefaultLimit());
   const cacheKey = `recommendations:boughtTogether:${productId}:${options.vehicleCatalogId ?? "all"}:${limit}`;
 
@@ -169,6 +179,7 @@ export async function listViewedTogether(
 ) {
   await assertProductExists(productId);
   const limit = options.limit ?? (await getRecommendationsDefaultLimit());
+  if (!(await isKnownVehicle(options.vehicleCatalogId))) return [];
   const cacheKey = `recommendations:viewedTogether:${productId}:${options.vehicleCatalogId ?? "all"}:${limit}`;
 
   const cached = cache.get<Awaited<ReturnType<typeof toProductResponse>>[]>(cacheKey);
@@ -198,6 +209,7 @@ async function computePopularForVehicle(vehicleCatalogId: number, limit: number)
 // selected), cached globally by (vehicleCatalogId, limit) — same reasoning
 // as listFrequentlyBoughtTogether above.
 export async function listPopularForVehicle(vehicleCatalogId: number, limit?: number) {
+  if (!(await isKnownVehicle(vehicleCatalogId))) return [];
   const resolvedLimit = limit ?? (await getRecommendationsDefaultLimit());
   const cacheKey = `recommendations:popularForVehicle:${vehicleCatalogId}:${resolvedLimit}`;
 

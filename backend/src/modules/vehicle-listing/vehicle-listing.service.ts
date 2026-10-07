@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { UNPAGINATED_LIST_MAX } from "../products/products.service.js";
 import { cache } from "../../lib/cache.js";
 import { findActiveDiscount, findDiscountAtOrAbovePrice } from "../../lib/discounts.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
@@ -440,7 +441,8 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     featured: query.featured,
     usdToGelRate,
     specFilters: query.specFilters,
-    limit: query.limit,
+    // Capped like products.service.ts's legacy path (UNPAGINATED_LIST_MAX).
+    limit: query.limit ?? UNPAGINATED_LIST_MAX,
   });
 
   let result: ReturnType<typeof toVehicleListingResponse>[];
@@ -452,13 +454,20 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     // order).
     const rankById = new Map(searchIds.map((id, index) => [id, index]));
     const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
-    result = (query.limit != null ? ranked.slice(0, query.limit) : ranked)
+    result = ranked
+      .slice(0, query.limit ?? UNPAGINATED_LIST_MAX)
       .map(nullFillVehicleCatalogSpecs)
       .map(toVehicleListingResponse);
   }
 
   if (cacheKey) cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
   return { items: result, total: result.length, page: 1, pageSize: result.length || 1 };
+}
+
+// The sitemap's listing URLs — the parts buildVehicleListingSlug and the
+// category path need, plus lastModified, for every active listing.
+export function listVehicleListingSitemapEntries() {
+  return vehicleListingRepository.findSitemapEntries();
 }
 
 // Homepage "popular vehicles" slider — see

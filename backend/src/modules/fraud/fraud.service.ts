@@ -28,129 +28,71 @@ export async function recordAuthEvent(
   }
 }
 
-// Arbitrary, unique to this lock's purpose — same technique as
-// orders.repository.ts's PROMO_CODE_LOCK_NAMESPACE and fina-sync.service.ts's
-// FINA_SYNC_LOCK_KEY.
-const ACCOUNT_LOCKOUT_LOCK_NAMESPACE = 738291645;
-
 // Account-level brute-force lockout — unlike authRateLimit
-// (rateLimit.middleware.ts, scoped per-IP), this blocks based on the target
+// (rateLimit.middleware.ts, scoped per-IP), this is keyed on the target
 // email itself, so a password-guessing attack spread across many IPs
-// against one account is still stopped once it crosses the threshold.
-// Reuses the exact same threshold/window Settings already exposes for the
-// admin "suspicious login activity" monitoring view below
-// (listSuspiciousLoginActivity) — an account that would surface there is
-// exactly the one this now actively blocks, rather than just flags for an
-// admin to notice after the fact.
+// against one account is still counted. Reuses the threshold/window
+// Settings of the admin "suspicious login activity" view below
+// (listSuspiciousLoginActivity).
 //
-// The naive version of this (count recent failures, then separately record
-// a new one on the *next* failed attempt) is a classic TOCTOU race: a burst
-// of concurrent login attempts for the same email all read the same
-// pre-burst count before any of them has committed its own failure, so all
-// of them pass the threshold check regardless of how large the burst is —
-// the lockout only limits *sequential* attempt rate, not concurrent ones.
-// This closes that the same way orders.repository.ts's promo-code
-// usage-recheck does: an advisory lock scoped to this one email
-// (`hashtext(email)` folds the string into the int4 key advisory locks
-// need), held for the whole count-check-then-record critical section, so a
-// second concurrent attempt against the *same* email can't re-count before
-// the first has committed. Different emails never contend with each other —
-// this doesn't serialize logins globally, only repeated attempts against
-// one account.
+// Concurrency: at most ONE attempt per email is in flight at a time (in
+// this process) — a concurrent second one is refused immediately with a
+// "try again" (429) instead of being evaluated, so a burst against one
+// account can't parallelize its guesses, and the failure count it reads
+// can't be stale. This used to be a Postgres advisory lock held in an
+// interactive transaction AROUND the bcrypt compare: every login then held
+// two pooled connections (the transaction's, plus the user lookup's) for
+// bcrypt's ~100-300 ms of CPU, so ~15 concurrent logins could exhaust the
+// pool (30) and stall the whole site. Now bcrypt runs with no connection
+// held, and recording a failure is a single insert. (Per process: fine for
+// this single-instance deployment; with several backend instances, each
+// would serialize its own share.)
 //
-// pg_try_advisory_xact_lock (non-blocking), not pg_advisory_xact_lock
-// (blocking) — this used to block, holding a checked-out pool connection
-// for however long it queued behind every other concurrent attempt against
-// the same email. A single attacker could send a burst of concurrent
-// requests for one (even fabricated) email — comfortably within
-// loginRateLimit's own per-IP budget — and each one would grab a pool
-// connection and then sit blocked in the queue, exhausting the whole app's
-// connection pool (Postgres's/node-postgres's small default) and starving
-// every *other* endpoint, not just login, for as long as the burst lasted.
-// Non-blocking means a request that loses the race never waits while
-// holding a connection: it fails the lock attempt immediately, releases
-// its connection right away, and the caller gets a fast "try again" instead
-// of queuing.
-//
-// `attempt` does the actual credential check (bcrypt compare) — it only
-// runs once the lock is actually held, which is intentional: that's
-// exactly the operation whose outcome needs to be recorded before the lock
-// releases. Bcrypt (~100-300ms) comfortably fits Prisma's default
-// interactive-transaction timeout.
-type LockoutOutcome<T> =
-  | { kind: "success"; value: T }
-  | { kind: "failure"; locked: boolean }
-  | { kind: "busy" };
+// A correct password always succeeds, even while "locked" — otherwise
+// anyone knowing the email could keep the real owner locked out forever by
+// sending wrong guesses. The lockout only changes how a WRONG guess is
+// answered (429 "too many attempts" instead of 401).
+const loginAttemptsInFlight = new Set<string>();
 
 export async function runWithAccountLockoutGuard<T>(
   email: string,
   ipAddress: string | null,
   attempt: () => Promise<{ ok: true; result: T } | { ok: false; userId: number | null }>,
 ): Promise<T> {
-  const [threshold, windowMinutes] = await Promise.all([
-    getFraudFailedLoginThreshold(),
-    getFraudFailedLoginWindowMinutes(),
-  ]);
-  const since = new Date(Date.now() - windowMinutes * 60 * 1000);
-
-  // Must never throw from inside this transaction — throwing here rolls
-  // back everything the transaction did, including the tx.authEvent.create
-  // below, silently discarding the very failure record the lockout (and
-  // listSuspiciousLoginActivity's admin monitoring view, which reads the
-  // same AuthEvent rows) depends on. Found live: recentFailures stayed at 0
-  // no matter how many wrong passwords were sent, because every one of
-  // them got written and then immediately undone by the throw that used to
-  // sit right here. Resolving normally (returning a plain result instead)
-  // lets the transaction commit, then the caller decides whether to throw
-  // *after* that commit has actually happened.
-  const outcome = await prisma.$transaction(async (tx): Promise<LockoutOutcome<T>> => {
-    const [{ locked: acquired }] = await tx.$queryRaw<{ locked: boolean }[]>`
-      SELECT pg_try_advisory_xact_lock(${ACCOUNT_LOCKOUT_LOCK_NAMESPACE}, hashtext(${email})) AS locked
-    `;
-    if (!acquired) {
-      return { kind: "busy" };
-    }
-
-    const recentFailures = await tx.authEvent.count({
-      where: { type: "LOGIN_FAILURE", email, createdAt: { gte: since } },
-    });
-    const locked = recentFailures >= threshold;
-
-    // Always run the real credential check, even while locked — an
-    // attacker who only knows the victim's email could otherwise keep the
-    // account locked forever by sending just `threshold` wrong guesses per
-    // window from a single IP (well under authRateLimit's own budget),
-    // rejecting even the legitimate owner's *correct* password the whole
-    // time. Checking the real outcome first means a correct password
-    // always succeeds regardless of lockout state — the lockout only ever
-    // rejects another *wrong* guess, so brute-forcing stays exactly as
-    // blocked as before, but the true owner is never locked out of their
-    // own account by someone else's guessing.
-    const result = await attempt();
-    if (result.ok) {
-      return { kind: "success", value: result.result };
-    }
-
-    await tx.authEvent.create({
-      data: { type: "LOGIN_FAILURE", email, userId: result.userId, ipAddress },
-    });
-    return { kind: "failure", locked };
-  });
-
-  if (outcome.kind === "success") {
-    return outcome.value;
-  }
-  if (outcome.kind === "busy") {
+  const key = email.toLowerCase();
+  if (loginAttemptsInFlight.has(key)) {
     throw new ApiError(
       429,
       "ამ ანგარიშზე უკვე მიმდინარეობს შესვლის მცდელობა — სცადეთ ცოტა ხანში",
       "LOGIN_ATTEMPT_IN_PROGRESS",
     );
   }
-  if (outcome.locked) {
-    throw new ApiError(429, "ძალიან ბევრი წარუმატებელი მცდელობა — სცადეთ მოგვიანებით", "ACCOUNT_LOCKED");
+  loginAttemptsInFlight.add(key);
+  try {
+    const result = await attempt();
+    if (result.ok) {
+      return result.result;
+    }
+
+    const [threshold, windowMinutes] = await Promise.all([
+      getFraudFailedLoginThreshold(),
+      getFraudFailedLoginWindowMinutes(),
+    ]);
+    const since = new Date(Date.now() - windowMinutes * 60 * 1000);
+    const recentFailures = await prisma.authEvent.count({
+      where: { type: "LOGIN_FAILURE", email, createdAt: { gte: since } },
+    });
+    await prisma.authEvent.create({
+      data: { type: "LOGIN_FAILURE", email, userId: result.userId, ipAddress },
+    });
+
+    if (recentFailures >= threshold) {
+      throw new ApiError(429, "ძალიან ბევრი წარუმატებელი მცდელობა — სცადეთ მოგვიანებით", "ACCOUNT_LOCKED");
+    }
+    throw new ApiError(401, "Invalid email or password", "INVALID_CREDENTIALS");
+  } finally {
+    loginAttemptsInFlight.delete(key);
   }
-  throw new ApiError(401, "Invalid email or password", "INVALID_CREDENTIALS");
 }
 
 type RiskFlag = { type: OrderRiskFlagType; detail: string | null };
@@ -232,6 +174,18 @@ export async function evaluateOrderRisk(
 // Login abuse is a moving-window monitoring concern (an admin checking "is
 // anything suspicious happening right now"), not a persisted historical
 // record the way order risk flags are.
+// Login/registration audit rows (AuthEvent) are read only over short
+// windows (lockout: minutes; suspicious-activity view: the configured
+// window) — kept half a year for an admin looking back at an incident, then
+// pruned daily (scheduled-jobs.registry.ts) instead of growing forever.
+const AUTH_EVENT_RETENTION_DAYS = 180;
+
+export async function pruneOldAuthEvents(): Promise<number> {
+  const cutoff = new Date(Date.now() - AUTH_EVENT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  const { count } = await prisma.authEvent.deleteMany({ where: { createdAt: { lt: cutoff } } });
+  return count;
+}
+
 export async function listSuspiciousLoginActivity() {
   const [threshold, windowMinutes] = await Promise.all([
     getFraudFailedLoginThreshold(),

@@ -59,22 +59,18 @@ export const whatsappChatRepository = {
   // owner shape because Prisma's generated `where` type only accepts the
   // field an @@unique actually names — same reasoning as
   // visitors.repository.ts's touchPresence.
+  // No `include` on purpose: an upsert with a nested read can't use
+  // Postgres's atomic INSERT … ON CONFLICT and degrades to read-then-insert,
+  // so two near-simultaneous first messages from one visitor could both
+  // insert and one fail on the unique owner (a 500). It also loaded the
+  // visitor's entire message history on every message they posted, which
+  // the caller never reads.
   findOrCreateSessionForOwner(owner: ChatOwner, customerPhone: string) {
     const create = { ...ownerWhere(owner), customerPhone };
     if ("userId" in owner) {
-      return prisma.whatsAppChatSession.upsert({
-        where: { userId: owner.userId },
-        create,
-        update: {},
-        include: messagesOrderedAsc,
-      });
+      return prisma.whatsAppChatSession.upsert({ where: { userId: owner.userId }, create, update: {} });
     }
-    return prisma.whatsAppChatSession.upsert({
-      where: { guestId: owner.guestId },
-      create,
-      update: {},
-      include: messagesOrderedAsc,
-    });
+    return prisma.whatsAppChatSession.upsert({ where: { guestId: owner.guestId }, create, update: {} });
   },
 
   updateCustomerPhone(sessionId: number, customerPhone: string) {

@@ -310,6 +310,24 @@ export const vehicleListingRepository = {
     });
   },
 
+  findSitemapEntries() {
+    return prisma.vehicleListing.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        year: true,
+        updatedAt: true,
+        vehicleCatalog: {
+          select: {
+            brand: { select: { slug: true } },
+            model: { select: { slug: true, category: { select: { slug: true } } } },
+          },
+        },
+      },
+      orderBy: { id: "asc" },
+    });
+  },
+
   // Paired with findMany above — same where-shape (including the isActive
   // exclusion and searchIds, when present), for real "how many pages"
   // totals on the customer browse/search path.

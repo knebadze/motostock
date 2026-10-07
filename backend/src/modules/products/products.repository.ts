@@ -516,6 +516,14 @@ export const productsRepository = {
     return rows.map((row) => row.id);
   },
 
+  findSitemapEntries() {
+    return prisma.product.findMany({
+      where: { variants: { some: { isActive: true } } },
+      select: { slug: true, updatedAt: true, category: { select: { slug: true } } },
+      orderBy: { id: "asc" },
+    });
+  },
+
   // Paired with findMany above — same where-shape (including the
   // active-variant exclusion and searchIds, when present), for real "how
   // many pages" totals on the customer browse/search path.
@@ -770,54 +778,25 @@ export const productsRepository = {
   // ranked by how many distinct orders they co-occurred in. Cart/order rows
   // are unique per (owner, variant), so counting OrderItem rows here already
   // counts distinct orders — no separate dedup step needed.
+  // One self-join instead of loading every order id that contains the
+  // anchor product into JS and sending it back as a huge IN list (thousands
+  // for a best-seller). Counts DISTINCT orders per companion product (two
+  // variants of one product in an order count once) and, like
+  // findPopularProductIds, ignores cancelled orders.
   async findCoOccurringProductIds(productId: number, limit: number): Promise<number[]> {
-    const anchorVariants = await prisma.productVariant.findMany({
-      where: { productId },
-      select: { id: true },
-    });
-    const anchorVariantIds = anchorVariants.map((variant) => variant.id);
-    if (anchorVariantIds.length === 0) return [];
-
-    const anchorOrderRows = await prisma.orderItem.findMany({
-      where: { itemType: "PRODUCT_VARIANT", productVariantId: { in: anchorVariantIds } },
-      select: { orderId: true },
-      distinct: ["orderId"],
-    });
-    const orderIds = anchorOrderRows.map((row) => row.orderId);
-    if (orderIds.length === 0) return [];
-
-    const grouped = await prisma.orderItem.groupBy({
-      by: ["productVariantId"],
-      where: {
-        orderId: { in: orderIds },
-        itemType: "PRODUCT_VARIANT",
-        productVariantId: { notIn: anchorVariantIds },
-      },
-      _count: { orderId: true },
-      orderBy: { _count: { orderId: "desc" } },
-      take: candidatePoolSize(limit),
-    });
-    if (grouped.length === 0) return [];
-
-    const companionVariantIds = grouped.map((group) => group.productVariantId as number);
-    const companionVariants = await prisma.productVariant.findMany({
-      where: { id: { in: companionVariantIds } },
-      select: { id: true, productId: true },
-    });
-    const productIdByVariantId = new Map(companionVariants.map((v) => [v.id, v.productId]));
-
-    const countsByProductId = new Map<number, number>();
-    for (const group of grouped) {
-      const companionProductId = productIdByVariantId.get(group.productVariantId as number);
-      if (companionProductId == null) continue;
-      const count = group._count.orderId;
-      countsByProductId.set(companionProductId, (countsByProductId.get(companionProductId) ?? 0) + count);
-    }
-
-    return Array.from(countsByProductId.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, limit)
-      .map(([id]) => id);
+    const rows = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT cv."productId" AS id
+      FROM "dbo"."OrderItem" anchor
+      JOIN "dbo"."ProductVariant" av ON av.id = anchor."productVariantId" AND av."productId" = ${productId}
+      JOIN "dbo"."Order" o ON o.id = anchor."orderId"
+      JOIN "cla"."OrderStatus" st ON st.id = o."statusId" AND st.key <> 'CANCELLED'
+      JOIN "dbo"."OrderItem" companion ON companion."orderId" = anchor."orderId"
+      JOIN "dbo"."ProductVariant" cv ON cv.id = companion."productVariantId" AND cv."productId" <> ${productId}
+      GROUP BY cv."productId"
+      ORDER BY COUNT(DISTINCT anchor."orderId") DESC, cv."productId" ASC
+      LIMIT ${limit}
+    `;
+    return rows.map((row) => row.id);
   },
 
   // Shared by the (technically public but frontend-unused) GET /products/:id

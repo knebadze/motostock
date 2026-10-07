@@ -77,6 +77,31 @@ export const getVehicleCatalogEntryFromServer = cache(async (
   );
 });
 
+// Sitemap feeds — just the URL parts + lastModified of every listable
+// product / active vehicle listing (the backend's /products/sitemap and
+// /vehicle-listings/sitemap), not full card rows of the whole catalog.
+export type ProductSitemapEntry = { slug: string; updatedAt: string; category: { slug: string } };
+export type VehicleListingSitemapEntry = {
+  id: number;
+  year: number;
+  updatedAt: string;
+  vehicleCatalog: { brand: { slug: string }; model: { slug: string }; category: { slug: string } };
+};
+
+export const getProductSitemapEntriesFromServer = cache(async (): Promise<ProductSitemapEntry[]> => {
+  return fetchFromServer<{ items: ProductSitemapEntry[] }, ProductSitemapEntry[]>("/products/sitemap", {
+    fallback: [],
+    extract: (data) => data.items,
+  });
+});
+
+export const getVehicleListingSitemapEntriesFromServer = cache(async (): Promise<VehicleListingSitemapEntry[]> => {
+  return fetchFromServer<{ items: VehicleListingSitemapEntry[] }, VehicleListingSitemapEntry[]>(
+    "/vehicle-listings/sitemap",
+    { fallback: [], extract: (data) => data.items },
+  );
+});
+
 // Sitemap feed — catalog entries at least one active product fits (the
 // "parts for <vehicle>" pages worth indexing).
 export const getVehicleCatalogOptionsWithCompatibleProductsFromServer = cache(

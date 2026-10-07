@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 import {
   getCategoriesFromServer,
-  getProductsFromServer,
+  getProductSitemapEntriesFromServer,
   getVacancyListFromServer,
   getVehicleCatalogOptionsWithCompatibleProductsFromServer,
-  getVehicleListingsFromServer,
+  getVehicleListingSitemapEntriesFromServer,
 } from "@/lib/api/server";
 import { buildVehicleCatalogSlug } from "@/lib/api/vehicle-catalog";
 import { getAlternateLanguages } from "@/lib/seo";
@@ -16,8 +16,8 @@ import { routing } from "@/i18n/routing";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [categories, products, vehicleListings, vacancies, fitmentVehicles] = await Promise.all([
     getCategoriesFromServer(),
-    getProductsFromServer(),
-    getVehicleListingsFromServer(),
+    getProductSitemapEntriesFromServer(),
+    getVehicleListingSitemapEntriesFromServer(),
     getVacancyListFromServer(),
     getVehicleCatalogOptionsWithCompatibleProductsFromServer(),
   ]);

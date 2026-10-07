@@ -34,6 +34,8 @@ vehicleListingRouter.get(
   vehicleListingController.getPopular,
 );
 vehicleListingRouter.get("/exchange-rate/usd-gel", vehicleListingController.getExchangeRate);
+// Public — the frontend sitemap's listing URLs (lean; before /:id).
+vehicleListingRouter.get("/sitemap", vehicleListingController.sitemap);
 // Registered before /:id for the same reason as /popular above (a literal
 // path segment ahead of the :id param route).
 vehicleListingRouter.get(
@@ -97,6 +99,36 @@ const listResponse = z.object({
   pageSize: z.number().int().positive().optional(),
 });
 const itemResponse = z.object({ item: vehicleListingResponseSchema });
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-listings/sitemap",
+  tags: ["VehicleListings"],
+  summary: "Every active listing's URL parts (id, year, brand/model/category slugs) and updatedAt — the frontend sitemap's feed, public",
+  responses: {
+    200: {
+      description: "Sitemap entries",
+      content: {
+        "application/json": {
+          schema: z.object({
+            items: z.array(
+              z.object({
+                id: z.int(),
+                year: z.int(),
+                updatedAt: z.iso.datetime(),
+                vehicleCatalog: z.object({
+                  brand: z.object({ slug: z.string() }),
+                  model: z.object({ slug: z.string() }),
+                  category: z.object({ slug: z.string() }),
+                }),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+  },
+});
 
 registry.registerPath({
   method: "get",

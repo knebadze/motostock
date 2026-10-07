@@ -4177,6 +4177,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicle-listings/sitemap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every active listing's URL parts (id, year, brand/model/category slugs) and updatedAt — the frontend sitemap's feed, public */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Sitemap entries */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: {
+                                id: number;
+                                year: number;
+                                /** Format: date-time */
+                                updatedAt: string;
+                                vehicleCatalog: {
+                                    brand: {
+                                        slug: string;
+                                    };
+                                    model: {
+                                        slug: string;
+                                    };
+                                    category: {
+                                        slug: string;
+                                    };
+                                };
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicle-listings": {
         parameters: {
             query?: never;
@@ -6171,6 +6225,51 @@ export interface paths {
         };
         trace?: never;
     };
+    "/products/sitemap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every listable product's URL parts (slug, category slug) and updatedAt — the frontend sitemap's feed, public */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Sitemap entries */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: {
+                                slug: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                                category: {
+                                    slug: string;
+                                };
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/products": {
         parameters: {
             query?: never;
@@ -8112,13 +8211,13 @@ export interface paths {
                         "application/json": {
                             jobs: {
                                 /** @enum {string} */
-                                key: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS";
+                                key: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
                                 labelKa: string;
                                 scheduleLabelKa: string;
                                 lastRun: {
                                     id: number;
                                     /** @enum {string} */
-                                    jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS";
+                                    jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
                                     /** @enum {string} */
                                     trigger: "SCHEDULED" | "MANUAL";
                                     /** @enum {string} */
@@ -8162,7 +8261,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    jobKey?: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS";
+                    jobKey?: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
                     page?: number;
                     pageSize?: number;
                 };
@@ -8182,7 +8281,7 @@ export interface paths {
                             runs: {
                                 id: number;
                                 /** @enum {string} */
-                                jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS";
+                                jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
                                 /** @enum {string} */
                                 trigger: "SCHEDULED" | "MANUAL";
                                 /** @enum {string} */
@@ -8232,7 +8331,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    key: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS";
+                    key: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
                 };
                 cookie?: never;
             };
@@ -8248,7 +8347,7 @@ export interface paths {
                             run: {
                                 id: number;
                                 /** @enum {string} */
-                                jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS";
+                                jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
                                 /** @enum {string} */
                                 trigger: "SCHEDULED" | "MANUAL";
                                 /** @enum {string} */

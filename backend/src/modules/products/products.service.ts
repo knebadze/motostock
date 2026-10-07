@@ -665,7 +665,10 @@ export async function listProducts(query: ProductListQuery) {
   }
 
   // Legacy, non-paginated customer path (homepage sliders, recommendations,
-  // any caller that only ever sent `limit`) — unchanged behavior.
+  // any caller that only ever sent `limit`). Without a `limit` this used to
+  // return the WHOLE catalog as full card rows to any anonymous caller —
+  // capped now; the sitemap has its own lean endpoint (listProductSitemapEntries).
+  const legacyLimit = query.limit ?? UNPAGINATED_LIST_MAX;
   const rows = await productsRepository.findMany({
     categoryIds,
     vehicleCompatibilityWhere,
@@ -677,7 +680,7 @@ export async function listProducts(query: ProductListQuery) {
     bulkDiscountEventId: query.bulkDiscountEventId,
     featured: query.featured,
     attributeFilters: query.attributeFilters,
-    limit: query.limit,
+    limit: legacyLimit,
   });
 
   let result: Awaited<ReturnType<typeof toCardResponse>>[];
@@ -690,7 +693,7 @@ export async function listProducts(query: ProductListQuery) {
     const rankById = new Map(searchIds.map((id, index) => [id, index]));
     const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
     result = await Promise.all(
-      (query.limit != null ? ranked.slice(0, query.limit) : ranked).map(toCardResponse),
+      ranked.slice(0, legacyLimit).map(toCardResponse),
     );
   }
 
@@ -740,6 +743,17 @@ export async function getProduct(id: number) {
     throw new ApiError(404, "პროდუქტი ვერ მოიძებნა", "PRODUCT_NOT_FOUND");
   }
   return toResponse(row);
+}
+
+// Upper bound for a list request that sent neither page/pageSize nor limit.
+export const UNPAGINATED_LIST_MAX = 1000;
+
+// The sitemap's product URLs — just what a URL needs (category slug +
+// product slug) and lastModified, for every listable product (≥1 active
+// variant, same rule as the storefront lists). Replaces the sitemap pulling
+// the whole catalog as full product cards.
+export function listProductSitemapEntries() {
+  return productsRepository.findSitemapEntries();
 }
 
 export async function getProductDetail(slug: string, vehicleCatalogId?: number) {
