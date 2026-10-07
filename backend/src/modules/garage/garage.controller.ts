@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { assertCallerMaySeeUser } from "../users/users.service.js";
 import { ApiError } from "../../lib/ApiError.js";
 import * as garageService from "./garage.service.js";
 import type { CreateGarageVehicleInput, UpdateGarageVehicleInput } from "./garage.schema.js";
@@ -70,6 +71,7 @@ export async function remove(req: Request, res: Response) {
 // routes above, just with an admin-supplied userId instead of the caller's
 // own. requireRole(ADMIN) is applied at the router level.
 export async function adminList(req: Request<{ userId: string }>, res: Response) {
+  await assertCallerMaySeeUser(req.user?.role, Number(req.params.userId));
   const items = await garageService.listMyGarage(Number(req.params.userId));
   res.status(200).json({ items });
 }
@@ -78,6 +80,7 @@ export async function adminCreate(
   req: Request<{ userId: string }, unknown, CreateGarageVehicleInput>,
   res: Response,
 ) {
+  await assertCallerMaySeeUser(req.user?.role, Number(req.params.userId));
   const item = await garageService.createGarageVehicle(Number(req.params.userId), req.body);
   res.status(201).json({ item });
 }

@@ -40,6 +40,12 @@ export function LoginForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
       // retry of anything.
       toast.error(t("oauthEmailHasPassword"));
       router.replace({ pathname, query: redirectQuery });
+    } else if (error === "oauth_email_exists") {
+      // Facebook login refused to auto-link onto an existing (e.g.
+      // Google-created) account with the same email — see the backend's
+      // resolveOAuthEmailMatch.
+      toast.error(t("oauthEmailExists"));
+      router.replace({ pathname, query: redirectQuery });
     }
     // Only meant to run once, reacting to the initial query param — re-running
     // on every pathname/router identity change would re-fire the toast.

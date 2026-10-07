@@ -45,9 +45,17 @@ type ExistingUser = NonNullable<Awaited<ReturnType<typeof usersRepository.findBy
 // flow for the legitimate case yet — a user who legitimately owns both just
 // logs in with their password instead (see oauth.controller.ts's distinct
 // redirect for this case, and LoginForm.tsx's matching message).
+//
+// Facebook never auto-links at all: it gives no "email verified" signal (see
+// oauth-providers.ts), so a Facebook identity merely CLAIMING the email of an
+// existing passwordless (Google-created) account would otherwise be handed
+// that account. Google does verify, so it keeps linking passwordless ones.
 function resolveOAuthEmailMatch(existingByEmail: ExistingUser, profile: OAuthProfile, provider: Provider) {
   if (existingByEmail.passwordHash) {
     throw new ApiError(409, "OAUTH_EMAIL_HAS_PASSWORD");
+  }
+  if (provider === "facebook") {
+    throw new ApiError(409, "OAUTH_EMAIL_EXISTS");
   }
   return provider === "google"
     ? usersRepository.linkGoogleId(existingByEmail.id, profile.providerId)

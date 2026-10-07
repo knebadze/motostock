@@ -15772,6 +15772,7 @@ export interface components {
             createdAt: string;
         };
         AdminUserDetail: components["schemas"]["AdminUser"] & {
+            phoneClaimedBy: components["schemas"]["AdminUser"] | null;
             addresses: components["schemas"]["Address"][];
             garage: components["schemas"]["GarageVehicle"][];
             wishlist: components["schemas"]["WishlistItem"][];

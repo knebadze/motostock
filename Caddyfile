@@ -29,6 +29,12 @@
 		# Hard to undo once a long value is out, hence the steps.
 		Strict-Transport-Security "max-age={$HSTS_MAX_AGE:0}"
 		X-Content-Type-Options "nosniff"
+		# Full URLs (which can carry one-time ?token= links) never leave the
+		# site in the Referer header — other origins only see the origin.
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# The site uses none of these browser features — deny them outright,
+		# including to any embedded third-party frame (the contact map).
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
 		-Server
 	}
 

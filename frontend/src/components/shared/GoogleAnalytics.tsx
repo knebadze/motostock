@@ -50,7 +50,12 @@ export async function GoogleAnalytics() {
             wait_for_update: 500
           });
           gtag('js', new Date());
-          gtag('config', '${measurementId}');
+          // One-time tokens (password reset, email verification, newsletter
+          // links: ?token=…) never go to Google — the page URL is sent with
+          // them blanked out.
+          gtag('config', '${measurementId}', {
+            page_location: location.href.replace(/([?&](?:token|code|state)=)[^&#]*/gi, '$1redacted')
+          });
         `}
       </Script>
     </>

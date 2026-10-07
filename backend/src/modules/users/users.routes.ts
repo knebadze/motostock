@@ -180,6 +180,9 @@ registry.registerPath({
 const adminUserDetailResponseSchema = registry.register(
   "AdminUserDetail",
   adminUserResponseSchema.extend({
+    // Walk-ins only: an account that registered with this walk-in's phone
+    // and awaits staff confirmation before the history is merged onto it.
+    phoneClaimedBy: adminUserResponseSchema.nullable(),
     addresses: z.array(addressResponseSchema),
     garage: z.array(garageVehicleResponseSchema),
     wishlist: z.array(wishlistItemResponseSchema),

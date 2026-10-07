@@ -72,7 +72,9 @@ function failureRedirect(res: Response, error: unknown = null, redirect: string 
   const reason =
     error instanceof ApiError && error.message === "OAUTH_EMAIL_HAS_PASSWORD"
       ? "oauth_email_has_password"
-      : "oauth_failed";
+      : error instanceof ApiError && error.message === "OAUTH_EMAIL_EXISTS"
+        ? "oauth_email_exists"
+        : "oauth_failed";
   // Keep ?redirect= so a retry from the login page still returns there.
   const redirectQuery = redirect ? `&redirect=${encodeURIComponent(redirect)}` : "";
   res.redirect(`${env.FRONTEND_ORIGIN}/login?error=${reason}${redirectQuery}`);

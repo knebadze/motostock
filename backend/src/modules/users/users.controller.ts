@@ -30,12 +30,12 @@ export async function list(
   req: Request<unknown, unknown, unknown, ListUsersQuery>,
   res: Response,
 ) {
-  const result = await listUsers(req.query);
+  const result = await listUsers(req.query, req.user?.role);
   res.status(200).json(result);
 }
 
 export async function getOne(req: Request, res: Response) {
-  const user = await getUserDetail(Number(req.params.id));
+  const user = await getUserDetail(Number(req.params.id), req.user?.role);
   res.status(200).json({ user });
 }
 
@@ -70,7 +70,7 @@ export async function createWalkIn(
 }
 
 export async function merge(req: Request<{ id: string; targetUserId: string }>, res: Response) {
-  const user = await mergeUserInto(Number(req.params.id), Number(req.params.targetUserId));
+  const user = await mergeUserInto(Number(req.params.id), Number(req.params.targetUserId), req.user?.role);
   res.status(200).json({ user });
 }
 

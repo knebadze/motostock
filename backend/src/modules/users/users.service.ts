@@ -6,7 +6,6 @@ import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { ROLES, type RoleName } from "../../lib/roles.js";
 import { toAddressResponse } from "../addresses/addresses.service.js";
 import { toResponse as toGarageVehicleResponse } from "../garage/garage.service.js";
-import { garageRepository } from "../garage/garage.repository.js";
 import { toResponse as toWishlistItemResponse } from "../wishlist/wishlist.service.js";
 import { toResponse as toCartItemResponse } from "../cart/cart.service.js";
 import { sessionRepository } from "../auth/session.repository.js";
@@ -119,7 +118,22 @@ export async function changePassword(
   });
 }
 
-export async function getUserDetail(id: number) {
+// OPERATOR (cashier/foreman) works with customers, not with the shop's
+// administrators: an ADMIN account is invisible to them — not listed, its
+// details (email, phone, addresses, cart) not readable, and not a valid
+// target for the workshop's garage/merge actions. Answered as "not found"
+// rather than "forbidden", so the account's existence isn't confirmed
+// either. No effect for an ADMIN caller.
+export async function assertCallerMaySeeUser(callerRole: RoleName | undefined, userId: number) {
+  if (callerRole !== ROLES.OPERATOR) return;
+  const user = await usersRepository.findById(userId);
+  if (user?.role.name === ROLES.ADMIN) {
+    throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა");
+  }
+}
+
+export async function getUserDetail(id: number, callerRole?: RoleName) {
+  await assertCallerMaySeeUser(callerRole, id);
   const [user, [orderCountAgg, spentAgg]] = await Promise.all([
     usersRepository.findByIdWithDetails(id),
     usersRepository.findOrderSummary(id),
@@ -128,8 +142,14 @@ export async function getUserDetail(id: number) {
     throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა");
   }
 
+  // A registration that claimed this walk-in's phone, awaiting staff
+  // confirmation (see user.prisma's phoneClaimedByUserId).
+  const phoneClaimedBy =
+    user.phoneClaimedByUserId != null ? await usersRepository.findById(user.phoneClaimedByUserId) : null;
+
   return {
     ...toAdminUserSummary(user),
+    phoneClaimedBy: phoneClaimedBy ? toAdminUserSummary(phoneClaimedBy) : null,
     addresses: user.addresses.map(toAddressResponse),
     garage: user.garageVehicles.map(toGarageVehicleResponse),
     wishlist: await Promise.all(user.wishlistItems.map(toWishlistItemResponse)),
@@ -142,9 +162,14 @@ export async function getUserDetail(id: number) {
   };
 }
 
-export async function listUsers(query: ListUsersQuery) {
+export async function listUsers(query: ListUsersQuery, callerRole?: RoleName) {
   const { page, pageSize, skip, take } = resolvePage(query);
-  const filters = { search: query.q, role: query.role, customerType: query.customerType };
+  const filters = {
+    search: query.q,
+    role: query.role,
+    customerType: query.customerType,
+    excludeRole: callerRole === ROLES.OPERATOR ? ("ADMIN" as const) : undefined,
+  };
 
   const [users, total] = await Promise.all([
     usersRepository.findMany(filters, skip, take),
@@ -196,7 +221,8 @@ export async function createWalkInUser(input: CreateWalkInUserInput) {
 // from R's, or R signed up via Google/Facebook, which collects no phone at
 // all). W is kept, not deleted (no delete-user feature exists) — just
 // flagged so the admin list can show "შერწყმულია".
-export async function mergeUserInto(fromUserId: number, targetUserId: number) {
+export async function mergeUserInto(fromUserId: number, targetUserId: number, callerRole?: RoleName) {
+  await assertCallerMaySeeUser(callerRole, targetUserId);
   if (fromUserId === targetUserId) {
     throw new ApiError(400, "მომხმარებლის თავად თავისთან შერწყმა შეუძლებელია", "MERGE_SAME_USER");
   }
@@ -237,8 +263,14 @@ export async function mergeUserInto(fromUserId: number, targetUserId: number) {
     throw new ApiError(400, "სამიზნე მომხმარებელი უკვე შერწყმულია სხვასთან", "TARGET_USER_ALREADY_MERGED");
   }
 
-  await garageRepository.reassignOwner(fromUserId, targetUserId);
-  const updated = await usersRepository.setMergedInto(fromUserId, targetUserId);
+  // The walk-in's phone follows it onto an account that has none (e.g. one
+  // that registered with this very phone — see auth.service.ts's register —
+  // or a Google/Facebook signup).
+  const transferPhone = fromUser.phone && !targetUser.phone ? fromUser.phone : null;
+  const updated = await usersRepository.mergeWalkInInto(fromUserId, targetUserId, transferPhone);
+  if (!updated) {
+    throw new ApiError(409, "მომხმარებელი უკვე შერწყმულია ან შეიცვალა — განაახლეთ გვერდი", "USER_ALREADY_MERGED");
+  }
   return toAdminUserSummary(updated);
 }
 

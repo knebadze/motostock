@@ -10,6 +10,9 @@ export type UserListFilters = {
   search?: string;
   role?: "USER" | "ADMIN" | "OPERATOR";
   customerType?: "WALK_IN" | "REGISTERED" | "MERGED";
+  // Set for an OPERATOR caller — ADMIN accounts are hidden from them (see
+  // users.service.ts's assertCallerMaySeeUser).
+  excludeRole?: "ADMIN";
 };
 
 // Shared between findMany and count so the two never drift apart — the
@@ -31,6 +34,10 @@ function buildWhere(filters: UserListFilters): Prisma.UserWhereInput | undefined
 
   if (filters.role) {
     and.push({ role: { name: filters.role } });
+  }
+
+  if (filters.excludeRole) {
+    and.push({ role: { name: { not: filters.excludeRole } } });
   }
 
   if (filters.customerType === "WALK_IN") {
@@ -185,28 +192,36 @@ export const usersRepository = {
   // design (see that function's comment) but must never be resurrected as
   // someone's fresh registration; this row-level check makes that structurally
   // impossible even if a future caller forgets the pre-check.
-  async convertWalkInToRegistered(
-    id: number,
-    data: { email: string; passwordHash: string; firstName: string; lastName: string; dateOfBirth: Date },
-  ) {
-    const { count } = await prisma.user.updateMany({
-      where: { id, isWalkIn: true, mergedIntoUserId: null },
-      data: { ...data, isWalkIn: false },
+  setPhoneClaim(walkInId: number, claimantUserId: number) {
+    return prisma.user.updateMany({
+      where: { id: walkInId, isWalkIn: true, mergedIntoUserId: null },
+      data: { phoneClaimedByUserId: claimantUserId },
     });
-    if (count === 0) {
-      return null;
-    }
-    return prisma.user.findUniqueOrThrow({ where: { id }, include: { role: true } });
   },
 
-  // Admin manual-merge fallback (users.service.ts's mergeUserInto) — the
-  // walk-in row is kept, not deleted (no delete-user feature exists), just
-  // flagged so the admin list can show "შერწყმულია".
-  setMergedInto(id: number, targetUserId: number) {
-    return prisma.user.update({
-      where: { id },
-      data: { mergedIntoUserId: targetUserId },
-      include: { role: true },
+  // users.service.ts's mergeUserInto, in ONE transaction: claim the walk-in
+  // (conditional — still a walk-in, not merged yet, so a concurrent merge or
+  // a second click loses cleanly), move its garage (service records follow
+  // their vehicles), and hand its phone to the target if the target has
+  // none (the walk-in's phone is cleared first — phone is unique). The
+  // walk-in row itself is kept (no delete-user feature exists), flagged so
+  // the admin list can show "შერწყმულია". Null when the claim lost.
+  mergeWalkInInto(fromUserId: number, targetUserId: number, transferPhone: string | null) {
+    return prisma.$transaction(async (tx) => {
+      const claimed = await tx.user.updateMany({
+        where: { id: fromUserId, isWalkIn: true, mergedIntoUserId: null },
+        data: {
+          mergedIntoUserId: targetUserId,
+          phoneClaimedByUserId: null,
+          ...(transferPhone ? { phone: null } : {}),
+        },
+      });
+      if (claimed.count !== 1) return null;
+      await tx.garageVehicle.updateMany({ where: { userId: fromUserId }, data: { userId: targetUserId } });
+      if (transferPhone) {
+        await tx.user.update({ where: { id: targetUserId }, data: { phone: transferPhone } });
+      }
+      return tx.user.findUniqueOrThrow({ where: { id: fromUserId }, include: { role: true } });
     });
   },
 

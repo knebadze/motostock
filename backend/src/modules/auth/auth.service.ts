@@ -80,12 +80,15 @@ export async function registerUser(
   const passwordHash = await hashPassword(input.password);
   const dateOfBirth = new Date(input.dateOfBirth);
 
-  // Auto-merge key: a walk-in customer entered by the workshop admin (see
-  // users.repository.ts's createWalkIn) is matched here the moment a real
-  // registration arrives with the same phone. The SAME row is converted in
-  // place (isWalkIn flipped false, real email/password set) rather than a
-  // new row being created and every GarageVehicle/ServiceRecord reassigned
-  // onto it — see the plan's design-decisions note on this.
+  // A walk-in customer entered by the workshop (see users.repository.ts's
+  // createWalkIn) may later register with the same phone. This used to
+  // convert that walk-in row in place — handing its garage (VINs) and full
+  // service history to whoever typed the phone number, with nothing proving
+  // they own it. Now the registrant gets a separate account WITHOUT the
+  // phone, and the walk-in is flagged (phoneClaimedByUserId) for staff, who
+  // know the customer, to confirm and merge (users.service.ts's
+  // mergeUserInto moves the phone over then). The registration response is
+  // the same either way, so it no longer reveals which phones are walk-ins.
   const walkIn = await usersRepository.findByPhone(input.phone);
   // A walk-in the admin already manually merged into a real account (see
   // users.service.ts's mergeUserInto) is kept around on purpose — flagged
@@ -108,32 +111,18 @@ export async function registerUser(
 
   let user;
   try {
+    user = await usersRepository.create({
+      email: input.email,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      passwordHash,
+      roleId: userRole.id,
+      // A walk-in's phone stays on the walk-in until staff confirm the merge.
+      phone: walkIn ? null : input.phone,
+      dateOfBirth,
+    });
     if (walkIn) {
-      const converted = await usersRepository.convertWalkInToRegistered(walkIn.id, {
-        email: input.email,
-        passwordHash,
-        firstName: input.firstName,
-        lastName: input.lastName,
-        dateOfBirth,
-      });
-      // A concurrent registration on this same phone won the race and
-      // already converted this row (see convertWalkInToRegistered's guard) —
-      // the phone is no longer a walk-in to merge onto, so this is now a
-      // genuine conflict, not a retryable transient error.
-      if (!converted) {
-        throw new ApiError(409, "Phone number already in use", "PHONE_ALREADY_IN_USE");
-      }
-      user = converted;
-    } else {
-      user = await usersRepository.create({
-        email: input.email,
-        firstName: input.firstName,
-        lastName: input.lastName,
-        passwordHash,
-        roleId: userRole.id,
-        phone: input.phone,
-        dateOfBirth,
-      });
+      await usersRepository.setPhoneClaim(walkIn.id, user.id);
     }
   } catch (err) {
     // A concurrent request (another password registration double-submit, or

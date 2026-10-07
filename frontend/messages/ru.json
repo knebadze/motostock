@@ -304,7 +304,8 @@
     "verifyRequiredLogout": "Выйти",
     "verifyRequiredLogoutError": "Не удалось выйти",
     "passwordTooLongError": "Пароль слишком длинный — максимум 72 символа",
-    "passwordInvalidCharsError": "Пароль может содержать только латинские буквы, цифры и символы"
+    "passwordInvalidCharsError": "Пароль может содержать только латинские буквы, цифры и символы",
+    "oauthEmailExists": "Аккаунт с этим email уже существует — войдите тем способом, которым регистрировались (например, через Google)"
   },
   "Home": {
     "heroTitle": "Экипировка, которой можно доверять на <hl>дороге</hl>",

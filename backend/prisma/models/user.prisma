@@ -30,6 +30,16 @@ model User {
   mergedIntoUserId        Int?
   mergedInto              User?                    @relation("UserMerge", fields: [mergedIntoUserId], references: [id], onDelete: SetNull)
   mergedFrom              User[]                   @relation("UserMerge")
+  // On a walk-in: a registration came in with this walk-in's phone number
+  // (auth.service.ts's register). Nothing proves the registrant owns that
+  // phone, so the walk-in's garage/service history is NOT handed over
+  // automatically — the new account is created separately (without the
+  // phone) and pointed to here, for staff who know the customer to confirm
+  // with one click (users.service.ts's mergeUserInto, which then also moves
+  // the phone over). Cleared by that merge.
+  phoneClaimedByUserId    Int?
+  phoneClaimedBy          User?                    @relation("PhoneClaim", fields: [phoneClaimedByUserId], references: [id], onDelete: SetNull)
+  phoneClaims             User[]                   @relation("PhoneClaim")
   // Null for password-registered accounts until they click the emailed
   // verification link; set immediately at creation for OAuth accounts
   // (Google/Facebook already confirmed the address) — see

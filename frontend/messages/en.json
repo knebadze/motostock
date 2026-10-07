@@ -304,7 +304,8 @@
     "verifyRequiredLogout": "Log out",
     "verifyRequiredLogoutError": "Couldn't log out",
     "passwordTooLongError": "Password is too long — max 72 characters",
-    "passwordInvalidCharsError": "Password may contain only Latin letters, digits and symbols"
+    "passwordInvalidCharsError": "Password may contain only Latin letters, digits and symbols",
+    "oauthEmailExists": "An account with this email already exists — please sign in the way you registered (e.g. with Google)"
   },
   "Home": {
     "heroTitle": "Gear you can trust on the <hl>road</hl>",

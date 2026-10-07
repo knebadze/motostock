@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Loader } from "@/components/shared/Loader";
-import { getUser, listUsers, type AdminUser } from "@/lib/api/users";
+import { getUser, listUsers, mergeUserInto, type AdminUser } from "@/lib/api/users";
 import type { GarageVehicle } from "@/lib/api/garage";
 import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import {
@@ -77,6 +77,10 @@ export function ServiceHistoryManager({
   const [searchingUsers, setSearchingUsers] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [garageVehicles, setGarageVehicles] = useState<GarageVehicle[]>([]);
+  // A registered account that claimed the selected walk-in's phone and
+  // awaits staff confirmation (backend: User.phoneClaimedByUserId).
+  const [phoneClaimedBy, setPhoneClaimedBy] = useState<AdminUser | null>(null);
+  const [confirmingClaim, setConfirmingClaim] = useState(false);
   const [loadingGarage, setLoadingGarage] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<GarageVehicle | null>(null);
 
@@ -130,6 +134,7 @@ export function ServiceHistoryManager({
       .then((detail) => {
         if (garageRequestSeqRef.current !== requestSeq) return;
         setGarageVehicles(detail.garage);
+        setPhoneClaimedBy(detail.phoneClaimedBy);
       })
       .catch((error) => {
         if (garageRequestSeqRef.current !== requestSeq) return;
@@ -145,6 +150,7 @@ export function ServiceHistoryManager({
   function changeUser() {
     setSelectedUser(null);
     setGarageVehicles([]);
+    setPhoneClaimedBy(null);
     setSelectedVehicle(null);
     setRecords([]);
     // Invalidate any in-flight garage/records fetch so a stale response
@@ -325,6 +331,23 @@ export function ServiceHistoryManager({
             </div>
           </div>
 
+          {selectedUser.isWalkIn && selectedUser.mergedIntoUserId == null && phoneClaimedBy && (
+            <div className="mt-4 flex flex-col gap-3 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-foreground">
+                ამ სტუმრის ტელეფონის ნომრით დარეგისტრირდა ანგარიში:{" "}
+                <span className="font-semibold">{phoneClaimedBy.name}</span> ({phoneClaimedBy.email}). თუ ეს
+                იგივე პირია, დააკავშირეთ — გარაჟი, სერვისის ისტორია და ნომერი მას გადაეცემა.
+              </p>
+              <button
+                type="button"
+                onClick={() => setConfirmingClaim(true)}
+                className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+              >
+                დაკავშირება
+              </button>
+            </div>
+          )}
+
           <div className="mt-6 flex items-center justify-between">
             <h2 className="text-sm font-semibold">ტრანსპორტი</h2>
             <button
@@ -494,6 +517,25 @@ export function ServiceHistoryManager({
         />
       )}
 
+      {selectedUser && (
+        <ConfirmDialog
+          open={confirmingClaim && phoneClaimedBy != null}
+          onClose={() => setConfirmingClaim(false)}
+          title="სტუმრის დაკავშირება ანგარიშთან"
+          message={
+            phoneClaimedBy
+              ? `დარწმუნებული ხართ, რომ ${phoneClaimedBy.name} (${phoneClaimedBy.email}) ნამდვილად ეს მომხმარებელია? მისი გარაჟი და სერვისის ისტორია ამ ანგარიშს გადაეცემა.`
+              : ""
+          }
+          confirmLabel="დაკავშირება"
+          successMessage="მომხმარებლები გაერთიანდა"
+          onConfirm={async () => {
+            if (!phoneClaimedBy) return;
+            await mergeUserInto(selectedUser.id, phoneClaimedBy.id);
+            handleMerged(phoneClaimedBy);
+          }}
+        />
+      )}
       {selectedUser && (
         <LinkExistingUserModal
           open={linkUserOpen}

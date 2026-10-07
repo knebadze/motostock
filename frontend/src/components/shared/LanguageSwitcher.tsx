@@ -100,6 +100,8 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
                     href: pathname,
                     locale: code,
                   });
+                  // Deliberately a full navigation — see the comment above.
+                  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
                   window.location.href = `${targetPath}${window.location.search}`;
                 }}
                 className={`flex w-full items-center px-3 py-2 text-sm transition-colors hover:bg-muted hover:text-primary-text ${

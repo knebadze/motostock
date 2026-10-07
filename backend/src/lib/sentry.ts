@@ -35,6 +35,12 @@ function scrub(value: unknown, depth = 0): unknown {
 }
 
 // Called first thing on startup (src/instrument.ts).
+const URL_SECRET_PARAM = /([?&](?:token|code|state)=)[^&#\s"]*/gi;
+
+function redactUrlSecrets(value: string): string {
+  return value.replace(URL_SECRET_PARAM, "$1[REDACTED]");
+}
+
 export function initSentry(): void {
   if (!env.SENTRY_DSN || initialized) return;
 
@@ -67,6 +73,12 @@ export function initSentry(): void {
           event.request.headers = scrub(event.request.headers) as Record<string, string>;
         }
         event.request.data = scrub(event.request.data);
+        // One-time tokens (and OAuth code/state) in the URL — see the
+        // frontend's lib/sentry-shared.ts.
+        if (event.request.url) event.request.url = redactUrlSecrets(event.request.url);
+        if (typeof event.request.query_string === "string") {
+          event.request.query_string = redactUrlSecrets(`?${event.request.query_string}`);
+        }
       }
       if (event.extra) event.extra = scrub(event.extra) as Record<string, unknown>;
       return event;

@@ -78,10 +78,16 @@ export async function sendWhatsAppTextMessage(to: string, body: string): Promise
 // isWhatsAppCloudApiConfigured.
 export function verifyWebhookSignature(rawBody: Buffer, signatureHeader: string | undefined): boolean {
   if (!env.WHATSAPP_APP_SECRET || !signatureHeader?.startsWith("sha256=")) return false;
-  const expected = createHmac("sha256", env.WHATSAPP_APP_SECRET).update(rawBody).digest("hex");
-  const provided = signatureHeader.slice("sha256=".length);
-  if (expected.length !== provided.length) return false;
-  return timingSafeEqual(Buffer.from(expected), Buffer.from(provided));
+  const expected = createHmac("sha256", env.WHATSAPP_APP_SECRET).update(rawBody).digest();
+  // Compared as raw 32-byte digests, never as strings: a header of 64
+  // non-ASCII characters (Node decodes header bytes as latin1) passed the
+  // old string-length check, then re-encoded to 128 UTF-8 bytes and made
+  // timingSafeEqual throw — an unauthenticated 500 that also flooded
+  // ErrorLog/Sentry. Anything that isn't exactly 64 hex characters is
+  // simply rejected.
+  const providedHex = signatureHeader.slice("sha256=".length);
+  if (!/^[0-9a-f]{64}$/i.test(providedHex)) return false;
+  return timingSafeEqual(expected, Buffer.from(providedHex, "hex"));
 }
 
 // Checked on the GET /webhook verification handshake (whatsapp-chat.
