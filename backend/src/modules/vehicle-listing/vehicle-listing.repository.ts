@@ -1,5 +1,5 @@
 import { prisma } from "../../config/prisma.js";
-import type { Prisma } from "../../generated/prisma/index.js";
+import { Prisma } from "../../generated/prisma/index.js";
 import { getSpecFieldDefinition } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
 import { applyVehicleListingAdminFilters } from "../filters/vehicle-listing/vehicle-listing-admin-filter-registry.js";
 import type { FilterEntry } from "../filters/filter-request.schema.js";
@@ -225,13 +225,28 @@ function buildWhere(filters: {
   return and.length > 0 ? { AND: and } : undefined;
 }
 
+// Customer browse/search filter shape shared by count/findIds below.
+type CustomerListingFilters = {
+  categoryIds?: number[];
+  searchIds?: number[];
+  brandIds?: number[];
+  priceMin?: number;
+  priceMax?: number;
+  yearMin?: number;
+  yearMax?: number;
+  onSale?: boolean;
+  bulkDiscountEventId?: number;
+  featured?: boolean;
+  usdToGelRate?: number;
+  specFilters?: SpecFilterInput;
+};
+
 export type VehicleListingSortBy = "newest" | "year-desc" | "price-asc" | "price-desc";
 
-// Only the DB-orderable sorts — price-asc/price-desc depend on each
-// listing's *effective* (discount-aware) price, which isn't a plain column
-// (the active discount is a separate, time-windowed table row), so those two
-// are computed in JS by the service instead (fetch-all-matching, sort, slice
-// — see vehicle-listing.service.ts's listVehicleListings).
+// Only the plain-column sorts — price-asc/price-desc order by each listing's
+// *effective* (discount-aware, GEL-normalized) price, which isn't a column,
+// so those go through findIdsOrderedByEffectivePrice's raw query instead
+// (see vehicle-listing.service.ts's listVehicleListings).
 function resolveOrderBy(sortBy: VehicleListingSortBy | undefined): Prisma.VehicleListingOrderByWithRelationInput[] {
   if (sortBy === "year-desc") return [{ year: "desc" }];
   // Most-garaged vehicles first (VehicleCatalog.popularity, kept live by the
@@ -294,24 +309,72 @@ export const vehicleListingRepository = {
   // Paired with findMany above — same where-shape (including the isActive
   // exclusion and searchIds, when present), for real "how many pages"
   // totals on the customer browse/search path.
-  count(filters: {
-    categoryIds?: number[];
-    searchIds?: number[];
-    brandIds?: number[];
-    priceMin?: number;
-    priceMax?: number;
-    yearMin?: number;
-    yearMax?: number;
-    onSale?: boolean;
-    bulkDiscountEventId?: number;
-    featured?: boolean;
-    usdToGelRate?: number;
-    specFilters?: SpecFilterInput;
-  }) {
+  count(filters: CustomerListingFilters) {
     const structuredWhere = buildWhere(filters);
     return prisma.vehicleListing.count({
       where: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] },
     });
+  },
+
+  // Just the ids of every customer-visible listing matching `filters` (same
+  // where-shape as count above) — the input to
+  // findIdsOrderedByEffectivePrice, cheap even for a large filtered set,
+  // unlike full card rows.
+  async findIds(filters: CustomerListingFilters): Promise<number[]> {
+    const structuredWhere = buildWhere(filters);
+    const rows = await prisma.vehicleListing.findMany({
+      where: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  },
+
+  // One page of `ids`, ordered in Postgres by the price the listing card
+  // shows: its currently-active discount price if any (the latest-starting
+  // discount whose [startDate, endDate] contains now — same rule as
+  // lib/discounts.ts's findActiveDiscount over the startDate-desc rows the
+  // card loads), else its regular price — normalized to GEL (a USD listing
+  // and its discount share the listing's currency) so GEL and USD listings
+  // sort together. Ties keep the shop's default order (most-garaged model
+  // first, then newest), then id so pages never overlap. Replaces a
+  // fetch-every-match + JS sort + slice.
+  async findIdsOrderedByEffectivePrice(
+    ids: number[],
+    direction: "asc" | "desc",
+    usdToGelRate: number,
+    skip: number,
+    take: number,
+  ): Promise<number[]> {
+    if (ids.length === 0) return [];
+    const order = direction === "asc" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+    // DateTime columns are UTC wall time in `timestamp` (no zone) — casting
+    // the ISO string to ::timestamp compares in that same frame.
+    const now = new Date().toISOString();
+    const rows = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT vl."id"
+      FROM "dbo"."VehicleListing" vl
+      JOIN "dbo"."VehicleCatalog" vc ON vc."id" = vl."vehicleCatalogId"
+      WHERE vl."id" = ANY(${ids}::int[])
+      ORDER BY
+        COALESCE(
+          (
+            SELECT d."discountPrice"
+            FROM "dbo"."VehicleListingDiscount" d
+            WHERE d."vehicleListingId" = vl."id"
+              AND d."startDate" <= ${now}::timestamp
+              AND ${now}::timestamp <= d."endDate"
+            ORDER BY d."startDate" DESC
+            LIMIT 1
+          ),
+          vl."price"
+        ) * CASE WHEN vl."priceCurrency" = 'USD' THEN ${usdToGelRate}::numeric ELSE 1 END ${order},
+        vc."popularity" DESC,
+        vl."createdAt" DESC,
+        vl."id" DESC
+      OFFSET ${skip}
+      LIMIT ${take}
+    `;
+    return rows.map((row) => row.id);
   },
 
   // See adminListInclude above for why this is a separate method rather

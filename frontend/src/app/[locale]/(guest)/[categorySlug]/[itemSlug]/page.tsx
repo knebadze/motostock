@@ -8,7 +8,7 @@ import {
   getProductDetailFromServer,
   getSimilarProductsFromServer,
   getVehicleListingFromServer,
-  getVehicleListingsFromServer,
+  getSimilarVehicleListingsFromServer,
   getViewedTogetherFromServer,
 } from "@/lib/api/server";
 import { buildVehicleListingSlug, parseVehicleListingIdFromSlug } from "@/lib/api/vehicle-listings";
@@ -158,8 +158,10 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
     }
 
     const breadcrumbChain = getAncestorChain(categories, listing.vehicleCatalog.category.id);
-    const allListings = await getVehicleListingsFromServer(listing.vehicleCatalog.category.id);
-    const similarListings = allListings.filter((item) => item.id !== listing.id).slice(0, 12);
+    const similarListings = await getSimilarVehicleListingsFromServer(
+      listing.vehicleCatalog.category.id,
+      listing.id,
+    );
 
     const title = [listing.vehicleCatalog.brand.name, listing.vehicleCatalog.model.name]
       .filter(Boolean)

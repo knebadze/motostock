@@ -383,28 +383,27 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       specFilters: query.specFilters,
     };
 
-    // Effective (discount-aware) price isn't a plain column — same
-    // fetch-all-matching + JS-sort + slice tradeoff as
-    // products.service.ts's listProducts price branch, for the same
-    // reason (see its comment).
+    // Price sort orders by the effective (discount-aware, GEL-normalized)
+    // price the card shows — not a column, so: ids of the whole filtered set
+    // (cheap), Postgres orders them and returns just this page, and only
+    // that page's card rows are loaded (same approach as
+    // products.service.ts's listProducts). `total` stays exact.
     if (query.sortBy === "price-asc" || query.sortBy === "price-desc") {
-      const rows = await vehicleListingRepository.findMany(filters);
-      const effectivePrice = (row: (typeof rows)[number]) => {
-        const activeDiscount = findActiveDiscount(row.discounts);
-        const raw = activeDiscount ? Number(activeDiscount.discountPrice) : Number(row.price);
-        // Normalize to GEL before comparing — a USD listing's discount (see
-        // vehicle-listing.prisma's priceCurrency comment) is same-currency
-        // as its own listing, so this one multiply covers both branches.
-        return row.priceCurrency === "USD" ? raw * (usdToGelRate ?? 1) : raw;
-      };
-      const sorted = [...rows].sort((a, b) =>
-        query.sortBy === "price-asc"
-          ? effectivePrice(a) - effectivePrice(b)
-          : effectivePrice(b) - effectivePrice(a),
+      const matchingIds = await vehicleListingRepository.findIds(filters);
+      const pageIds = await vehicleListingRepository.findIdsOrderedByEffectivePrice(
+        matchingIds,
+        query.sortBy === "price-asc" ? "asc" : "desc",
+        usdToGelRate ?? 1,
+        skip,
+        take,
       );
-      const pageRows = sorted.slice(skip, skip + take);
+      const rows = await vehicleListingRepository.findByIds(pageIds);
+      const rowById = new Map(rows.map((row) => [row.id, row]));
+      const pageRows = pageIds
+        .map((id) => rowById.get(id))
+        .filter((row): row is NonNullable<typeof row> => row != null);
       const result = pageRows.map(nullFillVehicleCatalogSpecs).map(toVehicleListingResponse);
-      return { items: result, total: rows.length, page, pageSize };
+      return { items: result, total: matchingIds.length, page, pageSize };
     }
 
     // Default ("newest") / year-desc sort: both plain DB-orderable columns —

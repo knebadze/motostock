@@ -5,10 +5,19 @@ import { forwardedForHeader, getServerApiBaseUrl } from "../internal";
 
 // Shared plumbing for every server-side (SSR) data getter in this folder.
 
+// Backend cookie names — backend/src/lib/jwt.ts's AUTH_COOKIE_NAME and
+// guest-identity.middleware.ts's GUEST_ID_COOKIE_NAME.
+const SESSION_COOKIE_NAME = "motostock_token";
+const GUEST_ID_COOKIE_NAME = "motostock_guest_id";
+
 async function authHeaders() {
   const cookieStore = await cookies();
   const cookieHeader = cookieStore.toString();
-  return cookieHeader ? { Cookie: cookieHeader } : undefined;
+  return {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    hasSession: cookieStore.has(SESSION_COOKIE_NAME),
+    hasGuestId: cookieStore.has(GUEST_ID_COOKIE_NAME),
+  };
 }
 
 // Every getXFromServer() in this folder is the same shape: forward the request
@@ -16,7 +25,14 @@ async function authHeaders() {
 // response, and fall back to a safe empty value on either "not logged in"
 // or a request failure — a server component must never throw just because
 // a fetch to the API failed. `requireAuth: true` bails out before the
-// request entirely for admin/account-only data; omitted (or false) means
+// request entirely when there's no session or guest-id cookie — owner-scoped
+// data (account, admin, and the guest-capable cart/wishlist/compare) can't
+// exist for such a visitor, so asking would only cost a round trip. Checking
+// for those two cookies specifically, not "any cookie": an anonymous
+// visitor nearly always carries some (locale, cookie consent), which used to
+// send every such request anyway. `requireSession: true` is stricter — for
+// endpoints only a logged-in user can answer (e.g. /users/me), where a guest
+// id alone is still a guaranteed 401. Omitted (or false) means
 // the endpoint is public and should still be attempted without a session
 // (see the many per-function comments in the domain files explaining *why* a given
 // endpoint needs to stay public — that reasoning lives at each call site,
@@ -28,12 +44,14 @@ export async function fetchFromServer<TResponse, TResult>(
     fallback: TResult;
     extract: (data: TResponse) => TResult;
     requireAuth?: boolean;
+    requireSession?: boolean;
   },
 ): Promise<TResult> {
-  const cookieHeaders = await authHeaders();
-  if (options.requireAuth && !cookieHeaders) return options.fallback;
+  const auth = await authHeaders();
+  if (options.requireSession && !auth.hasSession) return options.fallback;
+  if (options.requireAuth && !auth.hasSession && !auth.hasGuestId) return options.fallback;
   const headers = {
-    ...cookieHeaders,
+    ...auth.headers,
     ...forwardedForHeader((await requestHeaders()).get("x-forwarded-for")),
   };
 
@@ -55,11 +73,9 @@ export async function fetchFromServer<TResponse, TResult>(
     //
     // Only a missing status (the request never got an HTTP response at all —
     // connection refused, timeout, DNS) or a 5xx counts as worth surfacing.
-    // Every 4xx is an ordinary application response `requireAuth` callers
-    // already expect on every single guest page load (a guest has SOME
-    // cookie — locale/theme/guest-id — so `authHeaders()` still sends a
-    // Cookie header, and the backend correctly 401s `/users/me` etc. for
-    // them) or a deliberate "not found" (e.g. getVacancyBySlugFromServer) —
+    // Every 4xx is an ordinary application response — a `requireAuth`
+    // caller whose session cookie expired (backend correctly 401s) — or a
+    // deliberate "not found" (e.g. getVacancyBySlugFromServer) —
     // logging those would fire on nearly every request and both drown out
     // the real signal and trip Next.js dev overlay's console.error capture.
     const status = error instanceof ApiRequestError ? error.status : undefined;

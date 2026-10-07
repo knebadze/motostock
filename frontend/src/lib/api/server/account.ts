@@ -16,7 +16,7 @@ export const getCurrentUserFromServer = cache(async (): Promise<User | null> => 
   return fetchFromServer<{ user: User }, User | null>("/users/me", {
     fallback: null,
     extract: (data) => data.user,
-    requireAuth: true,
+    requireSession: true,
   });
 });
 

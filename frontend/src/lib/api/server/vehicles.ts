@@ -36,6 +36,23 @@ export const getVehicleBrandFacetsFromServer = cache(async (
   });
 });
 
+// Vehicle detail page's "similar listings" strip — one real page (12 + 1
+// spare for the listing being viewed, filtered out by the caller) in the
+// shop's default order, instead of every active listing in the category
+// (getVehicleListingsFromServer is unbounded) just to keep 12.
+export const SIMILAR_VEHICLE_LISTINGS_LIMIT = 12;
+export const getSimilarVehicleListingsFromServer = cache(async (
+  categoryId: number,
+  excludeId: number,
+): Promise<VehicleListing[]> => {
+  const items = await fetchFromServer<AdminListPage<VehicleListing>, VehicleListing[]>("/vehicle-listings", {
+    params: { categoryId, page: 1, pageSize: SIMILAR_VEHICLE_LISTINGS_LIMIT + 1, sortBy: "newest" },
+    fallback: [],
+    extract: (data) => data.items,
+  });
+  return items.filter((item) => item.id !== excludeId).slice(0, SIMILAR_VEHICLE_LISTINGS_LIMIT);
+});
+
 // Vehicle category shop page's initial (server-rendered) load specifically —
 // same reasoning as getProductsPageFromServer above (unlike
 // getVehicleListingsFromServer, this sends page/pageSize/sortBy for real
