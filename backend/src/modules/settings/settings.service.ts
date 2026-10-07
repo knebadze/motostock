@@ -489,12 +489,26 @@ export async function getUsdToGelRate(): Promise<number | null> {
 // call sites (cart preview, vehicle-listing filter/sort) are lower-stakes and
 // keep the softer `?? 1`/`?? undefined` fallback instead — see their own
 // comments.
+// A rate is refreshed daily (and at every boot); one this old means the
+// fetch has been failing for days — charging with it could be well off, so
+// checkout of USD-priced items stops instead (admin sees the failing job on
+// the "ავტომატური დავალებები" page).
+const USD_GEL_RATE_MAX_AGE_MS = 72 * 60 * 60 * 1000;
+
 export async function getUsdToGelRateOrThrow(): Promise<number> {
-  const rate = await getUsdToGelRate();
+  const [rate, updatedAt] = await Promise.all([getUsdToGelRate(), getUsdToGelRateUpdatedAt()]);
   if (rate == null) {
     throw new ApiError(
       503,
       "ვალუტის კურსი ჯერ არ არის მოტანილი — სცადეთ რამდენიმე წუთში ხელახლა",
+      "USD_GEL_RATE_UNAVAILABLE",
+    );
+  }
+  const updatedAtMs = updatedAt ? Date.parse(updatedAt) : NaN;
+  if (!Number.isFinite(updatedAtMs) || Date.now() - updatedAtMs > USD_GEL_RATE_MAX_AGE_MS) {
+    throw new ApiError(
+      503,
+      "ვალუტის კურსი მოძველებულია — დოლარში ფასიანი ნივთის შეძენა დროებით შეუძლებელია, სცადეთ მოგვიანებით",
       "USD_GEL_RATE_UNAVAILABLE",
     );
   }

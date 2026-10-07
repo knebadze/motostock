@@ -545,6 +545,23 @@ export async function updateVehicleListing(id: number, input: UpdateVehicleListi
     }
   }
 
+  // A discount's discountPrice has no currency of its own — it's read in
+  // the listing's CURRENT priceCurrency. Switching the currency would
+  // silently re-denominate every discount (a 9,000 USD sale price becoming
+  // 9,000 GEL ≈ a third of the bike's value), and the price guard above
+  // can't catch it (it compares bare numbers). So the switch is refused
+  // while any discount is active or still scheduled.
+  if (input.priceCurrency !== undefined && input.priceCurrency !== existing.priceCurrency) {
+    const now = new Date();
+    if (existing.discounts.some((discount) => discount.endDate >= now)) {
+      throw new ApiError(
+        400,
+        "ვალუტის შეცვლა შეუძლებელია, სანამ განცხადებას აქვს მოქმედი ან დაგეგმილი ფასდაკლება — ჯერ წაშალეთ ან დაასრულეთ ფასდაკლება",
+        "VEHICLE_LISTING_CURRENCY_HAS_DISCOUNTS",
+      );
+    }
+  }
+
   await assertRefsExist({
     vehicleCatalogId: input.vehicleCatalogId ?? existing.vehicleCatalog.id,
     conditionId: input.conditionId ?? existing.condition.id,

@@ -692,7 +692,8 @@
     "SERVICE_TYPE_NOT_FOUND": "Service type not found",
     "CURRENT_PASSWORD_REQUIRED": "Your current password is required",
     "CURRENT_PASSWORD_INCORRECT": "Your current password is incorrect",
-    "VALIDATION_FAILED": "The submitted data is invalid"
+    "VALIDATION_FAILED": "The submitted data is invalid",
+    "USD_GEL_RATE_UNAVAILABLE": "Items priced in USD can't be purchased right now — the exchange rate is being updated, please try again later"
   },
   "Common": {
     "genericError": "Something went wrong, please try again",

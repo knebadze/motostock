@@ -376,10 +376,17 @@ export const ordersRepository = {
 
         const promo = await tx.promoCode.findUnique({
           where: { id: input.promoCodeId },
-          select: { usageLimit: true },
+          select: { usageLimit: true, isActive: true, startDate: true, endDate: true },
         });
         if (!promo) {
           throw new ApiError(400, "პრომო კოდი ვეღარ მოიძებნა");
+        }
+        // Deactivated by an admin, or expired, between the checkout preview
+        // and this commit — re-checked here under the same lock as the
+        // usage limits below.
+        const now = new Date();
+        if (!promo.isActive || promo.startDate > now || promo.endDate < now) {
+          throw new ApiError(400, "პრომო კოდი აღარ მოქმედებს — წაშალეთ და სცადეთ თავიდან", "PROMO_CODE_EXPIRED");
         }
 
         // Excludes CANCELLED orders — same reasoning as promo-codes.repository.ts's

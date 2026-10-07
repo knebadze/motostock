@@ -33,6 +33,11 @@ const REQUEST_TIMEOUT_MS = 8000;
 
 type FallbackRatesResponse = { result: string; rates: Record<string, number> };
 
+// Plausible GEL per 1 USD — far wider than any real movement, only meant to
+// reject nonsense.
+const USD_GEL_RATE_MIN = 1.5;
+const USD_GEL_RATE_MAX = 5;
+
 async function fetchFallbackUsdToGelRate(): Promise<number> {
   const res = await fetch(FALLBACK_RATES_URL, {
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -46,6 +51,12 @@ async function fetchFallbackUsdToGelRate(): Promise<number> {
   const rate = body.rates?.GEL;
   if (typeof rate !== "number") {
     throw new Error("გარეშე კურსის API-ს პასუხში GEL კურსი ვერ მოიძებნა");
+  }
+  // This number prices real USD-listed vehicles at checkout — a garbage
+  // value from a third-party API (0, negative, a mis-scaled number) must
+  // never be stored. Throwing keeps the last good rate in place.
+  if (!(rate >= USD_GEL_RATE_MIN && rate <= USD_GEL_RATE_MAX)) {
+    throw new Error(`USD/GEL კურსი (${rate}) დასაშვებ დიაპაზონს (${USD_GEL_RATE_MIN}–${USD_GEL_RATE_MAX}) სცდება — არ შეინახა`);
   }
   return rate;
 }

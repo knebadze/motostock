@@ -692,7 +692,8 @@
     "SERVICE_TYPE_NOT_FOUND": "Тип обслуживания не найден",
     "CURRENT_PASSWORD_REQUIRED": "Укажите текущий пароль",
     "CURRENT_PASSWORD_INCORRECT": "Текущий пароль неверен",
-    "VALIDATION_FAILED": "Отправленные данные неверны"
+    "VALIDATION_FAILED": "Отправленные данные неверны",
+    "USD_GEL_RATE_UNAVAILABLE": "Товары с ценой в долларах временно недоступны для покупки — курс обновляется, попробуйте позже"
   },
   "Common": {
     "genericError": "Произошла ошибка, попробуйте снова",

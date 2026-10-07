@@ -203,6 +203,10 @@ function buildBreakdownItem(row: CartRow, unitPrice: number): BreakdownItem {
 // (base price vs. active ProductVariantDiscount/VehicleListingDiscount),
 // then layers a promo-code discount on top per the admin-configured
 // stacking setting.
+function roundToCents(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 export async function computeCheckoutTotals(userId: number, promoCodeInput?: string): Promise<CheckoutBreakdown> {
   const initialRows = await cartRepository.findByOwner({ userId });
   if (initialRows.length === 0) {
@@ -311,10 +315,14 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
 
   const items = cartRows.map((row, index) => {
     const rate = row.vehicleListing?.priceCurrency === "USD" ? usdToGelRate : 1;
-    const baseUnitPrice = Number(row.productVariant?.price ?? row.vehicleListing?.price ?? 0) * rate;
+    // Rounded to cents right after the USD->GEL conversion, so every branch
+    // below (not just the promo one) stores a whole-cent unitPrice and
+    // lineTotal is exactly unitPrice × quantity — an unrounded converted
+    // price left them a cent apart.
+    const baseUnitPrice = roundToCents(Number(row.productVariant?.price ?? row.vehicleListing?.price ?? 0) * rate);
     const activeDiscount = itemDiscounts[index];
     const hasActiveDiscount = activeDiscount !== null;
-    const effectivePrice = activeDiscount ? Number(activeDiscount.discountPrice) * rate : baseUnitPrice;
+    const effectivePrice = activeDiscount ? roundToCents(Number(activeDiscount.discountPrice) * rate) : baseUnitPrice;
 
     const matchKey = promoCodeItemKey({
       itemType: row.itemType,
@@ -346,7 +354,7 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
         unitPrice = effectivePrice;
       } else {
         const basis = stackingEnabled ? effectivePrice : baseUnitPrice;
-        unitPrice = Math.round(basis * (1 - promoMatch.discountPercent / 100) * 100) / 100;
+        unitPrice = roundToCents(basis * (1 - promoMatch.discountPercent / 100));
       }
     } else {
       unitPrice = effectivePrice;

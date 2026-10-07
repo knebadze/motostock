@@ -67,7 +67,11 @@ export const adminListInclude = {
   condition: true,
   status: true,
   color: true,
-  discounts: { orderBy: { startDate: "desc" }, take: 5 },
+  // All of them, not the latest 5: findActiveDiscount picks the active one
+  // from this list, and with 5+ later-starting (scheduled) discounts the
+  // active one fell off the end — cards and checkout then charged full price
+  // while the detail page showed the sale. A listing has a handful at most.
+  discounts: { orderBy: { startDate: "desc" } },
   images: { orderBy: { position: "asc" }, take: 1 },
 } as const;
 
