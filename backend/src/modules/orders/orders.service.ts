@@ -8,7 +8,11 @@ import { cartRepository } from "../cart/cart.repository.js";
 import { addressesRepository } from "../addresses/addresses.repository.js";
 import { banksRepository } from "../banks/banks.repository.js";
 import { usersRepository } from "../users/users.repository.js";
-import { syncVariantStockByIds, pushOrderSale } from "../fina-sync/fina-sync.service.js";
+import {
+  orderNeedsFinaPush,
+  processOrderFinaPush,
+  syncVariantStockByIds,
+} from "../fina-sync/fina-sync.service.js";
 import { sendEmailTemplate } from "../email-templates/email-templates.service.js";
 import { evaluateOrderRisk } from "../fraud/fraud.service.js";
 import { resolvePromoCodeForItems, promoCodeItemKey } from "../promo-codes/promo-codes.service.js";
@@ -680,6 +684,10 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
         // No gateway integration exists yet (see PaymentStatus's own
         // comment) — this is purely additive labeling for now.
         paymentStatus: input.fulfillmentMethod === "CARD" ? "AWAITING_PAYMENT" : "NOT_APPLICABLE",
+        // Outbox: queued in the order's own transaction, so the FINA sale
+        // push can't be lost to a crash/redeploy right after commit — see
+        // processOrderFinaPush below and the sweep in server.ts.
+        finaSyncStatus: orderNeedsFinaPush(items) ? "PENDING" : "NOT_APPLICABLE",
         items,
         soldStatusId,
         cartItemIds: breakdown.cartItemIds,
@@ -720,15 +728,11 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
         user.createdAt,
       );
 
-      void pushOrderSale({
-        id: order.id,
-        orderCode: order.orderCode,
-        items: order.items.map((item) => ({
-          productVariantId: item.productVariantId,
-          quantity: item.quantity,
-          unitPrice: Number(item.unitPrice),
-        })),
-      }).catch((err: unknown) => logger.error({ err, orderId: order.id }, "FINA sale push failed"));
+      // Immediate attempt; a failure (or a restart before it runs) is
+      // retried by the PENDING sweep. A no-op for a NOT_APPLICABLE order.
+      if (order.finaSyncStatus === "PENDING") {
+        void processOrderFinaPush(order.id);
+      }
 
       return toOrderResponse(order);
     } catch (error) {

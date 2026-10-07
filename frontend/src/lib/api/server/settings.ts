@@ -54,6 +54,7 @@ const SETTINGS_FALLBACK: Settings = {
   imageMaxDimensionPx: 1600,
   imageWebpQuality: 82,
   finaSyncIntervalMinutes: 15,
+  finaOrderPushRetryIntervalMinutes: 10,
   homepageCacheTtlMinutes: 5,
   sentryEnabled: false,
 };

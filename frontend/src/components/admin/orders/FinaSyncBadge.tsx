@@ -6,6 +6,16 @@ import type { FinaOrderSyncStatus } from "@/lib/api/orders";
 export function FinaSyncBadge({ status }: { status: FinaOrderSyncStatus }) {
   if (status === "NOT_APPLICABLE") return null;
 
+  // Queued — sent right after the order/cancellation, retried automatically
+  // (Settings → FINA sets how often) until it succeeds or turns FAILED.
+  if (status === "PENDING") {
+    return (
+      <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-600">
+        FINA რიგშია
+      </span>
+    );
+  }
+
   if (status === "SYNCED") {
     return (
       <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-green-600">

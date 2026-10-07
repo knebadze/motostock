@@ -3,6 +3,7 @@ import { prisma } from "../../config/prisma.js";
 import { startOfDayTbilisi, endOfDayTbilisi } from "../../lib/tbilisi-dates.js";
 import type {
   CartItemType,
+  FinaOrderSyncStatus,
   OrderDeliverySpeed,
   OrderFulfillmentMethod,
   PaymentStatus,
@@ -137,6 +138,9 @@ export type PlaceOrderInput = {
   // PaymentStatus's own comment in order.prisma) — purely additive labeling
   // until a real gateway integration exists.
   paymentStatus: PaymentStatus;
+  // PENDING when the order has anything to push to FINA (outbox — see
+  // fina-sync.service.ts's orderNeedsFinaPush).
+  finaSyncStatus: FinaOrderSyncStatus;
   items: PlaceOrderItemInput[];
   // Resolved once by orders.service.ts (same "look up the lookup row by
   // its stable key" pattern as statusId/PENDING above) — applied below to
@@ -208,6 +212,9 @@ export const ordersRepository = {
       items: StockAdjustmentItem[];
       soldStatusId: number;
       availableStatusId: number;
+      // Queue the FINA return push (outbox) in this same transaction — set
+      // when the order was ever FINA-relevant (see updateOrderStatus).
+      queueFinaReturn: boolean;
     } | undefined,
     expectedCurrentStatusId: number,
   ) {
@@ -226,6 +233,9 @@ export const ordersRepository = {
           statusId,
           ...cancellation,
           ...(stockAdjustment ? { cancelledAt: new Date() } : {}),
+          ...(stockAdjustment?.queueFinaReturn
+            ? { finaSyncStatus: "PENDING" as const, finaPushAttempts: 0 }
+            : {}),
         },
       });
       if (result.count === 0) {

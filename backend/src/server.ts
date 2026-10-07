@@ -6,8 +6,15 @@ import { prisma } from "./config/prisma.js";
 import { logger } from "./lib/logger.js";
 import { onLoggedError } from "./lib/error-hooks.js";
 import { captureLoggedError, flushSentry } from "./lib/sentry.js";
-import { isFinaConfigured, runSync } from "./modules/fina-sync/fina-sync.service.js";
-import { getFinaSyncIntervalMinutes } from "./modules/settings/settings.service.js";
+import {
+  isFinaConfigured,
+  processDueFinaOrderPushes,
+  runSync,
+} from "./modules/fina-sync/fina-sync.service.js";
+import {
+  getFinaOrderPushRetryIntervalMinutes,
+  getFinaSyncIntervalMinutes,
+} from "./modules/settings/settings.service.js";
 import { DEFAULT_JOB_CRON, JOB_DEFINITIONS } from "./modules/scheduled-jobs/scheduled-jobs.registry.js";
 import { runScheduledJob } from "./modules/scheduled-jobs/scheduled-jobs.service.js";
 
@@ -42,6 +49,34 @@ if (isFinaConfigured()) {
   };
   scheduleNext();
   logger.info("FINA scheduled sync enabled (interval configurable in Settings)");
+}
+
+// FINA order-push outbox sweep — retries orders left PENDING (a failed push,
+// or one cut off by a restart between commit and the FINA call). Same
+// self-rescheduling setTimeout pattern as the stock sync above, so the
+// admin's interval change (Settings → FINA) applies from the next run. The
+// first run comes shortly after boot rather than a full interval later: a
+// redeploy is exactly when a push is most likely to have been cut off.
+const FINA_ORDER_PUSH_FIRST_RUN_DELAY_MS = 30_000;
+let finaOrderPushTimer: NodeJS.Timeout | undefined;
+if (isFinaConfigured()) {
+  const runAndScheduleNext = () => {
+    if (finaSyncStopped) return;
+    processDueFinaOrderPushes()
+      .catch((err: unknown) => logger.error({ err }, "FINA order-push sweep failed"))
+      .finally(() => {
+        if (finaSyncStopped) return;
+        getFinaOrderPushRetryIntervalMinutes()
+          .then((minutes) => {
+            if (finaSyncStopped) return;
+            finaOrderPushTimer = setTimeout(runAndScheduleNext, minutes * 60_000);
+          })
+          .catch((err: unknown) =>
+            logger.error({ err }, "Failed to read FINA order-push retry interval setting"),
+          );
+      });
+  };
+  finaOrderPushTimer = setTimeout(runAndScheduleNext, FINA_ORDER_PUSH_FIRST_RUN_DELAY_MS);
 }
 
 // Bounds the growth of every table with no other retention policy
@@ -97,6 +132,7 @@ function shutdown(signal: string) {
 
   finaSyncStopped = true;
   if (finaSyncTimer) clearTimeout(finaSyncTimer);
+  if (finaOrderPushTimer) clearTimeout(finaOrderPushTimer);
   dailyScheduledJobCronTasks.forEach((task) => task.stop());
 
   const forceExit = setTimeout(() => {

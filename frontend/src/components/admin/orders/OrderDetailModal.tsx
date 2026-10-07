@@ -217,7 +217,7 @@ export function OrderDetailModal({
                 <span className="text-sm font-medium text-foreground">FINA სინქრონიზაცია:</span>
                 <FinaSyncBadge status={order.finaSyncStatus} />
               </div>
-              {order.finaSyncStatus === "FAILED" && (
+              {(order.finaSyncStatus === "FAILED" || order.finaSyncStatus === "PENDING") && (
                 <button
                   type="button"
                   onClick={handleRetryFinaSync}

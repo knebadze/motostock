@@ -855,7 +855,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Manually merge one user (typically a walk-in) into another (admin only) */
+        /** Manually merge one user (typically a walk-in) into another (admin/operator, workshop screen) */
         post: {
             parameters: {
                 query?: never;
@@ -1477,7 +1477,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List a given customer's garage vehicles (admin only, workshop screen) */
+        /** List a given customer's garage vehicles (admin/operator, workshop screen) */
         get: {
             parameters: {
                 query?: never;
@@ -1521,7 +1521,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** Add a catalog vehicle to a given customer's garage (admin only, workshop screen) */
+        /** Add a catalog vehicle to a given customer's garage (admin/operator, workshop screen) */
         post: {
             parameters: {
                 query?: never;
@@ -13174,6 +13174,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/share-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An uploaded image as a 1200×630 JPEG for link previews (og:image) — public */
+        get: {
+            parameters: {
+                query: {
+                    src: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description JPEG image */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/jpeg": string;
+                    };
+                };
+                /** @description Invalid path */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Image not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/faq/public": {
         parameters: {
             query?: never;
@@ -13667,7 +13723,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List all workshop service types, including inactive ones (admin) */
+        /** List all workshop service types, including inactive ones (admin/operator) */
         get: {
             parameters: {
                 query?: never;
@@ -13917,7 +13973,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** Log a workshop service performed on a garage vehicle (admin) */
+        /** Log a workshop service performed on a garage vehicle (admin/operator) */
         post: {
             parameters: {
                 query?: never;
@@ -14018,7 +14074,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete a service record (admin) */
+        /** Delete a service record (admin/operator) */
         delete: {
             parameters: {
                 query?: never;
@@ -14050,7 +14106,7 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        /** Update a service record (admin) */
+        /** Update a service record (admin/operator) */
         patch: {
             parameters: {
                 query?: never;
@@ -15682,6 +15738,8 @@ export interface components {
             imageWebpQuality: number;
             /** @example 15 */
             finaSyncIntervalMinutes: number;
+            /** @example 10 */
+            finaOrderPushRetryIntervalMinutes: number;
             /** @example 5 */
             homepageCacheTtlMinutes: number;
             /** @example false */
@@ -15788,6 +15846,8 @@ export interface components {
             imageWebpQuality: number;
             /** @example 15 */
             finaSyncIntervalMinutes: number;
+            /** @example 10 */
+            finaOrderPushRetryIntervalMinutes: number;
             /** @example 5 */
             homepageCacheTtlMinutes: number;
             /** @example false */
@@ -16396,7 +16456,7 @@ export interface components {
             };
             hasRiskFlags: boolean;
             /** @enum {string} */
-            finaSyncStatus: "NOT_APPLICABLE" | "SYNCED" | "FAILED";
+            finaSyncStatus: "NOT_APPLICABLE" | "PENDING" | "SYNCED" | "FAILED";
         };
         AdminOrder: components["schemas"]["Order"] & {
             buyer: {
@@ -16410,7 +16470,7 @@ export interface components {
             cancellationReason: components["schemas"]["LookupItem"] | null;
             cancellationNote: string | null;
             /** @enum {string} */
-            finaSyncStatus: "NOT_APPLICABLE" | "SYNCED" | "FAILED";
+            finaSyncStatus: "NOT_APPLICABLE" | "PENDING" | "SYNCED" | "FAILED";
             finaOutOperationId: number | null;
         };
         FinaSyncRun: {

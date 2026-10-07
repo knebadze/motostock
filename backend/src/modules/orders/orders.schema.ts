@@ -284,8 +284,9 @@ export const orderRiskFlagResponseSchema = registry.register(
 // state (a placed sale, or its return once cancelled) is actually reflected
 // in FINA. NOT_APPLICABLE means nothing to retry (no FINA-linked items, or
 // FINA/its Settings aren't configured); FAILED is what the admin order list
-// flags with the manual retry button.
-export const finaOrderSyncStatusSchema = z.enum(["NOT_APPLICABLE", "SYNCED", "FAILED"]);
+// flags with the manual retry button. PENDING is queued/being retried
+// automatically (outbox — see fina-sync.service.ts's runOrderPush).
+export const finaOrderSyncStatusSchema = z.enum(["NOT_APPLICABLE", "PENDING", "SYNCED", "FAILED"]);
 
 export const adminOrderSummaryResponseSchema = registry.register(
   "AdminOrderSummary",

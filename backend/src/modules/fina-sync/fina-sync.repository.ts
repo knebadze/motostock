@@ -78,15 +78,95 @@ export const finaSyncRepository = {
     `;
   },
 
-  // finaOutOperationId is only ever passed on a successful sale push (SYNCED
-  // from attemptOrderSalePush) — a return push or a FAILED transition never
-  // touches it, so a prior successful sale's id survives a later failed
-  // return-push attempt (still needed for the next retry's out_id).
-  setOrderFinaSyncStatus(orderId: number, status: FinaOrderSyncStatus, finaOutOperationId?: number) {
+  // Final outcome of a push (SYNCED after a return, or NOT_APPLICABLE when
+  // there turned out to be nothing to push) — also releases the push lease
+  // and resets the attempt counter.
+  setOrderFinaSyncStatus(orderId: number, status: FinaOrderSyncStatus) {
     return prisma.order.update({
       where: { id: orderId },
-      data: { finaSyncStatus: status, ...(finaOutOperationId != null ? { finaOutOperationId } : {}) },
+      data: { finaSyncStatus: status, finaPushAttempts: 0, finaPushLockedUntil: null },
     });
+  },
+
+  // A successful SALE push. Conditional on the order still not being
+  // cancelled, in one statement: if a cancellation committed while the sale
+  // was in flight, it already re-queued the order as PENDING (see
+  // orders.repository.ts's updateStatus) and marking it SYNCED here would
+  // swallow the return push it now needs. The FINA operation id is stored
+  // either way — that return references it as out_id.
+  async recordOrderSaleSynced(orderId: number, finaOutOperationId: number) {
+    const result = await prisma.order.updateMany({
+      where: { id: orderId, cancelledAt: null },
+      data: { finaOutOperationId, finaSyncStatus: "SYNCED", finaPushAttempts: 0, finaPushLockedUntil: null },
+    });
+    if (result.count === 0) {
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { finaOutOperationId, finaSyncStatus: "PENDING", finaPushAttempts: 0, finaPushLockedUntil: null },
+      });
+    }
+  },
+
+  recordOrderPushFailure(orderId: number, status: "PENDING" | "FAILED", attempts: number) {
+    return prisma.order.update({
+      where: { id: orderId },
+      data: { finaSyncStatus: status, finaPushAttempts: attempts, finaPushLockedUntil: null },
+    });
+  },
+
+  releaseOrderPushLease(orderId: number) {
+    return prisma.order.update({ where: { id: orderId }, data: { finaPushLockedUntil: null } });
+  },
+
+  // Takes the order's push lease — an atomic compare-and-set, so exactly one
+  // of the immediate push / the sweep / a manual retry wins and the others
+  // back off, without holding a DB connection (or an advisory lock) open for
+  // the length of the external FINA call. An expired lease (process killed
+  // mid-push) is claimable again.
+  async claimOrderPush(
+    orderId: number,
+    statuses: FinaOrderSyncStatus[],
+    leaseMs: number,
+  ): Promise<boolean> {
+    const now = new Date();
+    const result = await prisma.order.updateMany({
+      where: {
+        id: orderId,
+        finaSyncStatus: { in: statuses },
+        OR: [{ finaPushLockedUntil: null }, { finaPushLockedUntil: { lt: now } }],
+      },
+      data: { finaPushLockedUntil: new Date(now.getTime() + leaseMs) },
+    });
+    return result.count === 1;
+  },
+
+  findOrderForPush(orderId: number) {
+    return prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        orderCode: true,
+        finaOutOperationId: true,
+        finaSyncStatus: true,
+        finaPushAttempts: true,
+        finaPushLockedUntil: true,
+        cancelledAt: true,
+        items: { select: { productVariantId: true, quantity: true, unitPrice: true } },
+      },
+    });
+  },
+
+  async findDueOrderPushIds(limit: number): Promise<number[]> {
+    const rows = await prisma.order.findMany({
+      where: {
+        finaSyncStatus: "PENDING",
+        OR: [{ finaPushLockedUntil: null }, { finaPushLockedUntil: { lt: new Date() } }],
+      },
+      select: { id: true },
+      orderBy: { id: "asc" },
+      take: limit,
+    });
+    return rows.map((row) => row.id);
   },
 
   async createRun(data: {

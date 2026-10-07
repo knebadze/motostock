@@ -30,6 +30,7 @@ import {
   FINA_WEB_CUSTOMER_ID_KEY,
   FINA_WEB_USER_ID_KEY,
   FINA_SYNC_INTERVAL_MINUTES_KEY,
+  FINA_ORDER_PUSH_RETRY_INTERVAL_MINUTES_KEY,
   FINA_SYNC_DEFAULTS,
   CART_MAX_QUANTITY_KEY,
   COMPARE_MAX_ITEMS_KEY,
@@ -409,6 +410,13 @@ export async function getFinaSyncIntervalMinutes(): Promise<number> {
   });
 }
 
+export async function getFinaOrderPushRetryIntervalMinutes(): Promise<number> {
+  return cached(FINA_ORDER_PUSH_RETRY_INTERVAL_MINUTES_KEY, async () => {
+    const setting = await settingsRepository.findByKey(FINA_ORDER_PUSH_RETRY_INTERVAL_MINUTES_KEY);
+    return Number(setting?.value ?? FINA_SYNC_DEFAULTS.orderPushRetryIntervalMinutes);
+  });
+}
+
 export async function getHomepageCacheTtlMinutes(): Promise<number> {
   return cached(HOMEPAGE_CACHE_TTL_MINUTES_KEY, async () => {
     const setting = await settingsRepository.findByKey(HOMEPAGE_CACHE_TTL_MINUTES_KEY);
@@ -503,7 +511,7 @@ export async function getUsdToGelRateUpdatedAt(): Promise<string | null> {
 // Called only by exchange-rate.service.ts after a successful NBG fetch — a
 // failed fetch simply never calls this, leaving yesterday's rate (and this
 // cache entry) in place, same "best-effort, no throw" contract as
-// pushOrderSale/syncVariantStockByIds.
+// processOrderFinaPush/syncVariantStockByIds.
 export async function setUsdToGelRate(rate: number, fetchedAt: Date): Promise<void> {
   await settingsRepository.upsert(USD_TO_GEL_RATE_KEY, String(rate));
   await settingsRepository.upsert(USD_TO_GEL_RATE_UPDATED_AT_KEY, fetchedAt.toISOString());
@@ -560,6 +568,7 @@ export async function getSettings() {
     imageMaxDimensionPx: await getImageMaxDimensionPx(),
     imageWebpQuality: await getImageWebpQuality(),
     finaSyncIntervalMinutes: await getFinaSyncIntervalMinutes(),
+    finaOrderPushRetryIntervalMinutes: await getFinaOrderPushRetryIntervalMinutes(),
     homepageCacheTtlMinutes: await getHomepageCacheTtlMinutes(),
     sentryEnabled: await isSentryEnabled(),
   };
@@ -791,6 +800,11 @@ export async function updateSettings(input: UpdateSettingsInput) {
     await settingsRepository.upsert(
       FINA_SYNC_INTERVAL_MINUTES_KEY,
       String(input.finaSyncIntervalMinutes),
+      tx,
+    );
+    await settingsRepository.upsert(
+      FINA_ORDER_PUSH_RETRY_INTERVAL_MINUTES_KEY,
+      String(input.finaOrderPushRetryIntervalMinutes),
       tx,
     );
     await settingsRepository.upsert(

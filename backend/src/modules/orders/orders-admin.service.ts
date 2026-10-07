@@ -3,7 +3,7 @@ import type { EmailTemplateKey } from "../../generated/prisma/index.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { orderStatusesRepository } from "../order-statuses/order-statuses.repository.js";
-import { pushOrderReturn, retryOrderFinaPush } from "../fina-sync/fina-sync.service.js";
+import { processOrderFinaPush, retryOrderFinaPush } from "../fina-sync/fina-sync.service.js";
 import { sendEmailTemplate } from "../email-templates/email-templates.service.js";
 import { ordersRepository } from "./orders.repository.js";
 import {
@@ -138,6 +138,11 @@ export async function updateOrderStatus(
       })),
       soldStatusId,
       availableStatusId,
+      // Anything other than NOT_APPLICABLE means this order is (or was meant
+      // to be) in FINA: SYNCED needs the return; PENDING/FAILED (sale never
+      // confirmed) resolve to NOT_APPLICABLE at push time, since a return
+      // with no recorded sale is skipped.
+      queueFinaReturn: existing.finaSyncStatus !== "NOT_APPLICABLE",
     };
   }
 
@@ -153,19 +158,11 @@ export async function updateOrderStatus(
   );
 
   // Cancelling (the only stock-adjusting transition now that un-cancelling
-  // is disallowed above) mirrors into FINA as a return. Never throws — same
-  // best-effort contract as pushOrderSale.
-  if (stockAdjustment) {
-    await pushOrderReturn({
-      id: existing.id,
-      orderCode: existing.orderCode,
-      finaOutOperationId: existing.finaOutOperationId,
-      items: existing.items.map((item) => ({
-        productVariantId: item.productVariantId,
-        quantity: item.quantity,
-        unitPrice: Number(item.unitPrice),
-      })),
-    });
+  // is disallowed above) mirrors into FINA as a return — queued as PENDING
+  // by updateStatus above, attempted right away here. Never throws; the
+  // PENDING sweep retries whatever this attempt can't finish.
+  if (stockAdjustment?.queueFinaReturn) {
+    await processOrderFinaPush(existing.id);
   }
 
   const templateKey = STATUS_KEY_TO_EMAIL_TEMPLATE[status.key];
@@ -180,32 +177,19 @@ export async function updateOrderStatus(
   return toOrderStatusUpdateResponse(order);
 }
 
-// Admin-triggered manual retry of pushOrderSale/pushOrderReturn (see
-// fina-sync.service.ts's retryOrderFinaPush) — for an order whose
-// finaSyncStatus is FAILED. Direction (sale vs. return) is derived from the
-// order's current status, not tracked separately, so this always retries
-// whatever the automatic paths would have attempted for this order right now.
-// retryOrderFinaPush itself refuses (400) a SYNCED order, so a repeat click
-// after a prior retry already succeeded can't write a second real FINA
-// document.
+// Admin-triggered manual retry (see fina-sync.service.ts's
+// retryOrderFinaPush) — for an order whose finaSyncStatus is FAILED, or
+// PENDING when the admin doesn't want to wait for the next sweep. Direction
+// (sale vs. return) is derived from the order's own cancellation state
+// inside the push, same as the automatic paths. A SYNCED order is refused
+// (400), so a repeat click can't write a second real FINA document.
 export async function retryOrderFinaSync(orderId: number) {
   const order = await ordersRepository.findById(orderId);
   if (!order) {
     throw new ApiError(404, "შეკვეთა ვერ მოიძებნა");
   }
 
-  await retryOrderFinaPush({
-    id: order.id,
-    orderCode: order.orderCode,
-    isCancelled: order.status.key === "CANCELLED",
-    finaOutOperationId: order.finaOutOperationId,
-    finaSyncStatus: order.finaSyncStatus,
-    items: order.items.map((item) => ({
-      productVariantId: item.productVariantId,
-      quantity: item.quantity,
-      unitPrice: Number(item.unitPrice),
-    })),
-  });
+  await retryOrderFinaPush(order.id);
 
   return getAnyOrder(orderId);
 }

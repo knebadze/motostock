@@ -103,8 +103,9 @@ export type OrderRiskFlag = Schemas["OrderRiskFlag"];
 // See backend's FinaOrderSyncStatus — whether this order's current state (a
 // placed sale, or its return once cancelled) is actually reflected in FINA.
 // NOT_APPLICABLE means nothing to retry (no FINA-linked items, or FINA/its
-// Settings aren't configured yet) — never shown as an error.
-export type FinaOrderSyncStatus = "NOT_APPLICABLE" | "SYNCED" | "FAILED";
+// Settings aren't configured yet) — never shown as an error. PENDING is
+// queued and retried automatically (outbox); FAILED needs the admin.
+export type FinaOrderSyncStatus = "NOT_APPLICABLE" | "PENDING" | "SYNCED" | "FAILED";
 
 // See backend's PaymentStatus — whether a real bank gateway has actually
 // confirmed payment, entirely independent of fulfillmentMethod/status. No

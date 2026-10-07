@@ -25,9 +25,16 @@ enum FinaOrderSyncStatus {
   // The last push attempt (sale on placement, or return on cancellation)
   // succeeded and FINA reflects this order's current state.
   SYNCED
-  // A push was attempted (order has FINA-linked items, FINA is configured)
-  // but the FINA API call itself failed — admin can retry via
-  // retryOrderFinaPush.
+  // Outbox state: this order's current state (the sale on placement, or
+  // its return once cancelled) still has to be pushed to FINA. Written in
+  // the SAME transaction as the order/cancellation itself, so a push can't
+  // be lost to a crash or redeploy between commit and the FINA call — the
+  // immediate attempt right after commit usually clears it within seconds,
+  // and fina-sync.service.ts's processDueFinaOrderPushes sweep retries
+  // whatever is left (interval admin-configurable in Settings).
+  PENDING
+  // Automatic retries ran out (FINA_ORDER_PUSH_MAX_ATTEMPTS), or a manual
+  // retry failed — admin can retry via retryOrderFinaPush.
   FAILED
 
   @@schema("dbo")
@@ -155,8 +162,16 @@ model Order {
   // saveDocCustomerReturn's out_id. Null when FINA isn't configured, the
   // order has no FINA-linked items, or the push itself failed (best-effort,
   // never blocks checkout — see orders.service.ts).
-  finaOutOperationId Int?
-  finaSyncStatus     FinaOrderSyncStatus @default(NOT_APPLICABLE)
+  finaOutOperationId  Int?
+  finaSyncStatus      FinaOrderSyncStatus @default(NOT_APPLICABLE)
+  // Failed automatic push attempts for the current PENDING push — reset on
+  // success and whenever a new push is queued (cancellation).
+  finaPushAttempts    Int                 @default(0)
+  // Short lease taken before a FINA call (see fina-sync.repository.ts's
+  // claimOrderPush) so the immediate push, the background sweep and a manual
+  // retry never send the same document twice concurrently. Expires on its
+  // own, so a process killed mid-push doesn't leave the order stuck.
+  finaPushLockedUntil DateTime?
 
   // Foundation for the real bank-gateway integration (see PaymentStatus's
   // own comment) — set at placeOrder time to AWAITING_PAYMENT for a CARD
@@ -195,5 +210,8 @@ model Order {
   // analytics.repository.ts's cancellation metrics (count/lost-revenue/
   // reason-breakdown/recent-list) all range-filter on this.
   @@index([cancelledAt])
+  // The PENDING-push sweep (fina-sync.repository.ts's findDueOrderPushIds)
+  // runs every few minutes.
+  @@index([finaSyncStatus])
   @@schema("dbo")
 }

@@ -77,6 +77,7 @@ export const updateSettingsSchema = registry.register(
     imageMaxDimensionPx: z.int().positive().openapi({ example: 1600 }),
     imageWebpQuality: z.int().min(1).max(100).openapi({ example: 82 }),
     finaSyncIntervalMinutes: z.int().positive().openapi({ example: 15 }),
+    finaOrderPushRetryIntervalMinutes: z.int().positive().max(1440).openapi({ example: 10 }),
     homepageCacheTtlMinutes: z.int().positive().openapi({ example: 5 }),
     // Monitoring tab — see constants/monitoring.constants.ts.
     sentryEnabled: z.boolean().openapi({ example: false }),
@@ -144,6 +145,7 @@ export const settingsResponseSchema = registry.register(
     imageMaxDimensionPx: z.int().positive().openapi({ example: 1600 }),
     imageWebpQuality: z.int().min(1).max(100).openapi({ example: 82 }),
     finaSyncIntervalMinutes: z.int().positive().openapi({ example: 15 }),
+    finaOrderPushRetryIntervalMinutes: z.int().positive().max(1440).openapi({ example: 10 }),
     homepageCacheTtlMinutes: z.int().positive().openapi({ example: 5 }),
     // Monitoring tab — see constants/monitoring.constants.ts.
     sentryEnabled: z.boolean().openapi({ example: false }),
