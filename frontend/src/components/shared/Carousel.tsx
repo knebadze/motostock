@@ -6,6 +6,10 @@ import { useTranslations } from "next-intl";
 // Only ever rendered on the storefront (home/product/vehicle "similar
 // items" rows), never in the admin panel — safe to call useTranslations
 // directly instead of threading translated label props from every caller.
+// The card slots below are a fixed w-56 (224px) / sm:w-64 (256px) — cards
+// rendered inside pass this as their image `sizes`.
+export const CAROUSEL_CARD_IMAGE_SIZES = "(min-width: 640px) 256px, 224px";
+
 export function Carousel<T>({
   items,
   getKey,

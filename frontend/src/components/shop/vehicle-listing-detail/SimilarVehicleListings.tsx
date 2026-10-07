@@ -2,12 +2,11 @@
 
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { Carousel } from "@/components/shared/Carousel";
+import { Carousel, CAROUSEL_CARD_IMAGE_SIZES } from "@/components/shared/Carousel";
 import { VehicleListingCard } from "../VehicleListingCard";
 import { getWishlistStatus } from "@/lib/api/wishlist";
 import { getCompareStatus } from "@/lib/api/compare";
-import { isKnownAuthState } from "@/lib/api/auth-state";
-import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
+import { shouldCheckWishlistStatus, shouldCheckCompareStatus } from "@/lib/api/collection-status-gate";
 import { useCollectionStatusMap, lookupVehicleListingStatus } from "@/components/shared/useCollectionStatusMap";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 
@@ -22,9 +21,9 @@ export function SimilarVehicleListings({ listings }: { listings: VehicleListing[
     getWishlistStatus,
     [],
     listingIds,
-    () => isKnownAuthState() || isGuestWishlistKnownEnabled(),
+    shouldCheckWishlistStatus,
   );
-  const compareStatus = useCollectionStatusMap(getCompareStatus, [], listingIds, () => true);
+  const compareStatus = useCollectionStatusMap(getCompareStatus, [], listingIds, shouldCheckCompareStatus);
 
   if (listings.length === 0) return null;
 
@@ -41,6 +40,7 @@ export function SimilarVehicleListings({ listings }: { listings: VehicleListing[
             <VehicleListingCard
               listing={listing}
               layout="grid"
+              imageSizes={CAROUSEL_CARD_IMAGE_SIZES}
               wishlistItemId={lookupVehicleListingStatus(wishlistStatus, listing.id)}
               compareItemId={lookupVehicleListingStatus(compareStatus, listing.id)}
             />

@@ -97,9 +97,21 @@ export function AdminOrderNotifications() {
       }
     }
 
+    // Ticks are skipped while the tab is hidden (an admin panel left open in
+    // a background tab would otherwise poll all day), with an immediate
+    // check when it's shown again so nothing new is missed.
     void poll();
-    const intervalId = setInterval(poll, POLL_INTERVAL_MS);
-    return () => clearInterval(intervalId);
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === "visible") void poll();
+    }, POLL_INTERVAL_MS);
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") void poll();
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   return (

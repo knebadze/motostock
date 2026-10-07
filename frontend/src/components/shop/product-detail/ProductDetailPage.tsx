@@ -1,14 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatPrice, pickLookupName } from "@/lib/format";
-import { sanitizeRichText } from "@/lib/sanitize-html";
 import { WishlistButton } from "@/components/shared/WishlistButton";
 import { CompareButton } from "@/components/shared/CompareButton";
 import { AddToCartButton } from "@/components/shared/AddToCartButton";
 import type {
-  ProductListItem,
   ProductDetail,
   ProductFitmentRuleSummary,
   ProductVariantDetail,
@@ -18,10 +16,7 @@ import { Breadcrumb } from "../Breadcrumb";
 import { ProductGallery } from "./ProductGallery";
 import { VariantPicker } from "./VariantPicker";
 import { ProductSpecs } from "./ProductSpecs";
-import { SimilarProducts } from "./SimilarProducts";
 import { BuyTogether } from "./BuyTogether";
-import { FrequentlyBoughtTogether } from "./FrequentlyBoughtTogether";
-import { ViewedTogether } from "./ViewedTogether";
 
 // The thumbnail strip always shows every photo across every variant (plus
 // the product's own image as a fallback) so it stays populated and browsable
@@ -82,15 +77,21 @@ function resolvePreferredImage(
 export function ProductDetailPage({
   product,
   breadcrumbChain,
-  similarProducts,
-  frequentlyBoughtTogether,
-  viewedTogether,
+  companionRecommendations,
+  similarRecommendations,
+  descriptionHtml,
 }: {
   product: ProductDetail;
+  // The current locale's description, sanitized on the server — so this
+  // client component (and the browser) never loads DOMPurify, and the
+  // other two languages' descriptions aren't serialized into the page.
+  descriptionHtml: string | null;
   breadcrumbChain: Category[];
-  similarProducts: ProductListItem[];
-  frequentlyBoughtTogether: ProductListItem[];
-  viewedTogether: ProductListItem[];
+  // Server-rendered, streamed sections (see the route page's
+  // <Suspense>-wrapped recommendation components) — the gallery, price and
+  // add-to-cart no longer wait for the recommendation queries.
+  companionRecommendations: ReactNode;
+  similarRecommendations: ReactNode;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("ProductDetail");
@@ -108,9 +109,6 @@ export function ProductDetailPage({
   const outOfStock = !selectedVariant || selectedVariant.stockQuantity === 0;
   const images = collectGalleryImages(product);
   const preferredImage = resolvePreferredImage(product, selectedVariant);
-
-  const description =
-    locale === "en" ? product.descriptionEn : locale === "ru" ? product.descriptionRu : product.descriptionKa;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
@@ -231,25 +229,23 @@ export function ProductDetailPage({
       </div>
 
       <BuyTogether product={product} />
-      <FrequentlyBoughtTogether products={frequentlyBoughtTogether} />
-      <ViewedTogether products={viewedTogether} />
+      {companionRecommendations}
 
-      {description && (
+      {descriptionHtml && (
         <section className="mt-14 border-t border-border pt-8">
           <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
             {t("descriptionHeading")}
           </h2>
           <div
             className="mt-5 text-base leading-7 text-foreground [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:mt-4 [&_h3]:text-base [&_h3]:font-semibold [&_li]:ml-5 [&_ol]:list-decimal [&_p:last-child]:mb-0 [&_p]:mb-4 [&_ul]:list-disc"
-            // Admin-authored rich text (same trust boundary as the JSON-LD
-            // scripts already used on this page) — sanitized regardless as
-            // defense-in-depth (see sanitizeRichText).
-            dangerouslySetInnerHTML={{ __html: sanitizeRichText(description) }}
+            // Already sanitized on the server (the route page) — see
+            // descriptionHtml's prop comment.
+            dangerouslySetInnerHTML={{ __html: descriptionHtml }}
           />
         </section>
       )}
 
-      <SimilarProducts products={similarProducts} />
+      {similarRecommendations}
     </div>
   );
 }

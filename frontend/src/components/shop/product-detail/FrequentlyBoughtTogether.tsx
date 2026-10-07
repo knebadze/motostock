@@ -2,12 +2,11 @@
 
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { Carousel } from "@/components/shared/Carousel";
+import { Carousel, CAROUSEL_CARD_IMAGE_SIZES } from "@/components/shared/Carousel";
 import { ProductCard } from "../ProductCard";
 import { getWishlistStatus } from "@/lib/api/wishlist";
 import { getCompareStatus } from "@/lib/api/compare";
-import { isKnownAuthState } from "@/lib/api/auth-state";
-import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
+import { shouldCheckWishlistStatus, shouldCheckCompareStatus } from "@/lib/api/collection-status-gate";
 import { useCollectionStatusMap, lookupProductStatus } from "@/components/shared/useCollectionStatusMap";
 import type { ProductListItem } from "@/lib/api/products";
 
@@ -28,9 +27,9 @@ export function FrequentlyBoughtTogether({ products }: { products: ProductListIt
     getWishlistStatus,
     productIds,
     [],
-    () => isKnownAuthState() || isGuestWishlistKnownEnabled(),
+    shouldCheckWishlistStatus,
   );
-  const compareStatus = useCollectionStatusMap(getCompareStatus, productIds, [], () => true);
+  const compareStatus = useCollectionStatusMap(getCompareStatus, productIds, [], shouldCheckCompareStatus);
 
   if (products.length === 0) return null;
 
@@ -47,6 +46,7 @@ export function FrequentlyBoughtTogether({ products }: { products: ProductListIt
             <ProductCard
               product={product}
               layout="grid"
+              imageSizes={CAROUSEL_CARD_IMAGE_SIZES}
               wishlistItemId={lookupProductStatus(wishlistStatus, product.id)}
               compareItemId={lookupProductStatus(compareStatus, product.id)}
             />

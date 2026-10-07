@@ -18,8 +18,7 @@ import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 import { getWishlistStatus } from "@/lib/api/wishlist";
 import { getCompareStatus } from "@/lib/api/compare";
-import { isKnownAuthState } from "@/lib/api/auth-state";
-import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
+import { shouldCheckWishlistStatus, shouldCheckCompareStatus } from "@/lib/api/collection-status-gate";
 import { useCollectionStatusMap, lookupProductStatus } from "@/components/shared/useCollectionStatusMap";
 
 type SortBy = "newest" | "price-asc" | "price-desc";
@@ -84,9 +83,9 @@ export function ShopAllProductsPage({
     getWishlistStatus,
     visibleProductIds,
     [],
-    () => isKnownAuthState() || isGuestWishlistKnownEnabled(),
+    shouldCheckWishlistStatus,
   );
-  const compareStatus = useCollectionStatusMap(getCompareStatus, visibleProductIds, [], () => true);
+  const compareStatus = useCollectionStatusMap(getCompareStatus, visibleProductIds, [], shouldCheckCompareStatus);
 
   function fetchPage(page: number) {
     return load(

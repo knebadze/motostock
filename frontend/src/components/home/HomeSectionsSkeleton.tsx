@@ -1,4 +1,4 @@
-// Suspense fallback for HomepageSectionsContent — approximates that
+// Suspense fallback for HomepageSectionContent — approximates that
 // component's real shape (a heading + a row of cards per section) closely
 // enough to keep layout shift small once the real content streams in.
 export function HomeSectionsSkeleton({ count }: { count: number }) {

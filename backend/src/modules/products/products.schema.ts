@@ -101,6 +101,9 @@ const brandIdsQuerySchema = z
 // but a distinct-category list doesn't.
 export const productCategoryFacetsQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
+  // The /compatible-products/… page: only categories that have products
+  // fitting this vehicle.
+  vehicleCatalogId: z.coerce.number().int().positive().optional(),
   brandIds: brandIdsQuerySchema,
   onSale: z.coerce.boolean().optional(),
   bulkDiscountEventId: z.coerce.number().int().positive().optional(),

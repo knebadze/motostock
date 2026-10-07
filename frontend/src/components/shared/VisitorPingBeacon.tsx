@@ -13,12 +13,22 @@ const PING_INTERVAL_MS = 2 * 60 * 1000;
 // a failed ping (network hiccup, ad blocker) just means this one heartbeat
 // is missed, nothing user-facing depends on it succeeding.
 export function VisitorPingBeacon() {
+  // Only while the tab is visible — a page left open in a background tab
+  // isn't someone "active" on the site — plus a ping the moment it's shown
+  // again.
   useEffect(() => {
     pingVisitor().catch(() => {});
     const timer = setInterval(() => {
-      pingVisitor().catch(() => {});
+      if (document.visibilityState === "visible") pingVisitor().catch(() => {});
     }, PING_INTERVAL_MS);
-    return () => clearInterval(timer);
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") pingVisitor().catch(() => {});
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   return null;

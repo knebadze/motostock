@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
@@ -22,12 +23,23 @@ import { SELECTED_VEHICLE_COOKIE } from "@/lib/vehicle-selection";
 import { JsonLd } from "@/components/shared/JsonLd";
 import { ProductDetailPage } from "@/components/shop/product-detail/ProductDetailPage";
 import { VehicleListingDetailPage } from "@/components/shop/vehicle-listing-detail/VehicleListingDetailPage";
+import { SimilarVehicleListings } from "@/components/shop/vehicle-listing-detail/SimilarVehicleListings";
+import { SimilarProducts } from "@/components/shop/product-detail/SimilarProducts";
+import { FrequentlyBoughtTogether } from "@/components/shop/product-detail/FrequentlyBoughtTogether";
+import { ViewedTogether } from "@/components/shop/product-detail/ViewedTogether";
 import { buildSocialMetadata } from "@/lib/share-metadata";
 import { permanentRedirect } from "@/i18n/navigation";
 import { formatPrice } from "@/lib/format";
+import { sanitizeRichText } from "@/lib/sanitize-html";
 
 type Locale = "ka" | "en" | "ru";
 type PageParams = { locale: Locale; categorySlug: string; itemSlug: string };
+
+// Admin-authored rich text, sanitized here on the server (DOMPurify stays
+// out of the client bundle) — same as the FAQ/terms/vacancy pages.
+function localizedHtml(html: string | null | undefined): string | null {
+  return html ? sanitizeRichText(html) : null;
+}
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -142,6 +154,49 @@ export async function generateMetadata({
   };
 }
 
+// The recommendation sections stream in after the product/listing itself
+// (each inside its own <Suspense>, see below): they used to be awaited
+// before anything rendered, adding a round trip of ranking queries to every
+// detail page's time-to-first-byte.
+async function CompanionRecommendations({
+  productId,
+  vehicleCatalogId,
+  hasCuratedBuyTogether,
+}: {
+  productId: number;
+  vehicleCatalogId: string | undefined;
+  hasCuratedBuyTogether: boolean;
+}) {
+  // Algorithmic FBT is only a fallback for when the admin hasn't curated a
+  // buyTogether list (see BuyTogether.tsx vs FrequentlyBoughtTogether.tsx).
+  const [frequentlyBoughtTogether, viewedTogether] = await Promise.all([
+    hasCuratedBuyTogether ? Promise.resolve([]) : getFrequentlyBoughtTogetherFromServer(productId, vehicleCatalogId),
+    getViewedTogetherFromServer(productId, vehicleCatalogId),
+  ]);
+  return (
+    <>
+      <FrequentlyBoughtTogether products={frequentlyBoughtTogether} />
+      <ViewedTogether products={viewedTogether} />
+    </>
+  );
+}
+
+async function SimilarProductsSection({
+  productId,
+  vehicleCatalogId,
+}: {
+  productId: number;
+  vehicleCatalogId: string | undefined;
+}) {
+  const similarProducts = await getSimilarProductsFromServer(productId, vehicleCatalogId);
+  return <SimilarProducts products={similarProducts} />;
+}
+
+async function SimilarListingsSection({ categoryId, listingId }: { categoryId: number; listingId: number }) {
+  const similarListings = await getSimilarVehicleListingsFromServer(categoryId, listingId);
+  return <SimilarVehicleListings listings={similarListings} />;
+}
+
 export default async function ItemDetailRoute({ params }: { params: Promise<PageParams> }) {
   const { locale, categorySlug, itemSlug } = await params;
 
@@ -177,10 +232,6 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
     }
 
     const breadcrumbChain = getAncestorChain(categories, listing.vehicleCatalog.category.id);
-    const similarListings = await getSimilarVehicleListingsFromServer(
-      listing.vehicleCatalog.category.id,
-      listing.id,
-    );
 
     const title = [listing.vehicleCatalog.brand.name, listing.vehicleCatalog.model.name]
       .filter(Boolean)
@@ -250,9 +301,18 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
         <JsonLd data={vehicleJsonLd} />
         <JsonLd data={breadcrumbJsonLd} />
         <VehicleListingDetailPage
-          listing={listing}
+          // Descriptions (all three languages) dropped from what's
+          // serialized to the browser — the current one is passed sanitized.
+          listing={{ ...listing, descriptionKa: null, descriptionEn: null, descriptionRu: null }}
           breadcrumbChain={breadcrumbChain}
-          similarListings={similarListings}
+          similarListings={
+            <Suspense fallback={null}>
+              <SimilarListingsSection categoryId={listing.vehicleCatalog.category.id} listingId={listing.id} />
+            </Suspense>
+          }
+          descriptionHtml={localizedHtml(
+            locale === "en" ? listing.descriptionEn : locale === "ru" ? listing.descriptionRu : listing.descriptionKa,
+          )}
         />
       </>
     );
@@ -277,17 +337,6 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
   const productCategory = categories.find((item) => item.slug === product.category.slug);
   const breadcrumbChain = productCategory ? getAncestorChain(categories, productCategory.id) : [];
 
-  // Algorithmic FBT is only fetched as a fallback for when the admin hasn't
-  // curated a buyTogether list for this product (see BuyTogether.tsx vs the
-  // new FrequentlyBoughtTogether.tsx) — no point paying for the extra query
-  // when there's already a curated list to show.
-  const [similarProducts, frequentlyBoughtTogether, viewedTogether] = await Promise.all([
-    getSimilarProductsFromServer(product.id, selectedVehicleCatalogId),
-    product.buyTogether.length === 0
-      ? getFrequentlyBoughtTogetherFromServer(product.id, selectedVehicleCatalogId)
-      : Promise.resolve([]),
-    getViewedTogetherFromServer(product.id, selectedVehicleCatalogId),
-  ]);
 
   const pathname = `/${product.category.slug}/${itemSlug}`;
   const canonicalUrl = getAlternateLanguages(pathname)[locale];
@@ -356,11 +405,39 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
       <JsonLd data={productJsonLd} />
       <JsonLd data={breadcrumbJsonLd} />
       <ProductDetailPage
-        product={product}
+        // Descriptions and SEO meta (all three languages) aren't needed by
+        // the client component — dropped from what's serialized; the
+        // current description is passed sanitized below.
+        product={{
+          ...product,
+          descriptionKa: null,
+          descriptionEn: null,
+          descriptionRu: null,
+          metaTitleKa: null,
+          metaTitleEn: null,
+          metaTitleRu: null,
+          metaDescriptionKa: null,
+          metaDescriptionEn: null,
+          metaDescriptionRu: null,
+        }}
         breadcrumbChain={breadcrumbChain}
-        similarProducts={similarProducts}
-        frequentlyBoughtTogether={frequentlyBoughtTogether}
-        viewedTogether={viewedTogether}
+        companionRecommendations={
+          <Suspense fallback={null}>
+            <CompanionRecommendations
+              productId={product.id}
+              vehicleCatalogId={selectedVehicleCatalogId}
+              hasCuratedBuyTogether={product.buyTogether.length > 0}
+            />
+          </Suspense>
+        }
+        similarRecommendations={
+          <Suspense fallback={null}>
+            <SimilarProductsSection productId={product.id} vehicleCatalogId={selectedVehicleCatalogId} />
+          </Suspense>
+        }
+        descriptionHtml={localizedHtml(
+          locale === "en" ? product.descriptionEn : locale === "ru" ? product.descriptionRu : product.descriptionKa,
+        )}
       />
     </>
   );

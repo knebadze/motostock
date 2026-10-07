@@ -88,7 +88,16 @@ export function ImageCarousel({
       className={`relative w-full overflow-hidden bg-muted ${bordered ? "rounded-2xl border border-border" : ""} ${aspectClassName}`}
     >
       {image.src ? (
-        <Image src={image.src} alt={image.alt} fill priority={index === 0} className="object-cover" />
+        // No `priority`: these carousels sit below the fold (home info
+        // cards, about page) — preloading them competed with the hero image
+        // for the page's LCP. `sizes` caps them at their container width.
+        <Image
+          src={image.src}
+          alt={image.alt}
+          fill
+          sizes="(min-width: 1024px) 50vw, 100vw"
+          className="object-cover"
+        />
       ) : (
         <div className="flex size-full items-center justify-center border border-dashed border-border">
           <span className="text-sm text-muted-foreground">{image.alt}</span>

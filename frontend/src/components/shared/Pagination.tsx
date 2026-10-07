@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 // Server-side pagination companion to usePagination above — use this one
 // when the backend does the skip/take (see backend/src/lib/pagination.ts's
@@ -18,15 +18,21 @@ export function useServerPagination<T>(initialData: PagedResult<T>) {
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(false);
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
+  // Only the LATEST load may apply its result: with debounced search,
+  // a slow response for "hon" could otherwise land after the one for
+  // "honda" (or a page click during a filter fetch) and overwrite it.
+  const latestRequestRef = useRef(0);
 
   async function load(fetcher: () => Promise<PagedResult<T>>, onError?: (error: unknown) => void) {
+    const requestId = ++latestRequestRef.current;
     setLoading(true);
     try {
-      setData(await fetcher());
+      const result = await fetcher();
+      if (requestId === latestRequestRef.current) setData(result);
     } catch (error) {
-      onError?.(error);
+      if (requestId === latestRequestRef.current) onError?.(error);
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestRef.current) setLoading(false);
     }
   }
 

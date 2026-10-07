@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import NextLink from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
@@ -18,9 +18,11 @@ import { logoutUser, type User } from "@/lib/api/auth";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { setKnownAuthState } from "@/lib/api/auth-state";
 import { setKnownGuestFeatureStatus } from "@/lib/api/guest-feature-state";
+import { COMPARE_COUNT_CHANGED_EVENT, WISHLIST_COUNT_CHANGED_EVENT, setKnownCount } from "@/lib/badge-count-events";
 import type { GuestFeatureStatus } from "@/lib/api/server";
 import { formatShortName } from "@/lib/format";
-import type { Category } from "@/lib/api/categories";
+import type { HeaderCategory } from "@/lib/api/categories";
+
 import type { CompanyInfo } from "@/lib/api/company-info";
 
 const MEGA_MENU_CLOSE_DELAY_MS = 150;
@@ -72,7 +74,7 @@ export function Header({
 }: {
   user?: User | null;
   /** Full category tree (all depths) — the header derives top-level nav items and their children itself. */
-  categories?: Category[];
+  categories?: HeaderCategory[];
   companyInfo?: CompanyInfo | null;
   wishlistCount?: number;
   compareCount?: number;
@@ -81,7 +83,6 @@ export function Header({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const locale = useLocale() as "ka" | "en" | "ru";
   const tHeader = useTranslations("Header");
   const tFooter = useTranslations("Footer");
   const [isOpen, setIsOpen] = useState(false);
@@ -99,11 +100,15 @@ export function Header({
   // once per navigation/refresh with a fresh `user` prop. Same treatment for
   // guestFeatureStatus (see guest-feature-state.ts), so WishlistButton/
   // AddToCartButton elsewhere on the page can skip their status check
-  // instead of always firing it and relying on a 401.
+  // instead of always firing it and relying on a 401. And the badge counts
+  // (see badge-count-events.ts), so grids skip their wishlist/compare status
+  // check when that collection is empty.
   useEffect(() => {
     setKnownAuthState(user != null);
     setKnownGuestFeatureStatus(guestFeatureStatus);
-  }, [user, guestFeatureStatus]);
+    setKnownCount(WISHLIST_COUNT_CHANGED_EVENT, wishlistCount);
+    setKnownCount(COMPARE_COUNT_CHANGED_EVENT, compareCount);
+  }, [user, guestFeatureStatus, wishlistCount, compareCount]);
 
   const topLevelCategories = categories.filter((category) => category.parentId === null);
   const socialLinks = [
@@ -226,9 +231,9 @@ export function Header({
               <Link href="/terms" className="transition-colors hover:text-primary-text">
                 {tFooter("termsTitle")}
               </Link>
-              <Link href="/privacy" className="transition-colors hover:text-primary-text">
+              {/* <Link href="/privacy" className="transition-colors hover:text-primary-text">
                 {tFooter("privacyTitle")}
-              </Link>
+              </Link> */}
             </nav>
             <span className="h-3.5 w-px bg-border" aria-hidden />
             <LanguageSwitcher compact />
@@ -258,7 +263,7 @@ export function Header({
                     isActive ? "text-primary-text" : "text-foreground"
                   }`}
                 >
-                  {category.name[locale]}
+                  {category.name}
                 </Link>
               </div>
             );
@@ -399,7 +404,7 @@ export function Header({
                       <div className="relative size-16 overflow-hidden rounded-lg border border-border">
                         <Image
                           src={imageUrl}
-                          alt={child.name[locale]}
+                          alt={child.name}
                           fill
                           sizes="64px"
                           className="object-cover"
@@ -409,7 +414,7 @@ export function Header({
                       <div className="size-16 rounded-lg border border-dashed border-border" />
                     )}
                     <span className="text-sm font-medium text-foreground">
-                      {child.name[locale]}
+                      {child.name}
                     </span>
                   </Link>
                 );
@@ -488,7 +493,7 @@ export function Header({
                       isActive ? "text-primary-text" : "text-foreground"
                     }`}
                   >
-                    {category.name[locale]}
+                    {category.name}
                   </Link>
                 );
               }
@@ -509,7 +514,7 @@ export function Header({
                       onClick={() => setIsOpen(false)}
                       className={`flex-1 hover:text-primary-text ${isActive ? "text-primary-text" : "text-foreground"}`}
                     >
-                      {category.name[locale]}
+                      {category.name}
                     </Link>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -532,7 +537,7 @@ export function Header({
                         onClick={() => setIsOpen(false)}
                         className="rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
                       >
-                        {child.name[locale]}
+                        {child.name}
                       </Link>
                     ))}
                   </div>
@@ -582,13 +587,13 @@ export function Header({
               {tFooter("termsTitle")}
             </Link>
 
-            <Link
+            {/* <Link
               href="/privacy"
               onClick={() => setIsOpen(false)}
               className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tFooter("privacyTitle")}
-            </Link>
+            </Link> */}
 
             <div className="my-2 border-t border-border" />
 

@@ -19,6 +19,7 @@ export function VehicleListingCard({
   onWishlistChange,
   compareItemId,
   onCompareChange,
+  imageSizes,
 }: {
   listing: VehicleListing;
   layout: ViewMode;
@@ -32,6 +33,11 @@ export function VehicleListingCard({
   // or a batching grid.
   compareItemId?: number | null | "pending";
   onCompareChange?: (compared: boolean) => void;
+  // `sizes` for the card's image when it sits in a fixed-width slot
+  // (carousels: see Carousel.tsx's CAROUSEL_CARD_IMAGE_SIZES) instead of a
+  // fluid grid column — the default would make phones download an image
+  // ~3x wider than the card.
+  imageSizes?: string;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
@@ -74,7 +80,7 @@ export function VehicleListingCard({
             src={imageUrl}
             alt={vehicleLabel}
             fill
-            sizes={layout === "list" ? "96px" : "(min-width: 1024px) 22vw, (min-width: 640px) 45vw, 90vw"}
+            sizes={layout === "list" ? "96px" : (imageSizes ?? "(min-width: 1024px) 22vw, (min-width: 640px) 45vw, 90vw")}
             className="object-cover"
           />
         ) : (

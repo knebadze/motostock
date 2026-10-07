@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Pagination, usePagination } from "@/components/shared/Pagination";
+import { toast } from "sonner";
+import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import type { SelectOption } from "@/components/shared/Select";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
 import { ActiveFilterTags, type ActiveFilterTag } from "./ActiveFilterTags";
@@ -10,33 +11,43 @@ import { ShopToolbar } from "./ShopToolbar";
 import { ShopItemGrid } from "./ShopItemGrid";
 import { ProductCard } from "./ProductCard";
 import type { ViewMode } from "./ViewModeToggle";
-import type { ProductListItem } from "@/lib/api/products";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import { listProductsPage, type ProductListItem } from "@/lib/api/products";
+import type { NamedRef, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 import { persistSelectedVehicleCookie } from "@/lib/vehicle-selection";
 import { getWishlistStatus } from "@/lib/api/wishlist";
 import { getCompareStatus } from "@/lib/api/compare";
-import { isKnownAuthState } from "@/lib/api/auth-state";
-import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
+import { shouldCheckWishlistStatus, shouldCheckCompareStatus } from "@/lib/api/collection-status-gate";
 import { useCollectionStatusMap, lookupProductStatus } from "@/components/shared/useCollectionStatusMap";
 
 type SortBy = "newest" | "price-asc" | "price-desc";
 const SORT_VALUES: SortBy[] = ["newest", "price-asc", "price-desc"];
+const FILTER_DEBOUNCE_MS = 350;
 
 function parseSortBy(value: string): SortBy {
   return (SORT_VALUES as string[]).includes(value) ? (value as SortBy) : "newest";
 }
 
+// Server-paginated like the /shop page (ShopAllProductsPage.tsx): one page
+// of compatible products at a time, search/category/sort applied server-side.
+// It used to receive the WHOLE compatible set and filter/sort/paginate it in
+// the browser — for a vehicle covered by broad CATEGORY/ALL fitment rules,
+// most of the catalog inlined into this (indexed, sitemap-listed) page.
 export function CompatibleProductsPage({
   vehicle,
-  products,
+  initialData,
+  categories,
 }: {
   vehicle: VehicleCatalogEntry;
-  products: ProductListItem[];
+  initialData: PagedResult<ProductListItem>;
+  categories: NamedRef[];
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
   const tCommon = useTranslations("Common");
+  const tErrors = useTranslations("ApiErrors");
+  const { data, totalPages, loading, load } = useServerPagination(initialData);
   const [search, setSearch] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [sortBy, setSortBy] = useState<SortBy>(() => parseSortBy("newest"));
@@ -53,19 +64,39 @@ export function CompatibleProductsPage({
     persistSelectedVehicleCookie(String(vehicle.id));
   }, [vehicle.id]);
 
-  // The compatible set for one vehicle is inherently bounded (a handful of
-  // fitted products, not the whole catalog), so — unlike the per-category
-  // shop page — search/category filtering here narrows the already-fetched
-  // list client-side instead of round-tripping to the server per keystroke.
-  const categoryOptions = useMemo(() => {
-    const byId = new Map<number, ProductListItem["category"]>();
-    for (const product of products) {
-      if (!byId.has(product.category.id)) byId.set(product.category.id, product.category);
-    }
-    return Array.from(byId.values()).sort((a, b) =>
-      a.name[locale].localeCompare(b.name[locale]),
+  // Only categories that have products fitting this vehicle (server facet).
+  const categoryOptions = useMemo(
+    () => [...categories].sort((a, b) => a.name[locale].localeCompare(b.name[locale])),
+    [categories, locale],
+  );
+
+  function fetchPage(page: number) {
+    return load(
+      () =>
+        listProductsPage({
+          vehicleCatalogId: vehicle.id,
+          categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+          search: search.trim() || undefined,
+          page,
+          pageSize: data.pageSize,
+          sortBy,
+        }),
+      (error) => toast.error(resolveApiErrorMessage(error, tErrors, t("loadProductsError"))),
     );
-  }, [products, locale]);
+  }
+
+  // Skips its first run (initialData is already page 1, newest) — same guard
+  // as the other shop pages. Debounced for typing in the search box.
+  const skippedFirstFilterRun = useRef(false);
+  useEffect(() => {
+    if (!skippedFirstFilterRun.current) {
+      skippedFirstFilterRun.current = true;
+      return;
+    }
+    const timeoutId = setTimeout(() => fetchPage(1), FILTER_DEBOUNCE_MS);
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, selectedCategoryIds, sortBy]);
 
   function toggleCategory(categoryId: number) {
     setSelectedCategoryIds((current) =>
@@ -75,42 +106,17 @@ export function CompatibleProductsPage({
     );
   }
 
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return products.filter((product) => {
-      if (selectedCategoryIds.length > 0 && !selectedCategoryIds.includes(product.category.id)) {
-        return false;
-      }
-      if (query && !product.name[locale].toLowerCase().includes(query)) return false;
-      return true;
-    });
-  }, [products, selectedCategoryIds, search, locale]);
-
-  const sorted = useMemo(() => {
-    const result = [...filtered];
-    if (sortBy === "price-asc") {
-      result.sort((a, b) => (a.minPrice ?? 0) - (b.minPrice ?? 0));
-    } else if (sortBy === "price-desc") {
-      result.sort((a, b) => (b.minPrice ?? 0) - (a.minPrice ?? 0));
-    } else {
-      result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }
-    return result;
-  }, [filtered, sortBy]);
-
-  const { page, setPage, pageItems, totalPages } = usePagination(sorted);
-
   // One batched wishlist/compare status check for the current page's grid
   // instead of each ProductCard's own WishlistButton/CompareButton checking
   // individually — see useCollectionStatusMap's own comment.
-  const visibleProductIds = useMemo(() => pageItems.map((product) => product.id), [pageItems]);
+  const visibleProductIds = useMemo(() => data.items.map((product) => product.id), [data.items]);
   const wishlistStatus = useCollectionStatusMap(
     getWishlistStatus,
     visibleProductIds,
     [],
-    () => isKnownAuthState() || isGuestWishlistKnownEnabled(),
+    shouldCheckWishlistStatus,
   );
-  const compareStatus = useCollectionStatusMap(getCompareStatus, visibleProductIds, [], () => true);
+  const compareStatus = useCollectionStatusMap(getCompareStatus, visibleProductIds, [], shouldCheckCompareStatus);
 
   const sortOptions: SelectOption[] = [
     { value: "newest", label: t("sortNewest") },
@@ -129,21 +135,16 @@ export function CompatibleProductsPage({
         tags.push({
           key: `category-${categoryId}`,
           label: category.name[locale],
-          onRemove: () => {
-            toggleCategory(categoryId);
-            setPage(1);
-          },
+          onRemove: () => toggleCategory(categoryId),
         });
       }
     }
     return tags;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, selectedCategoryIds, categoryOptions, locale]);
 
   function handleClearAllFilters() {
     setSearch("");
     setSelectedCategoryIds([]);
-    setPage(1);
   }
 
   // Rendered twice below (desktop <aside>, mobile FilterDrawer) — kept as
@@ -154,10 +155,7 @@ export function CompatibleProductsPage({
 
       <input
         value={search}
-        onChange={(event) => {
-          setSearch(event.target.value);
-          setPage(1);
-        }}
+        onChange={(event) => setSearch(event.target.value)}
         placeholder={t("searchPlaceholder")}
         className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
       />
@@ -171,10 +169,7 @@ export function CompatibleProductsPage({
                 <input
                   type="checkbox"
                   checked={selectedCategoryIds.includes(category.id)}
-                  onChange={() => {
-                    toggleCategory(category.id);
-                    setPage(1);
-                  }}
+                  onChange={() => toggleCategory(category.id)}
                   className="size-4 rounded border-border accent-primary"
                 />
                 {category.name[locale]}
@@ -204,7 +199,7 @@ export function CompatibleProductsPage({
 
             <div className="flex flex-col gap-6">
               <ShopToolbar
-                resultCountLabel={t("resultCount", { count: sorted.length })}
+                resultCountLabel={t("resultCount", { count: data.total })}
                 sortLabel={t("sortLabel")}
                 sortValue={sortBy}
                 sortOptions={sortOptions}
@@ -218,7 +213,7 @@ export function CompatibleProductsPage({
               />
 
               <ShopItemGrid
-                items={pageItems}
+                items={data.items}
                 layout={viewMode}
                 getKey={(product) => product.id}
                 emptyMessage={t("emptyState")}
@@ -230,12 +225,13 @@ export function CompatibleProductsPage({
                     compareItemId={lookupProductStatus(compareStatus, product.id)}
                   />
                 )}
+                loading={loading}
               />
 
               <Pagination
-                currentPage={page}
+                currentPage={data.page}
                 totalPages={totalPages}
-                onPageChange={setPage}
+                onPageChange={(nextPage) => void fetchPage(nextPage)}
                 navLabel={tCommon("pagination.nav")}
                 prevLabel={tCommon("pagination.prev")}
                 nextLabel={tCommon("pagination.next")}

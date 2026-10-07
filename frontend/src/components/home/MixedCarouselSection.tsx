@@ -1,13 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { Carousel } from "@/components/shared/Carousel";
+import { Carousel, CAROUSEL_CARD_IMAGE_SIZES } from "@/components/shared/Carousel";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { VehicleListingCard } from "@/components/shop/VehicleListingCard";
 import { getWishlistStatus } from "@/lib/api/wishlist";
 import { getCompareStatus } from "@/lib/api/compare";
-import { isKnownAuthState } from "@/lib/api/auth-state";
-import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
+import { shouldCheckWishlistStatus, shouldCheckCompareStatus } from "@/lib/api/collection-status-gate";
 import {
   useCollectionStatusMap,
   lookupProductStatus,
@@ -43,9 +42,9 @@ export function MixedCarouselSection({
     getWishlistStatus,
     productIds,
     listingIds,
-    () => isKnownAuthState() || isGuestWishlistKnownEnabled(),
+    shouldCheckWishlistStatus,
   );
-  const compareStatus = useCollectionStatusMap(getCompareStatus, productIds, listingIds, () => true);
+  const compareStatus = useCollectionStatusMap(getCompareStatus, productIds, listingIds, shouldCheckCompareStatus);
 
   if (items.length === 0) return null;
 
@@ -61,6 +60,7 @@ export function MixedCarouselSection({
               <ProductCard
                 product={item.product}
                 layout="grid"
+                imageSizes={CAROUSEL_CARD_IMAGE_SIZES}
                 wishlistItemId={lookupProductStatus(wishlistStatus, item.product.id)}
                 compareItemId={lookupProductStatus(compareStatus, item.product.id)}
               />
@@ -68,6 +68,7 @@ export function MixedCarouselSection({
               <VehicleListingCard
                 listing={item.listing}
                 layout="grid"
+                imageSizes={CAROUSEL_CARD_IMAGE_SIZES}
                 wishlistItemId={lookupVehicleListingStatus(wishlistStatus, item.listing.id)}
                 compareItemId={lookupVehicleListingStatus(compareStatus, item.listing.id)}
               />

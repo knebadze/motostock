@@ -81,15 +81,23 @@ export const getVinDecodeStatusFromServer = cache(
 
 export type GuestFeatureStatus = { guestWishlistEnabled: boolean; guestCartEnabled: boolean };
 
-export const getGuestFeatureStatusFromServer = cache(async (): Promise<GuestFeatureStatus> => {
-  return fetchFromServer<GuestFeatureStatus, GuestFeatureStatus>("/settings/guest-feature-status", {
-    // Fails closed: if this lookup itself fails, WishlistButton/
-    // AddToCartButton just fall back to always attempting their status
-    // check (today's behavior) rather than assuming a guest feature is on.
-    fallback: { guestWishlistEnabled: false, guestCartEnabled: false },
-    extract: (data) => data,
-  });
-});
+// Read by the guest layout on EVERY storefront page, and identical for every
+// visitor — cached across requests for a minute (like the Sentry flag
+// below) instead of a backend round trip per page view. An admin toggling a
+// guest feature reaches the storefront within that minute.
+const getCachedGuestFeatureStatus = unstable_cache(
+  () =>
+    fetchPublicCacheable<GuestFeatureStatus, GuestFeatureStatus>("/settings/guest-feature-status", {
+      // Fails closed: if this lookup itself fails, WishlistButton/
+      // AddToCartButton just fall back to always attempting their status
+      // check rather than assuming a guest feature is on.
+      fallback: { guestWishlistEnabled: false, guestCartEnabled: false },
+      extract: (data) => data,
+    }),
+  ["guest-feature-status"],
+  { revalidate: 60, tags: ["guest-feature-status"] },
+);
+export const getGuestFeatureStatusFromServer = cache(getCachedGuestFeatureStatus);
 
 // The admin Sentry on/off toggle, for SentryFlagMeta's <meta> tag (the
 // browser SDK reads it per event). Public endpoint; cached across requests

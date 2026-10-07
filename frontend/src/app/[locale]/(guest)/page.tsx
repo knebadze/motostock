@@ -8,10 +8,10 @@ import {
   getMyGarageFromServer,
   getPublicHeroSlidesFromServer,
   getPublicHomepageSectionsFromServer,
-  getVehicleCatalogFromServer,
+  getVehicleSearchOptionsFromServer,
 } from "@/lib/api/server";
 import { HeroSlider } from "@/components/home/HeroSlider";
-import { HomepageSectionsContent } from "@/components/home/HomepageSectionsContent";
+import { HomepageSectionContent } from "@/components/home/HomepageSectionsContent";
 import { HomeSectionsSkeleton } from "@/components/home/HomeSectionsSkeleton";
 import { HomeInfoCardsSection } from "@/components/home/HomeInfoCardsSection";
 
@@ -35,7 +35,7 @@ export default async function HomePage({
   ]);
   const hasVehicleSearchSlide = slides.some((slide) => slide.type === "VEHICLE_SEARCH");
   const [vehicleCatalog, garageVehicles] = hasVehicleSearchSlide
-    ? await Promise.all([getVehicleCatalogFromServer(), getMyGarageFromServer()])
+    ? await Promise.all([getVehicleSearchOptionsFromServer(), getMyGarageFromServer()])
     : [[], []];
 
   const activeSections = [...sections]
@@ -101,18 +101,28 @@ export default async function HomePage({
         </section>
       )}
 
-      {/* Below-the-fold — one or two backend calls per active section (up to
-          ~8 total). Streamed in behind its own boundary instead of blocking
-          the hero/LCP content above on every section's own fetch finishing
-          first (see HomepageSectionsContent.tsx). */}
-      <Suspense fallback={<HomeSectionsSkeleton count={activeSections.length} />}>
-        <HomepageSectionsContent
-          activeSections={activeSections}
-          topLevelCategories={topLevelCategories}
-          selectedVehicleCatalogId={selectedVehicleCatalogId}
-          localeKey={localeKey}
-        />
-      </Suspense>
+      {/* Below-the-fold — one or two backend calls per active section. Each
+          section streams in behind its own boundary, neither blocking the
+          hero/LCP content above nor waiting on the other sections (see
+          HomepageSectionsContent.tsx). */}
+      {activeSections.map((section) => (
+        <div key={section.id}>
+          <Suspense
+            fallback={
+              <HomeSectionsSkeleton
+                count={section.type === "POPULAR_FOR_VEHICLE" && !selectedVehicleCatalogId ? 0 : 1}
+              />
+            }
+          >
+            <HomepageSectionContent
+              section={section}
+              topLevelCategories={topLevelCategories}
+              selectedVehicleCatalogId={selectedVehicleCatalogId}
+              localeKey={localeKey}
+            />
+          </Suspense>
+        </div>
+      ))}
 
       <HomeInfoCardsSection />
     </>

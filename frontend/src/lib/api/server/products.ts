@@ -57,6 +57,19 @@ export const getProductsPageFromServer = cache(async (
   });
 });
 
+// /compatible-products/… page's first server-rendered page — every
+// category, newest first; CompatibleProductsPage.tsx fetches further
+// pages/filters/sorts itself (listProductsPage), like the /shop page.
+export const getCompatibleProductsPageFromServer = cache(async (
+  vehicleCatalogId: number,
+): Promise<AdminListPage<ProductListItem>> => {
+  return fetchFromServer<AdminListPage<ProductListItem>, AdminListPage<ProductListItem>>("/products", {
+    params: { vehicleCatalogId, page: 1, pageSize: SHOP_PAGE_SIZE, sortBy: "newest" },
+    fallback: { items: [], total: 0, page: 1, pageSize: SHOP_PAGE_SIZE },
+    extract: (data) => data,
+  });
+});
+
 // Admin products list's initial (server-rendered) load specifically —
 // unlike getProductsFromServer above (shared with the storefront/sitemap/
 // admin pickers, which need the full card-rendering shape), this always
@@ -232,6 +245,7 @@ export const getProductFromServer = cache(async (id: number): Promise<Product | 
 // client-side.
 export const getShopCategoryFacetsFromServer = cache(async (filters: {
   categoryId?: number;
+  vehicleCatalogId?: number;
   brandIds?: number[];
   onSale?: boolean;
   bulkDiscountEventId?: number;
@@ -241,6 +255,7 @@ export const getShopCategoryFacetsFromServer = cache(async (filters: {
   return fetchFromServer<{ items: NamedRef[] }, NamedRef[]>("/products/category-facets", {
     params: {
       categoryId: filters.categoryId,
+      vehicleCatalogId: filters.vehicleCatalogId,
       brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
       onSale: filters.onSale || undefined,
       bulkDiscountEventId: filters.bulkDiscountEventId,

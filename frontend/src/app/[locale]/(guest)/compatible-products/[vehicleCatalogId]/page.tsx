@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { getProductsFromServer, getVehicleCatalogEntryFromServer } from "@/lib/api/server";
+import {
+  getCompatibleProductsPageFromServer,
+  getShopCategoryFacetsFromServer,
+  getVehicleCatalogEntryFromServer,
+} from "@/lib/api/server";
 import { buildVehicleCatalogSlug, parseVehicleCatalogIdFromSlug } from "@/lib/api/vehicle-catalog";
 import { permanentRedirect } from "@/i18n/navigation";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
@@ -26,9 +30,12 @@ export async function generateMetadata({ params }: { params: Promise<PageParams>
   const id = parseVehicleCatalogIdFromSlug(vehicleCatalogId);
   if (id == null) return {};
 
-  const vehicle = await getVehicleCatalogEntryFromServer(id);
+  // Same cached requests as the page body below.
+  const [vehicle, firstPage] = await Promise.all([
+    getVehicleCatalogEntryFromServer(id),
+    getCompatibleProductsPageFromServer(id),
+  ]);
   if (!vehicle) return {};
-  const products = await getProductsFromServer(undefined, id);
 
   const t = await getTranslations({ locale, namespace: "Metadata" });
   const vehicleLabel = formatVehicleCatalogLabel(vehicle);
@@ -36,14 +43,14 @@ export async function generateMetadata({ params }: { params: Promise<PageParams>
   const description = t("compatibleProductsDescription", {
     vehicle: vehicleLabel,
     siteName: siteConfig.name,
-    count: products.length,
+    count: firstPage.total,
   });
   const pathname = `/compatible-products/${buildVehicleCatalogSlug(vehicle)}`;
 
   return {
     title,
     description,
-    robots: products.length === 0 ? { index: false, follow: true } : undefined,
+    robots: firstPage.total === 0 ? { index: false, follow: true } : undefined,
     alternates: {
       canonical: buildCanonicalUrl(pathname, locale),
       languages: getAlternateLanguages(pathname),
@@ -63,7 +70,14 @@ export default async function VehicleCompatibleProductsPage({
     notFound();
   }
 
-  const vehicle = await getVehicleCatalogEntryFromServer(id);
+  // One page of compatible products (not the whole compatible set — a
+  // vehicle covered by broad CATEGORY/ALL fitment rules can match most of
+  // the catalog) plus the category facets, fetched alongside the vehicle.
+  const [vehicle, firstPage, categories] = await Promise.all([
+    getVehicleCatalogEntryFromServer(id),
+    getCompatibleProductsPageFromServer(id),
+    getShopCategoryFacetsFromServer({ vehicleCatalogId: id }),
+  ]);
   if (!vehicle) {
     notFound();
   }
@@ -76,7 +90,5 @@ export default async function VehicleCompatibleProductsPage({
     permanentRedirect({ href: `/compatible-products/${canonicalSlug}`, locale });
   }
 
-  const products = await getProductsFromServer(undefined, id);
-
-  return <CompatibleProductsPage vehicle={vehicle} products={products} />;
+  return <CompatibleProductsPage vehicle={vehicle} initialData={firstPage} categories={categories} />;
 }

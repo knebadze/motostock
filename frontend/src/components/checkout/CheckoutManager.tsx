@@ -21,7 +21,7 @@ import {
 import type { Address } from "@/lib/api/addresses";
 import type { LookupItem } from "@/lib/api/lookups";
 import type { Cart } from "@/lib/api/cart";
-import type { GarageVehicle, VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
+import type { GarageVehicle, VehicleSearchOption } from "@/lib/api/vehicle-catalog";
 import type { LocalizedString } from "@/lib/api/categories";
 import type { PublicBank } from "@/lib/api/banks";
 import { AddressFormModal } from "@/components/account/AddressFormModal";
@@ -38,7 +38,7 @@ export function CheckoutManager({
   addresses: Address[];
   cities: LookupItem[];
   cart: Cart;
-  vehicleCatalog: VehicleCatalogOption[];
+  vehicleCatalog: VehicleSearchOption[];
   garageVehicles: GarageVehicle[];
   banks: PublicBank[];
 }) {

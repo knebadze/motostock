@@ -8,7 +8,7 @@ import {
   getMyCartFromServer,
   getMyGarageFromServer,
   getPublicBanksFromServer,
-  getVehicleCatalogFromServer,
+  getVehicleSearchOptionsFromServer,
 } from "@/lib/api/server";
 import { CheckoutManager } from "@/components/checkout/CheckoutManager";
 
@@ -51,7 +51,7 @@ export default async function CheckoutPage() {
   // solely of vehicle listings.
   const hasProductItems = cart.items.some((item) => item.itemType === "PRODUCT_VARIANT");
   const [vehicleCatalog, garageVehicles] = hasProductItems
-    ? await Promise.all([getVehicleCatalogFromServer(), getMyGarageFromServer()])
+    ? await Promise.all([getVehicleSearchOptionsFromServer(), getMyGarageFromServer()])
     : [[], []];
 
   const t = await getTranslations("Checkout");

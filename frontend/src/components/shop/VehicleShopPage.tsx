@@ -18,8 +18,7 @@ import {
 import type { VehicleCategoryFilter, VehicleSpecField } from "@/lib/api/vehicle-category-filters";
 import { getWishlistStatus } from "@/lib/api/wishlist";
 import { getCompareStatus } from "@/lib/api/compare";
-import { isKnownAuthState } from "@/lib/api/auth-state";
-import { isGuestWishlistKnownEnabled } from "@/lib/api/guest-feature-state";
+import { shouldCheckWishlistStatus, shouldCheckCompareStatus } from "@/lib/api/collection-status-gate";
 import { useCollectionStatusMap, lookupVehicleListingStatus } from "@/components/shared/useCollectionStatusMap";
 import { ActiveFilterTags, type ActiveFilterTag } from "./ActiveFilterTags";
 import { VehicleFilters, type SpecFilterState } from "./VehicleFilters";
@@ -103,9 +102,9 @@ export function VehicleShopPage({
     getWishlistStatus,
     [],
     visibleListingIds,
-    () => isKnownAuthState() || isGuestWishlistKnownEnabled(),
+    shouldCheckWishlistStatus,
   );
-  const compareStatus = useCollectionStatusMap(getCompareStatus, [], visibleListingIds, () => true);
+  const compareStatus = useCollectionStatusMap(getCompareStatus, [], visibleListingIds, shouldCheckCompareStatus);
 
   // Brand checkboxes always reflect the category's full, unfiltered catalog
   // (not the currently-filtered result) — otherwise checked brands would

@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
 import type { HeroSlide, HeroSlideTextPosition, HeroSlideVerticalPosition } from "@/lib/api/hero-slides";
-import type { GarageVehicle, VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
+import type { GarageVehicle, VehicleSearchOption } from "@/lib/api/vehicle-catalog";
 import type { Category } from "@/lib/api/categories";
 import { VEHICLE_ROOT_CATEGORY_SLUG } from "@/lib/categories-tree";
 import { formatDate } from "@/lib/format";
@@ -90,7 +90,7 @@ export function HeroSlider({
   categories,
 }: {
   slides: HeroSlide[];
-  vehicleCatalog: VehicleCatalogOption[];
+  vehicleCatalog: VehicleSearchOption[];
   garageVehicles: GarageVehicle[];
   categories: Category[];
 }) {
@@ -131,6 +131,9 @@ export function HeroSlider({
   useEffect(() => {
     if (slides.length <= 1 || paused) return;
     const timer = setInterval(() => {
+      // Not while the tab is hidden — no one sees it, and each change would
+      // start loading the next slide's image for nothing.
+      if (document.visibilityState === "hidden") return;
       setIndex((current) => (current + 1) % slides.length);
     }, AUTOPLAY_MS);
     return () => clearInterval(timer);

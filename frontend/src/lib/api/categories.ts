@@ -16,6 +16,16 @@ export type Category = Schemas["Category"];
 
 export type CategoryInput = Schemas["CreateCategoryInput"];
 
+// What the site header (Header.tsx) actually renders, with the name already resolved to the
+// current locale — the guest layout passes this lean shape instead of full
+// Category rows (three languages, banner, timestamps...) for every category
+// on every page's serialized props.
+export type HeaderCategory = Pick<Category, "id" | "parentId" | "slug" | "imageUrl"> & { name: string };
+
+export function toHeaderCategories(categories: Category[], locale: "ka" | "en" | "ru"): HeaderCategory[] {
+  return categories.map(({ id, parentId, slug, imageUrl, name }) => ({ id, parentId, slug, imageUrl, name: name[locale] }));
+}
+
 export async function listCategories(adminFilters?: AdminFilterEntry[]): Promise<Category[]> {
   const { data } = await apiClient.get<{ categories: Category[] }>("/categories", {
     params: {

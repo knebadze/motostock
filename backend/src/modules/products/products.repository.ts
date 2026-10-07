@@ -561,6 +561,7 @@ export const productsRepository = {
   // same distinct-category list itself.
   async findDistinctCategoryFacets(filters: {
     categoryIds?: number[];
+    vehicleCompatibilityWhere?: Prisma.ProductWhereInput;
     brandIds?: number[];
     priceMin?: number;
     priceMax?: number;

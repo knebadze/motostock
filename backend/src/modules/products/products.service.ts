@@ -519,14 +519,18 @@ function isCacheableOnSaleQuery(query: ProductListQuery): boolean {
 // one lean ref row per category directly.
 export async function listProductCategoryFacets(query: {
   categoryId?: number;
+  vehicleCatalogId?: number;
   brandIds?: number[];
   onSale?: boolean;
   bulkDiscountEventId?: number;
 }) {
   const categoryIds =
     query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
+  const vehicleCompatibilityWhere =
+    query.vehicleCatalogId != null ? await buildVehicleCompatibilityWhere(query.vehicleCatalogId) : undefined;
   const rows = await productsRepository.findDistinctCategoryFacets({
     categoryIds,
+    vehicleCompatibilityWhere,
     brandIds: query.brandIds,
     onSale: query.onSale,
     bulkDiscountEventId: query.bulkDiscountEventId,

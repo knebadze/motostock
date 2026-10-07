@@ -13,6 +13,7 @@ import type { PrivacyPolicy } from "../privacy-policy";
 import type { Faq } from "../faq";
 import type { Vacancy } from "../vacancies";
 import type { PublicServiceType } from "../service-types";
+import type { VehicleCatalogOption, VehicleSearchOption } from "../vehicle-catalog";
 
 // Admin-edited site content (categories, company info, legal pages, FAQ, vacancies, hero slides, team, homepage sections).
 
@@ -131,6 +132,30 @@ const getCachedPublicServiceTypes = unstable_cache(
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["service-types-public"] },
 );
 export const getPublicServiceTypesFromServer = cache(getCachedPublicServiceTypes);
+
+// The whole vehicle catalog for the storefront's vehicle pickers (home hero
+// search, checkout compatibility check). Public and identical for every
+// visitor, so cached ACROSS requests (it used to be re-fetched — the full
+// catalog — on every home-page view), and slimmed to VehicleSearchOption
+// before it's serialized into the page.
+const getCachedVehicleSearchOptions = unstable_cache(
+  () =>
+    fetchPublicCacheable<{ items: VehicleCatalogOption[] }, VehicleSearchOption[]>("/vehicle-catalog/options", {
+      fallback: [],
+      extract: (data) =>
+        data.items.map(({ id, brand, model, variant, yearFrom, yearTo }) => ({
+          id,
+          brand,
+          model,
+          variant,
+          yearFrom,
+          yearTo,
+        })),
+    }),
+  ["vehicle-search-options"],
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["vehicle-catalog"] },
+);
+export const getVehicleSearchOptionsFromServer = cache(getCachedVehicleSearchOptions);
 
 // Admin — every FAQ entry, including inactive ones (see the admin FAQ
 // manager). Distinct from getFaqListFromServer's public/active-only list,

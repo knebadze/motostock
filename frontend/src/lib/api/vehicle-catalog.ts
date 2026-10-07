@@ -29,6 +29,12 @@ export type VehicleCatalogOption = Schemas["VehicleCatalogOption"];
 
 export type VehicleCatalogInput = Schemas["CreateVehicleCatalogInput"];
 
+// What the storefront's brand -> model -> year pickers (home hero search,
+// checkout compatibility check) actually read — the option without its
+// category, whose name repeated in all three languages on every row was
+// roughly half of each row's weight in the page payload.
+export type VehicleSearchOption = Omit<VehicleCatalogOption, "category">;
+
 // URL slug for a vehicle's "parts that fit" page (/compatible-products/…):
 // "honda-cbr600rr-2007-2012-123" — brand, model, variant, years, then the
 // catalog id, which is all parseVehicleCatalogIdFromSlug reads back (same
