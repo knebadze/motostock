@@ -212,20 +212,28 @@ export function OrderDetailModal({
           </div>
 
           {order.finaSyncStatus !== "NOT_APPLICABLE" && (
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-border p-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">FINA სინქრონიზაცია:</span>
-                <FinaSyncBadge status={order.finaSyncStatus} />
+            <div className="flex flex-col gap-2 rounded-xl border border-border p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-foreground">FINA სინქრონიზაცია:</span>
+                  <FinaSyncBadge status={order.finaSyncStatus} />
+                </div>
+                {(order.finaSyncStatus === "FAILED" || order.finaSyncStatus === "PENDING") && (
+                  <button
+                    type="button"
+                    onClick={handleRetryFinaSync}
+                    disabled={retryingFina}
+                    className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {retryingFina ? "იგზავნება..." : "ხელით გაშვება FINA-ში"}
+                  </button>
+                )}
               </div>
-              {(order.finaSyncStatus === "FAILED" || order.finaSyncStatus === "PENDING") && (
-                <button
-                  type="button"
-                  onClick={handleRetryFinaSync}
-                  disabled={retryingFina}
-                  className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {retryingFina ? "იგზავნება..." : "ხელით გაშვება FINA-ში"}
-                </button>
+              {/* Why the last push failed or is waiting — notably when FINA
+                  may already have the document (no response), so the admin
+                  checks FINA before pressing retry. */}
+              {order.finaLastError && order.finaSyncStatus !== "SYNCED" && (
+                <p className="text-xs text-muted-foreground">{order.finaLastError}</p>
               )}
             </div>
           )}

@@ -172,6 +172,16 @@ model Order {
   // retry never send the same document twice concurrently. Expires on its
   // own, so a process killed mid-push doesn't leave the order stuck.
   finaPushLockedUntil DateTime?
+  // When the sale / the return was confirmed recorded in FINA. Stock sync
+  // (fina-sync.repository.ts's applyFinaAvailability) uses them to tell
+  // whether a FINA stock snapshot already includes this order's document —
+  // a document recorded after the snapshot was fetched isn't in it yet.
+  finaSaleSyncedAt    DateTime?
+  finaReturnSyncedAt  DateTime?
+  // Why the last push attempt failed, for the admin's order detail —
+  // notably whether FINA may already have recorded the document (timeout /
+  // no response), in which case a blind retry could double it.
+  finaLastError       String?
 
   // Foundation for the real bank-gateway integration (see PaymentStatus's
   // own comment) — set at placeOrder time to AWAITING_PAYMENT for a CARD
@@ -213,5 +223,8 @@ model Order {
   // The PENDING-push sweep (fina-sync.repository.ts's findDueOrderPushIds)
   // runs every few minutes.
   @@index([finaSyncStatus])
+  // Recent-document lookups in applyFinaAvailability's stock adjustment.
+  @@index([finaSaleSyncedAt])
+  @@index([finaReturnSyncedAt])
   @@schema("dbo")
 }

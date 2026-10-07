@@ -16472,6 +16472,7 @@ export interface components {
             /** @enum {string} */
             finaSyncStatus: "NOT_APPLICABLE" | "PENDING" | "SYNCED" | "FAILED";
             finaOutOperationId: number | null;
+            finaLastError: string | null;
         };
         FinaSyncRun: {
             id: number;

@@ -53,6 +53,7 @@ function toOrderStatusUpdateResponse(order: OrderRow) {
     cancellationNote: order.cancellationNote,
     finaSyncStatus: order.finaSyncStatus,
     finaOutOperationId: order.finaOutOperationId,
+    finaLastError: order.finaLastError,
   };
 }
 

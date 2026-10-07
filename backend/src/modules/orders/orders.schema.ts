@@ -307,6 +307,8 @@ export const adminOrderResponseSchema = registry.register(
     cancellationNote: z.string().nullable(),
     finaSyncStatus: finaOrderSyncStatusSchema,
     finaOutOperationId: z.int().nullable(),
+    // Why the last FINA push failed (or is waiting) — see order.prisma.
+    finaLastError: z.string().nullable(),
   }),
 );
 

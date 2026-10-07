@@ -1,6 +1,46 @@
 import { env } from "../../config/env.js";
 
-export class FinaApiError extends Error {}
+// `safeToRetry` answers the one question that matters for the two
+// non-idempotent writes (saveDocProductOut/saveDocCustomerReturn): could
+// FINA have recorded the document despite this error? true = definitely not
+// (never connected, auth failed before the request, or FINA answered and
+// refused it) — re-sending can't double it. false = unknown (timeout, a
+// dropped connection, a 5xx, an unreadable reply) — FINA may well have
+// saved it, so the order-push outbox stops and leaves it to the admin
+// instead of retrying blindly. Irrelevant for reads.
+export class FinaApiError extends Error {
+  constructor(
+    message: string,
+    readonly safeToRetry = false,
+  ) {
+    super(message);
+  }
+}
+
+// Connection-phase failures — the request never reached FINA at all.
+const NOT_SENT_ERROR_CODES = new Set([
+  "ECONNREFUSED",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "UND_ERR_CONNECT_TIMEOUT",
+]);
+
+function toNetworkError(path: string, err: unknown): FinaApiError {
+  if (err instanceof FinaApiError) return err;
+  const code = (err as { cause?: { code?: unknown } } | null)?.cause?.code;
+  if (typeof code === "string" && NOT_SENT_ERROR_CODES.has(code)) {
+    return new FinaApiError(`FINA-სთან კავშირი ვერ დამყარდა (${path}, ${code})`, true);
+  }
+  const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+  return new FinaApiError(
+    timedOut
+      ? `FINA-მ ${FINA_REQUEST_TIMEOUT_MS / 1000} წამში არ უპასუხა (${path})`
+      : `FINA-სთან კავშირი გაწყდა (${path})`,
+    false,
+  );
+}
 
 interface FinaEnvelope<T> {
   ex: string | null;
@@ -12,7 +52,7 @@ interface FinaAuthResponse {
   ex: number;
 }
 
-interface FinaProductRest {
+export interface FinaProductRest {
   id: number;
   store: string;
   rest: number;
@@ -73,24 +113,34 @@ export function isFinaConfigured(): boolean {
 
 function assertConfigured() {
   if (!isFinaConfigured()) {
-    throw new FinaApiError("FINA API არ არის კონფიგურირებული");
+    throw new FinaApiError("FINA API არ არის კონფიგურირებული", true);
   }
 }
 
+// Every failure here is safeToRetry: authentication runs before the actual
+// request, so whatever went wrong, no document was sent.
 async function authenticate(): Promise<string> {
-  const res = await fetch(`${env.FINA_BASE_URL}/api/authentication/authenticate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ login: env.FINA_LOGIN, password: env.FINA_PASSWORD }),
-    signal: AbortSignal.timeout(FINA_REQUEST_TIMEOUT_MS),
-  });
+  try {
+    const res = await fetch(`${env.FINA_BASE_URL}/api/authentication/authenticate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ login: env.FINA_LOGIN, password: env.FINA_PASSWORD }),
+      signal: AbortSignal.timeout(FINA_REQUEST_TIMEOUT_MS),
+    });
 
-  if (!res.ok) {
-    throw new FinaApiError(`FINA ავტორიზაცია ვერ მოხერხდა (${res.status})`);
+    if (!res.ok) {
+      throw new FinaApiError(`FINA ავტორიზაცია ვერ მოხერხდა (${res.status})`, true);
+    }
+
+    const body = (await res.json()) as FinaAuthResponse;
+    if (!body.token) {
+      throw new FinaApiError("FINA ავტორიზაციის პასუხს token არ აქვს", true);
+    }
+    return body.token;
+  } catch (err) {
+    if (err instanceof FinaApiError) throw err;
+    throw new FinaApiError(`FINA ავტორიზაცია ვერ მოხერხდა (${toNetworkError("authenticate", err).message})`, true);
   }
-
-  const body = (await res.json()) as FinaAuthResponse;
-  return body.token;
 }
 
 async function getToken(): Promise<string> {
@@ -116,12 +166,29 @@ async function authHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
-function parseFinaEnvelope<T>(path: string, status: number, ok: boolean, body: FinaEnvelope<T>): T {
-  if (!ok) {
-    throw new FinaApiError(`FINA API-ის მოთხოვნა ვერ შესრულდა (${path}, ${status})`);
+// A 4xx or an `ex` error in the envelope means FINA answered and refused —
+// nothing was recorded (safeToRetry). A 5xx or a body that isn't the
+// expected JSON envelope (e.g. a proxy's HTML error page) leaves it unknown.
+async function readFinaResponse<T>(path: string, res: Response): Promise<T> {
+  let body: FinaEnvelope<T> | null;
+  try {
+    body = (await res.json()) as FinaEnvelope<T>;
+  } catch {
+    body = null;
+  }
+
+  if (!res.ok) {
+    const detail = body?.ex ? `: ${body.ex}` : "";
+    throw new FinaApiError(
+      `FINA API-ის მოთხოვნა ვერ შესრულდა (${path}, ${res.status})${detail}`,
+      res.status < 500,
+    );
+  }
+  if (!body) {
+    throw new FinaApiError(`FINA-ს პასუხი ვერ წავიკითხეთ (${path})`, false);
   }
   if (body.ex) {
-    throw new FinaApiError(`FINA API-ის შეცდომა: ${body.ex}`);
+    throw new FinaApiError(`FINA API-ის შეცდომა: ${body.ex}`, true);
   }
   return body.data as T;
 }
@@ -143,12 +210,23 @@ async function fetchWithAuthRetry(
   path: string,
   buildRequest: (headers: Record<string, string>) => Promise<Response>,
 ): Promise<Response> {
-  const res = await buildRequest(await authHeaders());
+  const headers = await authHeaders();
+  let res: Response;
+  try {
+    res = await buildRequest(headers);
+  } catch (err) {
+    throw toNetworkError(path, err);
+  }
   if (res.status !== 401) return res;
 
   cachedToken = null;
   cachedTokenExpiresAt = 0;
-  return buildRequest(await authHeaders());
+  const freshHeaders = await authHeaders();
+  try {
+    return await buildRequest(freshHeaders);
+  } catch (err) {
+    throw toNetworkError(path, err);
+  }
 }
 
 async function finaGet<T>(path: string): Promise<T> {
@@ -159,8 +237,7 @@ async function finaGet<T>(path: string): Promise<T> {
       signal: AbortSignal.timeout(FINA_REQUEST_TIMEOUT_MS),
     }),
   );
-  const body = (await res.json()) as FinaEnvelope<T>;
-  return parseFinaEnvelope(path, res.status, res.ok, body);
+  return readFinaResponse<T>(path, res);
 }
 
 async function finaPost<T>(path: string, payload: unknown): Promise<T> {
@@ -173,8 +250,7 @@ async function finaPost<T>(path: string, payload: unknown): Promise<T> {
       signal: AbortSignal.timeout(FINA_REQUEST_TIMEOUT_MS),
     }),
   );
-  const body = (await res.json()) as FinaEnvelope<T>;
-  return parseFinaEnvelope(path, res.status, res.ok, body);
+  return readFinaResponse<T>(path, res);
 }
 
 export function getProductsRestByStore(store: string): Promise<FinaProductRest[]> {

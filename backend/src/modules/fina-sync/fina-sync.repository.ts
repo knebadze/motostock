@@ -47,35 +47,113 @@ export const finaSyncRepository = {
     });
   },
 
-  updateStock(id: number, stockQuantity: number) {
-    return prisma.productVariant.update({ where: { id }, data: { stockQuantity } });
-  },
+  // The ONE place FINA stock is written into ProductVariant.stockQuantity
+  // (scheduled/manual sync, checkout refresh, admin per-order/per-product
+  // re-checks all go through here). `available` is FINA's sellable quantity
+  // for the variant (rest - reserve, see fina-sync.service.ts) as of
+  // `snapshotTakenAt` - taken BEFORE the FINA request was sent.
+  //
+  // FINA's number can't simply be copied over: web orders FINA hasn't
+  // recorded yet still have to count. Per FINA-tracked order touching the
+  // variant (finaSyncStatus <> NOT_APPLICABLE), comparing what the site has
+  // already applied locally with what the snapshot already contains:
+  //   - not cancelled, sale NOT in the snapshot (push pending/failed, or
+  //     recorded after the snapshot was taken)        -> -quantity
+  //   - cancelled, sale in the snapshot but its return NOT (return
+  //     pending/failed, or recorded after the snapshot) -> +quantity
+  //   - everything else is already consistent            -> 0
+  // "In the snapshot" = recorded before snapshotTakenAt; a document whose
+  // synced-at is unknown (pushed before these columns existed) counts as in.
+  //
+  // The variant rows are locked (FOR UPDATE, id order) before that
+  // adjustment is computed, so an order placed concurrently either committed
+  // first (and is counted) or waits for this write and then decrements the
+  // new value - it can never be overwritten. placeOrder/cancel lock variants
+  // in the same id order, so the two can't deadlock.
+  //
+  // Also flips the SOLD/AVAILABLE listing status the same way placeOrder/
+  // cancel do (only those two auto-managed values - never a status an admin
+  // set by hand).
+  async applyFinaAvailability(
+    entries: { variantId: number; available: number }[],
+    snapshotTakenAt: Date,
+    listingStatusIds: { sold: number; available: number } | null,
+  ): Promise<{ id: number; previousStock: number; newStock: number }[]> {
+    if (entries.length === 0) return [];
+    const availableById = new Map(entries.map((entry) => [entry.variantId, entry.available]));
+    const ids = [...availableById.keys()].sort((a, b) => a - b);
+    const idList = Prisma.join(ids);
 
-  // One round trip for every linked variant instead of one UPDATE per
-  // variant (see fina-sync.service.ts's runSync, which used to loop
-  // updateStock above once per variant) — a full-catalog sync could mean
-  // thousands of sequential round trips, needlessly keeping runSync's
-  // transaction (and the pool connection + advisory lock it holds) open far
-  // longer than the actual work requires. Uses the plain `prisma` client,
-  // not a passed-in transaction — same as updateStock above — so it commits
-  // on its own as soon as it completes, independent of the wrapping
-  // transaction's lifetime.
-  async updateStockBatch(updates: { id: number; stockQuantity: number }[]): Promise<void> {
-    if (updates.length === 0) return;
-    // Explicit ::int casts — without them Postgres can't infer a type for
-    // the raw query's parameter placeholders inside a bare VALUES list and
-    // defaults to text, which then fails to compare against pv.id
-    // (integer) with "operator does not exist: integer = text". Verified
-    // live against the dev DB before relying on this.
-    const rows = Prisma.join(
-      updates.map((u) => Prisma.sql`(${u.id}::int, ${u.stockQuantity}::int)`),
+    return prisma.$transaction(
+      async (tx) => {
+        const locked = await tx.$queryRaw<{ id: number; stockQuantity: number }[]>`
+          SELECT id, "stockQuantity" FROM "dbo"."ProductVariant"
+          WHERE id IN (${idList})
+          ORDER BY id
+          FOR UPDATE
+        `;
+        if (locked.length === 0) return [];
+
+        const saleInSnapshot = Prisma.sql`(o."finaOutOperationId" IS NOT NULL AND (o."finaSaleSyncedAt" IS NULL OR o."finaSaleSyncedAt" < ${snapshotTakenAt}))`;
+        const returnInSnapshot = Prisma.sql`(o."finaSyncStatus" = 'SYNCED' AND (o."finaReturnSyncedAt" IS NULL OR o."finaReturnSyncedAt" < ${snapshotTakenAt}))`;
+        // The first OR-group is an index-friendly superset of the two exact
+        // cases after it: every order that can be out of step is either
+        // still being pushed, or had a document recorded after the snapshot.
+        const adjustments = await tx.$queryRaw<{ id: number; adjustment: number }[]>`
+          SELECT oi."productVariantId" AS id,
+                 SUM(CASE WHEN o."cancelledAt" IS NULL THEN -oi.quantity ELSE oi.quantity END)::int AS adjustment
+          FROM "dbo"."OrderItem" oi
+          JOIN "dbo"."Order" o ON o.id = oi."orderId"
+          WHERE oi."productVariantId" IN (${idList})
+            AND o."finaSyncStatus" <> 'NOT_APPLICABLE'
+            AND (
+              o."finaSyncStatus" IN ('PENDING', 'FAILED')
+              OR o."finaSaleSyncedAt" >= ${snapshotTakenAt}
+              OR o."finaReturnSyncedAt" >= ${snapshotTakenAt}
+            )
+            AND (
+              (o."cancelledAt" IS NULL AND NOT ${saleInSnapshot})
+              OR (o."cancelledAt" IS NOT NULL AND ${saleInSnapshot} AND NOT ${returnInSnapshot})
+            )
+          GROUP BY oi."productVariantId"
+        `;
+        const adjustmentById = new Map(adjustments.map((row) => [row.id, row.adjustment]));
+
+        const results = locked.map((row) => ({
+          id: row.id,
+          previousStock: row.stockQuantity,
+          newStock: Math.max(0, availableById.get(row.id)! + (adjustmentById.get(row.id) ?? 0)),
+        }));
+
+        // Explicit ::int casts - without them Postgres can't infer a type
+        // for the parameters inside a bare VALUES list and defaults to text
+        // ("operator does not exist: integer = text").
+        const values = Prisma.join(results.map((row) => Prisma.sql`(${row.id}::int, ${row.newStock}::int)`));
+        await tx.$executeRaw`
+          UPDATE "dbo"."ProductVariant" AS pv
+          SET "stockQuantity" = v.stock
+          FROM (VALUES ${values}) AS v(id, stock)
+          WHERE pv.id = v.id
+        `;
+
+        if (listingStatusIds) {
+          await tx.productVariant.updateMany({
+            where: { id: { in: ids }, statusId: listingStatusIds.sold, stockQuantity: { gt: 0 } },
+            data: { statusId: listingStatusIds.available },
+          });
+          await tx.productVariant.updateMany({
+            where: { id: { in: ids }, statusId: listingStatusIds.available, stockQuantity: { lte: 0 } },
+            data: { statusId: listingStatusIds.sold },
+          });
+        }
+
+        return results;
+      },
+      // Locks are held only for a couple of queries/updates - a concurrent
+      // checkout waits milliseconds, not the FINA round-trip (that already
+      // happened before this transaction started).
+      { timeout: 30_000, maxWait: 10_000 },
     );
-    await prisma.$executeRaw`
-      UPDATE "dbo"."ProductVariant" AS pv
-      SET "stockQuantity" = v.stock
-      FROM (VALUES ${rows}) AS v(id, stock)
-      WHERE pv.id = v.id
-    `;
   },
 
   // Final outcome of a push (SYNCED after a return, or NOT_APPLICABLE when
@@ -84,7 +162,21 @@ export const finaSyncRepository = {
   setOrderFinaSyncStatus(orderId: number, status: FinaOrderSyncStatus) {
     return prisma.order.update({
       where: { id: orderId },
-      data: { finaSyncStatus: status, finaPushAttempts: 0, finaPushLockedUntil: null },
+      data: { finaSyncStatus: status, finaPushAttempts: 0, finaPushLockedUntil: null, finaLastError: null },
+    });
+  },
+
+  // A successful RETURN push - synced-at feeds applyFinaAvailability.
+  recordOrderReturnSynced(orderId: number) {
+    return prisma.order.update({
+      where: { id: orderId },
+      data: {
+        finaSyncStatus: "SYNCED",
+        finaReturnSyncedAt: new Date(),
+        finaPushAttempts: 0,
+        finaPushLockedUntil: null,
+        finaLastError: null,
+      },
     });
   },
 
@@ -95,22 +187,41 @@ export const finaSyncRepository = {
   // swallow the return push it now needs. The FINA operation id is stored
   // either way — that return references it as out_id.
   async recordOrderSaleSynced(orderId: number, finaOutOperationId: number) {
+    const synced = {
+      finaOutOperationId,
+      finaSaleSyncedAt: new Date(),
+      finaPushAttempts: 0,
+      finaPushLockedUntil: null,
+      finaLastError: null,
+    };
     const result = await prisma.order.updateMany({
       where: { id: orderId, cancelledAt: null },
-      data: { finaOutOperationId, finaSyncStatus: "SYNCED", finaPushAttempts: 0, finaPushLockedUntil: null },
+      data: { ...synced, finaSyncStatus: "SYNCED" },
     });
     if (result.count === 0) {
-      await prisma.order.update({
-        where: { id: orderId },
-        data: { finaOutOperationId, finaSyncStatus: "PENDING", finaPushAttempts: 0, finaPushLockedUntil: null },
-      });
+      await prisma.order.update({ where: { id: orderId }, data: { ...synced, finaSyncStatus: "PENDING" } });
     }
   },
 
-  recordOrderPushFailure(orderId: number, status: "PENDING" | "FAILED", attempts: number) {
+  recordOrderPushFailure(
+    orderId: number,
+    status: "PENDING" | "FAILED",
+    attempts: number,
+    lastError: string,
+  ) {
     return prisma.order.update({
       where: { id: orderId },
-      data: { finaSyncStatus: status, finaPushAttempts: attempts, finaPushLockedUntil: null },
+      data: { finaSyncStatus: status, finaPushAttempts: attempts, finaPushLockedUntil: null, finaLastError: lastError },
+    });
+  },
+
+  // A push that can't run yet for a reason that isn't a failure (FINA
+  // web-customer/user Settings not filled in) - stays PENDING, attempt not
+  // counted, reason shown to the admin.
+  deferOrderPush(orderId: number, reason: string) {
+    return prisma.order.update({
+      where: { id: orderId },
+      data: { finaPushLockedUntil: null, finaLastError: reason },
     });
   },
 

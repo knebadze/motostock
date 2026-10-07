@@ -154,6 +154,17 @@ export type PlaceOrderInput = {
   cartItemIds: number[];
 };
 
+// Stock-touching loops lock ProductVariant rows (each UPDATE takes a row
+// lock held until commit) — always in ascending id order, the same order
+// fina-sync.repository.ts's applyFinaAvailability locks them in, so two
+// transactions touching an overlapping set can never wait on each other in
+// a cycle (deadlock). Vehicle-listing lines (no FINA link) keep their place.
+function sortByVariantId<T extends { productVariantId?: number | null }>(items: T[]): T[] {
+  return [...items].sort(
+    (a, b) => (a.productVariantId ?? Number.MAX_SAFE_INTEGER) - (b.productVariantId ?? Number.MAX_SAFE_INTEGER),
+  );
+}
+
 export const ordersRepository = {
   findByUserId(userId: number) {
     return prisma.order.findMany({
@@ -247,7 +258,10 @@ export const ordersRepository = {
 
       if (!stockAdjustment) return;
 
-      for (const item of stockAdjustment.items) {
+      // Variant rows locked in id order — same order as
+      // fina-sync.repository.ts's applyFinaAvailability, so a concurrent
+      // FINA stock write and this can't deadlock.
+      for (const item of sortByVariantId(stockAdjustment.items)) {
         if (item.productVariantId != null) {
           await tx.productVariant.update({
             where: { id: item.productVariantId },
@@ -391,7 +405,8 @@ export const ordersRepository = {
         }
       }
 
-      for (const item of input.items) {
+      // Id order for the row locks — see sortByVariantId.
+      for (const item of sortByVariantId(input.items)) {
         if (item.productVariantId != null) {
           // isActive: true guards against a variant deactivated in the
           // narrow race window between computeCheckoutTotals's read and
