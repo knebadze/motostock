@@ -9,6 +9,7 @@ import {
   type BulkImportVehicleCatalogResult,
 } from "@/lib/api/vehicle-catalog";
 import { ApiRequestError } from "@/lib/api/client";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 
 export function VehicleCatalogBulkImportModal({
   open,
@@ -52,6 +53,7 @@ export function VehicleCatalogBulkImportModal({
     try {
       const importResult = await bulkImportVehicleCatalog(file);
       setResult(importResult);
+      if (importResult.createdCount > 0) await revalidatePublicCache("vehicle-catalog");
       if (importResult.createdCount > 0) {
         toast.success(`დაემატა ${importResult.createdCount} ჩანაწერი`);
         onImported();

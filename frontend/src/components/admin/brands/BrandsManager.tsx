@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { BrandFormModal } from "./BrandFormModal";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 
 const columns: DataTableColumn<Brand>[] = [
   {
@@ -105,6 +106,7 @@ export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
         onConfirm={async () => {
           if (!deletingBrand) return;
           await deleteBrand(deletingBrand.id);
+          await revalidatePublicCache("vehicle-catalog");
           await refresh();
         }}
       />

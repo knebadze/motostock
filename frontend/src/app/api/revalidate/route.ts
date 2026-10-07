@@ -12,7 +12,16 @@ import { getCurrentUserFromServer } from "@/lib/api/server";
 // forms write straight to the Express backend, not through Next.js — so
 // this is a thin dedicated endpoint the admin UI calls as a second step
 // right after a successful save (see each admin manager's own call site).
-const REVALIDATABLE_TAGS = ["categories", "company-info", "terms", "privacy-policy", "faq-public"] as const;
+const REVALIDATABLE_TAGS = [
+  "categories",
+  "company-info",
+  "terms",
+  "privacy-policy",
+  "faq-public",
+  // The vehicle search options (home hero search, checkout compatibility
+  // check) — refreshed after vehicle catalog/brand/model saves.
+  "vehicle-catalog",
+] as const;
 type RevalidatableTag = (typeof REVALIDATABLE_TAGS)[number];
 
 function isRevalidatableTag(value: unknown): value is RevalidatableTag {

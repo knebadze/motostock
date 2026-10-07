@@ -24,6 +24,7 @@ import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 import { VehicleCatalogSpecsTab } from "./VehicleCatalogSpecsTab";
 import { VehicleCatalogDescriptionTab } from "./VehicleCatalogDescriptionTab";
 import { VehicleCatalogImageTab } from "./VehicleCatalogImageTab";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 
 function toNullableInt(value: string): number | null {
   return value.trim() === "" ? null : Number(value);
@@ -265,6 +266,7 @@ export function VehicleCatalogFormModal({
       const saved = isEditing
         ? await updateVehicleCatalogEntry(entry.id, input)
         : await createVehicleCatalogEntry(input);
+      await revalidatePublicCache("vehicle-catalog");
 
       if (imageFile) {
         try {
