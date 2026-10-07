@@ -28,22 +28,18 @@ export const visitorsRepository = {
   },
 
   // Insert-or-ignore for (date, visitor) — see VisitorVisit's model comment.
-  // `update: {}` is a deliberate no-op on conflict (this row, once created
-  // for a given day, never changes) — same idempotent-claim shape as
-  // seed.ts's seedLookup upserts.
+  // A single INSERT … ON CONFLICT DO NOTHING (createMany + skipDuplicates),
+  // not prisma.upsert: upsert is a read then a write, so two near-
+  // simultaneous pings from the same visitor (two tabs) could both find no
+  // row and both insert — the second failing with a unique-constraint error
+  // (a 500 on /visitors/ping, seen in Sentry). The row never changes once
+  // created for the day, so "ignore if it exists" is all this needs.
   async recordVisit(owner: VisitorOwner, date: string): Promise<void> {
-    if ("userId" in owner) {
-      await prisma.visitorVisit.upsert({
-        where: { date_userId: { date, userId: owner.userId } },
-        create: { date, userId: owner.userId },
-        update: {},
-      });
-      return;
-    }
-    await prisma.visitorVisit.upsert({
-      where: { date_guestId: { date, guestId: owner.guestId } },
-      create: { date, guestId: owner.guestId },
-      update: {},
+    await prisma.visitorVisit.createMany({
+      data: [
+        "userId" in owner ? { date, userId: owner.userId } : { date, guestId: owner.guestId },
+      ],
+      skipDuplicates: true,
     });
   },
 

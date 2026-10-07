@@ -16,7 +16,11 @@ import {
   getFinaSyncIntervalMinutes,
 } from "./modules/settings/settings.service.js";
 import { DEFAULT_JOB_CRON, JOB_DEFINITIONS } from "./modules/scheduled-jobs/scheduled-jobs.registry.js";
-import { runScheduledJob } from "./modules/scheduled-jobs/scheduled-jobs.service.js";
+import {
+  runScheduledJob,
+  SCHEDULED_JOB_ALREADY_RUNNING,
+} from "./modules/scheduled-jobs/scheduled-jobs.service.js";
+import { ApiError } from "./lib/ApiError.js";
 
 // Every logger.error(...) (the same calls that fill the admin ErrorLog) also
 // goes to Sentry — a no-op unless SENTRY_DSN is set and the admin toggle is
@@ -99,9 +103,15 @@ if (isFinaConfigured()) {
 // mutations above. `unref` matches the old `dailyPruneTimer.unref()` — these
 // tasks must never keep the process alive on their own.
 function runDailyScheduledJob(key: (typeof JOB_DEFINITIONS)[number]["key"]) {
-  runScheduledJob(key, "SCHEDULED", null).catch((err: unknown) =>
-    logger.error({ err, jobKey: key }, "Scheduled job failed"),
-  );
+  runScheduledJob(key, "SCHEDULED", null).catch((err: unknown) => {
+    // Another run of the same job is in progress (e.g. an admin's "run
+    // now") — expected, not an error; a warning keeps it out of ErrorLog/Sentry.
+    if (err instanceof ApiError && err.code === SCHEDULED_JOB_ALREADY_RUNNING) {
+      logger.warn({ jobKey: key }, "Scheduled job skipped — already running");
+      return;
+    }
+    logger.error({ err, jobKey: key }, "Scheduled job failed");
+  });
 }
 // Also run once immediately on boot, not just on the cron schedule — this
 // app still deploys far more often than once a day, so relying on the cron

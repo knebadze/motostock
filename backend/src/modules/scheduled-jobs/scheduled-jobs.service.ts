@@ -15,6 +15,17 @@ const JOB_DEFINITION_BY_KEY = new Map(JOB_DEFINITIONS.map((job) => [job.key, job
 // never contend with each other, only two attempts to run the SAME job.
 const SCHEDULED_JOB_LOCK_NAMESPACE = 851972455;
 
+// Every job here finishes in seconds to a few minutes; a RUNNING row older
+// than this was left behind by a process stopped mid-job (see
+// closeAbandonedRuns) and must not keep blocking the job forever — it used
+// to: the overlap guard below then refused every later run of that job.
+const ABANDONED_RUN_AFTER_MS = 30 * 60 * 1000;
+
+// Thrown when the same job is already running — an expected overlap (boot
+// run vs. cron tick vs. manual "run now"), not a failure; the scheduler
+// logs it as a warning, not an error.
+export const SCHEDULED_JOB_ALREADY_RUNNING = "SCHEDULED_JOB_ALREADY_RUNNING";
+
 // Same RUNNING-written-up-front-then-finished pattern as fina-sync.service.ts's
 // runSync — a crash mid-job leaves a visibly stuck RUNNING row instead of no
 // row at all. Called both by server.ts's cron schedule (trigger=SCHEDULED,
@@ -49,6 +60,7 @@ export async function runScheduledJob(
     if (!locked) {
       return null;
     }
+    await scheduledJobsRepository.closeAbandonedRuns(key, new Date(Date.now() - ABANDONED_RUN_AFTER_MS), tx);
     const alreadyRunning = await scheduledJobsRepository.findRunningRun(key, tx);
     if (alreadyRunning) {
       return null;
@@ -57,7 +69,7 @@ export async function runScheduledJob(
   });
 
   if (!run) {
-    throw new ApiError(409, "ეს ამოცანა უკვე მიმდინარეობს", "SCHEDULED_JOB_ALREADY_RUNNING");
+    throw new ApiError(409, "ეს ამოცანა უკვე მიმდინარეობს", SCHEDULED_JOB_ALREADY_RUNNING);
   }
 
   try {

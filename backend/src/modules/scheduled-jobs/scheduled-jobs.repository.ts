@@ -38,6 +38,20 @@ export const scheduledJobsRepository = {
 
   // scheduled-jobs.service.ts's runScheduledJob overlap guard — is there
   // already an unfinished run of this exact job.
+  // A RUNNING row older than `startedBefore` can't still be running — its
+  // process was stopped mid-job (deploy/restart: jobs also run at boot, so
+  // this is common). Closed as FAILED so it stops blocking every later run.
+  closeAbandonedRuns(jobKey: ScheduledJobKey, startedBefore: Date, db: DbClient = prisma) {
+    return db.scheduledJobRun.updateMany({
+      where: { jobKey, status: "RUNNING", startedAt: { lt: startedBefore } },
+      data: {
+        status: "FAILED",
+        finishedAt: new Date(),
+        errorMessage: "შეწყდა — სერვერი გადაიტვირთა ამოცანის შესრულებისას",
+      },
+    });
+  },
+
   findRunningRun(jobKey: ScheduledJobKey, db: DbClient = prisma) {
     return db.scheduledJobRun.findFirst({ where: { jobKey, status: "RUNNING" } });
   },
