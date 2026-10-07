@@ -10,6 +10,7 @@ import { garageRepository } from "../garage/garage.repository.js";
 import { toResponse as toWishlistItemResponse } from "../wishlist/wishlist.service.js";
 import { toResponse as toCartItemResponse } from "../cart/cart.service.js";
 import { sessionRepository } from "../auth/session.repository.js";
+import { passwordResetTokenRepository } from "../auth/password-reset-token.repository.js";
 import { rolesRepository } from "../roles/roles.repository.js";
 import { usersRepository } from "./users.repository.js";
 import type {
@@ -98,6 +99,9 @@ export async function changePassword(
 
   const passwordHash = await hashPassword(input.newPassword);
   const updated = await usersRepository.updatePasswordHash(userId, passwordHash);
+  // Any reset link requested before this change is void now — see
+  // passwordResetTokenRepository.invalidateAllForUser.
+  await passwordResetTokenRepository.invalidateAllForUser(userId);
 
   // Every other device's Session row is now permanently unusable (its next
   // request fails the tokenVersion check regardless) — delete them here

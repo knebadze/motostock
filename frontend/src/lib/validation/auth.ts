@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hasInvalidPasswordChars, isPasswordTooLong } from "@/lib/password";
 
 const MIN_AGE_YEARS = 16;
 
@@ -15,7 +16,11 @@ export function createRegisterFormSchema(t: (key: string) => string) {
         .trim()
         .min(1, t("emailRequiredError"))
         .email(t("emailInvalidError")),
-      password: z.string().min(8, t("passwordTooShortError")).max(100, t("passwordTooShortError")),
+      password: z
+        .string()
+        .min(8, t("passwordTooShortError"))
+        .refine((value) => !hasInvalidPasswordChars(value), t("passwordInvalidCharsError"))
+        .refine((value) => !isPasswordTooLong(value), t("passwordTooLongError")),
       confirmPassword: z.string().min(1, t("confirmPasswordRequiredError")),
       // Also the walk-in-customer auto-merge key on the backend — see
       // auth.service.ts's registerUser.

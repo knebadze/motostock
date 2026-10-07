@@ -302,7 +302,9 @@
     "verifyRequiredContinue": "I've verified it — continue",
     "verifyRequiredBannerMessage": "Didn't get the email?",
     "verifyRequiredLogout": "Log out",
-    "verifyRequiredLogoutError": "Couldn't log out"
+    "verifyRequiredLogoutError": "Couldn't log out",
+    "passwordTooLongError": "Password is too long — max 72 characters",
+    "passwordInvalidCharsError": "Password may contain only Latin letters, digits and symbols"
   },
   "Home": {
     "heroTitle": "Gear you can trust on the <hl>road</hl>",
@@ -614,7 +616,9 @@
       "submitting": "Saving...",
       "mismatch": "Passwords do not match",
       "success": "Password changed successfully",
-      "error": "Failed to change password"
+      "error": "Failed to change password",
+      "tooLong": "Password is too long — max 72 characters",
+      "invalidChars": "Password may contain only Latin letters, digits and symbols"
     },
     "newsletter": {
       "label": "Newsletter subscription",

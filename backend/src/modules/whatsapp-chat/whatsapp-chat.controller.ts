@@ -4,6 +4,7 @@ import { logger } from "../../lib/logger.js";
 import { verifyWebhookSignature, verifyWebhookVerifyToken } from "../../lib/whatsapp-cloud-api.js";
 import { resolveChatOwner } from "./whatsapp-chat.middleware.js";
 import { getChatForOwner, handleInboundStaffReply, postCustomerMessage } from "./whatsapp-chat.service.js";
+import { whatsappChatRepository } from "./whatsapp-chat.repository.js";
 import type { PostChatMessageInput } from "./whatsapp-chat.schema.js";
 
 export async function postMessage(req: Request<unknown, unknown, PostChatMessageInput>, res: Response) {
@@ -52,6 +53,7 @@ export function verifyWebhook(req: Request, res: Response) {
 }
 
 type WhatsAppWebhookMessage = {
+  id?: string;
   from?: string;
   type?: string;
   text?: { body?: string };
@@ -84,6 +86,17 @@ function extractInboundTextMessages(body: unknown): WhatsAppWebhookMessage[] {
   return messages;
 }
 
+// A failure of the dedupe store itself (not a duplicate) must not drop the
+// staff reply — it's processed anyway; a rare double beats a lost answer.
+async function isFirstDelivery(messageId: string): Promise<boolean> {
+  try {
+    return await whatsappChatRepository.recordInboundMessageId(messageId);
+  } catch (err) {
+    logger.error({ err }, "Failed to record inbound WhatsApp message id — processing it without dedupe");
+    return true;
+  }
+}
+
 export async function receiveWebhook(req: Request, res: Response) {
   const signature = req.headers["x-hub-signature-256"] as string | undefined;
   if (!req.rawBody || !verifyWebhookSignature(req.rawBody, signature)) {
@@ -103,6 +116,9 @@ export async function receiveWebhook(req: Request, res: Response) {
     for (const message of messages) {
       const body = message.text?.body;
       if (!body) continue;
+      // Meta re-delivers webhooks it isn't sure arrived — the same reply
+      // must not be saved (and shown to the customer) twice.
+      if (message.id && !(await isFirstDelivery(message.id))) continue;
       await handleInboundStaffReply({ from: message.from, body, contextMessageId: message.context?.id });
     }
   } catch (err) {

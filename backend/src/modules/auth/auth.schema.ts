@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { loginPasswordField, newPasswordField } from "../../lib/password.js";
 import { registry } from "../../docs/registry.js";
 import { emailSchema } from "../../lib/email.js";
 import { phoneField } from "../../lib/phone.js";
@@ -10,7 +11,7 @@ export const registerSchema = registry.register(
     firstName: z.string().min(2).max(50).openapi({ example: "Nika" }),
     lastName: z.string().min(2).max(50).openapi({ example: "Beridze" }),
     email: emailSchema.openapi({ example: "rider@motostock.ge" }),
-    password: z.string().min(8).max(100).openapi({ example: "supersecret123" }),
+    password: newPasswordField.openapi({ example: "supersecret123" }),
     // Also the walk-in-customer auto-merge key — see auth.service.ts's
     // register for why this is required here (unlike User.phone, which is
     // nullable on the model for pre-existing rows and OAuth signups).
@@ -24,7 +25,7 @@ export const loginSchema = registry.register(
   "LoginInput",
   z.object({
     email: emailSchema.openapi({ example: "rider@motostock.ge" }),
-    password: z.string().min(1).openapi({ example: "supersecret123" }),
+    password: loginPasswordField.openapi({ example: "supersecret123" }),
   }),
 );
 export type LoginInput = z.infer<typeof loginSchema>;
@@ -41,7 +42,7 @@ export const resetPasswordSchema = registry.register(
   "ResetPasswordInput",
   z.object({
     token: z.string().min(1),
-    password: z.string().min(8).max(100).openapi({ example: "supersecret123" }),
+    password: newPasswordField.openapi({ example: "supersecret123" }),
   }),
 );
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

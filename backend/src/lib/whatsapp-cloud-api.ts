@@ -25,6 +25,12 @@ const REQUEST_TIMEOUT_MS = 10_000;
 // message id Meta assigns it — callers store this id so a later "Reply"
 // (quote) to this exact message can be matched back via the webhook's
 // `context.id` (see whatsapp-chat.service.ts).
+// "995599123456" -> "***3456" for any run of 7+ digits (optionally with a
+// leading "+").
+function maskPhoneNumbers(text: string): string {
+  return text.replace(/\+?\d{7,}/g, (digits) => `***${digits.slice(-4)}`);
+}
+
 export async function sendWhatsAppTextMessage(to: string, body: string): Promise<string> {
   const url = `https://graph.facebook.com/${GRAPH_API_VERSION}/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
   const response = await fetch(url, {
@@ -44,7 +50,14 @@ export async function sendWhatsAppTextMessage(to: string, body: string): Promise
 
   if (!response.ok) {
     const errorText = await response.text();
-    logger.error({ status: response.status, body: errorText, to }, "WhatsApp Cloud API send failed");
+    // logger.error lands in the admin-visible ErrorLog table (and Sentry) —
+    // phone numbers stay out of it: only the recipient's last 4 digits, and
+    // any long digit run in Meta's error body (it can echo the number back)
+    // masked the same way. Body capped too.
+    logger.error(
+      { status: response.status, body: maskPhoneNumbers(errorText).slice(0, 1000), toSuffix: to.slice(-4) },
+      "WhatsApp Cloud API send failed",
+    );
     throw new Error(`WhatsApp send failed with status ${response.status}`);
   }
 

@@ -302,7 +302,9 @@
     "verifyRequiredContinue": "Уже подтверждено — продолжить",
     "verifyRequiredBannerMessage": "Не получили письмо?",
     "verifyRequiredLogout": "Выйти",
-    "verifyRequiredLogoutError": "Не удалось выйти"
+    "verifyRequiredLogoutError": "Не удалось выйти",
+    "passwordTooLongError": "Пароль слишком длинный — максимум 72 символа",
+    "passwordInvalidCharsError": "Пароль может содержать только латинские буквы, цифры и символы"
   },
   "Home": {
     "heroTitle": "Экипировка, которой можно доверять на <hl>дороге</hl>",
@@ -614,7 +616,9 @@
       "submitting": "Сохранение...",
       "mismatch": "Пароли не совпадают",
       "success": "Пароль успешно изменён",
-      "error": "Не удалось изменить пароль"
+      "error": "Не удалось изменить пароль",
+      "tooLong": "Пароль слишком длинный — максимум 72 символа",
+      "invalidChars": "Пароль может содержать только латинские буквы, цифры и символы"
     },
     "newsletter": {
       "label": "Подписка на рассылку",

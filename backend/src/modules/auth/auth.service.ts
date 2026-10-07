@@ -314,6 +314,7 @@ export async function resetPassword(
 
   const passwordHash = await hashPassword(input.password);
   const user = await usersRepository.updatePasswordHash(resetToken.userId, passwordHash);
+  await passwordResetTokenRepository.invalidateAllForUser(user.id);
 
   // Every pre-existing Session row for this user (across every device) is
   // now permanently unusable — the tokenVersion bump above already rejects

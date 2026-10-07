@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { newPasswordField } from "../../lib/password.js";
 import { registry } from "../../docs/registry.js";
 import { phoneField } from "../../lib/phone.js";
 import { dateOfBirthField } from "../../lib/date-of-birth.js";
@@ -10,7 +11,7 @@ export const changePasswordSchema = registry.register(
     // yet) have nothing to confirm; whether it's actually required for a
     // given user is checked in the service against their stored hash.
     currentPassword: z.string().min(1).optional(),
-    newPassword: z.string().min(8).max(100).openapi({ example: "supersecret123" }),
+    newPassword: newPasswordField.openapi({ example: "supersecret123" }),
   }),
 );
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
