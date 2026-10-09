@@ -16,7 +16,11 @@ import {
 } from "@/lib/api/team-members";
 import type { LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
-import { TEAM_MEMBER_NAME_MAX_LENGTH, teamMemberFormSchema } from "@/lib/validation/team-members";
+import {
+  TEAM_MEMBER_DESCRIPTION_MAX_LENGTH,
+  TEAM_MEMBER_NAME_MAX_LENGTH,
+  teamMemberFormSchema,
+} from "@/lib/validation/team-members";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
 function CharCount({ value, max }: { value: string; max: number }) {
@@ -47,6 +51,9 @@ export function TeamMemberFormModal({
   const [nameEn, setNameEn] = useState(member?.name.en ?? "");
   const [nameRu, setNameRu] = useState(member?.name.ru ?? "");
   const [positionId, setPositionId] = useState(member ? String(member.positionId) : "");
+  const [descriptionKa, setDescriptionKa] = useState(member?.description.ka ?? "");
+  const [descriptionEn, setDescriptionEn] = useState(member?.description.en ?? "");
+  const [descriptionRu, setDescriptionRu] = useState(member?.description.ru ?? "");
   const [isActive, setIsActive] = useState(member?.isActive ?? true);
   const { file: imageFile, previewUrl, onChange: handleImageChange } = useFileUploadPreview(
     resolveMediaUrl(member?.imageUrl ?? null),
@@ -65,6 +72,7 @@ export function TeamMemberFormModal({
     const result = teamMemberFormSchema.safeParse({
       name: { ka: nameKa, en: nameEn, ru: nameRu },
       positionId,
+      description: { ka: descriptionKa, en: descriptionEn, ru: descriptionRu },
     });
     if (!result.success) {
       setErrors(getFieldErrors(result.error));
@@ -78,6 +86,7 @@ export function TeamMemberFormModal({
       const input = {
         name: { ka: nameKa.trim(), en: nameEn.trim(), ru: nameRu.trim() },
         positionId: Number(positionId),
+        description: { ka: descriptionKa.trim(), en: descriptionEn.trim(), ru: descriptionRu.trim() },
         isActive,
       };
 
@@ -173,6 +182,62 @@ export function TeamMemberFormModal({
               placeholder="აირჩიეთ თანამდებობა"
             />
             <FieldError message={errors.positionId} />
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <label htmlFor="team-description-ka" className="text-sm font-medium">
+                აღწერა (ქართულად)
+              </label>
+              <CharCount value={descriptionKa} max={TEAM_MEMBER_DESCRIPTION_MAX_LENGTH} />
+            </div>
+            <textarea
+              id="team-description-ka"
+              value={descriptionKa}
+              maxLength={TEAM_MEMBER_DESCRIPTION_MAX_LENGTH}
+              onChange={(event) => setDescriptionKa(event.target.value)}
+              rows={4}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <FieldError message={errors["description.ka"]} />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <label htmlFor="team-description-en" className="text-sm font-medium">
+                აღწერა (ინგლისურად)
+              </label>
+              <CharCount value={descriptionEn} max={TEAM_MEMBER_DESCRIPTION_MAX_LENGTH} />
+            </div>
+            <textarea
+              id="team-description-en"
+              value={descriptionEn}
+              maxLength={TEAM_MEMBER_DESCRIPTION_MAX_LENGTH}
+              onChange={(event) => setDescriptionEn(event.target.value)}
+              rows={4}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <FieldError message={errors["description.en"]} />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <label htmlFor="team-description-ru" className="text-sm font-medium">
+                აღწერა (რუსულად)
+              </label>
+              <CharCount value={descriptionRu} max={TEAM_MEMBER_DESCRIPTION_MAX_LENGTH} />
+            </div>
+            <textarea
+              id="team-description-ru"
+              value={descriptionRu}
+              maxLength={TEAM_MEMBER_DESCRIPTION_MAX_LENGTH}
+              onChange={(event) => setDescriptionRu(event.target.value)}
+              rows={4}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <FieldError message={errors["description.ru"]} />
           </div>
         </div>
 

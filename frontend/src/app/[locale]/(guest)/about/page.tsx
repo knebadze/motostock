@@ -126,12 +126,16 @@ export default async function AboutPage() {
       {team.length > 0 && (
         <div className="mt-16">
           <h2 className="mb-6 text-xl font-bold tracking-tight">{t("teamHeading")}</h2>
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {team.map((member) => {
               const photoUrl = resolveMediaUrl(member.imageUrl);
+              const description = member.description[locale];
               return (
-                <div key={member.id} className="flex flex-col items-center text-center">
-                  <div className="relative size-28 overflow-hidden rounded-full bg-muted">
+                <div
+                  key={member.id}
+                  className="flex flex-col items-center rounded-2xl border border-border bg-card p-5 text-center shadow-sm transition-shadow hover:shadow-md"
+                >
+                  <div className="relative size-24 shrink-0 overflow-hidden rounded-full bg-muted">
                     {photoUrl ? (
                       <Image src={photoUrl} alt={member.name[locale]} fill className="object-cover" />
                     ) : (
@@ -139,7 +143,10 @@ export default async function AboutPage() {
                     )}
                   </div>
                   <p className="mt-3 font-semibold text-foreground">{member.name[locale]}</p>
-                  <p className="text-sm text-muted-foreground">{member.role[locale]}</p>
+                  <p className="text-sm text-primary">{member.role[locale]}</p>
+                  {description && (
+                    <p className="mt-2 line-clamp-4 text-sm text-muted-foreground">{description}</p>
+                  )}
                 </div>
               );
             })}

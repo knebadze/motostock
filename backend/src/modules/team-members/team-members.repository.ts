@@ -8,6 +8,9 @@ type TeamMemberWriteData = {
   nameEn?: string;
   nameRu?: string;
   positionId?: number;
+  descriptionKa?: string | null;
+  descriptionEn?: string | null;
+  descriptionRu?: string | null;
   isActive?: boolean;
 };
 

@@ -17,6 +17,9 @@ type TeamMemberRow = {
   nameRu: string;
   positionId: number;
   position: { nameKa: string; nameEn: string; nameRu: string };
+  descriptionKa: string | null;
+  descriptionEn: string | null;
+  descriptionRu: string | null;
   imageUrl: string | null;
   isActive: boolean;
   sortOrder: number;
@@ -30,6 +33,7 @@ function toResponse(row: TeamMemberRow) {
     name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu },
     positionId: row.positionId,
     role: { ka: row.position.nameKa, en: row.position.nameEn, ru: row.position.nameRu },
+    description: { ka: row.descriptionKa, en: row.descriptionEn, ru: row.descriptionRu },
     imageUrl: row.imageUrl,
     isActive: row.isActive,
     sortOrder: row.sortOrder,
@@ -66,6 +70,9 @@ export async function createTeamMember(input: CreateTeamMemberInput) {
     nameEn: input.name.en,
     nameRu: input.name.ru,
     positionId: input.positionId,
+    descriptionKa: input.description?.ka || null,
+    descriptionEn: input.description?.en || null,
+    descriptionRu: input.description?.ru || null,
     isActive: input.isActive ?? true,
   });
   return toResponse(row);
@@ -86,6 +93,13 @@ export async function updateTeamMember(id: number, input: UpdateTeamMemberInput)
       ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
       : {}),
     ...(input.positionId !== undefined ? { positionId: input.positionId } : {}),
+    ...(input.description !== undefined
+      ? {
+          descriptionKa: input.description.ka || null,
+          descriptionEn: input.description.en || null,
+          descriptionRu: input.description.ru || null,
+        }
+      : {}),
     ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
   });
   return toResponse(row);

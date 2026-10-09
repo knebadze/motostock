@@ -8,11 +8,21 @@ const nameFieldSchema = z.object({
   ru: z.string().trim().min(1).max(60),
 });
 
+// Bio shown on the public /about page — unlike name, each locale is
+// independently optional (a member's bio doesn't need translating into all
+// three languages at once) and may be cleared with an empty string.
+const descriptionFieldSchema = z.object({
+  ka: z.string().trim().max(1000).optional(),
+  en: z.string().trim().max(1000).optional(),
+  ru: z.string().trim().max(1000).optional(),
+});
+
 export const createTeamMemberSchema = registry.register(
   "CreateTeamMemberInput",
   z.object({
     name: nameFieldSchema.openapi({ example: { ka: "გიორგი მელაძე", en: "Giorgi Meladze", ru: "Гиорги Меладзе" } }),
     positionId: z.int().positive(),
+    description: descriptionFieldSchema.optional(),
     isActive: z.boolean().optional(),
   }),
 );
@@ -45,6 +55,11 @@ export const teamMemberResponseSchema = registry.register(
     // Denormalized from the linked Position for display (e.g. the public
     // /about page) without a second lookup fetch.
     role: localizedStringSchema,
+    description: z.object({
+      ka: z.string().nullable(),
+      en: z.string().nullable(),
+      ru: z.string().nullable(),
+    }),
     imageUrl: z.string().nullable(),
     isActive: z.boolean(),
     sortOrder: z.int(),

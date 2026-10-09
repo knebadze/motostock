@@ -1,6 +1,10 @@
 import { apiClient } from "./client";
 import type { LocalizedString } from "./categories";
 
+// Each locale independently nullable — unlike name/role, a member's bio
+// doesn't need translating into all three languages at once.
+export type NullableLocalizedString = { ka: string | null; en: string | null; ru: string | null };
+
 export type TeamMember = {
   id: number;
   name: LocalizedString;
@@ -8,6 +12,7 @@ export type TeamMember = {
   // Denormalized from the linked Position classifier (see @/lib/api/lookups
   // "positions" type) — for display without a second lookup.
   role: LocalizedString;
+  description: NullableLocalizedString;
   imageUrl: string | null;
   isActive: boolean;
   sortOrder: number;
@@ -18,6 +23,7 @@ export type TeamMember = {
 export type TeamMemberInput = {
   name: LocalizedString;
   positionId: number;
+  description?: { ka?: string; en?: string; ru?: string };
   isActive?: boolean;
 };
 
