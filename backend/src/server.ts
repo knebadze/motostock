@@ -1,12 +1,32 @@
+import "./instrument.js";
 import cron, { type ScheduledTask } from "node-cron";
 import { app } from "./app.js";
 import { env } from "./config/env.js";
 import { prisma } from "./config/prisma.js";
 import { logger } from "./lib/logger.js";
-import { isFinaConfigured, runSync } from "./modules/fina-sync/fina-sync.service.js";
-import { getFinaSyncIntervalMinutes } from "./modules/settings/settings.service.js";
-import { JOB_DEFINITIONS } from "./modules/scheduled-jobs/scheduled-jobs.registry.js";
-import { runScheduledJob } from "./modules/scheduled-jobs/scheduled-jobs.service.js";
+import { onLoggedError } from "./lib/error-hooks.js";
+import { captureLoggedError, flushSentry } from "./lib/sentry.js";
+import {
+  isFinaConfigured,
+  processDueFinaOrderPushes,
+  runSync,
+} from "./modules/fina-sync/fina-sync.service.js";
+import {
+  getFinaOrderPushRetryIntervalMinutes,
+  getFinaSyncIntervalMinutes,
+} from "./modules/settings/settings.service.js";
+import { FINA_SYNC_DEFAULTS } from "./modules/settings/constants/index.js";
+import { DEFAULT_JOB_CRON, JOB_DEFINITIONS } from "./modules/scheduled-jobs/scheduled-jobs.registry.js";
+import {
+  runScheduledJob,
+  SCHEDULED_JOB_ALREADY_RUNNING,
+} from "./modules/scheduled-jobs/scheduled-jobs.service.js";
+import { ApiError } from "./lib/ApiError.js";
+
+// Every logger.error(...) (the same calls that fill the admin ErrorLog) also
+// goes to Sentry — a no-op unless SENTRY_DSN is set and the admin toggle is
+// on (see lib/sentry.ts).
+onLoggedError(captureLoggedError);
 
 const server = app.listen(env.PORT, () => {
   logger.info(`Server listening on http://localhost:${env.PORT}`);
@@ -30,10 +50,55 @@ if (isFinaConfigured()) {
             .finally(scheduleNext);
         }, minutes * 60_000);
       })
-      .catch((err: unknown) => logger.error({ err }, "Failed to read FINA sync interval setting"));
+      .catch((err: unknown) => {
+        // Never let one failed settings read stop the schedule for good —
+        // retry on the default interval.
+        logger.error({ err }, "Failed to read FINA sync interval setting — using the default");
+        if (finaSyncStopped) return;
+        finaSyncTimer = setTimeout(() => {
+          runSync("SCHEDULED")
+            .catch((syncErr: unknown) => logger.error({ err: syncErr }, "Scheduled FINA sync failed"))
+            .finally(scheduleNext);
+        }, FINA_SYNC_DEFAULTS.intervalMinutes * 60_000);
+      });
   };
   scheduleNext();
   logger.info("FINA scheduled sync enabled (interval configurable in Settings)");
+}
+
+// FINA order-push outbox sweep — retries orders left PENDING (a failed push,
+// or one cut off by a restart between commit and the FINA call). Same
+// self-rescheduling setTimeout pattern as the stock sync above, so the
+// admin's interval change (Settings → FINA) applies from the next run. The
+// first run comes shortly after boot rather than a full interval later: a
+// redeploy is exactly when a push is most likely to have been cut off.
+const FINA_ORDER_PUSH_FIRST_RUN_DELAY_MS = 30_000;
+let finaOrderPushTimer: NodeJS.Timeout | undefined;
+if (isFinaConfigured()) {
+  const runAndScheduleNext = () => {
+    if (finaSyncStopped) return;
+    processDueFinaOrderPushes()
+      .catch((err: unknown) => logger.error({ err }, "FINA order-push sweep failed"))
+      .finally(() => {
+        if (finaSyncStopped) return;
+        getFinaOrderPushRetryIntervalMinutes()
+          .then((minutes) => {
+            if (finaSyncStopped) return;
+            finaOrderPushTimer = setTimeout(runAndScheduleNext, minutes * 60_000);
+          })
+          .catch((err: unknown) => {
+            // Same as the stock sync above: fall back to the default rather
+            // than silently ending the sweep until the next restart.
+            logger.error({ err }, "Failed to read FINA order-push retry interval setting — using the default");
+            if (finaSyncStopped) return;
+            finaOrderPushTimer = setTimeout(
+              runAndScheduleNext,
+              FINA_SYNC_DEFAULTS.orderPushRetryIntervalMinutes * 60_000,
+            );
+          });
+      });
+  };
+  finaOrderPushTimer = setTimeout(runAndScheduleNext, FINA_ORDER_PUSH_FIRST_RUN_DELAY_MS);
 }
 
 // Bounds the growth of every table with no other retention policy
@@ -41,33 +106,39 @@ if (isFinaConfigured()) {
 // EmailVerificationToken, guest-owned ProductView/VehicleListingView rows,
 // orphaned rich-text images — see scheduled-jobs.registry.ts for the actual
 // prune functions) — daily is plenty, none of them need pruning more
-// precisely than that. Real wall-clock cron (03:00 Tbilisi time) instead of
-// a plain `setInterval`, which only ever counted 24h from whenever this
-// process happened to boot — during frequent redeploys that interval
-// effectively never fired, and even when it did it could land at any hour.
-// Each run is persisted via scheduled-jobs' RUNNING->SUCCESS/FAILED history
-// (see the admin "ავტომატური დავალებები" page) instead of only logging on
-// failure. `noOverlap` skips a cron tick if the previous run of the *same*
-// job is still in flight — no separate lock needed, this is a single-
-// instance deployment (see docker-compose.yml) and every job here is a pure
-// cutoff-based delete with no correctness risk from a stray concurrent run,
-// unlike FINA sync's stock mutations above. `unref` matches the old
-// `dailyPruneTimer.unref()` — these tasks must never keep the process alive
-// on their own.
-const DAILY_PRUNE_CRON = "0 3 * * *";
-function runDailyPruneJob(key: (typeof JOB_DEFINITIONS)[number]["key"]) {
-  runScheduledJob(key, "SCHEDULED", null).catch((err: unknown) =>
-    logger.error({ err, jobKey: key }, "Scheduled job failed"),
-  );
+// precisely than that. Real wall-clock cron (Tbilisi time, per-job — see
+// each JobDefinition's own `cron` field, defaulting to DEFAULT_JOB_CRON's
+// 03:00) instead of a plain `setInterval`, which only ever counted 24h from
+// whenever this process happened to boot — during frequent redeploys that
+// interval effectively never fired, and even when it did it could land at
+// any hour. Each run is persisted via scheduled-jobs' RUNNING->SUCCESS/
+// FAILED history (see the admin "ავტომატური დავალებები" page) instead of
+// only logging on failure. `noOverlap` skips a cron tick if the previous run
+// of the *same* job is still in flight — no separate lock needed, this is a
+// single-instance deployment (see docker-compose.yml) and every job here is
+// either a pure cutoff-based delete or an idempotent daily fetch/send, with
+// no correctness risk from a stray concurrent run, unlike FINA sync's stock
+// mutations above. `unref` matches the old `dailyPruneTimer.unref()` — these
+// tasks must never keep the process alive on their own.
+function runDailyScheduledJob(key: (typeof JOB_DEFINITIONS)[number]["key"]) {
+  runScheduledJob(key, "SCHEDULED", null).catch((err: unknown) => {
+    // Another run of the same job is in progress (e.g. an admin's "run
+    // now") — expected, not an error; a warning keeps it out of ErrorLog/Sentry.
+    if (err instanceof ApiError && err.code === SCHEDULED_JOB_ALREADY_RUNNING) {
+      logger.warn({ jobKey: key }, "Scheduled job skipped — already running");
+      return;
+    }
+    logger.error({ err, jobKey: key }, "Scheduled job failed");
+  });
 }
 // Also run once immediately on boot, not just on the cron schedule — this
 // app still deploys far more often than once a day, so relying on the cron
 // trigger alone would often mean these jobs never actually fire in
 // practice (same rationale the old setInterval version's boot-time call
 // had; node-cron's TaskOptions has no "run immediately" flag of its own).
-JOB_DEFINITIONS.forEach((job) => runDailyPruneJob(job.key));
-const dailyPruneCronTasks: ScheduledTask[] = JOB_DEFINITIONS.map((job) =>
-  cron.schedule(DAILY_PRUNE_CRON, () => runDailyPruneJob(job.key), {
+JOB_DEFINITIONS.forEach((job) => runDailyScheduledJob(job.key));
+const dailyScheduledJobCronTasks: ScheduledTask[] = JOB_DEFINITIONS.map((job) =>
+  cron.schedule(job.cron ?? DEFAULT_JOB_CRON, () => runDailyScheduledJob(job.key), {
     timezone: "Asia/Tbilisi",
     noOverlap: true,
     unref: true,
@@ -89,7 +160,8 @@ function shutdown(signal: string) {
 
   finaSyncStopped = true;
   if (finaSyncTimer) clearTimeout(finaSyncTimer);
-  dailyPruneCronTasks.forEach((task) => task.stop());
+  if (finaOrderPushTimer) clearTimeout(finaOrderPushTimer);
+  dailyScheduledJobCronTasks.forEach((task) => task.stop());
 
   const forceExit = setTimeout(() => {
     logger.error("Graceful shutdown timed out, forcing exit");
@@ -106,6 +178,7 @@ function shutdown(signal: string) {
     } catch (disconnectErr) {
       logger.error({ err: disconnectErr }, "Error while disconnecting Prisma");
     }
+    await flushSentry(2_000);
     clearTimeout(forceExit);
     process.exit(0);
   });

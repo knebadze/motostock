@@ -8,7 +8,7 @@ import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination } from "@/components/shared/Pagination";
 import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
-import { deleteProduct, listProductsPage, type Product } from "@/lib/api/products";
+import { deleteProduct, listProductsPage, type ProductListItem } from "@/lib/api/products";
 import { syncProductStock } from "@/lib/api/fina-sync";
 import type { AdminListPage } from "@/lib/api/server";
 import { resolveMediaUrl, ApiRequestError } from "@/lib/api/client";
@@ -18,9 +18,10 @@ import type { ProductBrand } from "@/lib/api/product-brands";
 import type { LookupItem } from "@/lib/api/lookups";
 import { buildProductFilterFields } from "@/config/admin-filters/product-filters";
 import { formatPrice } from "@/lib/format";
+import { useAdminRole } from "@/components/admin/AdminRoleContext";
 import { ProductDetailModal } from "./ProductDetailModal";
 
-const columns: DataTableColumn<Product>[] = [
+const columns: DataTableColumn<ProductListItem>[] = [
   {
     header: "",
     render: (product) =>
@@ -84,7 +85,7 @@ export function ProductsManager({
   conditions,
   statuses,
 }: {
-  initialData: AdminListPage<Product>;
+  initialData: AdminListPage<ProductListItem>;
   categories: Category[];
   productBrands: ProductBrand[];
   sizes: LookupItem[];
@@ -93,9 +94,11 @@ export function ProductsManager({
   statuses: LookupItem[];
 }) {
   const router = useRouter();
+  const role = useAdminRole();
+  const isOperator = role === "OPERATOR";
   const [data, setData] = useState(initialData);
   const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
-  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState<ProductListItem | null>(null);
   const [viewingProductId, setViewingProductId] = useState<number | null>(null);
   const [syncingProductId, setSyncingProductId] = useState<number | null>(null);
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
@@ -135,7 +138,7 @@ export function ProductsManager({
   // any FINA-linked variants (the same "0 checked" case OrderDetailModal
   // already handles gracefully), rather than fetching variant/finaId detail
   // into the list response just to conditionally hide one button.
-  async function handleSyncProduct(product: Product) {
+  async function handleSyncProduct(product: ProductListItem) {
     setSyncingProductId(product.id);
     try {
       const result = await syncProductStock(product.id);
@@ -158,17 +161,19 @@ export function ProductsManager({
     <div>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">პროდუქტები</h1>
-        <button
-          type="button"
-          onClick={() => router.push("/admin/products/new")}
-          disabled={!canCreate}
-          className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
-        >
-          + პროდუქტის დამატება
-        </button>
+        {!isOperator && (
+          <button
+            type="button"
+            onClick={() => router.push("/admin/products/new")}
+            disabled={!canCreate}
+            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
+          >
+            + პროდუქტის დამატება
+          </button>
+        )}
       </div>
 
-      {!canCreate && (
+      {!isOperator && !canCreate && (
         <p className="mt-2 text-sm text-muted-foreground">
           პროდუქტის დასამატებლად ჯერ საჭიროა მინიმუმ ერთი კატეგორიის შექმნა.
         </p>
@@ -187,8 +192,8 @@ export function ProductsManager({
           actions={(product) => (
             <RowActions
               onView={() => setViewingProductId(product.id)}
-              onEdit={() => router.push(`/admin/products/${product.id}`)}
-              onDelete={() => setDeletingProduct(product)}
+              onEdit={isOperator ? undefined : () => router.push(`/admin/products/${product.id}`)}
+              onDelete={isOperator ? undefined : () => setDeletingProduct(product)}
               extra={
                 <button
                   type="button"
@@ -196,7 +201,7 @@ export function ProductsManager({
                   disabled={syncingProductId === product.id}
                   aria-label="FINA სინქრონიზაცია"
                   title="FINA სინქრონიზაცია"
-                  className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:opacity-50"
+                  className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text disabled:opacity-50"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

@@ -1,19 +1,15 @@
 import { apiClient } from "./client";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type WhatsAppChatMessageSender = "CUSTOMER" | "STAFF" | "SYSTEM";
 
-export type WhatsAppChatMessage = {
-  id: number;
-  sender: WhatsAppChatMessageSender;
-  body: string;
-  createdAt: string;
-};
+export type WhatsAppChatMessage = WhatsAppChatThread["messages"][number];
 
-export type WhatsAppChatThread = {
-  sessionId: number | null;
-  isOpenNow: boolean;
-  messages: WhatsAppChatMessage[];
-};
+export type WhatsAppChatThread = Schemas["WhatsAppChatSession"];
 
 export async function getWhatsAppChatThread(): Promise<WhatsAppChatThread> {
   const { data } = await apiClient.get<WhatsAppChatThread>("/whatsapp-chat/messages");

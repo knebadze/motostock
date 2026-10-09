@@ -1,20 +1,31 @@
 {
   "Metadata": {
-    "title": "{siteName} — Moto Gear & Accessories",
-    "description": "Accessories, clothing, helmets, and parts for motorcycles.",
+    "title": "{siteName} — Motorcycles, Parts & Service",
+    "description": "Motorcycles, parts, helmets and riding gear, plus motorcycle service and repair. Find parts that fit your bike online.",
     "categoryTitle": "{category} — {siteName}",
     "categoryTitleWithPage": "{category} — Page {page} — {siteName}",
     "categoryDescription": "{category} — best selection and prices at {siteName}.",
+    "compatibleProductsTitle": "{vehicle} — Parts & Accessories | {siteName}",
+    "compatibleProductsDescription": "Parts, accessories and gear that fit the {vehicle} at {siteName} — {count} products.",
     "aboutTitle": "About Us — {siteName}",
     "aboutDescription": "Learn about {siteName} — your trusted store for motorcycle gear, apparel, and parts in Georgia.",
     "faqTitle": "Frequently Asked Questions — {siteName}",
     "faqDescription": "Answers to common questions about ordering, delivery, and payment at {siteName}.",
+    "vacanciesTitle": "Vacancies — {siteName}",
+    "vacanciesDescription": "Join our team — browse open vacancies at {siteName}.",
     "contactTitle": "Contact Us — {siteName}",
     "contactDescription": "Get in touch — address, phone, email, and working hours for {siteName}.",
     "termsTitle": "Terms & Conditions — {siteName}",
     "termsDescription": "The terms and conditions for using {siteName}'s services.",
+    "privacyTitle": "Privacy Policy — {siteName}",
+    "privacyDescription": "How {siteName} collects, uses, and protects your personal data.",
     "catalogTitle": "Catalog — {siteName}",
-    "catalogDescription": "Browse the full {siteName} catalog by category."
+    "catalogDescription": "Browse the full {siteName} catalog by category.",
+    "titleWithCity": "{siteName} — Motorcycles, Parts & Service in {city}",
+    "descriptionWithCity": "Motorcycles, parts, helmets and riding gear, plus motorcycle service and repair in {city}. Find parts that fit your bike online.",
+    "serviceTitle": "Motorcycle Service & Repair — {siteName}",
+    "serviceDescription": "Motorcycle service at {siteName}: {services}. Working hours, address and booking.",
+    "serviceDescriptionGeneric": "Motorcycle service and repair at {siteName} — working hours, address and booking."
   },
   "Nav": {
     "home": "Home",
@@ -74,6 +85,9 @@
     "outOfStock": "Out of stock",
     "lowStock": "Only {count} left",
     "discountBadge": "Sale",
+    "customsCleared": "Customs cleared",
+    "customsNotCleared": "Not customs cleared",
+    "toggleCurrency": "Toggle currency (₾/$)",
     "emptyState": "No results found",
     "loadProductsError": "Failed to load products",
     "loadVehiclesError": "Failed to load vehicles",
@@ -106,6 +120,7 @@
   },
   "Cart": {
     "empty": "Your cart is empty.",
+    "continueShopping": "Continue shopping",
     "itemCount": "{count, plural, one {# item} other {# items}}",
     "subtotal": "Subtotal",
     "viewCart": "View cart",
@@ -159,6 +174,10 @@
     "discount": "Discount",
     "delivery": "Delivery",
     "total": "Total",
+    "itemsTotal": "Items total",
+    "totalNeedsAddress": "The full total, including delivery, will appear once you choose an address",
+    "totalNeedsBank": "The full total will appear once you choose a bank",
+    "totalCalculating": "Calculating total...",
     "placeOrder": "Place order",
     "placing": "Placing order...",
     "placeSuccess": "Order placed successfully",
@@ -187,6 +206,7 @@
     "conditionLabel": "Condition",
     "colorLabel": "Color",
     "yearLabel": "Year",
+    "customsClearedLabel": "Customs cleared",
     "mileageLabel": "Mileage",
     "warrantyLabel": "Warranty",
     "warrantyYearsValue": "{value, plural, one {# year} other {# years}}",
@@ -220,6 +240,8 @@
     "firstNameLabel": "First name",
     "lastNameLabel": "Last name",
     "emailLabel": "Email",
+    "phoneLabel": "Phone number",
+    "dateOfBirthLabel": "Date of birth",
     "passwordLabel": "Password",
     "confirmPasswordLabel": "Confirm password",
     "loginSubmit": "Log in",
@@ -237,6 +259,8 @@
     "emailInvalidError": "Invalid email format",
     "passwordTooShortError": "Password must be at least 8 characters",
     "confirmPasswordRequiredError": "Confirm your password",
+    "phoneError": "Invalid phone number",
+    "dateOfBirthError": "Invalid date of birth, you must be at least 16 years old",
     "termsAgreement": "I agree to the <terms>Terms and Conditions</terms>",
     "termsRequiredError": "You must agree to the Terms and Conditions to continue",
     "loginError": "Log in failed",
@@ -274,10 +298,14 @@
     "verificationResent": "Verification email sent again",
     "verificationResendError": "Couldn't send the email",
     "verifyRequiredTitle": "Verify your email",
-    "verifyRequiredDescription": "You need to verify your email before you can access your account. A verification link has been sent to {email}.",
+    "verifyRequiredDescription": "You need to verify your email before continuing. A verification link has been sent to {email}.",
+    "verifyRequiredContinue": "I've verified it — continue",
     "verifyRequiredBannerMessage": "Didn't get the email?",
     "verifyRequiredLogout": "Log out",
-    "verifyRequiredLogoutError": "Couldn't log out"
+    "verifyRequiredLogoutError": "Couldn't log out",
+    "passwordTooLongError": "Password is too long — max 72 characters",
+    "passwordInvalidCharsError": "Password may contain only Latin letters, digits and symbols",
+    "oauthEmailExists": "An account with this email already exists — please sign in the way you registered (e.g. with Google)"
   },
   "Home": {
     "heroTitle": "Gear you can trust on the <hl>road</hl>",
@@ -296,7 +324,8 @@
     "searchGarageLabel": "Choose from your garage",
     "searchGaragePlaceholder": "Choose your vehicle",
     "searchOrDivider": "or",
-    "searchButton": "Search"
+    "searchButton": "Search",
+    "seoHeading": "Motorcycles, parts, riding gear and motorcycle service"
   },
   "HomeInfoCards": {
     "heading": "Get to know MotoStock 22",
@@ -319,7 +348,9 @@
     "aboutUs": "About us",
     "contactTitle": "Contact",
     "termsTitle": "Terms & Conditions",
+    "privacyTitle": "Privacy Policy",
     "faqTitle": "FAQ",
+    "vacanciesTitle": "Vacancies",
     "rights": "All rights reserved.",
     "hoursClosed": "Closed",
     "mondayShort": "Mon",
@@ -328,7 +359,8 @@
     "thursdayShort": "Thu",
     "fridayShort": "Fri",
     "saturdayShort": "Sat",
-    "sundayShort": "Sun"
+    "sundayShort": "Sun",
+    "serviceTitle": "Service"
   },
   "Catalog": {
     "title": "Catalog",
@@ -358,9 +390,20 @@
     "empty": "Content coming soon.",
     "loading": "Loading..."
   },
+  "PrivacyPolicy": {
+    "title": "Privacy Policy",
+    "empty": "Content coming soon.",
+    "loading": "Loading..."
+  },
   "Faq": {
     "title": "Frequently Asked Questions",
     "empty": "Questions coming soon."
+  },
+  "Vacancies": {
+    "title": "Vacancies",
+    "empty": "There are no open vacancies at the moment.",
+    "viewDetails": "View details",
+    "backToList": "All vacancies"
   },
   "About": {
     "title": "About Us",
@@ -383,7 +426,10 @@
   "CookieNotice": {
     "message": "This site only uses strictly necessary cookies (sign-in, cart, wishlist) to work properly.",
     "linkLabel": "Learn more",
-    "acceptLabel": "Got it"
+    "acceptLabel": "Got it",
+    "analyticsMessage": "Besides strictly necessary cookies, with your consent we use analytics cookies (Google Analytics) to understand how the site is used and improve it.",
+    "acceptAllLabel": "Accept",
+    "rejectLabel": "Reject"
   },
   "ScrollToTop": {
     "label": "Scroll to top"
@@ -526,6 +572,7 @@
     },
     "orders": {
       "empty": "You haven't placed any orders yet.",
+      "invoiceDownload": "Download invoice",
       "reorderButton": "Buy again",
       "reorderLoading": "Working...",
       "reorderAllAdded": "All items added to cart",
@@ -570,7 +617,9 @@
       "submitting": "Saving...",
       "mismatch": "Passwords do not match",
       "success": "Password changed successfully",
-      "error": "Failed to change password"
+      "error": "Failed to change password",
+      "tooLong": "Password is too long — max 72 characters",
+      "invalidChars": "Password may contain only Latin letters, digits and symbols"
     },
     "newsletter": {
       "label": "Newsletter subscription",
@@ -593,6 +642,9 @@
     "backHome": "Back to homepage"
   },
   "ApiErrors": {
+    "RECORD_CONFLICT": "This record already exists",
+    "RECORD_IN_USE": "This action can't be completed — the record is used elsewhere",
+    "RECORD_NOT_FOUND": "Record not found — it may have been removed",
     "NOT_AUTHENTICATED": "Please sign in",
     "PRODUCT_NOT_FOUND": "Product not found",
     "PRODUCT_VARIANT_NOT_FOUND": "The selected variant was not found",
@@ -641,7 +693,8 @@
     "SERVICE_TYPE_NOT_FOUND": "Service type not found",
     "CURRENT_PASSWORD_REQUIRED": "Your current password is required",
     "CURRENT_PASSWORD_INCORRECT": "Your current password is incorrect",
-    "VALIDATION_FAILED": "The submitted data is invalid"
+    "VALIDATION_FAILED": "The submitted data is invalid",
+    "USD_GEL_RATE_UNAVAILABLE": "Items priced in USD can't be purchased right now — the exchange rate is being updated, please try again later"
   },
   "Common": {
     "genericError": "Something went wrong, please try again",
@@ -703,5 +756,18 @@
       "promoCodeScopeAllProducts": "all products",
       "promoCodeScopeAllVehicles": "all vehicles"
     }
+  },
+  "Service": {
+    "title": "Motorcycle Service",
+    "intro": "Our service center takes care of your motorcycle — from routine maintenance to repairs. Parts are picked right on site, and the history of every service is kept in your profile's garage.",
+    "servicesHeading": "What we do",
+    "noServices": "The list of services is coming soon — contact us for details.",
+    "contactHeading": "Booking and advice",
+    "contactText": "Call or visit us to book a service or check a price.",
+    "callButton": "Call",
+    "contactLink": "Address and contact",
+    "partsHeading": "Parts for your bike",
+    "partsText": "Add your motorcycle to the garage and see only the parts that fit it.",
+    "partsLink": "Open garage"
   }
 }

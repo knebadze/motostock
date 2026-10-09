@@ -20,7 +20,9 @@ const errorLogSchema = z.object({
   id: z.int(),
   message: z.string(),
   stack: z.string().nullable(),
-  context: z.unknown().nullable(),
+  // Whatever object was logged alongside the error (lib/logger.ts) — a JSON
+  // object or null, never a bare value.
+  context: z.record(z.string(), z.unknown()).nullable(),
   createdAt: z.iso.datetime(),
 });
 const listResponse = z.object({

@@ -8,6 +8,7 @@ import { resolveMediaUrl } from "@/lib/api/client";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 import type { Category } from "@/lib/api/categories";
+import { buildSocialMetadata } from "@/lib/share-metadata";
 
 export async function generateMetadata({
   params,
@@ -27,7 +28,7 @@ export async function generateMetadata({
       canonical: buildCanonicalUrl(pathname, locale),
       languages: getAlternateLanguages(pathname),
     },
-    openGraph: { title, description },
+    ...(await buildSocialMetadata({ locale, title, description, pathname })),
   };
 }
 
@@ -61,7 +62,7 @@ function CategoryCard({ category, locale }: { category: Category; locale: "ka" |
       ) : (
         <div className="size-12 shrink-0 rounded-lg border border-dashed border-border" />
       )}
-      <span className="font-semibold text-foreground transition-colors group-hover:text-primary">
+      <span className="font-semibold text-foreground transition-colors group-hover:text-primary-text">
         {category.name[locale]}
       </span>
     </Link>
@@ -124,7 +125,7 @@ function CatalogPageView({ categories }: { categories: Category[] }) {
             <a
               key={category.id}
               href={`#${category.slug}`}
-              className="rounded-full border border-border px-3.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+              className="rounded-full border border-border px-3.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary-text"
             >
               {category.name[locale]}
             </a>
@@ -174,7 +175,7 @@ function CatalogPageView({ categories }: { categories: Category[] }) {
                   </div>
                   <span
                     className={`shrink-0 text-sm font-semibold transition-colors group-hover:underline ${
-                      bannerUrl ? "text-white" : "text-primary"
+                      bannerUrl ? "text-white" : "text-primary-text"
                     }`}
                   >
                     {t("viewAll")} →

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { changePassword } from "@/lib/api/auth";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
+import { hasInvalidPasswordChars, isPasswordTooLong } from "@/lib/password";
 
 export function ChangePasswordForm() {
   const t = useTranslations("Account.changePassword");
@@ -19,6 +20,14 @@ export function ChangePasswordForm() {
 
     if (newPassword !== confirmPassword) {
       toast.error(t("mismatch"));
+      return;
+    }
+    if (hasInvalidPasswordChars(newPassword)) {
+      toast.error(t("invalidChars"));
+      return;
+    }
+    if (isPasswordTooLong(newPassword)) {
+      toast.error(t("tooLong"));
       return;
     }
 

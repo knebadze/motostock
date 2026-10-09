@@ -12,8 +12,10 @@ import {
   adminOrderSummaryResponseSchema,
   checkoutInputSchema,
   checkoutPreviewResponseSchema,
+  downloadInvoiceQuerySchema,
   listOrdersQuerySchema,
   orderIdParamSchema,
+  resolveFinaPushSchema,
   orderResponseSchema,
   orderSummaryResponseSchema,
   reorderResultResponseSchema,
@@ -44,6 +46,12 @@ ordersRouter.post(
 );
 ordersRouter.get("/me", ordersController.list);
 ordersRouter.get("/me/:id", validate(orderIdParamSchema, "params"), ordersController.getOne);
+ordersRouter.get(
+  "/me/:id/invoice",
+  validate(orderIdParamSchema, "params"),
+  validate(downloadInvoiceQuerySchema, "query"),
+  ordersController.downloadInvoice,
+);
 ordersRouter.post(
   "/me/:id/reorder",
   validate(orderIdParamSchema, "params"),
@@ -57,28 +65,48 @@ ordersRouter.post(
 // used elsewhere (e.g. vehicle-listing.routes.ts).
 ordersRouter.get(
   "/",
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(listOrdersQuerySchema, "query"),
   ordersController.listAll,
 );
 ordersRouter.get(
   "/:id",
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(orderIdParamSchema, "params"),
   ordersController.getAny,
 );
+ordersRouter.get(
+  "/:id/invoice",
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(orderIdParamSchema, "params"),
+  validate(downloadInvoiceQuerySchema, "query"),
+  ordersController.downloadAnyInvoice,
+);
+ordersRouter.get(
+  "/:id/packing-slip",
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(orderIdParamSchema, "params"),
+  ordersController.downloadAnyPackingSlip,
+);
 ordersRouter.patch(
   "/:id/status",
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(orderIdParamSchema, "params"),
   validate(updateOrderStatusSchema),
   ordersController.updateStatus,
 );
 ordersRouter.post(
   "/:id/fina-sync",
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(orderIdParamSchema, "params"),
   ordersController.retryFinaSync,
+);
+ordersRouter.post(
+  "/:id/fina-resolve",
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(orderIdParamSchema, "params"),
+  validate(resolveFinaPushSchema),
+  ordersController.resolveFinaSync,
 );
 
 const security = [{ cookieAuth: [] }];
@@ -151,6 +179,20 @@ registry.registerPath({
 });
 
 registry.registerPath({
+  method: "get",
+  path: "/orders/me/{id}/invoice",
+  tags: ["Orders"],
+  summary: "Download one of the caller's placed orders as a PDF invoice",
+  security,
+  request: { params: orderIdParamSchema, query: downloadInvoiceQuerySchema },
+  responses: {
+    200: { description: "PDF invoice", content: { "application/pdf": { schema: { type: "string", format: "binary" } } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
   method: "post",
   path: "/orders/me/{id}/reorder",
   tags: ["Orders"],
@@ -214,6 +256,26 @@ registry.registerPath({
 
 registry.registerPath({
   method: "post",
+  path: "/orders/{id}/fina-resolve",
+  tags: ["Orders"],
+  summary: "Record the admin's check of FINA for an uncertain push: the document is there (sale: with its operation id) or it isn't (re-queued) — admin/operator",
+  security,
+  request: {
+    params: orderIdParamSchema,
+    body: { content: { "application/json": { schema: resolveFinaPushSchema } } },
+  },
+  responses: {
+    200: { description: "Resolved — see the order's finaSyncStatus", content: { "application/json": { schema: adminOrderResponse } } },
+    400: { description: "Nothing to resolve, or the sale's operation id is missing", content: { "application/json": { schema: errorResponseSchema } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+    429: { description: "A push is in progress right now", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
   path: "/orders/{id}/fina-sync",
   tags: ["Orders"],
   summary: "Manually retry pushing this order's sale (or, if cancelled, its return) to FINA after a prior failure (admin only)",
@@ -226,5 +288,35 @@ registry.registerPath({
     403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
     502: { description: "FINA API call failed", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/orders/{id}/invoice",
+  tags: ["Orders"],
+  summary: "Any order's PDF invoice, opened inline for printing (admin/operator)",
+  security,
+  request: { params: orderIdParamSchema, query: downloadInvoiceQuerySchema },
+  responses: {
+    200: { description: "PDF invoice", content: { "application/pdf": { schema: { type: "string", format: "binary" } } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Not an admin/operator", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Order not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/orders/{id}/packing-slip",
+  tags: ["Orders"],
+  summary: "Any order's PDF packing slip (items, SKU, size/color, no prices), opened inline for printing (admin/operator)",
+  security,
+  request: { params: orderIdParamSchema },
+  responses: {
+    200: { description: "PDF packing slip", content: { "application/pdf": { schema: { type: "string", format: "binary" } } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Not an admin/operator", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Order not found", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

@@ -17,6 +17,7 @@ export const HERO_SLIDE_TYPE_SHORT_LABELS: Record<HeroSlideType, string> = {
   VEHICLE_SEARCH: "ტრანსპორტის ძებნა",
   CATEGORY_FILTER: "კატეგორიის არჩევა",
   INFO: "საინფორმაციო",
+  POSTER: "პოსტერი",
 };
 
 export const HERO_SLIDE_TYPE_PICKER_LABELS: Record<HeroSlideType, string> = {
@@ -25,6 +26,7 @@ export const HERO_SLIDE_TYPE_PICKER_LABELS: Record<HeroSlideType, string> = {
   VEHICLE_SEARCH: "ტრანსპორტის ძებნის ფორმა",
   CATEGORY_FILTER: "კატეგორიის არჩევის ფორმა",
   INFO: "საინფორმაციო (ღილაკის/ფორმის გარეშე)",
+  POSTER: "პოსტერი (მხოლოდ სურათი)",
 };
 
 export const HERO_SLIDE_TYPE_OPTIONS: { value: HeroSlideType; label: string }[] = (
@@ -39,4 +41,6 @@ export const HERO_SLIDE_TYPE_DESCRIPTIONS: Record<HeroSlideType, string> = {
   CATEGORY_FILTER:
     "ფონური სურათი, სათაური, ქვესათაური და კატეგორიის არჩევის ფორმა — მომხმარებელი აირჩევს კატეგორიას და გადავა შესაბამის გვერდზე.",
   INFO: "მხოლოდ ფონური სურათი, სათაური და ქვესათაური — არც ღილაკი, არც ფორმა.",
+  POSTER:
+    "მხოლოდ სურათი — არც სათაური, არც ქვესათაური, არც ღილაკი ჩანს საიტზე. სათაური მხოლოდ ადმინის სიაში ამოცნობისთვისაა გამოსადეგი (მაგ. პოსტერის დასახელება).",
 };

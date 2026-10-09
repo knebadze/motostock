@@ -33,6 +33,7 @@ export const vehicleSpecFieldSchema = z.enum([
   "CHARGING_TIME_MINUTES",
   "HAS_ABS",
   "HAS_LOCKING_DIFFERENTIAL",
+  "IS_CUSTOMS_CLEARED",
 ]);
 export type VehicleSpecFieldInput = z.infer<typeof vehicleSpecFieldSchema>;
 

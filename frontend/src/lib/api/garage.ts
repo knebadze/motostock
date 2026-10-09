@@ -1,13 +1,14 @@
 import { apiClient } from "./client";
 import type { GarageVehicle } from "./vehicle-catalog";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type { GarageVehicle } from "./vehicle-catalog";
 
-export type GarageVehicleInput = {
-  vehicleCatalogId: number;
-  year: number;
-  vin?: string | null;
-};
+export type GarageVehicleInput = Schemas["CreateGarageVehicleInput"];
 
 export async function listMyGarage(): Promise<GarageVehicle[]> {
   const { data } = await apiClient.get<{ items: GarageVehicle[] }>("/users/me/garage");
@@ -44,4 +45,22 @@ export async function uploadGarageVehicleImage(id: number, file: File): Promise<
 
 export async function deleteGarageVehicle(id: number): Promise<void> {
   await apiClient.delete(`/users/me/garage/${id}`);
+}
+
+// Admin-scoped variants (workshop screen — add/list a vehicle for any
+// customer, walk-in or registered).
+export async function listGarageForUser(userId: number): Promise<GarageVehicle[]> {
+  const { data } = await apiClient.get<{ items: GarageVehicle[] }>(`/users/${userId}/garage`);
+  return data.items;
+}
+
+export async function createGarageVehicleForUser(
+  userId: number,
+  input: GarageVehicleInput,
+): Promise<GarageVehicle> {
+  const { data } = await apiClient.post<{ item: GarageVehicle }>(
+    `/users/${userId}/garage`,
+    input,
+  );
+  return data.item;
 }

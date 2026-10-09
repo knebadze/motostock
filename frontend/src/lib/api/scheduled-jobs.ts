@@ -1,42 +1,23 @@
 import { apiClient } from "./client";
+import type { ApiResponse } from "./generated-helpers";
 
 export type ScheduledJobKey =
   | "DAILY_PRUNE_VISITOR_DATA"
   | "DAILY_PRUNE_AUTH_ARTIFACTS"
   | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS"
   | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS"
-  | "DAILY_PRUNE_RICH_TEXT_IMAGES";
+  | "DAILY_PRUNE_RICH_TEXT_IMAGES"
+  | "FETCH_USD_GEL_RATE"
+  | "BIRTHDAY_EMAIL"
+  | "DAILY_PRUNE_ERROR_LOGS"
+  | "DAILY_PRUNE_GUEST_COLLECTIONS"
+  | "DAILY_PRUNE_AUTH_EVENTS";
 
-export type ScheduledJobRun = {
-  id: number;
-  jobKey: ScheduledJobKey;
-  trigger: "SCHEDULED" | "MANUAL";
-  // RUNNING is a run still in progress or, if it never got resolved, one
-  // that crashed before finishing (finishedAt stays null either way) — same
-  // convention as FinaSyncRun's own RUNNING status.
-  status: "RUNNING" | "SUCCESS" | "FAILED";
-  startedAt: string;
-  finishedAt: string | null;
-  itemsAffected: number | null;
-  // Per-category breakdown for jobs that delete from more than one table
-  // (e.g. {presenceDeleted, visitsDeleted}) — itemsAffected is their sum.
-  detail: Record<string, number> | null;
-  errorMessage: string | null;
-  triggeredBy: { id: number; name: string } | null;
-};
+export type ScheduledJobRun = ScheduledJobRunsPage["runs"][number];
 
-export type ScheduledJobDefinition = {
-  key: ScheduledJobKey;
-  labelKa: string;
-  lastRun: ScheduledJobRun | null;
-};
+export type ScheduledJobDefinition = ApiResponse<"/scheduled-jobs", "get">["jobs"][number];
 
-export type ScheduledJobRunsPage = {
-  runs: ScheduledJobRun[];
-  total: number;
-  page: number;
-  pageSize: number;
-};
+export type ScheduledJobRunsPage = ApiResponse<"/scheduled-jobs/runs", "get">;
 
 export async function getScheduledJobs(): Promise<ScheduledJobDefinition[]> {
   const { data } = await apiClient.get<{ jobs: ScheduledJobDefinition[] }>("/scheduled-jobs");

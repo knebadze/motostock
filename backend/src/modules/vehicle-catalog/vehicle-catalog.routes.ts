@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
-import { uploadRateLimit } from "../../middleware/rateLimit.middleware.js";
+import { uploadRateLimit, vehicleCatalogSubmitRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { imageUpload, spreadsheetUpload } from "../../middleware/upload.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
@@ -15,6 +15,7 @@ import {
   updateVehicleCatalogSchema,
   vehicleCatalogIdParamSchema,
   vehicleCatalogListQuerySchema,
+  vehicleCatalogOptionResponseSchema,
   vehicleCatalogResponseSchema,
 } from "./vehicle-catalog.schema.js";
 import { garageVehicleResponseSchema } from "../garage/garage.schema.js";
@@ -26,6 +27,14 @@ vehicleCatalogRouter.get(
   validate(vehicleCatalogListQuerySchema, "query"),
   vehicleCatalogController.list,
 );
+// Public, like GET / — registered before /:id so the literal "options"
+// segment isn't swallowed by the :id param route.
+vehicleCatalogRouter.get("/options", vehicleCatalogController.listOptions);
+// Public sitemap feed — see listVehicleCatalogOptionsWithCompatibleProducts.
+vehicleCatalogRouter.get(
+  "/options/with-compatible-products",
+  vehicleCatalogController.listOptionsWithCompatibleProducts,
+);
 vehicleCatalogRouter.get(
   "/:id",
   validate(vehicleCatalogIdParamSchema, "params"),
@@ -34,6 +43,7 @@ vehicleCatalogRouter.get(
 vehicleCatalogRouter.post(
   "/submit",
   requireAuth,
+  vehicleCatalogSubmitRateLimit,
   validate(submitVehicleCatalogSchema),
   vehicleCatalogController.submit,
 );
@@ -91,6 +101,32 @@ registry.registerPath({
   request: { query: vehicleCatalogListQuerySchema },
   responses: {
     200: { description: "Vehicle catalog list", content: { "application/json": { schema: listResponse } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-catalog/options",
+  tags: ["VehicleCatalog"],
+  summary: "Every catalog entry in the lean picker shape (id, category, brand, model, variant, years) — public",
+  responses: {
+    200: {
+      description: "Vehicle catalog options",
+      content: { "application/json": { schema: z.object({ items: z.array(vehicleCatalogOptionResponseSchema) }) } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-catalog/options/with-compatible-products",
+  tags: ["VehicleCatalog"],
+  summary: "Catalog entries (lean picker shape) that at least one active product fits — sitemap feed, public",
+  responses: {
+    200: {
+      description: "Vehicle catalog options with compatible products",
+      content: { "application/json": { schema: z.object({ items: z.array(vehicleCatalogOptionResponseSchema) }) } },
+    },
   },
 });
 

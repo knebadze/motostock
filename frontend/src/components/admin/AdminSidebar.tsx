@@ -2,8 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { adminNav } from "@/config/admin-nav";
+import { adminNav, type AdminNavItem } from "@/config/admin-nav";
 import { Logo } from "@/components/shared/Logo";
+import { useAdminRole } from "./AdminRoleContext";
+
+function canSeeNavItem(item: AdminNavItem, role: ReturnType<typeof useAdminRole>): boolean {
+  if (role === "ADMIN") return true;
+  return item.allowedRoles?.includes(role) ?? false;
+}
 
 export function AdminSidebar({
   open,
@@ -17,6 +23,10 @@ export function AdminSidebar({
   onToggleCollapsed: () => void;
 }) {
   const pathname = usePathname();
+  const role = useAdminRole();
+  const visibleNav = adminNav
+    .map((section) => ({ ...section, items: section.items.filter((item) => canSeeNavItem(item, role)) }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <>
@@ -37,7 +47,7 @@ export function AdminSidebar({
           type="button"
           onClick={onToggleCollapsed}
           aria-label={collapsed ? "მენიუს გაშლა" : "მენიუს აკეცვა"}
-          className="absolute -right-3.5 top-8 hidden size-7 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-md transition-colors hover:border-primary/50 hover:text-primary md:flex"
+          className="absolute -right-3.5 top-8 hidden size-7 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-md transition-colors hover:border-primary/50 hover:text-primary-text md:flex"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -66,7 +76,7 @@ export function AdminSidebar({
             collapsed ? "md:items-center md:px-2" : ""
           }`}
         >
-          {adminNav.map((section) => (
+          {visibleNav.map((section) => (
             <div key={section.label} className="flex w-full flex-col gap-0.5">
               <span
                 className={`px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground ${
@@ -86,7 +96,7 @@ export function AdminSidebar({
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-primary font-semibold text-primary-foreground shadow-sm"
-                        : "text-foreground hover:bg-muted hover:text-primary"
+                        : "text-foreground hover:bg-muted hover:text-primary-text"
                     } ${collapsed ? "md:justify-center md:px-2" : ""}`}
                   >
                     {item.icon}

@@ -9,8 +9,11 @@ import {
   isFinaConfigured,
   saveDocCustomerReturn,
   saveDocProductOut,
+  type FinaProductRest,
   type FinaSaleLine,
 } from "./fina-client.js";
+import { lookupsRepository } from "../lookups/lookups.repository.js";
+import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { finaSyncRepository } from "./fina-sync.repository.js";
 import { getFinaWebCustomerId, getFinaWebUserId } from "../settings/settings.service.js";
 import type { FinaOrderSyncStatus, FinaSyncTrigger } from "../../generated/prisma/index.js";
@@ -21,11 +24,97 @@ export { isFinaConfigured };
 // Postgres advisory locks don't need to reference a real row).
 const FINA_SYNC_LOCK_KEY = 851972364;
 
-// Arbitrary namespace for retryOrderFinaPush's per-order lock (two-int form
-// of pg_try_advisory_xact_lock: this namespace + the order's own id) —
-// distinct from FINA_SYNC_LOCK_KEY above so a manual order retry never
-// contends with the unrelated catalog-sync lock.
-const RETRY_FINA_PUSH_LOCK_NAMESPACE = 851972399;
+// Order-push outbox (see order.prisma's FinaOrderSyncStatus.PENDING).
+// Lease comfortably longer than one FINA call (fina-client.ts's 8s
+// FINA_REQUEST_TIMEOUT_MS), so it never expires under a push still running.
+const FINA_ORDER_PUSH_LEASE_MS = 60_000;
+// Automatic attempts (the immediate one + sweeps) for a failure that
+// definitely recorded nothing in FINA (FINA down, refused) before the order
+// is marked FAILED for the admin — ~6 hours at the default 10-minute sweep,
+// so a FINA outage of a few hours clears by itself instead of leaving every
+// order of that window for manual retry. (An UNCERTAIN failure never
+// retries — see runOrderPush.)
+export const FINA_ORDER_PUSH_MAX_ATTEMPTS = 36;
+// Per sweep — far above any realistic backlog for one shop; just a bound.
+const FINA_ORDER_PUSH_SWEEP_BATCH = 50;
+
+// What the site may sell of one FINA product: the physical rest minus what
+// FINA itself holds reserved (goods set aside at the register count as
+// gone). Floored — FINA quantities can be fractional (weighed/measured
+// goods); the site only sells whole units.
+function sellableQuantity(row: FinaProductRest): number {
+  return Math.max(0, Math.floor(row.rest - (row.reserve ?? 0)));
+}
+
+// Sellable quantity per FINA product id for this shop's store (FINA_STORE).
+// With `finaIds`, only those products are requested (getProductsRestArray —
+// a cart's few items, not the whole catalog); that endpoint can return rows
+// for every store, so they're filtered to FINA_STORE. If none match (the
+// `store` field turns out to be formatted differently from FINA_STORE, e.g.
+// a name vs. a code) it falls back to the store-scoped endpoint rather than
+// mixing in another store's stock. Products absent from the result are
+// treated as 0 by the caller (applyAvailability).
+async function fetchStoreAvailability(finaIds?: number[]): Promise<Map<number, number>> {
+  const store = env.FINA_STORE!.trim();
+  let rows: FinaProductRest[];
+  if (finaIds && finaIds.length > 0) {
+    const allStores = await getProductsRestArray(finaIds);
+    rows = allStores.filter((row) => String(row.store).trim() === store);
+    if (allStores.length > 0 && rows.length === 0) {
+      logger.warn(
+        { store, returnedStore: allStores[0].store },
+        "FINA getProductsRestArray returned no rows for FINA_STORE — falling back to getProductsRestByStore",
+      );
+      rows = await getProductsRestByStore(store);
+    }
+  } else {
+    rows = await getProductsRestByStore(store);
+  }
+
+  const availability = new Map<number, number>();
+  for (const row of rows) {
+    availability.set(row.id, (availability.get(row.id) ?? 0) + sellableQuantity(row));
+  }
+  return availability;
+}
+
+// SOLD/AVAILABLE listing-status ids for applyFinaAvailability's status flip
+// — null (flip skipped, stock still written) if the lookup rows are missing.
+async function resolveListingStatusIds(): Promise<{ sold: number; available: number } | null> {
+  const delegate = getLookupDelegate("listing-statuses");
+  const [sold, available] = await Promise.all([
+    lookupsRepository.findByKey(delegate, "SOLD"),
+    lookupsRepository.findByKey(delegate, "AVAILABLE"),
+  ]);
+  return sold && available ? { sold: sold.id, available: available.id } : null;
+}
+
+type FinaSnapshot = { takenAt: Date; finishedAt: Date };
+
+// Writes FINA's availability into the given FINA-linked variants via
+// finaSyncRepository.applyFinaAvailability — which accounts for web orders
+// FINA hasn't recorded yet. A linked product ABSENT from FINA's reply counts
+// as 0 in this store: store-scoped rest lists leave out products at zero, so
+// a product that sold out at the register used to keep its old site stock
+// (and checkout still called it "confirmed").
+async function applyAvailability(
+  variants: { id: number; finaId: number | null }[],
+  availability: Map<number, number>,
+  snapshot: FinaSnapshot,
+) {
+  const entries = variants
+    .filter((variant) => variant.finaId != null)
+    .map((variant) => ({ variantId: variant.id, available: availability.get(variant.finaId!) ?? 0 }));
+  return finaSyncRepository.applyFinaAvailability(entries, snapshot, await resolveListingStatusIds());
+}
+
+// Times one FINA stock read: requested at `takenAt`, answered by
+// `finishedAt` (see applyFinaAvailability for how both are used).
+async function readFinaSnapshot(finaIds?: number[]): Promise<{ availability: Map<number, number>; snapshot: FinaSnapshot }> {
+  const takenAt = new Date();
+  const availability = await fetchStoreAvailability(finaIds);
+  return { availability, snapshot: { takenAt, finishedAt: new Date() } };
+}
 
 export async function runSync(trigger: FinaSyncTrigger, triggeredById: number | null = null) {
   if (!isFinaConfigured()) {
@@ -60,9 +149,16 @@ export async function runSync(trigger: FinaSyncTrigger, triggeredById: number | 
   // lock, and the one pool connection backing it, stay held once the actual
   // DB work starts. A failure here never touches the lock at all — there's
   // nothing to protect yet, so it's logged and returned directly.
-  let rests: Awaited<ReturnType<typeof getProductsRestByStore>>;
+  let availability: Map<number, number>;
+  let snapshot: FinaSnapshot;
   try {
-    rests = await getProductsRestByStore(env.FINA_STORE!);
+    ({ availability, snapshot } = await readFinaSnapshot());
+    // Absent products now count as 0 (see applyAvailability) — so an EMPTY
+    // whole-store reply is treated as a failed read, not as "everything
+    // sold out", which would zero the entire catalog.
+    if (availability.size === 0 && variants.length > 0) {
+      throw new FinaApiError("FINA-მ საწყობის ნაშთების ცარიელი სია დააბრუნა — სინქრონიზაცია შეჩერდა");
+    }
   } catch (err) {
     const message = err instanceof FinaApiError ? err.message : "მოულოდნელი შეცდომა FINA სინქრონიზაციისას";
     logger.error({ err }, "FINA sync failed");
@@ -75,24 +171,11 @@ export async function runSync(trigger: FinaSyncTrigger, triggeredById: number | 
     });
   }
 
-  const restByFinaId = new Map(rests.map((r) => [r.id, r.rest]));
-  const updates = variants
-    .filter((variant) => restByFinaId.has(variant.finaId!))
-    .map((variant) => ({
-      id: variant.id,
-      stockQuantity: Math.max(0, Math.floor(restByFinaId.get(variant.finaId!)!)),
-    }));
-
-  // A Postgres transaction-scoped advisory lock (not the old in-memory
-  // `isRunning` boolean) so two concurrent runs can't overlap even if the
-  // backend is ever scaled to more than one process/container — the lock
-  // is held by Postgres, not by this process's memory, and releases
-  // automatically when the transaction below commits or throws, regardless
-  // of which pooled connection Prisma happens to use for it. The actual
-  // stock write (updateStockBatch) runs inside this callback but, like the
-  // old per-variant loop it replaced, goes through finaSyncRepository's own
-  // connection rather than `tx` — the lock is what matters for serializing
-  // concurrent runs, not which connection the write itself commits on.
+  // A Postgres transaction-scoped advisory lock (not an in-memory flag) so
+  // two concurrent runs can't overlap even if the backend is ever scaled to
+  // more than one process/container. The stock write itself
+  // (applyAvailability) runs in its own short transaction — the lock is what
+  // serializes concurrent runs, not which connection the write commits on.
   return prisma.$transaction(
     async (tx) => {
       const [{ locked }] = await tx.$queryRaw<{ locked: boolean }[]>`
@@ -115,10 +198,8 @@ export async function runSync(trigger: FinaSyncTrigger, triggeredById: number | 
       }
 
       try {
-        // One round trip for every linked variant instead of one UPDATE per
-        // variant — see finaSyncRepository.updateStockBatch.
-        await finaSyncRepository.updateStockBatch(updates);
-        const variantsUpdated = updates.length;
+        const results = await applyAvailability(variants, availability, snapshot);
+        const variantsUpdated = results.length;
 
         const status = variantsChecked === 0 || variantsUpdated === variantsChecked ? "SUCCESS" : "PARTIAL";
         return await finaSyncRepository.finishRun(run.id, {
@@ -140,10 +221,6 @@ export async function runSync(trigger: FinaSyncTrigger, triggeredById: number | 
         });
       }
     },
-    // Still generous, though the transaction itself now only needs to cover
-    // the lock check + one batch UPDATE + one log write, not N sequential
-    // per-variant round trips — kept wide as a safety margin, not because
-    // this path is expected to need it.
     { timeout: 5 * 60 * 1000, maxWait: 10_000 },
   );
 }
@@ -155,20 +232,33 @@ export function listSyncRuns(limit = 50) {
 // Live per-item stock refresh for checkout (cart→checkout entry and right
 // before order placement — see orders.service.ts's computeCheckoutTotals),
 // distinct from runSync's full-catalog admin job above: scoped to just the
-// cart's variant ids, and NOT logged as a FinaSyncRun (that history table
-// is for the scheduled/manual admin job, not every shopper's checkout
-// visit). Never throws on missing config or a failed FINA call — the caller
-// falls back to whatever stockQuantity is already in the DB rather than
-// failing checkout outright over an external API hiccup. The boolean return
-// (added for placeOrder's CONFIRMED-vs-PENDING decision — see
-// orders.service.ts) reports whether FINA was actually reached and
+// cart's variants (only their FINA products are requested), and NOT logged
+// as a FinaSyncRun on success. This is what keeps register sales from being
+// oversold online between scheduled syncs. Never throws on missing config or
+// a failed FINA call — the caller falls back to whatever stockQuantity is
+// already in the DB rather than failing checkout over an external API
+// hiccup. The boolean return (placeOrder's CONFIRMED-vs-PENDING decision —
+// see orders.service.ts) reports whether FINA was actually reached and
 // confirmed *something*, not just "no error was thrown".
 const RECENT_SYNC_TTL_MS = 20_000;
+// Beyond this many remembered carts, expired entries are swept — the maps
+// are keyed by cart contents, so without it they'd only ever grow.
+const RECENT_SYNC_MAX_ENTRIES = 500;
 const recentSyncAt = new Map<string, number>();
 const recentSyncConfirmed = new Map<string, boolean>();
 
 function syncThrottleKey(variantIds: number[]): string {
   return [...variantIds].sort((a, b) => a - b).join(",");
+}
+
+function pruneRecentSyncs(now: number) {
+  if (recentSyncAt.size <= RECENT_SYNC_MAX_ENTRIES) return;
+  for (const [key, at] of recentSyncAt) {
+    if (now - at >= RECENT_SYNC_TTL_MS) {
+      recentSyncAt.delete(key);
+      recentSyncConfirmed.delete(key);
+    }
+  }
 }
 
 export async function syncVariantStockByIds(variantIds: number[]): Promise<boolean> {
@@ -183,6 +273,7 @@ export async function syncVariantStockByIds(variantIds: number[]): Promise<boole
   if (last != null && now - last < RECENT_SYNC_TTL_MS) {
     return recentSyncConfirmed.get(key) ?? false;
   }
+  pruneRecentSyncs(now);
   recentSyncAt.set(key, now);
 
   try {
@@ -194,14 +285,8 @@ export async function syncVariantStockByIds(variantIds: number[]): Promise<boole
       return false;
     }
 
-    const rests = await getProductsRestByStore(env.FINA_STORE!);
-    const restByFinaId = new Map(rests.map((r) => [r.id, r.rest]));
-
-    for (const variant of variants) {
-      const rest = restByFinaId.get(variant.finaId!);
-      if (rest === undefined) continue;
-      await finaSyncRepository.updateStock(variant.id, Math.max(0, Math.floor(rest)));
-    }
+    const { availability, snapshot } = await readFinaSnapshot(variants.map((variant) => variant.finaId!));
+    await applyAvailability(variants, availability, snapshot);
 
     recentSyncConfirmed.set(key, true);
     return true;
@@ -237,88 +322,60 @@ export type OrderStockSyncResult = {
   items: { productVariantId: number; previousStock: number; newStock: number | null }[];
 };
 
-// Admin order-detail action (see fina-sync.controller.ts's syncOrder) — an
-// explicit, on-demand re-check of FINA stock for just the FINA-linked
-// product variants on one order, using getProductsRestArray's id-scoped
-// lookup instead of runSync's whole-catalog pull. Unlike
-// syncVariantStockByIds above, this is a deliberate admin click with its own
-// error toast, so a FINA failure surfaces as a thrown ApiError rather than
-// degrading silently.
-export async function syncOrderStock(orderId: number): Promise<OrderStockSyncResult> {
-  if (!isFinaConfigured()) {
-    throw new ApiError(400, "FINA სინქრონიზაცია არ არის კონფიგურირებული");
-  }
-
-  const variants = await finaSyncRepository.findLinkedVariantsForOrder(orderId);
+// Shared by the admin's per-order and per-product "re-check FINA stock"
+// actions below — a deliberate admin click with its own error toast, so a
+// FINA failure surfaces as a thrown ApiError rather than degrading silently.
+async function syncVariantsForAdmin(
+  variants: { id: number; finaId: number | null; stockQuantity: number }[],
+  logLabel: string,
+): Promise<OrderStockSyncResult> {
   if (variants.length === 0) {
     return { checked: 0, updated: 0, items: [] };
   }
 
   try {
-    const rests = await getProductsRestArray(variants.map((variant) => variant.finaId!));
-    const restByFinaId = new Map(rests.map((r) => [r.id, r.rest]));
+    const { availability, snapshot } = await readFinaSnapshot(variants.map((variant) => variant.finaId!));
+    const results = await applyAvailability(variants, availability, snapshot);
+    const resultById = new Map(results.map((result) => [result.id, result]));
 
-    const items: OrderStockSyncResult["items"] = [];
-    let updated = 0;
-    for (const variant of variants) {
-      const rest = restByFinaId.get(variant.finaId!);
-      if (rest === undefined) {
-        items.push({ productVariantId: variant.id, previousStock: variant.stockQuantity, newStock: null });
-        continue;
-      }
-      const newStock = Math.max(0, Math.floor(rest));
-      await finaSyncRepository.updateStock(variant.id, newStock);
-      updated += 1;
-      items.push({ productVariantId: variant.id, previousStock: variant.stockQuantity, newStock });
-    }
-
-    return { checked: variants.length, updated, items };
+    return {
+      checked: variants.length,
+      updated: results.length,
+      items: variants.map((variant) => {
+        const result = resultById.get(variant.id);
+        return {
+          productVariantId: variant.id,
+          previousStock: result?.previousStock ?? variant.stockQuantity,
+          newStock: result?.newStock ?? null,
+        };
+      }),
+    };
   } catch (err) {
     const message = err instanceof FinaApiError ? err.message : "მოულოდნელი შეცდომა FINA სინქრონიზაციისას";
-    logger.error({ err }, "FINA order stock sync failed");
+    logger.error({ err }, logLabel);
     throw new ApiError(502, message);
   }
 }
 
+// Admin order-detail action (see fina-sync.controller.ts's syncOrder) — an
+// on-demand re-check of FINA stock for just this order's FINA-linked
+// variants.
+export async function syncOrderStock(orderId: number): Promise<OrderStockSyncResult> {
+  if (!isFinaConfigured()) {
+    throw new ApiError(400, "FINA სინქრონიზაცია არ არის კონფიგურირებული");
+  }
+  const variants = await finaSyncRepository.findLinkedVariantsForOrder(orderId);
+  return syncVariantsForAdmin(variants, "FINA order stock sync failed");
+}
+
 // Admin product-detail action (see fina-sync.controller.ts's syncProduct) —
-// same shape and reasoning as syncOrderStock above, scoped to one Product's
-// own FINA-linked variants instead of one order's. Reuses
-// OrderStockSyncResult's shape as-is (identical fields, no order-specific
-// meaning attached) rather than declaring a parallel duplicate type.
+// same, scoped to one Product's own FINA-linked variants.
 export async function syncProductStock(productId: number): Promise<OrderStockSyncResult> {
   if (!isFinaConfigured()) {
     throw new ApiError(400, "FINA სინქრონიზაცია არ არის კონფიგურირებული");
   }
-
   const variants = await finaSyncRepository.findLinkedVariantsByProduct(productId);
-  if (variants.length === 0) {
-    return { checked: 0, updated: 0, items: [] };
-  }
-
-  try {
-    const rests = await getProductsRestArray(variants.map((variant) => variant.finaId!));
-    const restByFinaId = new Map(rests.map((r) => [r.id, r.rest]));
-
-    const items: OrderStockSyncResult["items"] = [];
-    let updated = 0;
-    for (const variant of variants) {
-      const rest = restByFinaId.get(variant.finaId!);
-      if (rest === undefined) {
-        items.push({ productVariantId: variant.id, previousStock: variant.stockQuantity, newStock: null });
-        continue;
-      }
-      const newStock = Math.max(0, Math.floor(rest));
-      await finaSyncRepository.updateStock(variant.id, newStock);
-      updated += 1;
-      items.push({ productVariantId: variant.id, previousStock: variant.stockQuantity, newStock });
-    }
-
-    return { checked: variants.length, updated, items };
-  } catch (err) {
-    const message = err instanceof FinaApiError ? err.message : "მოულოდნელი შეცდომა FINA სინქრონიზაციისას";
-    logger.error({ err }, "FINA product stock sync failed");
-    throw new ApiError(502, message);
-  }
+  return syncVariantsForAdmin(variants, "FINA product stock sync failed");
 }
 
 // Web orders are always non-cash from FINA's point of view (bank/card, not
@@ -327,33 +384,45 @@ export async function syncProductStock(productId: number): Promise<OrderStockSyn
 const FINA_PAY_TYPE_NON_CASH = 1;
 
 export type FinaOrderPushItem = {
+  id: number;
   productVariantId: number | null;
   quantity: number;
   unitPrice: number;
+  finaProductId: number | null;
 };
 
-// Shared by pushOrderSale/pushOrderReturn below — resolves each order line
-// to a FINA product id via ProductVariant.finaId, dropping vehicle-listing
-// lines (no FINA field exists on that model) and any variant that isn't
-// FINA-linked. Returns null if there's nothing FINA-relevant to push, so the
-// caller can bail out without an empty saveDoc* call.
+type FinaOrderLines = {
+  lines: FinaSaleLine[];
+  // Which FINA product each order line went out as — stored on the sale
+  // (OrderItem.finaProductId) so the return later mirrors it exactly.
+  itemFinaProductIds: { itemId: number; finaProductId: number }[];
+};
+
+// Shared by the sale/return attempts below — resolves each order line to a
+// FINA product id, dropping vehicle-listing lines (no FINA field exists on
+// that model) and anything not FINA-linked. A SALE uses each variant's
+// current link; a RETURN uses the id the line was sold under
+// (OrderItem.finaProductId), so re-linking a variant in between can't
+// return a different product than was sold — falling back to the current
+// link only for lines sold before that column existed. Null if there's
+// nothing FINA-relevant to push.
 async function buildFinaOrderLines(
   orderId: number,
   items: FinaOrderPushItem[],
-): Promise<FinaSaleLine[] | null> {
+  kind: "sale" | "return",
+): Promise<FinaOrderLines | null> {
   const linked = await finaSyncRepository.findLinkedVariantsForOrder(orderId);
-  if (linked.length === 0) return null;
+  const currentFinaIdByVariantId = new Map(linked.map((variant) => [variant.id, variant.finaId!]));
 
-  const finaIdByVariantId = new Map(linked.map((variant) => [variant.id, variant.finaId!]));
-  const lines = items
-    .filter((item) => item.productVariantId != null && finaIdByVariantId.has(item.productVariantId))
-    .map((item) => ({
-      id: finaIdByVariantId.get(item.productVariantId!)!,
-      quantity: item.quantity,
-      price: item.unitPrice,
-    }));
-
-  return lines.length > 0 ? lines : null;
+  const resolved: FinaOrderLines = { lines: [], itemFinaProductIds: [] };
+  for (const item of items) {
+    const current = item.productVariantId != null ? currentFinaIdByVariantId.get(item.productVariantId) : undefined;
+    const finaProductId = kind === "return" ? (item.finaProductId ?? current) : current;
+    if (finaProductId == null) continue;
+    resolved.lines.push({ id: finaProductId, quantity: item.quantity, price: item.unitPrice });
+    resolved.itemFinaProductIds.push({ itemId: item.id, finaProductId });
+  }
+  return resolved.lines.length > 0 ? resolved : null;
 }
 
 function sumLineAmount(lines: FinaSaleLine[]): number {
@@ -363,12 +432,24 @@ function sumLineAmount(lines: FinaSaleLine[]): number {
 // Thrown by attemptOrderSalePush/attemptOrderReturnPush when there is
 // nothing FINA-relevant to do (not configured, Settings not filled in, no
 // FINA-linked items, or — for a return — no prior sale to return against).
-// Distinct from a real FINA API failure: pushOrderSale/pushOrderReturn treat
-// this as a silent no-op (order stays NOT_APPLICABLE), while
+// Distinct from a real FINA API failure: an automatic push (runOrderPush) treats
+// this as "nothing to push" (order becomes NOT_APPLICABLE), while
 // retryOrderFinaPush surfaces it to the admin as a 400 explaining why a
 // manual retry isn't possible, rather than a 502 implying FINA itself is
 // unreachable.
-class FinaPushSkipped extends Error {}
+//
+// `deferred`: not "nothing to push" but "can't push YET" — FINA_STORE isn't
+// a numeric store id, or the FINA web-customer/user Settings aren't filled
+// in. The order stays PENDING (and keeps counting against FINA stock in
+// applyFinaAvailability, since the sale really happened) until fixed.
+class FinaPushSkipped extends Error {
+  constructor(
+    message: string,
+    readonly deferred = false,
+  ) {
+    super(message);
+  }
+}
 
 type FinaOrderPushInput = {
   id: number;
@@ -381,19 +462,27 @@ type FinaOrderPushInput = {
 // sale and return attempt functions below.
 async function resolveFinaPushContext(
   order: FinaOrderPushInput,
-): Promise<{ customerId: number; userId: number; lines: FinaSaleLine[] }> {
+  kind: "sale" | "return",
+): Promise<{ store: number; customerId: number; userId: number } & FinaOrderLines> {
   if (!isFinaConfigured()) {
     throw new FinaPushSkipped("FINA არ არის კონფიგურირებული");
   }
+  // FINA's write endpoints take the store as a number; the stock reads
+  // compare it as a string. A non-numeric FINA_STORE would make every push
+  // a 4xx — caught here as a config problem instead.
+  const store = Number(env.FINA_STORE);
+  if (!Number.isInteger(store) || store <= 0) {
+    throw new FinaPushSkipped("FINA_STORE არ არის რიცხვითი საწყობის ID — შეამოწმეთ სერვერის პარამეტრები", true);
+  }
   const [customerId, userId] = await Promise.all([getFinaWebCustomerId(), getFinaWebUserId()]);
   if (customerId == null || userId == null) {
-    throw new FinaPushSkipped("FINA-ს პარამეტრებში მყიდველისა და მომხმარებლის ID არ არის შევსებული");
+    throw new FinaPushSkipped("FINA-ს პარამეტრებში მყიდველისა და მომხმარებლის ID არ არის შევსებული", true);
   }
-  const lines = await buildFinaOrderLines(order.id, order.items);
+  const lines = await buildFinaOrderLines(order.id, order.items, kind);
   if (!lines) {
     throw new FinaPushSkipped("ამ შეკვეთას არცერთი FINA-სთან დაკავშირებული ერთეული არ აქვს");
   }
-  return { customerId, userId, lines };
+  return { store, customerId, userId, ...lines };
 }
 
 // Records this order's sale in FINA (saveDocProductOut) and stores the
@@ -401,19 +490,19 @@ async function resolveFinaPushContext(
 // when there's nothing to push, or the underlying FinaApiError/network error
 // if the call itself fails — callers decide how to handle each.
 async function attemptOrderSalePush(order: FinaOrderPushInput): Promise<number> {
-  const { customerId, userId, lines } = await resolveFinaPushContext(order);
+  const { store, customerId, userId, lines, itemFinaProductIds } = await resolveFinaPushContext(order, "sale");
 
   const finaOutOperationId = await saveDocProductOut({
     date: new Date().toISOString(),
     purpose: `ვების შეკვეთა № ${order.orderCode}`,
     amount: sumLineAmount(lines),
-    store: Number(env.FINA_STORE),
+    store,
     customer: customerId,
     user: userId,
     payType: FINA_PAY_TYPE_NON_CASH,
     products: lines,
   });
-  await finaSyncRepository.setOrderFinaSyncStatus(order.id, "SYNCED", finaOutOperationId);
+  await finaSyncRepository.recordOrderSaleSynced(order.id, finaOutOperationId, itemFinaProductIds);
   return finaOutOperationId;
 }
 
@@ -430,132 +519,238 @@ async function attemptOrderReturnPush(
   if (order.finaOutOperationId == null) {
     throw new FinaPushSkipped("ამ შეკვეთის თავდაპირველი გაყიდვა FINA-ში არასდროს დასინქრონდა");
   }
-  const { customerId, userId, lines } = await resolveFinaPushContext(order);
+  const { store, customerId, userId, lines } = await resolveFinaPushContext(order, "return");
 
+  const sentAt = new Date();
   await saveDocCustomerReturn({
-    date: new Date().toISOString(),
+    date: sentAt.toISOString(),
     purpose: `შეკვეთის გაუქმება № ${order.orderCode}`,
     amount: sumLineAmount(lines),
-    store: Number(env.FINA_STORE),
+    store,
     customer: customerId,
     user: userId,
     payType: FINA_PAY_TYPE_NON_CASH,
     products: lines.map((line) => ({ ...line, outId: order.finaOutOperationId! })),
   });
-  await finaSyncRepository.setOrderFinaSyncStatus(order.id, "SYNCED");
+  await finaSyncRepository.recordOrderReturnSynced(order.id, sentAt);
 }
 
-// Fires right after placeOrder commits (see orders.service.ts). Best-effort
-// and never throws — same catch/log/no-op contract as syncVariantStockByIds,
-// so a FINA outage or an admin who hasn't filled in the FINA web-customer/
-// user Settings yet never blocks a real checkout. A genuine FINA API failure
-// (order has FINA-linked items, config is present, but the call itself
-// errored) is recorded as FAILED so the admin order list can flag it and
-// offer the manual retry below.
-export async function pushOrderSale(order: FinaOrderPushInput): Promise<void> {
-  try {
-    await attemptOrderSalePush(order);
-  } catch (err) {
-    if (err instanceof FinaPushSkipped) return;
-    logger.error({ err, orderId: order.id }, "FINA sale push failed");
-    await finaSyncRepository.setOrderFinaSyncStatus(order.id, "FAILED");
-  }
+// Whether a just-placed order has anything FINA could need — decides if
+// placeOrder writes it as PENDING (outbox) in its own transaction. Cheap and
+// synchronous on purpose; the finer checks (Settings filled in, variants
+// actually FINA-linked) happen at push time, which downgrades the order to
+// NOT_APPLICABLE when they don't hold.
+export function orderNeedsFinaPush(items: { productVariantId?: number | null }[]): boolean {
+  return isFinaConfigured() && items.some((item) => item.productVariantId != null);
 }
 
-// Fires from updateOrderStatus's RESTORE branch (see orders-admin.service.ts).
-// Same best-effort catch/log/no-op contract as pushOrderSale.
-export async function pushOrderReturn(
-  order: FinaOrderPushInput & { finaOutOperationId: number | null },
-): Promise<void> {
-  try {
-    await attemptOrderReturnPush(order);
-  } catch (err) {
-    if (err instanceof FinaPushSkipped) return;
-    logger.error({ err, orderId: order.id }, "FINA return push failed");
-    await finaSyncRepository.setOrderFinaSyncStatus(order.id, "FAILED");
-  }
+type OrderPushMode = "automatic" | "manual";
+
+function documentLabel(order: { orderCode: string; cancelledAt: Date | null }): string {
+  return `„${order.cancelledAt ? "შეკვეთის გაუქმება" : "ვების შეკვეთა"} № ${order.orderCode}“`;
 }
 
-// Admin-triggered manual retry (see orders-admin.service.ts's retryOrderFinaSync,
-// wired to the order-detail "გაუშვი ხელით" button) — unlike the two
-// best-effort pushes above, this is a deliberate admin click with its own
-// error toast, so it surfaces failures as a thrown ApiError instead of
-// degrading silently (same convention as syncOrderStock). Picks sale vs.
-// return by the order's current cancellation state: a cancelled order always
-// means "retry the return", everything else means "retry the sale" — this
-// mirrors exactly the automatic paths' own direction logic, so a manual
-// retry can never push the wrong document type for the order's current
-// state.
-export async function retryOrderFinaPush(order: {
-  id: number;
-  orderCode: string;
-  isCancelled: boolean;
-  finaOutOperationId: number | null;
-  finaSyncStatus: FinaOrderSyncStatus;
-  items: FinaOrderPushItem[];
-}): Promise<void> {
-  // The `order.finaSyncStatus === "SYNCED"` check alone isn't enough to stop
-  // a second real FINA document from being written: two near-simultaneous
-  // retries (an admin double-clicking, or two tabs) both read this same
-  // FAILED status from the caller's earlier findById, both pass the check
-  // below, and both proceed to call saveDocProductOut/saveDocCustomerReturn
-  // for real — this is a genuine external side effect, not a DB row, so
-  // there's no P2002-style safety net to catch the race after the fact.
-  // pg_try_advisory_xact_lock (two-int form: namespace + this order's id)
-  // held for the FULL duration of the external call, same shape as
-  // runSync's FINA_SYNC_LOCK_KEY above but scoped per-order instead of
-  // globally — a losing concurrent retry is refused immediately (429)
-  // instead of queueing behind the winner. Unlike the account-lockout guard
-  // (customer-facing, high-frequency, attacker-reachable), this endpoint is
-  // admin-only and manually clicked, so holding one pool connection for the
-  // ~8s FINA_REQUEST_TIMEOUT_MS duration of the external call is an
-  // acceptable, bounded cost — not the same DoS shape.
-  await prisma.$transaction(
-    async (tx) => {
-      const [{ locked }] = await tx.$queryRaw<{ locked: boolean }[]>`
-        SELECT pg_try_advisory_xact_lock(${RETRY_FINA_PUSH_LOCK_NAMESPACE}, ${order.id}) AS locked
-      `;
-      if (!locked) {
-        throw new ApiError(
-          429,
-          "ამ შეკვეთაზე უკვე მიმდინარეობს ხელახალი გაგზავნა FINA-ში — მოითმინეთ და თავიდან სცადეთ",
-        );
-      }
+const ABANDONED_PUSH_MESSAGE =
+  "წინა გაგზავნა შუა გზაზე შეწყდა (სერვერი გადაიტვირთა) — უცნობია, მიიღო თუ არა FINA-მ დოკუმენტი. შეამოწმეთ FINA-ში და მონიშნეთ შედეგი.";
 
-      // Re-read fresh, inside the lock — order.finaSyncStatus above is a
-      // snapshot from before the lock was acquired, and a just-finished
-      // concurrent retry (or the original automatic push) may have already
-      // flipped it to SYNCED in the gap.
-      const fresh = await tx.order.findUnique({
-        where: { id: order.id },
-        select: { finaSyncStatus: true },
-      });
-      if (!fresh || fresh.finaSyncStatus === "SYNCED") {
-        throw new ApiError(
-          400,
-          "ეს შეკვეთა უკვე დასინქრონებულია FINA-სთან — ხელახლა გაგზავნა საჭირო არ არის",
-        );
-      }
-
-      try {
-        if (order.isCancelled) {
-          await attemptOrderReturnPush(order);
-        } else {
-          await attemptOrderSalePush(order);
-        }
-      } catch (err) {
-        if (err instanceof FinaPushSkipped) {
-          throw new ApiError(400, err.message);
-        }
-        await finaSyncRepository.setOrderFinaSyncStatus(order.id, "FAILED");
-        const message =
-          err instanceof FinaApiError ? err.message : "მოულოდნელი შეცდომა FINA-სთან კავშირისას";
-        throw new ApiError(502, message);
-      }
-    },
-    // Generous enough to cover one external FINA call (8s timeout, see
-    // fina-client.ts's FINA_REQUEST_TIMEOUT_MS) plus safety margin, while
-    // still bounded — this is a manual admin action, not a hot path.
-    { timeout: 20_000, maxWait: 10_000 },
+// One push attempt for whatever this order's current state needs — the
+// return once it's cancelled, the sale otherwise — under the order's push
+// lease. "automatic" (right after placement/cancellation, and the sweep)
+// never throws: a failure that definitely recorded nothing counts an attempt
+// and leaves the order PENDING for the next sweep (up to
+// FINA_ORDER_PUSH_MAX_ATTEMPTS); one whose outcome is unknown goes straight
+// to FAILED + uncertain for the admin. "manual" (the admin's retry button)
+// surfaces every outcome as an ApiError for the admin's toast.
+async function runOrderPush(orderId: number, mode: OrderPushMode): Promise<void> {
+  const claimable: FinaOrderSyncStatus[] = mode === "manual" ? ["PENDING", "FAILED"] : ["PENDING"];
+  const claim = await finaSyncRepository.claimOrderPush(
+    orderId,
+    claimable,
+    FINA_ORDER_PUSH_LEASE_MS,
+    ABANDONED_PUSH_MESSAGE,
   );
+  if (claim === "abandoned") {
+    logger.warn({ orderId }, "FINA order push found abandoned mid-call — marked uncertain");
+    if (mode === "manual") throw new ApiError(409, ABANDONED_PUSH_MESSAGE);
+    return;
+  }
+  if (claim === "unavailable") {
+    if (mode === "automatic") return;
+    const current = await finaSyncRepository.findOrderForPush(orderId);
+    if (current?.finaSyncStatus === "SYNCED") {
+      throw new ApiError(400, "ეს შეკვეთა უკვე დასინქრონებულია FINA-სთან — ხელახლა გაგზავნა საჭირო არ არის");
+    }
+    if (current?.finaPushLockedUntil && current.finaPushLockedUntil > new Date()) {
+      throw new ApiError(429, "ამ შეკვეთაზე უკვე მიმდინარეობს გაგზავნა FINA-ში — მოითმინეთ და თავიდან სცადეთ");
+    }
+    throw new ApiError(400, "ამ შეკვეთისთვის FINA-ში გასაგზავნი არაფერია");
+  }
+
+  const order = await finaSyncRepository.findOrderForPush(orderId);
+  if (!order) return;
+  const input = {
+    id: order.id,
+    orderCode: order.orderCode,
+    finaOutOperationId: order.finaOutOperationId,
+    items: order.items.map((item) => ({
+      id: item.id,
+      productVariantId: item.productVariantId,
+      quantity: item.quantity,
+      unitPrice: Number(item.unitPrice),
+      finaProductId: item.finaProductId,
+    })),
+  };
+
+  // Cancelled before its sale was confirmed, while that sale's outcome is
+  // still unknown: FINA may hold the sale, and then the goods (already back
+  // on the site's shelf) also need a return in FINA. That can't be decided
+  // here — it used to fall through to "no sale, nothing to return"
+  // (NOT_APPLICABLE), silently dropping the warning.
+  if (order.cancelledAt && order.finaOutOperationId == null && order.finaPushUncertain) {
+    const message = `შეკვეთა გაუქმდა, მაგრამ უცნობია, მიიღო თუ არა FINA-მ მისი გაყიდვა (${documentLabel({
+      orderCode: order.orderCode,
+      cancelledAt: null,
+    })}). შეამოწმეთ FINA-ში: თუ გაყიდვა იქ არის, მონიშნეთ „FINA-ში არის“ მისი ოპერაციის ნომრით — სისტემა დაბრუნებას გააგზავნის.`;
+    await finaSyncRepository.recordOrderPushFailure(orderId, "FAILED", order.finaPushAttempts, message, true);
+    if (mode === "manual") throw new ApiError(409, message);
+    return;
+  }
+
+  try {
+    if (order.cancelledAt) {
+      await attemptOrderReturnPush(input);
+    } else {
+      await attemptOrderSalePush(input);
+    }
+  } catch (err) {
+    if (err instanceof FinaPushSkipped) {
+      if (err.deferred) {
+        await finaSyncRepository.deferOrderPush(orderId, err.message);
+      } else if (mode === "automatic") {
+        await finaSyncRepository.setOrderFinaSyncStatus(orderId, "NOT_APPLICABLE");
+      } else {
+        await finaSyncRepository.releaseOrderPushLease(orderId);
+      }
+      if (mode === "manual") throw new ApiError(400, err.message);
+      return;
+    }
+
+    logger.error({ err, orderId, mode }, "FINA order push failed");
+    const baseMessage =
+      err instanceof FinaApiError ? err.message : "მოულოდნელი შეცდომა FINA-სთან კავშირისას";
+    // Only a failure that definitely recorded nothing in FINA is retried
+    // automatically. An ambiguous one (timeout, dropped connection, 5xx)
+    // may already have created the document — retrying blindly could
+    // record the sale/return twice — so it stops at FAILED + uncertain for
+    // the admin to check FINA and resolve (resolveOrderFinaPush).
+    const safeToRetry = err instanceof FinaApiError && err.safeToRetry;
+    const lastError = safeToRetry
+      ? baseMessage
+      : `${baseMessage}. პასუხი არ მიგვიღია — შესაძლოა FINA-ში დოკუმენტი (${documentLabel(order)}) უკვე შეიქმნა. შეამოწმეთ FINA-ში და მონიშნეთ შედეგი.`;
+    const attempts = order.finaPushAttempts + 1;
+    const exhausted = mode === "manual" || !safeToRetry || attempts >= FINA_ORDER_PUSH_MAX_ATTEMPTS;
+    await finaSyncRepository.recordOrderPushFailure(
+      orderId,
+      exhausted ? "FAILED" : "PENDING",
+      attempts,
+      lastError,
+      !safeToRetry,
+    );
+    if (mode === "manual") {
+      throw new ApiError(502, lastError);
+    }
+  }
+}
+
+// Fired right after placeOrder / a cancellation commits (both wrote the
+// order as PENDING in their own transaction). Never throws — a FINA outage
+// never blocks checkout or the admin's status change; whatever this attempt
+// can't finish, the sweep below picks up.
+export async function processOrderFinaPush(orderId: number): Promise<void> {
+  try {
+    await runOrderPush(orderId, "automatic");
+  } catch (err) {
+    logger.error({ err, orderId }, "FINA order push crashed");
+  }
+}
+
+// The outbox sweep (scheduled from server.ts, interval admin-configurable
+// via Settings' finaOrderPushRetryIntervalMinutes) — retries every order
+// still PENDING: a failed attempt, or one that never ran because the
+// process restarted between commit and push. One at a time; a typical run
+// finds nothing and costs a single indexed query.
+export async function processDueFinaOrderPushes(): Promise<void> {
+  const orderIds = await finaSyncRepository.findDueOrderPushIds(FINA_ORDER_PUSH_SWEEP_BATCH);
+  for (const orderId of orderIds) {
+    await processOrderFinaPush(orderId);
+  }
+}
+
+// Admin-triggered manual retry (see orders-admin.service.ts's
+// retryOrderFinaSync, wired to the order-detail "ხელით გაშვება FINA-ში"
+// button) — for a FAILED order, or a PENDING one the admin doesn't want to
+// wait on. Same push and same lease as the automatic paths, so it can't
+// double-send alongside them; errors are thrown for the admin's toast.
+export async function retryOrderFinaPush(orderId: number): Promise<void> {
+  await runOrderPush(orderId, "manual");
+}
+
+export type FinaPushResolution = { outcome: "RECORDED"; finaOperationId?: number } | { outcome: "NOT_RECORDED" };
+
+// The admin's answer for a push whose outcome is unknown (finaPushUncertain,
+// or any FAILED/PENDING push the admin has checked in FINA by hand) — the
+// only safe way out: a blind retry could record the document twice.
+//   RECORDED     — FINA has it. For a sale, its FINA operation id is
+//                  required (a later cancellation's return references it).
+//                  A cancelled order whose sale is now confirmed is
+//                  re-queued for its return.
+//   NOT_RECORDED — FINA doesn't. Re-queued and pushed again — except a
+//                  cancelled order whose sale never reached FINA: nothing
+//                  to sell or return there (NOT_APPLICABLE).
+export async function resolveOrderFinaPush(orderId: number, resolution: FinaPushResolution): Promise<void> {
+  const order = await finaSyncRepository.findOrderForPush(orderId);
+  if (!order) {
+    throw new ApiError(404, "შეკვეთა ვერ მოიძებნა");
+  }
+  if (order.finaSyncStatus !== "FAILED" && order.finaSyncStatus !== "PENDING") {
+    throw new ApiError(400, "ამ შეკვეთის FINA-ს სტატუსი დასადასტურებელი არ არის");
+  }
+  if (order.finaPushLockedUntil && order.finaPushLockedUntil > new Date()) {
+    throw new ApiError(429, "ამ შეკვეთაზე ახლა მიმდინარეობს გაგზავნა FINA-ში — მოითმინეთ და თავიდან სცადეთ");
+  }
+
+  // Which document is outstanding: the return once a confirmed sale was
+  // cancelled, otherwise the sale itself.
+  const pendingDocument = order.cancelledAt && order.finaOutOperationId != null ? "return" : "sale";
+
+  if (resolution.outcome === "RECORDED") {
+    if (pendingDocument === "return") {
+      await finaSyncRepository.resolveReturnRecorded(order.id);
+      return;
+    }
+    const finaOperationId = resolution.finaOperationId;
+    if (finaOperationId == null || !Number.isInteger(finaOperationId) || finaOperationId <= 0) {
+      throw new ApiError(400, "მიუთითეთ გაყიდვის დოკუმენტის ოპერაციის ნომერი FINA-დან");
+    }
+    const lines = await buildFinaOrderLines(
+      order.id,
+      order.items.map((item) => ({ ...item, unitPrice: Number(item.unitPrice) })),
+      "sale",
+    );
+    await finaSyncRepository.resolveSaleRecorded(
+      order.id,
+      finaOperationId,
+      order.cancelledAt ? "PENDING" : "SYNCED",
+      lines?.itemFinaProductIds ?? [],
+    );
+    if (order.cancelledAt) await processOrderFinaPush(order.id);
+    return;
+  }
+
+  if (pendingDocument === "sale" && order.cancelledAt) {
+    await finaSyncRepository.setOrderFinaSyncStatus(order.id, "NOT_APPLICABLE");
+    return;
+  }
+  await finaSyncRepository.setOrderFinaSyncStatus(order.id, "PENDING");
+  await processOrderFinaPush(order.id);
 }

@@ -1,32 +1,11 @@
-import type { LookupItem } from "./lookups";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type DashboardLowStockItemType = "PRODUCT_VARIANT" | "VEHICLE_LISTING";
 
-export type DashboardStats = {
-  counts: {
-    totalOrders: number;
-    totalUsers: number;
-    totalProducts: number;
-    totalVehicleListings: number;
-    activePromoCodes: number;
-    lowStockCount: number;
-  };
-  revenueLast30Days: number;
-  ordersByStatus: { status: LookupItem; count: number }[];
-  recentOrders: {
-    id: number;
-    orderCode: string;
-    buyerName: string;
-    status: LookupItem;
-    total: number;
-    createdAt: string;
-  }[];
-  lowStockItems: {
-    id: number;
-    rowKey: string;
-    itemType: DashboardLowStockItemType;
-    label: string;
-    variantLabel: string | null;
-    stockQuantity: number;
-  }[];
-};
+export type DashboardSalesSummary = DashboardStats["salesToday"];
+
+export type DashboardStats = Schemas["DashboardStats"];

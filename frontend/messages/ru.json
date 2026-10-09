@@ -1,20 +1,31 @@
 {
   "Metadata": {
-    "title": "{siteName} — Мотоэкипировка и аксессуары",
-    "description": "Аксессуары, экипировка, шлемы и запчасти для мототехники.",
+    "title": "{siteName} — мотоциклы, запчасти и мотосервис",
+    "description": "Мотоциклы, запчасти, шлемы и экипировка, сервис и ремонт мотоциклов. Подберите совместимые с вашим мотоциклом запчасти онлайн.",
     "categoryTitle": "{category} — {siteName}",
     "categoryTitleWithPage": "{category} — Страница {page} — {siteName}",
     "categoryDescription": "{category} — лучший выбор и цены в {siteName}.",
+    "compatibleProductsTitle": "{vehicle} — запчасти и аксессуары | {siteName}",
+    "compatibleProductsDescription": "Запчасти, аксессуары и экипировка для {vehicle} в {siteName} — {count} товаров.",
     "aboutTitle": "О нас — {siteName}",
     "aboutDescription": "Узнайте больше о {siteName} — надёжном магазине мотоэкипировки, аксессуаров и запчастей в Грузии.",
     "faqTitle": "Часто задаваемые вопросы — {siteName}",
     "faqDescription": "Ответы на часто задаваемые вопросы о заказе, доставке и оплате в {siteName}.",
+    "vacanciesTitle": "Вакансии — {siteName}",
+    "vacanciesDescription": "Присоединяйтесь к нашей команде — ознакомьтесь с открытыми вакансиями в {siteName}.",
     "contactTitle": "Контакты — {siteName}",
     "contactDescription": "Свяжитесь с нами — адрес, телефон, эл. почта и часы работы {siteName}.",
     "termsTitle": "Условия использования — {siteName}",
     "termsDescription": "Условия использования сервисов {siteName}.",
+    "privacyTitle": "Политика конфиденциальности — {siteName}",
+    "privacyDescription": "Как {siteName} собирает, использует и защищает ваши персональные данные.",
     "catalogTitle": "Каталог — {siteName}",
-    "catalogDescription": "Просмотрите полный каталог {siteName} по категориям."
+    "catalogDescription": "Просмотрите полный каталог {siteName} по категориям.",
+    "titleWithCity": "{siteName} — мотоциклы, запчасти и мотосервис | {city}",
+    "descriptionWithCity": "Мотоциклы, запчасти, шлемы и экипировка, сервис и ремонт мотоциклов — {city}. Подберите совместимые с вашим мотоциклом запчасти онлайн.",
+    "serviceTitle": "Сервис и ремонт мотоциклов — {siteName}",
+    "serviceDescription": "Мотосервис {siteName}: {services}. Часы работы, адрес и запись.",
+    "serviceDescriptionGeneric": "Сервис и ремонт мотоциклов в {siteName} — часы работы, адрес и запись."
   },
   "Nav": {
     "home": "Главная",
@@ -74,6 +85,9 @@
     "outOfStock": "Нет в наличии",
     "lowStock": "Осталось всего {count} шт.",
     "discountBadge": "Скидка",
+    "customsCleared": "Растаможен",
+    "customsNotCleared": "Не растаможен",
+    "toggleCurrency": "Переключить валюту (₾/$)",
     "emptyState": "Ничего не найдено",
     "loadProductsError": "Не удалось загрузить товары",
     "loadVehiclesError": "Не удалось загрузить технику",
@@ -106,6 +120,7 @@
   },
   "Cart": {
     "empty": "Корзина пуста.",
+    "continueShopping": "Вернуться к покупкам",
     "itemCount": "{count, plural, one {# товар} few {# товара} many {# товаров} other {# товаров}}",
     "subtotal": "Итого",
     "viewCart": "Смотреть корзину",
@@ -159,6 +174,10 @@
     "discount": "Скидка",
     "delivery": "Доставка",
     "total": "Итого к оплате",
+    "itemsTotal": "Сумма товаров",
+    "totalNeedsAddress": "Полная сумма с доставкой появится после выбора адреса",
+    "totalNeedsBank": "Полная сумма появится после выбора банка",
+    "totalCalculating": "Расчёт суммы...",
     "placeOrder": "Оформить заказ",
     "placing": "Оформляется...",
     "placeSuccess": "Заказ успешно оформлен",
@@ -187,6 +206,7 @@
     "conditionLabel": "Состояние",
     "colorLabel": "Цвет",
     "yearLabel": "Год",
+    "customsClearedLabel": "Растаможен",
     "mileageLabel": "Пробег",
     "warrantyLabel": "Гарантия",
     "warrantyYearsValue": "{value, plural, one {# год} few {# года} many {# лет} other {# лет}}",
@@ -220,6 +240,8 @@
     "firstNameLabel": "Имя",
     "lastNameLabel": "Фамилия",
     "emailLabel": "Эл. почта",
+    "phoneLabel": "Номер телефона",
+    "dateOfBirthLabel": "Дата рождения",
     "passwordLabel": "Пароль",
     "confirmPasswordLabel": "Повторите пароль",
     "loginSubmit": "Войти",
@@ -237,6 +259,8 @@
     "emailInvalidError": "Неверный формат эл. почты",
     "passwordTooShortError": "Пароль должен содержать минимум 8 символов",
     "confirmPasswordRequiredError": "Повторите пароль",
+    "phoneError": "Неверный номер телефона",
+    "dateOfBirthError": "Неверная дата рождения, возраст должен быть не менее 16 лет",
     "termsAgreement": "Я согласен с <terms>условиями использования</terms>",
     "termsRequiredError": "Для продолжения необходимо согласиться с условиями использования",
     "loginError": "Не удалось войти",
@@ -274,10 +298,14 @@
     "verificationResent": "Письмо с подтверждением отправлено повторно",
     "verificationResendError": "Не удалось отправить письмо",
     "verifyRequiredTitle": "Подтвердите ваш email",
-    "verifyRequiredDescription": "Для доступа к личному кабинету необходимо подтвердить email. Ссылка для подтверждения отправлена на {email}.",
+    "verifyRequiredDescription": "Чтобы продолжить, необходимо подтвердить email. Ссылка для подтверждения отправлена на {email}.",
+    "verifyRequiredContinue": "Уже подтверждено — продолжить",
     "verifyRequiredBannerMessage": "Не получили письмо?",
     "verifyRequiredLogout": "Выйти",
-    "verifyRequiredLogoutError": "Не удалось выйти"
+    "verifyRequiredLogoutError": "Не удалось выйти",
+    "passwordTooLongError": "Пароль слишком длинный — максимум 72 символа",
+    "passwordInvalidCharsError": "Пароль может содержать только латинские буквы, цифры и символы",
+    "oauthEmailExists": "Аккаунт с этим email уже существует — войдите тем способом, которым регистрировались (например, через Google)"
   },
   "Home": {
     "heroTitle": "Экипировка, которой можно доверять на <hl>дороге</hl>",
@@ -296,7 +324,8 @@
     "searchGarageLabel": "Выбрать из вашего гаража",
     "searchGaragePlaceholder": "Выберите вашу технику",
     "searchOrDivider": "или",
-    "searchButton": "Поиск"
+    "searchButton": "Поиск",
+    "seoHeading": "Мотоциклы, запчасти, экипировка и мотосервис"
   },
   "HomeInfoCards": {
     "heading": "Познакомьтесь с MotoStock 22",
@@ -319,7 +348,9 @@
     "aboutUs": "О нас",
     "contactTitle": "Контакты",
     "termsTitle": "Условия использования",
+    "privacyTitle": "Политика конфиденциальности",
     "faqTitle": "Частые вопросы",
+    "vacanciesTitle": "Вакансии",
     "rights": "Все права защищены.",
     "hoursClosed": "Закрыто",
     "mondayShort": "Пн",
@@ -328,7 +359,8 @@
     "thursdayShort": "Чт",
     "fridayShort": "Пт",
     "saturdayShort": "Сб",
-    "sundayShort": "Вс"
+    "sundayShort": "Вс",
+    "serviceTitle": "Сервис"
   },
   "Catalog": {
     "title": "Каталог",
@@ -358,9 +390,20 @@
     "empty": "Текст будет добавлен позже.",
     "loading": "Загрузка..."
   },
+  "PrivacyPolicy": {
+    "title": "Политика конфиденциальности",
+    "empty": "Текст будет добавлен позже.",
+    "loading": "Загрузка..."
+  },
   "Faq": {
     "title": "Часто задаваемые вопросы",
     "empty": "Вопросы появятся позже."
+  },
+  "Vacancies": {
+    "title": "Вакансии",
+    "empty": "На данный момент открытых вакансий нет.",
+    "viewDetails": "Подробнее",
+    "backToList": "Все вакансии"
   },
   "About": {
     "title": "О нас",
@@ -383,7 +426,10 @@
   "CookieNotice": {
     "message": "Сайт использует только строго необходимые файлы cookie (авторизация, корзина, избранное) для корректной работы.",
     "linkLabel": "Подробнее",
-    "acceptLabel": "Понятно"
+    "acceptLabel": "Понятно",
+    "analyticsMessage": "Помимо строго необходимых файлов cookie, с вашего согласия мы используем аналитические cookie (Google Analytics), чтобы понимать, как используется сайт, и улучшать его.",
+    "acceptAllLabel": "Принять",
+    "rejectLabel": "Отклонить"
   },
   "ScrollToTop": {
     "label": "Наверх"
@@ -526,6 +572,7 @@
     },
     "orders": {
       "empty": "Вы ещё не оформили ни одного заказа.",
+      "invoiceDownload": "Скачать счёт",
       "reorderButton": "Повторить заказ",
       "reorderLoading": "Обработка...",
       "reorderAllAdded": "Все товары добавлены в корзину",
@@ -570,7 +617,9 @@
       "submitting": "Сохранение...",
       "mismatch": "Пароли не совпадают",
       "success": "Пароль успешно изменён",
-      "error": "Не удалось изменить пароль"
+      "error": "Не удалось изменить пароль",
+      "tooLong": "Пароль слишком длинный — максимум 72 символа",
+      "invalidChars": "Пароль может содержать только латинские буквы, цифры и символы"
     },
     "newsletter": {
       "label": "Подписка на рассылку",
@@ -593,6 +642,9 @@
     "backHome": "Вернуться на главную"
   },
   "ApiErrors": {
+    "RECORD_CONFLICT": "Такая запись уже существует",
+    "RECORD_IN_USE": "Действие невозможно — запись используется в других данных",
+    "RECORD_NOT_FOUND": "Запись не найдена — возможно, она уже удалена",
     "NOT_AUTHENTICATED": "Пожалуйста, войдите в систему",
     "PRODUCT_NOT_FOUND": "Товар не найден",
     "PRODUCT_VARIANT_NOT_FOUND": "Выбранный вариант не найден",
@@ -641,7 +693,8 @@
     "SERVICE_TYPE_NOT_FOUND": "Тип обслуживания не найден",
     "CURRENT_PASSWORD_REQUIRED": "Укажите текущий пароль",
     "CURRENT_PASSWORD_INCORRECT": "Текущий пароль неверен",
-    "VALIDATION_FAILED": "Отправленные данные неверны"
+    "VALIDATION_FAILED": "Отправленные данные неверны",
+    "USD_GEL_RATE_UNAVAILABLE": "Товары с ценой в долларах временно недоступны для покупки — курс обновляется, попробуйте позже"
   },
   "Common": {
     "genericError": "Произошла ошибка, попробуйте снова",
@@ -703,5 +756,18 @@
       "promoCodeScopeAllProducts": "все товары",
       "promoCodeScopeAllVehicles": "вся техника"
     }
+  },
+  "Service": {
+    "title": "Мотосервис",
+    "intro": "Наш сервисный центр обслужит ваш мотоцикл — от планового ТО до ремонта. Запчасти подбираются на месте, а история обслуживания хранится в гараже вашего профиля.",
+    "servicesHeading": "Что мы делаем",
+    "noServices": "Список услуг скоро появится — свяжитесь с нами для подробностей.",
+    "contactHeading": "Запись и консультация",
+    "contactText": "Позвоните или приходите, чтобы записаться на сервис или уточнить цену.",
+    "callButton": "Позвонить",
+    "contactLink": "Адрес и контакты",
+    "partsHeading": "Запчасти для вашего мотоцикла",
+    "partsText": "Добавьте мотоцикл в гараж и смотрите только подходящие к нему запчасти.",
+    "partsLink": "Открыть гараж"
   }
 }

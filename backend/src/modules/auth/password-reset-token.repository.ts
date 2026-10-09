@@ -24,6 +24,18 @@ export const passwordResetTokenRepository = {
     });
   },
 
+  // Burns every still-unused reset link of a user — called once their
+  // password has changed (a reset via one link, or a logged-in change).
+  // Otherwise an older link (several requested, or one sitting in a
+  // compromised mailbox) stayed usable to take the account over again until
+  // it expired.
+  invalidateAllForUser(userId: number) {
+    return prisma.passwordResetToken.updateMany({
+      where: { userId, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+  },
+
   // resetPassword already rejects any token whose expiresAt is in the past
   // (see auth.service.ts), so a row past that point can never be claimed —
   // safe to delete outright instead of leaving it to accumulate forever.

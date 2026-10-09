@@ -1,3 +1,6 @@
+import type { z } from "zod";
+import type { Expect, ResponseMatches } from "../../lib/response-contract.js";
+import type { vehicleCatalogOptionResponseSchema } from "./vehicle-catalog.schema.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation, runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
@@ -8,6 +11,7 @@ import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { applyVehicleCatalogAdminFilters } from "../filters/vehicle-catalog/vehicle-catalog-filter-registry.js";
 import { resolvePage } from "../../lib/pagination.js";
 import { vehicleCatalogRepository } from "./vehicle-catalog.repository.js";
+import { cache } from "../../lib/cache.js";
 import type {
   CreateVehicleCatalogInput,
   SubmitVehicleCatalogInput,
@@ -191,6 +195,98 @@ export async function listVehicleCatalog(query: VehicleCatalogListQuery = {}) {
     vehicleCatalogRepository.count(where),
   ]);
   return { items: rows.map(toVehicleCatalogResponse), total, page, pageSize };
+}
+
+export async function listVehicleCatalogOptions() {
+  const rows = await vehicleCatalogRepository.findOptions();
+  return rows.map((row) => ({
+    id: row.id,
+    category: toNamedRef(row.model.category),
+    brand: row.brand,
+    model: { id: row.model.id, name: row.model.name, slug: row.model.slug },
+    variant: row.variant,
+    yearFrom: row.yearFrom,
+    yearTo: row.yearTo,
+  }));
+}
+
+// Sitemap feed for the "parts for <vehicle>" pages (/compatible-products/…):
+// only vehicles at least one active product actually fits — an empty page
+// is noindex anyway (see that page's generateMetadata), so listing it would
+// just waste crawl budget. Computed for the whole catalog in memory from four
+// queries (vehicleCatalogRepository.findCompatibilityInputs) — it used to run
+// three queries per catalog entry, tens of seconds for a bulk-imported
+// catalog — cached for an hour, and concurrent requests during a miss share
+// one computation instead of each running it.
+const COMPATIBLE_OPTIONS_CACHE_KEY = "vehicleCatalog:optionsWithCompatibleProducts";
+const COMPATIBLE_OPTIONS_CACHE_TTL_MS = 60 * 60 * 1000;
+type CatalogOption = Awaited<ReturnType<typeof listVehicleCatalogOptions>>[number];
+let compatibleOptionsInFlight: Promise<CatalogOption[]> | null = null;
+
+// Spec rule field -> the catalog column holding that spec's lookup id.
+const SPEC_FIELD_COLUMN = {
+  FUEL_TYPE: "fuelTypeId",
+  TRANSMISSION_TYPE: "transmissionTypeId",
+  COOLING_TYPE: "coolingTypeId",
+  FINAL_DRIVE_TYPE: "finalDriveTypeId",
+  DRIVE_TYPE: "driveTypeId",
+  START_TYPE: "startTypeId",
+  POWERTRAIN_TYPE: "powertrainTypeId",
+} as const;
+
+async function computeOptionsWithCompatibleProducts(): Promise<CatalogOption[]> {
+  const [options, { fitments, rules, specs, categories }] = await Promise.all([
+    listVehicleCatalogOptions(),
+    vehicleCatalogRepository.findCompatibilityInputs(),
+  ]);
+  // An ALL rule on any listable product fits every vehicle.
+  if (rules.some((rule) => rule.type === "ALL")) return options;
+
+  const fittedIds = new Set(fitments.map((fitment) => fitment.vehicleCatalogId));
+  const ruleCategoryIds = new Set(
+    rules.filter((rule) => rule.type === "CATEGORY" && rule.categoryId != null).map((rule) => rule.categoryId!),
+  );
+  const ruleSpecs = new Set(
+    rules
+      .filter((rule) => rule.type === "SPEC" && rule.specField != null && rule.specLookupItemId != null)
+      .map((rule) => `${rule.specField}:${rule.specLookupItemId}`),
+  );
+  const parentIdById = new Map(categories.map((category) => [category.id, category.parentId]));
+  const categoryOrAncestorHasRule = (categoryId: number) => {
+    for (let current: number | null = categoryId; current != null; current = parentIdById.get(current) ?? null) {
+      if (ruleCategoryIds.has(current)) return true;
+    }
+    return false;
+  };
+  const specById = new Map(specs.map((spec) => [spec.id, spec]));
+
+  return options.filter((option) => {
+    if (fittedIds.has(option.id)) return true;
+    const spec = specById.get(option.id);
+    if (!spec) return false;
+    if (ruleCategoryIds.size > 0 && categoryOrAncestorHasRule(spec.model.categoryId)) return true;
+    if (ruleSpecs.size === 0) return false;
+    return Object.entries(SPEC_FIELD_COLUMN).some(([field, column]) => {
+      const value = spec[column];
+      return value != null && ruleSpecs.has(`${field}:${value}`);
+    });
+  });
+}
+
+export async function listVehicleCatalogOptionsWithCompatibleProducts(): Promise<CatalogOption[]> {
+  const cached = cache.get<CatalogOption[]>(COMPATIBLE_OPTIONS_CACHE_KEY);
+  if (cached) return cached;
+  if (!compatibleOptionsInFlight) {
+    compatibleOptionsInFlight = computeOptionsWithCompatibleProducts()
+      .then((result) => {
+        cache.set(COMPATIBLE_OPTIONS_CACHE_KEY, result, COMPATIBLE_OPTIONS_CACHE_TTL_MS);
+        return result;
+      })
+      .finally(() => {
+        compatibleOptionsInFlight = null;
+      });
+  }
+  return compatibleOptionsInFlight;
 }
 
 export async function getVehicleCatalogEntry(id: number) {
@@ -401,3 +497,12 @@ export async function deleteVehicleCatalogEntry(id: number) {
   }
   void deleteUploadedImage(existing.imageUrl);
 }
+
+// Contract check: the picker mapper must return exactly what
+// vehicleCatalogOptionResponseSchema documents (the frontend's
+// VehicleCatalogOption type is generated from it — see
+// lib/response-contract.ts).
+type _VehicleCatalogOptionContract = Expect<ResponseMatches<
+  Awaited<ReturnType<typeof listVehicleCatalogOptions>>[number],
+  z.infer<typeof vehicleCatalogOptionResponseSchema>
+>>;

@@ -13,10 +13,12 @@ import {
   createVehicleListing,
   updateVehicleListing,
   type VehicleListing,
+  type VehicleListingCurrency,
   type VehicleListingInput,
 } from "@/lib/api/vehicle-listings";
+import { useUsdToGelRate } from "@/lib/useUsdToGelRate";
 import { uploadVehicleListingImages } from "@/lib/api/vehicle-listing-images";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import type { LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError } from "@/lib/api/client";
 import { VehicleListingDiscountsPanel } from "./VehicleListingDiscountsPanel";
@@ -24,7 +26,7 @@ import { VehicleListingImagesPanel } from "./VehicleListingImagesPanel";
 import { vehicleListingFormSchema } from "@/lib/validation/vehicle-listing";
 import { MAX_DECIMAL_10_2, getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 
-function vehicleCatalogLabel(entry: VehicleCatalogEntry): string {
+function vehicleCatalogLabel(entry: VehicleCatalogOption): string {
   const year =
     entry.yearFrom || entry.yearTo ? ` (${entry.yearFrom ?? "?"}–${entry.yearTo ?? "?"})` : "";
   return `${entry.brand.name} ${entry.model.name}${year}`;
@@ -48,7 +50,7 @@ export function VehicleListingFormModal({
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   conditions: LookupItem[];
   statuses: LookupItem[];
   colors: LookupItem[];
@@ -83,6 +85,14 @@ export function VehicleListingFormModal({
   );
   const [warrantyUnit, setWarrantyUnit] = useState(listing?.warrantyUnit ?? "");
   const [isActive, setIsActive] = useState(listing?.isActive ?? true);
+  const [isFeaturedOnHomepage, setIsFeaturedOnHomepage] = useState(
+    listing?.isFeaturedOnHomepage ?? false,
+  );
+  const [isCustomsCleared, setIsCustomsCleared] = useState(listing?.isCustomsCleared ?? false);
+  const [priceCurrency, setPriceCurrency] = useState<VehicleListingCurrency>(
+    listing?.priceCurrency ?? "GEL",
+  );
+  const { rate: usdToGelRate } = useUsdToGelRate();
   const [price, setPrice] = useState(listing ? String(listing.price) : "");
   const [stockQuantity, setStockQuantity] = useState(
     listing ? String(listing.stockQuantity) : "1",
@@ -154,6 +164,9 @@ export function VehicleListingFormModal({
         warrantyValue: warrantyValue ? Number(warrantyValue) : null,
         warrantyUnit: warrantyUnit ? (warrantyUnit as "YEAR" | "MONTH") : null,
         isActive,
+        isFeaturedOnHomepage,
+        isCustomsCleared,
+        priceCurrency,
         price: Number(price),
         ...(isEditing
           ? stockQuantityChanged
@@ -255,17 +268,37 @@ export function VehicleListingFormModal({
         </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="vl-price" className="text-sm font-medium">
-            ფასი (₾) *
+            ფასი ({priceCurrency === "USD" ? "$" : "₾"}) *
           </label>
-          <input
-            id="vl-price"
-            type="number"
-            step="0.01"
-            max={MAX_DECIMAL_10_2}
-            value={price}
-            onChange={(event) => setPrice(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
+          <div className="flex gap-2">
+            <input
+              id="vl-price"
+              type="number"
+              step="0.01"
+              max={MAX_DECIMAL_10_2}
+              value={price}
+              onChange={(event) => setPrice(event.target.value)}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <div className="w-24 shrink-0">
+              <Select
+                ariaLabel="ვალუტა"
+                options={[
+                  { value: "GEL", label: "₾" },
+                  { value: "USD", label: "$" },
+                ]}
+                value={priceCurrency}
+                onChange={(value) => setPriceCurrency(value as VehicleListingCurrency)}
+              />
+            </div>
+          </div>
+          {priceCurrency === "USD" && (
+            <p className="text-xs text-muted-foreground">
+              {usdToGelRate != null
+                ? `დღეს კურსი: 1$ = ${usdToGelRate.toFixed(4)} ₾`
+                : "დღეს კურსი ჯერ არ არის ცნობილი"}
+            </p>
+          )}
           <FieldError message={errors.price} />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -332,6 +365,31 @@ export function VehicleListingFormModal({
         </div>
         <Toggle checked={isActive} onChange={setIsActive} label="აქტიურია" />
       </div>
+
+      <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+        <div>
+          <p className="text-sm font-medium">ახალი პროდუქცია სლაიდერში</p>
+          <p className="text-sm text-muted-foreground">
+            გამოჩნდება მთავარი გვერდის &quot;ახალი პროდუქცია&quot; სლაიდერში.
+          </p>
+        </div>
+        <Toggle
+          checked={isFeaturedOnHomepage}
+          onChange={setIsFeaturedOnHomepage}
+          label="ახალი პროდუქცია სლაიდერში"
+        />
+      </div>
+
+      <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+        <div>
+          <p className="text-sm font-medium">განბაჟებულია</p>
+          <p className="text-sm text-muted-foreground">
+            გამოჩნდება მომხმარებლისთვის, როგორც განბაჟებული ტექნიკა, და შეიძლება გამოყენებულ იქნას
+            მაღაზიის ფილტრში.
+          </p>
+        </div>
+        <Toggle checked={isCustomsCleared} onChange={setIsCustomsCleared} label="განბაჟებულია" />
+      </div>
     </>
   );
 
@@ -374,6 +432,7 @@ export function VehicleListingFormModal({
               <VehicleListingDiscountsPanel
                 listingId={listing.id}
                 basePrice={Number(price) || listing.price}
+                priceCurrency={priceCurrency}
               />
             ),
           },

@@ -1,14 +1,16 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireAuth } from "../../middleware/auth.middleware.js";
+import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import { uploadRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { imageUpload } from "../../middleware/upload.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
+import { ROLES } from "../../lib/roles.js";
 import * as garageController from "./garage.controller.js";
 import {
   createGarageVehicleSchema,
+  garageUserIdParamSchema,
   garageVehicleIdParamSchema,
   garageVehicleResponseSchema,
   updateGarageVehicleSchema,
@@ -43,6 +45,29 @@ garageRouter.delete(
   "/me/garage/:id",
   validate(garageVehicleIdParamSchema, "params"),
   garageController.remove,
+);
+
+// Admin workshop screen — add/list a vehicle for any customer (walk-in or
+// registered). Registered after the literal "/me/garage" routes above, so
+// those still resolve first; ":userId" here never matches "me" in practice
+// because a matching request would already have been handled by that exact
+// route before reaching this one.
+garageRouter.get(
+  "/:userId/garage",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(garageUserIdParamSchema, "params"),
+  garageController.adminList,
+);
+garageRouter.post(
+  "/:userId/garage",
+  requireAuth,
+  // OPERATOR too — a new walk-in's bike has to be added before any service
+  // record can be logged on it.
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(garageUserIdParamSchema, "params"),
+  validate(createGarageVehicleSchema),
+  garageController.adminCreate,
 );
 
 const security = [{ cookieAuth: [] }];
@@ -119,5 +144,37 @@ registry.registerPath({
     204: { description: "Deleted" },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/users/{userId}/garage",
+  tags: ["Garage"],
+  summary: "List a given customer's garage vehicles (admin/operator, workshop screen)",
+  security,
+  request: { params: garageUserIdParamSchema },
+  responses: {
+    200: { description: "Garage vehicles", content: { "application/json": { schema: listResponse } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/users/{userId}/garage",
+  tags: ["Garage"],
+  summary: "Add a catalog vehicle to a given customer's garage (admin/operator, workshop screen)",
+  security,
+  request: {
+    params: garageUserIdParamSchema,
+    body: { content: { "application/json": { schema: createGarageVehicleSchema } } },
+  },
+  responses: {
+    201: { description: "Created", content: { "application/json": { schema: itemResponse } } },
+    400: { description: "Invalid references", content: { "application/json": { schema: errorResponseSchema } } },
+    401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

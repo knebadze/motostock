@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# OpenAPI document — intermediate input for `npm run api:types`; only the
+# generated schema.d.ts is committed.
+/src/lib/api/generated/openapi.json

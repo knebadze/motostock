@@ -22,6 +22,7 @@ import type { LookupItem } from "@/lib/api/lookups";
 import { buildVehicleCatalogFilterFields } from "@/config/admin-filters/vehicle-catalog-filters";
 import { VehicleCatalogFormModal } from "./VehicleCatalogFormModal";
 import { VehicleCatalogBulkImportModal } from "./VehicleCatalogBulkImportModal";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 
 const columns: DataTableColumn<VehicleCatalogEntry>[] = [
   {
@@ -252,6 +253,7 @@ export function VehicleCatalogManager({
         onConfirm={async () => {
           if (!deletingEntry) return;
           await deleteVehicleCatalogEntry(deletingEntry.id);
+          await revalidatePublicCache("vehicle-catalog");
           await refresh();
         }}
       />

@@ -1,3 +1,4 @@
+import { redirect as nextRedirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { getCurrentUserFromServer } from "@/lib/api/server";
@@ -14,6 +15,15 @@ export default async function AccountLayout({
     const locale = await getLocale();
     redirect({ href: "/login", locale });
     return null;
+  }
+
+  // Staff (ADMIN/OPERATOR) have no customer profile — their "account" is
+  // the admin panel (same rule as Header.tsx's account menu). Any /account/*
+  // link they follow (e.g. the shop's "my garage" filter, the service page)
+  // lands there instead of a customer area that isn't theirs. Plain
+  // next/navigation redirect: /admin isn't locale-routed.
+  if (user.role === "ADMIN" || user.role === "OPERATOR") {
+    nextRedirect("/admin");
   }
 
   // Hard gate — an unverified account never reaches any /account/* page,

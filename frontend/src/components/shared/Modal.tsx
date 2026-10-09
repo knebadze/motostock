@@ -1,13 +1,21 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 
 const SIZE_CLASSES = {
   md: "max-w-md",
   xl: "max-w-2xl",
   "2xl": "max-w-4xl",
+  "3xl": "max-w-6xl",
 } as const;
+
+// Open modals, innermost last — lets a modal open on top of another (e.g.
+// an order's detail over a customer's order history). Without it, one
+// Escape press closed every open modal at once (each had its own document
+// keydown listener), and closing the inner one re-enabled page scrolling
+// while the outer one was still open.
+const openModalStack: symbol[] = [];
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -31,6 +39,9 @@ export function Modal({
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+  // Unique per instance — a fixed id would be duplicated while two modals
+  // are open, breaking aria-labelledby for the inner one.
+  const titleId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -44,7 +55,12 @@ export function Modal({
     previouslyFocused.current = document.activeElement as HTMLElement | null;
     dialogRef.current?.focus();
 
+    const stackToken = Symbol("modal");
+    openModalStack.push(stackToken);
+
     function handleKeyDown(event: KeyboardEvent) {
+      // Only the innermost open modal reacts to keys.
+      if (openModalStack[openModalStack.length - 1] !== stackToken) return;
       if (event.key === "Escape") {
         onClose();
         return;
@@ -76,7 +92,9 @@ export function Modal({
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
+      const index = openModalStack.indexOf(stackToken);
+      if (index !== -1) openModalStack.splice(index, 1);
+      if (openModalStack.length === 0) document.body.style.overflow = "";
       previouslyFocused.current?.focus();
     };
   }, [open, onClose]);
@@ -91,12 +109,12 @@ export function Modal({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-title"
+        aria-labelledby={titleId}
         tabIndex={-1}
         className={`relative flex max-h-[90vh] w-full flex-col rounded-2xl border border-border bg-card p-6 shadow-xl outline-none ${SIZE_CLASSES[size]}`}
       >
         <div className="mb-4 flex shrink-0 items-center justify-between">
-          <h2 id="modal-title" className="text-lg font-bold tracking-tight">
+          <h2 id={titleId} className="text-lg font-bold tracking-tight">
             {title}
           </h2>
           <button

@@ -1,26 +1,15 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type AttributeValueType = "TEXT" | "NUMBER" | "BOOLEAN" | "SELECT";
 
-export type Attribute = {
-  id: number;
-  category: { id: number; name: LocalizedString; slug: string };
-  name: LocalizedString;
-  valueType: AttributeValueType;
-  required: boolean;
-  unit: { id: number; name: LocalizedString; abbreviation: LocalizedString } | null;
-  createdAt: string;
-  updatedAt: string;
-};
+export type Attribute = Schemas["Attribute"];
 
-export type AttributeInput = {
-  categoryId: number;
-  name: LocalizedString;
-  valueType: AttributeValueType;
-  required?: boolean;
-  unitId?: number | null;
-};
+export type AttributeInput = Schemas["CreateAttributeInput"];
 
 export async function listAttributes(categoryId?: number): Promise<Attribute[]> {
   const { data } = await apiClient.get<{ items: Attribute[] }>("/attributes", {

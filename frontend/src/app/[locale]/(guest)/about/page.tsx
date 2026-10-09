@@ -6,6 +6,7 @@ import { getPublicTeamMembersFromServer } from "@/lib/api/server";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
+import { buildSocialMetadata } from "@/lib/share-metadata";
 
 // Static, hand-authored page (not admin/DB-driven) — heavy on images/text/
 // a slider, unlike the single admin-edited rich-text block Terms uses.
@@ -63,7 +64,7 @@ export async function generateMetadata({
       canonical: buildCanonicalUrl(pathname, locale),
       languages: getAlternateLanguages(pathname),
     },
-    openGraph: { title, description },
+    ...(await buildSocialMetadata({ locale, title, description, pathname })),
   };
 }
 
@@ -113,7 +114,7 @@ export default async function AboutPage() {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {whyUsItems.map((item) => (
             <div key={item.title} className="rounded-2xl border border-border bg-card p-6">
-              <div className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <div className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary-text">
                 {item.icon}
               </div>
               <h3 className="mt-4 font-semibold text-foreground">{item.title}</h3>

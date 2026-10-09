@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, useServerPagination } from "@/components/shared/Pagination";
 import { Select } from "@/components/shared/Select";
+import { ProductDetailModal } from "../products/ProductDetailModal";
 import { formatDateTime } from "@/lib/format";
 import { ApiRequestError } from "@/lib/api/client";
 import {
@@ -52,6 +52,7 @@ export function BuyTogetherManager({
   const { data, totalPages, loading, load } = useServerPagination(initialData);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [viewingProductId, setViewingProductId] = useState<number | null>(null);
 
   const categoryOptions = categories.map((category) => ({
     value: String(category.id),
@@ -137,7 +138,7 @@ export function BuyTogetherManager({
             type="button"
             onClick={handleClearFilters}
             disabled={loading}
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary disabled:opacity-50"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text disabled:opacity-50"
           >
             გაწმენდა
           </button>
@@ -152,17 +153,22 @@ export function BuyTogetherManager({
           emptyMessage="კავშირი არ მოიძებნა"
           actions={(item) => (
             <div className="flex justify-end">
-              <Link
-                href={`/admin/products/${item.product.id}`}
-                className="text-sm font-medium text-primary hover:underline"
+              <button
+                type="button"
+                onClick={() => setViewingProductId(item.product.id)}
+                className="text-sm font-medium text-primary-text hover:underline"
               >
                 ნახვა
-              </Link>
+              </button>
             </div>
           )}
         />
         <Pagination currentPage={data.page} totalPages={totalPages} onPageChange={loadPage} />
       </div>
+
+      {viewingProductId != null && (
+        <ProductDetailModal productId={viewingProductId} onClose={() => setViewingProductId(null)} />
+      )}
     </div>
   );
 }

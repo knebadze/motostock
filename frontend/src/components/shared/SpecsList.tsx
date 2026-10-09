@@ -39,7 +39,7 @@ export function SpecsList({
         <button
           type="button"
           onClick={() => setExpanded((value) => !value)}
-          className="self-start text-sm font-semibold text-primary hover:underline"
+          className="self-start text-sm font-semibold text-primary-text hover:underline"
         >
           {expanded ? collapseLabel : showAllLabel}
         </button>

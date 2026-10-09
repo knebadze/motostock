@@ -10,22 +10,34 @@ import {
   finaSyncRunResponseSchema,
   orderIdParamSchema,
   orderStockSyncResultSchema,
+  orderStockSyncWithOrderResultSchema,
   productIdParamSchema,
 } from "./fina-sync.schema.js";
 
 export const finaSyncRouter = Router();
 
-finaSyncRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
-finaSyncRouter.post("/run", finaSyncController.run);
-finaSyncRouter.get("/runs", finaSyncController.list);
+// Per-route (not a blanket `.use()`) — every route here grants OPERATOR too;
+// re-syncing/re-checking FINA stock is part of the OPERATOR role's normal
+// products/orders workflow, not a catalog/data-management write it's
+// otherwise kept away from.
+finaSyncRouter.post(
+  "/run",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  finaSyncController.run,
+);
+finaSyncRouter.get("/runs", requireAuth, requireRole(ROLES.ADMIN, ROLES.OPERATOR), finaSyncController.list);
 finaSyncRouter.post(
   "/orders/:orderId",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(orderIdParamSchema, "params"),
   finaSyncController.syncOrder,
 );
 finaSyncRouter.post(
   "/products/:productId",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(productIdParamSchema, "params"),
   finaSyncController.syncProduct,
 );
@@ -66,7 +78,7 @@ registry.registerPath({
   security,
   request: { params: orderIdParamSchema },
   responses: {
-    200: { description: "Sync result", content: { "application/json": { schema: orderStockSyncResultSchema } } },
+    200: { description: "Sync result", content: { "application/json": { schema: orderStockSyncWithOrderResultSchema } } },
     400: { description: "FINA not configured", content: { "application/json": { schema: errorResponseSchema } } },
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
     403: { description: "Insufficient permissions", content: { "application/json": { schema: errorResponseSchema } } },

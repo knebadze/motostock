@@ -9,6 +9,7 @@ import { vehicleSpecFieldSchema } from "../vehicle-category-filters/vehicle-cate
 import { adminFiltersQuerySchema } from "../filters/filter-request.schema.js";
 
 export const warrantyUnitSchema = z.enum(["YEAR", "MONTH"]);
+export const vehicleListingCurrencySchema = z.enum(["GEL", "USD"]);
 
 // Both null together (no warranty advertised) or both set — never just one,
 // on either create or a partial update.
@@ -36,6 +37,19 @@ const baseVehicleListingSchema = z.object({
   warrantyValue: z.int().positive().nullable().optional(),
   warrantyUnit: warrantyUnitSchema.nullable().optional(),
   isActive: z.boolean().optional(),
+  // Admin-curated membership in the homepage's manually-curated "New
+  // Arrivals" mixed slider (FEATURED_MIXED) — see product.prisma's matching
+  // field for the full rationale.
+  isFeaturedOnHomepage: z.boolean().optional(),
+  // Admin-set customs-clearance status for this specific imported unit —
+  // shown on the storefront and filterable via the vehicle-category-filters
+  // system's IS_CUSTOMS_CLEARED spec field (per-category admin-enabled),
+  // not a fixed list-query param of its own.
+  isCustomsCleared: z.boolean().optional(),
+  // The currency `price` is denominated in — defaults GEL. See
+  // vehicle-listing.prisma's matching field for the checkout-conversion
+  // rationale.
+  priceCurrency: vehicleListingCurrencySchema.optional(),
   price: z.coerce.number().positive().max(MAX_DECIMAL_10_2).openapi({ example: 4500 }),
   // nonnegative, not positive — 0 is a legitimate value (out of stock,
   // sold out but the listing kept for reference), same as mileageKm above.
@@ -111,6 +125,9 @@ export const vehicleListingListQuerySchema = z.object({
   // homepage hero-slider's event-scoped DISCOUNT slides link here (see
   // bulk-discount-events.service.ts's setEventHeroSlide).
   bulkDiscountEventId: z.coerce.number().int().positive().optional(),
+  // Homepage "New Arrivals" mixed slider (FEATURED_MIXED) — a plain
+  // admin-curated boolean, not computed from any discount/popularity data.
+  featured: z.coerce.boolean().optional(),
   // Homepage sliders cap how many listings they pull — optional everywhere
   // else.
   limit: z.coerce.number().int().positive().max(50).optional(),
@@ -162,7 +179,21 @@ export const popularVehicleListingsQuerySchema = z.object({
 export type PopularVehicleListingsQuery = z.infer<typeof popularVehicleListingsQuerySchema>;
 
 const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
-const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
+// Exported for vehicleListingBrandFacetsResponseSchema below (vehicle-listing
+// routes register that one for the OpenAPI doc, so this needs to be
+// reachable there too).
+export const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
+
+// Backs VehicleShopPage.tsx's brand-checkbox facet list — the exact same
+// filter set as the storefront browse/search endpoint above, minus
+// everything (search/pagination/sort/spec filters) that endpoint needs but a
+// distinct-brand list doesn't.
+export const vehicleListingBrandFacetsQuerySchema = z.object({
+  categoryId: z.coerce.number().int().positive().optional(),
+  bulkDiscountEventId: z.coerce.number().int().positive().optional(),
+});
+export type VehicleListingBrandFacetsQuery = z.infer<typeof vehicleListingBrandFacetsQuerySchema>;
+export const vehicleListingBrandFacetsResponseSchema = z.object({ items: z.array(brandModelRefSchema) });
 
 export const vehicleListingResponseSchema = registry.register(
   "VehicleListing",
@@ -211,6 +242,7 @@ export const vehicleListingResponseSchema = registry.register(
     warrantyValue: z.int().nullable(),
     warrantyUnit: warrantyUnitSchema.nullable(),
     isActive: z.boolean(),
+    priceCurrency: vehicleListingCurrencySchema,
     price: z.number().openapi({ example: 4500 }),
     stockQuantity: z.int(),
     descriptionKa: z.string().nullable(),
@@ -225,6 +257,8 @@ export const vehicleListingResponseSchema = registry.register(
     // `price`).
     activeDiscount: z.object({ discountPrice: z.number().openapi({ example: 3999 }) }).nullable(),
     viewCount: z.int(),
+    isFeaturedOnHomepage: z.boolean(),
+    isCustomsCleared: z.boolean(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
     // Same "update-response-only" flag as ProductVariant's identical field —

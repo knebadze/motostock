@@ -18,8 +18,11 @@ export const compatibilityRouter = Router();
 // Pure admin tooling (unified view across every product's fitments/rules) —
 // unlike the per-product fitment routes it's built from, there is no
 // customer-facing use for this, so the whole router is admin-gated, same
-// pattern as promo-codes.routes.ts.
-compatibilityRouter.use(requireAuth, requireRole(ROLES.ADMIN));
+// pattern as promo-codes.routes.ts. Both routes here are read-only (no
+// mutation exists on this router at all — fitments/rules are edited from the
+// individual product's own fitment panel), so OPERATOR gets the same access
+// as ADMIN with no further split needed.
+compatibilityRouter.use(requireAuth, requireRole(ROLES.ADMIN, ROLES.OPERATOR));
 
 compatibilityRouter.get("/", validate(listCompatibilityQuerySchema, "query"), compatibilityController.list);
 compatibilityRouter.get(

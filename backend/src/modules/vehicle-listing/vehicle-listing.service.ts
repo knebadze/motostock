@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { UNPAGINATED_LIST_MAX } from "../products/products.service.js";
 import { cache } from "../../lib/cache.js";
 import { findActiveDiscount, findDiscountAtOrAbovePrice } from "../../lib/discounts.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
@@ -8,7 +9,11 @@ import { resolveCategoryAndDescendantIds } from "../categories/categories.servic
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
-import { getHomepageCacheTtlMinutes } from "../settings/settings.service.js";
+import {
+  getHomepageCacheTtlMinutes,
+  getUsdToGelRate,
+  getUsdToGelRateUpdatedAt,
+} from "../settings/settings.service.js";
 import {
   toDiscountResponse,
   type DiscountRow,
@@ -70,6 +75,7 @@ type VehicleListingRow = {
   warrantyValue: number | null;
   warrantyUnit: "YEAR" | "MONTH" | null;
   isActive: boolean;
+  priceCurrency: "GEL" | "USD";
   price: { toString(): string };
   stockQuantity: number;
   descriptionKa: string | null;
@@ -78,12 +84,50 @@ type VehicleListingRow = {
   images: ImageRow[];
   discounts: DiscountRow[];
   viewCount: number;
+  isFeaturedOnHomepage: boolean;
+  isCustomsCleared: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
 
 function toNamedRef(row: NamedRefRow) {
   return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
+}
+
+// Rows fetched via vehicleListingRepository's adminListInclude (the admin
+// list, and — since the storefront browse/search N+1 fix below — every
+// customer-facing list/carousel path too) drop the 7 VehicleCatalog
+// spec-lookup joins entirely. Null-filled right after the fetch purely to
+// satisfy toVehicleListingResponse's shape — no card (admin table row or
+// storefront ProductCard-equivalent) ever renders these; only the single-
+// item detail page (vehicleListingRepository.findById, still the full
+// include) actually reads them.
+function nullFillVehicleCatalogSpecs<T extends { vehicleCatalog: object }>(
+  row: T,
+): T & {
+  vehicleCatalog: T["vehicleCatalog"] & {
+    fuelType: null;
+    transmissionType: null;
+    coolingType: null;
+    finalDriveType: null;
+    driveType: null;
+    startType: null;
+    powertrainType: null;
+  };
+} {
+  return {
+    ...row,
+    vehicleCatalog: {
+      ...row.vehicleCatalog,
+      fuelType: null,
+      transmissionType: null,
+      coolingType: null,
+      finalDriveType: null,
+      driveType: null,
+      startType: null,
+      powertrainType: null,
+    },
+  };
 }
 
 export function toVehicleListingResponse(row: VehicleListingRow) {
@@ -135,6 +179,7 @@ export function toVehicleListingResponse(row: VehicleListingRow) {
     warrantyValue: row.warrantyValue,
     warrantyUnit: row.warrantyUnit,
     isActive: row.isActive,
+    priceCurrency: row.priceCurrency,
     price: Number(row.price),
     stockQuantity: row.stockQuantity,
     descriptionKa: row.descriptionKa,
@@ -144,6 +189,8 @@ export function toVehicleListingResponse(row: VehicleListingRow) {
     discounts: row.discounts.map(toDiscountResponse),
     activeDiscount: activeDiscount ? { discountPrice: Number(activeDiscount.discountPrice) } : null,
     viewCount: row.viewCount,
+    isFeaturedOnHomepage: row.isFeaturedOnHomepage,
+    isCustomsCleared: row.isCustomsCleared,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -220,12 +267,40 @@ function isCacheableOnSaleQuery(query: VehicleListingListQuery): boolean {
     query.yearMin == null &&
     query.yearMax == null &&
     query.bulkDiscountEventId == null &&
+    query.featured == null &&
     query.specFilters == null &&
     query.adminFilters == null &&
     query.page == null &&
     query.pageSize == null &&
     query.sortBy == null
   );
+}
+
+// Public — backs the storefront's GEL⇄USD toggle (useUsdToGelRate.ts) and
+// the admin listing form's "today's rate" hint. `rate`/`updatedAt` are both
+// null only on a brand-new install with zero successful FETCH_USD_GEL_RATE
+// runs yet (see settings.service.ts's getUsdToGelRate).
+export async function getUsdToGelExchangeRate() {
+  const [rate, updatedAt] = await Promise.all([getUsdToGelRate(), getUsdToGelRateUpdatedAt()]);
+  return { rate, updatedAt };
+}
+
+// Backs VehicleShopPage.tsx's brand-checkbox facet list — the same 2 filters
+// getVehicleListingsFromServer is called with today (categoryId,
+// bulkDiscountEventId), but replaces that unbounded full-listing-row fetch
+// (used only to re-derive this exact distinct-brand list client-side) with a
+// query that returns one lean ref row per brand directly (same fix as
+// products.service.ts's listProductCategoryFacets/listProductBrandFacets).
+export async function listVehicleListingBrandFacets(query: {
+  categoryId?: number;
+  bulkDiscountEventId?: number;
+}) {
+  const categoryIds =
+    query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
+  return vehicleListingRepository.findDistinctBrandFacets({
+    categoryIds,
+    bulkDiscountEventId: query.bulkDiscountEventId,
+  });
 }
 
 // total/page/pageSize are real (DB-backed) whenever the caller is paginated
@@ -247,6 +322,11 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     query.search != null
       ? await vehicleListingRepository.findSearchRankedIds(query.search, query.limit)
       : undefined;
+  // Resolved once regardless of whether priceMin/priceMax/price-sort is
+  // actually in play this call — cheap (in-memory cached), and needed by
+  // both buildWhere's price-filter OR-clause and the price-sort comparator
+  // below.
+  const usdToGelRate = (await getUsdToGelRate()) ?? undefined;
 
   // The admin panel (AdminFilterPanel, which always sends adminFilters)
   // fetches one server-paginated page (page/pageSize below) of the filtered
@@ -274,6 +354,8 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       yearMax: query.yearMax,
       onSale: query.onSale,
       bulkDiscountEventId: query.bulkDiscountEventId,
+      featured: query.featured,
+      usdToGelRate,
       specFilters: query.specFilters,
       adminFilters: query.adminFilters,
     };
@@ -281,19 +363,7 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       vehicleListingRepository.findManyForAdmin({ ...adminCountFilters, skip, take }),
       vehicleListingRepository.countForAdmin(adminCountFilters),
     ]);
-    const rows = adminRows.map((row) => ({
-      ...row,
-      vehicleCatalog: {
-        ...row.vehicleCatalog,
-        fuelType: null,
-        transmissionType: null,
-        coolingType: null,
-        finalDriveType: null,
-        driveType: null,
-        startType: null,
-        powertrainType: null,
-      },
-    }));
+    const rows = adminRows.map(nullFillVehicleCatalogSpecs);
     const result = rows.map(toVehicleListingResponse);
     return { items: result, total: adminTotal, page, pageSize };
   }
@@ -309,27 +379,32 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       yearMax: query.yearMax,
       onSale: query.onSale,
       bulkDiscountEventId: query.bulkDiscountEventId,
+      featured: query.featured,
+      usdToGelRate,
       specFilters: query.specFilters,
     };
 
-    // Effective (discount-aware) price isn't a plain column — same
-    // fetch-all-matching + JS-sort + slice tradeoff as
-    // products.service.ts's listProducts price branch, for the same
-    // reason (see its comment).
+    // Price sort orders by the effective (discount-aware, GEL-normalized)
+    // price the card shows — not a column, so: ids of the whole filtered set
+    // (cheap), Postgres orders them and returns just this page, and only
+    // that page's card rows are loaded (same approach as
+    // products.service.ts's listProducts). `total` stays exact.
     if (query.sortBy === "price-asc" || query.sortBy === "price-desc") {
-      const rows = await vehicleListingRepository.findMany(filters);
-      const effectivePrice = (row: (typeof rows)[number]) => {
-        const activeDiscount = findActiveDiscount(row.discounts);
-        return activeDiscount ? Number(activeDiscount.discountPrice) : Number(row.price);
-      };
-      const sorted = [...rows].sort((a, b) =>
-        query.sortBy === "price-asc"
-          ? effectivePrice(a) - effectivePrice(b)
-          : effectivePrice(b) - effectivePrice(a),
+      const matchingIds = await vehicleListingRepository.findIds(filters);
+      const pageIds = await vehicleListingRepository.findIdsOrderedByEffectivePrice(
+        matchingIds,
+        query.sortBy === "price-asc" ? "asc" : "desc",
+        usdToGelRate ?? 1,
+        skip,
+        take,
       );
-      const pageRows = sorted.slice(skip, skip + take);
-      const result = pageRows.map(toVehicleListingResponse);
-      return { items: result, total: rows.length, page, pageSize };
+      const rows = await vehicleListingRepository.findByIds(pageIds);
+      const rowById = new Map(rows.map((row) => [row.id, row]));
+      const pageRows = pageIds
+        .map((id) => rowById.get(id))
+        .filter((row): row is NonNullable<typeof row> => row != null);
+      const result = pageRows.map(nullFillVehicleCatalogSpecs).map(toVehicleListingResponse);
+      return { items: result, total: matchingIds.length, page, pageSize };
     }
 
     // Default ("newest") / year-desc sort: both plain DB-orderable columns —
@@ -347,7 +422,7 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
       }),
       vehicleListingRepository.count(filters),
     ]);
-    const result = rows.map(toVehicleListingResponse);
+    const result = rows.map(nullFillVehicleCatalogSpecs).map(toVehicleListingResponse);
     return { items: result, total, page, pageSize };
   }
 
@@ -363,26 +438,36 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     yearMax: query.yearMax,
     onSale: query.onSale,
     bulkDiscountEventId: query.bulkDiscountEventId,
+    featured: query.featured,
+    usdToGelRate,
     specFilters: query.specFilters,
-    limit: query.limit,
+    // Capped like products.service.ts's legacy path (UNPAGINATED_LIST_MAX).
+    limit: query.limit ?? UNPAGINATED_LIST_MAX,
   });
 
   let result: ReturnType<typeof toVehicleListingResponse>[];
   if (searchIds == null) {
-    result = rows.map(toVehicleListingResponse);
+    result = rows.map(nullFillVehicleCatalogSpecs).map(toVehicleListingResponse);
   } else {
     // See products.service.ts's listProducts for why this re-sort/slice
     // step is needed (findMany's `id: {in: [...]}` doesn't preserve rank
     // order).
     const rankById = new Map(searchIds.map((id, index) => [id, index]));
     const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
-    result = (query.limit != null ? ranked.slice(0, query.limit) : ranked).map(
-      toVehicleListingResponse,
-    );
+    result = ranked
+      .slice(0, query.limit ?? UNPAGINATED_LIST_MAX)
+      .map(nullFillVehicleCatalogSpecs)
+      .map(toVehicleListingResponse);
   }
 
   if (cacheKey) cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
   return { items: result, total: result.length, page: 1, pageSize: result.length || 1 };
+}
+
+// The sitemap's listing URLs — the parts buildVehicleListingSlug and the
+// category path need, plus lastModified, for every active listing.
+export function listVehicleListingSitemapEntries() {
+  return vehicleListingRepository.findSitemapEntries();
 }
 
 // Homepage "popular vehicles" slider — see
@@ -403,7 +488,7 @@ export async function listPopularVehicleListings(limit: number) {
   const result = rankedIds
     .map((id) => rowById.get(id))
     .filter((row): row is NonNullable<typeof row> => row != null)
-    .map((row) => toVehicleListingResponse(row));
+    .map((row) => toVehicleListingResponse(nullFillVehicleCatalogSpecs(row)));
 
   cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
   return result;
@@ -465,6 +550,23 @@ export async function updateVehicleListing(id: number, input: UpdateVehicleListi
       throw new ApiError(
         400,
         "ახალი ფასი ვერ იქნება ფასდაკლების ფასზე დაბალი ან ტოლი — ჯერ შეცვალეთ ან გააუქმეთ ფასდაკლება",
+      );
+    }
+  }
+
+  // A discount's discountPrice has no currency of its own — it's read in
+  // the listing's CURRENT priceCurrency. Switching the currency would
+  // silently re-denominate every discount (a 9,000 USD sale price becoming
+  // 9,000 GEL ≈ a third of the bike's value), and the price guard above
+  // can't catch it (it compares bare numbers). So the switch is refused
+  // while any discount is active or still scheduled.
+  if (input.priceCurrency !== undefined && input.priceCurrency !== existing.priceCurrency) {
+    const now = new Date();
+    if (existing.discounts.some((discount) => discount.endDate >= now)) {
+      throw new ApiError(
+        400,
+        "ვალუტის შეცვლა შეუძლებელია, სანამ განცხადებას აქვს მოქმედი ან დაგეგმილი ფასდაკლება — ჯერ წაშალეთ ან დაასრულეთ ფასდაკლება",
+        "VEHICLE_LISTING_CURRENCY_HAS_DISCOUNTS",
       );
     }
   }

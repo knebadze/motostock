@@ -6,19 +6,19 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      // Admin panel and auth/account flows aren't public content — matches
-      // the per-page `robots: { index: false }` metadata as defense in depth.
-      disallow: [
-        "/admin",
-        "/*/login",
-        "/*/register",
-        "/*/forgot-password",
-        "/*/reset-password",
-        "/*/account",
-        "/*/wishlist",
-        "/*/cart",
-        "/*/checkout",
-      ],
+      // Only /admin belongs here — it's not a page we want crawled AT ALL
+      // (no crawl budget wasted on internal tooling). The auth/account/cart/
+      // checkout pages used to be listed here too, alongside their own
+      // per-page `robots: { index: false }` metadata — that combination is
+      // actually counterproductive: a robots.txt Disallow stops Googlebot
+      // from ever FETCHING the page, so it never even sees the noindex tag.
+      // If one of those URLs ever picks up an external backlink, Google can
+      // still show a bare, snippet-less "no information is available"
+      // listing for it instead of fully excluding it, which the meta
+      // noindex would have done correctly if crawling were allowed. Those
+      // pages' own `index: false` metadata is the one mechanism doing real
+      // work here now.
+      disallow: ["/admin"],
     },
     sitemap: `${getSiteUrl()}/sitemap.xml`,
   };

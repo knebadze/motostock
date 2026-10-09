@@ -6,6 +6,40 @@ model User {
   facebookId              String?                  @unique
   firstName               String
   lastName                String
+  // Nullable so every pre-existing row and every OAuth signup (which
+  // collects neither) are unaffected — required only by registerSchema's
+  // email+password path, since it's also the auto-merge key: a walk-in
+  // customer created from the workshop (isWalkIn below) with a matching
+  // phone gets converted in place into the real account on registration,
+  // rather than a separate row being created and reassigned (see
+  // auth.service.ts's register).
+  phone                   String?                  @unique
+  dateOfBirth             DateTime?                @db.Date
+  // A customer entered by an admin from the workshop screen (name/phone/DOB
+  // only, no login) — a real User row, not a separate table, so the entire
+  // existing garage/service-record/admin-user-list machinery just works on
+  // them. Flipped false in place the moment a matching registration arrives
+  // (see auth.service.ts's register) — the row's id never changes, so
+  // garageVehicles/serviceRecords need no reassignment for that path.
+  isWalkIn                Boolean                  @default(false)
+  // Set by the admin's manual "link to an existing account" fallback
+  // (used when the automatic phone-match can't apply — e.g. the customer
+  // registered via Google/Facebook, which collects no phone) — the walk-in
+  // row itself is kept (not deleted, no delete-user feature exists), its
+  // garageVehicles already reassigned onto mergedInto by that point.
+  mergedIntoUserId        Int?
+  mergedInto              User?                    @relation("UserMerge", fields: [mergedIntoUserId], references: [id], onDelete: SetNull)
+  mergedFrom              User[]                   @relation("UserMerge")
+  // On a walk-in: a registration came in with this walk-in's phone number
+  // (auth.service.ts's register). Nothing proves the registrant owns that
+  // phone, so the walk-in's garage/service history is NOT handed over
+  // automatically — the new account is created separately (without the
+  // phone) and pointed to here, for staff who know the customer to confirm
+  // with one click (users.service.ts's mergeUserInto, which then also moves
+  // the phone over). Cleared by that merge.
+  phoneClaimedByUserId    Int?
+  phoneClaimedBy          User?                    @relation("PhoneClaim", fields: [phoneClaimedByUserId], references: [id], onDelete: SetNull)
+  phoneClaims             User[]                   @relation("PhoneClaim")
   // Null for password-registered accounts until they click the emailed
   // verification link; set immediately at creation for OAuth accounts
   // (Google/Facebook already confirmed the address) — see
@@ -52,5 +86,9 @@ model User {
   updatedAt               DateTime                 @updatedAt
 
   @@index([roleId])
+  // users.repository.ts's admin filter (customerType === "MERGED") and the
+  // mergedInto self-relation's reverse side (mergedFrom) both filter/join on
+  // this column.
+  @@index([mergedIntoUserId])
   @@schema("dbo")
 }

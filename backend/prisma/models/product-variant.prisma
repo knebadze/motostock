@@ -15,6 +15,10 @@ model ProductVariant {
   color         Color?                   @relation(fields: [colorId], references: [id], onDelete: SetNull)
   price         Decimal                  @db.Decimal(10, 2)
   stockQuantity Int                      @default(1)
+  // When the FINA stock snapshot last written into stockQuantity was taken
+  // (fina-sync.repository.ts's applyFinaAvailability) — an older snapshot
+  // (a slow full sync) must not overwrite a newer one (a checkout refresh).
+  finaSnapshotAt DateTime?
   conditionId   Int?
   condition     Condition?               @relation(fields: [conditionId], references: [id], onDelete: SetNull)
   statusId      Int?

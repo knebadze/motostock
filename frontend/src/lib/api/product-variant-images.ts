@@ -1,7 +1,11 @@
 import { createImageCollectionApi } from "./collection-image-api";
-import type { CollectionImage } from "./collection-image-api";
+import type { components } from "./generated/schema";
 
-export type ProductVariantImage = CollectionImage;
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
+
+export type ProductVariantImage = Schemas["ProductVariantImage"];
 
 const productVariantImagesApi = createImageCollectionApi(
   (variantId) => `/product-variants/${variantId}/images`,

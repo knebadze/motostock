@@ -41,6 +41,13 @@ export async function listServiceTypes(onlyActive?: boolean) {
   return rows.map(toResponse);
 }
 
+// Public /service page — active types in the admin's order, names only
+// (see publicServiceTypeResponseSchema).
+export async function listPublicServiceTypes() {
+  const rows = await serviceTypesRepository.findMany(true);
+  return rows.map((row) => ({ id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu } }));
+}
+
 export async function getServiceType(id: number) {
   const row = await serviceTypesRepository.findById(id);
   if (!row) {

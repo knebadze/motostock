@@ -2,14 +2,22 @@ import { ApiError } from "../../lib/ApiError.js";
 import { comparePassword, hashPassword } from "../../lib/password.js";
 import { resolvePage } from "../../lib/pagination.js";
 import { signJwt } from "../../lib/jwt.js";
-import type { RoleName } from "../../lib/roles.js";
+import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
+import { ROLES, type RoleName } from "../../lib/roles.js";
 import { toAddressResponse } from "../addresses/addresses.service.js";
 import { toResponse as toGarageVehicleResponse } from "../garage/garage.service.js";
 import { toResponse as toWishlistItemResponse } from "../wishlist/wishlist.service.js";
 import { toResponse as toCartItemResponse } from "../cart/cart.service.js";
 import { sessionRepository } from "../auth/session.repository.js";
+import { passwordResetTokenRepository } from "../auth/password-reset-token.repository.js";
+import { rolesRepository } from "../roles/roles.repository.js";
 import { usersRepository } from "./users.repository.js";
-import type { ChangePasswordInput, ListUsersQuery } from "./users.schema.js";
+import type {
+  ChangePasswordInput,
+  CreateWalkInUserInput,
+  ListUsersQuery,
+  UpdateUserRoleInput,
+} from "./users.schema.js";
 
 export async function getUserById(id: number) {
   const user = await usersRepository.findById(id);
@@ -25,6 +33,37 @@ export async function getUserById(id: number) {
     createdAt: user.createdAt,
     role: user.role.name,
     emailVerified: user.emailVerifiedAt != null,
+  };
+}
+
+function toAdminUserSummary(user: {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  dateOfBirth: Date | null;
+  isWalkIn: boolean;
+  mergedIntoUserId: number | null;
+  role: { name: string };
+  passwordHash: string | null;
+  googleId: string | null;
+  facebookId: string | null;
+  createdAt: Date;
+}) {
+  return {
+    id: user.id,
+    email: user.email,
+    name: `${user.firstName} ${user.lastName}`,
+    phone: user.phone,
+    dateOfBirth: user.dateOfBirth,
+    isWalkIn: user.isWalkIn,
+    mergedIntoUserId: user.mergedIntoUserId,
+    role: user.role.name,
+    hasPassword: user.passwordHash != null,
+    hasGoogle: user.googleId != null,
+    hasFacebook: user.facebookId != null,
+    createdAt: user.createdAt,
   };
 }
 
@@ -59,6 +98,9 @@ export async function changePassword(
 
   const passwordHash = await hashPassword(input.newPassword);
   const updated = await usersRepository.updatePasswordHash(userId, passwordHash);
+  // Any reset link requested before this change is void now — see
+  // passwordResetTokenRepository.invalidateAllForUser.
+  await passwordResetTokenRepository.invalidateAllForUser(userId);
 
   // Every other device's Session row is now permanently unusable (its next
   // request fails the tokenVersion check regardless) — delete them here
@@ -76,49 +118,181 @@ export async function changePassword(
   });
 }
 
-export async function getUserDetail(id: number) {
-  const user = await usersRepository.findByIdWithDetails(id);
+// OPERATOR (cashier/foreman) works with customers, not with the shop's
+// administrators: an ADMIN account is invisible to them — not listed, its
+// details (email, phone, addresses, cart) not readable, and not a valid
+// target for the workshop's garage/merge actions. Answered as "not found"
+// rather than "forbidden", so the account's existence isn't confirmed
+// either. No effect for an ADMIN caller.
+export async function assertCallerMaySeeUser(callerRole: RoleName | undefined, userId: number) {
+  if (callerRole !== ROLES.OPERATOR) return;
+  const user = await usersRepository.findById(userId);
+  if (user?.role.name === ROLES.ADMIN) {
+    throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა");
+  }
+}
+
+export async function getUserDetail(id: number, callerRole?: RoleName) {
+  await assertCallerMaySeeUser(callerRole, id);
+  const [user, [orderCountAgg, spentAgg]] = await Promise.all([
+    usersRepository.findByIdWithDetails(id),
+    usersRepository.findOrderSummary(id),
+  ]);
   if (!user) {
     throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა");
   }
 
+  // A registration that claimed this walk-in's phone, awaiting staff
+  // confirmation (see user.prisma's phoneClaimedByUserId).
+  const phoneClaimedBy =
+    user.phoneClaimedByUserId != null ? await usersRepository.findById(user.phoneClaimedByUserId) : null;
+
   return {
-    id: user.id,
-    email: user.email,
-    name: `${user.firstName} ${user.lastName}`,
-    role: user.role.name,
-    hasPassword: user.passwordHash != null,
-    hasGoogle: user.googleId != null,
-    hasFacebook: user.facebookId != null,
-    createdAt: user.createdAt,
+    ...toAdminUserSummary(user),
+    phoneClaimedBy: phoneClaimedBy ? toAdminUserSummary(phoneClaimedBy) : null,
     addresses: user.addresses.map(toAddressResponse),
     garage: user.garageVehicles.map(toGarageVehicleResponse),
     wishlist: await Promise.all(user.wishlistItems.map(toWishlistItemResponse)),
-    cart: user.cartItems.map(toCartItemResponse),
+    cart: await Promise.all(user.cartItems.map(toCartItemResponse)),
+    orderStats: {
+      orderCount: orderCountAgg._count._all,
+      totalSpent: Number(spentAgg._sum.total ?? 0),
+      lastOrderAt: orderCountAgg._max.createdAt,
+    },
   };
 }
 
-export async function listUsers(query: ListUsersQuery) {
+export async function listUsers(query: ListUsersQuery, callerRole?: RoleName) {
   const { page, pageSize, skip, take } = resolvePage(query);
+  const filters = {
+    search: query.q,
+    role: query.role,
+    customerType: query.customerType,
+    excludeRole: callerRole === ROLES.OPERATOR ? ("ADMIN" as const) : undefined,
+  };
 
   const [users, total] = await Promise.all([
-    usersRepository.findMany(query.q, skip, take),
-    usersRepository.count(query.q),
+    usersRepository.findMany(filters, skip, take),
+    usersRepository.count(filters),
   ]);
 
   return {
-    users: users.map((user) => ({
-      id: user.id,
-      email: user.email,
-      name: `${user.firstName} ${user.lastName}`,
-      role: user.role.name,
-      hasPassword: user.passwordHash != null,
-      hasGoogle: user.googleId != null,
-      hasFacebook: user.facebookId != null,
-      createdAt: user.createdAt,
-    })),
+    users: users.map(toAdminUserSummary),
     total,
     page,
     pageSize,
   };
+}
+
+// Admin workshop "+ ახალი სტუმარი მომხმარებელი" action — creates a real User
+// row with no login (synthetic email, no password), so garage/service-record
+// creation can attach to a real id right away. Converted in place (not
+// replaced) the moment a matching registration arrives — see
+// auth.service.ts's registerUser.
+export async function createWalkInUser(input: CreateWalkInUserInput) {
+  const existingPhone = await usersRepository.findByPhone(input.phone);
+  if (existingPhone) {
+    throw new ApiError(409, "ამ ტელეფონის ნომრით მომხმარებელი უკვე არსებობს", "PHONE_ALREADY_IN_USE");
+  }
+
+  const userRole = await rolesRepository.findByName(ROLES.USER);
+  if (!userRole) {
+    throw new ApiError(500, "Default role is not configured", "INTERNAL_CONFIG_ERROR");
+  }
+
+  try {
+    const user = await usersRepository.createWalkIn({
+      firstName: input.firstName,
+      lastName: input.lastName,
+      phone: input.phone,
+      dateOfBirth: new Date(input.dateOfBirth),
+      roleId: userRole.id,
+    });
+    return toAdminUserSummary(user);
+  } catch (err) {
+    if (!isUniqueConstraintViolation(err, "phone")) throw err;
+    throw new ApiError(409, "ამ ტელეფონის ნომრით მომხმარებელი უკვე არსებობს", "PHONE_ALREADY_IN_USE");
+  }
+}
+
+// Admin manual-merge fallback — for two already-separate rows (a walk-in W
+// and a real account R the admin knows are the same person) that the
+// automatic phone-match couldn't connect on its own (e.g. W's phone differs
+// from R's, or R signed up via Google/Facebook, which collects no phone at
+// all). W is kept, not deleted (no delete-user feature exists) — just
+// flagged so the admin list can show "შერწყმულია".
+export async function mergeUserInto(fromUserId: number, targetUserId: number, callerRole?: RoleName) {
+  await assertCallerMaySeeUser(callerRole, targetUserId);
+  if (fromUserId === targetUserId) {
+    throw new ApiError(400, "მომხმარებლის თავად თავისთან შერწყმა შეუძლებელია", "MERGE_SAME_USER");
+  }
+
+  const [fromUser, targetUser] = await Promise.all([
+    usersRepository.findById(fromUserId),
+    usersRepository.findById(targetUserId),
+  ]);
+  if (!fromUser || !targetUser) {
+    throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა", "USER_NOT_FOUND");
+  }
+  // This endpoint exists only to fold a walk-in's history onto a real
+  // account (see this function's own doc comment above) — without these two
+  // checks it could be called directly (bypassing the UI's own isWalkIn
+  // gate) to merge two already-real accounts together, permanently
+  // reassigning one customer's garage/service history onto another with no
+  // legitimate reason to. Also covers the auto-merge race: a walk-in that
+  // registerUser has already converted in place (isWalkIn now false) is no
+  // longer a valid merge source either.
+  if (!fromUser.isWalkIn) {
+    throw new ApiError(
+      400,
+      "წყარო მომხმარებელი არ არის სტუმარი — შერწყმა შესაძლებელია მხოლოდ სტუმარი მომხმარებლის რეალურ ანგარიშთან დაკავშირებისას",
+      "SOURCE_USER_NOT_WALK_IN",
+    );
+  }
+  if (targetUser.isWalkIn) {
+    throw new ApiError(
+      400,
+      "სამიზნე მომხმარებელი თავად სტუმარია — აირჩიეთ რეგისტრირებული ანგარიში",
+      "TARGET_USER_IS_WALK_IN",
+    );
+  }
+  if (fromUser.mergedIntoUserId != null) {
+    throw new ApiError(400, "მომხმარებელი უკვე შერწყმულია", "USER_ALREADY_MERGED");
+  }
+  if (targetUser.mergedIntoUserId != null) {
+    throw new ApiError(400, "სამიზნე მომხმარებელი უკვე შერწყმულია სხვასთან", "TARGET_USER_ALREADY_MERGED");
+  }
+
+  // The walk-in's phone follows it onto an account that has none (e.g. one
+  // that registered with this very phone — see auth.service.ts's register —
+  // or a Google/Facebook signup).
+  const transferPhone = fromUser.phone && !targetUser.phone ? fromUser.phone : null;
+  const updated = await usersRepository.mergeWalkInInto(fromUserId, targetUserId, transferPhone);
+  if (!updated) {
+    throw new ApiError(409, "მომხმარებელი უკვე შერწყმულია ან შეიცვალა — განაახლეთ გვერდი", "USER_ALREADY_MERGED");
+  }
+  return toAdminUserSummary(updated);
+}
+
+// The only way to grant/revoke OPERATOR (or promote/demote ADMIN) — no
+// self-registration path ever produces anything but ROLES.USER. Blocks
+// changing the caller's own role so an admin can't accidentally lock
+// themselves out of the panel with no other admin left to undo it.
+export async function updateUserRole(id: number, callerId: number, input: UpdateUserRoleInput) {
+  if (id === callerId) {
+    throw new ApiError(400, "საკუთარი როლის შეცვლა შეუძლებელია", "CANNOT_CHANGE_OWN_ROLE");
+  }
+
+  const user = await usersRepository.findById(id);
+  if (!user) {
+    throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა", "USER_NOT_FOUND");
+  }
+
+  const role = await rolesRepository.findByName(input.role);
+  if (!role) {
+    throw new ApiError(500, "როლი კონფიგურირებული არ არის", "ROLE_NOT_CONFIGURED");
+  }
+
+  const updated = await usersRepository.updateRole(id, role.id);
+  return toAdminUserSummary(updated);
 }

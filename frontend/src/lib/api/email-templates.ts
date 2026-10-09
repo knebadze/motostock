@@ -1,26 +1,22 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type EmailTemplateKey =
   | "ORDER_PLACED"
   | "ORDER_CONFIRMED"
   | "ORDER_SHIPPED"
   | "ORDER_DELIVERED"
-  | "ORDER_CANCELLED";
+  | "ORDER_CANCELLED"
+  | "NEW_ORDER_ADMIN"
+  | "BIRTHDAY";
 
-export type EmailTemplate = {
-  id: number;
-  key: EmailTemplateKey;
-  subject: LocalizedString;
-  body: LocalizedString;
-  createdAt: string;
-  updatedAt: string;
-};
+export type EmailTemplate = Schemas["EmailTemplate"];
 
-export type UpdateEmailTemplateInput = {
-  subject: LocalizedString;
-  body: LocalizedString;
-};
+export type UpdateEmailTemplateInput = Schemas["UpdateEmailTemplateInput"];
 
 export async function listEmailTemplates(): Promise<EmailTemplate[]> {
   const { data } = await apiClient.get<{ items: EmailTemplate[] }>("/email-templates");

@@ -7,6 +7,7 @@ import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { JsonLd } from "@/components/shared/JsonLd";
 import { siteConfig } from "@/config/site";
 import type { Faq } from "@/lib/api/faq";
+import { buildSocialMetadata } from "@/lib/share-metadata";
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -30,7 +31,7 @@ export async function generateMetadata({
       canonical: buildCanonicalUrl(pathname, locale),
       languages: getAlternateLanguages(pathname),
     },
-    openGraph: { title, description },
+    ...(await buildSocialMetadata({ locale, title, description, pathname })),
   };
 }
 
@@ -97,7 +98,7 @@ function FaqPageView({ faqs }: { faqs: Faq[] }) {
                 </svg>
               </summary>
               <div
-                className="mt-3 text-sm leading-6 text-muted-foreground [&_a]:text-primary [&_a]:underline [&_li]:ml-5 [&_ol]:list-decimal [&_p:last-child]:mb-0 [&_p]:mb-3 [&_ul]:list-disc"
+                className="mt-3 text-sm leading-6 text-muted-foreground [&_a]:text-primary-text [&_a]:underline [&_li]:ml-5 [&_ol]:list-decimal [&_p:last-child]:mb-0 [&_p]:mb-3 [&_ul]:list-disc"
                 dangerouslySetInnerHTML={{
                   __html: sanitizeRichText(faq.answer[locale] || faq.answer.ka),
                 }}

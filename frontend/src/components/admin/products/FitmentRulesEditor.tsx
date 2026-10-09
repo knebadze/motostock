@@ -10,6 +10,7 @@ import {
   deleteProductFitmentRule,
   listProductFitmentRules,
   type ProductFitmentRule,
+  type ProductFitmentRuleInput,
   type ProductFitmentRuleType,
 } from "@/lib/api/product-fitment-rules";
 import type { Category } from "@/lib/api/categories";
@@ -124,7 +125,12 @@ export function FitmentRulesEditor({
       await createProductFitmentRule(productId, {
         type: newRuleType,
         categoryId: newRuleType === "CATEGORY" ? Number(newRuleCategoryId) : undefined,
-        specField: newRuleType === "SPEC" ? (newRuleSpecField as VehicleSpecField) : undefined,
+        // Only LOOKUP spec fields are offered (SPEC_FIELD_OPTIONS), which is all
+        // the backend accepts here.
+        specField:
+          newRuleType === "SPEC"
+            ? (newRuleSpecField as NonNullable<ProductFitmentRuleInput["specField"]>)
+            : undefined,
         specLookupItemId: newRuleType === "SPEC" ? Number(newRuleSpecValueId) : undefined,
       });
       resetNewRuleFields();
@@ -267,7 +273,7 @@ export function FitmentRulesEditor({
           type="button"
           onClick={handleAddRule}
           disabled={adding}
-          className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+          className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text disabled:opacity-50"
         >
           + წესის დამატება
         </button>

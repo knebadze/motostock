@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Select } from "@/components/shared/Select";
+import { DateInput } from "@/components/shared/DateInput";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { Toggle } from "@/components/shared/Toggle";
@@ -22,7 +23,6 @@ import { listAttributeOptions, type AttributeOption } from "@/lib/api/attribute-
 import { listBrands, type Brand } from "@/lib/api/brands";
 import { listModels, type Model } from "@/lib/api/models";
 import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
-import type { VehicleSpecField } from "@/lib/api/vehicle-category-filters";
 import { ApiRequestError } from "@/lib/api/client";
 import { toTbilisiDateOnly } from "@/lib/format";
 import { flattenTree, isVehicleCategory } from "@/lib/categories-tree";
@@ -232,7 +232,8 @@ export function PromoCodeFormModal({
       attributeOptionId: domain === "PRODUCT" && attributeOptionId ? Number(attributeOptionId) : null,
       brandId: domain === "VEHICLE" && brandId ? Number(brandId) : null,
       modelId: domain === "VEHICLE" && modelId ? Number(modelId) : null,
-      specField: domain === "VEHICLE" && specField ? (specField as VehicleSpecField) : null,
+      specField:
+        domain === "VEHICLE" && specField ? (specField as NonNullable<PromoCodeInput["specField"]>) : null,
       specLookupItemId: domain === "VEHICLE" && specLookupItemId ? Number(specLookupItemId) : null,
       discountPercent: Number(discountPercent),
       usageLimit: usageLimit.trim() ? Number(usageLimit) : null,
@@ -460,22 +461,12 @@ export function PromoCodeFormModal({
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">დაწყება *</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(event) => setStartDate(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
+            <DateInput value={startDate} onChange={setStartDate} />
             <FieldError message={errors.startDate} />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">დასრულება *</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(event) => setEndDate(event.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
+            <DateInput value={endDate} onChange={setEndDate} />
             <FieldError message={errors.endDate} />
           </div>
         </div>

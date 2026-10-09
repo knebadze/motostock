@@ -1,4 +1,26 @@
 import bcrypt from "bcrypt";
+import { z } from "zod";
+
+// New passwords: Latin letters, digits and symbols only (printable ASCII,
+// space included) — the shop's rule, so no Georgian (or Cyrillic) letters,
+// which also rules out "typed it on the wrong keyboard layout" lockouts.
+// Being ASCII also makes every character exactly one byte, so the 72-char
+// cap is bcrypt's real limit: it only ever uses the first 72 bytes of a
+// password and silently drops the rest.
+export const MAX_PASSWORD_LENGTH = 72;
+const PASSWORD_ALLOWED_CHARS = /^[\x20-\x7E]*$/;
+
+export const newPasswordField = z
+  .string()
+  .min(8)
+  .max(MAX_PASSWORD_LENGTH)
+  .regex(PASSWORD_ALLOWED_CHARS, "Password may contain only Latin letters, digits and symbols");
+
+// Login only bounds the size (bcrypt work + request size) — it can't apply
+// the new-password rules, since accounts created before them may have
+// Georgian or longer passwords, which must still be able to log in (and
+// then change to a compliant one).
+export const loginPasswordField = z.string().min(1).max(1024);
 
 const SALT_ROUNDS = 12;
 

@@ -5,7 +5,7 @@ import { AdminLoginForm } from "@/components/admin/AdminLoginForm";
 export default async function AdminLoginPage() {
   const user = await getCurrentUserFromServer();
 
-  if (user?.role === "ADMIN") {
+  if (user?.role === "ADMIN" || user?.role === "OPERATOR") {
     redirect("/admin");
   }
 

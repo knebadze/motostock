@@ -43,7 +43,36 @@ export function ProductGallery({
     const index = resolvedPreferred ? resolved.findIndex((image) => image.url === resolvedPreferred) : -1;
     return index >= 0 ? index : 0;
   });
+  // The lightbox browses on its own index and never selects a variant: it
+  // used to share selectImage below, so paging through photos silently
+  // switched the selected size/color (the add-to-cart target) behind the
+  // full-screen overlay — and, with the parent keying this gallery by the
+  // variant id, that remount also closed the lightbox mid-browse.
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // Follow the selection when the variant changes from outside (size/color
+  // buttons) — adjusted during render instead of remounting via `key`, which
+  // would also reset the lightbox. Skipped when the active photo already
+  // belongs to the newly preferred photo's variant, so clicking a variant's
+  // 2nd thumbnail doesn't snap back to its 1st.
+  const [syncedPreferred, setSyncedPreferred] = useState(resolvedPreferred);
+  if (resolvedPreferred !== syncedPreferred) {
+    setSyncedPreferred(resolvedPreferred);
+    const preferredIndex = resolvedPreferred
+      ? resolved.findIndex((image) => image.url === resolvedPreferred)
+      : -1;
+    const preferredVariantId = preferredIndex >= 0 ? resolved[preferredIndex].variantId : null;
+    const activeVariantId = resolved[activeIndex]?.variantId ?? null;
+    if (preferredIndex >= 0 && (preferredVariantId == null || preferredVariantId !== activeVariantId)) {
+      setActiveIndex(preferredIndex);
+    }
+  }
+
+  function openLightbox() {
+    setLightboxIndex(Math.min(activeIndex, resolved.length - 1));
+    setLightboxOpen(true);
+  }
 
   function selectImage(index: number) {
     setActiveIndex(index);
@@ -63,7 +92,7 @@ export function ProductGallery({
     <div className="flex flex-col gap-3">
       <button
         type="button"
-        onClick={() => setLightboxOpen(true)}
+        onClick={openLightbox}
         aria-label={alt}
         className="relative aspect-square w-full cursor-zoom-in overflow-hidden rounded-2xl border border-border bg-muted"
       >
@@ -101,8 +130,8 @@ export function ProductGallery({
         open={lightboxOpen}
         onClose={() => setLightboxOpen(false)}
         images={resolved}
-        index={activeIndex}
-        onIndexChange={selectImage}
+        index={lightboxIndex}
+        onIndexChange={setLightboxIndex}
         alt={alt}
       />
     </div>

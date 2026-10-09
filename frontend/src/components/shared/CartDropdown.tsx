@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import { getCartItemDisplay, recomputeCart } from "@/lib/cart-item-display";
+import { dispatchCartItemChanged } from "@/lib/cart-events";
+import { dispatchCountChanged, CART_COUNT_CHANGED_EVENT } from "@/lib/badge-count-events";
 import { getMyCart, removeFromCart, updateCartItemQuantity, type Cart, type CartItem } from "@/lib/api/cart";
 import { usePopoverMenu } from "./usePopoverMenu";
 import { QuantityStepper } from "./QuantityStepper";
@@ -20,7 +21,19 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
   const tHeader = useTranslations("Header");
   const tCart = useTranslations("Cart");
   const tErrors = useTranslations("ApiErrors");
-  const router = useRouter();
+  // Reflects a mutation made elsewhere on the page (AddToCartButton on a
+  // product/vehicle card) without a `router.refresh()` — see
+  // badge-count-events.ts. Only matters while the dropdown is closed
+  // (`cart === null`, badge showing `initialCount`); once opened, `cart`'s
+  // own itemCount takes over below.
+  const [countOverride, setCountOverride] = useState<number | null>(null);
+  useEffect(() => {
+    function handleCountChanged(event: Event) {
+      setCountOverride((event as CustomEvent<number>).detail);
+    }
+    window.addEventListener(CART_COUNT_CHANGED_EVENT, handleCountChanged);
+    return () => window.removeEventListener(CART_COUNT_CHANGED_EVENT, handleCountChanged);
+  }, []);
   // arrowNav: false — this popover mixes links/images/a quantity stepper
   // under one panel, not a list of role="menuitem" commands, so only
   // Escape-to-close applies (see attachMenuKeyboardNav's own comment for
@@ -36,11 +49,12 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
     setOpen(next);
     if (!next) {
       // Drops the locally-fetched cart on close so the badge falls back to
-      // `initialCount` again instead of permanently shadowing it — without
-      // this, a mutation elsewhere (e.g. AddToCartButton on a product page,
-      // which does refresh initialCount via router.refresh()) never showed
-      // up here again until a hard reload, since `cart` stayed non-null for
-      // the rest of the session once the dropdown had been opened once.
+      // countOverride/initialCount again instead of permanently shadowing
+      // them — without this, a mutation elsewhere (e.g. AddToCartButton on a
+      // product page, which dispatches CART_COUNT_CHANGED_EVENT — see
+      // badge-count-events.ts) never showed up here again until a hard
+      // reload, since `cart` stayed non-null for the rest of the session
+      // once the dropdown had been opened once.
       setCart(null);
       return;
     }
@@ -57,21 +71,51 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
 
   async function handleQuantityChange(item: CartItem, nextQuantity: number) {
     setPendingId(item.id);
+    // The variant's/listing's own id — what AddToCartButton keys its
+    // `itemId` prop on, not this cart row's own id — see cart-events.ts.
+    const itemId = item.productVariant?.id ?? item.vehicleListing?.id;
     try {
+      // Captured from inside the setCart updater (which always sees the
+      // latest `cart`, unlike this closure's own stale reference) so the
+      // dispatch below carries the exact same recomputed total the badge
+      // itself just switched to — null if the dropdown got closed (cart
+      // reset to null) while this request was in flight, same guard the
+      // updater itself already had.
+      let recomputed: Cart | null = null;
       if (nextQuantity < 1) {
         await removeFromCart(item.id);
-        setCart((current) =>
-          current ? recomputeCart(current.items.filter((existing) => existing.id !== item.id)) : current,
-        );
+        setCart((current) => {
+          if (!current) return current;
+          recomputed = recomputeCart(current.items.filter((existing) => existing.id !== item.id));
+          return recomputed;
+        });
+        if (itemId != null) {
+          dispatchCartItemChanged({ itemType: item.itemType, itemId, cartItem: null });
+        }
       } else {
         const updated = await updateCartItemQuantity(item.id, nextQuantity);
-        setCart((current) =>
-          current
-            ? recomputeCart(current.items.map((existing) => (existing.id === item.id ? updated : existing)))
-            : current,
-        );
+        setCart((current) => {
+          if (!current) return current;
+          recomputed = recomputeCart(
+            current.items.map((existing) => (existing.id === item.id ? updated : existing)),
+          );
+          return recomputed;
+        });
+        if (itemId != null) {
+          dispatchCartItemChanged({
+            itemType: item.itemType,
+            itemId,
+            cartItem: { id: updated.id, quantity: updated.quantity },
+          });
+        }
       }
-      router.refresh();
+      // Tells this same badge (and any other page's CartDropdown instance,
+      // though there's only ever one) the fresh total directly, instead of
+      // a `router.refresh()` that would re-run this whole route's server
+      // component tree just to update one integer.
+      if (recomputed) {
+        dispatchCountChanged(CART_COUNT_CHANGED_EVENT, (recomputed as Cart).itemCount);
+      }
     } catch (error) {
       toast.error(resolveApiErrorMessage(error, tErrors, tCart("updateError")));
     } finally {
@@ -81,8 +125,10 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
 
   // Falls back to the server-rendered count until the dropdown is opened
   // for the first time (avoids an extra full-cart fetch on every page load
-  // just to keep this badge in sync — see (guest)/layout.tsx).
-  const count = cart?.itemCount ?? initialCount;
+  // just to keep this badge in sync — see (guest)/layout.tsx) — countOverride
+  // (a mutation elsewhere on the page) takes priority over that stale
+  // server-rendered value whenever one has arrived.
+  const count = cart?.itemCount ?? countOverride ?? initialCount;
 
   return (
     <div ref={containerRef} className="relative">
@@ -93,7 +139,7 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
         aria-label={tHeader("cart")}
         aria-haspopup="true"
         aria-expanded={open}
-        className="relative flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9"
+        className="relative flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-10"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -137,7 +183,7 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
                       <Link
                         href={href}
                         onClick={() => setOpen(false)}
-                        className="flex items-center gap-3 transition-colors hover:text-primary"
+                        className="flex items-center gap-3 transition-colors hover:text-primary-text"
                       >
                         <div className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-muted">
                           {imageUrl ? (
@@ -163,7 +209,7 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
                           increaseLabel={tCart("increaseQuantity")}
                           size="sm"
                         />
-                        <span className="text-sm font-semibold text-primary">{formatPrice(item.lineTotal)}</span>
+                        <span className="text-sm font-semibold text-primary-text">{formatPrice(item.lineTotal)}</span>
                       </div>
                     </li>
                   );
@@ -179,7 +225,7 @@ export function CartDropdown({ initialCount }: { initialCount: number }) {
               <div className="border-t border-border p-3">
                 <div className="flex items-center justify-between text-sm font-semibold text-foreground">
                   <span>{tCart("subtotal")}</span>
-                  <span className="text-primary">{formatPrice(cart.subtotal)}</span>
+                  <span className="text-primary-text">{formatPrice(cart.subtotal)}</span>
                 </div>
                 <Link
                   href="/cart"

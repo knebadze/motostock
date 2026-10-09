@@ -16,6 +16,9 @@ export const updateSettingsSchema = registry.register(
     // Dormant (chat option hidden) until an admin sets a real number — same
     // "no default" reasoning as finaWebCustomerId/finaWebUserId below.
     whatsappSupportPhoneNumber: z.string().trim().max(30).nullable().openapi({ example: "+995555123456" }),
+    // Dormant (no NEW_ORDER_ADMIN email sent) until an admin sets a real
+    // address here — same "no default" reasoning as the WhatsApp number.
+    adminNotificationEmail: z.email().nullable().openapi({ example: "admin@example.com" }),
     deliveryTbilisiPrice: z.number().nonnegative().openapi({ example: 15 }),
     deliveryTbilisiTime: z.string().openapi({ example: "1-2 სამუშაო დღე" }),
     deliveryRegionsPrice: z.number().nonnegative().openapi({ example: 25 }),
@@ -74,7 +77,10 @@ export const updateSettingsSchema = registry.register(
     imageMaxDimensionPx: z.int().positive().openapi({ example: 1600 }),
     imageWebpQuality: z.int().min(1).max(100).openapi({ example: 82 }),
     finaSyncIntervalMinutes: z.int().positive().openapi({ example: 15 }),
+    finaOrderPushRetryIntervalMinutes: z.int().positive().max(1440).openapi({ example: 10 }),
     homepageCacheTtlMinutes: z.int().positive().openapi({ example: 5 }),
+    // Monitoring tab — see constants/monitoring.constants.ts.
+    sentryEnabled: z.boolean().openapi({ example: false }),
   }),
 );
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
@@ -91,6 +97,9 @@ export const settingsResponseSchema = registry.register(
     // Dormant (chat option hidden) until an admin sets a real number — same
     // "no default" reasoning as finaWebCustomerId/finaWebUserId below.
     whatsappSupportPhoneNumber: z.string().trim().max(30).nullable().openapi({ example: "+995555123456" }),
+    // Dormant (no NEW_ORDER_ADMIN email sent) until an admin sets a real
+    // address here — same "no default" reasoning as the WhatsApp number.
+    adminNotificationEmail: z.email().nullable().openapi({ example: "admin@example.com" }),
     deliveryTbilisiPrice: z.number().nonnegative().openapi({ example: 15 }),
     deliveryTbilisiTime: z.string().openapi({ example: "1-2 სამუშაო დღე" }),
     deliveryRegionsPrice: z.number().nonnegative().openapi({ example: 25 }),
@@ -136,7 +145,10 @@ export const settingsResponseSchema = registry.register(
     imageMaxDimensionPx: z.int().positive().openapi({ example: 1600 }),
     imageWebpQuality: z.int().min(1).max(100).openapi({ example: 82 }),
     finaSyncIntervalMinutes: z.int().positive().openapi({ example: 15 }),
+    finaOrderPushRetryIntervalMinutes: z.int().positive().max(1440).openapi({ example: 10 }),
     homepageCacheTtlMinutes: z.int().positive().openapi({ example: 5 }),
+    // Monitoring tab — see constants/monitoring.constants.ts.
+    sentryEnabled: z.boolean().openapi({ example: false }),
   }),
 );
 
@@ -162,4 +174,18 @@ export const guestFeatureStatusResponseSchema = registry.register(
     guestWishlistEnabled: z.boolean().openapi({ example: false }),
     guestCartEnabled: z.boolean().openapi({ example: false }),
   }),
+);
+
+// Admin Monitoring tab's read-only status — whether SENTRY_DSN exists on
+// this server (never the value itself).
+export const monitoringStatusResponseSchema = registry.register(
+  "MonitoringStatus",
+  z.object({ sentryConfigured: z.boolean() }),
+);
+
+// Public — the frontend gates its own (browser + SSR) Sentry reporting on
+// the same admin toggle the backend uses.
+export const publicMonitoringStatusResponseSchema = registry.register(
+  "PublicMonitoringStatus",
+  z.object({ sentryEnabled: z.boolean() }),
 );

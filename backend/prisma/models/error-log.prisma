@@ -3,9 +3,9 @@
 // error.middleware.ts as a 500, but background/best-effort failures too
 // (a failed FINA push, a swallowed guest-cart-merge error, a mail send
 // timing out) that would otherwise only ever exist in stdout/
-// `docker compose logs`. Admin-only, viewed at /admin/error-logs; no
-// automatic retention/pruning — an admin clears it manually (see
-// error-logs.routes.ts's clear) when it's served its purpose.
+// `docker compose logs`. Admin-only, viewed at /admin/error-logs; rows older
+// than 30 days are deleted daily by the DAILY_PRUNE_ERROR_LOGS scheduled job
+// (see error-logs.service.ts), and an admin can still clear it all manually.
 model ErrorLog {
   id        Int      @id @default(autoincrement())
   message   String

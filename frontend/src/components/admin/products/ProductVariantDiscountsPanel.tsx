@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
+import { DateInput } from "@/components/shared/DateInput";
 import { FieldError } from "@/components/shared/FieldError";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
@@ -212,28 +213,18 @@ export function ProductVariantDiscountsPanel({
           <FieldError message={errors.discountPrice} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <input
-            type="date"
-            value={startDate}
-            onChange={(event) => setStartDate(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
+          <DateInput value={startDate} onChange={setStartDate} />
           <FieldError message={errors.startDate} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <input
-            type="date"
-            value={endDate}
-            onChange={(event) => setEndDate(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
+          <DateInput value={endDate} onChange={setEndDate} />
           <FieldError message={errors.endDate} />
         </div>
         <button
           type="button"
           onClick={handleAddClick}
           disabled={adding}
-          className="h-fit rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+          className="h-fit rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text disabled:opacity-50"
         >
           + დამატება
         </button>

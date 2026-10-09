@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { RootShell } from "@/components/shared/RootShell";
 import { VisitorPingBeacon } from "@/components/shared/VisitorPingBeacon";
+import { GoogleAnalytics } from "@/components/shared/GoogleAnalytics";
+import { buildSocialMetadata } from "@/lib/share-metadata";
+import { SentryFlagMeta } from "@/components/shared/SentryFlagMeta";
 import { JsonLd } from "@/components/shared/JsonLd";
 import { getAlternateLanguages, getSiteUrl } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
@@ -12,6 +16,24 @@ import { getCompanyInfoFromServer } from "@/lib/api/server";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { localizedLookupName } from "@/lib/api/lookups";
 import type { WeekDay } from "@/lib/api/company-info";
+
+// Translation namespaces only ever read by SERVER components (via
+// getTranslations, or useTranslations in a non-client component) — they get
+// their messages from the request config, never from NextIntlClientProvider,
+// so shipping them to the browser on every page was pure payload. Listed as
+// an exclusion (not a list of client namespaces) so a namespace added later
+// reaches client components by default; only list one here after checking
+// no "use client" module (or anything it imports) reads it.
+const SERVER_ONLY_NAMESPACES = [
+  "Metadata",
+  "About",
+  "Contact",
+  "Catalog",
+  "PrivacyPolicy",
+  "Faq",
+  "Vacancies",
+  "NotFound",
+] as const;
 
 const DAY_OF_WEEK_SCHEMA: Record<WeekDay, string> = {
   MONDAY: "https://schema.org/Monday",
@@ -34,8 +56,16 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "Metadata" });
-  const title = t("title", { siteName: siteConfig.name });
-  const description = t("description");
+  // Names what the shop is and where (motorcycles, parts, service + its
+  // city from company info) — the searches it should be found for. The city
+  // is appended rather than inflected ("| თბილისი"), so any city name reads
+  // correctly in all three languages.
+  const companyInfo = await getCompanyInfoFromServer();
+  const city = companyInfo.city ? localizedLookupName(companyInfo.city, locale) : null;
+  const title = city
+    ? t("titleWithCity", { siteName: siteConfig.name, city })
+    : t("title", { siteName: siteConfig.name });
+  const description = city ? t("descriptionWithCity", { city }) : t("description");
 
   return {
     title,
@@ -45,25 +75,10 @@ export async function generateMetadata({
       canonical: getAlternateLanguages("/")[locale],
       languages: getAlternateLanguages("/"),
     },
-    // Site-wide fallback so every page shares at least a title/description
-    // when shared on Facebook/Slack/Twitter/etc. — pages with their own
-    // content (product/vehicle/category) override this with a richer,
-    // per-item openGraph block. No default `images` here: the only brand
-    // asset on hand (public/logo.svg) is a white-on-transparent SVG that
-    // social crawlers either skip or render invisible on a light card —
-    // add a real raster (PNG/JPG) share image here once one exists.
-    openGraph: {
-      title,
-      description,
-      siteName: siteConfig.name,
-      locale,
-      type: "website",
-    },
-    twitter: {
-      card: "summary",
-      title,
-      description,
-    },
+    // Site-wide fallback for pages without their own (home included): the
+    // shop logo from admin → company info as the preview image — see
+    // lib/share-metadata.ts.
+    ...(await buildSocialMetadata({ locale, title, description, pathname: "/" })),
   };
 }
 
@@ -141,12 +156,27 @@ export default async function LocaleLayout({
   }
 
   setRequestLocale(locale);
+  const messages = await getMessages();
+  const clientMessages = Object.fromEntries(
+    Object.entries(messages).filter(
+      ([namespace]) => !(SERVER_ONLY_NAMESPACES as readonly string[]).includes(namespace),
+    ),
+  );
 
   return (
     <RootShell lang={locale}>
-      <LocalBusinessJsonLd locale={locale} />
+      {/* company-info fetch (rarely changes) previously blocked every single
+          page's initial render (this layout wraps every storefront route).
+          Suspense lets the rest of the page stream ahead of it instead —
+          `fallback={null}` since this renders no visible UI of its own, only
+          a JSON-LD <script> tag. */}
+      <Suspense fallback={null}>
+        <LocalBusinessJsonLd locale={locale} />
+      </Suspense>
+      <GoogleAnalytics />
+      <SentryFlagMeta />
       <VisitorPingBeacon />
-      <NextIntlClientProvider>{children}</NextIntlClientProvider>
+      <NextIntlClientProvider messages={clientMessages}>{children}</NextIntlClientProvider>
     </RootShell>
   );
 }

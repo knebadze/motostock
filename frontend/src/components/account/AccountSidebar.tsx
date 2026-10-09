@@ -30,8 +30,8 @@ export function AccountSidebar({ user }: { user: User }) {
               href={item.href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-primary/10 font-semibold text-primary"
-                  : "text-foreground hover:bg-muted hover:text-primary"
+                  ? "bg-primary/10 font-semibold text-primary-text"
+                  : "text-foreground hover:bg-muted hover:text-primary-text"
               }`}
             >
               {item.icon}

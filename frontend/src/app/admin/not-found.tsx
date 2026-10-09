@@ -4,7 +4,7 @@ export default function NotFound() {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-24 text-center">
       <div className="mx-auto max-w-md">
-        <p className="text-sm font-semibold text-primary">404</p>
+        <p className="text-sm font-semibold text-primary-text">404</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">
           გვერდი ვერ მოიძებნა
         </h1>

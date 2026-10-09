@@ -1,35 +1,17 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
+import type { components } from "./generated/schema";
 
-export type Bank = {
-  id: number;
-  key: string;
-  name: LocalizedString;
-  logoUrl: string | null;
-  isActive: boolean;
-  sortOrder: number;
-  supportsInstallment: boolean;
-  supportsSplitPayment: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
+
+export type Bank = Schemas["Bank"];
 
 // The checkout page's shape — display fields only (see banks.service.ts's
 // toPublicResponse on the backend).
-export type PublicBank = {
-  id: number;
-  key: string;
-  name: LocalizedString;
-  logoUrl: string | null;
-};
+export type PublicBank = Schemas["PublicBank"];
 
-export type BankInput = {
-  key: string;
-  name: LocalizedString;
-  isActive?: boolean;
-  supportsInstallment?: boolean;
-  supportsSplitPayment?: boolean;
-};
+export type BankInput = Schemas["CreateBankInput"];
 
 export async function listBanks(): Promise<Bank[]> {
   const { data } = await apiClient.get<{ items: Bank[] }>("/banks");

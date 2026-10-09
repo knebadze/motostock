@@ -8,7 +8,7 @@ import {
   getMyCartFromServer,
   getMyGarageFromServer,
   getPublicBanksFromServer,
-  getVehicleCatalogFromServer,
+  getVehicleSearchOptionsFromServer,
 } from "@/lib/api/server";
 import { CheckoutManager } from "@/components/checkout/CheckoutManager";
 
@@ -24,6 +24,14 @@ export default async function CheckoutPage() {
   const user = await getCurrentUserFromServer();
   if (!user) {
     redirect({ href: { pathname: "/login", query: { redirect: "/checkout" } }, locale });
+    return null;
+  }
+  // Placing (and even previewing) an order needs a verified email — see
+  // orders.service.ts's assertEmailVerified. Checked up front instead of
+  // letting the shopper fill in the whole form only to hit a 403 at the end;
+  // /verify-required sends them back here once verified.
+  if (!user.emailVerified) {
+    redirect({ href: { pathname: "/verify-required", query: { redirect: "/checkout" } }, locale });
     return null;
   }
 
@@ -43,7 +51,7 @@ export default async function CheckoutPage() {
   // solely of vehicle listings.
   const hasProductItems = cart.items.some((item) => item.itemType === "PRODUCT_VARIANT");
   const [vehicleCatalog, garageVehicles] = hasProductItems
-    ? await Promise.all([getVehicleCatalogFromServer(), getMyGarageFromServer()])
+    ? await Promise.all([getVehicleSearchOptionsFromServer(), getMyGarageFromServer()])
     : [[], []];
 
   const t = await getTranslations("Checkout");

@@ -1,5 +1,5 @@
 import { getGuestIdCookieMaxAgeDays, getRecentlyViewedLimit } from "../settings/settings.service.js";
-import { toResponse as toProductResponse } from "../products/products.service.js";
+import { toCardResponse as toProductResponse } from "../products/products.service.js";
 import { productViewsRepository, type ProductViewOwner } from "./product-views.repository.js";
 
 export async function recordProductView(owner: ProductViewOwner, productId: number): Promise<void> {

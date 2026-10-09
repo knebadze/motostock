@@ -10,6 +10,16 @@ import type {
   VehicleCatalogListQuery,
 } from "./vehicle-catalog.schema.js";
 
+export async function listOptions(_req: Request, res: Response) {
+  const items = await vehicleCatalogService.listVehicleCatalogOptions();
+  res.status(200).json({ items });
+}
+
+export async function listOptionsWithCompatibleProducts(_req: Request, res: Response) {
+  const items = await vehicleCatalogService.listVehicleCatalogOptionsWithCompatibleProducts();
+  res.status(200).json({ items });
+}
+
 export async function list(
   req: Request<unknown, unknown, unknown, VehicleCatalogListQuery>,
   res: Response,

@@ -2,9 +2,24 @@ import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
 import { getClientIp } from "../../lib/request-ip.js";
 import { previewCheckout, placeOrder } from "./orders.service.js";
-import { listMyOrders, getMyOrder, reorderOrder, listAllOrders, getAnyOrder } from "./orders-query.service.js";
-import { updateOrderStatus, retryOrderFinaSync } from "./orders-admin.service.js";
-import type { CheckoutInput, ListOrdersQuery, UpdateOrderStatusInput } from "./orders.schema.js";
+import {
+  listMyOrders,
+  getMyOrder,
+  reorderOrder,
+  listAllOrders,
+  getAnyOrder,
+  getMyOrderInvoicePdf,
+  getAnyOrderInvoicePdf,
+  getAnyOrderPackingSlipPdf,
+} from "./orders-query.service.js";
+import { updateOrderStatus, retryOrderFinaSync, resolveOrderFinaSync } from "./orders-admin.service.js";
+import type { ResolveFinaPushInput } from "./orders.schema.js";
+import type {
+  CheckoutInput,
+  DownloadInvoiceQuery,
+  ListOrdersQuery,
+  UpdateOrderStatusInput,
+} from "./orders.schema.js";
 
 // requireAuth (see orders.routes.ts) guarantees req.user is set before any
 // handler here runs — this is just the narrow structural read of it.
@@ -37,6 +52,39 @@ export async function list(req: Request, res: Response) {
 export async function getOne(req: Request, res: Response) {
   const order = await getMyOrder(requireUserId(req), Number(req.params.id));
   res.status(200).json({ order });
+}
+
+export async function downloadInvoice(
+  req: Request<{ id: string }, unknown, unknown, DownloadInvoiceQuery>,
+  res: Response,
+) {
+  const { buffer, filename } = await getMyOrderInvoicePdf(
+    requireUserId(req),
+    Number(req.params.id),
+    req.query.locale ?? "ka",
+  );
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.status(200).send(buffer);
+}
+
+// Staff print views — `inline` (not `attachment` like the customer download
+// above) so the PDF opens in a browser tab ready to print.
+function sendInlinePdf(res: Response, { buffer, filename }: { buffer: Buffer; filename: string }) {
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+  res.status(200).send(buffer);
+}
+
+export async function downloadAnyInvoice(
+  req: Request<{ id: string }, unknown, unknown, DownloadInvoiceQuery>,
+  res: Response,
+) {
+  sendInlinePdf(res, await getAnyOrderInvoicePdf(Number(req.params.id), req.query.locale ?? "ka"));
+}
+
+export async function downloadAnyPackingSlip(req: Request<{ id: string }>, res: Response) {
+  sendInlinePdf(res, await getAnyOrderPackingSlipPdf(Number(req.params.id)));
 }
 
 export async function reorder(req: Request, res: Response) {
@@ -73,5 +121,10 @@ export async function updateStatus(
 
 export async function retryFinaSync(req: Request, res: Response) {
   const order = await retryOrderFinaSync(Number(req.params.id));
+  res.status(200).json({ order });
+}
+
+export async function resolveFinaSync(req: Request, res: Response) {
+  const order = await resolveOrderFinaSync(Number(req.params.id), req.body as ResolveFinaPushInput);
   res.status(200).json({ order });
 }

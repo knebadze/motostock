@@ -3,6 +3,7 @@ import { prisma } from "../../config/prisma.js";
 import { startOfDayTbilisi, endOfDayTbilisi } from "../../lib/tbilisi-dates.js";
 import type {
   CartItemType,
+  FinaOrderSyncStatus,
   OrderDeliverySpeed,
   OrderFulfillmentMethod,
   PaymentStatus,
@@ -46,11 +47,21 @@ function buildAdminWhere(filters: {
   createdFrom?: string;
   createdTo?: string;
   flaggedOnly?: boolean;
+  finaFailedOnly?: boolean;
+  userId?: number;
 }): Prisma.OrderWhereInput | undefined {
   const and: Prisma.OrderWhereInput[] = [];
 
+  if (filters.userId != null) {
+    and.push({ userId: filters.userId });
+  }
+
   if (filters.flaggedOnly) {
     and.push({ riskFlags: { some: {} } });
+  }
+
+  if (filters.finaFailedOnly) {
+    and.push({ finaSyncStatus: "FAILED" });
   }
 
   if (filters.search) {
@@ -127,6 +138,9 @@ export type PlaceOrderInput = {
   // PaymentStatus's own comment in order.prisma) — purely additive labeling
   // until a real gateway integration exists.
   paymentStatus: PaymentStatus;
+  // PENDING when the order has anything to push to FINA (outbox — see
+  // fina-sync.service.ts's orderNeedsFinaPush).
+  finaSyncStatus: FinaOrderSyncStatus;
   items: PlaceOrderItemInput[];
   // Resolved once by orders.service.ts (same "look up the lookup row by
   // its stable key" pattern as statusId/PENDING above) — applied below to
@@ -140,6 +154,17 @@ export type PlaceOrderInput = {
   cartItemIds: number[];
 };
 
+// Stock-touching loops lock ProductVariant rows (each UPDATE takes a row
+// lock held until commit) — always in ascending id order, the same order
+// fina-sync.repository.ts's applyFinaAvailability locks them in, so two
+// transactions touching an overlapping set can never wait on each other in
+// a cycle (deadlock). Vehicle-listing lines (no FINA link) keep their place.
+function sortByVariantId<T extends { productVariantId?: number | null }>(items: T[]): T[] {
+  return [...items].sort(
+    (a, b) => (a.productVariantId ?? Number.MAX_SAFE_INTEGER) - (b.productVariantId ?? Number.MAX_SAFE_INTEGER),
+  );
+}
+
 export const ordersRepository = {
   findByUserId(userId: number) {
     return prisma.order.findMany({
@@ -151,6 +176,19 @@ export const ordersRepository = {
 
   findById(id: number) {
     return prisma.order.findUnique({ where: { id }, include: orderItemsInclude });
+  },
+
+  // Packing-slip-only extras (see invoice.service.ts's
+  // generateOrderPackingSlipPdf) — kept out of orderItemsInclude so the
+  // regular order responses don't start carrying them.
+  findPackingSlipExtras(userId: number, variantIds: number[]) {
+    return Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { phone: true } }),
+      prisma.productVariant.findMany({
+        where: { id: { in: variantIds } },
+        select: { id: true, sku: true, size: { select: { nameKa: true } }, color: { select: { nameKa: true } } },
+      }),
+    ]);
   },
 
   // Idempotency-key lookup — see orders.service.ts's placeOrder, which
@@ -185,6 +223,9 @@ export const ordersRepository = {
       items: StockAdjustmentItem[];
       soldStatusId: number;
       availableStatusId: number;
+      // Queue the FINA return push (outbox) in this same transaction — set
+      // when the order was ever FINA-relevant (see updateOrderStatus).
+      queueFinaReturn: boolean;
     } | undefined,
     expectedCurrentStatusId: number,
   ) {
@@ -203,6 +244,9 @@ export const ordersRepository = {
           statusId,
           ...cancellation,
           ...(stockAdjustment ? { cancelledAt: new Date() } : {}),
+          ...(stockAdjustment?.queueFinaReturn
+            ? { finaSyncStatus: "PENDING" as const, finaPushAttempts: 0 }
+            : {}),
         },
       });
       if (result.count === 0) {
@@ -214,7 +258,10 @@ export const ordersRepository = {
 
       if (!stockAdjustment) return;
 
-      for (const item of stockAdjustment.items) {
+      // Variant rows locked in id order — same order as
+      // fina-sync.repository.ts's applyFinaAvailability, so a concurrent
+      // FINA stock write and this can't deadlock.
+      for (const item of sortByVariantId(stockAdjustment.items)) {
         if (item.productVariantId != null) {
           await tx.productVariant.update({
             where: { id: item.productVariantId },
@@ -329,10 +376,17 @@ export const ordersRepository = {
 
         const promo = await tx.promoCode.findUnique({
           where: { id: input.promoCodeId },
-          select: { usageLimit: true },
+          select: { usageLimit: true, isActive: true, startDate: true, endDate: true },
         });
         if (!promo) {
           throw new ApiError(400, "პრომო კოდი ვეღარ მოიძებნა");
+        }
+        // Deactivated by an admin, or expired, between the checkout preview
+        // and this commit — re-checked here under the same lock as the
+        // usage limits below.
+        const now = new Date();
+        if (!promo.isActive || promo.startDate > now || promo.endDate < now) {
+          throw new ApiError(400, "პრომო კოდი აღარ მოქმედებს — წაშალეთ და სცადეთ თავიდან", "PROMO_CODE_EXPIRED");
         }
 
         // Excludes CANCELLED orders — same reasoning as promo-codes.repository.ts's
@@ -358,7 +412,8 @@ export const ordersRepository = {
         }
       }
 
-      for (const item of input.items) {
+      // Id order for the row locks — see sortByVariantId.
+      for (const item of sortByVariantId(input.items)) {
         if (item.productVariantId != null) {
           // isActive: true guards against a variant deactivated in the
           // narrow race window between computeCheckoutTotals's read and

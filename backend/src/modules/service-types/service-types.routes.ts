@@ -10,29 +10,50 @@ import {
   createServiceTypeSchema,
   reorderServiceTypesSchema,
   serviceTypeIdParamSchema,
+  publicServiceTypeResponseSchema,
   serviceTypeResponseSchema,
   updateServiceTypeSchema,
 } from "./service-types.schema.js";
 
 export const serviceTypesRouter = Router();
 
-serviceTypesRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
-serviceTypesRouter.get("/", serviceTypesController.list);
-serviceTypesRouter.post("/", validate(createServiceTypeSchema), serviceTypesController.create);
+// OPERATOR (the workshop foreman) gets the full "სახელოსნო" section,
+// service-type management included — it's the workshop's own price/service
+// list, not catalog/discount data.
+// Public — the storefront /service page (names only).
+serviceTypesRouter.get("/public", serviceTypesController.listPublic);
+serviceTypesRouter.get(
+  "/",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  serviceTypesController.list,
+);
+serviceTypesRouter.post(
+  "/",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(createServiceTypeSchema),
+  serviceTypesController.create,
+);
 serviceTypesRouter.patch(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(serviceTypeIdParamSchema, "params"),
   validate(updateServiceTypeSchema),
   serviceTypesController.update,
 );
 serviceTypesRouter.put(
   "/order",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(reorderServiceTypesSchema),
   serviceTypesController.reorder,
 );
 serviceTypesRouter.delete(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(serviceTypeIdParamSchema, "params"),
   serviceTypesController.remove,
 );
@@ -45,10 +66,23 @@ registry.registerPath({
   method: "get",
   path: "/service-types",
   tags: ["ServiceTypes"],
-  summary: "List all workshop service types, including inactive ones (admin)",
+  summary: "List all workshop service types, including inactive ones (admin/operator)",
   security,
   responses: {
     200: { description: "Service types", content: { "application/json": { schema: listResponse } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/service-types/public",
+  tags: ["ServiceTypes"],
+  summary: "Active workshop service types, names only (storefront /service page) — public",
+  responses: {
+    200: {
+      description: "Public service types",
+      content: { "application/json": { schema: z.object({ items: z.array(publicServiceTypeResponseSchema) }) } },
+    },
   },
 });
 

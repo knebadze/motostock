@@ -11,6 +11,7 @@ import type { Brand } from "@/lib/api/brands";
 import type { Category } from "@/lib/api/categories";
 import { ApiRequestError } from "@/lib/api/client";
 import { ModelFormModal } from "./ModelFormModal";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 
 const columns: DataTableColumn<Model>[] = [
   { header: "მარკა", render: (model) => model.brand.name },
@@ -145,6 +146,7 @@ export function ModelsManager({
         onConfirm={async () => {
           if (!deletingModel) return;
           await deleteModel(deletingModel.id);
+          await revalidatePublicCache("vehicle-catalog");
           await refresh();
         }}
       />

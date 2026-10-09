@@ -24,18 +24,34 @@ export const teamMembersRouter = Router();
 // members) stays admin-only.
 teamMembersRouter.get("/public", teamMembersController.listPublic);
 
-teamMembersRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
-teamMembersRouter.get("/", teamMembersController.list);
-teamMembersRouter.post("/", validate(createTeamMemberSchema), teamMembersController.create);
+// Per-route (not a blanket `.use()`) so GET can grant OPERATOR too — the
+// workshop "სერვისის ისტორია" screen's mechanic dropdown needs this list;
+// write routes stay ADMIN-only.
+teamMembersRouter.get(
+  "/",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  teamMembersController.list,
+);
+teamMembersRouter.post(
+  "/",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  validate(createTeamMemberSchema),
+  teamMembersController.create,
+);
 teamMembersRouter.patch(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(teamMemberIdParamSchema, "params"),
   validate(updateTeamMemberSchema),
   teamMembersController.update,
 );
 teamMembersRouter.post(
   "/:id/image",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   uploadRateLimit,
   validate(teamMemberIdParamSchema, "params"),
   imageUpload().single("image"),
@@ -43,11 +59,15 @@ teamMembersRouter.post(
 );
 teamMembersRouter.put(
   "/order",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(reorderTeamMembersSchema),
   teamMembersController.reorder,
 );
 teamMembersRouter.delete(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(teamMemberIdParamSchema, "params"),
   teamMembersController.remove,
 );

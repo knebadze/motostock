@@ -32,6 +32,21 @@ export const sessionRepository = {
     return prisma.session.findUnique({ where: { id }, select: { id: true, lastSeenAt: true } });
   },
 
+  // Everything auth.middleware.ts's per-request check needs, in one query
+  // (it used to be a user lookup followed by a separate session lookup): the
+  // session itself, plus its owner's current tokenVersion and role.
+  findForAuth(id: number) {
+    return prisma.session.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        userId: true,
+        lastSeenAt: true,
+        user: { select: { id: true, tokenVersion: true, role: { select: { name: true } } } },
+      },
+    });
+  },
+
   // Fire-and-forget from auth.middleware.ts's sliding-timeout refresh
   // (throttled — see that call site) — deleteMany rather than update so a
   // session deleted concurrently (e.g. an admin revoking it, or logout, in

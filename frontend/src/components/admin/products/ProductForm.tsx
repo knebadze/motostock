@@ -5,15 +5,15 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FormActions } from "@/components/shared/FormActions";
 import { Tabs } from "@/components/shared/Tabs";
-import type { Product } from "@/lib/api/products";
+import type { Product, ProductListItem } from "@/lib/api/products";
 import { siteConfig } from "@/config/site";
 import type { Attribute } from "@/lib/api/attributes";
 import type { Category } from "@/lib/api/categories";
 import { listProductBrands, type ProductBrand } from "@/lib/api/product-brands";
 import type { LookupItem } from "@/lib/api/lookups";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
-import { flattenTree, slugify } from "@/lib/categories-tree";
+import { flattenTree, isVehicleCategory, slugify } from "@/lib/categories-tree";
 import { generateVariantCombinations } from "@/lib/variant-matrix";
 import { productFormSchema, buildAttributeValuesSchema, type AttributeFieldValue } from "@/lib/validation/products";
 import { productVariantFormSchema } from "@/lib/validation/product-variants";
@@ -27,18 +27,25 @@ import { ProductBuyTogetherPanel } from "./ProductBuyTogetherPanel";
 import { ProductBasicInfoTab } from "./ProductBasicInfoTab";
 import { ProductDescriptionTab } from "./ProductDescriptionTab";
 import { ProductImageTab } from "./ProductImageTab";
-import { ProductSeoTab } from "./ProductSeoTab";
+import { ProductSeoTab, type LocalizedMeta, type SeoLocale } from "./ProductSeoTab";
 import { ProductPricingTab, type DraftVariant } from "./ProductPricingTab";
 import {
   toAttributeFieldValues,
   withAttributeDefaults,
   toAttributeValueInputs,
 } from "./product-form-attributes";
-import { saveProductForm, PRODUCT_FORM_SAVE_WARNING_MESSAGES } from "./product-form-save";
+import { saveProductForm, PRODUCT_FORM_SAVE_WARNING_MESSAGES, formatVariantSaveWarning } from "./product-form-save";
 
 function toNullableHtml(html: string): string | null {
   const isBlank = html.replace(/<[^>]*>/g, "").trim() === "";
   return isBlank ? null : html;
+}
+
+const SEO_LOCALES: SeoLocale[] = ["ka", "en", "ru"];
+
+function toNullableText(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
 }
 
 export function ProductForm({
@@ -57,14 +64,19 @@ export function ProductForm({
   colors: LookupItem[];
   conditions: LookupItem[];
   statuses: LookupItem[];
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   vehicleSpecLookups: VehicleSpecLookupMap;
-  allProducts: Product[];
+  allProducts: ProductListItem[];
   product: Product | null;
 }) {
   const router = useRouter();
   const isEditing = product !== null;
-  const flatCategories = flattenTree(categories);
+  // Excludes vehicle (transport) categories — those are vehicle listings,
+  // not products, and belong only in the vehicle listing form's own category
+  // picker (same fix as BulkDiscountsPanel.tsx's product category picker).
+  const flatCategories = flattenTree(
+    categories.filter((category) => !isVehicleCategory(categories, category.id)),
+  );
 
   const [categoryId, setCategoryId] = useState(product ? String(product.category.id) : "");
   const [productBrandId, setProductBrandId] = useState(
@@ -76,11 +88,28 @@ export function ProductForm({
   const [nameRu, setNameRu] = useState(product?.name.ru ?? "");
   const [slug, setSlug] = useState(product?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(false);
-  const [metaTitle, setMetaTitle] = useState(product?.metaTitle ?? "");
-  const [metaTitleTouched, setMetaTitleTouched] = useState((product?.metaTitle ?? "") !== "");
-  const [metaDescription, setMetaDescription] = useState(product?.metaDescription ?? "");
-  const [metaDescriptionTouched, setMetaDescriptionTouched] = useState(
-    (product?.metaDescription ?? "") !== "",
+  const [metaTitle, setMetaTitle] = useState<LocalizedMeta>(() => ({
+    ka: product?.metaTitleKa ?? "",
+    en: product?.metaTitleEn ?? "",
+    ru: product?.metaTitleRu ?? "",
+  }));
+  const [metaTitleTouched, setMetaTitleTouched] = useState<Record<SeoLocale, boolean>>(() => ({
+    ka: Boolean(product?.metaTitleKa),
+    en: Boolean(product?.metaTitleEn),
+    ru: Boolean(product?.metaTitleRu),
+  }));
+  const [metaDescription, setMetaDescription] = useState<LocalizedMeta>(() => ({
+    ka: product?.metaDescriptionKa ?? "",
+    en: product?.metaDescriptionEn ?? "",
+    ru: product?.metaDescriptionRu ?? "",
+  }));
+  const [metaDescriptionTouched, setMetaDescriptionTouched] = useState<Record<SeoLocale, boolean>>(() => ({
+    ka: Boolean(product?.metaDescriptionKa),
+    en: Boolean(product?.metaDescriptionEn),
+    ru: Boolean(product?.metaDescriptionRu),
+  }));
+  const [isFeaturedOnHomepage, setIsFeaturedOnHomepage] = useState(
+    product?.isFeaturedOnHomepage ?? false,
   );
   const [descriptionKa, setDescriptionKa] = useState(product?.descriptionKa ?? "");
   const [descriptionEn, setDescriptionEn] = useState(product?.descriptionEn ?? "");
@@ -122,12 +151,10 @@ export function ProductForm({
   const [initialIsActive, setInitialIsActive] = useState(true);
   const [draftVariants, setDraftVariants] = useState<DraftVariant[]>([]);
   const nextDraftVariantId = useRef(0);
-
-  const [initialDiscountPercent, setInitialDiscountPercent] = useState("");
-  const [initialDiscountPrice, setInitialDiscountPrice] = useState("");
-  const [initialDiscountStartDate, setInitialDiscountStartDate] = useState("");
-  const [initialDiscountEndDate, setInitialDiscountEndDate] = useState("");
-  const pendingVariantImageFilesRef = useRef<File[]>([]);
+  // Which draft row currently has its "images/discount" section open — at
+  // most one at a time, same simple accordion pattern as most other
+  // expandable admin lists in this app.
+  const [expandedDraftId, setExpandedDraftId] = useState<number | null>(null);
 
   // Same create-time batching as the variant matrix above: fitment links are
   // held locally until the product actually exists, then created right after
@@ -154,25 +181,45 @@ export function ProductForm({
   // "touched" convention as slug: stops overriding as soon as the admin
   // edits the meta field directly, and never overwrites a value a product
   // already had when this form opened (see the touched-state initializers).
+  // Per locale — each language's meta follows that language's own name.
   function handleNameChange(next: { ka: string; en: string; ru: string }) {
     setNameKa(next.ka);
     setNameEn(next.en);
     setNameRu(next.ru);
-    if (!metaTitleTouched && next.ka) {
-      setMetaTitle(`${next.ka} | ${siteConfig.name}`.slice(0, 70));
-    }
+    setMetaTitle((current) => {
+      const updated = { ...current };
+      for (const locale of SEO_LOCALES) {
+        if (!metaTitleTouched[locale] && next[locale]) {
+          updated[locale] = `${next[locale]} | ${siteConfig.name}`.slice(0, 70);
+        }
+      }
+      return updated;
+    });
   }
 
   function handleEnglishNameChange(value: string) {
     if (!slugTouched) setSlug(slugify(value));
   }
 
+  function syncMetaDescription(locale: SeoLocale, html: string) {
+    if (metaDescriptionTouched[locale]) return;
+    const plainText = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    setMetaDescription((current) => ({ ...current, [locale]: plainText.slice(0, 160) }));
+  }
+
   function handleDescriptionKaChange(html: string) {
     setDescriptionKa(html);
-    if (!metaDescriptionTouched) {
-      const plainText = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-      setMetaDescription(plainText.slice(0, 160));
-    }
+    syncMetaDescription("ka", html);
+  }
+
+  function handleDescriptionEnChange(html: string) {
+    setDescriptionEn(html);
+    syncMetaDescription("en", html);
+  }
+
+  function handleDescriptionRuChange(html: string) {
+    setDescriptionRu(html);
+    syncMetaDescription("ru", html);
   }
 
   function handleSlugChange(value: string) {
@@ -180,14 +227,14 @@ export function ProductForm({
     setSlug(value);
   }
 
-  function handleMetaTitleChange(value: string) {
-    setMetaTitleTouched(true);
-    setMetaTitle(value);
+  function handleMetaTitleChange(locale: SeoLocale, value: string) {
+    setMetaTitleTouched((current) => ({ ...current, [locale]: true }));
+    setMetaTitle((current) => ({ ...current, [locale]: value }));
   }
 
-  function handleMetaDescriptionChange(value: string) {
-    setMetaDescriptionTouched(true);
-    setMetaDescription(value);
+  function handleMetaDescriptionChange(locale: SeoLocale, value: string) {
+    setMetaDescriptionTouched((current) => ({ ...current, [locale]: true }));
+    setMetaDescription((current) => ({ ...current, [locale]: value }));
   }
 
   // Product brands are category-scoped (with tree inheritance, resolved
@@ -269,6 +316,11 @@ export function ProductForm({
         sku: initialBaseSku,
         finaId,
         isActive: initialIsActive,
+        imageFiles: [],
+        discountPercent: "",
+        discountPrice: "",
+        discountStartDate: "",
+        discountEndDate: "",
       })),
     ]);
 
@@ -296,22 +348,11 @@ export function ProductForm({
 
   function removeDraftVariant(draftId: number) {
     setDraftVariants((prev) => prev.filter((variant) => variant.draftId !== draftId));
+    setExpandedDraftId((current) => (current === draftId ? null : current));
   }
 
-  function handleInitialDiscountPercentChange(value: string) {
-    setInitialDiscountPercent(value);
-
-    const percentNum = Number(value);
-    const priceNum = Number(initialBasePrice);
-    if (
-      value.trim() !== "" &&
-      Number.isFinite(percentNum) &&
-      percentNum >= 0 &&
-      percentNum <= 100 &&
-      initialBasePrice.trim() !== ""
-    ) {
-      setInitialDiscountPrice((priceNum * (1 - percentNum / 100)).toFixed(2));
-    }
+  function toggleDraftVariantExpanded(draftId: number) {
+    setExpandedDraftId((current) => (current === draftId ? null : draftId));
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -321,27 +362,44 @@ export function ProductForm({
       categoryId,
       name: { ka: nameKa, en: nameEn, ru: nameRu },
       slug,
-      metaTitle: metaTitle || undefined,
-      metaDescription: metaDescription || undefined,
+      metaTitleKa: metaTitle.ka || undefined,
+      metaTitleEn: metaTitle.en || undefined,
+      metaTitleRu: metaTitle.ru || undefined,
+      metaDescriptionKa: metaDescription.ka || undefined,
+      metaDescriptionEn: metaDescription.en || undefined,
+      metaDescriptionRu: metaDescription.ru || undefined,
     });
     const attributeResult = buildAttributeValuesSchema(categoryAttributes).safeParse(
       withAttributeDefaults(attributeValues, categoryAttributes),
     );
-    const wantsInitialDiscount = draftVariants.length > 0 && initialDiscountPrice.trim() !== "";
-    const discountResult = wantsInitialDiscount
-      ? productVariantDiscountFormSchema.safeParse({
-          discountPrice: initialDiscountPrice,
-          discountPercent: initialDiscountPercent,
-          startDate: initialDiscountStartDate,
-          endDate: initialDiscountEndDate,
-        })
-      : null;
 
-    if (!mainResult.success || !attributeResult.success || discountResult?.success === false) {
+    // Each draft variant's discount is independently optional — only
+    // validated (and only reported) for rows where the admin actually
+    // started filling one in, keyed by draftId so DraftVariantsTable can
+    // show each row's own errors without them colliding.
+    const draftDiscountErrors: FieldErrors = {};
+    let hasDraftDiscountError = false;
+    for (const draft of draftVariants) {
+      if (draft.discountPrice.trim() === "") continue;
+      const result = productVariantDiscountFormSchema.safeParse({
+        discountPrice: draft.discountPrice,
+        discountPercent: draft.discountPercent,
+        startDate: draft.discountStartDate,
+        endDate: draft.discountEndDate,
+      });
+      if (!result.success) {
+        hasDraftDiscountError = true;
+        for (const [key, message] of Object.entries(getFieldErrors(result.error))) {
+          draftDiscountErrors[`draft-${draft.draftId}-${key}`] = message;
+        }
+      }
+    }
+
+    if (!mainResult.success || !attributeResult.success || hasDraftDiscountError) {
       setErrors({
         ...(mainResult.success ? {} : getFieldErrors(mainResult.error)),
         ...(attributeResult.success ? {} : getFieldErrors(attributeResult.error)),
-        ...(discountResult?.success === false ? getFieldErrors(discountResult.error) : {}),
+        ...draftDiscountErrors,
       });
       toast.error("გთხოვთ შეასწოროთ ველები");
       return;
@@ -356,11 +414,16 @@ export function ProductForm({
         productBrandId: productBrandId ? Number(productBrandId) : null,
         name: { ka: nameKa.trim(), en: nameEn.trim(), ru: nameRu.trim() },
         slug: slug.trim(),
-        metaTitle: metaTitle.trim() ? metaTitle.trim() : null,
-        metaDescription: metaDescription.trim() ? metaDescription.trim() : null,
+        metaTitleKa: toNullableText(metaTitle.ka),
+        metaTitleEn: toNullableText(metaTitle.en),
+        metaTitleRu: toNullableText(metaTitle.ru),
+        metaDescriptionKa: toNullableText(metaDescription.ka),
+        metaDescriptionEn: toNullableText(metaDescription.en),
+        metaDescriptionRu: toNullableText(metaDescription.ru),
         descriptionKa: toNullableHtml(descriptionKa),
         descriptionEn: toNullableHtml(descriptionEn),
         descriptionRu: toNullableHtml(descriptionRu),
+        isFeaturedOnHomepage,
         attributeValues: toAttributeValueInputs(attributeValues, categoryAttributes),
       };
 
@@ -370,20 +433,13 @@ export function ProductForm({
         productInput,
         imageFile,
         draftVariants,
-        pendingVariantImageFiles: pendingVariantImageFilesRef.current,
-        initialDiscount: wantsInitialDiscount
-          ? {
-              price: initialDiscountPrice,
-              percent: initialDiscountPercent,
-              startDate: initialDiscountStartDate,
-              endDate: initialDiscountEndDate,
-            }
-          : null,
         draftFitments,
       });
 
       if (result.ok) {
         toast.success(isEditing ? "პროდუქტი განახლდა" : "პროდუქტი დაემატა");
+      } else if (result.warning === "variants") {
+        toast.error(formatVariantSaveWarning(result.failedVariantLabels));
       } else {
         toast.error(PRODUCT_FORM_SAVE_WARNING_MESSAGES[result.warning]);
       }
@@ -415,6 +471,8 @@ export function ProductForm({
           onNameChange={handleNameChange}
           onEnglishChange={handleEnglishNameChange}
           nameErrors={{ ka: errors["name.ka"], en: errors["name.en"], ru: errors["name.ru"] }}
+          isFeaturedOnHomepage={isFeaturedOnHomepage}
+          onIsFeaturedOnHomepageChange={setIsFeaturedOnHomepage}
         />
       ),
     },
@@ -439,9 +497,9 @@ export function ProductForm({
           descriptionKa={descriptionKa}
           onDescriptionKaChange={handleDescriptionKaChange}
           descriptionEn={descriptionEn}
-          onDescriptionEnChange={setDescriptionEn}
+          onDescriptionEnChange={handleDescriptionEnChange}
           descriptionRu={descriptionRu}
-          onDescriptionRuChange={setDescriptionRu}
+          onDescriptionRuChange={handleDescriptionRuChange}
         />
       ),
     },
@@ -461,7 +519,7 @@ export function ProductForm({
           onMetaTitleChange={handleMetaTitleChange}
           metaDescription={metaDescription}
           onMetaDescriptionChange={handleMetaDescriptionChange}
-          errors={{ slug: errors.slug, metaTitle: errors.metaTitle, metaDescription: errors.metaDescription }}
+          errors={errors}
         />
       ),
     },
@@ -511,19 +569,10 @@ export function ProductForm({
                 onInitialIsActiveChange={setInitialIsActive}
                 onGenerateDraftVariants={handleGenerateDraftVariants}
                 draftVariants={draftVariants}
+                expandedDraftId={expandedDraftId}
+                onToggleDraftVariantExpanded={toggleDraftVariantExpanded}
                 onDraftVariantChange={updateDraftVariant}
                 onDraftVariantRemove={removeDraftVariant}
-                onPendingVariantImageFilesChange={(files) => {
-                  pendingVariantImageFilesRef.current = files;
-                }}
-                initialDiscountPercent={initialDiscountPercent}
-                onInitialDiscountPercentChange={handleInitialDiscountPercentChange}
-                initialDiscountPrice={initialDiscountPrice}
-                onInitialDiscountPriceChange={setInitialDiscountPrice}
-                initialDiscountStartDate={initialDiscountStartDate}
-                onInitialDiscountStartDateChange={setInitialDiscountStartDate}
-                initialDiscountEndDate={initialDiscountEndDate}
-                onInitialDiscountEndDateChange={setInitialDiscountEndDate}
                 errors={errors}
               />
             ),

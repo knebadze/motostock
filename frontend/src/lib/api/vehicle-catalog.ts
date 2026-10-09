@@ -1,7 +1,12 @@
 import { apiClient } from "./client";
 import type { LocalizedString } from "./categories";
-import type { LookupItem } from "./lookups";
 import type { AdminFilterEntry } from "./admin-filters";
+import type { components } from "./generated/schema";
+import { slugify } from "../categories-tree";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type NamedRef = {
   id: number;
@@ -17,104 +22,52 @@ export type BrandModelRef = {
   slug: string;
 };
 
-export type VehicleCatalogEntry = {
+export type VehicleCatalogEntry = Schemas["VehicleCatalog"];
+// The lean picker shape (GET /vehicle-catalog/options) — everything a "pick a
+// vehicle" UI reads, without the 30+ spec columns of a full entry.
+export type VehicleCatalogOption = Schemas["VehicleCatalogOption"];
+
+export type VehicleCatalogInput = Schemas["CreateVehicleCatalogInput"];
+
+// What the storefront's brand -> model -> year pickers (home hero search,
+// checkout compatibility check) actually read — the option without its
+// category, whose name repeated in all three languages on every row was
+// roughly half of each row's weight in the page payload.
+export type VehicleSearchOption = Omit<VehicleCatalogOption, "category">;
+
+// URL slug for a vehicle's "parts that fit" page (/compatible-products/…):
+// "honda-cbr600rr-2007-2012-123" — brand, model, variant, years, then the
+// catalog id, which is all parseVehicleCatalogIdFromSlug reads back (same
+// trailing-id scheme as vehicle listings' buildVehicleListingSlug), so a
+// renamed brand/model only changes the slug, never breaks the page.
+export function buildVehicleCatalogSlug(entry: {
   id: number;
-  category: NamedRef;
-  brand: BrandModelRef;
-  model: BrandModelRef;
-  submittedBy: { id: number; name: string } | null;
+  brand: { slug: string };
+  model: { slug: string };
   variant: string;
   yearFrom: number | null;
   yearTo: number | null;
-  engineVolumeCc: number | null;
-  enginePowerHp: number | null;
-  cylinderCount: number | null;
-  gearCount: number | null;
-  seatCount: number | null;
-  weightKg: number | null;
-  seatHeightMm: number | null;
-  fuelTankLiters: number | null;
-  topSpeedKmh: number | null;
-  hasAbs: boolean | null;
-  fuelType: LookupItem | null;
-  transmissionType: LookupItem | null;
-  coolingType: LookupItem | null;
-  finalDriveType: LookupItem | null;
-  driveType: LookupItem | null;
-  startType: LookupItem | null;
-  powertrainType: LookupItem | null;
-  motorPowerWatt: number | null;
-  batteryCapacityWh: number | null;
-  rangeKm: number | null;
-  chargingTimeMinutes: number | null;
-  hasLockingDifferential: boolean | null;
-  imageUrl: string | null;
-  descriptionKa: string | null;
-  descriptionEn: string | null;
-  descriptionRu: string | null;
-  popularity: number;
-  createdAt: string;
-  updatedAt: string;
-};
+}): string {
+  const parts = [entry.brand.slug, entry.model.slug, slugify(entry.variant)];
+  if (entry.yearFrom != null) parts.push(String(entry.yearFrom));
+  if (entry.yearTo != null && entry.yearTo !== entry.yearFrom) parts.push(String(entry.yearTo));
+  parts.push(String(entry.id));
+  return parts.filter(Boolean).join("-");
+}
 
-export type VehicleCatalogInput = {
-  brandId: number;
-  modelId: number;
-  variant?: string;
-  yearFrom?: number | null;
-  yearTo?: number | null;
-  engineVolumeCc?: number | null;
-  enginePowerHp?: number | null;
-  cylinderCount?: number | null;
-  gearCount?: number | null;
-  seatCount?: number | null;
-  weightKg?: number | null;
-  seatHeightMm?: number | null;
-  fuelTankLiters?: number | null;
-  topSpeedKmh?: number | null;
-  hasAbs?: boolean | null;
-  fuelTypeId?: number | null;
-  transmissionTypeId?: number | null;
-  coolingTypeId?: number | null;
-  finalDriveTypeId?: number | null;
-  driveTypeId?: number | null;
-  startTypeId?: number | null;
-  powertrainTypeId?: number | null;
-  motorPowerWatt?: number | null;
-  batteryCapacityWh?: number | null;
-  rangeKm?: number | null;
-  chargingTimeMinutes?: number | null;
-  hasLockingDifferential?: boolean | null;
-  descriptionKa?: string | null;
-  descriptionEn?: string | null;
-  descriptionRu?: string | null;
-};
+// Inverse of buildVehicleCatalogSlug — the trailing number. Also accepts the
+// old bare-id URLs (/compatible-products/123), which the page then
+// 301-redirects to the slugged form.
+export function parseVehicleCatalogIdFromSlug(slug: string): number | null {
+  const match = /(\d+)$/.exec(slug);
+  if (!match) return null;
+  const id = Number(match[1]);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
 
-export type SubmitVehicleCatalogInput = {
-  brandId: number;
-  modelId: number;
-  variant?: string;
-  yearFrom?: number | null;
-  yearTo?: number | null;
-  year: number;
-  vin?: string | null;
-  engineVolumeCc?: number | null;
-  enginePowerHp?: number | null;
-  fuelTypeId?: number | null;
-  transmissionTypeId?: number | null;
-};
+export type SubmitVehicleCatalogInput = Schemas["SubmitVehicleCatalogInput"];
 
-export type GarageVehicle = {
-  id: number;
-  year: number;
-  vin: string | null;
-  // The customer's own photo of their actual vehicle — distinct from
-  // vehicleCatalog.imageUrl, which is a shared stock photo for the model.
-  imageUrl: string | null;
-  vehicleCatalog: VehicleCatalogEntry;
-  createdAt: string;
-  updatedAt: string;
-};
+export type GarageVehicle = Schemas["GarageVehicle"];
 
 export async function submitVehicleCatalogEntry(
   input: SubmitVehicleCatalogInput,
@@ -178,19 +131,9 @@ export async function deleteVehicleCatalogEntry(id: number): Promise<void> {
   await apiClient.delete(`/vehicle-catalog/${id}`);
 }
 
-export type BulkImportRowResult = {
-  row: number;
-  status: "created" | "error";
-  message: string | null;
-  id: number | null;
-};
+export type BulkImportRowResult = BulkImportVehicleCatalogResult["results"][number];
 
-export type BulkImportVehicleCatalogResult = {
-  totalRows: number;
-  createdCount: number;
-  errorCount: number;
-  results: BulkImportRowResult[];
-};
+export type BulkImportVehicleCatalogResult = Schemas["BulkImportVehicleCatalogResult"];
 
 export async function downloadVehicleCatalogTemplate(): Promise<void> {
   const { data } = await apiClient.get<Blob>("/vehicle-catalog/bulk-import/template", {

@@ -21,11 +21,6 @@ import type { FinaSyncRun } from "@/lib/api/fina-sync";
 import { FinaSyncStatusBadge } from "@/components/admin/fina-sync/FinaSyncStatusBadge";
 import { ScheduledJobStatusBadge, SCHEDULED_JOB_TRIGGER_LABEL } from "./ScheduledJobStatusBadge";
 
-// Every job here shares the same wall-clock schedule (see server.ts) — a
-// per-job cron expression isn't stored anywhere the API surfaces, so this
-// is a fixed display string rather than something read per row.
-const CRON_SCHEDULE_LABEL = "ყოველდღე 03:00 (თბილისის დრო)";
-
 const ALL_JOBS = "ALL" as const;
 
 function toPagedResult(page: ScheduledJobRunsPage): PagedResult<ScheduledJobRun> {
@@ -90,7 +85,7 @@ export function ScheduledJobsManager({
 
   const jobColumns: DataTableColumn<ScheduledJobDefinition>[] = [
     { header: "სახელი", render: (job) => job.labelKa },
-    { header: "განრიგი", render: () => CRON_SCHEDULE_LABEL, cellClassName: "text-muted-foreground" },
+    { header: "განრიგი", render: (job) => job.scheduleLabelKa, cellClassName: "text-muted-foreground" },
     {
       header: "ბოლო გაშვება",
       render: (job) => (job.lastRun ? formatDateTime(job.lastRun.startedAt) : "—"),

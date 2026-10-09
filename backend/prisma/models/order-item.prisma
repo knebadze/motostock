@@ -22,6 +22,13 @@ model OrderItem {
 
   quantity  Int
   unitPrice Decimal @db.Decimal(10, 2)
+  // The FINA product id this line was SOLD under (set when the sale push
+  // succeeds). The cancellation's return document is built from this, not
+  // the variant's current finaId — re-linking a variant in between must not
+  // return a different product than was sold. Null for unsynced/non-FINA
+  // lines (and lines synced before this column existed — the return then
+  // falls back to the variant's current link).
+  finaProductId Int?
   lineTotal Decimal @db.Decimal(10, 2)
 
   createdAt DateTime @default(now())

@@ -7,11 +7,14 @@ enum VehicleCategoryFilterType {
   @@schema("cla")
 }
 
-// Fixed VehicleCatalog columns that can be exposed as a shop filter — there
-// is no generic Attribute system on the vehicle side, so unlike
-// CategoryFilterConfig.attributeId this points at one of a hardcoded set of
-// columns (see vehicle-spec-fields.registry.ts for the LOOKUP/NUMBER/BOOLEAN
-// kind + Prisma column each value maps to).
+// Fixed columns that can be exposed as a shop filter — there is no generic
+// Attribute system on the vehicle side, so unlike CategoryFilterConfig.
+// attributeId this points at one of a hardcoded set of columns (see
+// vehicle-spec-fields.registry.ts for the LOOKUP/NUMBER/BOOLEAN kind + which
+// table/column each value maps to). Almost all of these are VehicleCatalog
+// engineering specs, except IS_CUSTOMS_CLEARED — a VehicleListing column
+// (every unit's own customs status, not a catalog/model-level spec) — see
+// the registry's own comment for how that one case is handled.
 enum VehicleSpecField {
   FUEL_TYPE
   TRANSMISSION_TYPE
@@ -35,6 +38,7 @@ enum VehicleSpecField {
   CHARGING_TIME_MINUTES
   HAS_ABS
   HAS_LOCKING_DIFFERENTIAL
+  IS_CUSTOMS_CLEARED
 
   @@schema("cla")
 }

@@ -15,6 +15,7 @@ import { SearchRecommendationsSettingsTab } from "./SearchRecommendationsSetting
 import { SessionAuthSettingsTab } from "./SessionAuthSettingsTab";
 import { ImageSettingsTab } from "./ImageSettingsTab";
 import { CacheTab } from "./CacheTab";
+import { MonitoringSettingsTab } from "./MonitoringSettingsTab";
 
 export function SettingsManager({ initialSettings }: { initialSettings: Settings }) {
   const [settings, setSettings] = useState(initialSettings);
@@ -99,6 +100,11 @@ export function SettingsManager({ initialSettings }: { initialSettings: Settings
               key: "cache",
               label: "ქეში",
               content: <CacheTab settings={settings} saving={saving} onSave={save} />,
+            },
+            {
+              key: "monitoring",
+              label: "მონიტორინგი",
+              content: <MonitoringSettingsTab settings={settings} saving={saving} onSave={save} />,
             },
           ]}
         />

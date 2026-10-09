@@ -1,46 +1,20 @@
 import { apiClient } from "./client";
 import type { HeroSlide } from "./hero-slides";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type BulkDiscountEventTargetType = "PRODUCT" | "VEHICLE_LISTING";
 
 // Embedded (optionally) into BulkApplyDiscountsInput — see bulk-discounts.ts.
 // Grouping a bulk apply under a named event is opt-in, never required.
-export type BulkDiscountEventInput = {
-  nameKa: string;
-  nameEn: string;
-  nameRu: string;
-  descriptionKa?: string;
-  descriptionEn?: string;
-  descriptionRu?: string;
-};
+export type BulkDiscountEventInput = Schemas["BulkDiscountEventInput"];
 
-export type BulkDiscountEvent = {
-  id: number;
-  nameKa: string;
-  nameEn: string;
-  nameRu: string;
-  descriptionKa: string | null;
-  descriptionEn: string | null;
-  descriptionRu: string | null;
-  imageUrl: string | null;
-  targetType: BulkDiscountEventTargetType;
-  discountPercent: number;
-  startDate: string;
-  endDate: string;
-  itemCount: number;
-  // Non-null once the "სლაიდი" action has created this event's homepage
-  // hero-slider slide — lets the admin table render that action as
-  // create-vs-edit without a separate round trip.
-  heroSlideId: number | null;
-  createdAt: string;
-};
+export type BulkDiscountEvent = Schemas["BulkDiscountEvent"];
 
-export type BulkDiscountEventsPage = {
-  items: BulkDiscountEvent[];
-  total: number;
-  page: number;
-  pageSize: number;
-};
+export type BulkDiscountEventsPage = Schemas["BulkDiscountEventsPage"];
 
 export async function listBulkDiscountEvents(filters: {
   targetType?: BulkDiscountEventTargetType;
@@ -88,11 +62,7 @@ export async function deleteBulkDiscountEvent(id: number): Promise<void> {
 
 // ---- homepage hero-slider slide ----
 
-export type BulkDiscountEventHeroSlideInput = {
-  title: { ka: string; en: string; ru: string };
-  subtitle?: { ka: string; en: string; ru: string } | null;
-  buttonLabel: { ka: string; en: string; ru: string };
-};
+export type BulkDiscountEventHeroSlideInput = Schemas["BulkDiscountEventHeroSlideInput"];
 
 export async function getBulkDiscountEventHeroSlide(eventId: number): Promise<HeroSlide> {
   const { data } = await apiClient.get<{ item: HeroSlide }>(`/bulk-discount-events/${eventId}/hero-slide`);

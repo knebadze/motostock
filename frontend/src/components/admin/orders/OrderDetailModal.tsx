@@ -8,10 +8,18 @@ import { Loader } from "@/components/shared/Loader";
 import { Select } from "@/components/shared/Select";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { formatDateTime, formatPrice } from "@/lib/format";
-import { getAnyOrder, updateOrderStatus, retryOrderFinaSync, type AdminOrder } from "@/lib/api/orders";
+import {
+  getAdminOrderInvoiceUrl,
+  getAdminOrderPackingSlipUrl,
+  getAnyOrder,
+  updateOrderStatus,
+  retryOrderFinaSync,
+  type AdminOrder,
+} from "@/lib/api/orders";
 import { syncOrderStock, type OrderStockSyncItem } from "@/lib/api/fina-sync";
 import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
 import { FinaSyncBadge } from "./FinaSyncBadge";
+import { FinaResolvePanel } from "./FinaResolvePanel";
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
 import { DELIVERY_SPEED_LABELS, FULFILLMENT_LABELS, RISK_FLAG_LABELS } from "./order-labels";
 
@@ -158,6 +166,24 @@ export function OrderDetailModal({
             <div>
               <h3 className="text-lg font-semibold">{order.orderCode}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{formatDateTime(order.createdAt)}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <a
+                  href={getAdminOrderInvoiceUrl(order.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
+                >
+                  ინვოისის ბეჭდვა
+                </a>
+                <a
+                  href={getAdminOrderPackingSlipUrl(order.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
+                >
+                  შეფუთვის ფურცელი
+                </a>
+              </div>
             </div>
             {order.status.key === "CANCELLED" ? (
               <p className="text-sm text-muted-foreground">
@@ -187,20 +213,40 @@ export function OrderDetailModal({
           </div>
 
           {order.finaSyncStatus !== "NOT_APPLICABLE" && (
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-border p-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">FINA სინქრონიზაცია:</span>
-                <FinaSyncBadge status={order.finaSyncStatus} />
+            <div className="flex flex-col gap-2 rounded-xl border border-border p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-foreground">FINA სინქრონიზაცია:</span>
+                  <FinaSyncBadge status={order.finaSyncStatus} />
+                </div>
+                {/* No blind retry while the outcome is unknown — the panel
+                    below resolves it instead (a retry could double it). */}
+                {(order.finaSyncStatus === "FAILED" || order.finaSyncStatus === "PENDING") &&
+                  !order.finaPushUncertain && (
+                  <button
+                    type="button"
+                    onClick={handleRetryFinaSync}
+                    disabled={retryingFina}
+                    className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {retryingFina ? "იგზავნება..." : "ხელით გაშვება FINA-ში"}
+                  </button>
+                )}
               </div>
-              {order.finaSyncStatus === "FAILED" && (
-                <button
-                  type="button"
-                  onClick={handleRetryFinaSync}
-                  disabled={retryingFina}
-                  className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {retryingFina ? "იგზავნება..." : "ხელით გაშვება FINA-ში"}
-                </button>
+              {/* Why the last push failed or is waiting — notably when FINA
+                  may already have the document (no response), so the admin
+                  checks FINA before pressing retry. */}
+              {order.finaLastError && order.finaSyncStatus !== "SYNCED" && (
+                <p className="text-xs text-muted-foreground">{order.finaLastError}</p>
+              )}
+              {order.finaPushUncertain && order.finaSyncStatus !== "SYNCED" && (
+                <FinaResolvePanel
+                  order={order}
+                  onResolved={(updated) => {
+                    setOrder(updated);
+                    onStatusChanged();
+                  }}
+                />
               )}
             </div>
           )}
@@ -405,7 +451,7 @@ export function OrderDetailModal({
             )}
             <div className="mt-1 flex items-center justify-between text-lg font-bold text-foreground">
               <span>სულ</span>
-              <span className="text-primary">{formatPrice(order.total)}</span>
+              <span className="text-primary-text">{formatPrice(order.total)}</span>
             </div>
           </div>
         </div>

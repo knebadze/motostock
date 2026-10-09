@@ -22,7 +22,7 @@ export function CategoriesSection({
             href={`/${category.slug}`}
             className="group rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary"
           >
-            <span className="text-lg font-semibold transition-colors group-hover:text-primary">
+            <span className="text-lg font-semibold transition-colors group-hover:text-primary-text">
               {category.name[locale]}
             </span>
           </Link>

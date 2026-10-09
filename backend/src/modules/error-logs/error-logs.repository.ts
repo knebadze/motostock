@@ -16,4 +16,9 @@ export const errorLogsRepository = {
   clear() {
     return prisma.errorLog.deleteMany();
   },
+
+  async deleteCreatedBefore(cutoff: Date) {
+    const { count } = await prisma.errorLog.deleteMany({ where: { createdAt: { lt: cutoff } } });
+    return count;
+  },
 };

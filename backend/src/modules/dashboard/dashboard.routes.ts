@@ -7,7 +7,9 @@ import { dashboardStatsResponseSchema } from "./dashboard.schema.js";
 
 export const dashboardRouter = Router();
 
-dashboardRouter.use(requireAuth, requireRole(ROLES.ADMIN));
+// Read-only single endpoint — safe to grant OPERATOR too (see proxy.ts's
+// OPERATOR_ALLOWED_PATHS, which now includes the dashboard).
+dashboardRouter.use(requireAuth, requireRole(ROLES.ADMIN, ROLES.OPERATOR));
 
 dashboardRouter.get("/stats", dashboardController.stats);
 

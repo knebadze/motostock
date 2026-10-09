@@ -11,7 +11,7 @@ const TYPES_WITH_BUTTON_LABEL = new Set(["CTA", "DISCOUNT"]);
 
 export const heroSlideFormSchema = z
   .object({
-    type: z.enum(["CTA", "VEHICLE_SEARCH", "INFO", "CATEGORY_FILTER", "DISCOUNT"]),
+    type: z.enum(["CTA", "VEHICLE_SEARCH", "INFO", "CATEGORY_FILTER", "DISCOUNT", "POSTER"]),
     title: z.object({
       ka: z.string().trim().min(1, "შეავსეთ სათაური (ქართულად)").max(HERO_SLIDE_TITLE_MAX_LENGTH),
       en: z.string().trim().min(1, "შეავსეთ სათაური (ინგლისურად)").max(HERO_SLIDE_TITLE_MAX_LENGTH),

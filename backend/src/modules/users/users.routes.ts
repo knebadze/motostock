@@ -10,8 +10,15 @@ import { garageVehicleResponseSchema } from "../garage/garage.schema.js";
 import { wishlistItemResponseSchema } from "../wishlist/wishlist.schema.js";
 import { cartItemResponseSchema } from "../cart/cart.schema.js";
 import { ROLES } from "../../lib/roles.js";
-import { changePassword, getOne, list, me } from "./users.controller.js";
-import { changePasswordSchema, listUsersQuerySchema, userIdParamSchema } from "./users.schema.js";
+import { changePassword, createWalkIn, getOne, list, me, merge, updateRole } from "./users.controller.js";
+import {
+  changePasswordSchema,
+  createWalkInUserSchema,
+  listUsersQuerySchema,
+  mergeUserParamsSchema,
+  updateUserRoleSchema,
+  userIdParamSchema,
+} from "./users.schema.js";
 
 export const usersRouter = Router();
 
@@ -32,16 +39,49 @@ usersRouter.patch(
 usersRouter.get(
   "/",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  // Also OPERATOR — the workshop "სერვისის ისტორია" screen searches this
+  // list to pick a customer before it can show/attach their garage/service
+  // records (see garage.routes.ts's admin-scoped /:userId/garage, granted
+  // the same way).
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(listUsersQuerySchema, "query"),
   list,
 );
 usersRouter.get(
   "/:id",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(userIdParamSchema, "params"),
   getOne,
+);
+usersRouter.post(
+  "/walk-in",
+  requireAuth,
+  // Also OPERATOR — registering a walk-in customer is part of the workshop
+  // "სერვისის ისტორია" screen's normal flow (see ServiceHistoryManager.tsx),
+  // not a catalog/data-management write the OPERATOR role is otherwise kept
+  // away from.
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(createWalkInUserSchema),
+  createWalkIn,
+);
+usersRouter.post(
+  "/:id/merge-into/:targetUserId",
+  requireAuth,
+  // OPERATOR too — the workshop screen's "დაკავშირება არსებულ მომხმარებელთან".
+  // Safe to widen: mergeUserInto only ever folds a walk-in onto a real
+  // account, never two real accounts together.
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(mergeUserParamsSchema, "params"),
+  merge,
+);
+usersRouter.patch(
+  "/:id/role",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  validate(userIdParamSchema, "params"),
+  validate(updateUserRoleSchema),
+  updateRole,
 );
 
 registry.registerPath({
@@ -88,7 +128,16 @@ const adminUserResponseSchema = registry.register(
     id: z.int().openapi({ example: 1 }),
     email: z.email().openapi({ example: "rider@motostock.ge" }),
     name: z.string().openapi({ example: "Nika Beridze" }),
-    role: z.enum(["USER", "ADMIN"]),
+    phone: z.string().nullable(),
+    dateOfBirth: z.iso.datetime().nullable(),
+    // A workshop-entered customer with no login of their own — see
+    // users.service.ts's createWalkInUser.
+    isWalkIn: z.boolean(),
+    // Set once an admin manually links this (walk-in) row onto a real
+    // account — the row is kept, not deleted, and stays visible in the
+    // admin list, per the "მაინც უნდა ჩანდეს" requirement.
+    mergedIntoUserId: z.int().nullable(),
+    role: z.enum(["USER", "ADMIN", "OPERATOR"]),
     hasPassword: z.boolean(),
     hasGoogle: z.boolean(),
     hasFacebook: z.boolean(),
@@ -131,10 +180,19 @@ registry.registerPath({
 const adminUserDetailResponseSchema = registry.register(
   "AdminUserDetail",
   adminUserResponseSchema.extend({
+    // Walk-ins only: an account that registered with this walk-in's phone
+    // and awaits staff confirmation before the history is merged onto it.
+    phoneClaimedBy: adminUserResponseSchema.nullable(),
     addresses: z.array(addressResponseSchema),
     garage: z.array(garageVehicleResponseSchema),
     wishlist: z.array(wishlistItemResponseSchema),
     cart: z.array(cartItemResponseSchema),
+    // Lifetime totals; totalSpent excludes cancelled orders.
+    orderStats: z.object({
+      orderCount: z.int(),
+      totalSpent: z.number(),
+      lastOrderAt: z.iso.datetime().nullable(),
+    }),
   }),
 );
 
@@ -149,6 +207,98 @@ registry.registerPath({
     200: {
       description: "User detail",
       content: { "application/json": { schema: z.object({ user: adminUserDetailResponseSchema }) } },
+    },
+    401: {
+      description: "Not authenticated",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    403: {
+      description: "Insufficient permissions",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    404: {
+      description: "Not found",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/users/walk-in",
+  tags: ["Users"],
+  summary: "Create a walk-in customer with no site login (admin or operator, workshop screen)",
+  security: [{ cookieAuth: [] }],
+  request: { body: { content: { "application/json": { schema: createWalkInUserSchema } } } },
+  responses: {
+    201: {
+      description: "Created",
+      content: { "application/json": { schema: z.object({ user: adminUserResponseSchema }) } },
+    },
+    401: {
+      description: "Not authenticated",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    403: {
+      description: "Insufficient permissions",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    409: {
+      description: "Phone number already in use",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/users/{id}/merge-into/{targetUserId}",
+  tags: ["Users"],
+  summary: "Manually merge one user (typically a walk-in) into another (admin/operator, workshop screen)",
+  security: [{ cookieAuth: [] }],
+  request: { params: mergeUserParamsSchema },
+  responses: {
+    200: {
+      description: "Merged",
+      content: { "application/json": { schema: z.object({ user: adminUserResponseSchema }) } },
+    },
+    400: {
+      description: "Invalid merge (same user, or either side already merged)",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    401: {
+      description: "Not authenticated",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    403: {
+      description: "Insufficient permissions",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    404: {
+      description: "Not found",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/users/{id}/role",
+  tags: ["Users"],
+  summary: "Change a user's role — the only way to grant/revoke OPERATOR (admin only)",
+  security: [{ cookieAuth: [] }],
+  request: {
+    params: userIdParamSchema,
+    body: { content: { "application/json": { schema: updateUserRoleSchema } } },
+  },
+  responses: {
+    200: {
+      description: "Updated",
+      content: { "application/json": { schema: z.object({ user: adminUserResponseSchema }) } },
+    },
+    400: {
+      description: "Cannot change your own role",
+      content: { "application/json": { schema: errorResponseSchema } },
     },
     401: {
       description: "Not authenticated",

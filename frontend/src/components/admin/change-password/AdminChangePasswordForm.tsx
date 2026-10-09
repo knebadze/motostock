@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { changePassword } from "@/lib/api/auth";
 import { ApiRequestError } from "@/lib/api/client";
+import { hasInvalidPasswordChars, isPasswordTooLong } from "@/lib/password";
 
 // Same backend endpoint (PATCH /users/me/password) and API client function
 // as the storefront's ChangePasswordForm — this is just an admin-panel-
@@ -21,6 +22,14 @@ export function AdminChangePasswordForm() {
 
     if (newPassword !== confirmPassword) {
       toast.error("ახალი პაროლები არ ემთხვევა ერთმანეთს");
+      return;
+    }
+    if (hasInvalidPasswordChars(newPassword)) {
+      toast.error("პაროლი უნდა შედგებოდეს მხოლოდ ლათინური ასოების, ციფრებისა და სიმბოლოებისგან");
+      return;
+    }
+    if (isPasswordTooLong(newPassword)) {
+      toast.error("პაროლი ძალიან გრძელია — მაქსიმუმ 72 სიმბოლო");
       return;
     }
 

@@ -1,6 +1,7 @@
 import createMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { routing } from "@/i18n/routing";
+import { forwardedForHeader, getServerApiBaseUrl } from "@/lib/api/internal";
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -20,6 +21,79 @@ function resolveApiOrigin(): string {
 
 const apiOrigin = resolveApiOrigin();
 const siteIsHttps = (process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https://");
+// Unset until the client's own Google Analytics property exists (see
+// components/shared/GoogleAnalytics.tsx) — CSP stays exactly as strict as
+// today until then; adding the env var later is the only step needed to
+// both turn on the script (that component's own check) and widen the CSP
+// here to allow it.
+const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
+// Sentry's browser SDK POSTs events to its ingest host (the DSN's origin) —
+// allowed in connect-src only when Sentry is built in (see
+// lib/sentry-shared.ts), so the CSP stays as strict as before otherwise.
+function resolveSentryIngestOrigin(): string {
+  try {
+    return process.env.NEXT_PUBLIC_SENTRY_DSN ? ` ${new URL(process.env.NEXT_PUBLIC_SENTRY_DSN).origin}` : "";
+  } catch {
+    return "";
+  }
+}
+const sentryConnectSrc = resolveSentryIngestOrigin();
+
+// OPERATOR is a limited staff/cashier role — view-only across products/
+// vehicle-listings/fina-sync, plus order status changes and the full
+// workshop section (service-history + service-types).
+// Checked here (middleware), not via a headers()-forwarded pathname read in
+// app/admin/(protected)/layout.tsx — an earlier version tried that and hit a
+// real bug: the forwarded pathname wasn't reliably visible to the layout,
+// so every OPERATOR page load fell through to "not allowed" and redirected
+// to /admin/orders — including requests already AT /admin/orders, which
+// re-ran the same broken check on itself and looped forever. Middleware has
+// `request.nextUrl.pathname` directly, with no round-trip to get wrong.
+const OPERATOR_ALLOWED_PATHS = new Set([
+  "/admin",
+  "/admin/analytics",
+  "/admin/products",
+  "/admin/vehicle-listings",
+  "/admin/service-history",
+  "/admin/service-types",
+  "/admin/fina-sync",
+  "/admin/orders",
+  "/admin/users",
+  "/admin/bulk-discounts",
+  "/admin/promo-codes",
+  "/admin/compatibility",
+  "/admin/buy-together",
+  "/admin/change-password",
+]);
+const OPERATOR_DEFAULT_PATH = "/admin";
+
+// Only called for /admin/* paths outside OPERATOR_ALLOWED_PATHS — an ADMIN
+// hitting one of those pays this extra request too (middleware can't know
+// the role without asking), but every OPERATOR-reachable page skips it
+// entirely, and this backend call is the same "who is this cookie" lookup
+// app/admin/(protected)/layout.tsx already makes on its own via
+// getCurrentUserFromServer(), just moved earlier so it can gate before the
+// page starts rendering instead of after.
+async function isOperatorSession(request: NextRequest): Promise<boolean> {
+  const cookie = request.headers.get("cookie");
+  if (!cookie) return false;
+
+  try {
+    // Server-to-server: internal URL + forwarded visitor IP, same as
+    // lib/api/server/core.ts (see lib/api/internal.ts for why). apiOrigin above
+    // stays the public origin — it's for the browser-facing CSP.
+    const response = await fetch(`${getServerApiBaseUrl()}/users/me`, {
+      headers: { cookie, ...forwardedForHeader(request.headers.get("x-forwarded-for")) },
+      cache: "no-store",
+    });
+    if (!response.ok) return false;
+    const body = (await response.json()) as { user?: { role?: string } };
+    return body.user?.role === "OPERATOR";
+  } catch {
+    return false;
+  }
+}
 
 // A fresh nonce per request lets script-src stay strict (block arbitrary
 // inline/external script injection) while still allowing the specific
@@ -30,9 +104,20 @@ const siteIsHttps = (process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https:/
 // means browsers that support nonces ignore host-based script-src entries
 // entirely (only nonce/hash matter), so no script host allowlist is needed.
 function buildCspHeader(nonce: string): string {
+  // 'strict-dynamic' already lets a nonced <script> (GoogleAnalytics.tsx's
+  // gtag.js tag) load further scripts from anywhere, so googletagmanager.com
+  // doesn't strictly need adding to script-src itself — added anyway as a
+  // harmless fallback for the rare browser that honors host lists but not
+  // strict-dynamic. connect-src DOES need the explicit hosts: gtag.js sends
+  // its actual hit/beacon requests via fetch, which strict-dynamic has no
+  // say over.
+  const gaScriptSrc = gaMeasurementId ? " https://www.googletagmanager.com" : "";
+  const gaConnectSrc = gaMeasurementId
+    ? " https://www.google-analytics.com https://www.googletagmanager.com"
+    : "";
   const directives = [
     `default-src 'self'`,
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}${gaScriptSrc}`,
     // Inline style="" attributes are pervasive (chart widths, computed
     // dropdown offsets, the hero background-image) and can't practically be
     // nonced the way <script> tags can — CSS alone can't execute script, so
@@ -41,7 +126,7 @@ function buildCspHeader(nonce: string): string {
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' blob: data: ${apiOrigin} https://res.cloudinary.com`,
     `font-src 'self'`,
-    `connect-src 'self' ${apiOrigin}`,
+    `connect-src 'self' ${apiOrigin}${gaConnectSrc}${sentryConnectSrc}`,
     // The contact page's embedded store-location map (app/[locale]/(guest)/
     // contact/page.tsx).
     `frame-src https://www.google.com`,
@@ -62,7 +147,7 @@ function buildCspHeader(nonce: string): string {
   return directives.join("; ");
 }
 
-export default function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const cspHeader = buildCspHeader(nonce);
 
@@ -72,11 +157,22 @@ export default function proxy(request: NextRequest) {
   request.headers.set("x-nonce", nonce);
   request.headers.set("Content-Security-Policy", cspHeader);
 
+  const pathname = request.nextUrl.pathname;
+
+  if (
+    pathname.startsWith("/admin") &&
+    pathname !== "/admin/login" &&
+    !OPERATOR_ALLOWED_PATHS.has(pathname) &&
+    (await isOperatorSession(request))
+  ) {
+    return NextResponse.redirect(new URL(OPERATOR_DEFAULT_PATH, request.url));
+  }
+
   // /admin isn't locale-routed (see i18n/routing.ts) and used to be excluded
   // from this proxy's matcher entirely — now included so it gets the same
   // CSP, but passed straight through instead of into next-intl's locale
   // resolution, which knows nothing about /admin.
-  const response = request.nextUrl.pathname.startsWith("/admin")
+  const response = pathname.startsWith("/admin")
     ? NextResponse.next({ request: { headers: request.headers } })
     : intlMiddleware(request);
 

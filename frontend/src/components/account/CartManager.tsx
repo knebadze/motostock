@@ -41,7 +41,7 @@ function CartLineRow({
       </Link>
 
       <div className="flex flex-1 flex-col gap-1">
-        <Link href={href} className="font-semibold text-foreground hover:text-primary">
+        <Link href={href} className="font-semibold text-foreground hover:text-primary-text">
           {title}
         </Link>
         {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
@@ -59,7 +59,7 @@ function CartLineRow({
           />
 
           <div className="flex items-center gap-3">
-            <span className="font-semibold text-primary">{formatPrice(item.lineTotal)}</span>
+            <span className="font-semibold text-primary-text">{formatPrice(item.lineTotal)}</span>
             <button
               type="button"
               onClick={onRemove}
@@ -137,7 +137,17 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
   }
 
   if (cart.items.length === 0) {
-    return <p className="mt-6 text-muted-foreground">{t("empty")}</p>;
+    return (
+      <div className="mt-6 flex flex-col items-start gap-4">
+        <p className="text-muted-foreground">{t("empty")}</p>
+        <Link
+          href="/catalog"
+          className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+        >
+          {t("continueShopping")}
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -159,7 +169,7 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
         <p className="text-sm text-muted-foreground">{t("itemCount", { count: cart.itemCount })}</p>
         <div className="mt-2 flex items-center justify-between text-lg font-bold text-foreground">
           <span>{t("subtotal")}</span>
-          <span className="text-primary">{formatPrice(cart.subtotal)}</span>
+          <span className="text-primary-text">{formatPrice(cart.subtotal)}</span>
         </div>
         <Link
           href="/checkout"

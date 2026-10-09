@@ -25,6 +25,11 @@ export const productAttributeValueInputSchema = z.object({
 });
 export type ProductAttributeValueInput = z.infer<typeof productAttributeValueInputSchema>;
 
+// Per-locale SEO overrides — null/omitted means "use this locale's name /
+// description" on the storefront.
+const metaTitleField = z.string().max(70).nullable().optional();
+const metaDescriptionField = z.string().max(200).nullable().optional();
+
 export const createProductSchema = registry.register(
   "CreateProductInput",
   z.object({
@@ -32,12 +37,20 @@ export const createProductSchema = registry.register(
     productBrandId: z.int().positive().nullable().optional(),
     name: localizedStringSchema,
     slug: slugField,
-    metaTitle: z.string().max(70).nullable().optional(),
-    metaDescription: z.string().max(200).nullable().optional(),
+    metaTitleKa: metaTitleField,
+    metaTitleEn: metaTitleField,
+    metaTitleRu: metaTitleField,
+    metaDescriptionKa: metaDescriptionField,
+    metaDescriptionEn: metaDescriptionField,
+    metaDescriptionRu: metaDescriptionField,
     descriptionKa: optionalDescription,
     descriptionEn: optionalDescription,
     descriptionRu: optionalDescription,
     attributeValues: z.array(productAttributeValueInputSchema).optional(),
+    // Admin checkbox — "show this product in the homepage's FEATURED_MIXED
+    // (New Arrivals) slider" (see homepage-section.prisma). Optional/defaults
+    // false on create, same as every other boolean flag in this schema.
+    isFeaturedOnHomepage: z.boolean().optional(),
   }),
 );
 export type CreateProductInput = z.infer<typeof createProductSchema>;
@@ -82,6 +95,30 @@ const brandIdsQuerySchema = z
   )
   .optional();
 
+// Backs ShopAllProductsPage.tsx's category-checkbox facet list — the exact
+// same filter set as the storefront browse/search endpoint above, minus
+// everything (search/pagination/sort/attribute filters) that endpoint needs
+// but a distinct-category list doesn't.
+export const productCategoryFacetsQuerySchema = z.object({
+  categoryId: z.coerce.number().int().positive().optional(),
+  // The /compatible-products/… page: only categories that have products
+  // fitting this vehicle.
+  vehicleCatalogId: z.coerce.number().int().positive().optional(),
+  brandIds: brandIdsQuerySchema,
+  onSale: z.coerce.boolean().optional(),
+  bulkDiscountEventId: z.coerce.number().int().positive().optional(),
+});
+export type ProductCategoryFacetsQuery = z.infer<typeof productCategoryFacetsQuerySchema>;
+
+// Backs ProductShopPage.tsx's brand-checkbox facet list — the single filter
+// getProductsFromServer(category.id) is called with today (per-category
+// browse), unlike productCategoryFacetsQuerySchema above (the cross-category
+// /shop page's facet).
+export const productBrandFacetsQuerySchema = z.object({
+  categoryId: z.coerce.number().int().positive().optional(),
+});
+export type ProductBrandFacetsQuery = z.infer<typeof productBrandFacetsQuerySchema>;
+
 export const productListQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
   // Cross-category "browse everything" page's category-checkbox facet
@@ -105,6 +142,11 @@ export const productListQuerySchema = z.object({
   // homepage hero-slider's event-scoped DISCOUNT slides link here (see
   // bulk-discount-events.service.ts's setEventHeroSlide).
   bulkDiscountEventId: z.coerce.number().int().positive().optional(),
+  // Homepage's FEATURED_MIXED slider — narrows to products with their own
+  // isFeaturedOnHomepage checkbox ticked (see createProductSchema below),
+  // across every category. Unlike onSale/bulkDiscountEventId this isn't
+  // computed from discount rows at all — it's a plain admin-curated flag.
+  featured: z.coerce.boolean().optional(),
   // Homepage sliders (see homepage-sections module) cap how many products
   // they pull — optional everywhere else.
   limit: z.coerce.number().int().positive().max(50).optional(),
@@ -192,8 +234,16 @@ export const checkCompatibilityResponseSchema = registry.register(
   }),
 );
 
-const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
-const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
+// Exported for productCategoryFacetsResponseSchema below (products.routes.ts
+// registers that one for the OpenAPI doc, so this needs to be reachable
+// there too).
+export const namedRefSchema = z.object({ id: z.int(), name: localizedStringSchema, slug: z.string() });
+// Exported for productBrandFacetsResponseSchema below, same reason as
+// namedRefSchema above.
+export const brandModelRefSchema = z.object({ id: z.int(), name: z.string(), slug: z.string() });
+
+export const productCategoryFacetsResponseSchema = z.object({ items: z.array(namedRefSchema) });
+export const productBrandFacetsResponseSchema = z.object({ items: z.array(brandModelRefSchema) });
 
 const unitRefSchema = z.object({
   id: z.int(),
@@ -217,21 +267,22 @@ const productCardDiscountSchema = z.object({
   discountPrice: z.number().openapi({ example: 159.99 }),
 });
 
-export const productResponseSchema = registry.register(
-  "Product",
+// The lean "product card" shape — every product grid/slider/list surface
+// (shop, homepage, recommendations, wishlist, recently viewed, buy-together,
+// admin list). Deliberately omits the three HTML descriptions, the six SEO
+// meta strings and attributeValues: a card never shows them, yet they were
+// the bulk of each row's payload (and attributeValues cost three joins per
+// value). The full Product below is for the product page, admin detail/edit
+// and compare.
+export const productCardResponseSchema = registry.register(
+  "ProductCard",
   z.object({
     id: z.int().openapi({ example: 1 }),
     category: namedRefSchema,
     productBrand: brandModelRefSchema.nullable(),
     name: localizedStringSchema,
     slug: z.string(),
-    metaTitle: z.string().nullable(),
-    metaDescription: z.string().nullable(),
-    descriptionKa: z.string().nullable(),
-    descriptionEn: z.string().nullable(),
-    descriptionRu: z.string().nullable(),
     imageUrl: z.string().nullable(),
-    attributeValues: z.array(productAttributeValueResponseSchema),
     variantCount: z.int().openapi({ example: 2 }),
     minPrice: z.number().nullable().openapi({ example: 199.99 }),
     totalStock: z.int().openapi({ example: 5 }),
@@ -246,8 +297,25 @@ export const productResponseSchema = registry.register(
     // — an admin-facing interest signal, separate from the Order-based
     // "most sold" ranking used by the popular-products slider.
     viewCount: z.int().openapi({ example: 0 }),
+    isFeaturedOnHomepage: z.boolean(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
+  }),
+);
+
+export const productResponseSchema = registry.register(
+  "Product",
+  productCardResponseSchema.extend({
+    metaTitleKa: z.string().nullable(),
+    metaTitleEn: z.string().nullable(),
+    metaTitleRu: z.string().nullable(),
+    metaDescriptionKa: z.string().nullable(),
+    metaDescriptionEn: z.string().nullable(),
+    metaDescriptionRu: z.string().nullable(),
+    descriptionKa: z.string().nullable(),
+    descriptionEn: z.string().nullable(),
+    descriptionRu: z.string().nullable(),
+    attributeValues: z.array(productAttributeValueResponseSchema),
   }),
 );
 
@@ -305,7 +373,7 @@ export const productDetailResponseSchema = registry.register(
     variants: z.array(productVariantDetailResponseSchema),
     fitments: z.array(compatibleVehicleSchema),
     fitmentRules: z.array(fitmentRuleSchema),
-    buyTogether: z.array(productResponseSchema),
+    buyTogether: z.array(productCardResponseSchema),
   }),
 );
 

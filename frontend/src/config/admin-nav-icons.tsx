@@ -381,6 +381,22 @@ export const termsIcon = (
   </svg>
 );
 
+export const privacyPolicyIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-5"
+  >
+    <path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+);
+
 export const faqIcon = (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -395,6 +411,23 @@ export const faqIcon = (
     <circle cx="12" cy="12" r="9" />
     <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 2-2.5 3" />
     <line x1="12" y1="16.5" x2="12.01" y2="16.5" />
+  </svg>
+);
+
+export const vacanciesIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-5"
+  >
+    <rect x="2" y="7" width="20" height="14" rx="2" />
+    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+    <path d="M2 13h20" />
   </svg>
 );
 

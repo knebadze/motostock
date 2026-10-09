@@ -58,3 +58,17 @@ model WhatsAppChatMessage {
   @@index([sessionId, createdAt])
   @@schema("dbo")
 }
+
+// Ids of inbound webhook messages already processed — Meta re-delivers a
+// webhook it isn't sure arrived (network hiccup, slow 200), and without this
+// the same staff reply would be saved (and shown to the customer) twice.
+// whatsapp-chat.controller.ts records the id before handling the message and
+// skips it if it's already here. Kept a week (pruned opportunistically by
+// whatsapp-chat.repository.ts) — Meta's retries stop long before that.
+model WhatsAppInboundMessage {
+  messageId  String   @id
+  receivedAt DateTime @default(now())
+
+  @@index([receivedAt])
+  @@schema("dbo")
+}

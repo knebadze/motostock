@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import NextLink from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
@@ -18,9 +18,11 @@ import { logoutUser, type User } from "@/lib/api/auth";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { setKnownAuthState } from "@/lib/api/auth-state";
 import { setKnownGuestFeatureStatus } from "@/lib/api/guest-feature-state";
+import { COMPARE_COUNT_CHANGED_EVENT, WISHLIST_COUNT_CHANGED_EVENT, setKnownCount } from "@/lib/badge-count-events";
 import type { GuestFeatureStatus } from "@/lib/api/server";
 import { formatShortName } from "@/lib/format";
-import type { Category } from "@/lib/api/categories";
+import type { HeaderCategory } from "@/lib/api/categories";
+
 import type { CompanyInfo } from "@/lib/api/company-info";
 
 const MEGA_MENU_CLOSE_DELAY_MS = 150;
@@ -29,7 +31,7 @@ const MEGA_MENU_CLOSE_DELAY_MS = 150;
 // text color) so they read as small badges against the label text instead
 // of blending into it.
 const phoneIcon = (
-  <span className="text-primary">
+  <span className="text-primary-text">
     <svg
       viewBox="0 0 24 24"
       fill="none"
@@ -45,7 +47,7 @@ const phoneIcon = (
 );
 
 const mailIcon = (
-  <span className="text-primary">
+  <span className="text-primary-text">
     <svg
       viewBox="0 0 24 24"
       fill="none"
@@ -72,7 +74,7 @@ export function Header({
 }: {
   user?: User | null;
   /** Full category tree (all depths) — the header derives top-level nav items and their children itself. */
-  categories?: Category[];
+  categories?: HeaderCategory[];
   companyInfo?: CompanyInfo | null;
   wishlistCount?: number;
   compareCount?: number;
@@ -81,7 +83,6 @@ export function Header({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const locale = useLocale() as "ka" | "en" | "ru";
   const tHeader = useTranslations("Header");
   const tFooter = useTranslations("Footer");
   const [isOpen, setIsOpen] = useState(false);
@@ -99,11 +100,15 @@ export function Header({
   // once per navigation/refresh with a fresh `user` prop. Same treatment for
   // guestFeatureStatus (see guest-feature-state.ts), so WishlistButton/
   // AddToCartButton elsewhere on the page can skip their status check
-  // instead of always firing it and relying on a 401.
+  // instead of always firing it and relying on a 401. And the badge counts
+  // (see badge-count-events.ts), so grids skip their wishlist/compare status
+  // check when that collection is empty.
   useEffect(() => {
     setKnownAuthState(user != null);
     setKnownGuestFeatureStatus(guestFeatureStatus);
-  }, [user, guestFeatureStatus]);
+    setKnownCount(WISHLIST_COUNT_CHANGED_EVENT, wishlistCount);
+    setKnownCount(COMPARE_COUNT_CHANGED_EVENT, compareCount);
+  }, [user, guestFeatureStatus, wishlistCount, compareCount]);
 
   const topLevelCategories = categories.filter((category) => category.parentId === null);
   const socialLinks = [
@@ -174,7 +179,7 @@ export function Header({
             {companyInfo?.phone && (
               <a
                 href={`tel:${companyInfo.phone}`}
-                className="flex items-center gap-1.5 transition-colors hover:text-primary"
+                className="flex items-center gap-1.5 transition-colors hover:text-primary-text"
               >
                 {phoneIcon}
                 {companyInfo.phone}
@@ -183,7 +188,7 @@ export function Header({
             {companyInfo?.email && (
               <a
                 href={`mailto:${companyInfo.email}`}
-                className="flex items-center gap-1.5 transition-colors hover:text-primary"
+                className="flex items-center gap-1.5 transition-colors hover:text-primary-text"
               >
                 {mailIcon}
                 {companyInfo.email}
@@ -200,7 +205,7 @@ export function Header({
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={social.label}
-                      className="text-primary transition-opacity hover:opacity-70 [&>svg]:size-4"
+                      className="text-primary-text transition-opacity hover:opacity-70 [&>svg]:size-4"
                     >
                       {social.icon}
                     </a>
@@ -211,15 +216,24 @@ export function Header({
           </div>
           <div className="flex items-center gap-3">
             <nav className="flex items-center gap-4">
-              <Link href="/about" className="transition-colors hover:text-primary">
+              <Link href="/service" className="transition-colors hover:text-primary-text">
+                {tFooter("serviceTitle")}
+              </Link>
+              <Link href="/about" className="transition-colors hover:text-primary-text">
                 {tFooter("aboutUs")}
               </Link>
-              <Link href="/contact" className="transition-colors hover:text-primary">
+              <Link href="/contact" className="transition-colors hover:text-primary-text">
                 {tFooter("contactTitle")}
               </Link>
-              <Link href="/terms" className="transition-colors hover:text-primary">
+              <Link href="/vacancies" className="transition-colors hover:text-primary-text">
+                {tFooter("vacanciesTitle")}
+              </Link>
+              <Link href="/terms" className="transition-colors hover:text-primary-text">
                 {tFooter("termsTitle")}
               </Link>
+              {/* <Link href="/privacy" className="transition-colors hover:text-primary-text">
+                {tFooter("privacyTitle")}
+              </Link> */}
             </nav>
             <span className="h-3.5 w-px bg-border" aria-hidden />
             <LanguageSwitcher compact />
@@ -245,11 +259,11 @@ export function Header({
               <div key={category.id} onMouseEnter={() => openMegaMenu(category.id)}>
                 <Link
                   href={href}
-                  className={`transition-colors hover:text-primary ${
-                    isActive ? "text-primary" : "text-foreground"
+                  className={`transition-colors hover:text-primary-text ${
+                    isActive ? "text-primary-text" : "text-foreground"
                   }`}
                 >
-                  {category.name[locale]}
+                  {category.name}
                 </Link>
               </div>
             );
@@ -283,19 +297,20 @@ export function Header({
                   className="absolute right-0 top-12 z-50 w-48 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg"
                 >
                   <li>
-                    {user.role === "ADMIN" ? (
+                    {user.role === "ADMIN" || user.role === "OPERATOR" ? (
                       // /admin isn't locale-routed (see proxy.ts's own comment on this) —
-                      // a logged-in admin's "account" is the admin panel, not the
-                      // customer-facing /account area (which also hard-gates on
-                      // emailVerified, a check that never applies to how admin accounts
-                      // are provisioned). Plain next/link, not the i18n-aware `Link`
-                      // above, since that one only knows how to prefix locale-routed
-                      // paths.
+                      // a logged-in admin's (or operator's — same reasoning, a
+                      // limited staff role, not a customer) "account" is the
+                      // admin panel, not the customer-facing /account area
+                      // (which also hard-gates on emailVerified, a check that
+                      // never applies to how these accounts are provisioned).
+                      // Plain next/link, not the i18n-aware `Link` above, since
+                      // that one only knows how to prefix locale-routed paths.
                       <NextLink
                         href="/admin"
                         onClick={() => setAccountMenuOpen(false)}
                         role="menuitem"
-                        className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+                        className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                       >
                         {tHeader("adminPanel")}
                       </NextLink>
@@ -304,7 +319,7 @@ export function Header({
                         href="/account"
                         onClick={() => setAccountMenuOpen(false)}
                         role="menuitem"
-                        className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+                        className="block px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                       >
                         {tHeader("myAccount")}
                       </Link>
@@ -315,7 +330,7 @@ export function Header({
                       type="button"
                       onClick={handleLogout}
                       role="menuitem"
-                      className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary"
+                      className="block w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                     >
                       {tHeader("logout")}
                     </button>
@@ -327,7 +342,7 @@ export function Header({
             <div className="hidden items-center gap-2 lg:flex">
               <Link
                 href="/register"
-                className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+                className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
               >
                 {tHeader("register")}
               </Link>
@@ -346,7 +361,7 @@ export function Header({
             aria-expanded={isOpen}
             aria-controls="mobile-nav"
             aria-label={isOpen ? tHeader("closeMenu") : tHeader("openMenu")}
-            className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9 lg:hidden"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-10 lg:hidden"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -389,7 +404,7 @@ export function Header({
                       <div className="relative size-16 overflow-hidden rounded-lg border border-border">
                         <Image
                           src={imageUrl}
-                          alt={child.name[locale]}
+                          alt={child.name}
                           fill
                           sizes="64px"
                           className="object-cover"
@@ -399,7 +414,7 @@ export function Header({
                       <div className="size-16 rounded-lg border border-dashed border-border" />
                     )}
                     <span className="text-sm font-medium text-foreground">
-                      {child.name[locale]}
+                      {child.name}
                     </span>
                   </Link>
                 );
@@ -409,13 +424,21 @@ export function Header({
         </div>
       )}
 
+      {/* The panel scrolls on its own, capped at the viewport below the h-16
+          bar (the only header row below lg) — body scroll is locked while
+          it's open (see the overflow effect above), so without this the
+          login/cart links at the bottom were unreachable on short screens.
+          `inert` while closed: the collapsed rows are only 0px tall, not
+          hidden, so their links were still Tab-focusable (and read by
+          screen readers) when the menu was shut. */}
       <div
         id="mobile-nav"
+        inert={!isOpen}
         className={`grid overflow-hidden border-b border-border transition-[grid-template-rows] duration-200 ease-out lg:hidden ${
           isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         }`}
       >
-        <div className="min-h-0">
+        <div className="max-h-[calc(100dvh-4rem)] min-h-0 overflow-y-auto overscroll-contain">
           <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-6">
             <div className="flex flex-col gap-1 text-xs text-muted-foreground">
               {companyInfo?.phone && (
@@ -439,7 +462,7 @@ export function Header({
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={social.label}
-                      className="text-primary transition-opacity hover:opacity-70 [&>svg]:size-4"
+                      className="text-primary-text transition-opacity hover:opacity-70 [&>svg]:size-4"
                     >
                       {social.icon}
                     </a>
@@ -457,26 +480,85 @@ export function Header({
             {topLevelCategories.map((category) => {
               const href = `/${category.slug}`;
               const isActive = pathname === href;
+              const children = categories.filter((item) => item.parentId === category.id);
+
+              // Leaf category (no children) — same plain link as before.
+              if (children.length === 0) {
+                return (
+                  <Link
+                    key={category.id}
+                    href={href}
+                    onClick={() => setIsOpen(false)}
+                    className={`rounded-lg px-3 py-2.5 transition-colors hover:bg-muted hover:text-primary-text ${
+                      isActive ? "text-primary-text" : "text-foreground"
+                    }`}
+                  >
+                    {category.name}
+                  </Link>
+                );
+              }
+
+              // Has subcategories — the desktop header reveals these via a
+              // hover mega-menu (activeChildren above), which has no mobile
+              // equivalent at all; a mobile visitor previously had no way to
+              // reach a subcategory except landing on the parent category
+              // page first. <details>/<summary> gives a free, keyboard-
+              // operable disclosure widget (Enter/Space toggles natively) —
+              // same pattern this codebase's FAQ accordion already uses —
+              // instead of hand-rolling expand/collapse state.
               return (
-                <Link
-                  key={category.id}
-                  href={href}
-                  onClick={() => setIsOpen(false)}
-                  className={`rounded-lg px-3 py-2.5 transition-colors hover:bg-muted hover:text-primary ${
-                    isActive ? "text-primary" : "text-foreground"
-                  }`}
-                >
-                  {category.name[locale]}
-                </Link>
+                <details key={category.id} className="group [&_summary::-webkit-details-marker]:hidden">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted">
+                    <Link
+                      href={href}
+                      onClick={() => setIsOpen(false)}
+                      className={`flex-1 hover:text-primary-text ${isActive ? "text-primary-text" : "text-foreground"}`}
+                    >
+                      {category.name}
+                    </Link>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </summary>
+                  <div className="ml-3 flex flex-col gap-1 border-l border-border py-1 pl-3">
+                    {children.map((child) => (
+                      <Link
+                        key={child.id}
+                        href={`/${child.slug}`}
+                        onClick={() => setIsOpen(false)}
+                        className="rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                      >
+                        {child.name}
+                      </Link>
+                    ))}
+                  </div>
+                </details>
               );
             })}
 
             <div className="my-2 border-t border-border" />
 
             <Link
+              href="/service"
+              onClick={() => setIsOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+            >
+              {tFooter("serviceTitle")}
+            </Link>
+
+            <Link
               href="/about"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tFooter("aboutUs")}
             </Link>
@@ -484,25 +566,41 @@ export function Header({
             <Link
               href="/contact"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tFooter("contactTitle")}
             </Link>
 
             <Link
+              href="/vacancies"
+              onClick={() => setIsOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+            >
+              {tFooter("vacanciesTitle")}
+            </Link>
+
+            <Link
               href="/terms"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tFooter("termsTitle")}
             </Link>
+
+            {/* <Link
+              href="/privacy"
+              onClick={() => setIsOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+            >
+              {tFooter("privacyTitle")}
+            </Link> */}
 
             <div className="my-2 border-t border-border" />
 
             <Link
               href="/wishlist"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tHeader("wishlist")}
               {wishlistCount > 0 && <span className="text-muted-foreground"> ({wishlistCount})</span>}
@@ -511,7 +609,7 @@ export function Header({
             <Link
               href="/compare"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tHeader("compare")}
               {compareCount > 0 && <span className="text-muted-foreground"> ({compareCount})</span>}
@@ -520,7 +618,7 @@ export function Header({
             <Link
               href="/cart"
               onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
             >
               {tHeader("cart")}
               {cartCount > 0 && <span className="text-muted-foreground"> ({cartCount})</span>}
@@ -528,11 +626,11 @@ export function Header({
 
             {user ? (
               <>
-                {user.role === "ADMIN" ? (
+                {user.role === "ADMIN" || user.role === "OPERATOR" ? (
                   <NextLink
                     href="/admin"
                     onClick={() => setIsOpen(false)}
-                    className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+                    className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                   >
                     {tHeader("adminPanel")}
                   </NextLink>
@@ -540,7 +638,7 @@ export function Header({
                   <Link
                     href="/account"
                     onClick={() => setIsOpen(false)}
-                    className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary"
+                    className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                   >
                     {tHeader("myAccount")}
                   </Link>
@@ -558,7 +656,7 @@ export function Header({
                 <Link
                   href="/register"
                   onClick={() => setIsOpen(false)}
-                  className="mt-2 rounded-lg border border-border px-3 py-2.5 text-center font-semibold text-foreground transition-colors hover:bg-muted hover:text-primary"
+                  className="mt-2 rounded-lg border border-border px-3 py-2.5 text-center font-semibold text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                 >
                   {tHeader("register")}
                 </Link>

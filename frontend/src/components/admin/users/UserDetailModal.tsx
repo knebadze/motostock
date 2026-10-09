@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Loader } from "@/components/shared/Loader";
-import { getUser, type AdminUserDetail } from "@/lib/api/users";
+import { Select } from "@/components/shared/Select";
+import { getUser, updateUserRole, type AdminUser, type AdminUserDetail } from "@/lib/api/users";
 import type { WishlistItem } from "@/lib/api/wishlist";
+import { useAdminRole } from "@/components/admin/AdminRoleContext";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
-import { formatDateTime, formatVehicleCatalogLabel } from "@/lib/format";
+import { formatDate, formatDateTime, formatPrice, formatVehicleCatalogLabel } from "@/lib/format";
+import { CustomerOrdersModal } from "./CustomerOrdersModal";
 import { getCartItemDisplay } from "@/lib/cart-item-display";
 
 const cameraIcon = (
@@ -25,6 +28,18 @@ const cameraIcon = (
     <circle cx="12" cy="13" r="4" />
   </svg>
 );
+
+const ROLE_OPTIONS = [
+  { value: "USER", label: "მომხმარებელი" },
+  { value: "ADMIN", label: "ადმინი" },
+  { value: "OPERATOR", label: "ოპერატორი" },
+];
+
+const ROLE_LABELS: Record<AdminUser["role"], string> = {
+  USER: "მომხმარებელი",
+  ADMIN: "ადმინი",
+  OPERATOR: "ოპერატორი",
+};
 
 function wishlistItemLabel(item: WishlistItem): string {
   if (item.product) return item.product.name.ka;
@@ -54,9 +69,41 @@ function authMethodBadges(user: AdminUserDetail) {
   );
 }
 
-export function UserDetailModal({ userId, onClose }: { userId: number; onClose: () => void }) {
+export function UserDetailModal({
+  userId,
+  onClose,
+  onRoleChanged,
+}: {
+  userId: number;
+  onClose: () => void;
+  // Lets the caller's own list refresh (the badge/role column there would
+  // otherwise stay stale until the admin reloads the page) — see
+  // UsersManager.tsx.
+  onRoleChanged?: (user: AdminUser) => void;
+}) {
+  const viewerIsOperator = useAdminRole() === "OPERATOR";
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [changingRole, setChangingRole] = useState(false);
+  const [ordersOpen, setOrdersOpen] = useState(false);
+  // Stable identity — CustomerOrdersModal's load effect depends on onClose.
+  const closeOrders = useCallback(() => setOrdersOpen(false), []);
+
+  async function handleRoleChange(nextRole: string) {
+    if (!detail || nextRole === detail.role) return;
+    setChangingRole(true);
+    try {
+      const updated = await updateUserRole(detail.id, nextRole as AdminUser["role"]);
+      setDetail((current) => (current ? { ...current, role: updated.role } : current));
+      onRoleChanged?.(updated);
+      toast.success("როლი განახლდა");
+    } catch (error) {
+      const message = error instanceof ApiRequestError ? error.message : "როლის შეცვლა ვერ მოხერხდა";
+      toast.error(message);
+    } finally {
+      setChangingRole(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -94,15 +141,39 @@ export function UserDetailModal({ userId, onClose }: { userId: number; onClose: 
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h3 className="text-lg font-semibold">{detail.name}</h3>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                  detail.role === "ADMIN"
-                    ? "bg-primary/15 text-primary"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {detail.role === "ADMIN" ? "ადმინი" : "მომხმარებელი"}
-              </span>
+              {viewerIsOperator ? (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    detail.role === "ADMIN"
+                      ? "bg-primary/15 text-primary-text"
+                      : detail.role === "OPERATOR"
+                        ? "bg-amber-500/15 text-amber-600"
+                        : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {ROLE_LABELS[detail.role]}
+                </span>
+              ) : (
+                <div className="w-40">
+                  <Select
+                    ariaLabel="როლი"
+                    options={ROLE_OPTIONS}
+                    value={detail.role}
+                    onChange={handleRoleChange}
+                    disabled={changingRole}
+                  />
+                </div>
+              )}
+              {detail.isWalkIn && (
+                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-600">
+                  სტუმარი
+                </span>
+              )}
+              {detail.mergedIntoUserId != null && (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+                  შერწყმულია (#{detail.mergedIntoUserId})
+                </span>
+              )}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{detail.email}</p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -118,7 +189,57 @@ export function UserDetailModal({ userId, onClose }: { userId: number; onClose: 
                 </p>
                 <p className="mt-1 text-sm">{formatDateTime(detail.createdAt)}</p>
               </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  ტელეფონი
+                </p>
+                <p className="mt-1 text-sm">{detail.phone ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  დაბადების თარიღი
+                </p>
+                <p className="mt-1 text-sm">
+                  {detail.dateOfBirth ? formatDate(detail.dateOfBirth) : "—"}
+                </p>
+              </div>
             </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <h4 className="text-sm font-semibold">შეკვეთები</h4>
+              {detail.orderStats.orderCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setOrdersOpen(true)}
+                  className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
+                >
+                  შეკვეთების ისტორია
+                </button>
+              )}
+            </div>
+            {detail.orderStats.orderCount === 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">შეკვეთა ჯერ არ გაუკეთებია</p>
+            ) : (
+              <div className="mt-2 grid grid-cols-3 gap-3">
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground">შეკვეთები</p>
+                  <p className="mt-1 text-lg font-bold">{detail.orderStats.orderCount}</p>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-3">
+                  {/* Cancelled orders excluded — see users.service.ts. */}
+                  <p className="text-xs text-muted-foreground">დახარჯული</p>
+                  <p className="mt-1 text-lg font-bold">{formatPrice(detail.orderStats.totalSpent)}</p>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground">ბოლო შეკვეთა</p>
+                  <p className="mt-1 text-sm font-semibold">
+                    {detail.orderStats.lastOrderAt ? formatDate(detail.orderStats.lastOrderAt) : "—"}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -233,6 +354,9 @@ export function UserDetailModal({ userId, onClose }: { userId: number; onClose: 
             )}
           </div>
         </div>
+      )}
+      {ordersOpen && detail && (
+        <CustomerOrdersModal userId={detail.id} userName={detail.name} onClose={closeOrders} />
       )}
     </Modal>
   );

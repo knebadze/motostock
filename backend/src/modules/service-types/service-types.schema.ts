@@ -21,6 +21,17 @@ export const createServiceTypeSchema = registry.register(
 );
 export type CreateServiceTypeInput = z.infer<typeof createServiceTypeSchema>;
 
+// The storefront /service page's list — names only. defaultPrice is a
+// workshop-internal pre-fill for logging a job, not a published price, and
+// the position/filter flags are logging details.
+export const publicServiceTypeResponseSchema = registry.register(
+  "PublicServiceType",
+  z.object({
+    id: z.int(),
+    name: localizedStringSchema,
+  }),
+);
+
 export const updateServiceTypeSchema = registry.register(
   "UpdateServiceTypeInput",
   createServiceTypeSchema.partial(),

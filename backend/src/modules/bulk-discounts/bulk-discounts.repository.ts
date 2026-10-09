@@ -92,6 +92,7 @@ const vehicleCandidateSelect = {
   id: true,
   year: true,
   price: true,
+  priceCurrency: true,
   condition: { select: lookupSelect },
   color: { select: lookupSelect },
   vehicleCatalog: {
@@ -129,6 +130,7 @@ const vehicleDiscountHistorySelect = {
       id: true,
       year: true,
       price: true,
+      priceCurrency: true,
       condition: { select: lookupSelect },
       color: { select: lookupSelect },
       vehicleCatalog: {

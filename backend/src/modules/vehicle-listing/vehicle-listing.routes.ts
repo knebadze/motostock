@@ -10,6 +10,8 @@ import {
   createVehicleListingSchema,
   popularVehicleListingsQuerySchema,
   updateVehicleListingSchema,
+  vehicleListingBrandFacetsQuerySchema,
+  vehicleListingBrandFacetsResponseSchema,
   vehicleListingDetailAdminResponseSchema,
   vehicleListingIdParamSchema,
   vehicleListingListQuerySchema,
@@ -31,32 +33,58 @@ vehicleListingRouter.get(
   validate(popularVehicleListingsQuerySchema, "query"),
   vehicleListingController.getPopular,
 );
+vehicleListingRouter.get("/exchange-rate/usd-gel", vehicleListingController.getExchangeRate);
+// Public — the frontend sitemap's listing URLs (lean; before /:id).
+vehicleListingRouter.get("/sitemap", vehicleListingController.sitemap);
+// Registered before /:id for the same reason as /popular above (a literal
+// path segment ahead of the :id param route).
+vehicleListingRouter.get(
+  "/brand-facets",
+  validate(vehicleListingBrandFacetsQuerySchema, "query"),
+  vehicleListingController.getBrandFacets,
+);
 vehicleListingRouter.get(
   "/:id",
   validate(vehicleListingIdParamSchema, "params"),
   vehicleListingController.getOne,
 );
 
-vehicleListingRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
+// Per-route (not a blanket `.use()`) so /:id/detail can grant OPERATOR
+// while POST/PATCH/DELETE stay ADMIN-only — a path-less `.use()` can't
+// express that split. Also avoids the class of bug fixed for /api/products
+// and /api/users: this router's mount prefix also catches requests meant
+// for vehicleListingDiscountsRouter/vehicleListingImagesRouter (mounted
+// separately at /api/vehicle-listings/:listingId/discounts|images but still
+// routed through this router's stack first), which happened to be harmless
+// here only because those routers already required ADMIN too — a future
+// route added to either with a different role requirement would have
+// silently inherited this router's blanket gate instead.
 vehicleListingRouter.get(
   "/:id/detail",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(vehicleListingIdParamSchema, "params"),
   vehicleListingController.getDetailAdmin,
 );
 vehicleListingRouter.post(
   "/",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(createVehicleListingSchema),
   vehicleListingController.create,
 );
 vehicleListingRouter.patch(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(vehicleListingIdParamSchema, "params"),
   validate(updateVehicleListingSchema),
   vehicleListingController.update,
 );
 vehicleListingRouter.delete(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(vehicleListingIdParamSchema, "params"),
   vehicleListingController.remove,
 );
@@ -71,6 +99,36 @@ const listResponse = z.object({
   pageSize: z.number().int().positive().optional(),
 });
 const itemResponse = z.object({ item: vehicleListingResponseSchema });
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-listings/sitemap",
+  tags: ["VehicleListings"],
+  summary: "Every active listing's URL parts (id, year, brand/model/category slugs) and updatedAt — the frontend sitemap's feed, public",
+  responses: {
+    200: {
+      description: "Sitemap entries",
+      content: {
+        "application/json": {
+          schema: z.object({
+            items: z.array(
+              z.object({
+                id: z.int(),
+                year: z.int(),
+                updatedAt: z.iso.datetime(),
+                vehicleCatalog: z.object({
+                  brand: z.object({ slug: z.string() }),
+                  model: z.object({ slug: z.string() }),
+                  category: z.object({ slug: z.string() }),
+                }),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+  },
+});
 
 registry.registerPath({
   method: "get",
@@ -91,6 +149,37 @@ registry.registerPath({
   request: { query: popularVehicleListingsQuerySchema },
   responses: {
     200: { description: "Popular vehicle listings", content: { "application/json": { schema: listResponse } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-listings/brand-facets",
+  tags: ["VehicleListings"],
+  summary: "Distinct brands among vehicle listings matching the given filters (public — shop page's brand-checkbox facet list)",
+  request: { query: vehicleListingBrandFacetsQuerySchema },
+  responses: {
+    200: {
+      description: "Brand refs",
+      content: { "application/json": { schema: vehicleListingBrandFacetsResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-listings/exchange-rate/usd-gel",
+  tags: ["VehicleListings"],
+  summary: "Get today's USD/GEL rate (public — storefront currency toggle, admin form hint)",
+  responses: {
+    200: {
+      description: "Exchange rate",
+      content: {
+        "application/json": {
+          schema: z.object({ rate: z.number().nullable(), updatedAt: z.iso.datetime().nullable() }),
+        },
+      },
+    },
   },
 });
 

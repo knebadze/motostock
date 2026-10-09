@@ -10,6 +10,7 @@ import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 import { localizedLookupName } from "@/lib/api/lookups";
 import type { CompanyInfo, WeekDay } from "@/lib/api/company-info";
+import { buildSocialMetadata } from "@/lib/share-metadata";
 
 export async function generateMetadata({
   params,
@@ -29,7 +30,7 @@ export async function generateMetadata({
       canonical: buildCanonicalUrl(pathname, locale),
       languages: getAlternateLanguages(pathname),
     },
-    openGraph: { title, description },
+    ...(await buildSocialMetadata({ locale, title, description, pathname })),
   };
 }
 
@@ -78,7 +79,7 @@ const clockIcon = (
 function InfoCard({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
   return (
     <div className="flex items-start gap-4 rounded-2xl border border-border bg-card p-5">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-text">
         {icon}
       </span>
       <div className="min-w-0">
@@ -133,7 +134,7 @@ function ContactPageView({ companyInfo }: { companyInfo: CompanyInfo }) {
 
           {companyInfo.phone && (
             <InfoCard icon={phoneIcon} label={t("phoneLabel")}>
-              <a href={`tel:${companyInfo.phone}`} className="transition-colors hover:text-primary">
+              <a href={`tel:${companyInfo.phone}`} className="transition-colors hover:text-primary-text">
                 {companyInfo.phone}
               </a>
             </InfoCard>
@@ -141,7 +142,7 @@ function ContactPageView({ companyInfo }: { companyInfo: CompanyInfo }) {
 
           {companyInfo.email && (
             <InfoCard icon={mailIcon} label={t("emailLabel")}>
-              <a href={`mailto:${companyInfo.email}`} className="transition-colors hover:text-primary">
+              <a href={`mailto:${companyInfo.email}`} className="transition-colors hover:text-primary-text">
                 {companyInfo.email}
               </a>
             </InfoCard>
@@ -160,7 +161,7 @@ function ContactPageView({ companyInfo }: { companyInfo: CompanyInfo }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={social.label}
-                    className="flex size-10 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                    className="flex size-10 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary-text"
                   >
                     {social.icon}
                   </a>
@@ -172,7 +173,7 @@ function ContactPageView({ companyInfo }: { companyInfo: CompanyInfo }) {
 
         <div className="rounded-2xl border border-border bg-card p-5">
           <div className="flex items-center gap-4">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-text">
               {clockIcon}
             </span>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

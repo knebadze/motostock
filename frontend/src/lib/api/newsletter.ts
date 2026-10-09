@@ -1,22 +1,16 @@
 import { apiClient } from "./client";
 import type { PagedResult } from "@/components/shared/Pagination";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type NewsletterSubscriberStatus = "PENDING" | "CONFIRMED" | "UNSUBSCRIBED";
 
-export type NewsletterSubscriber = {
-  id: number;
-  email: string;
-  status: NewsletterSubscriberStatus;
-  confirmedAt: string | null;
-  unsubscribedAt: string | null;
-  createdAt: string;
-};
+export type NewsletterSubscriber = Schemas["NewsletterSubscriber"];
 
-export type NewsletterSubscriberCounts = {
-  pending: number;
-  confirmed: number;
-  unsubscribed: number;
-};
+export type NewsletterSubscriberCounts = Schemas["NewsletterSubscriberCounts"];
 
 export async function subscribeToNewsletter(email: string): Promise<void> {
   await apiClient.post("/newsletter/subscribe", { email });
@@ -25,7 +19,7 @@ export async function subscribeToNewsletter(email: string): Promise<void> {
 // "NOT_SUBSCRIBED" (not one of NewsletterSubscriberStatus's DB values) means
 // this account's email has no NewsletterSubscriber row at all — the common
 // case for an account that's never touched the newsletter.
-export type MyNewsletterStatus = "NOT_SUBSCRIBED" | NewsletterSubscriberStatus;
+export type MyNewsletterStatus = Schemas["MyNewsletterStatus"]["status"];
 
 // Account-page toggle (see AccountNewsletterCard.tsx) — always acts on the
 // logged-in session's own email, resolved server-side; no email/token param

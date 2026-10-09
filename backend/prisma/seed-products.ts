@@ -1298,8 +1298,12 @@ async function seedProduct(seed: ProductSeed, vehicleIdBySlug: Record<string, nu
       descriptionEn: seed.descriptionEn,
       descriptionRu: seed.descriptionRu,
       slug: seed.slug,
-      metaTitle: `${seed.nameKa} | ${SITE_NAME}`,
-      metaDescription: seed.nameKa,
+      metaTitleKa: `${seed.nameKa} | ${SITE_NAME}`,
+      metaTitleEn: `${seed.nameEn} | ${SITE_NAME}`,
+      metaTitleRu: `${seed.nameRu} | ${SITE_NAME}`,
+      metaDescriptionKa: seed.nameKa,
+      metaDescriptionEn: seed.nameEn,
+      metaDescriptionRu: seed.nameRu,
     },
   });
 

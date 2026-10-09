@@ -8,7 +8,9 @@ import { ROLES } from "../../lib/roles.js";
 import * as serviceRecordsController from "./service-records.controller.js";
 import {
   createServiceRecordSchema,
+  listServiceRecordsAdminQuerySchema,
   listServiceRecordsQuerySchema,
+  serviceRecordAdminResponseSchema,
   serviceRecordIdParamSchema,
   serviceRecordResponseSchema,
   updateServiceRecordSchema,
@@ -28,17 +30,30 @@ serviceRecordsRouter.get(
   serviceRecordsController.list,
 );
 
+// Workshop "სერვისის ისტორია" screen's admin-wide overview table — view-only,
+// so OPERATOR gets it too (same as the per-vehicle GET above).
+serviceRecordsRouter.get(
+  "/admin",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(listServiceRecordsAdminQuerySchema, "query"),
+  serviceRecordsController.listAdmin,
+);
+
+// OPERATOR (the shop's foreman) can log and correct service work — they're
+// the one actually doing it at the workshop, and previously had to ask an
+// ADMIN to type every record in — including deleting a mistaken one.
 serviceRecordsRouter.post(
   "/",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(createServiceRecordSchema),
   serviceRecordsController.create,
 );
 serviceRecordsRouter.patch(
   "/:id",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(serviceRecordIdParamSchema, "params"),
   validate(updateServiceRecordSchema),
   serviceRecordsController.update,
@@ -46,7 +61,7 @@ serviceRecordsRouter.patch(
 serviceRecordsRouter.delete(
   "/:id",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(serviceRecordIdParamSchema, "params"),
   serviceRecordsController.remove,
 );
@@ -70,10 +85,34 @@ registry.registerPath({
 });
 
 registry.registerPath({
+  method: "get",
+  path: "/service-records/admin",
+  tags: ["ServiceRecords"],
+  summary: "List recently performed services across every customer/vehicle, filterable and paginated (admin/operator)",
+  security,
+  request: { query: listServiceRecordsAdminQuerySchema },
+  responses: {
+    200: {
+      description: "Service records",
+      content: {
+        "application/json": {
+          schema: z.object({
+            items: z.array(serviceRecordAdminResponseSchema),
+            total: z.int(),
+            page: z.int(),
+            pageSize: z.int(),
+          }),
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
   method: "post",
   path: "/service-records",
   tags: ["ServiceRecords"],
-  summary: "Log a workshop service performed on a garage vehicle (admin)",
+  summary: "Log a workshop service performed on a garage vehicle (admin/operator)",
   security,
   request: { body: { content: { "application/json": { schema: createServiceRecordSchema } } } },
   responses: {
@@ -86,7 +125,7 @@ registry.registerPath({
   method: "patch",
   path: "/service-records/{id}",
   tags: ["ServiceRecords"],
-  summary: "Update a service record (admin)",
+  summary: "Update a service record (admin/operator)",
   security,
   request: {
     params: serviceRecordIdParamSchema,
@@ -102,7 +141,7 @@ registry.registerPath({
   method: "delete",
   path: "/service-records/{id}",
   tags: ["ServiceRecords"],
-  summary: "Delete a service record (admin)",
+  summary: "Delete a service record (admin/operator)",
   security,
   request: { params: serviceRecordIdParamSchema },
   responses: {

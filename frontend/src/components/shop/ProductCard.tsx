@@ -7,7 +7,7 @@ import { resolveMediaUrl } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
 import { WishlistButton } from "@/components/shared/WishlistButton";
 import { CompareButton } from "@/components/shared/CompareButton";
-import type { Product } from "@/lib/api/products";
+import type { ProductListItem } from "@/lib/api/products";
 import type { ViewMode } from "./ViewModeToggle";
 
 export function ProductCard({
@@ -17,17 +17,25 @@ export function ProductCard({
   onWishlistChange,
   compareItemId,
   onCompareChange,
+  imageSizes,
 }: {
-  product: Product;
+  product: ProductListItem;
   layout: ViewMode;
-  // Passed by WishlistManager, which already knows every card here is
-  // wishlisted — skips the status lookup and lets the card announce
-  // removal so it can drop itself from that list.
-  wishlistItemId?: number;
+  // Passed by WishlistManager (every card there is wishlisted by
+  // definition) or by a grid using useCollectionStatusMap to batch the
+  // lookup across every card at once — see WishlistButton's own prop
+  // comment for what each possible value means.
+  wishlistItemId?: number | null | "pending";
   onWishlistChange?: (wishlisted: boolean) => void;
-  // Same idea as wishlistItemId/onWishlistChange, passed by CompareManager.
-  compareItemId?: number;
+  // Same idea as wishlistItemId/onWishlistChange, passed by CompareManager
+  // or a batching grid.
+  compareItemId?: number | null | "pending";
   onCompareChange?: (compared: boolean) => void;
+  // `sizes` for the card's image when it sits in a fixed-width slot
+  // (carousels: see Carousel.tsx's CAROUSEL_CARD_IMAGE_SIZES) instead of a
+  // fluid grid column — the default would make phones download an image
+  // ~3x wider than the card.
+  imageSizes?: string;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
@@ -68,7 +76,7 @@ export function ProductCard({
             src={imageUrl}
             alt={product.name[locale]}
             fill
-            sizes={layout === "list" ? "96px" : "(min-width: 1024px) 22vw, (min-width: 640px) 45vw, 90vw"}
+            sizes={layout === "list" ? "96px" : (imageSizes ?? "(min-width: 1024px) 22vw, (min-width: 640px) 45vw, 90vw")}
             className="object-cover"
           />
         ) : (
@@ -120,12 +128,12 @@ export function ProductCard({
             <span className="text-sm text-muted-foreground line-through">
               {formatPrice(activeDiscount.price)}
             </span>
-            <span className="text-lg font-bold text-primary">
+            <span className="text-lg font-bold text-primary-text">
               {formatPrice(activeDiscount.discountPrice)}
             </span>
           </div>
         ) : (
-          <span className="text-lg font-bold text-primary">
+          <span className="text-lg font-bold text-primary-text">
             {product.minPrice != null ? formatPrice(product.minPrice) : "—"}
           </span>
         )}

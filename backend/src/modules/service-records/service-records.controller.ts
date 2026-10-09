@@ -4,6 +4,7 @@ import { ROLES } from "../../lib/roles.js";
 import * as serviceRecordsService from "./service-records.service.js";
 import type {
   CreateServiceRecordInput,
+  ListServiceRecordsAdminQuery,
   ListServiceRecordsQuery,
   UpdateServiceRecordInput,
 } from "./service-records.schema.js";
@@ -20,9 +21,17 @@ export async function list(req: Request, res: Response) {
   const items = await serviceRecordsService.listServiceRecordsForVehicle(
     garageVehicleId,
     req.user.sub,
-    req.user.role === ROLES.ADMIN,
+    req.user.role === ROLES.ADMIN || req.user.role === ROLES.OPERATOR,
   );
   res.status(200).json({ items });
+}
+
+export async function listAdmin(
+  req: Request<unknown, unknown, unknown, ListServiceRecordsAdminQuery>,
+  res: Response,
+) {
+  const result = await serviceRecordsService.listServiceRecordsAdmin(req.query);
+  res.status(200).json(result);
 }
 
 export async function create(

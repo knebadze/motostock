@@ -7,7 +7,7 @@ import { Loader } from "@/components/shared/Loader";
 export default function Loading() {
   return (
     <div className="flex flex-1 items-center justify-center py-24">
-      <Loader size="lg" className="text-primary" />
+      <Loader size="lg" className="text-primary-text" />
     </div>
   );
 }

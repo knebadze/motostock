@@ -7,6 +7,7 @@ import { Toggle } from "@/components/shared/Toggle";
 import { useOptimisticToggle } from "@/components/shared/useOptimisticToggle";
 import { deleteFaq, listFaqs, reorderFaqs, updateFaq, type Faq } from "@/lib/api/faq";
 import { ApiRequestError } from "@/lib/api/client";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 import { FaqFormModal } from "./FaqFormModal";
 
 export function FaqManager({ initialFaqs }: { initialFaqs: Faq[] }) {
@@ -19,6 +20,9 @@ export function FaqManager({ initialFaqs }: { initialFaqs: Faq[] }) {
   async function refresh() {
     try {
       setFaqs(await listFaqs());
+      // Covers both create/edit (FaqFormModal's onSaved below) and delete
+      // (ConfirmDialog's onConfirm below) in one place — both call this.
+      await revalidatePublicCache("faq-public");
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
@@ -36,7 +40,9 @@ export function FaqManager({ initialFaqs }: { initialFaqs: Faq[] }) {
     setFormOpen(true);
   }
 
-  const handleToggleActive = useOptimisticToggle(faqs, setFaqs, updateFaq);
+  const handleToggleActive = useOptimisticToggle(faqs, setFaqs, updateFaq, () =>
+    revalidatePublicCache("faq-public"),
+  );
 
   async function handleDrop(targetId: number) {
     const currentDraggedId = draggedId;
@@ -55,6 +61,7 @@ export function FaqManager({ initialFaqs }: { initialFaqs: Faq[] }) {
 
     try {
       setFaqs(await reorderFaqs(nextOrder));
+      await revalidatePublicCache("faq-public");
     } catch (error) {
       setFaqs(previous);
       const message =

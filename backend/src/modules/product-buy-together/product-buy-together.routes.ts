@@ -41,8 +41,10 @@ productBuyTogetherRouter.delete(
 // app.ts, so every route inside it automatically inherits that prefix and
 // can't expose a cross-product "list everything" endpoint. Mirrors
 // compatibility.routes.ts's reasoning exactly.
+// Read-only (list only, no mutation on this router) — see
+// compatibility.routes.ts's identical reasoning for granting OPERATOR here.
 export const productBuyTogetherAdminRouter = Router();
-productBuyTogetherAdminRouter.use(requireAuth, requireRole(ROLES.ADMIN));
+productBuyTogetherAdminRouter.use(requireAuth, requireRole(ROLES.ADMIN, ROLES.OPERATOR));
 productBuyTogetherAdminRouter.get(
   "/",
   validate(listProductBuyTogetherAdminQuerySchema, "query"),

@@ -8,6 +8,8 @@ import { useRouter } from "@/i18n/navigation";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
+import { generateUuid } from "@/lib/uuid";
+import { getCartItemDisplay } from "@/lib/cart-item-display";
 import { EmailVerificationBanner } from "@/components/shared/EmailVerificationBanner";
 import {
   placeOrder,
@@ -19,7 +21,7 @@ import {
 import type { Address } from "@/lib/api/addresses";
 import type { LookupItem } from "@/lib/api/lookups";
 import type { Cart } from "@/lib/api/cart";
-import type { GarageVehicle, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { GarageVehicle, VehicleSearchOption } from "@/lib/api/vehicle-catalog";
 import type { LocalizedString } from "@/lib/api/categories";
 import type { PublicBank } from "@/lib/api/banks";
 import { AddressFormModal } from "@/components/account/AddressFormModal";
@@ -36,7 +38,7 @@ export function CheckoutManager({
   addresses: Address[];
   cities: LookupItem[];
   cart: Cart;
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleSearchOption[];
   garageVehicles: GarageVehicle[];
   banks: PublicBank[];
 }) {
@@ -83,7 +85,7 @@ export function CheckoutManager({
   // that error means the backend already placed an order under this key and
   // is refusing to silently attach it to a cart that's since changed, so a
   // real *new* attempt needs a key of its own.
-  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+  const [idempotencyKey, setIdempotencyKey] = useState(() => generateUuid());
 
   const requiresAddress = fulfillmentMethod !== "PICKUP";
   const requiresBank = fulfillmentMethod === "CARD";
@@ -92,6 +94,34 @@ export function CheckoutManager({
   // preview yet when a courier method has no address picked) — avoids a
   // synchronous setState-in-effect that could instead just be computed here.
   const displayPreview = canFetchPreview ? preview : null;
+
+  // The items list used to render only from the preview, which doesn't
+  // exist until a courier method has an address (and a card method a bank)
+  // picked — so "Order items" sat empty right when the shopper was deciding.
+  // Falls back to the cart's own lines (no stock check yet; the preview adds
+  // that once it can be fetched).
+  const summaryItems = displayPreview
+    ? displayPreview.items.map((item, index) => ({
+        key: item.id ?? `preview-${index}`,
+        imageUrl: resolveMediaUrl(item.imageUrl),
+        title: item.itemName[locale],
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        lineTotal: item.lineTotal,
+        stockIssue: item.inStock ? null : item.availableQuantity,
+      }))
+    : cart.items.map((item) => {
+        const display = getCartItemDisplay(item, locale);
+        return {
+          key: item.id,
+          imageUrl: display.imageUrl,
+          title: display.title,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal,
+          stockIssue: null as number | null,
+        };
+      });
 
   useEffect(() => {
     if (!canFetchPreview) return;
@@ -219,7 +249,7 @@ export function CheckoutManager({
         // mint a fresh key so the next click is a genuine new attempt, and
         // refresh so the displayed cart/preview reflect what's actually in
         // it now.
-        setIdempotencyKey(crypto.randomUUID());
+        setIdempotencyKey(generateUuid());
         toast.error(resolveApiErrorMessage(error, tErrors, t("placeError")));
         router.refresh();
       } else {
@@ -251,7 +281,7 @@ export function CheckoutManager({
               <button
                 type="button"
                 onClick={() => setAddressModalOpen(true)}
-                className="text-sm font-medium text-primary hover:underline"
+                className="text-sm font-medium text-primary-text hover:underline"
               >
                 {t("addAddressButton")}
               </button>
@@ -298,15 +328,15 @@ export function CheckoutManager({
         <section className="rounded-2xl border border-border bg-card p-5">
           <h2 className="font-semibold text-foreground">{t("itemsHeading")}</h2>
           <ul className="mt-3 flex flex-col gap-3">
-            {(displayPreview?.items ?? []).map((item, index) => {
-              const imageUrl = resolveMediaUrl(item.imageUrl);
+            {summaryItems.map((item) => {
+              const imageUrl = item.imageUrl;
               return (
-                <li key={item.id ?? index} className="flex items-center gap-3">
+                <li key={item.key} className="flex items-center gap-3">
                   <div className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-muted">
                     {imageUrl ? (
                       <Image
                         src={imageUrl}
-                        alt={item.itemName[locale]}
+                        alt={item.title}
                         fill
                         sizes="56px"
                         className="object-cover"
@@ -317,15 +347,15 @@ export function CheckoutManager({
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-sm font-medium text-foreground">
-                      {item.itemName[locale]}
+                      {item.title}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {item.quantity} × {formatPrice(item.unitPrice)}
                     </span>
-                    {!item.inStock && (
+                    {item.stockIssue != null && (
                       <span className="mt-1 text-xs font-medium text-red-600">
-                        {item.availableQuantity > 0
-                          ? t("limitedStockItem", { count: item.availableQuantity })
+                        {item.stockIssue > 0
+                          ? t("limitedStockItem", { count: item.stockIssue })
                           : t("outOfStockItem")}
                       </span>
                     )}
@@ -505,7 +535,7 @@ export function CheckoutManager({
                   type="button"
                   onClick={handleApplyPromoCode}
                   disabled={promoApplying || !promoCodeInput.trim() || (displayPreview?.promoCodeBlocked ?? false)}
-                  className="rounded-full border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                  className="rounded-full border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary-text disabled:opacity-50"
                 >
                   {t("applyPromo")}
                 </button>
@@ -517,29 +547,54 @@ export function CheckoutManager({
           )}
 
           <div className="mt-5 flex flex-col gap-1.5 text-sm">
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span>{t("subtotal")}</span>
-              <span>{formatPrice(displayPreview?.subtotal ?? 0)}</span>
-            </div>
-            {displayPreview && displayPreview.discountTotal > 0 && (
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span>{t("discount")}</span>
-                <span>−{formatPrice(displayPreview.discountTotal)}</span>
-              </div>
+            {/* Totals come only from the server preview, which can't be
+                fetched until a courier method has an address (and a card
+                method a bank) — this used to render "0.00 ₾" as the total in
+                the meantime. Until then: the cart's own items total, plus
+                what's still missing for the full amount. */}
+            {displayPreview ? (
+              <>
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span>{t("subtotal")}</span>
+                  <span>{formatPrice(displayPreview.subtotal)}</span>
+                </div>
+                {displayPreview.discountTotal > 0 && (
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>{t("discount")}</span>
+                    <span>−{formatPrice(displayPreview.discountTotal)}</span>
+                  </div>
+                )}
+                {displayPreview.deliveryCost > 0 && (
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>
+                      {t("delivery")}
+                      {displayPreview.deliveryTimeSnapshot ? ` (${displayPreview.deliveryTimeSnapshot})` : ""}
+                    </span>
+                    <span>{formatPrice(displayPreview.deliveryCost)}</span>
+                  </div>
+                )}
+                <div className="mt-1 flex items-center justify-between text-lg font-bold text-foreground">
+                  <span>{t("total")}</span>
+                  <span className="text-primary-text">{formatPrice(displayPreview.total)}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between font-semibold text-foreground">
+                  <span>{t("itemsTotal")}</span>
+                  <span>{formatPrice(cart.subtotal)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {!canFetchPreview
+                    ? requiresAddress && addressId == null
+                      ? t("totalNeedsAddress")
+                      : t("totalNeedsBank")
+                    : previewLoading
+                      ? t("totalCalculating")
+                      : null}
+                </p>
+              </>
             )}
-            {displayPreview && displayPreview.deliveryCost > 0 && (
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span>
-                  {t("delivery")}
-                  {displayPreview.deliveryTimeSnapshot ? ` (${displayPreview.deliveryTimeSnapshot})` : ""}
-                </span>
-                <span>{formatPrice(displayPreview.deliveryCost)}</span>
-              </div>
-            )}
-            <div className="mt-1 flex items-center justify-between text-lg font-bold text-foreground">
-              <span>{t("total")}</span>
-              <span className="text-primary">{formatPrice(displayPreview?.total ?? 0)}</span>
-            </div>
           </div>
 
           {displayPreview?.hasStockIssues && (

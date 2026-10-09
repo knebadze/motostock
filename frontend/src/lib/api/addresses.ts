@@ -1,26 +1,13 @@
 import { apiClient } from "./client";
-import type { LookupItem } from "./lookups";
+import type { components } from "./generated/schema";
 
-export type Address = {
-  id: number;
-  phone: string;
-  city: LookupItem & { isTbilisi: boolean };
-  street: string;
-  building: string | null;
-  apartment: string | null;
-  postalCode: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
-export type AddressInput = {
-  phone: string;
-  cityId: number;
-  street: string;
-  building?: string | null;
-  apartment?: string | null;
-  postalCode?: string | null;
-};
+export type Address = Schemas["Address"];
+
+export type AddressInput = Schemas["CreateAddressInput"];
 
 export async function listMyAddresses(): Promise<Address[]> {
   const { data } = await apiClient.get<{ addresses: Address[] }>("/users/me/addresses");

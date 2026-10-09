@@ -45,6 +45,21 @@ export const orderIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+// The admin's answer for a FINA push whose outcome is unknown — see
+// fina-sync.service.ts's resolveOrderFinaPush.
+export const resolveFinaPushSchema = registry.register(
+  "ResolveFinaPushInput",
+  z.discriminatedUnion("outcome", [
+    z.object({
+      outcome: z.literal("RECORDED"),
+      // Required when the outstanding document is the sale.
+      finaOperationId: z.int().positive().optional().openapi({ example: 12345 }),
+    }),
+    z.object({ outcome: z.literal("NOT_RECORDED") }),
+  ]),
+);
+export type ResolveFinaPushInput = z.infer<typeof resolveFinaPushSchema>;
+
 // Cross-field rule ("reason required when the target status is CANCELLED")
 // isn't checked here — this schema only sees statusId, not the status's
 // key, and the mapping is a DB row (OrderStatus is admin-editable, not a
@@ -249,6 +264,11 @@ export const listOrdersQuerySchema = z.object({
   // fraud.service.ts's evaluateOrderRisk (admin-only, flag-for-review, never
   // an automatic block).
   flaggedOnly: z.coerce.boolean().optional(),
+  // Narrows to orders whose FINA push failed — the dashboard's "needs
+  // action" tile links here (see dashboard.service.ts).
+  finaFailedOnly: z.coerce.boolean().optional(),
+  // One customer's orders — the admin user-detail modal's "all orders" link.
+  userId: z.coerce.number().int().positive().optional(),
   // Real server-side pagination (skip/take), same pattern as
   // error-logs.schema.ts — both optional, no `.default()` (defaults are
   // applied in the controller instead, see that file's comment for why: an
@@ -279,8 +299,9 @@ export const orderRiskFlagResponseSchema = registry.register(
 // state (a placed sale, or its return once cancelled) is actually reflected
 // in FINA. NOT_APPLICABLE means nothing to retry (no FINA-linked items, or
 // FINA/its Settings aren't configured); FAILED is what the admin order list
-// flags with the manual retry button.
-export const finaOrderSyncStatusSchema = z.enum(["NOT_APPLICABLE", "SYNCED", "FAILED"]);
+// flags with the manual retry button. PENDING is queued/being retried
+// automatically (outbox — see fina-sync.service.ts's runOrderPush).
+export const finaOrderSyncStatusSchema = z.enum(["NOT_APPLICABLE", "PENDING", "SYNCED", "FAILED"]);
 
 export const adminOrderSummaryResponseSchema = registry.register(
   "AdminOrderSummary",
@@ -301,5 +322,17 @@ export const adminOrderResponseSchema = registry.register(
     cancellationNote: z.string().nullable(),
     finaSyncStatus: finaOrderSyncStatusSchema,
     finaOutOperationId: z.int().nullable(),
+    // Why the last FINA push failed (or is waiting) — see order.prisma.
+    finaLastError: z.string().nullable(),
+    // FINA may or may not have the last document — the admin must check
+    // FINA and resolve (POST /orders/{id}/fina-resolve) instead of retrying.
+    finaPushUncertain: z.boolean(),
   }),
 );
+
+// Defaults to "ka" in the controller (not `.default()` here) — same reason
+// as listOrdersQuerySchema's page/pageSize above.
+export const downloadInvoiceQuerySchema = z.object({
+  locale: z.enum(["ka", "en", "ru"]).optional(),
+});
+export type DownloadInvoiceQuery = z.infer<typeof downloadInvoiceQuerySchema>;

@@ -13,8 +13,10 @@ import {
 } from "@/lib/api/bulk-discounts";
 import { deleteProductVariantDiscount } from "@/lib/api/product-variant-discounts";
 import { deleteVehicleListingDiscount } from "@/lib/api/vehicle-listing-discounts";
+import type { VehicleListingCurrency } from "@/lib/api/vehicle-listings";
 import { ApiRequestError } from "@/lib/api/client";
 import { formatPrice, toTbilisiDateOnly } from "@/lib/format";
+import { useAdminRole } from "@/components/admin/AdminRoleContext";
 
 type UnifiedRow = {
   key: string;
@@ -22,6 +24,9 @@ type UnifiedRow = {
   label: string;
   subLabel: string;
   price: number;
+  // Always GEL for PRODUCT rows (no currency concept there) — only VEHICLE
+  // rows can be USD, per their own listing's priceCurrency.
+  priceCurrency: VehicleListingCurrency;
   discountPrice: number;
   discountPercent: number | null;
   startDate: string;
@@ -39,6 +44,7 @@ function fromProductRow(row: ProductDiscountHistoryRow): UnifiedRow {
     label: row.productName.ka,
     subLabel: [row.brand?.name, row.size?.nameKa, row.color?.nameKa].filter(Boolean).join(" · ") || "—",
     price: row.price,
+    priceCurrency: "GEL",
     discountPrice: row.discountPrice,
     discountPercent: row.discountPercent,
     startDate: row.startDate,
@@ -57,6 +63,7 @@ function fromVehicleRow(row: VehicleDiscountHistoryRow): UnifiedRow {
     label: `${row.brand.name} ${row.model.name}${row.variant ? ` — ${row.variant}` : ""} (${row.year})`,
     subLabel: [row.condition.nameKa, row.color.nameKa].filter(Boolean).join(" · ") || "—",
     price: row.price,
+    priceCurrency: row.priceCurrency,
     discountPrice: row.discountPrice,
     discountPercent: row.discountPercent,
     startDate: row.startDate,
@@ -86,6 +93,7 @@ const TYPE_LABELS: Record<UnifiedRow["type"], string> = {
 };
 
 export function DiscountHistoryPanel() {
+  const isOperator = useAdminRole() === "OPERATOR";
   const [rows, setRows] = useState<UnifiedRow[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [truncated, setTruncated] = useState(false);
@@ -145,8 +153,10 @@ export function DiscountHistoryPanel() {
       header: "ფასი",
       render: (row) => (
         <>
-          <span className="text-muted-foreground line-through">{formatPrice(row.price)}</span>{" "}
-          <span className="font-semibold">{formatPrice(row.discountPrice)}</span>
+          <span className="text-muted-foreground line-through">
+            {formatPrice(row.price, row.priceCurrency)}
+          </span>{" "}
+          <span className="font-semibold">{formatPrice(row.discountPrice, row.priceCurrency)}</span>
         </>
       ),
     },
@@ -230,15 +240,19 @@ export function DiscountHistoryPanel() {
           data={filteredRows}
           getRowKey={(row) => row.key}
           emptyMessage="ფასდაკლება არ არსებობს"
-          actions={(row) => (
-            <button
-              type="button"
-              onClick={() => setDeletingRow(row)}
-              className="rounded-full px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10"
-            >
-              წაშლა
-            </button>
-          )}
+          actions={
+            isOperator
+              ? undefined
+              : (row) => (
+                  <button
+                    type="button"
+                    onClick={() => setDeletingRow(row)}
+                    className="rounded-full px-3 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-500/10"
+                  >
+                    წაშლა
+                  </button>
+                )
+          }
         />
       )}
 

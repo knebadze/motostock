@@ -6,6 +6,10 @@ import { useTranslations } from "next-intl";
 // Only ever rendered on the storefront (home/product/vehicle "similar
 // items" rows), never in the admin panel — safe to call useTranslations
 // directly instead of threading translated label props from every caller.
+// The card slots below are a fixed w-56 (224px) / sm:w-64 (256px) — cards
+// rendered inside pass this as their image `sizes`.
+export const CAROUSEL_CARD_IMAGE_SIZES = "(min-width: 640px) 256px, 224px";
+
 export function Carousel<T>({
   items,
   getKey,
@@ -53,7 +57,7 @@ export function Carousel<T>({
           type="button"
           onClick={() => scrollByPage(-1)}
           aria-label={t("prev")}
-          className="absolute -left-4 top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md transition-colors hover:border-primary hover:text-primary sm:flex"
+          className="absolute -left-4 top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md transition-colors hover:border-primary hover:text-primary-text sm:flex"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -86,7 +90,7 @@ export function Carousel<T>({
           type="button"
           onClick={() => scrollByPage(1)}
           aria-label={t("next")}
-          className="absolute -right-4 top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md transition-colors hover:border-primary hover:text-primary sm:flex"
+          className="absolute -right-4 top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md transition-colors hover:border-primary hover:text-primary-text sm:flex"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

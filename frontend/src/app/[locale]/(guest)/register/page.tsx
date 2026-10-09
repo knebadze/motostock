@@ -2,20 +2,31 @@ import type { Metadata } from "next";
 import { getLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { getCurrentUserFromServer, getOAuthStatusFromServer } from "@/lib/api/server";
+import { resolveRedirectTarget } from "@/lib/auth-redirect";
 import { RegisterForm } from "@/components/shared/RegisterForm";
 
 // Auth flows aren't content — keep them out of search results.
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-export default async function RegisterPage() {
-  const [user, oauthStatus] = await Promise.all([
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string | string[] }>;
+}) {
+  const [user, oauthStatus, { redirect: redirectParam }] = await Promise.all([
     getCurrentUserFromServer(),
     getOAuthStatusFromServer(),
+    searchParams,
   ]);
 
   if (user) {
     const locale = await getLocale();
-    redirect({ href: "/account", locale });
+    // Already signed in (e.g. a second tab finished the login) — honor the
+    // same ?redirect= the form would have, not always /account.
+    redirect({
+      href: resolveRedirectTarget(typeof redirectParam === "string" ? redirectParam : null),
+      locale,
+    });
   }
 
   return (

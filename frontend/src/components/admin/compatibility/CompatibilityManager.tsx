@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { toast } from "sonner";
+import { ProductDetailModal } from "../products/ProductDetailModal";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, useServerPagination } from "@/components/shared/Pagination";
 import { Select } from "@/components/shared/Select";
@@ -17,9 +17,9 @@ import {
   type CompatibleVehicle,
   type ListCompatibilityFilters,
 } from "@/lib/api/compatibility";
-import { listProducts, type Product } from "@/lib/api/products";
+import { listProducts, type ProductListItem } from "@/lib/api/products";
 import type { Category } from "@/lib/api/categories";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 
 const KIND_LABELS: Record<CompatibilityItem["kind"], string> = {
   FITMENT: "ცალკეული ტრანსპორტი",
@@ -29,13 +29,13 @@ const KIND_LABELS: Record<CompatibilityItem["kind"], string> = {
 };
 
 const KIND_BADGE_CLASSES: Record<CompatibilityItem["kind"], string> = {
-  FITMENT: "bg-primary/15 text-primary",
+  FITMENT: "bg-primary/15 text-primary-text",
   RULE_ALL: "bg-green-500/15 text-green-600",
   RULE_CATEGORY: "bg-blue-500/15 text-blue-600",
   RULE_SPEC: "bg-amber-500/15 text-amber-600",
 };
 
-function productLabel(product: Product): string {
+function productLabel(product: ProductListItem): string {
   return `${product.name.ka} — ${product.category.name.ka}`;
 }
 
@@ -83,6 +83,7 @@ function AllCompatibilityTab({
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [kind, setKind] = useState("");
+  const [viewingProductId, setViewingProductId] = useState<number | null>(null);
 
   const categoryOptions = categories.map((category) => ({
     value: String(category.id),
@@ -169,7 +170,7 @@ function AllCompatibilityTab({
             type="button"
             onClick={handleClearFilters}
             disabled={loading}
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary disabled:opacity-50"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text disabled:opacity-50"
           >
             გაწმენდა
           </button>
@@ -184,17 +185,22 @@ function AllCompatibilityTab({
           emptyMessage="თავსებადობა არ მოიძებნა"
           actions={(item) => (
             <div className="flex justify-end">
-              <Link
-                href={`/admin/products/${item.product.id}`}
-                className="text-sm font-medium text-primary hover:underline"
+              <button
+                type="button"
+                onClick={() => setViewingProductId(item.product.id)}
+                className="text-sm font-medium text-primary-text hover:underline"
               >
                 ნახვა
-              </Link>
+              </button>
             </div>
           )}
         />
         <Pagination currentPage={data.page} totalPages={totalPages} onPageChange={(page) => loadPage(page)} />
       </div>
+
+      {viewingProductId != null && (
+        <ProductDetailModal productId={viewingProductId} onClose={() => setViewingProductId(null)} />
+      )}
     </div>
   );
 }
@@ -203,14 +209,14 @@ function CompatibilityCheckTab({
   products,
   vehicleCatalog,
 }: {
-  products: Product[];
-  vehicleCatalog: VehicleCatalogEntry[];
+  products: ProductListItem[];
+  vehicleCatalog: VehicleCatalogOption[];
 }) {
   const [mode, setMode] = useState<"vehicle" | "product">("vehicle");
   const [vehicleCatalogId, setVehicleCatalogId] = useState("");
   const [productId, setProductId] = useState("");
   const [loading, setLoading] = useState(false);
-  const [matchedProducts, setMatchedProducts] = useState<Product[] | null>(null);
+  const [matchedProducts, setMatchedProducts] = useState<ProductListItem[] | null>(null);
   const [matchedVehicles, setMatchedVehicles] = useState<CompatibleVehicle[] | null>(null);
 
   const vehicleOptions = vehicleCatalog.map((entry) => ({
@@ -268,8 +274,8 @@ function CompatibilityCheckTab({
           onClick={() => handleModeChange("vehicle")}
           className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
             mode === "vehicle"
-              ? "border-primary bg-primary/10 text-primary"
-              : "border-border text-foreground hover:border-primary hover:text-primary"
+              ? "border-primary bg-primary/10 text-primary-text"
+              : "border-border text-foreground hover:border-primary hover:text-primary-text"
           }`}
         >
           ტრანსპორტით
@@ -279,8 +285,8 @@ function CompatibilityCheckTab({
           onClick={() => handleModeChange("product")}
           className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
             mode === "product"
-              ? "border-primary bg-primary/10 text-primary"
-              : "border-border text-foreground hover:border-primary hover:text-primary"
+              ? "border-primary bg-primary/10 text-primary-text"
+              : "border-border text-foreground hover:border-primary hover:text-primary-text"
           }`}
         >
           პროდუქტით
@@ -315,15 +321,15 @@ function CompatibilityCheckTab({
         {!loading && mode === "vehicle" && matchedProducts && (
           <DataTable
             columns={[
-              { header: "პროდუქტი", render: (product: Product) => product.name.ka },
+              { header: "პროდუქტი", render: (product: ProductListItem) => product.name.ka },
               {
                 header: "კატეგორია",
-                render: (product: Product) => product.category.name.ka,
+                render: (product: ProductListItem) => product.category.name.ka,
                 cellClassName: "text-muted-foreground",
               },
               {
                 header: "ფასი",
-                render: (product: Product) => (product.minPrice != null ? formatPrice(product.minPrice) : "—"),
+                render: (product: ProductListItem) => (product.minPrice != null ? formatPrice(product.minPrice) : "—"),
               },
             ]}
             data={matchedProducts}
@@ -358,8 +364,8 @@ export function CompatibilityManager({
 }: {
   initialData: CompatibilityPage;
   categories: Category[];
-  products: Product[];
-  vehicleCatalog: VehicleCatalogEntry[];
+  products: ProductListItem[];
+  vehicleCatalog: VehicleCatalogOption[];
 }) {
   return (
     <div>

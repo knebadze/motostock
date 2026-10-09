@@ -35,6 +35,11 @@ export function getFacebookAuthUrl(state: string): string {
   return url.toString();
 }
 
+// Without a timeout a hung Google/Meta endpoint leaves the visitor's OAuth
+// callback spinning for minutes; on timeout the fetch rejects and the
+// controller's failureRedirect sends them back to login with oauth_failed.
+const OAUTH_REQUEST_TIMEOUT_MS = 10_000;
+
 export async function exchangeGoogleCode(code: string): Promise<OAuthProfile> {
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -46,6 +51,7 @@ export async function exchangeGoogleCode(code: string): Promise<OAuthProfile> {
       redirect_uri: redirectUri("google"),
       grant_type: "authorization_code",
     }),
+    signal: AbortSignal.timeout(OAUTH_REQUEST_TIMEOUT_MS),
   });
   if (!tokenRes.ok) {
     throw new OAuthError(`Google token exchange failed (${tokenRes.status})`);
@@ -54,6 +60,7 @@ export async function exchangeGoogleCode(code: string): Promise<OAuthProfile> {
 
   const profileRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
     headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(OAUTH_REQUEST_TIMEOUT_MS),
   });
   if (!profileRes.ok) {
     throw new OAuthError(`Google profile fetch failed (${profileRes.status})`);
@@ -79,7 +86,7 @@ export async function exchangeFacebookCode(code: string): Promise<OAuthProfile> 
   tokenUrl.searchParams.set("redirect_uri", redirectUri("facebook"));
   tokenUrl.searchParams.set("code", code);
 
-  const tokenRes = await fetch(tokenUrl);
+  const tokenRes = await fetch(tokenUrl, { signal: AbortSignal.timeout(OAUTH_REQUEST_TIMEOUT_MS) });
   if (!tokenRes.ok) {
     throw new OAuthError(`Facebook token exchange failed (${tokenRes.status})`);
   }
@@ -89,7 +96,7 @@ export async function exchangeFacebookCode(code: string): Promise<OAuthProfile> 
   profileUrl.searchParams.set("fields", "id,name,email");
   profileUrl.searchParams.set("access_token", accessToken);
 
-  const profileRes = await fetch(profileUrl);
+  const profileRes = await fetch(profileUrl, { signal: AbortSignal.timeout(OAUTH_REQUEST_TIMEOUT_MS) });
   if (!profileRes.ok) {
     throw new OAuthError(`Facebook profile fetch failed (${profileRes.status})`);
   }

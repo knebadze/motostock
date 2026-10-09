@@ -18,13 +18,14 @@ const TYPE_LABELS: Record<HomepageSection["type"], string> = {
   POPULAR_VEHICLES: "პოპულარული ტრანსპორტი",
   DISCOUNTED_MIXED: "ფასდაკლებული პროდუქტები და ტრანსპორტი (შერეული)",
   POPULAR_MIXED: "პოპულარული პროდუქტები და ტრანსპორტი (შერეული)",
+  FEATURED_MIXED: "ახალი პროდუქცია და ტრანსპორტი (შერეული)",
   CATEGORIES: "კატეგორიები",
   POPULAR_FOR_VEHICLE: "პოპულარული მომხმარებლის ტრანსპორტისთვის",
   RECOMMENDED_FOR_YOU: "რეკომენდებული (პერსონალიზებული)",
   RECENTLY_VIEWED: "ბოლოს ნანახი",
 };
 
-const MIXED_TYPES: HomepageSection["type"][] = ["DISCOUNTED_MIXED", "POPULAR_MIXED"];
+const MIXED_TYPES: HomepageSection["type"][] = ["DISCOUNTED_MIXED", "POPULAR_MIXED", "FEATURED_MIXED"];
 
 function SectionRow({
   section,
@@ -120,7 +121,7 @@ function SectionRow({
               onClick={() => onMove("up")}
               disabled={isFirst}
               aria-label="ზემოთ აწევა"
-              className="rounded p-0.5 text-muted-foreground transition-colors hover:text-primary disabled:opacity-30"
+              className="rounded p-0.5 text-muted-foreground transition-colors hover:text-primary-text disabled:opacity-30"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -140,7 +141,7 @@ function SectionRow({
               onClick={() => onMove("down")}
               disabled={isLast}
               aria-label="ქვემოთ ჩამოწევა"
-              className="rounded p-0.5 text-muted-foreground transition-colors hover:text-primary disabled:opacity-30"
+              className="rounded p-0.5 text-muted-foreground transition-colors hover:text-primary-text disabled:opacity-30"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

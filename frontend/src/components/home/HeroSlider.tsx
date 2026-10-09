@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
 import type { HeroSlide, HeroSlideTextPosition, HeroSlideVerticalPosition } from "@/lib/api/hero-slides";
-import type { GarageVehicle, VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { GarageVehicle, VehicleSearchOption } from "@/lib/api/vehicle-catalog";
 import type { Category } from "@/lib/api/categories";
 import { VEHICLE_ROOT_CATEGORY_SLUG } from "@/lib/categories-tree";
 import { formatDate } from "@/lib/format";
@@ -90,7 +90,7 @@ export function HeroSlider({
   categories,
 }: {
   slides: HeroSlide[];
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleSearchOption[];
   garageVehicles: GarageVehicle[];
   categories: Category[];
 }) {
@@ -131,6 +131,9 @@ export function HeroSlider({
   useEffect(() => {
     if (slides.length <= 1 || paused) return;
     const timer = setInterval(() => {
+      // Not while the tab is hidden — no one sees it, and each change would
+      // start loading the next slide's image for nothing.
+      if (document.visibilityState === "hidden") return;
       setIndex((current) => (current + 1) % slides.length);
     }, AUTOPLAY_MS);
     return () => clearInterval(timer);
@@ -148,69 +151,95 @@ export function HeroSlider({
       className="relative aspect-4/3 w-full overflow-hidden border-b border-border sm:aspect-video lg:aspect-21/9 lg:max-h-130"
     >
       {imageUrl ? (
-        <Image src={imageUrl} alt="" fill priority={index === 0} className="object-cover" />
+        <Image
+          src={imageUrl}
+          alt=""
+          fill
+          priority={index === 0}
+          // Full viewport width at every breakpoint (this section has no
+          // max-width wrapper) — without this, Next.js defaults to treating
+          // the image as if it could be as wide as the *source* image and
+          // serves an oversized variant on mobile, directly inflating LCP.
+          sizes="100vw"
+          className="object-cover"
+        />
       ) : (
         <div className="size-full bg-muted" />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 
-      <div
-        className={`absolute inset-0 flex flex-col px-4 py-8 sm:px-8 sm:py-12 lg:px-16 ${VERTICAL_POSITION_CLASSES[slide.verticalPosition]}`}
-      >
-        <div
-          className={`mx-auto flex w-full max-w-6xl flex-col gap-4 ${TEXT_POSITION_CLASSES[slide.textPosition]}`}
-        >
-          <h1 className="max-w-2xl text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
-            {slide.title[locale]}
-          </h1>
-          {slide.type === "DISCOUNT" && slide.bulkDiscountEvent && (
-            <span className="w-fit rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground">
-              {t("discountBadge", {
-                percent: slide.bulkDiscountEvent.discountPercent,
-                startDate: formatDate(slide.bulkDiscountEvent.startDate),
-                endDate: formatDate(slide.bulkDiscountEvent.endDate),
-              })}
-            </span>
-          )}
-          {slide.type === "DISCOUNT" && !slide.bulkDiscountEvent && slide.promoCode && (
-            <span className="w-fit rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground">
-              {t("promoCodeBadge", {
-                percent: slide.promoCode.discountPercent,
-                code: slide.promoCode.code,
-                scope: promoCodeScopeText(slide.promoCode, locale, t),
-                startDate: formatDate(slide.promoCode.startDate),
-                endDate: formatDate(slide.promoCode.endDate),
-              })}
-            </span>
-          )}
-          {slide.subtitle && (
-            <p className="max-w-xl text-base text-white/90 sm:text-lg">{slide.subtitle[locale]}</p>
-          )}
+      {/* POSTER is just the image — no dimming overlay, no title/subtitle/
+          button/form. The image (a poster/banner the admin uploads) already
+          carries its own text, so overlaying more on top of it would only
+          clash with it. title still exists on this slide row (required at
+          the DB level like every other type) but is an admin-list-only
+          label, deliberately not rendered here. */}
+      {slide.type !== "POSTER" && (
+        <>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 
-          {slide.type === "CTA" && slide.buttonLabel && slide.buttonLink && (
-            <Link
-              href={slide.buttonLink}
-              className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+          <div
+            className={`absolute inset-0 flex flex-col px-4 py-8 sm:px-8 sm:py-12 lg:px-16 ${VERTICAL_POSITION_CLASSES[slide.verticalPosition]}`}
+          >
+            <div
+              className={`mx-auto flex w-full max-w-6xl flex-col gap-4 ${TEXT_POSITION_CLASSES[slide.textPosition]}`}
             >
-              {slide.buttonLabel[locale]}
-            </Link>
-          )}
+              {/* h2, not h1 — the page itself now always renders its own
+                  stable <h1> (see [locale]/page.tsx), since this per-slide
+                  heading is conditional (absent entirely for POSTER slides)
+                  and changes with whichever slide is currently showing. */}
+              <h2 className="max-w-2xl text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
+                {slide.title[locale]}
+              </h2>
+              {slide.type === "DISCOUNT" && slide.bulkDiscountEvent && (
+                <span className="w-fit rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground">
+                  {t("discountBadge", {
+                    percent: slide.bulkDiscountEvent.discountPercent,
+                    startDate: formatDate(slide.bulkDiscountEvent.startDate),
+                    endDate: formatDate(slide.bulkDiscountEvent.endDate),
+                  })}
+                </span>
+              )}
+              {slide.type === "DISCOUNT" && !slide.bulkDiscountEvent && slide.promoCode && (
+                <span className="w-fit rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground">
+                  {t("promoCodeBadge", {
+                    percent: slide.promoCode.discountPercent,
+                    code: slide.promoCode.code,
+                    scope: promoCodeScopeText(slide.promoCode, locale, t),
+                    startDate: formatDate(slide.promoCode.startDate),
+                    endDate: formatDate(slide.promoCode.endDate),
+                  })}
+                </span>
+              )}
+              {slide.subtitle && (
+                <p className="max-w-xl text-base text-white/90 sm:text-lg">{slide.subtitle[locale]}</p>
+              )}
 
-          {slide.type === "DISCOUNT" && slide.buttonLabel && (
-            <Link
-              href={buildDiscountLink(slide)}
-              className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
-            >
-              {slide.buttonLabel[locale]}
-            </Link>
-          )}
+              {slide.type === "CTA" && slide.buttonLabel && slide.buttonLink && (
+                <Link
+                  href={slide.buttonLink}
+                  className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+                >
+                  {slide.buttonLabel[locale]}
+                </Link>
+              )}
 
-          {slide.type === "VEHICLE_SEARCH" && (
-            <VehicleSearchForm vehicleCatalog={vehicleCatalog} garageVehicles={garageVehicles} />
-          )}
-          {slide.type === "CATEGORY_FILTER" && <CategorySearchForm categories={categories} />}
-        </div>
-      </div>
+              {slide.type === "DISCOUNT" && slide.buttonLabel && (
+                <Link
+                  href={buildDiscountLink(slide)}
+                  className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+                >
+                  {slide.buttonLabel[locale]}
+                </Link>
+              )}
+
+              {slide.type === "VEHICLE_SEARCH" && (
+                <VehicleSearchForm vehicleCatalog={vehicleCatalog} garageVehicles={garageVehicles} />
+              )}
+              {slide.type === "CATEGORY_FILTER" && <CategorySearchForm categories={categories} />}
+            </div>
+          </div>
+        </>
+      )}
 
       {slides.length > 1 && (
         <>

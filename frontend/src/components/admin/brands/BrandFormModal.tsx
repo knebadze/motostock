@@ -11,6 +11,7 @@ import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { slugify } from "@/lib/categories-tree";
 import { brandFormSchema } from "@/lib/validation/brands";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 
 export function BrandFormModal({
   open,
@@ -56,6 +57,7 @@ export function BrandFormModal({
       };
 
       const savedBrand = isEditing ? await updateBrand(brand.id, input) : await createBrand(input);
+      await revalidatePublicCache("vehicle-catalog");
 
       if (logoFile) {
         try {

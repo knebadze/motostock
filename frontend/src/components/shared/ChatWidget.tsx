@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocale, useTranslations } from "next-intl";
-import type { Faq } from "@/lib/api/faq";
+// Current locale only, answer already sanitized on the server (the guest
+// layout builds these) — every page used to serialize all FAQs in all three
+// languages into its props for a panel most visitors never open.
+export type ChatFaq = { id: number; question: string; answerHtml: string };
 import { ApiRequestError } from "@/lib/api/client";
 import {
   getWhatsAppChatThread,
@@ -48,7 +51,12 @@ function WhatsAppThread({ messages }: { messages: WhatsAppChatMessage[] }) {
   }, [messages.length]);
 
   return (
-    <div className="flex flex-col gap-2">
+    // aria-live so a reply that arrives while the panel is open (polled
+    // every POLL_INTERVAL_MS) gets announced — without this, a screen-reader
+    // user had no way to know a new message landed short of closing and
+    // reopening the panel to re-read the whole thread. "additions" only,
+    // not the whole thread re-announced on every poll tick.
+    <div className="flex flex-col gap-2" aria-live="polite" aria-relevant="additions">
       {messages.map((message) => {
         if (message.sender === "SYSTEM") {
           return (
@@ -82,11 +90,10 @@ export function ChatWidget({
   faqs,
   whatsappChatEnabled,
 }: {
-  faqs: Faq[];
+  faqs: ChatFaq[];
   whatsappChatEnabled: boolean;
 }) {
   const t = useTranslations("ChatWidget");
-  const locale = useLocale() as "ka" | "en" | "ru";
   const [open, setOpen] = useState(false);
   const [openQuestionId, setOpenQuestionId] = useState<number | null>(null);
   const [view, setView] = useState<"faq" | "whatsapp">("faq");
@@ -163,10 +170,21 @@ export function ChatWidget({
 
   // Poll for the rep's reply only while the WhatsApp view is actually
   // visible — no point background-polling the FAQ view or a closed widget.
+  // Skipped while the tab is hidden (no one is reading the thread), with an
+  // immediate refresh when it's shown again.
   useEffect(() => {
     if (!open || view !== "whatsapp") return;
-    const intervalId = setInterval(refreshThread, POLL_INTERVAL_MS);
-    return () => clearInterval(intervalId);
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === "visible") refreshThread();
+    }, POLL_INTERVAL_MS);
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") refreshThread();
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [open, view]);
 
   async function handleSend() {
@@ -223,7 +241,7 @@ export function ChatWidget({
                           onClick={() => setOpenQuestionId(isOpen ? null : faq.id)}
                           className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-medium text-foreground"
                         >
-                          {faq.question[locale]}
+                          {faq.question}
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
@@ -238,9 +256,13 @@ export function ChatWidget({
                           </svg>
                         </button>
                         {isOpen && (
-                          <p className="border-t border-border px-3 py-2.5 text-sm text-muted-foreground">
-                            {faq.answer[locale]}
-                          </p>
+                          <div
+                            className="border-t border-border px-3 py-2.5 text-sm text-muted-foreground [&_li]:ml-4 [&_ol]:list-decimal [&_p:last-child]:mb-0 [&_p]:mb-2 [&_ul]:list-disc"
+                            // The answer is admin-authored rich text (it used
+                            // to show here as literal tags) — sanitized on the
+                            // server, see ChatFaq.
+                            dangerouslySetInnerHTML={{ __html: faq.answerHtml }}
+                          />
                         )}
                       </div>
                     );

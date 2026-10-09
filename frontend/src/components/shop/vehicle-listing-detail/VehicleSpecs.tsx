@@ -28,6 +28,12 @@ export function buildVehicleSpecRows(
     { key: "condition", label: t("conditionLabel"), value: pickLookupName(listing.condition, locale), raw: null },
     { key: "color", label: t("colorLabel"), value: pickLookupName(listing.color, locale), raw: null },
     { key: "year", label: t("yearLabel"), value: String(listing.year), raw: listing.year },
+    {
+      key: "customsCleared",
+      label: t("customsClearedLabel"),
+      value: listing.isCustomsCleared ? t("yes") : t("no"),
+      raw: listing.isCustomsCleared ? 1 : 0,
+    },
   ];
 
   if (listing.mileageKm != null) {

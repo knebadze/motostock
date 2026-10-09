@@ -99,7 +99,31 @@ export async function getChatForOwner(owner: ChatOwner) {
 // to a session via the WhatsApp "Reply" (quote) the rep used, or (if they
 // didn't quote) the single session currently awaiting a reply, if there's
 // exactly one.
-export async function handleInboundStaffReply(params: { body: string; contextMessageId?: string }) {
+//
+// The webhook HMAC only proves the payload came from Meta, not WHO texted
+// the business number — anyone can message it. So `from` must match the
+// configured support rep's number, or the text is dropped: otherwise a
+// stranger's message would be saved as a STAFF reply and shown to the
+// customer as if the shop wrote it (and an unroutable one would also
+// trigger a nudge to the rep's phone). Compared after the same digits-only
+// normalization used when relaying to the rep, so "+995 599…" in Settings
+// matches Meta's "995599…".
+export async function handleInboundStaffReply(params: {
+  from?: string;
+  body: string;
+  contextMessageId?: string;
+}) {
+  const supportPhoneNumber = await getWhatsAppSupportPhoneNumber();
+  const normalizedSupportPhone = supportPhoneNumber ? normalizePhoneForWhatsApp(supportPhoneNumber) : "";
+  const normalizedFrom = params.from ? normalizePhoneForWhatsApp(params.from) : "";
+  if (!normalizedSupportPhone || normalizedFrom !== normalizedSupportPhone) {
+    logger.warn(
+      { fromSuffix: normalizedFrom.slice(-4) },
+      "Ignored inbound WhatsApp message from a number other than the support rep's",
+    );
+    return;
+  }
+
   let sessionId: number | null = null;
 
   if (params.contextMessageId) {

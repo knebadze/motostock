@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import {
   addToCompare,
+  getCompareCount,
   getCompareStatus,
   removeFromCompare,
   type CompareItemType,
 } from "@/lib/api/compare";
+import { dispatchCountChanged, COMPARE_COUNT_CHANGED_EVENT } from "@/lib/badge-count-events";
 
 // A "compare scales" glyph — two bars of unequal height on a shared base,
 // distinct from WishlistButton's heart at a glance.
@@ -35,29 +36,46 @@ export function CompareButton({
   labelAdd?: string;
   labelAdded?: string;
   className?: string;
-  // Skips the status lookup when the caller already knows it (e.g. the
-  // comparison page, where every card is compared by definition).
-  initialCompareItemId?: number | null;
+  // Skips the individual status lookup when the caller already knows it:
+  // a definite number/null (the comparison page, where every card is
+  // compared by definition, or a grid that already resolved a batched
+  // lookup — see useCollectionStatusMap.ts) or the "pending" sentinel (a
+  // grid's batched lookup is still in flight — wait for the real answer
+  // instead of also firing this button's own redundant request). Omitted
+  // entirely (undefined) means no parent is managing this — check for
+  // ourselves, same as before batching existed.
+  initialCompareItemId?: number | null | "pending";
   // Fired after a successful add/remove — lets a parent list (e.g. the
   // comparison page) drop the card immediately instead of waiting for a
   // full refetch.
   onChange?: (compared: boolean) => void;
 }) {
-  const router = useRouter();
   const t = useTranslations("Common.compareButton");
   const tErrors = useTranslations("ApiErrors");
   const resolvedLabelAdd = labelAdd ?? t("add");
   const resolvedLabelAdded = labelAdded ?? t("added");
-  // The compare row's own id (needed for DELETE) — not just a boolean —
-  // since it's fetched lazily per button rather than batched across a
-  // whole grid. Fine at current catalog size; worth batching later if a
-  // page ever renders dozens of these at once.
+  // The compare row's own id (needed for DELETE) — not just a boolean.
   const [compareItemId, setCompareItemId] = useState<number | null>(
-    initialCompareItemId ?? null,
+    typeof initialCompareItemId === "number" ? initialCompareItemId : null,
   );
   const [loading, setLoading] = useState(false);
 
+  // Adopts a batched answer once a parent's useCollectionStatusMap lookup
+  // resolves (initialCompareItemId transitioning from "pending"/undefined to
+  // a definite number|null) — without this, a card whose parent is still
+  // waiting on the batch at mount time would never learn the real answer.
   useEffect(() => {
+    if (initialCompareItemId === "pending" || initialCompareItemId === undefined) return;
+    // Syncing to a value owned by a parent (see the comment above) — same
+    // established pattern as ThemeToggle.tsx's mount-sync effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCompareItemId(initialCompareItemId);
+  }, [initialCompareItemId]);
+
+  useEffect(() => {
+    // A parent has taken ownership of this lookup (a definite value, or
+    // "pending" while its own batched call is in flight) — never also fire
+    // our own individual request in either case.
     if (initialCompareItemId !== undefined) return;
     let cancelled = false;
 
@@ -80,8 +98,7 @@ export function CompareButton({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemType, id]);
+  }, [itemType, id, initialCompareItemId]);
 
   async function toggle(event: React.MouseEvent) {
     event.preventDefault();
@@ -103,12 +120,10 @@ export function CompareButton({
         setCompareItemId(item.id);
         onChange?.(true);
       }
-      // Refreshes server components (the header's compare-count badge is
-      // fetched there) without a full page reload — same fix
-      // AddToCartButton.tsx's handleAdd already applies; this button
-      // previously never called it at all, leaving the header badge stale
-      // until something else happened to trigger a refresh.
-      router.refresh();
+      // Tells the header's CompareDropdown its fresh count directly, instead
+      // of a `router.refresh()` that would re-run this entire route's whole
+      // server component tree just to update one integer.
+      dispatchCountChanged(COMPARE_COUNT_CHANGED_EVENT, await getCompareCount());
     } catch (error) {
       toast.error(resolveApiErrorMessage(error, tErrors, t("error")));
     } finally {
@@ -126,8 +141,8 @@ export function CompareButton({
         disabled={loading}
         className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-60 ${
           active
-            ? "border-primary bg-primary/10 text-primary"
-            : "border-border text-foreground hover:border-primary hover:text-primary"
+            ? "border-primary bg-primary/10 text-primary-text"
+            : "border-border text-foreground hover:border-primary hover:text-primary-text"
         } ${className}`}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4">
@@ -145,8 +160,8 @@ export function CompareButton({
       disabled={loading}
       aria-label={active ? resolvedLabelAdded : resolvedLabelAdd}
       aria-pressed={active}
-      className={`flex size-8 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:text-primary disabled:opacity-60 ${
-        active ? "text-primary" : ""
+      className={`flex size-8 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur transition-colors hover:text-primary-text disabled:opacity-60 ${
+        active ? "text-primary-text" : ""
       } ${className}`}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4">

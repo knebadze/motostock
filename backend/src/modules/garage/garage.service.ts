@@ -2,6 +2,7 @@ import { ApiError } from "../../lib/ApiError.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
 import { toVehicleCatalogResponse } from "../vehicle-catalog/vehicle-catalog.service.js";
+import { usersRepository } from "../users/users.repository.js";
 import { garageRepository } from "./garage.repository.js";
 import type { CreateGarageVehicleInput, UpdateGarageVehicleInput } from "./garage.schema.js";
 
@@ -61,6 +62,20 @@ export async function listMyGarage(userId: number) {
 }
 
 export async function createGarageVehicle(userId: number, input: CreateGarageVehicleInput) {
+  // Guards the users.service.ts mergeUserInto data black hole: without this,
+  // a vehicle could still be added to a walk-in row that's already been
+  // merged away (mergedIntoUserId set) — silently invisible, since the admin
+  // workshop screen and the customer's own account both work off the MERGE
+  // TARGET's garage from that point on, never this row's again.
+  const user = await usersRepository.findById(userId);
+  if (!user || user.mergedIntoUserId != null) {
+    throw new ApiError(
+      400,
+      "მომხმარებელი შერწყმულია სხვა ანგარიშთან — გამოიყენეთ სამიზნე ანგარიშის გვერდი",
+      "USER_ALREADY_MERGED",
+    );
+  }
+
   await assertCatalogEntryFitsYear(input.vehicleCatalogId, input.year);
 
   const row = await garageRepository.createWithPopularityBump({

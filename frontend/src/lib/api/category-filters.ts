@@ -1,36 +1,19 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
-import type { NamedRef } from "./vehicle-catalog";
-import type { AttributeValueType } from "./attributes";
+import type { components } from "./generated/schema";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type CategoryFilterType = "PRICE" | "BRAND" | "ATTRIBUTE" | "MY_VEHICLE";
 
-export type CategoryFilterAttributeOption = { id: number; key: string; label: LocalizedString };
+export type CategoryFilterAttributeOption = CategoryFilterAttribute["options"][number];
 
-export type CategoryFilterAttribute = {
-  id: number;
-  name: LocalizedString;
-  valueType: AttributeValueType;
-  options: CategoryFilterAttributeOption[];
-};
+export type CategoryFilterAttribute = NonNullable<CategoryFilter["attribute"]>;
 
-export type CategoryFilter = {
-  id: number;
-  categoryId: number;
-  // The row's own defining category — differs from the browsed/managed
-  // category when this filter was inherited from a parent category.
-  category: NamedRef;
-  filterType: CategoryFilterType;
-  sortOrder: number;
-  // Only present when filterType is "ATTRIBUTE".
-  attribute: CategoryFilterAttribute | null;
-};
+export type CategoryFilter = Schemas["CategoryFilterConfig"];
 
-export type CategoryFilterInput = {
-  categoryId: number;
-  filterType: CategoryFilterType;
-  attributeId?: number | null;
-};
+export type CategoryFilterInput = Schemas["CreateCategoryFilterInput"];
 
 export async function listCategoryFilters(categoryId: number): Promise<CategoryFilter[]> {
   const { data } = await apiClient.get<{ items: CategoryFilter[] }>("/category-filters", {

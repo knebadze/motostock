@@ -1,4 +1,7 @@
+import { getLocale } from "next-intl/server";
 import { Header } from "@/components/shared/Header";
+import { toHeaderCategories } from "@/lib/api/categories";
+import { sanitizeRichText } from "@/lib/sanitize-html";
 import { Footer } from "@/components/shared/Footer";
 import { CookieNotice } from "@/components/shared/CookieNotice";
 import { ScrollToTopButton } from "@/components/shared/ScrollToTopButton";
@@ -19,8 +22,9 @@ export default async function GuestLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [user, categories, companyInfo, cartCount, wishlistCount, compareCount, faqs, guestFeatureStatus] =
+  const [locale, user, categories, companyInfo, cartCount, wishlistCount, compareCount, faqs, guestFeatureStatus] =
     await Promise.all([
+      getLocale(),
       getCurrentUserFromServer(),
       getCategoriesFromServer(),
       getCompanyInfoFromServer(),
@@ -31,11 +35,13 @@ export default async function GuestLayout({
       getGuestFeatureStatusFromServer(),
     ]);
 
+  const typedLocale = locale as "ka" | "en" | "ru";
+
   return (
     <>
       <Header
         user={user}
-        categories={categories}
+        categories={toHeaderCategories(categories, typedLocale)}
         companyInfo={companyInfo}
         cartCount={cartCount}
         wishlistCount={wishlistCount}
@@ -46,7 +52,13 @@ export default async function GuestLayout({
       <Footer />
       <CookieNotice />
       <ScrollToTopButton />
-      <ChatWidget faqs={faqs} whatsappChatEnabled={companyInfo.whatsappChatEnabled} />
+      <ChatWidget
+        faqs={faqs.map((faq) => ({
+          id: faq.id,
+          question: faq.question[typedLocale],
+          answerHtml: sanitizeRichText(faq.answer[typedLocale]),
+        }))}
+        whatsappChatEnabled={companyInfo.whatsappChatEnabled} />
     </>
   );
 }

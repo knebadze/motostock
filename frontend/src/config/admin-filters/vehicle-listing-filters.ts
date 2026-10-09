@@ -1,5 +1,5 @@
 import type { AdminFilterField } from "@/components/admin/shared/AdminFilterPanel";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import type { LookupItem } from "@/lib/api/lookups";
 import { VEHICLE_SPEC_FIELDS } from "@/config/vehicle-spec-fields";
 
@@ -24,7 +24,7 @@ function toLookupOptions(items: LookupItem[]) {
 // full spec coverage) — NUMBER/BOOLEAN spec fields need no options at all, so
 // those stay fully available here.
 export function buildVehicleListingFilterFields(data: {
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   conditions: LookupItem[];
   statuses: LookupItem[];
   colors: LookupItem[];

@@ -5,7 +5,7 @@ import type { Settings } from "@/lib/api/settings";
 
 type FinaDraft = Pick<
   Settings,
-  "finaWebCustomerId" | "finaWebUserId" | "finaSyncIntervalMinutes"
+  "finaWebCustomerId" | "finaWebUserId" | "finaSyncIntervalMinutes" | "finaOrderPushRetryIntervalMinutes"
 >;
 
 function finaDraftFrom(settings: Settings): FinaDraft {
@@ -13,6 +13,7 @@ function finaDraftFrom(settings: Settings): FinaDraft {
     finaWebCustomerId: settings.finaWebCustomerId,
     finaWebUserId: settings.finaWebUserId,
     finaSyncIntervalMinutes: settings.finaSyncIntervalMinutes,
+    finaOrderPushRetryIntervalMinutes: settings.finaOrderPushRetryIntervalMinutes,
   };
 }
 
@@ -78,20 +79,45 @@ export function FinaSettingsTab({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-col gap-1.5 sm:w-1/2 sm:pr-1.5">
-        <label className="text-sm font-medium">ავტომატური სინქრონიზაციის ინტერვალი (წუთი)</label>
-        <input
-          type="number"
-          min={1}
-          value={draft.finaSyncIntervalMinutes}
-          onChange={(event) =>
-            setDraft((current) => ({
-              ...current,
-              finaSyncIntervalMinutes: Number(event.target.value),
-            }))
-          }
-          className={inputClassName}
-        />
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium">ავტომატური სინქრონიზაციის ინტერვალი (წუთი)</label>
+          <input
+            type="number"
+            min={1}
+            value={draft.finaSyncIntervalMinutes}
+            onChange={(event) =>
+              setDraft((current) => ({
+                ...current,
+                finaSyncIntervalMinutes: Number(event.target.value),
+              }))
+            }
+            className={inputClassName}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium">
+            გაუგზავნელი შეკვეთების ხელახალი ცდის ინტერვალი (წუთი)
+          </label>
+          <input
+            type="number"
+            min={1}
+            max={1440}
+            value={draft.finaOrderPushRetryIntervalMinutes}
+            onChange={(event) =>
+              setDraft((current) => ({
+                ...current,
+                finaOrderPushRetryIntervalMinutes: Number(event.target.value),
+              }))
+            }
+            className={inputClassName}
+          />
+          <p className="text-xs text-muted-foreground">
+            შეკვეთა FINA-ში იგზავნება მაშინვე. ეს ინტერვალი განსაზღვრავს, რამდენ ხანში ერთხელ
+            ცდის სისტემა თავიდან გაგზავნას, თუ პირველად ვერ გაიგზავნა. 5 წარუმატებელი ცდის
+            შემდეგ შეკვეთა მოინიშნება „ვერ დასინქრონდა“-დ.
+          </p>
+        </div>
       </div>
 
       <button

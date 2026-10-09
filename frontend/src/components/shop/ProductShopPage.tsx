@@ -3,17 +3,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { usePathname, useRouter } from "@/i18n/navigation";
+import { replaceUrlQueryParams } from "@/lib/url-query-state";
 import type { SelectOption } from "@/components/shared/Select";
 import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
-import { listProductsPage, type Product, type ProductAttributeFilters } from "@/lib/api/products";
+import { listProductsPage, type ProductListItem, type ProductAttributeFilters } from "@/lib/api/products";
 import type { Category } from "@/lib/api/categories";
 import type { CategoryFilter, CategoryFilterAttribute } from "@/lib/api/category-filters";
-import type { GarageVehicle } from "@/lib/api/vehicle-catalog";
+import type { BrandModelRef, GarageVehicle } from "@/lib/api/vehicle-catalog";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 import { persistSelectedVehicleCookie } from "@/lib/vehicle-selection";
+import { getWishlistStatus } from "@/lib/api/wishlist";
+import { getCompareStatus } from "@/lib/api/compare";
+import { shouldCheckWishlistStatus, shouldCheckCompareStatus } from "@/lib/api/collection-status-gate";
+import { useCollectionStatusMap, lookupProductStatus } from "@/components/shared/useCollectionStatusMap";
 import { ActiveFilterTags, type ActiveFilterTag } from "./ActiveFilterTags";
 import { ProductFilters, type AttributeFilterState, type BrandOption } from "./ProductFilters";
 import { ProductCard } from "./ProductCard";
@@ -42,7 +46,7 @@ export function ProductShopPage({
   category,
   breadcrumbChain,
   subcategories,
-  products,
+  brands,
   initialData,
   filters,
   garageVehicles,
@@ -51,11 +55,13 @@ export function ProductShopPage({
   category: Category;
   breadcrumbChain: Category[];
   subcategories: Category[];
-  // Unbounded — feeds the brand-checkbox facet list, which needs to see
-  // every brand present in the category, not just the current page's.
-  products: Product[];
+  // The distinct brands present among matching products — feeds the
+  // brand-checkbox facet list. Computed server-side by a lean, dedicated
+  // query (getProductBrandFacetsFromServer) instead of shipping every
+  // matching product's full card data just to re-derive this list here.
+  brands: BrandModelRef[];
   // Real server pagination — feeds the actual grid.
-  initialData: PagedResult<Product>;
+  initialData: PagedResult<ProductListItem>;
   filters: CategoryFilter[];
   garageVehicles: GarageVehicle[];
   initialSort?: string;
@@ -64,8 +70,6 @@ export function ProductShopPage({
   const t = useTranslations("Shop");
   const tCommon = useTranslations("Common");
   const tErrors = useTranslations("ApiErrors");
-  const pathname = usePathname();
-  const router = useRouter();
 
   const [search, setSearch] = useState("");
   const [selectedBrandIds, setSelectedBrandIds] = useState<number[]>([]);
@@ -82,21 +86,29 @@ export function ProductShopPage({
   const { data, totalPages, loading, load } = useServerPagination(initialData);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
+  // One batched wishlist/compare status check for the current page's grid
+  // instead of each ProductCard's own WishlistButton/CompareButton checking
+  // individually — re-runs whenever the visible page/filter set changes
+  // (see useCollectionStatusMap's own comment).
+  const visibleProductIds = useMemo(() => data.items.map((product) => product.id), [data.items]);
+  const wishlistStatus = useCollectionStatusMap(
+    getWishlistStatus,
+    visibleProductIds,
+    [],
+    shouldCheckWishlistStatus,
+  );
+  const compareStatus = useCollectionStatusMap(getCompareStatus, visibleProductIds, [], shouldCheckCompareStatus);
+
   // Brand checkboxes always reflect the category's full, unfiltered catalog
   // (not the currently-filtered result) — otherwise checked brands would
   // visually disappear as other filters narrow the list.
-  const brandOptions: BrandOption[] = useMemo(() => {
-    const byId = new Map<number, BrandOption>();
-    for (const product of products) {
-      if (product.productBrand && !byId.has(product.productBrand.id)) {
-        byId.set(product.productBrand.id, {
-          id: product.productBrand.id,
-          label: product.productBrand.name,
-        });
-      }
-    }
-    return Array.from(byId.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [products]);
+  const brandOptions: BrandOption[] = useMemo(
+    () =>
+      brands
+        .map((brand) => ({ id: brand.id, label: brand.name }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [brands],
+  );
 
   function updateAttributeState(attributeId: number, patch: Partial<AttributeFilterState>) {
     setAttributeFilterState((current) => ({
@@ -195,11 +207,11 @@ export function ProductShopPage({
   // not synced here — faceted-filter combinations aren't meant to be
   // individually indexed).
   useEffect(() => {
-    const query: Record<string, string> = {};
-    if (data.page > 1) query.page = String(data.page);
-    if (sortBy !== "newest") query.sort = sortBy;
-    router.replace({ pathname, query }, { scroll: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // history.replaceState, not router.replace — see url-query-state.ts.
+    replaceUrlQueryParams({
+      page: data.page > 1 ? String(data.page) : null,
+      sort: sortBy !== "newest" ? sortBy : null,
+    });
   }, [data.page, sortBy]);
 
   const sortOptions: SelectOption[] = [
@@ -400,7 +412,14 @@ export function ProductShopPage({
                 layout={viewMode}
                 getKey={(product) => product.id}
                 emptyMessage={t("emptyState")}
-                renderItem={(product, layout) => <ProductCard product={product} layout={layout} />}
+                renderItem={(product, layout) => (
+                  <ProductCard
+                    product={product}
+                    layout={layout}
+                    wishlistItemId={lookupProductStatus(wishlistStatus, product.id)}
+                    compareItemId={lookupProductStatus(compareStatus, product.id)}
+                  />
+                )}
                 loading={loading}
               />
 

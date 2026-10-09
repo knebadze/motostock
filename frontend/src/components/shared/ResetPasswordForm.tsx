@@ -8,6 +8,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { resetPassword } from "@/lib/api/auth";
 import { ApiRequestError } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
+import { hasInvalidPasswordChars, isPasswordTooLong } from "@/lib/password";
 
 export function ResetPasswordForm() {
   const t = useTranslations("Auth");
@@ -26,7 +27,7 @@ export function ResetPasswordForm() {
         <p className="mt-4 text-sm text-muted-foreground">{t("resetPasswordMissingToken")}</p>
         <Link
           href="/forgot-password"
-          className="mt-6 inline-block font-semibold text-primary hover:underline"
+          className="mt-6 inline-block font-semibold text-primary-text hover:underline"
         >
           {t("backToForgotPassword")}
         </Link>
@@ -39,6 +40,14 @@ export function ResetPasswordForm() {
 
     if (password !== confirmPassword) {
       toast.error(t("passwordMismatch"));
+      return;
+    }
+    if (hasInvalidPasswordChars(password)) {
+      toast.error(t("passwordInvalidCharsError"));
+      return;
+    }
+    if (isPasswordTooLong(password)) {
+      toast.error(t("passwordTooLongError"));
       return;
     }
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
-import { productResponseSchema } from "../products/products.schema.js";
+import { productCardResponseSchema } from "../products/products.schema.js";
 
 export const recommendationsProductIdParamSchema = z.object({
   productId: z.coerce.number().int().positive(),
@@ -30,5 +30,5 @@ export type RecommendedForMeQuery = z.infer<typeof recommendedForMeQuerySchema>;
 
 export const recommendationsListResponseSchema = registry.register(
   "RecommendationsList",
-  z.object({ items: z.array(productResponseSchema) }),
+  z.object({ items: z.array(productCardResponseSchema) }),
 );

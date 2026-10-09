@@ -7,6 +7,7 @@ import {
   bulkDiscountEventInputSchema,
   bulkDiscountEventTargetTypeSchema,
 } from "../bulk-discount-events/bulk-discount-events.schema.js";
+import { vehicleListingCurrencySchema } from "../vehicle-listing/vehicle-listing.schema.js";
 
 export { bulkDiscountEventTargetTypeSchema as bulkDiscountTargetTypeSchema };
 
@@ -135,6 +136,7 @@ export const bulkVehicleDiscountCandidateResponseSchema = registry.register(
     color: lookupItemResponseSchema,
     specValues: z.array(candidateSpecValueSchema),
     price: z.number().openapi({ example: 4500 }),
+    priceCurrency: vehicleListingCurrencySchema,
     activeDiscount: z
       .object({ discountPercent: z.number().nullable(), startDate: z.iso.datetime(), endDate: z.iso.datetime() })
       .nullable(),
@@ -153,6 +155,7 @@ export const vehicleDiscountHistoryRowSchema = registry.register(
     condition: lookupItemResponseSchema,
     color: lookupItemResponseSchema,
     price: z.number(),
+    priceCurrency: vehicleListingCurrencySchema,
     discountPrice: z.number(),
     discountPercent: z.number().nullable(),
     startDate: z.iso.date(),

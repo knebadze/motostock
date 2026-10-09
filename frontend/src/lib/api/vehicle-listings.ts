@@ -1,67 +1,46 @@
 import { apiClient } from "./client";
-import type { VehicleCatalogEntry } from "./vehicle-catalog";
-import type { LookupItem } from "./lookups";
-import type { VehicleListingDiscount } from "./vehicle-listing-discounts";
-import type { VehicleListingImage } from "./vehicle-listing-images";
 import type { VehicleSpecField } from "./vehicle-category-filters";
 import type { AdminFilterEntry } from "./admin-filters";
+import type { components } from "./generated/schema";
+import type { ApiResponse } from "./generated-helpers";
+
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
 export type WarrantyUnit = "YEAR" | "MONTH";
+export type VehicleListingCurrency = "GEL" | "USD";
 
-export type VehicleListing = {
+export type VehicleListing = Schemas["VehicleListing"];
+
+// Human-readable URL slug ("honda-cbr600-2020-4821") instead of a bare
+// numeric id — the id is kept as a trailing suffix rather than stored as its
+// own DB column, so this needs no migration and no backend change at all:
+// the id is still what every lookup actually keys on (see
+// parseVehicleListingIdFromSlug below), the brand/model/year prefix is purely
+// cosmetic/SEO. brand.slug/model.slug (not the raw name) are reused so this
+// never needs its own slugify pass or drifts from whatever normalization
+// those already went through.
+export function buildVehicleListingSlug(listing: {
   id: number;
-  // Was a 35-field inline copy of VehicleCatalogEntry, drifting silently
-  // whenever a new spec field was added there (nothing forced this shape to
-  // keep up) — this Omit derives it instead, so it can never fall behind.
-  vehicleCatalog: Omit<VehicleCatalogEntry, "submittedBy" | "popularity" | "createdAt" | "updatedAt">;
-  condition: LookupItem;
-  status: LookupItem;
-  color: LookupItem;
   year: number;
-  mileageKm: number | null;
-  warrantyValue: number | null;
-  warrantyUnit: WarrantyUnit | null;
-  isActive: boolean;
-  price: number;
-  stockQuantity: number;
-  descriptionKa: string | null;
-  descriptionEn: string | null;
-  descriptionRu: string | null;
-  images: VehicleListingImage[];
-  discounts: VehicleListingDiscount[];
-  // Narrower than a full VehicleListingDiscount — may be derived from a
-  // rule-based bulk discount (no real DB row of its own). Only
-  // discountPrice is ever read; the crossed-out original price always comes
-  // from the listing's own `price`.
-  activeDiscount: { discountPrice: number } | null;
-  viewCount: number;
-  createdAt: string;
-  updatedAt: string;
-  // Same "update-response-only" flag as ProductVariant's identical field —
-  // see VehicleListingInput's previousStockQuantity.
-  stockConflict?: boolean;
-};
+  vehicleCatalog: { brand: { slug: string }; model: { slug: string } };
+}): string {
+  return `${listing.vehicleCatalog.brand.slug}-${listing.vehicleCatalog.model.slug}-${listing.year}-${listing.id}`;
+}
 
-export type VehicleListingInput = {
-  vehicleCatalogId: number;
-  conditionId: number;
-  statusId: number;
-  colorId: number;
-  year: number;
-  mileageKm?: number | null;
-  warrantyValue?: number | null;
-  warrantyUnit?: WarrantyUnit | null;
-  isActive?: boolean;
-  price: number;
-  stockQuantity?: number;
-  // Same "delta against the live DB value, not an absolute overwrite"
-  // reasoning as ProductVariantInput's identical field — see
-  // VehicleListingFormModal.tsx's handleSubmit.
-  previousStockQuantity?: number;
-  descriptionKa?: string | null;
-  descriptionEn?: string | null;
-  descriptionRu?: string | null;
-};
+// The inverse of buildVehicleListingSlug — reads the trailing numeric id back
+// out. Also accepts a bare numeric string with no slug prefix at all, so
+// every link ever shared/bookmarked before this change keeps working
+// unchanged.
+export function parseVehicleListingIdFromSlug(itemSlug: string): number | null {
+  const match = /(\d+)$/.exec(itemSlug);
+  if (!match) return null;
+  const id = Number(match[1]);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+export type VehicleListingInput = Schemas["CreateVehicleListingInput"];
 
 export type VehicleSpecFilters = {
   lookupFilters?: { field: VehicleSpecField; ids: number[] }[];
@@ -82,6 +61,9 @@ export type VehicleListingFilters = {
   // the vehicle-root category page's own ?eventId= URL param (see the
   // homepage hero-slider's event-scoped DISCOUNT slides).
   bulkDiscountEventId?: number;
+  // Homepage "New Arrivals" mixed slider — a plain admin-curated flag, not
+  // computed from any discount/popularity data.
+  featured?: boolean;
   limit?: number;
   specFilters?: VehicleSpecFilters;
   adminFilters?: AdminFilterEntry[];
@@ -123,6 +105,7 @@ async function fetchVehicleListingsList(
       yearMax: filters.yearMax,
       onSale: filters.onSale || undefined,
       bulkDiscountEventId: filters.bulkDiscountEventId,
+      featured: filters.featured || undefined,
       limit: filters.limit,
       specFilters:
         filters.specFilters && !isEmptySpecFilters(filters.specFilters)
@@ -172,29 +155,13 @@ export async function getVehicleListing(id: number): Promise<VehicleListing> {
   return data.item;
 }
 
-export type VehicleListingSaleOrder = {
-  orderId: number;
-  orderCode: string;
-  createdAt: string;
-  buyerName: string;
-  buyerEmail: string;
-  quantity: number;
-  lineTotal: number;
-  status: string;
-};
+export type VehicleListingSaleOrder = VehicleListingSalesSummary["recentOrders"][number];
 
-export type VehicleListingSalesSummary = {
-  totalQuantitySold: number;
-  totalRevenue: number;
-  orderCount: number;
-  recentOrders: VehicleListingSaleOrder[];
-};
+export type VehicleListingSalesSummary = VehicleListingDetailAdmin["sales"];
 
 // Admin-only detail — same as VehicleListing plus sales history, returned
 // by the admin "full view" endpoint (see getVehicleListingDetailAdmin).
-export type VehicleListingDetailAdmin = VehicleListing & {
-  sales: VehicleListingSalesSummary;
-};
+export type VehicleListingDetailAdmin = Schemas["VehicleListingDetailAdmin"];
 
 export async function getVehicleListingDetailAdmin(id: number): Promise<VehicleListingDetailAdmin> {
   const { data } = await apiClient.get<{ item: VehicleListingDetailAdmin }>(
@@ -223,4 +190,13 @@ export async function updateVehicleListing(
 
 export async function deleteVehicleListing(id: number): Promise<void> {
   await apiClient.delete(`/vehicle-listings/${id}`);
+}
+
+export type UsdToGelExchangeRate = ApiResponse<"/vehicle-listings/exchange-rate/usd-gel", "get">;
+
+// Public — backs the storefront's GEL⇄USD toggle (see useUsdToGelRate.ts)
+// and the admin listing form's "today's rate" hint.
+export async function getUsdToGelRate(): Promise<UsdToGelExchangeRate> {
+  const { data } = await apiClient.get<UsdToGelExchangeRate>("/vehicle-listings/exchange-rate/usd-gel");
+  return data;
 }

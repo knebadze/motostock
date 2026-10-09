@@ -1,9 +1,13 @@
 type QuantityStepperSize = "sm" | "md" | "lg";
 
+// One notch up from the original 28/32/36px — none of those cleared the
+// ~40-44px comfortable mobile tap-target guideline (the WCAG 2.2 AA minimum
+// is a lower 24px, which they did clear, but +/- on a purchase-flow control
+// deserves the more comfortable size, not just the bare minimum).
 const SIZE_CLASSES: Record<QuantityStepperSize, { container: string; button: string; count: string }> = {
-  sm: { container: "gap-1", button: "size-7", count: "w-5 text-xs" },
-  md: { container: "gap-1.5", button: "size-8", count: "w-6 text-sm" },
-  lg: { container: "gap-1.5", button: "size-9", count: "w-6 text-sm" },
+  sm: { container: "gap-1", button: "size-8", count: "w-5 text-xs" },
+  md: { container: "gap-1.5", button: "size-9", count: "w-6 text-sm" },
+  lg: { container: "gap-1.5", button: "size-10", count: "w-6 text-sm" },
 };
 
 // Shared "−, quantity, +" control for adjusting a cart line item's quantity
@@ -48,7 +52,7 @@ export function QuantityStepper({
         onClick={onDecrease}
         disabled={decrementDisabled}
         aria-label={decreaseLabel}
-        className={`flex items-center justify-center text-foreground transition-colors hover:text-primary disabled:opacity-40 ${sizeClasses.button}`}
+        className={`flex items-center justify-center text-foreground transition-colors hover:text-primary-text disabled:opacity-40 ${sizeClasses.button}`}
       >
         −
       </button>
@@ -58,7 +62,7 @@ export function QuantityStepper({
         onClick={onIncrease}
         disabled={incrementDisabled}
         aria-label={increaseLabel}
-        className={`flex items-center justify-center text-foreground transition-colors hover:text-primary disabled:opacity-40 ${sizeClasses.button}`}
+        className={`flex items-center justify-center text-foreground transition-colors hover:text-primary-text disabled:opacity-40 ${sizeClasses.button}`}
       >
         +
       </button>

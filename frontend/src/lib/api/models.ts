@@ -1,24 +1,13 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
+import type { components } from "./generated/schema";
 
-export type Model = {
-  id: number;
-  brandId: number;
-  brand: { id: number; name: string; slug: string };
-  categoryId: number;
-  category: { id: number; name: LocalizedString; slug: string };
-  name: string;
-  slug: string;
-  createdAt: string;
-  updatedAt: string;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
-export type ModelInput = {
-  brandId: number;
-  categoryId: number;
-  name: string;
-  slug: string;
-};
+export type Model = Schemas["Model"];
+
+export type ModelInput = Schemas["CreateModelInput"];
 
 export async function listModels(brandId?: number): Promise<Model[]> {
   const { data } = await apiClient.get<{ models: Model[] }>("/models", {

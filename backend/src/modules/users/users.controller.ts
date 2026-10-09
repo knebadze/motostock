@@ -3,11 +3,19 @@ import { ApiError } from "../../lib/ApiError.js";
 import { setAuthCookie } from "../../lib/jwt.js";
 import {
   changePassword as changePasswordService,
+  createWalkInUser,
   getUserById,
   getUserDetail,
   listUsers,
+  mergeUserInto,
+  updateUserRole,
 } from "./users.service.js";
-import type { ChangePasswordInput, ListUsersQuery } from "./users.schema.js";
+import type {
+  ChangePasswordInput,
+  CreateWalkInUserInput,
+  ListUsersQuery,
+  UpdateUserRoleInput,
+} from "./users.schema.js";
 
 export async function me(req: Request, res: Response) {
   if (!req.user) {
@@ -22,12 +30,12 @@ export async function list(
   req: Request<unknown, unknown, unknown, ListUsersQuery>,
   res: Response,
 ) {
-  const result = await listUsers(req.query);
+  const result = await listUsers(req.query, req.user?.role);
   res.status(200).json(result);
 }
 
 export async function getOne(req: Request, res: Response) {
-  const user = await getUserDetail(Number(req.params.id));
+  const user = await getUserDetail(Number(req.params.id), req.user?.role);
   res.status(200).json({ user });
 }
 
@@ -51,4 +59,29 @@ export async function changePassword(
   );
   await setAuthCookie(res, token);
   res.status(204).send();
+}
+
+export async function createWalkIn(
+  req: Request<unknown, unknown, CreateWalkInUserInput>,
+  res: Response,
+) {
+  const user = await createWalkInUser(req.body);
+  res.status(201).json({ user });
+}
+
+export async function merge(req: Request<{ id: string; targetUserId: string }>, res: Response) {
+  const user = await mergeUserInto(Number(req.params.id), Number(req.params.targetUserId), req.user?.role);
+  res.status(200).json({ user });
+}
+
+export async function updateRole(
+  req: Request<{ id: string }, unknown, UpdateUserRoleInput>,
+  res: Response,
+) {
+  if (!req.user) {
+    throw new ApiError(401, "Not authenticated", "NOT_AUTHENTICATED");
+  }
+
+  const user = await updateUserRole(Number(req.params.id), req.user.sub, req.body);
+  res.status(200).json({ user });
 }

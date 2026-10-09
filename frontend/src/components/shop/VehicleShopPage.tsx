@@ -3,18 +3,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { usePathname, useRouter } from "@/i18n/navigation";
+import { replaceUrlQueryParams } from "@/lib/url-query-state";
 import type { SelectOption } from "@/components/shared/Select";
 import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import type { Category } from "@/lib/api/categories";
+import type { BrandModelRef } from "@/lib/api/vehicle-catalog";
 import {
   listVehicleListingsPage,
   type VehicleListing,
   type VehicleSpecFilters,
 } from "@/lib/api/vehicle-listings";
 import type { VehicleCategoryFilter, VehicleSpecField } from "@/lib/api/vehicle-category-filters";
+import { getWishlistStatus } from "@/lib/api/wishlist";
+import { getCompareStatus } from "@/lib/api/compare";
+import { shouldCheckWishlistStatus, shouldCheckCompareStatus } from "@/lib/api/collection-status-gate";
+import { useCollectionStatusMap, lookupVehicleListingStatus } from "@/components/shared/useCollectionStatusMap";
 import { ActiveFilterTags, type ActiveFilterTag } from "./ActiveFilterTags";
 import { VehicleFilters, type SpecFilterState } from "./VehicleFilters";
 import type { BrandOption } from "./ProductFilters";
@@ -44,7 +49,7 @@ export function VehicleShopPage({
   category,
   breadcrumbChain,
   subcategories,
-  listings,
+  brands,
   initialData,
   filters,
   initialSort = "newest",
@@ -53,9 +58,11 @@ export function VehicleShopPage({
   category: Category;
   breadcrumbChain: Category[];
   subcategories: Category[];
-  // Unbounded — feeds the brand-checkbox facet list, which needs to see
-  // every brand present in the category, not just the current page's.
-  listings: VehicleListing[];
+  // The distinct brands present among matching listings — feeds the
+  // brand-checkbox facet list. Computed server-side by a lean, dedicated
+  // query (getVehicleBrandFacetsFromServer) instead of shipping every
+  // matching listing's full card data just to re-derive this list here.
+  brands: BrandModelRef[];
   // Real server pagination — feeds the actual grid.
   initialData: PagedResult<VehicleListing>;
   filters: VehicleCategoryFilter[];
@@ -71,8 +78,6 @@ export function VehicleShopPage({
   const t = useTranslations("Shop");
   const tCommon = useTranslations("Common");
   const tErrors = useTranslations("ApiErrors");
-  const pathname = usePathname();
-  const router = useRouter();
 
   const [search, setSearch] = useState("");
   const [selectedBrandIds, setSelectedBrandIds] = useState<number[]>([]);
@@ -88,19 +93,29 @@ export function VehicleShopPage({
   const { data, totalPages, loading, load } = useServerPagination(initialData);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
+  // One batched wishlist/compare status check for the current page's grid
+  // instead of each VehicleListingCard's own WishlistButton/CompareButton
+  // checking individually — re-runs whenever the visible page/filter set
+  // changes (see useCollectionStatusMap's own comment).
+  const visibleListingIds = useMemo(() => data.items.map((listing) => listing.id), [data.items]);
+  const wishlistStatus = useCollectionStatusMap(
+    getWishlistStatus,
+    [],
+    visibleListingIds,
+    shouldCheckWishlistStatus,
+  );
+  const compareStatus = useCollectionStatusMap(getCompareStatus, [], visibleListingIds, shouldCheckCompareStatus);
+
   // Brand checkboxes always reflect the category's full, unfiltered catalog
   // (not the currently-filtered result) — otherwise checked brands would
   // visually disappear as other filters narrow the list.
-  const brandOptions: BrandOption[] = useMemo(() => {
-    const byId = new Map<number, BrandOption>();
-    for (const listing of listings) {
-      const brand = listing.vehicleCatalog.brand;
-      if (!byId.has(brand.id)) {
-        byId.set(brand.id, { id: brand.id, label: brand.name });
-      }
-    }
-    return Array.from(byId.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [listings]);
+  const brandOptions: BrandOption[] = useMemo(
+    () =>
+      brands
+        .map((brand) => ({ id: brand.id, label: brand.name }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [brands],
+  );
 
   function updateSpecState(field: VehicleSpecField, patch: Partial<SpecFilterState>) {
     setSpecFilterState((current) => ({
@@ -199,11 +214,12 @@ export function VehicleShopPage({
   // not synced — faceted-filter combinations aren't meant to be individually
   // indexed).
   useEffect(() => {
-    const query: Record<string, string> = {};
-    if (data.page > 1) query.page = String(data.page);
-    if (sortBy !== "newest") query.sort = sortBy;
-    if (initialEventId != null) query.eventId = String(initialEventId);
-    router.replace({ pathname, query }, { scroll: false });
+    // history.replaceState, not router.replace — see url-query-state.ts.
+    replaceUrlQueryParams({
+      page: data.page > 1 ? String(data.page) : null,
+      sort: sortBy !== "newest" ? sortBy : null,
+      eventId: initialEventId != null ? String(initialEventId) : null,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.page, sortBy]);
 
@@ -404,7 +420,12 @@ export function VehicleShopPage({
                 getKey={(listing) => listing.id}
                 emptyMessage={t("emptyState")}
                 renderItem={(listing, layout) => (
-                  <VehicleListingCard listing={listing} layout={layout} />
+                  <VehicleListingCard
+                    listing={listing}
+                    layout={layout}
+                    wishlistItemId={lookupVehicleListingStatus(wishlistStatus, listing.id)}
+                    compareItemId={lookupVehicleListingStatus(compareStatus, listing.id)}
+                  />
                 )}
                 loading={loading}
               />

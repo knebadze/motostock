@@ -1,5 +1,5 @@
 import { prisma } from "../../config/prisma.js";
-import { vehicleListingInclude } from "../vehicle-listing/vehicle-listing.repository.js";
+import { adminListInclude as vehicleListingCartInclude } from "../vehicle-listing/vehicle-listing.repository.js";
 import { getCartMaxQuantity } from "../settings/settings.service.js";
 import type { CartItemType } from "../../generated/prisma/index.js";
 
@@ -33,7 +33,7 @@ const productVariantInclude = {
 // same shape under User.cartItems without duplicating it.
 export const cartItemInclude = {
   productVariant: { include: productVariantInclude },
-  vehicleListing: { include: vehicleListingInclude },
+  vehicleListing: { include: vehicleListingCartInclude },
 } as const;
 
 export const cartRepository = {

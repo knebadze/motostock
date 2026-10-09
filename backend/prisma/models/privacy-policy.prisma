@@ -1,0 +1,16 @@
+// Singleton row (one per install, like CompanyInfo/TermsAndConditions) — the
+// admin-editable "Privacy Policy" page content, localized. Raw HTML from the
+// admin's rich-text editor, rendered as-is on the public page.
+model PrivacyPolicy {
+  id        Int      @id @default(autoincrement())
+  // Fixed-value unique column enforcing "at most one row" at the DB level —
+  // same singleton guard as CompanyInfo.singleton/TermsAndConditions.singleton.
+  singleton Boolean  @unique @default(true)
+  contentKa String   @default("")
+  contentEn String   @default("")
+  contentRu String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("dbo")
+}

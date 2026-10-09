@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
+import { adminOrderResponseSchema } from "../orders/orders.schema.js";
 
 export const finaSyncRunResponseSchema = registry.register(
   "FinaSyncRun",
@@ -32,6 +33,18 @@ export const orderStockSyncResultSchema = registry.register(
   }),
 );
 export type OrderStockSyncResult = z.infer<typeof orderStockSyncResultSchema>;
+
+// POST /fina-sync/orders/{orderId} only — fina-sync.controller.ts's syncOrder
+// adds the order itself when every linked item was confirmed and a still-
+// PENDING order got auto-confirmed (null otherwise), so the admin modal can
+// swap in the updated order. Was undocumented until the frontend's types
+// started being generated from these schemas.
+export const orderStockSyncWithOrderResultSchema = registry.register(
+  "OrderStockSyncWithOrderResult",
+  orderStockSyncResultSchema.extend({
+    order: adminOrderResponseSchema.nullable(),
+  }),
+);
 
 export const orderIdParamSchema = z.object({
   orderId: z.coerce.number().int().positive(),

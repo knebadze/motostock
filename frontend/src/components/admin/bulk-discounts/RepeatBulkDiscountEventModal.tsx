@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
+import { DateInput } from "@/components/shared/DateInput";
 import { FormActions } from "@/components/shared/FormActions";
 import { repeatBulkDiscountEvent, type BulkDiscountEvent } from "@/lib/api/bulk-discount-events";
 import { ApiRequestError } from "@/lib/api/client";
@@ -59,21 +60,11 @@ export function RepeatBulkDiscountEventModal({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium">დაწყება *</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(inputEvent) => setStartDate(inputEvent.target.value)}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-              />
+              <DateInput value={startDate} onChange={setStartDate} />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium">დასრულება *</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(inputEvent) => setEndDate(inputEvent.target.value)}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-              />
+              <DateInput value={endDate} onChange={setEndDate} />
             </div>
           </div>
 

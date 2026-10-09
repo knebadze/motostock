@@ -1,0 +1,19 @@
+// Admin-managed job postings — public-facing "vacancies" list + per-vacancy
+// detail page (see vacancies.service.ts). No sortOrder — unlike FAQ/team
+// members, listings are naturally ordered newest-first (createdAt desc) on
+// both the admin list and the public page, so no manual drag-reorder exists.
+model Vacancy {
+  id            Int      @id @default(autoincrement())
+  titleKa       String
+  titleEn       String
+  titleRu       String
+  descriptionKa String
+  descriptionEn String
+  descriptionRu String
+  slug          String   @unique
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@schema("dbo")
+}

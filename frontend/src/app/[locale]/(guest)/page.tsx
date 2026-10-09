@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -5,22 +6,13 @@ import { SELECTED_VEHICLE_COOKIE } from "@/lib/vehicle-selection";
 import {
   getCategoriesFromServer,
   getMyGarageFromServer,
-  getOnSaleProductsFromServer,
-  getOnSaleVehicleListingsFromServer,
-  getPopularForVehicleFromServer,
-  getPopularProductsFromServer,
-  getPopularVehicleListingsFromServer,
   getPublicHeroSlidesFromServer,
   getPublicHomepageSectionsFromServer,
-  getRecentlyViewedFromServer,
-  getRecommendedForMeFromServer,
-  getVehicleCatalogFromServer,
+  getVehicleSearchOptionsFromServer,
 } from "@/lib/api/server";
 import { HeroSlider } from "@/components/home/HeroSlider";
-import { ProductsCarouselSection } from "@/components/home/ProductsCarouselSection";
-import { VehicleListingsCarouselSection } from "@/components/home/VehicleListingsCarouselSection";
-import { MixedCarouselSection } from "@/components/home/MixedCarouselSection";
-import { CategoriesSection } from "@/components/home/CategoriesSection";
+import { HomepageSectionContent } from "@/components/home/HomepageSectionsContent";
+import { HomeSectionsSkeleton } from "@/components/home/HomeSectionsSkeleton";
 import { HomeInfoCardsSection } from "@/components/home/HomeInfoCardsSection";
 
 type Locale = "ka" | "en" | "ru";
@@ -34,13 +26,18 @@ export default async function HomePage({
   const localeKey = locale as Locale;
   const t = await getTranslations({ locale, namespace: "Home" });
 
-  const slides = await getPublicHeroSlidesFromServer();
+  // Neither of these depends on the other's result — fetched in parallel
+  // instead of two sequential round-trips before the hero/LCP content can
+  // even start rendering.
+  const [slides, sections] = await Promise.all([
+    getPublicHeroSlidesFromServer(),
+    getPublicHomepageSectionsFromServer(),
+  ]);
   const hasVehicleSearchSlide = slides.some((slide) => slide.type === "VEHICLE_SEARCH");
   const [vehicleCatalog, garageVehicles] = hasVehicleSearchSlide
-    ? await Promise.all([getVehicleCatalogFromServer(), getMyGarageFromServer()])
+    ? await Promise.all([getVehicleSearchOptionsFromServer(), getMyGarageFromServer()])
     : [[], []];
 
-  const sections = await getPublicHomepageSectionsFromServer();
   const activeSections = [...sections]
     .filter((section) => section.isActive)
     .sort((a, b) => a.sortOrder - b.sortOrder);
@@ -52,7 +49,9 @@ export default async function HomePage({
 
   // Only fetched when actually needed — most homepage loads won't have a
   // CATEGORY_FILTER hero slide or an active CATEGORIES section configured,
-  // so this stays a no-op by default.
+  // so this stays a no-op by default. Kept here (not deferred into the
+  // Suspense boundary below) since a CATEGORY_FILTER slide needs it for the
+  // above-the-fold hero itself.
   const needsCategories =
     slides.some((slide) => slide.type === "CATEGORY_FILTER") ||
     activeSections.some((section) => section.type === "CATEGORIES");
@@ -61,128 +60,24 @@ export default async function HomePage({
     .filter((category) => category.parentId === null)
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const sectionContent = await Promise.all(
-    activeSections.map(async (section) => {
-      const title = section.title[localeKey];
-      switch (section.type) {
-        case "DISCOUNTED_PRODUCTS":
-          return {
-            key: section.id,
-            node: (
-              <ProductsCarouselSection
-                title={title}
-                products={await getOnSaleProductsFromServer(section.itemCount)}
-              />
-            ),
-          };
-        case "POPULAR_PRODUCTS":
-          return {
-            key: section.id,
-            node: (
-              <ProductsCarouselSection
-                title={title}
-                products={await getPopularProductsFromServer(section.itemCount)}
-              />
-            ),
-          };
-        case "DISCOUNTED_VEHICLES":
-          return {
-            key: section.id,
-            node: (
-              <VehicleListingsCarouselSection
-                title={title}
-                listings={await getOnSaleVehicleListingsFromServer(section.itemCount)}
-              />
-            ),
-          };
-        case "POPULAR_VEHICLES":
-          return {
-            key: section.id,
-            node: (
-              <VehicleListingsCarouselSection
-                title={title}
-                listings={await getPopularVehicleListingsFromServer(section.itemCount)}
-              />
-            ),
-          };
-        case "DISCOUNTED_MIXED": {
-          const [products, listings] = await Promise.all([
-            getOnSaleProductsFromServer(section.productItemCount ?? 5),
-            getOnSaleVehicleListingsFromServer(section.vehicleItemCount ?? 5),
-          ]);
-          return {
-            key: section.id,
-            node: <MixedCarouselSection title={title} products={products} listings={listings} />,
-          };
-        }
-        case "POPULAR_MIXED": {
-          const [products, listings] = await Promise.all([
-            getPopularProductsFromServer(section.productItemCount ?? 5),
-            getPopularVehicleListingsFromServer(section.vehicleItemCount ?? 5),
-          ]);
-          return {
-            key: section.id,
-            node: <MixedCarouselSection title={title} products={products} listings={listings} />,
-          };
-        }
-        case "CATEGORIES":
-          return {
-            key: section.id,
-            node: (
-              <CategoriesSection
-                title={title}
-                categories={topLevelCategories.slice(0, section.itemCount)}
-                locale={localeKey}
-              />
-            ),
-          };
-        // Per-visitor, not global like every case above — renders nothing
-        // (via ProductsCarouselSection's own empty-state) rather than
-        // falling back to a generic list under a personalized heading when
-        // there's no vehicle selected/no signal for this particular visitor.
-        case "POPULAR_FOR_VEHICLE":
-          return {
-            key: section.id,
-            node: selectedVehicleCatalogId ? (
-              <ProductsCarouselSection
-                title={title}
-                products={await getPopularForVehicleFromServer(selectedVehicleCatalogId, section.itemCount)}
-              />
-            ) : null,
-          };
-        case "RECOMMENDED_FOR_YOU":
-          return {
-            key: section.id,
-            node: (
-              <ProductsCarouselSection
-                title={title}
-                products={await getRecommendedForMeFromServer(section.itemCount)}
-              />
-            ),
-          };
-        case "RECENTLY_VIEWED":
-          return {
-            key: section.id,
-            node: (
-              <ProductsCarouselSection
-                title={title}
-                products={await getRecentlyViewedFromServer(section.itemCount)}
-              />
-            ),
-          };
-      }
-    }),
-  );
-
   return (
     <>
       {slides.length > 0 ? (
-        <HeroSlider
-          slides={slides}
-          vehicleCatalog={vehicleCatalog}
-          garageVehicles={garageVehicles}
-          categories={allCategories}
-        />
+        <>
+          {/* HeroSlider's own per-slide heading is an <h2> now, not <h1> —
+              a POSTER-type slide intentionally renders no heading of its own
+              at all (see HeroSlider.tsx), which used to leave the whole
+              homepage with zero <h1> whenever an admin picked one as the
+              first/only slide. This one is always present regardless of
+              which slide is showing or what type it is. */}
+          <h1 className="sr-only">{t("seoHeading")}</h1>
+          <HeroSlider
+            slides={slides}
+            vehicleCatalog={vehicleCatalog}
+            garageVehicles={garageVehicles}
+            categories={allCategories}
+          />
+        </>
       ) : (
         // Fallback for before any slide is configured (or all disabled) — the
         // original static hero, unchanged, so the homepage is never empty.
@@ -190,7 +85,7 @@ export default async function HomePage({
           <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-24 sm:px-6 lg:px-8">
             <h1 className="max-w-2xl text-4xl font-extrabold tracking-tight sm:text-5xl">
               {t.rich("heroTitle", {
-                hl: (chunks) => <span className="text-primary">{chunks}</span>,
+                hl: (chunks) => <span className="text-primary-text">{chunks}</span>,
               })}
             </h1>
             <p className="max-w-xl text-lg text-muted-foreground">
@@ -206,8 +101,27 @@ export default async function HomePage({
         </section>
       )}
 
-      {sectionContent.map(({ key, node }) => (
-        <div key={key}>{node}</div>
+      {/* Below-the-fold — one or two backend calls per active section. Each
+          section streams in behind its own boundary, neither blocking the
+          hero/LCP content above nor waiting on the other sections (see
+          HomepageSectionsContent.tsx). */}
+      {activeSections.map((section) => (
+        <div key={section.id}>
+          <Suspense
+            fallback={
+              <HomeSectionsSkeleton
+                count={section.type === "POPULAR_FOR_VEHICLE" && !selectedVehicleCatalogId ? 0 : 1}
+              />
+            }
+          >
+            <HomepageSectionContent
+              section={section}
+              topLevelCategories={topLevelCategories}
+              selectedVehicleCatalogId={selectedVehicleCatalogId}
+              localeKey={localeKey}
+            />
+          </Suspense>
+        </div>
       ))}
 
       <HomeInfoCardsSection />

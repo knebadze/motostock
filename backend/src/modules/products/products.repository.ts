@@ -1,5 +1,5 @@
 import { prisma } from "../../config/prisma.js";
-import type { Prisma } from "../../generated/prisma/index.js";
+import { Prisma } from "../../generated/prisma/index.js";
 import { applyProductAdminFilters } from "../filters/product/product-admin-filter-registry.js";
 import type { FilterEntry } from "../filters/filter-request.schema.js";
 import { getSalesSummaryLimit, getSearchResultCap } from "../settings/settings.service.js";
@@ -93,6 +93,36 @@ export const productSummaryInclude = {
   },
 } as const;
 
+// The "product card" projection (see products.schema.ts's
+// productCardResponseSchema) — an explicit scalar `select` rather than
+// `include`, because `include` also pulls every scalar column, i.e. the three
+// HTML descriptions and six SEO meta strings that no card ever shows.
+// Variants are the same active-only, discount-ordered selection as
+// productSummaryInclude (needed for the price/stock/discount badge).
+const productCardScalarSelect = {
+  id: true,
+  // Not in the card response — recommendations.service.ts ranks card rows
+  // by category/brand affinity.
+  categoryId: true,
+  productBrandId: true,
+  nameKa: true,
+  nameEn: true,
+  nameRu: true,
+  slug: true,
+  imageUrl: true,
+  viewCount: true,
+  isFeaturedOnHomepage: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+export const productCardSelect = {
+  ...productCardScalarSelect,
+  category: productSummaryInclude.category,
+  productBrand: productSummaryInclude.productBrand,
+  variants: productSummaryInclude.variants,
+} as const;
+
 // Unfiltered counterpart to productSummaryInclude above — every variant,
 // active or not, for the handful of admin-only call sites (findById's
 // create/update/updateImage response, so an admin who just deactivated a
@@ -124,7 +154,8 @@ const adminProductSummaryInclude = {
 // brand/price-range/stock/variant-count/view-count, never attributeValues
 // or a discount badge (the admin detail modal fetches full per-product data
 // separately when actually needed).
-const adminListInclude = {
+const adminListSelect = {
+  ...productCardScalarSelect,
   category: { select: namedRefSelect },
   productBrand: { select: brandModelRefSelect },
   variants: { select: { price: true, stockQuantity: true } },
@@ -168,7 +199,7 @@ const detailIncludeBase = {
   // the public detail endpoint can surface them in one query, same as
   // fitments/fitmentRules above.
   buyTogether: {
-    include: { relatedProduct: { include: productSummaryInclude } },
+    include: { relatedProduct: { select: productCardSelect } },
     orderBy: { createdAt: "asc" },
   },
 } as const;
@@ -197,8 +228,13 @@ type ProductWriteData = {
   descriptionEn?: string | null;
   descriptionRu?: string | null;
   slug: string;
-  metaTitle?: string | null;
-  metaDescription?: string | null;
+  metaTitleKa?: string | null;
+  metaTitleEn?: string | null;
+  metaTitleRu?: string | null;
+  metaDescriptionKa?: string | null;
+  metaDescriptionEn?: string | null;
+  metaDescriptionRu?: string | null;
+  isFeaturedOnHomepage?: boolean;
 };
 
 type AttributeValueWriteData = {
@@ -232,6 +268,7 @@ async function buildWhere(filters: {
   // HeroSlider.tsx's buildDiscountLink). Implies the same active-window
   // check onSale does; there's no separate "onSale=true" requirement.
   bulkDiscountEventId?: number;
+  featured?: boolean;
   attributeFilters?: AttributeFilterInput;
   adminFilters?: FilterEntry[];
   // True only from the customer-facing findMany/count below. priceMin/
@@ -315,6 +352,10 @@ async function buildWhere(filters: {
     });
   }
 
+  if (filters.featured) {
+    and.push({ isFeaturedOnHomepage: true });
+  }
+
   for (const facet of filters.attributeFilters?.selectFilters ?? []) {
     and.push({
       attributeValues: { some: { attributeId: facet.attributeId, optionId: { in: facet.optionIds } } },
@@ -356,6 +397,7 @@ export const productsRepository = {
     priceMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
     attributeFilters?: AttributeFilterInput;
     adminFilters?: FilterEntry[];
     limit?: number;
@@ -385,10 +427,100 @@ export const productsRepository = {
           { variants: { some: { isActive: true } } },
         ],
       },
-      include: productSummaryInclude,
+      select: productCardSelect,
       orderBy: { createdAt: "desc" },
       skip: suppressPagination ? undefined : filters.skip,
       take: suppressPagination ? undefined : filters.limit,
+    });
+  },
+
+  // Ids only, same where-shape as findMany/count — step one of the
+  // price-sorted storefront page (see findIdsOrderedByMinPrice and
+  // products.service.ts's listProducts): cheap enough to fetch for the whole
+  // filtered set, unlike full card rows.
+  async findIds(filters: {
+    categoryIds?: number[];
+    vehicleCompatibilityWhere?: Prisma.ProductWhereInput;
+    searchIds?: number[];
+    brandIds?: number[];
+    priceMin?: number;
+    priceMax?: number;
+    onSale?: boolean;
+    bulkDiscountEventId?: number;
+    featured?: boolean;
+    attributeFilters?: AttributeFilterInput;
+  }): Promise<number[]> {
+    const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
+    const rows = await prisma.product.findMany({
+      where: {
+        AND: [
+          ...(structuredWhere ? [structuredWhere] : []),
+          { variants: { some: { isActive: true } } },
+        ],
+      },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  },
+
+  // One page of `ids`, ordered in Postgres by the price the product card
+  // actually shows (products.service.ts's toCardResponse + the frontend's
+  // ProductCard): the cheapest currently-active discount price among its
+  // active variants if any variant is on sale (findCardActiveDiscount), else
+  // the cheapest active variant's regular price (minPrice). A variant's
+  // active discount is the one whose [startDate, endDate] contains `now`,
+  // latest-starting first — same as lib/discounts.ts's findActiveDiscount
+  // over the startDate-desc rows productCardSelect loads. Ties go
+  // newest-first, then by id so pages never overlap. Prisma's relation
+  // orderBy only supports `_count`, hence the raw query; every id here
+  // already passed findIds' filters.
+  async findIdsOrderedByDisplayedPrice(
+    ids: number[],
+    direction: "asc" | "desc",
+    skip: number,
+    take: number,
+  ): Promise<number[]> {
+    if (ids.length === 0) return [];
+    const order = direction === "asc" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+    // DateTime columns are stored as UTC wall time in `timestamp` (no zone);
+    // casting the ISO string to ::timestamp compares in that same frame,
+    // independent of the DB session's timezone.
+    const now = new Date().toISOString();
+    const rows = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT p."id"
+      FROM "dbo"."Product" p
+      WHERE p."id" = ANY(${ids}::int[])
+      ORDER BY COALESCE(
+        (
+          SELECT MIN((
+            SELECT d."discountPrice"
+            FROM "dbo"."ProductVariantDiscount" d
+            WHERE d."productVariantId" = v."id"
+              AND d."startDate" <= ${now}::timestamp
+              AND ${now}::timestamp <= d."endDate"
+            ORDER BY d."startDate" DESC
+            LIMIT 1
+          ))
+          FROM "dbo"."ProductVariant" v
+          WHERE v."productId" = p."id" AND v."isActive" = true
+        ),
+        (
+          SELECT MIN(v."price")
+          FROM "dbo"."ProductVariant" v
+          WHERE v."productId" = p."id" AND v."isActive" = true
+        )
+      ) ${order} NULLS LAST, p."createdAt" DESC, p."id" DESC
+      OFFSET ${skip}
+      LIMIT ${take}
+    `;
+    return rows.map((row) => row.id);
+  },
+
+  findSitemapEntries() {
+    return prisma.product.findMany({
+      where: { variants: { some: { isActive: true } } },
+      select: { slug: true, updatedAt: true, category: { select: { slug: true } } },
+      orderBy: { id: "asc" },
     });
   },
 
@@ -405,6 +537,7 @@ export const productsRepository = {
     priceMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
     attributeFilters?: AttributeFilterInput;
   }) {
     const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
@@ -416,6 +549,60 @@ export const productsRepository = {
         ],
       },
     });
+  },
+
+  // Backs ShopAllProductsPage.tsx's category-checkbox facet list. Same
+  // where-shape as findMany above (so the facets shown always match the
+  // exact set findMany itself would return), but returns one row per
+  // DISTINCT category instead of one row per product, selecting only the
+  // ~5 scalar category ref fields — not full product rows with 3-locale
+  // descriptions/metaTitle/attributeValues, which findMany's unbounded call
+  // was being used for previously purely to let the client re-derive this
+  // same distinct-category list itself.
+  async findDistinctCategoryFacets(filters: {
+    categoryIds?: number[];
+    vehicleCompatibilityWhere?: Prisma.ProductWhereInput;
+    brandIds?: number[];
+    priceMin?: number;
+    priceMax?: number;
+    onSale?: boolean;
+    bulkDiscountEventId?: number;
+    featured?: boolean;
+  }) {
+    const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
+    const rows = await prisma.product.findMany({
+      where: {
+        AND: [
+          ...(structuredWhere ? [structuredWhere] : []),
+          { variants: { some: { isActive: true } } },
+        ],
+      },
+      select: { category: { select: namedRefSelect } },
+      distinct: ["categoryId"],
+    });
+    return rows.map((row) => row.category);
+  },
+
+  // Backs ProductShopPage.tsx's brand-checkbox facet list — same reasoning
+  // as findDistinctCategoryFacets above, applied to productBrand instead of
+  // category. Products with no brand (productBrandId null) are excluded —
+  // ProductShopPage's own facet derivation already skipped those too.
+  async findDistinctBrandFacets(filters: { categoryIds?: number[] }) {
+    const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
+    const rows = await prisma.product.findMany({
+      where: {
+        AND: [
+          ...(structuredWhere ? [structuredWhere] : []),
+          { variants: { some: { isActive: true } } },
+          { productBrandId: { not: null } },
+        ],
+      },
+      select: { productBrand: { select: brandModelRefSelect } },
+      distinct: ["productBrandId"],
+    });
+    return rows
+      .map((row) => row.productBrand)
+      .filter((brand): brand is NonNullable<typeof brand> => brand != null);
   },
 
   // See adminListInclude above for why this is a separate method rather
@@ -431,6 +618,7 @@ export const productsRepository = {
     priceMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
     attributeFilters?: AttributeFilterInput;
     adminFilters?: FilterEntry[];
     skip?: number;
@@ -438,7 +626,7 @@ export const productsRepository = {
   }) {
     return prisma.product.findMany({
       where: await buildWhere(filters),
-      include: adminListInclude,
+      select: adminListSelect,
       orderBy: { createdAt: "desc" },
       skip: filters.skip,
       take: filters.take,
@@ -454,6 +642,7 @@ export const productsRepository = {
     priceMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
     attributeFilters?: AttributeFilterInput;
     adminFilters?: FilterEntry[];
   }) {
@@ -512,7 +701,7 @@ export const productsRepository = {
   findByIds(ids: number[]) {
     return prisma.product.findMany({
       where: { id: { in: ids }, variants: { some: { isActive: true } } },
-      include: productSummaryInclude,
+      select: productCardSelect,
     });
   },
 
@@ -523,7 +712,7 @@ export const productsRepository = {
   findManyRaw(where: Prisma.ProductWhereInput, limit: number) {
     return prisma.product.findMany({
       where: { AND: [where, { variants: { some: { isActive: true } } }] },
-      include: productSummaryInclude,
+      select: productCardSelect,
       orderBy: { createdAt: "desc" },
       take: limit,
     });
@@ -590,54 +779,25 @@ export const productsRepository = {
   // ranked by how many distinct orders they co-occurred in. Cart/order rows
   // are unique per (owner, variant), so counting OrderItem rows here already
   // counts distinct orders — no separate dedup step needed.
+  // One self-join instead of loading every order id that contains the
+  // anchor product into JS and sending it back as a huge IN list (thousands
+  // for a best-seller). Counts DISTINCT orders per companion product (two
+  // variants of one product in an order count once) and, like
+  // findPopularProductIds, ignores cancelled orders.
   async findCoOccurringProductIds(productId: number, limit: number): Promise<number[]> {
-    const anchorVariants = await prisma.productVariant.findMany({
-      where: { productId },
-      select: { id: true },
-    });
-    const anchorVariantIds = anchorVariants.map((variant) => variant.id);
-    if (anchorVariantIds.length === 0) return [];
-
-    const anchorOrderRows = await prisma.orderItem.findMany({
-      where: { itemType: "PRODUCT_VARIANT", productVariantId: { in: anchorVariantIds } },
-      select: { orderId: true },
-      distinct: ["orderId"],
-    });
-    const orderIds = anchorOrderRows.map((row) => row.orderId);
-    if (orderIds.length === 0) return [];
-
-    const grouped = await prisma.orderItem.groupBy({
-      by: ["productVariantId"],
-      where: {
-        orderId: { in: orderIds },
-        itemType: "PRODUCT_VARIANT",
-        productVariantId: { notIn: anchorVariantIds },
-      },
-      _count: { orderId: true },
-      orderBy: { _count: { orderId: "desc" } },
-      take: candidatePoolSize(limit),
-    });
-    if (grouped.length === 0) return [];
-
-    const companionVariantIds = grouped.map((group) => group.productVariantId as number);
-    const companionVariants = await prisma.productVariant.findMany({
-      where: { id: { in: companionVariantIds } },
-      select: { id: true, productId: true },
-    });
-    const productIdByVariantId = new Map(companionVariants.map((v) => [v.id, v.productId]));
-
-    const countsByProductId = new Map<number, number>();
-    for (const group of grouped) {
-      const companionProductId = productIdByVariantId.get(group.productVariantId as number);
-      if (companionProductId == null) continue;
-      const count = group._count.orderId;
-      countsByProductId.set(companionProductId, (countsByProductId.get(companionProductId) ?? 0) + count);
-    }
-
-    return Array.from(countsByProductId.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, limit)
-      .map(([id]) => id);
+    const rows = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT cv."productId" AS id
+      FROM "dbo"."OrderItem" anchor
+      JOIN "dbo"."ProductVariant" av ON av.id = anchor."productVariantId" AND av."productId" = ${productId}
+      JOIN "dbo"."Order" o ON o.id = anchor."orderId"
+      JOIN "cla"."OrderStatus" st ON st.id = o."statusId" AND st.key <> 'CANCELLED'
+      JOIN "dbo"."OrderItem" companion ON companion."orderId" = anchor."orderId"
+      JOIN "dbo"."ProductVariant" cv ON cv.id = companion."productVariantId" AND cv."productId" <> ${productId}
+      GROUP BY cv."productId"
+      ORDER BY COUNT(DISTINCT anchor."orderId") DESC, cv."productId" ASC
+      LIMIT ${limit}
+    `;
+    return rows.map((row) => row.id);
   },
 
   // Shared by the (technically public but frontend-unused) GET /products/:id
@@ -647,6 +807,23 @@ export const productsRepository = {
   // rather than switching to productSummaryInclude.
   findById(id: number) {
     return prisma.product.findUnique({ where: { id }, include: adminProductSummaryInclude });
+  },
+
+  // Lean projection for promo-codes.service.ts's cart-item matching — only
+  // the 3 fields that logic actually reads (category/brand/attribute-option
+  // membership), batched across every product in the cart instead of a
+  // per-item findById pulling the full admin card include (variants,
+  // prices, discounts, category/brand names, ...).
+  findManyForPromoMatch(ids: number[]) {
+    return prisma.product.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        categoryId: true,
+        productBrandId: true,
+        attributeValues: { select: { attributeId: true, optionId: true } },
+      },
+    });
   },
 
   findBySlug(slug: string) {

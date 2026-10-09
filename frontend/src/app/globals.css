@@ -24,6 +24,16 @@
   --primary: #d97706;
   --primary-hover: #b45309;
   --primary-foreground: #0f172a;
+  /* Flat-text use only (prices, active tab/nav states, links) — --primary
+     clears the 3:1 UI-component threshold for button fills fine, but only
+     ~3.2:1 as flat text, short of the 4.5:1 AA minimum for normal text.
+     amber-800 gives a comfortable margin (6.5–7:1+) against every real
+     light-mode surface (background/card/muted) — same "not another
+     borderline value" reasoning as this file's own muted-foreground fix
+     above, and deliberately not a reuse of --primary-hover (only ~4.58:1
+     against --muted, itself close to the line, and semantically meant for
+     a hover state, not static text). */
+  --primary-text: #92400e;
 }
 
 .dark {
@@ -41,6 +51,9 @@
   --primary: #ffdc00;
   --primary-hover: #ffe666;
   --primary-foreground: #18181b;
+  /* No separate value needed — the brand yellow already has strong contrast
+     as flat text against dark surfaces. */
+  --primary-text: var(--primary);
 }
 
 @theme inline {
@@ -54,6 +67,7 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-text: var(--primary-text);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);

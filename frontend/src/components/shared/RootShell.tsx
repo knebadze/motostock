@@ -10,15 +10,21 @@ import "@/app/globals.css";
 // Georgian heading/body text was silently falling back to the OS default
 // font. Noto Sans Georgian covers both `georgian` and `latin` in one
 // family, so Georgian text and Latin/numbers stay visually consistent.
+//
+// No `weight` list: it's a variable font, so omitting it loads ONE file per
+// subset covering every weight 400–800 we use — listing five weights made
+// next/font fetch five static instances per subset instead.
 const notoSans = Noto_Sans_Georgian({
   variable: "--font-sans",
   subsets: ["latin", "georgian"],
-  weight: ["400", "500", "600", "700", "800"],
 });
 
+// Monospace is only used for VIN codes (account garage) and admin screens —
+// not preloaded on every storefront page; it loads when first used.
 const geistMono = Geist_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
+  preload: false,
 });
 
 export async function RootShell({

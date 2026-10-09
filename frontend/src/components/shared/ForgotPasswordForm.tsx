@@ -35,7 +35,7 @@ export function ForgotPasswordForm() {
         <p className="mt-4 text-sm text-muted-foreground">{t("forgotPasswordSent")}</p>
         <Link
           href="/login"
-          className="mt-6 inline-block font-semibold text-primary hover:underline"
+          className="mt-6 inline-block font-semibold text-primary-text hover:underline"
         >
           {t("backToLogin")}
         </Link>
@@ -76,7 +76,7 @@ export function ForgotPasswordForm() {
         </button>
 
         <p className="text-center text-sm text-muted-foreground">
-          <Link href="/login" className="font-semibold text-primary hover:underline">
+          <Link href="/login" className="font-semibold text-primary-text hover:underline">
             {t("backToLogin")}
           </Link>
         </p>

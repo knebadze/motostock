@@ -1,5 +1,10 @@
 import { prisma } from "../../config/prisma.js";
 import type { WhatsAppMessageSender } from "../../generated/prisma/index.js";
+import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
+
+const INBOUND_ID_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const INBOUND_ID_PRUNE_INTERVAL_MS = 60 * 60 * 1000;
+let lastInboundIdPruneAt = 0;
 
 export type ChatOwner = { userId: number } | { guestId: string };
 
@@ -10,6 +15,29 @@ function ownerWhere(owner: ChatOwner) {
 const messagesOrderedAsc = { messages: { orderBy: { createdAt: "asc" as const } } };
 
 export const whatsappChatRepository = {
+  // Records an inbound webhook message id; false when it was already
+  // recorded (Meta re-delivered it) — the caller then skips it. The primary
+  // key makes this atomic even for two concurrent deliveries of the same id.
+  // Old ids are pruned at most hourly, piggybacking on this call.
+  async recordInboundMessageId(messageId: string): Promise<boolean> {
+    const now = Date.now();
+    if (now - lastInboundIdPruneAt > INBOUND_ID_PRUNE_INTERVAL_MS) {
+      lastInboundIdPruneAt = now;
+      await prisma.whatsAppInboundMessage.deleteMany({
+        where: { receivedAt: { lt: new Date(now - INBOUND_ID_RETENTION_MS) } },
+      });
+    }
+    try {
+      await prisma.whatsAppInboundMessage.create({ data: { messageId } });
+      return true;
+    } catch (error) {
+      // A primary-key clash: Postgres names it "WhatsAppInboundMessage_pkey"
+      // (no field name in it), so match on the table part.
+      if (isUniqueConstraintViolation(error, "WhatsAppInboundMessage")) return false;
+      throw error;
+    }
+  },
+
   // One conversation thread per owner — the caller reuses this across
   // messages instead of starting a new session every time (see
   // whatsapp-chat.service.ts's postCustomerMessage).
@@ -31,22 +59,18 @@ export const whatsappChatRepository = {
   // owner shape because Prisma's generated `where` type only accepts the
   // field an @@unique actually names — same reasoning as
   // visitors.repository.ts's touchPresence.
+  // No `include` on purpose: an upsert with a nested read can't use
+  // Postgres's atomic INSERT … ON CONFLICT and degrades to read-then-insert,
+  // so two near-simultaneous first messages from one visitor could both
+  // insert and one fail on the unique owner (a 500). It also loaded the
+  // visitor's entire message history on every message they posted, which
+  // the caller never reads.
   findOrCreateSessionForOwner(owner: ChatOwner, customerPhone: string) {
     const create = { ...ownerWhere(owner), customerPhone };
     if ("userId" in owner) {
-      return prisma.whatsAppChatSession.upsert({
-        where: { userId: owner.userId },
-        create,
-        update: {},
-        include: messagesOrderedAsc,
-      });
+      return prisma.whatsAppChatSession.upsert({ where: { userId: owner.userId }, create, update: {} });
     }
-    return prisma.whatsAppChatSession.upsert({
-      where: { guestId: owner.guestId },
-      create,
-      update: {},
-      include: messagesOrderedAsc,
-    });
+    return prisma.whatsAppChatSession.upsert({ where: { guestId: owner.guestId }, create, update: {} });
   },
 
   updateCustomerPhone(sessionId: number, customerPhone: string) {

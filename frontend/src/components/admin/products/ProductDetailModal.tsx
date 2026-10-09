@@ -159,7 +159,7 @@ function DescriptionTab({ product }: { product: ProductDetailAdmin }) {
               {section.label}
             </p>
             <div
-              className="mt-1.5 text-sm [&_a]:text-primary [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+              className="mt-1.5 text-sm [&_a]:text-primary-text [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
               dangerouslySetInnerHTML={{ __html: sanitizeRichText(section.html) }}
             />
           </div>
@@ -205,7 +205,7 @@ function VariantsTab({ product }: { product: ProductDetailAdmin }) {
                     <span className="text-muted-foreground line-through">
                       {formatPrice(variant.price)}
                     </span>{" "}
-                    <span className="font-semibold text-primary">
+                    <span className="font-semibold text-primary-text">
                       {formatPrice(variant.activeDiscount.discountPrice)}
                     </span>
                   </>

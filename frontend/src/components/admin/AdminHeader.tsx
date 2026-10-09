@@ -1,6 +1,7 @@
 "use client";
 
 import { AdminThemeToggle } from "./AdminThemeToggle";
+import { AdminOrderNotifications } from "./AdminOrderNotifications";
 import { UserMenu } from "./UserMenu";
 import { Logo } from "@/components/shared/Logo";
 
@@ -21,7 +22,7 @@ export function AdminHeader({
           onClick={onMenuClick}
           aria-expanded={sidebarOpen}
           aria-label={sidebarOpen ? "მენიუს დახურვა" : "მენიუს გახსნა"}
-          className="relative z-60 flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary md:hidden"
+          className="relative z-60 flex size-9 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text md:hidden"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -44,6 +45,7 @@ export function AdminHeader({
       </div>
 
       <div className="flex items-center gap-2">
+        <AdminOrderNotifications />
         <AdminThemeToggle />
         <UserMenu userName={userName} />
       </div>

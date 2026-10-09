@@ -14,6 +14,12 @@ export const PROMO_STACKING_ENABLED_KEY = "promo_stacking_enabled";
 // admin explicitly sets a real rep number, rather than silently relaying
 // to nothing.
 export const WHATSAPP_SUPPORT_PHONE_NUMBER_KEY = "whatsapp_support_phone_number";
+// Same "dormant until configured" shape as the WhatsApp number above — the
+// new-order admin email (see orders.service.ts's placeOrder) is simply
+// skipped while this is unset, rather than falling back to some other
+// address (CompanyInfo.email is the public contact address shown on the
+// site, a different concern from where internal order alerts should go).
+export const ADMIN_NOTIFICATION_EMAIL_KEY = "admin_notification_email";
 
 export const GENERAL_SETTING_KEYS = [
   USE_CLOUD_STORAGE_KEY,
@@ -23,4 +29,5 @@ export const GENERAL_SETTING_KEYS = [
   GUEST_CART_ENABLED_KEY,
   PROMO_STACKING_ENABLED_KEY,
   WHATSAPP_SUPPORT_PHONE_NUMBER_KEY,
+  ADMIN_NOTIFICATION_EMAIL_KEY,
 ];

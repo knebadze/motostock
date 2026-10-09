@@ -8,7 +8,9 @@ import { analyticsOverviewResponseSchema, analyticsQuerySchema } from "./analyti
 
 export const analyticsRouter = Router();
 
-analyticsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
+// Read-only single endpoint — safe to grant OPERATOR too (see proxy.ts's
+// OPERATOR_ALLOWED_PATHS, which now includes analytics).
+analyticsRouter.use(requireAuth, requireRole(ROLES.ADMIN, ROLES.OPERATOR));
 
 analyticsRouter.get(
   "/overview",

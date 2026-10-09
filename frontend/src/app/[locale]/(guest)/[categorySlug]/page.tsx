@@ -3,21 +3,23 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
   getCategoriesFromServer,
+  getCategorySlugRedirectFromServer,
   getCategoryFiltersFromServer,
   getMyGarageFromServer,
-  getProductsFromServer,
+  getProductBrandFacetsFromServer,
   getProductsPageFromServer,
+  getVehicleBrandFacetsFromServer,
   getVehicleCategoryFiltersFromServer,
-  getVehicleListingsFromServer,
   getVehicleListingsPageFromServer,
 } from "@/lib/api/server";
 import { isVehicleCategory, getAncestorChain } from "@/lib/categories-tree";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
-import { resolveMediaUrl } from "@/lib/api/client";
 import { siteConfig } from "@/config/site";
 import { JsonLd } from "@/components/shared/JsonLd";
 import { ProductShopPage } from "@/components/shop/ProductShopPage";
 import { VehicleShopPage } from "@/components/shop/VehicleShopPage";
+import { buildSocialMetadata } from "@/lib/share-metadata";
+import { permanentRedirect } from "@/i18n/navigation";
 
 type Locale = "ka" | "en" | "ru";
 type PageParams = { locale: Locale; categorySlug: string };
@@ -64,7 +66,6 @@ export async function generateMetadata({
     siteName: siteConfig.name,
   });
   const pathname = `/${categorySlug}`;
-  const image = resolveMediaUrl(category.bannerImageUrl ?? category.imageUrl);
 
   return {
     title,
@@ -73,11 +74,13 @@ export async function generateMetadata({
       canonical: buildCanonicalUrl(pathname, locale, { page: pageNum }),
       languages: getAlternateLanguages(pathname),
     },
-    openGraph: {
+    ...(await buildSocialMetadata({
+      locale,
       title,
       description,
-      images: image ? [image] : undefined,
-    },
+      pathname,
+      imageSrc: category.bannerImageUrl ?? category.imageUrl,
+    })),
   };
 }
 
@@ -94,6 +97,15 @@ export default async function CategoryShopPage({
   const categories = await getCategoriesFromServer();
   const category = categories.find((item) => item.slug === categorySlug);
   if (!category) {
+    // A renamed category's old URL — 301 to its current slug, keeping the
+    // page/sort/event query.
+    const moved = await getCategorySlugRedirectFromServer(categorySlug);
+    if (moved) {
+      const query = Object.fromEntries(
+        Object.entries({ page, sort, eventId }).filter(([, value]) => value != null),
+      ) as Record<string, string>;
+      permanentRedirect({ href: { pathname: `/${moved.slug}`, query }, locale });
+    }
     notFound();
   }
 
@@ -136,11 +148,12 @@ export default async function CategoryShopPage({
 
   if (isVehicle) {
     const vehicleSortBy = parseVehicleSortBy(initialSort);
-    // `listings` (unbounded) feeds the brand-checkbox facet list, which needs
-    // to see every brand present in the category, not just the current
-    // page's — `listingsPage` (real server pagination) feeds the actual grid.
-    const [listings, listingsPage, vehicleFilters] = await Promise.all([
-      getVehicleListingsFromServer(category.id, parsedEventId),
+    // `brandFacets` — the distinct brands present in this category — feeds
+    // the brand-checkbox facet list, via a lean dedicated endpoint rather
+    // than an unbounded full-listing fetch just to re-derive it client-side.
+    // `listingsPage` (real server pagination) feeds the actual grid.
+    const [brandFacets, listingsPage, vehicleFilters] = await Promise.all([
+      getVehicleBrandFacetsFromServer(category.id, parsedEventId),
       getVehicleListingsPageFromServer(category.id, initialPage, vehicleSortBy, parsedEventId),
       getVehicleCategoryFiltersFromServer(category.id),
     ]);
@@ -151,7 +164,7 @@ export default async function CategoryShopPage({
           category={category}
           breadcrumbChain={ancestorChain}
           subcategories={subcategories}
-          listings={listings}
+          brands={brandFacets}
           initialData={listingsPage}
           filters={vehicleFilters}
           initialSort={vehicleSortBy}
@@ -164,11 +177,11 @@ export default async function CategoryShopPage({
   // The garage/session vehicle is deliberately never used to pre-filter this
   // list — it only takes effect once the shopper explicitly picks it from
   // the MY_VEHICLE filter on this page (see ProductFilters/ProductShopPage).
-  // `products` (unbounded) feeds the brand-checkbox facet list, same
-  // reasoning as `listings` above; `productsPage` feeds the actual grid.
+  // `brandFacets` feeds the brand-checkbox facet list, same reasoning as the
+  // vehicle branch above; `productsPage` feeds the actual grid.
   const productSortBy = parseProductSortBy(initialSort);
-  const [products, productsPage, filters, garageVehicles] = await Promise.all([
-    getProductsFromServer(category.id),
+  const [brandFacets, productsPage, filters, garageVehicles] = await Promise.all([
+    getProductBrandFacetsFromServer(category.id),
     getProductsPageFromServer(category.id, initialPage, productSortBy),
     getCategoryFiltersFromServer(category.id),
     getMyGarageFromServer(),
@@ -180,7 +193,7 @@ export default async function CategoryShopPage({
         category={category}
         breadcrumbChain={ancestorChain}
         subcategories={subcategories}
-        products={products}
+        brands={brandFacets}
         initialData={productsPage}
         filters={filters}
         garageVehicles={garageVehicles}

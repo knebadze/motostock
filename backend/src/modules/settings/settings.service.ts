@@ -13,6 +13,7 @@ import {
   GUEST_CART_ENABLED_KEY,
   PROMO_STACKING_ENABLED_KEY,
   WHATSAPP_SUPPORT_PHONE_NUMBER_KEY,
+  ADMIN_NOTIFICATION_EMAIL_KEY,
   DELIVERY_TBILISI_PRICE_KEY,
   DELIVERY_TBILISI_TIME_KEY,
   DELIVERY_REGIONS_PRICE_KEY,
@@ -29,6 +30,7 @@ import {
   FINA_WEB_CUSTOMER_ID_KEY,
   FINA_WEB_USER_ID_KEY,
   FINA_SYNC_INTERVAL_MINUTES_KEY,
+  FINA_ORDER_PUSH_RETRY_INTERVAL_MINUTES_KEY,
   FINA_SYNC_DEFAULTS,
   CART_MAX_QUANTITY_KEY,
   COMPARE_MAX_ITEMS_KEY,
@@ -63,6 +65,7 @@ import {
   IMAGE_DEFAULTS,
   HOMEPAGE_CACHE_TTL_MINUTES_KEY,
   CACHE_DEFAULTS,
+  SENTRY_ENABLED_KEY,
 } from "./constants/index.js";
 import type { Prisma } from "../../generated/prisma/index.js";
 import type { UpdateSettingsInput, VinDecodeProvider } from "./settings.schema.js";
@@ -129,6 +132,18 @@ export async function isGuestCartEnabled(): Promise<boolean> {
 // already has an active ProductVariantDiscount/VehicleListingDiscount, or
 // is skipped for that item so the two discounts never combine — see
 // orders.service.ts computeCheckoutTotals.
+// Monitoring tab — off by default (see monitoring.constants.ts).
+export async function isSentryEnabled(): Promise<boolean> {
+  return cached(SENTRY_ENABLED_KEY, async () => {
+    const setting = await settingsRepository.findByKey(SENTRY_ENABLED_KEY);
+    return setting?.value === "true";
+  });
+}
+
+export function getMonitoringStatus() {
+  return { sentryConfigured: Boolean(env.SENTRY_DSN) };
+}
+
 export async function isPromoStackingEnabled(): Promise<boolean> {
   return cached(PROMO_STACKING_ENABLED_KEY, async () => {
     const setting = await settingsRepository.findByKey(PROMO_STACKING_ENABLED_KEY);
@@ -395,6 +410,13 @@ export async function getFinaSyncIntervalMinutes(): Promise<number> {
   });
 }
 
+export async function getFinaOrderPushRetryIntervalMinutes(): Promise<number> {
+  return cached(FINA_ORDER_PUSH_RETRY_INTERVAL_MINUTES_KEY, async () => {
+    const setting = await settingsRepository.findByKey(FINA_ORDER_PUSH_RETRY_INTERVAL_MINUTES_KEY);
+    return Number(setting?.value ?? FINA_SYNC_DEFAULTS.orderPushRetryIntervalMinutes);
+  });
+}
+
 export async function getHomepageCacheTtlMinutes(): Promise<number> {
   return cached(HOMEPAGE_CACHE_TTL_MINUTES_KEY, async () => {
     const setting = await settingsRepository.findByKey(HOMEPAGE_CACHE_TTL_MINUTES_KEY);
@@ -430,6 +452,87 @@ export async function getWhatsAppSupportPhoneNumber(): Promise<string | null> {
   });
 }
 
+// Same "dormant until configured" spirit — orders.service.ts's placeOrder
+// simply skips sending the NEW_ORDER_ADMIN email while this is unset.
+export async function getAdminNotificationEmail(): Promise<string | null> {
+  return cached(ADMIN_NOTIFICATION_EMAIL_KEY, async () => {
+    const setting = await settingsRepository.findByKey(ADMIN_NOTIFICATION_EMAIL_KEY);
+    return setting?.value ?? null;
+  });
+}
+
+// Deliberately NOT part of GENERAL_SETTING_KEYS/ALL_SETTING_KEYS/the admin
+// Settings form — this value is never admin-typed, only ever written by
+// exchange-rate.service.ts's daily FETCH_USD_GEL_RATE job (see
+// scheduled-jobs.registry.ts). Same "dormant until set" contract as the
+// getters above: a fresh install with zero successful fetches yet returns
+// null, handled by vehicle-listing.service.ts/orders.service.ts as a
+// startup-only edge case.
+const USD_TO_GEL_RATE_KEY = "usd_to_gel_rate";
+const USD_TO_GEL_RATE_UPDATED_AT_KEY = "usd_to_gel_rate_updated_at";
+
+export async function getUsdToGelRate(): Promise<number | null> {
+  return cached(USD_TO_GEL_RATE_KEY, async () => {
+    const setting = await settingsRepository.findByKey(USD_TO_GEL_RATE_KEY);
+    return setting?.value ? Number(setting.value) : null;
+  });
+}
+
+// For the one call site that actually charges real money — orders.service.ts's
+// checkout-total computation — silently treating "no rate fetched yet" as
+// `?? 1` (1 USD = 1 GEL) would undercharge a USD-priced vehicle listing by
+// roughly the real exchange rate's full amount (~2.7x). That's only reachable
+// in the narrow window between a fresh install/Settings wipe and the first
+// successful FETCH_USD_GEL_RATE run (which also fires once on every process
+// boot, so in practice it closes within seconds) — but a checkout happening
+// in that exact window must fail loudly, not quietly mischarge. Display-only
+// call sites (cart preview, vehicle-listing filter/sort) are lower-stakes and
+// keep the softer `?? 1`/`?? undefined` fallback instead — see their own
+// comments.
+// A rate is refreshed daily (and at every boot); one this old means the
+// fetch has been failing for days — charging with it could be well off, so
+// checkout of USD-priced items stops instead (admin sees the failing job on
+// the "ავტომატური დავალებები" page).
+const USD_GEL_RATE_MAX_AGE_MS = 72 * 60 * 60 * 1000;
+
+export async function getUsdToGelRateOrThrow(): Promise<number> {
+  const [rate, updatedAt] = await Promise.all([getUsdToGelRate(), getUsdToGelRateUpdatedAt()]);
+  if (rate == null) {
+    throw new ApiError(
+      503,
+      "ვალუტის კურსი ჯერ არ არის მოტანილი — სცადეთ რამდენიმე წუთში ხელახლა",
+      "USD_GEL_RATE_UNAVAILABLE",
+    );
+  }
+  const updatedAtMs = updatedAt ? Date.parse(updatedAt) : NaN;
+  if (!Number.isFinite(updatedAtMs) || Date.now() - updatedAtMs > USD_GEL_RATE_MAX_AGE_MS) {
+    throw new ApiError(
+      503,
+      "ვალუტის კურსი მოძველებულია — დოლარში ფასიანი ნივთის შეძენა დროებით შეუძლებელია, სცადეთ მოგვიანებით",
+      "USD_GEL_RATE_UNAVAILABLE",
+    );
+  }
+  return rate;
+}
+
+export async function getUsdToGelRateUpdatedAt(): Promise<string | null> {
+  return cached(USD_TO_GEL_RATE_UPDATED_AT_KEY, async () => {
+    const setting = await settingsRepository.findByKey(USD_TO_GEL_RATE_UPDATED_AT_KEY);
+    return setting?.value ?? null;
+  });
+}
+
+// Called only by exchange-rate.service.ts after a successful NBG fetch — a
+// failed fetch simply never calls this, leaving yesterday's rate (and this
+// cache entry) in place, same "best-effort, no throw" contract as
+// processOrderFinaPush/syncVariantStockByIds.
+export async function setUsdToGelRate(rate: number, fetchedAt: Date): Promise<void> {
+  await settingsRepository.upsert(USD_TO_GEL_RATE_KEY, String(rate));
+  await settingsRepository.upsert(USD_TO_GEL_RATE_UPDATED_AT_KEY, fetchedAt.toISOString());
+  cache.del(cacheKey(USD_TO_GEL_RATE_KEY));
+  cache.del(cacheKey(USD_TO_GEL_RATE_UPDATED_AT_KEY));
+}
+
 export async function getSettings() {
   return {
     useCloudStorage: await isCloudStorageEnabled(),
@@ -439,6 +542,7 @@ export async function getSettings() {
     guestCartEnabled: await isGuestCartEnabled(),
     promoStackingEnabled: await isPromoStackingEnabled(),
     whatsappSupportPhoneNumber: await getWhatsAppSupportPhoneNumber(),
+    adminNotificationEmail: await getAdminNotificationEmail(),
     deliveryTbilisiPrice: await getDeliveryTbilisiPrice(),
     deliveryTbilisiTime: await getDeliveryTbilisiTime(),
     deliveryRegionsPrice: await getDeliveryRegionsPrice(),
@@ -478,7 +582,9 @@ export async function getSettings() {
     imageMaxDimensionPx: await getImageMaxDimensionPx(),
     imageWebpQuality: await getImageWebpQuality(),
     finaSyncIntervalMinutes: await getFinaSyncIntervalMinutes(),
+    finaOrderPushRetryIntervalMinutes: await getFinaOrderPushRetryIntervalMinutes(),
     homepageCacheTtlMinutes: await getHomepageCacheTtlMinutes(),
+    sentryEnabled: await isSentryEnabled(),
   };
 }
 
@@ -522,6 +628,10 @@ export async function updateSettings(input: UpdateSettingsInput) {
     );
   }
 
+  if (input.sentryEnabled && !env.SENTRY_DSN) {
+    throw new ApiError(400, "Sentry-ის ჩართვამდე დააყენეთ SENTRY_DSN სერვერის გარემოს ცვლადებში");
+  }
+
   if (input.vinDecodeEnabled && input.vinDecodeProvider === "vincario" && !isVincarioConfigured()) {
     throw new ApiError(
       400,
@@ -554,6 +664,7 @@ export async function updateSettings(input: UpdateSettingsInput) {
       tx,
     );
     await upsertNullable(WHATSAPP_SUPPORT_PHONE_NUMBER_KEY, input.whatsappSupportPhoneNumber, tx);
+    await upsertNullable(ADMIN_NOTIFICATION_EMAIL_KEY, input.adminNotificationEmail, tx);
     await settingsRepository.upsert(
       DELIVERY_TBILISI_PRICE_KEY,
       String(input.deliveryTbilisiPrice),
@@ -706,10 +817,16 @@ export async function updateSettings(input: UpdateSettingsInput) {
       tx,
     );
     await settingsRepository.upsert(
+      FINA_ORDER_PUSH_RETRY_INTERVAL_MINUTES_KEY,
+      String(input.finaOrderPushRetryIntervalMinutes),
+      tx,
+    );
+    await settingsRepository.upsert(
       HOMEPAGE_CACHE_TTL_MINUTES_KEY,
       String(input.homepageCacheTtlMinutes),
       tx,
     );
+    await settingsRepository.upsert(SENTRY_ENABLED_KEY, String(input.sentryEnabled), tx);
   });
 
   for (const key of ALL_SETTING_KEYS) cache.del(cacheKey(key));

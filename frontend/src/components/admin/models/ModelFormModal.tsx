@@ -13,6 +13,7 @@ import { ApiRequestError } from "@/lib/api/client";
 import { flattenTree, isVehicleCategory, slugify } from "@/lib/categories-tree";
 import { modelFormSchema } from "@/lib/validation/models";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 
 export function ModelFormModal({
   open,
@@ -87,6 +88,7 @@ export function ModelFormModal({
       } else {
         await createModel(input);
       }
+      await revalidatePublicCache("vehicle-catalog");
 
       toast.success(isEditing ? "მოდელი განახლდა" : "მოდელი დაემატა");
       onSaved();

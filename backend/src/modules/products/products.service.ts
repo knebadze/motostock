@@ -1,4 +1,6 @@
+import type { z } from "zod";
 import { ApiError } from "../../lib/ApiError.js";
+import type { Expect, ResponseMatches } from "../../lib/response-contract.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { cache } from "../../lib/cache.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
@@ -24,13 +26,21 @@ import {
 } from "../product-variant-discounts/product-variant-discounts.service.js";
 import { toImageResponse } from "../product-variant-images/product-variant-images.service.js";
 import { productsRepository } from "./products.repository.js";
+import { recordSlugRename } from "../slug-redirects/slug-redirects.service.js";
 import type {
   CreateProductInput,
   ProductAttributeValueInput,
   ProductListQuery,
   UpdateProductInput,
 } from "./products.schema.js";
-import type { Prisma, VehicleSpecField } from "../../generated/prisma/index.js";
+import type {
+  productCardResponseSchema,
+  productDetailAdminResponseSchema,
+  productDetailResponseSchema,
+  productResponseSchema,
+} from "./products.schema.js";
+import type { AttributeValueType, Prisma, VehicleSpecField } from "../../generated/prisma/index.js";
+import type { VehicleSpecFieldInput } from "../product-fitment-rules/product-fitment-rules.schema.js";
 
 type NamedRefRow = {
   id: number;
@@ -58,7 +68,7 @@ type AttributeValueRow = {
     nameKa: string;
     nameEn: string;
     nameRu: string;
-    valueType: string;
+    valueType: AttributeValueType;
     unit: UnitRefRow | null;
   };
   valueText: string | null;
@@ -97,35 +107,44 @@ function findCardActiveDiscount(
   return cheapest;
 }
 
-type ProductRow = {
+// What every card query selects (productsRepository's productCardSelect).
+type ProductCardRow = {
   id: number;
   category: NamedRefRow;
   productBrand: BrandModelRefRow | null;
   nameKa: string;
   nameEn: string;
   nameRu: string;
-  descriptionKa: string | null;
-  descriptionEn: string | null;
-  descriptionRu: string | null;
   imageUrl: string | null;
   slug: string;
-  metaTitle: string | null;
-  metaDescription: string | null;
   viewCount: number;
-  attributeValues: AttributeValueRow[];
+  isFeaturedOnHomepage: boolean;
   variants: VariantSummaryRow[];
   createdAt: Date;
   updatedAt: Date;
+};
+
+type ProductRow = ProductCardRow & {
+  descriptionKa: string | null;
+  descriptionEn: string | null;
+  descriptionRu: string | null;
+  metaTitleKa: string | null;
+  metaTitleEn: string | null;
+  metaTitleRu: string | null;
+  metaDescriptionKa: string | null;
+  metaDescriptionEn: string | null;
+  metaDescriptionRu: string | null;
+  attributeValues: AttributeValueRow[];
 };
 
 function toNamedRef(row: NamedRefRow) {
   return { id: row.id, name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu }, slug: row.slug };
 }
 
-// Exported for reuse by product-buy-together.service.ts, which maps related
-// Product rows (fetched via productsRepository) through this same "product
-// card" response shape.
-export async function toResponse(row: ProductRow) {
+// The lean "product card" response (products.schema.ts's
+// productCardResponseSchema) — every grid/slider/list surface, here and in
+// wishlist/product-views/product-buy-together/recommendations.
+export async function toCardResponse(row: ProductCardRow) {
   const totalStock = row.variants.reduce((sum, v) => sum + v.stockQuantity, 0);
   return {
     id: row.id,
@@ -133,12 +152,33 @@ export async function toResponse(row: ProductRow) {
     productBrand: row.productBrand,
     name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu },
     slug: row.slug,
-    metaTitle: row.metaTitle,
-    metaDescription: row.metaDescription,
+    imageUrl: row.imageUrl,
+    variantCount: row.variants.length,
+    minPrice: row.variants.length > 0 ? Math.min(...row.variants.map((v) => Number(v.price))) : null,
+    totalStock,
+    lowStockQuantity: await computeLowStockQuantity(totalStock, row.category.lowStockBadgeEnabled),
+    activeDiscount: findCardActiveDiscount(row.variants),
+    viewCount: row.viewCount,
+    isFeaturedOnHomepage: row.isFeaturedOnHomepage,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+// The full Product (card + descriptions, SEO meta, attribute values) — the
+// product page, admin detail/edit and compare.
+export async function toResponse(row: ProductRow) {
+  return {
+    ...(await toCardResponse(row)),
+    metaTitleKa: row.metaTitleKa,
+    metaTitleEn: row.metaTitleEn,
+    metaTitleRu: row.metaTitleRu,
+    metaDescriptionKa: row.metaDescriptionKa,
+    metaDescriptionEn: row.metaDescriptionEn,
+    metaDescriptionRu: row.metaDescriptionRu,
     descriptionKa: row.descriptionKa,
     descriptionEn: row.descriptionEn,
     descriptionRu: row.descriptionRu,
-    imageUrl: row.imageUrl,
     attributeValues: row.attributeValues.map((value) => ({
       attributeId: value.attributeId,
       attributeName: {
@@ -173,14 +213,6 @@ export async function toResponse(row: ProductRow) {
           }
         : null,
     })),
-    variantCount: row.variants.length,
-    minPrice: row.variants.length > 0 ? Math.min(...row.variants.map((v) => Number(v.price))) : null,
-    totalStock,
-    lowStockQuantity: await computeLowStockQuantity(totalStock, row.category.lowStockBadgeEnabled),
-    activeDiscount: findCardActiveDiscount(row.variants),
-    viewCount: row.viewCount,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
   };
 }
 
@@ -223,7 +255,7 @@ type ProductDetailRow = Omit<ProductRow, "variants"> & {
   variants: VariantDetailRow[];
   fitments: FitmentRow[];
   fitmentRules: FitmentRuleRow[];
-  buyTogether: { relatedProduct: ProductRow }[];
+  buyTogether: { relatedProduct: ProductCardRow }[];
 };
 
 async function toVariantDetailResponse(row: VariantDetailRow, lowStockBadgeEnabled: boolean) {
@@ -272,7 +304,12 @@ async function toFitmentRuleResponse(rule: FitmentRuleRow) {
     id: rule.id,
     type: rule.type,
     category: rule.category ? toNamedRef(rule.category) : null,
-    specField: rule.specField,
+    // The column is the full VehicleSpecField enum (shared with the numeric
+    // vehicle filters), but a fitment rule can only ever be written with one
+    // of the lookup-backed fields — product-fitment-rules.schema.ts's
+    // vehicleSpecFieldSchema rejects the rest — which is exactly what the
+    // documented response type promises.
+    specField: rule.specField as VehicleSpecFieldInput | null,
     specFieldLabel,
     specValue,
   };
@@ -293,7 +330,7 @@ export async function toDetailResponse(row: ProductDetailRow) {
       model: fitment.vehicleCatalog.model,
     })),
     fitmentRules: await Promise.all(row.fitmentRules.map(toFitmentRuleResponse)),
-    buyTogether: await Promise.all(row.buyTogether.map((link) => toResponse(link.relatedProduct))),
+    buyTogether: await Promise.all(row.buyTogether.map((link) => toCardResponse(link.relatedProduct))),
   };
 }
 
@@ -461,6 +498,7 @@ function isCacheableOnSaleQuery(query: ProductListQuery): boolean {
     query.priceMin == null &&
     query.priceMax == null &&
     query.bulkDiscountEventId == null &&
+    query.featured == null &&
     query.attributeFilters == null &&
     query.adminFilters == null &&
     query.page == null &&
@@ -474,10 +512,46 @@ function isCacheableOnSaleQuery(query: ProductListQuery): boolean {
 // sent page/pageSize. Every other caller (homepage sliders, recommendations,
 // any `limit`-only request) gets total = items.length, page = 1, so the
 // shape stays uniform without carrying real pagination info there.
+// Backs ShopAllProductsPage.tsx's category-checkbox facet list — the same
+// 4 filters getShopProductsFromServer is called with today, but this
+// replaces that unbounded full-product-row fetch (used only to re-derive
+// this exact distinct-category list client-side) with a query that returns
+// one lean ref row per category directly.
+export async function listProductCategoryFacets(query: {
+  categoryId?: number;
+  vehicleCatalogId?: number;
+  brandIds?: number[];
+  onSale?: boolean;
+  bulkDiscountEventId?: number;
+}) {
+  const categoryIds =
+    query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
+  const vehicleCompatibilityWhere =
+    query.vehicleCatalogId != null ? await buildVehicleCompatibilityWhere(query.vehicleCatalogId) : undefined;
+  const rows = await productsRepository.findDistinctCategoryFacets({
+    categoryIds,
+    vehicleCompatibilityWhere,
+    brandIds: query.brandIds,
+    onSale: query.onSale,
+    bulkDiscountEventId: query.bulkDiscountEventId,
+  });
+  return rows.map(toNamedRef);
+}
+
+// Backs ProductShopPage.tsx's brand-checkbox facet list — the single filter
+// getProductsFromServer(category.id) is called with today (per-category
+// browse, unlike ShopAllProductsPage's cross-category one above), replacing
+// that unbounded full-product-row fetch with a lean per-brand query.
+export async function listProductBrandFacets(query: { categoryId?: number }) {
+  const categoryIds =
+    query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
+  return productsRepository.findDistinctBrandFacets({ categoryIds });
+}
+
 export async function listProducts(query: ProductListQuery) {
   const cacheKey = isCacheableOnSaleQuery(query) ? `products:onSale:${query.limit ?? "all"}` : null;
   if (cacheKey) {
-    const cached = cache.get<Awaited<ReturnType<typeof toResponse>>[]>(cacheKey);
+    const cached = cache.get<Awaited<ReturnType<typeof toCardResponse>>[]>(cacheKey);
     if (cached) return { items: cached, total: cached.length, page: 1, pageSize: cached.length || 1 };
   }
 
@@ -505,11 +579,10 @@ export async function listProducts(query: ProductListQuery) {
   // fetches one server-paginated page (page/pageSize below) of the filtered
   // result set — see productsRepository.findManyForAdmin's comment for why
   // that path uses a lean projection instead of the storefront card
-  // include. attributeValues/each variant's discounts are backfilled as
-  // empty right after the fetch purely to satisfy toResponse's shape —
-  // nothing reads those two fields off an admin-list row (the admin detail
-  // modal fetches full per-product data separately), so activeDiscount
-  // ending up null and attributeValues empty here is harmless.
+  // select. Each variant's discounts are backfilled as empty right after the
+  // fetch purely to satisfy toCardResponse's shape — nothing reads
+  // activeDiscount off an admin-list row (the admin detail modal fetches
+  // full per-product data separately), so it ending up null is harmless.
   const isAdminList = query.adminFilters != null;
   // The storefront shop pages (see frontend's useServerPagination callers)
   // opt into real pagination by sending page/pageSize; every other
@@ -527,6 +600,7 @@ export async function listProducts(query: ProductListQuery) {
       priceMax: query.priceMax,
       onSale: query.onSale,
       bulkDiscountEventId: query.bulkDiscountEventId,
+      featured: query.featured,
       attributeFilters: query.attributeFilters,
       adminFilters: query.adminFilters,
     };
@@ -536,13 +610,12 @@ export async function listProducts(query: ProductListQuery) {
     ]);
     const rows = adminRows.map((row) => ({
       ...row,
-      attributeValues: [] as AttributeValueRow[],
       variants: row.variants.map((variant) => ({
         ...variant,
         discounts: [] as DiscountSummaryRow[],
       })),
     }));
-    const result = await Promise.all(rows.map(toResponse));
+    const result = await Promise.all(rows.map(toCardResponse));
     return { items: result, total: adminTotal, page, pageSize };
   }
 
@@ -556,30 +629,30 @@ export async function listProducts(query: ProductListQuery) {
       priceMax: query.priceMax,
       onSale: query.onSale,
       bulkDiscountEventId: query.bulkDiscountEventId,
+      featured: query.featured,
       attributeFilters: query.attributeFilters,
     };
 
-    // Price sort orders by each product's cheapest ACTIVE variant — not a
-    // plain column, so there's no Postgres ORDER BY for it (Prisma's
-    // relation-aggregate orderBy only supports `_count`, not `_min`/`_max`).
-    // Fetching every filtered match and sorting in JS is the pragmatic
-    // tradeoff here: this store's per-category (or even whole, on-sale)
-    // catalog is realistically small enough that this doesn't cost what an
-    // unbounded query against a huge table would — a true fix would need
-    // either a raw SQL query duplicating buildWhere, or a denormalized
-    // "cheapest active variant price" column kept in sync on every variant
-    // write, both bigger changes than this shop-page sort control warrants
-    // today. `total` is exact (the full matched set, not an estimate).
+    // Price sort orders by the price the card shows (discounted if on sale
+    // — see findIdsOrderedByDisplayedPrice), not the bare regular price, so
+    // the list reads as sorted to the shopper. Ids of the whole filtered set
+    // (cheap), Postgres orders them and returns just this page, and only that
+    // page's ~pageSize card rows are loaded. `total` stays exact.
     if (query.sortBy === "price-asc" || query.sortBy === "price-desc") {
-      const rows = await productsRepository.findMany(filters);
-      const priceOf = (row: (typeof rows)[number]) =>
-        row.variants.length > 0 ? Math.min(...row.variants.map((v) => Number(v.price))) : Infinity;
-      const sorted = [...rows].sort((a, b) =>
-        query.sortBy === "price-asc" ? priceOf(a) - priceOf(b) : priceOf(b) - priceOf(a),
+      const matchingIds = await productsRepository.findIds(filters);
+      const pageIds = await productsRepository.findIdsOrderedByDisplayedPrice(
+        matchingIds,
+        query.sortBy === "price-asc" ? "asc" : "desc",
+        skip,
+        take,
       );
-      const pageRows = sorted.slice(skip, skip + take);
-      const result = await Promise.all(pageRows.map(toResponse));
-      return { items: result, total: rows.length, page, pageSize };
+      const rows = await productsRepository.findByIds(pageIds);
+      const rowById = new Map(rows.map((row) => [row.id, row]));
+      const pageRows = pageIds
+        .map((id) => rowById.get(id))
+        .filter((row): row is NonNullable<typeof row> => row != null);
+      const result = await Promise.all(pageRows.map(toCardResponse));
+      return { items: result, total: matchingIds.length, page, pageSize };
     }
 
     // Default ("newest") sort: a plain DB skip/take + a matching count(),
@@ -591,12 +664,15 @@ export async function listProducts(query: ProductListQuery) {
       productsRepository.findMany({ ...filters, skip, limit: take, paginate: true }),
       productsRepository.count(filters),
     ]);
-    const result = await Promise.all(rows.map(toResponse));
+    const result = await Promise.all(rows.map(toCardResponse));
     return { items: result, total, page, pageSize };
   }
 
   // Legacy, non-paginated customer path (homepage sliders, recommendations,
-  // any caller that only ever sent `limit`) — unchanged behavior.
+  // any caller that only ever sent `limit`). Without a `limit` this used to
+  // return the WHOLE catalog as full card rows to any anonymous caller —
+  // capped now; the sitemap has its own lean endpoint (listProductSitemapEntries).
+  const legacyLimit = query.limit ?? UNPAGINATED_LIST_MAX;
   const rows = await productsRepository.findMany({
     categoryIds,
     vehicleCompatibilityWhere,
@@ -606,13 +682,14 @@ export async function listProducts(query: ProductListQuery) {
     priceMax: query.priceMax,
     onSale: query.onSale,
     bulkDiscountEventId: query.bulkDiscountEventId,
+    featured: query.featured,
     attributeFilters: query.attributeFilters,
-    limit: query.limit,
+    limit: legacyLimit,
   });
 
-  let result: Awaited<ReturnType<typeof toResponse>>[];
+  let result: Awaited<ReturnType<typeof toCardResponse>>[];
   if (searchIds == null) {
-    result = await Promise.all(rows.map(toResponse));
+    result = await Promise.all(rows.map(toCardResponse));
   } else {
     // findMany's `id: {in: searchIds}` doesn't preserve searchIds' relevance
     // order — restore it, then apply the limit here (findMany skipped `take`
@@ -620,7 +697,7 @@ export async function listProducts(query: ProductListQuery) {
     const rankById = new Map(searchIds.map((id, index) => [id, index]));
     const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
     result = await Promise.all(
-      (query.limit != null ? ranked.slice(0, query.limit) : ranked).map(toResponse),
+      ranked.slice(0, legacyLimit).map(toCardResponse),
     );
   }
 
@@ -635,7 +712,7 @@ export async function listProducts(query: ProductListQuery) {
 // reason as listProducts' on-sale path above.
 export async function listPopularProducts(limit: number) {
   const cacheKey = `products:popular:${limit}`;
-  const cached = cache.get<Awaited<ReturnType<typeof toResponse>>[]>(cacheKey);
+  const cached = cache.get<Awaited<ReturnType<typeof toCardResponse>>[]>(cacheKey);
   if (cached) return cached;
 
   const rankedIds = await productsRepository.findPopularProductIds(limit);
@@ -647,7 +724,7 @@ export async function listPopularProducts(limit: number) {
     rankedIds
       .map((id) => rowById.get(id))
       .filter((row): row is NonNullable<typeof row> => row != null)
-      .map((row) => toResponse(row)),
+      .map((row) => toCardResponse(row)),
   );
 
   cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
@@ -670,6 +747,17 @@ export async function getProduct(id: number) {
     throw new ApiError(404, "პროდუქტი ვერ მოიძებნა", "PRODUCT_NOT_FOUND");
   }
   return toResponse(row);
+}
+
+// Upper bound for a list request that sent neither page/pageSize nor limit.
+export const UNPAGINATED_LIST_MAX = 1000;
+
+// The sitemap's product URLs — just what a URL needs (category slug +
+// product slug) and lastModified, for every listable product (≥1 active
+// variant, same rule as the storefront lists). Replaces the sitemap pulling
+// the whole catalog as full product cards.
+export function listProductSitemapEntries() {
+  return productsRepository.findSitemapEntries();
 }
 
 export async function getProductDetail(slug: string, vehicleCatalogId?: number) {
@@ -747,11 +835,16 @@ export async function createProduct(input: CreateProductInput) {
         nameEn: input.name.en,
         nameRu: input.name.ru,
         slug: input.slug,
-        metaTitle: input.metaTitle ?? null,
-        metaDescription: input.metaDescription ?? null,
+        metaTitleKa: input.metaTitleKa ?? null,
+        metaTitleEn: input.metaTitleEn ?? null,
+        metaTitleRu: input.metaTitleRu ?? null,
+        metaDescriptionKa: input.metaDescriptionKa ?? null,
+        metaDescriptionEn: input.metaDescriptionEn ?? null,
+        metaDescriptionRu: input.metaDescriptionRu ?? null,
         descriptionKa: input.descriptionKa ?? null,
         descriptionEn: input.descriptionEn ?? null,
         descriptionRu: input.descriptionRu ?? null,
+        isFeaturedOnHomepage: input.isFeaturedOnHomepage ?? false,
       }),
     "slug",
     "ეს slug უკვე გამოყენებულია",
@@ -812,15 +905,27 @@ export async function updateProduct(id: number, input: UpdateProductInput) {
           ? { nameKa: input.name.ka, nameEn: input.name.en, nameRu: input.name.ru }
           : {}),
         ...(input.slug !== undefined ? { slug: input.slug } : {}),
-        ...(input.metaTitle !== undefined ? { metaTitle: input.metaTitle } : {}),
-        ...(input.metaDescription !== undefined ? { metaDescription: input.metaDescription } : {}),
+        ...(input.metaTitleKa !== undefined ? { metaTitleKa: input.metaTitleKa } : {}),
+        ...(input.metaTitleEn !== undefined ? { metaTitleEn: input.metaTitleEn } : {}),
+        ...(input.metaTitleRu !== undefined ? { metaTitleRu: input.metaTitleRu } : {}),
+        ...(input.metaDescriptionKa !== undefined ? { metaDescriptionKa: input.metaDescriptionKa } : {}),
+        ...(input.metaDescriptionEn !== undefined ? { metaDescriptionEn: input.metaDescriptionEn } : {}),
+        ...(input.metaDescriptionRu !== undefined ? { metaDescriptionRu: input.metaDescriptionRu } : {}),
         ...(input.descriptionKa !== undefined ? { descriptionKa: input.descriptionKa } : {}),
         ...(input.descriptionEn !== undefined ? { descriptionEn: input.descriptionEn } : {}),
         ...(input.descriptionRu !== undefined ? { descriptionRu: input.descriptionRu } : {}),
+        ...(input.isFeaturedOnHomepage !== undefined
+          ? { isFeaturedOnHomepage: input.isFeaturedOnHomepage }
+          : {}),
       }),
     "slug",
     "ეს slug უკვე გამოყენებულია",
   );
+
+  // Old URL keeps working — 301 to the new slug (see slug-redirects).
+  if (input.slug !== undefined && input.slug !== existing.slug) {
+    await recordSlugRename("PRODUCT", id, existing.slug, input.slug);
+  }
 
   return getProduct(id);
 }
@@ -867,3 +972,23 @@ export async function deleteProduct(id: number) {
     void deleteUploadedImage(image.imageUrl);
   }
 }
+
+// Contract checks: the mappers above must return exactly what
+// products.schema.ts documents — the frontend's Product/ProductDetail types
+// are generated from those schemas (see lib/response-contract.ts).
+type _ProductCardResponseContract = Expect<ResponseMatches<
+  Awaited<ReturnType<typeof toCardResponse>>,
+  z.infer<typeof productCardResponseSchema>
+>>;
+type _ProductResponseContract = Expect<ResponseMatches<
+  Awaited<ReturnType<typeof toResponse>>,
+  z.infer<typeof productResponseSchema>
+>>;
+type _ProductDetailResponseContract = Expect<ResponseMatches<
+  Awaited<ReturnType<typeof getProductDetail>>,
+  z.infer<typeof productDetailResponseSchema>
+>>;
+type _ProductDetailAdminResponseContract = Expect<ResponseMatches<
+  Awaited<ReturnType<typeof getProductDetailAdmin>>,
+  z.infer<typeof productDetailAdminResponseSchema>
+>>;

@@ -78,6 +78,37 @@ export async function registerUser(
   }
 
   const passwordHash = await hashPassword(input.password);
+  const dateOfBirth = new Date(input.dateOfBirth);
+
+  // A walk-in customer entered by the workshop (see users.repository.ts's
+  // createWalkIn) may later register with the same phone. This used to
+  // convert that walk-in row in place — handing its garage (VINs) and full
+  // service history to whoever typed the phone number, with nothing proving
+  // they own it. Now the registrant gets a separate account WITHOUT the
+  // phone, and the walk-in is flagged (phoneClaimedByUserId) for staff, who
+  // know the customer, to confirm and merge (users.service.ts's
+  // mergeUserInto moves the phone over then). The registration response is
+  // the same either way, so it no longer reveals which phones are walk-ins.
+  const walkIn = await usersRepository.findByPhone(input.phone);
+  // A walk-in the admin already manually merged into a real account (see
+  // users.service.ts's mergeUserInto) is kept around on purpose — flagged
+  // via mergedIntoUserId, but its own isWalkIn is deliberately left true
+  // (the row itself never stopped being a walk-in, it just also now points
+  // at where its history moved). Without this check, someone registering
+  // with that same phone later (a reused number, or the original person
+  // registering directly instead of via the OAuth account they were merged
+  // onto) would pass straight through and resurrect this already-merged row
+  // as their own brand-new account — permanently and incorrectly flagged as
+  // "merged into" someone else, which also silently blocks them from ever
+  // adding a garage vehicle (garage.service.ts's createGarageVehicle checks
+  // exactly this field).
+  if (walkIn && (!walkIn.isWalkIn || walkIn.mergedIntoUserId != null)) {
+    // The phone belongs to someone else's already-registered account (or an
+    // already-merged-away walk-in) — same conflict shape as the email check
+    // above.
+    throw new ApiError(409, "Phone number already in use", "PHONE_ALREADY_IN_USE");
+  }
+
   let user;
   try {
     user = await usersRepository.create({
@@ -86,15 +117,26 @@ export async function registerUser(
       lastName: input.lastName,
       passwordHash,
       roleId: userRole.id,
+      // A walk-in's phone stays on the walk-in until staff confirm the merge.
+      phone: walkIn ? null : input.phone,
+      dateOfBirth,
     });
+    if (walkIn) {
+      await usersRepository.setPhoneClaim(walkIn.id, user.id);
+    }
   } catch (err) {
     // A concurrent request (another password registration double-submit, or
     // an OAuth signup racing this one — see oauth.service.ts's
-    // findOrCreateOAuthUser) can pass the findByEmail check above before
-    // either commits — surface the same clean 409 the pre-check above gives
-    // the non-race case, instead of a raw 500.
-    if (!isUniqueConstraintViolation(err, "email")) throw err;
-    throw new ApiError(409, "Email already in use", "EMAIL_ALREADY_IN_USE");
+    // findOrCreateOAuthUser) can pass the findByEmail/findByPhone checks
+    // above before either commits — surface the same clean 409 the pre-check
+    // above gives the non-race case, instead of a raw 500.
+    if (isUniqueConstraintViolation(err, "email")) {
+      throw new ApiError(409, "Email already in use", "EMAIL_ALREADY_IN_USE");
+    }
+    if (isUniqueConstraintViolation(err, "phone")) {
+      throw new ApiError(409, "Phone number already in use", "PHONE_ALREADY_IN_USE");
+    }
+    throw err;
   }
 
   const session = await sessionRepository.create(user.id, { ipAddress, userAgent });
@@ -124,15 +166,10 @@ export async function loginUser(
   ipAddress: string | null,
   userAgent: string | null,
 ) {
-  // The lockout check (has this email failed too many times recently?), the
-  // credential check, and recording a new failure are all done inside one
-  // lock-held critical section, scoped to this email — see fraud.service.ts's
-  // runWithAccountLockoutGuard for why (closes a TOCTOU race where a burst of
-  // concurrent attempts could otherwise all read the same pre-attack failure
-  // count and all slip through regardless of the configured threshold). IP-
-  // scoped authRateLimit (rateLimit.middleware.ts) can't catch a guessing
-  // attack spread across many IPs against one account; this closes that gap
-  // too, regardless of which IP the current attempt comes from.
+  // One attempt per email at a time, failures counted per account — see
+  // fraud.service.ts's runWithAccountLockoutGuard. IP-scoped authRateLimit
+  // (rateLimit.middleware.ts) can't catch a guessing attack spread across
+  // many IPs against one account; this covers that, whatever the IP.
   const user = await runWithAccountLockoutGuard(input.email, ipAddress, async () => {
     const candidate = await usersRepository.findByEmail(input.email);
     if (!candidate || !candidate.passwordHash) {
@@ -261,6 +298,7 @@ export async function resetPassword(
 
   const passwordHash = await hashPassword(input.password);
   const user = await usersRepository.updatePasswordHash(resetToken.userId, passwordHash);
+  await passwordResetTokenRepository.invalidateAllForUser(user.id);
 
   // Every pre-existing Session row for this user (across every device) is
   // now permanently unusable — the tokenVersion bump above already rejects

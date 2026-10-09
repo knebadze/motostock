@@ -15,10 +15,11 @@ import {
 import type { AdminListPage } from "@/lib/api/server";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import type { AdminFilterEntry } from "@/lib/api/admin-filters";
-import type { VehicleCatalogEntry } from "@/lib/api/vehicle-catalog";
+import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import type { LookupItem } from "@/lib/api/lookups";
 import { formatPrice } from "@/lib/format";
 import { buildVehicleListingFilterFields } from "@/config/admin-filters/vehicle-listing-filters";
+import { useAdminRole } from "@/components/admin/AdminRoleContext";
 import { VehicleListingFormModal } from "./VehicleListingFormModal";
 import { VehicleListingDetailModal } from "./VehicleListingDetailModal";
 
@@ -58,14 +59,14 @@ const columns: DataTableColumn<VehicleListing>[] = [
       listing.activeDiscount ? (
         <span className="flex flex-col">
           <span className="text-xs text-muted-foreground line-through">
-            {formatPrice(listing.price)}
+            {formatPrice(listing.price, listing.priceCurrency)}
           </span>
-          <span className="font-semibold text-primary">
-            {formatPrice(listing.activeDiscount.discountPrice)}
+          <span className="font-semibold text-primary-text">
+            {formatPrice(listing.activeDiscount.discountPrice, listing.priceCurrency)}
           </span>
         </span>
       ) : (
-        formatPrice(listing.price)
+        formatPrice(listing.price, listing.priceCurrency)
       ),
   },
   {
@@ -84,7 +85,7 @@ const columns: DataTableColumn<VehicleListing>[] = [
       <span
         className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
           listing.isActive
-            ? "bg-primary/15 text-primary"
+            ? "bg-primary/15 text-primary-text"
             : "bg-muted text-muted-foreground"
         }`}
       >
@@ -102,11 +103,13 @@ export function VehicleListingsManager({
   colors,
 }: {
   initialData: AdminListPage<VehicleListing>;
-  vehicleCatalog: VehicleCatalogEntry[];
+  vehicleCatalog: VehicleCatalogOption[];
   conditions: LookupItem[];
   statuses: LookupItem[];
   colors: LookupItem[];
 }) {
+  const role = useAdminRole();
+  const isOperator = role === "OPERATOR";
   const [data, setData] = useState(initialData);
   const [formOpen, setFormOpen] = useState(false);
   const [editingListing, setEditingListing] = useState<VehicleListing | null>(null);
@@ -156,17 +159,19 @@ export function VehicleListingsManager({
     <div>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">გასაყიდი ტექნიკა</h1>
-        <button
-          type="button"
-          onClick={openCreateModal}
-          disabled={!canCreate}
-          className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
-        >
-          + განცხადების დამატება
-        </button>
+        {!isOperator && (
+          <button
+            type="button"
+            onClick={openCreateModal}
+            disabled={!canCreate}
+            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
+          >
+            + განცხადების დამატება
+          </button>
+        )}
       </div>
 
-      {!canCreate && (
+      {!isOperator && !canCreate && (
         <p className="mt-2 text-sm text-muted-foreground">
           განცხადების დასამატებლად ჯერ საჭიროა ტექნიკის კატალოგში ჩანაწერის არსებობა.
         </p>
@@ -185,8 +190,8 @@ export function VehicleListingsManager({
           actions={(listing) => (
             <RowActions
               onView={() => setViewingListingId(listing.id)}
-              onEdit={() => openEditModal(listing)}
-              onDelete={() => setDeletingListing(listing)}
+              onEdit={isOperator ? undefined : () => openEditModal(listing)}
+              onDelete={isOperator ? undefined : () => setDeletingListing(listing)}
             />
           )}
         />

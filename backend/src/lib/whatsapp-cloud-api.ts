@@ -15,11 +15,22 @@ export function normalizePhoneForWhatsApp(phone: string): string {
 
 const GRAPH_API_VERSION = "v21.0";
 
+// Same reasoning as FINA's own timeout (fina-client.ts): without one, a
+// hung Meta endpoint holds the request (and graceful shutdown) open for
+// minutes. Callers already treat a failed send as best-effort.
+const REQUEST_TIMEOUT_MS = 10_000;
+
 // Sends a plain-text WhatsApp message from the business's Cloud-API number
 // to `to` (E.164, digits only, no leading +) and returns the WhatsApp
 // message id Meta assigns it — callers store this id so a later "Reply"
 // (quote) to this exact message can be matched back via the webhook's
 // `context.id` (see whatsapp-chat.service.ts).
+// "995599123456" -> "***3456" for any run of 7+ digits (optionally with a
+// leading "+").
+function maskPhoneNumbers(text: string): string {
+  return text.replace(/\+?\d{7,}/g, (digits) => `***${digits.slice(-4)}`);
+}
+
 export async function sendWhatsAppTextMessage(to: string, body: string): Promise<string> {
   const url = `https://graph.facebook.com/${GRAPH_API_VERSION}/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
   const response = await fetch(url, {
@@ -34,11 +45,19 @@ export async function sendWhatsAppTextMessage(to: string, body: string): Promise
       type: "text",
       text: { body },
     }),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    logger.error({ status: response.status, body: errorText, to }, "WhatsApp Cloud API send failed");
+    // logger.error lands in the admin-visible ErrorLog table (and Sentry) —
+    // phone numbers stay out of it: only the recipient's last 4 digits, and
+    // any long digit run in Meta's error body (it can echo the number back)
+    // masked the same way. Body capped too.
+    logger.error(
+      { status: response.status, body: maskPhoneNumbers(errorText).slice(0, 1000), toSuffix: to.slice(-4) },
+      "WhatsApp Cloud API send failed",
+    );
     throw new Error(`WhatsApp send failed with status ${response.status}`);
   }
 
@@ -59,10 +78,16 @@ export async function sendWhatsAppTextMessage(to: string, body: string): Promise
 // isWhatsAppCloudApiConfigured.
 export function verifyWebhookSignature(rawBody: Buffer, signatureHeader: string | undefined): boolean {
   if (!env.WHATSAPP_APP_SECRET || !signatureHeader?.startsWith("sha256=")) return false;
-  const expected = createHmac("sha256", env.WHATSAPP_APP_SECRET).update(rawBody).digest("hex");
-  const provided = signatureHeader.slice("sha256=".length);
-  if (expected.length !== provided.length) return false;
-  return timingSafeEqual(Buffer.from(expected), Buffer.from(provided));
+  const expected = createHmac("sha256", env.WHATSAPP_APP_SECRET).update(rawBody).digest();
+  // Compared as raw 32-byte digests, never as strings: a header of 64
+  // non-ASCII characters (Node decodes header bytes as latin1) passed the
+  // old string-length check, then re-encoded to 128 UTF-8 bytes and made
+  // timingSafeEqual throw — an unauthenticated 500 that also flooded
+  // ErrorLog/Sentry. Anything that isn't exactly 64 hex characters is
+  // simply rejected.
+  const providedHex = signatureHeader.slice("sha256=".length);
+  if (!/^[0-9a-f]{64}$/i.test(providedHex)) return false;
+  return timingSafeEqual(expected, Buffer.from(providedHex, "hex"));
 }
 
 // Checked on the GET /webhook verification handshake (whatsapp-chat.

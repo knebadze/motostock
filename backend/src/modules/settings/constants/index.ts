@@ -16,6 +16,7 @@ export * from "./search-recommendations.constants.js";
 export * from "./session-auth.constants.js";
 export * from "./image.constants.js";
 export * from "./cache.constants.js";
+export * from "./monitoring.constants.js";
 
 import { GENERAL_SETTING_KEYS } from "./general.constants.js";
 import { DELIVERY_SETTING_KEYS } from "./delivery.constants.js";
@@ -27,6 +28,7 @@ import { SEARCH_RECOMMENDATIONS_SETTING_KEYS } from "./search-recommendations.co
 import { SESSION_AUTH_SETTING_KEYS } from "./session-auth.constants.js";
 import { IMAGE_SETTING_KEYS } from "./image.constants.js";
 import { CACHE_SETTING_KEYS } from "./cache.constants.js";
+import { MONITORING_SETTING_KEYS } from "./monitoring.constants.js";
 
 export const ALL_SETTING_KEYS: string[] = [
   ...GENERAL_SETTING_KEYS,
@@ -39,4 +41,5 @@ export const ALL_SETTING_KEYS: string[] = [
   ...SESSION_AUTH_SETTING_KEYS,
   ...IMAGE_SETTING_KEYS,
   ...CACHE_SETTING_KEYS,
+  ...MONITORING_SETTING_KEYS,
 ];

@@ -13,11 +13,16 @@ import {
   checkCompatibilityResponseSchema,
   createProductSchema,
   popularProductsQuerySchema,
+  productBrandFacetsQuerySchema,
+  productBrandFacetsResponseSchema,
+  productCategoryFacetsQuerySchema,
+  productCategoryFacetsResponseSchema,
   productDetailAdminResponseSchema,
   productDetailQuerySchema,
   productDetailResponseSchema,
   productIdParamSchema,
   productListQuerySchema,
+  productCardResponseSchema,
   productResponseSchema,
   productSlugParamSchema,
   updateProductSchema,
@@ -34,6 +39,20 @@ productsRouter.get(
   validate(popularProductsQuerySchema, "query"),
   productsController.getPopular,
 );
+// Registered before /:id for the same reason as /popular above (a literal
+// path segment ahead of the :id param route).
+productsRouter.get(
+  "/category-facets",
+  validate(productCategoryFacetsQuerySchema, "query"),
+  productsController.getCategoryFacets,
+);
+productsRouter.get(
+  "/brand-facets",
+  validate(productBrandFacetsQuerySchema, "query"),
+  productsController.getBrandFacets,
+);
+// Public — the frontend sitemap's product URLs (lean; before /:id).
+productsRouter.get("/sitemap", productsController.sitemap);
 productsRouter.get(
   "/by-slug/:slug",
   validate(productSlugParamSchema, "params"),
@@ -62,7 +81,7 @@ productsRouter.get("/:id", validate(productIdParamSchema, "params"), productsCon
 productsRouter.get(
   "/:id/detail",
   requireAuth,
-  requireRole(ROLES.ADMIN),
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(productIdParamSchema, "params"),
   productsController.getDetailAdmin,
 );
@@ -103,12 +122,33 @@ const security = [{ cookieAuth: [] }];
 // present) — the storefront/popular paths never send page/pageSize and their
 // responses omit these three fields, so they stay optional here.
 const listResponse = z.object({
-  items: z.array(productResponseSchema),
+  items: z.array(productCardResponseSchema),
   total: z.number().int().nonnegative().optional(),
   page: z.number().int().positive().optional(),
   pageSize: z.number().int().positive().optional(),
 });
 const itemResponse = z.object({ item: productResponseSchema });
+
+registry.registerPath({
+  method: "get",
+  path: "/products/sitemap",
+  tags: ["Products"],
+  summary: "Every listable product's URL parts (slug, category slug) and updatedAt — the frontend sitemap's feed, public",
+  responses: {
+    200: {
+      description: "Sitemap entries",
+      content: {
+        "application/json": {
+          schema: z.object({
+            items: z.array(
+              z.object({ slug: z.string(), updatedAt: z.iso.datetime(), category: z.object({ slug: z.string() }) }),
+            ),
+          }),
+        },
+      },
+    },
+  },
+});
 
 registry.registerPath({
   method: "get",
@@ -129,6 +169,34 @@ registry.registerPath({
   request: { query: popularProductsQuerySchema },
   responses: {
     200: { description: "Popular products", content: { "application/json": { schema: listResponse } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/products/category-facets",
+  tags: ["Products"],
+  summary: "Distinct categories among products matching the given filters (public — shop page's category-checkbox facet list)",
+  request: { query: productCategoryFacetsQuerySchema },
+  responses: {
+    200: {
+      description: "Category refs",
+      content: { "application/json": { schema: productCategoryFacetsResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/products/brand-facets",
+  tags: ["Products"],
+  summary: "Distinct brands among products matching the given category (public — category shop page's brand-checkbox facet list)",
+  request: { query: productBrandFacetsQuerySchema },
+  responses: {
+    200: {
+      description: "Brand refs",
+      content: { "application/json": { schema: productBrandFacetsResponseSchema } },
+    },
   },
 });
 

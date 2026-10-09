@@ -6,18 +6,24 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Loader } from "@/components/shared/Loader";
-import { getUser, listUsers, type AdminUser } from "@/lib/api/users";
+import { getUser, listUsers, mergeUserInto, type AdminUser } from "@/lib/api/users";
 import type { GarageVehicle } from "@/lib/api/garage";
+import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import {
   deleteServiceRecord,
   listServiceRecordsForVehicle,
   type ServiceRecord,
+  type ServiceRecordsAdminPage,
 } from "@/lib/api/service-records";
 import type { ServiceType } from "@/lib/api/service-types";
 import type { TeamMember } from "@/lib/api/team-members";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { formatDate, formatPrice, formatVehicleCatalogLabel } from "@/lib/format";
 import { ServiceRecordFormModal } from "./ServiceRecordFormModal";
+import { AddWalkInCustomerModal } from "./AddWalkInCustomerModal";
+import { AddGarageVehicleModal } from "./AddGarageVehicleModal";
+import { LinkExistingUserModal } from "./LinkExistingUserModal";
+import { RecentServiceRecordsPanel } from "./RecentServiceRecordsPanel";
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -56,9 +62,13 @@ function serviceRecordDetail(record: ServiceRecord): string | null {
 export function ServiceHistoryManager({
   initialServiceTypes,
   teamMembers,
+  vehicleCatalog,
+  initialRecentServiceRecords,
 }: {
   initialServiceTypes: ServiceType[];
   teamMembers: TeamMember[];
+  vehicleCatalog: VehicleCatalogOption[];
+  initialRecentServiceRecords: ServiceRecordsAdminPage;
 }) {
   const [serviceTypes] = useState(initialServiceTypes);
 
@@ -67,6 +77,10 @@ export function ServiceHistoryManager({
   const [searchingUsers, setSearchingUsers] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [garageVehicles, setGarageVehicles] = useState<GarageVehicle[]>([]);
+  // A registered account that claimed the selected walk-in's phone and
+  // awaits staff confirmation (backend: User.phoneClaimedByUserId).
+  const [phoneClaimedBy, setPhoneClaimedBy] = useState<AdminUser | null>(null);
+  const [confirmingClaim, setConfirmingClaim] = useState(false);
   const [loadingGarage, setLoadingGarage] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<GarageVehicle | null>(null);
 
@@ -82,6 +96,9 @@ export function ServiceHistoryManager({
   const [formOpen, setFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<ServiceRecord | null>(null);
   const [deletingRecord, setDeletingRecord] = useState<ServiceRecord | null>(null);
+  const [addWalkInOpen, setAddWalkInOpen] = useState(false);
+  const [addVehicleOpen, setAddVehicleOpen] = useState(false);
+  const [linkUserOpen, setLinkUserOpen] = useState(false);
 
   useEffect(() => {
     const query = userQuery.trim();
@@ -93,7 +110,7 @@ export function ServiceHistoryManager({
 
     setSearchingUsers(true);
     const timeoutId = setTimeout(() => {
-      listUsers(query)
+      listUsers({ search: query })
         .then((result) => setUserResults(result.users))
         .catch(() => setUserResults([]))
         .finally(() => setSearchingUsers(false));
@@ -117,6 +134,7 @@ export function ServiceHistoryManager({
       .then((detail) => {
         if (garageRequestSeqRef.current !== requestSeq) return;
         setGarageVehicles(detail.garage);
+        setPhoneClaimedBy(detail.phoneClaimedBy);
       })
       .catch((error) => {
         if (garageRequestSeqRef.current !== requestSeq) return;
@@ -132,6 +150,7 @@ export function ServiceHistoryManager({
   function changeUser() {
     setSelectedUser(null);
     setGarageVehicles([]);
+    setPhoneClaimedBy(null);
     setSelectedVehicle(null);
     setRecords([]);
     // Invalidate any in-flight garage/records fetch so a stale response
@@ -162,6 +181,19 @@ export function ServiceHistoryManager({
       .finally(() => {
         if (recordsRequestSeqRef.current === requestSeq) setLoadingRecords(false);
       });
+  }
+
+  function handleVehicleCreated(vehicle: GarageVehicle) {
+    setGarageVehicles((prev) => [vehicle, ...prev]);
+    selectVehicle(vehicle);
+  }
+
+  function handleMerged(target: AdminUser) {
+    // LinkExistingUserModal passes the MERGE TARGET here (not the walk-in
+    // source, which the backend's own merge response describes and which is
+    // now empty) — switch the panel to it since that's where the walk-in's
+    // garage/service history just moved.
+    selectUser(target);
   }
 
   function openCreateModal() {
@@ -248,35 +280,96 @@ export function ServiceHistoryManager({
           {!searchingUsers && userQuery.trim() && userResults.length === 0 && (
             <p className="mt-3 text-sm text-muted-foreground">მომხმარებელი ვერ მოიძებნა</p>
           )}
+
+          <button
+            type="button"
+            onClick={() => setAddWalkInOpen(true)}
+            className="mt-4 rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
+          >
+            + ახალი სტუმარი მომხმარებელი
+          </button>
         </div>
       ) : (
         <div className="mt-6">
           <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
             <div>
-              <p className="font-semibold text-foreground">{selectedUser.name}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold text-foreground">{selectedUser.name}</p>
+                {selectedUser.isWalkIn && (
+                  <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-600">
+                    სტუმარი
+                  </span>
+                )}
+                {selectedUser.mergedIntoUserId != null && (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+                    შერწყმულია
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">{selectedUser.email}</p>
+              {selectedUser.phone && (
+                <p className="text-xs text-muted-foreground">{selectedUser.phone}</p>
+              )}
             </div>
+            <div className="flex items-center gap-2">
+              {selectedUser.isWalkIn && selectedUser.mergedIntoUserId == null && (
+                <button
+                  type="button"
+                  onClick={() => setLinkUserOpen(true)}
+                  className="rounded-full px-3 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                >
+                  დაკავშირება არსებულ მომხმარებელთან
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={changeUser}
+                className="rounded-full px-3 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              >
+                მომხმარებლის შეცვლა
+              </button>
+            </div>
+          </div>
+
+          {selectedUser.isWalkIn && selectedUser.mergedIntoUserId == null && phoneClaimedBy && (
+            <div className="mt-4 flex flex-col gap-3 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-foreground">
+                ამ სტუმრის ტელეფონის ნომრით დარეგისტრირდა ანგარიში:{" "}
+                <span className="font-semibold">{phoneClaimedBy.name}</span> ({phoneClaimedBy.email}). თუ ეს
+                იგივე პირია, დააკავშირეთ — გარაჟი, სერვისის ისტორია და ნომერი მას გადაეცემა.
+              </p>
+              <button
+                type="button"
+                onClick={() => setConfirmingClaim(true)}
+                className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+              >
+                დაკავშირება
+              </button>
+            </div>
+          )}
+
+          <div className="mt-6 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">ტრანსპორტი</h2>
             <button
               type="button"
-              onClick={changeUser}
-              className="rounded-full px-3 py-1.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              onClick={() => setAddVehicleOpen(true)}
+              className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text"
             >
-              მომხმარებლის შეცვლა
+              + ტრანსპორტის დამატება
             </button>
           </div>
 
           {loadingGarage ? (
-            <div className="mt-6 flex justify-center">
+            <div className="mt-3 flex justify-center">
               <Loader size="lg" />
             </div>
           ) : garageVehicles.length === 0 ? (
-            <p className="mt-6 rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+            <p className="mt-3 rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
               ამ მომხმარებლის გარაჟი ცარიელია
             </p>
           ) : (
-            <div className="mt-6">
-              <h2 className="text-sm font-semibold">ტრანსპორტი</h2>
-              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            <div className="mt-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {garageVehicles.map((vehicle) => {
                   const photoUrl = resolveMediaUrl(vehicle.imageUrl);
                   return (
@@ -318,6 +411,8 @@ export function ServiceHistoryManager({
                 <h2 className="text-sm font-semibold">
                   სერვისის ისტორია — {formatVehicleCatalogLabel(selectedVehicle.vehicleCatalog)}
                 </h2>
+                {/* OPERATOR (the foreman) has the full workshop flow here —
+                    same as ADMIN, matching service-records.routes.ts. */}
                 <button
                   type="button"
                   onClick={openCreateModal}
@@ -364,6 +459,14 @@ export function ServiceHistoryManager({
         </div>
       )}
 
+      <div className="mt-8 border-t border-border pt-8">
+        <RecentServiceRecordsPanel
+          initialData={initialRecentServiceRecords}
+          serviceTypes={serviceTypes}
+          teamMembers={teamMembers}
+        />
+      </div>
+
       {selectedVehicle && (
         <ServiceRecordFormModal
           key={`${editingRecord?.id ?? "new"}-${formOpen}`}
@@ -397,6 +500,50 @@ export function ServiceHistoryManager({
           refreshRecords(selectedVehicle.id);
         }}
       />
+
+      <AddWalkInCustomerModal
+        open={addWalkInOpen}
+        onClose={() => setAddWalkInOpen(false)}
+        onCreated={selectUser}
+      />
+
+      {selectedUser && (
+        <AddGarageVehicleModal
+          open={addVehicleOpen}
+          onClose={() => setAddVehicleOpen(false)}
+          onCreated={handleVehicleCreated}
+          userId={selectedUser.id}
+          vehicleCatalog={vehicleCatalog}
+        />
+      )}
+
+      {selectedUser && (
+        <ConfirmDialog
+          open={confirmingClaim && phoneClaimedBy != null}
+          onClose={() => setConfirmingClaim(false)}
+          title="სტუმრის დაკავშირება ანგარიშთან"
+          message={
+            phoneClaimedBy
+              ? `დარწმუნებული ხართ, რომ ${phoneClaimedBy.name} (${phoneClaimedBy.email}) ნამდვილად ეს მომხმარებელია? მისი გარაჟი და სერვისის ისტორია ამ ანგარიშს გადაეცემა.`
+              : ""
+          }
+          confirmLabel="დაკავშირება"
+          successMessage="მომხმარებლები გაერთიანდა"
+          onConfirm={async () => {
+            if (!phoneClaimedBy) return;
+            await mergeUserInto(selectedUser.id, phoneClaimedBy.id);
+            handleMerged(phoneClaimedBy);
+          }}
+        />
+      )}
+      {selectedUser && (
+        <LinkExistingUserModal
+          open={linkUserOpen}
+          onClose={() => setLinkUserOpen(false)}
+          sourceUser={selectedUser}
+          onMerged={handleMerged}
+        />
+      )}
     </div>
   );
 }

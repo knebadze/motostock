@@ -1,13 +1,22 @@
 "use client";
 
-import { Carousel } from "@/components/shared/Carousel";
+import { useMemo } from "react";
+import { Carousel, CAROUSEL_CARD_IMAGE_SIZES } from "@/components/shared/Carousel";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { VehicleListingCard } from "@/components/shop/VehicleListingCard";
-import type { Product } from "@/lib/api/products";
+import { getWishlistStatus } from "@/lib/api/wishlist";
+import { getCompareStatus } from "@/lib/api/compare";
+import { shouldCheckWishlistStatus, shouldCheckCompareStatus } from "@/lib/api/collection-status-gate";
+import {
+  useCollectionStatusMap,
+  lookupProductStatus,
+  lookupVehicleListingStatus,
+} from "@/components/shared/useCollectionStatusMap";
+import type { ProductListItem } from "@/lib/api/products";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 
 type MixedItem =
-  | { kind: "product"; key: string; product: Product }
+  | { kind: "product"; key: string; product: ProductListItem }
   | { kind: "vehicle"; key: string; listing: VehicleListing };
 
 export function MixedCarouselSection({
@@ -16,13 +25,26 @@ export function MixedCarouselSection({
   listings,
 }: {
   title: string;
-  products: Product[];
+  products: ProductListItem[];
   listings: VehicleListing[];
 }) {
   const items: MixedItem[] = [
     ...products.map((product): MixedItem => ({ kind: "product", key: `p${product.id}`, product })),
     ...listings.map((listing): MixedItem => ({ kind: "vehicle", key: `v${listing.id}`, listing })),
   ];
+
+  // One batched wishlist/compare call covering BOTH products and listings at
+  // once (getWishlistStatus/getCompareStatus already accept both id arrays
+  // together) instead of each card's own button checking individually.
+  const productIds = useMemo(() => products.map((product) => product.id), [products]);
+  const listingIds = useMemo(() => listings.map((listing) => listing.id), [listings]);
+  const wishlistStatus = useCollectionStatusMap(
+    getWishlistStatus,
+    productIds,
+    listingIds,
+    shouldCheckWishlistStatus,
+  );
+  const compareStatus = useCollectionStatusMap(getCompareStatus, productIds, listingIds, shouldCheckCompareStatus);
 
   if (items.length === 0) return null;
 
@@ -35,9 +57,21 @@ export function MixedCarouselSection({
           getKey={(item) => item.key}
           renderItem={(item) =>
             item.kind === "product" ? (
-              <ProductCard product={item.product} layout="grid" />
+              <ProductCard
+                product={item.product}
+                layout="grid"
+                imageSizes={CAROUSEL_CARD_IMAGE_SIZES}
+                wishlistItemId={lookupProductStatus(wishlistStatus, item.product.id)}
+                compareItemId={lookupProductStatus(compareStatus, item.product.id)}
+              />
             ) : (
-              <VehicleListingCard listing={item.listing} layout="grid" />
+              <VehicleListingCard
+                listing={item.listing}
+                layout="grid"
+                imageSizes={CAROUSEL_CARD_IMAGE_SIZES}
+                wishlistItemId={lookupVehicleListingStatus(wishlistStatus, item.listing.id)}
+                compareItemId={lookupVehicleListingStatus(compareStatus, item.listing.id)}
+              />
             )
           }
         />

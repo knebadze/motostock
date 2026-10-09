@@ -1,5 +1,5 @@
 import { prisma } from "../../config/prisma.js";
-import type { Prisma } from "../../generated/prisma/index.js";
+import { Prisma } from "../../generated/prisma/index.js";
 import { getSpecFieldDefinition } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
 import { applyVehicleListingAdminFilters } from "../filters/vehicle-listing/vehicle-listing-admin-filter-registry.js";
 import type { FilterEntry } from "../filters/filter-request.schema.js";
@@ -49,7 +49,15 @@ const include = vehicleListingInclude;
 // vehicle-listing.service.ts's toVehicleListingResponse null-fills below
 // for this path), the full images gallery, or a listing's whole discount
 // history.
-const adminListInclude = {
+//
+// Exported — cart.repository.ts and wishlist.repository.ts reuse this exact
+// shape too. Neither VehicleListingCard.tsx (wishlist) nor cart.service.ts's
+// own price computation reads any of the 7 dropped spec-lookup relations
+// either, so there's no reason those two paths carried the full storefront-
+// detail include (7 extra joins, the whole discount history, every image)
+// when this already-proven-safe, already-null-filled-elsewhere shape covers
+// everything both of them actually use.
+export const adminListInclude = {
   vehicleCatalog: {
     include: {
       brand: { select: brandModelRefSelect },
@@ -59,7 +67,11 @@ const adminListInclude = {
   condition: true,
   status: true,
   color: true,
-  discounts: { orderBy: { startDate: "desc" }, take: 5 },
+  // All of them, not the latest 5: findActiveDiscount picks the active one
+  // from this list, and with 5+ later-starting (scheduled) discounts the
+  // active one fell off the end — cards and checkout then charged full price
+  // while the detail page showed the sale. A listing has a handful at most.
+  discounts: { orderBy: { startDate: "desc" } },
   images: { orderBy: { position: "asc" }, take: 1 },
 } as const;
 
@@ -73,11 +85,14 @@ type VehicleListingWriteData = {
   warrantyValue?: number | null;
   warrantyUnit?: "YEAR" | "MONTH" | null;
   isActive?: boolean;
+  priceCurrency?: "GEL" | "USD";
   price: number;
   stockQuantity?: number;
   descriptionKa?: string | null;
   descriptionEn?: string | null;
   descriptionRu?: string | null;
+  isFeaturedOnHomepage?: boolean;
+  isCustomsCleared?: boolean;
 };
 
 function buildWhere(filters: {
@@ -95,6 +110,13 @@ function buildWhere(filters: {
   // part of one BulkDiscountEvent — same purpose as products.repository.ts's
   // identical field (see that file's comment).
   bulkDiscountEventId?: number;
+  featured?: boolean;
+  // Resolved once by vehicle-listing.service.ts (getUsdToGelRate) — lets
+  // priceMin/priceMax (always GEL from the shopper's perspective) match
+  // USD-priced listings too, by converting the bounds instead of the price
+  // column itself. Falls back to 1 (no conversion) if the rate isn't
+  // available yet — see vehicle-listing.prisma's priceCurrency comment.
+  usdToGelRate?: number;
   specFilters?: SpecFilterInput;
   adminFilters?: FilterEntry[];
 }): Prisma.VehicleListingWhereInput | undefined {
@@ -113,11 +135,24 @@ function buildWhere(filters: {
   }
 
   if (filters.priceMin != null || filters.priceMax != null) {
+    const rate = filters.usdToGelRate ?? 1;
     and.push({
-      price: {
-        ...(filters.priceMin != null ? { gte: filters.priceMin } : {}),
-        ...(filters.priceMax != null ? { lte: filters.priceMax } : {}),
-      },
+      OR: [
+        {
+          priceCurrency: "GEL",
+          price: {
+            ...(filters.priceMin != null ? { gte: filters.priceMin } : {}),
+            ...(filters.priceMax != null ? { lte: filters.priceMax } : {}),
+          },
+        },
+        {
+          priceCurrency: "USD",
+          price: {
+            ...(filters.priceMin != null ? { gte: filters.priceMin / rate } : {}),
+            ...(filters.priceMax != null ? { lte: filters.priceMax / rate } : {}),
+          },
+        },
+      ],
     });
   }
 
@@ -148,10 +183,18 @@ function buildWhere(filters: {
     });
   }
 
-  // Spec fields resolve to a dynamic VehicleCatalog column name at runtime
-  // (see vehicle-spec-fields.registry.ts) — Prisma's generated WhereInput
-  // type can't express "one of these known keys, chosen at runtime", so the
-  // constructed clause is cast back to it.
+  if (filters.featured) {
+    and.push({ isFeaturedOnHomepage: true });
+  }
+
+  // Spec fields resolve to a dynamic column name at runtime (see
+  // vehicle-spec-fields.registry.ts) — Prisma's generated WhereInput type
+  // can't express "one of these known keys, chosen at runtime", so the
+  // constructed clause is cast back to it. Almost all resolve to a
+  // VehicleCatalog column (the default when `table` is omitted); IS_CUSTOMS_
+  // CLEARED is the one VehicleListing-level exception (see the registry's
+  // own comment) and is pushed at the top level instead of nested under
+  // `vehicleCatalog`.
   for (const lookupFilter of filters.specFilters?.lookupFilters ?? []) {
     const { column } = getSpecFieldDefinition(lookupFilter.field);
     and.push({
@@ -172,8 +215,12 @@ function buildWhere(filters: {
   }
 
   for (const field of filters.specFilters?.booleanFields ?? []) {
-    const { column } = getSpecFieldDefinition(field);
-    and.push({ vehicleCatalog: { [column]: true } as Prisma.VehicleCatalogWhereInput });
+    const { table = "VehicleCatalog", column } = getSpecFieldDefinition(field);
+    and.push(
+      table === "VehicleListing"
+        ? ({ [column]: true } as Prisma.VehicleListingWhereInput)
+        : ({ vehicleCatalog: { [column]: true } } as Prisma.VehicleListingWhereInput),
+    );
   }
 
   const adminWhere = applyVehicleListingAdminFilters(filters.adminFilters);
@@ -182,13 +229,28 @@ function buildWhere(filters: {
   return and.length > 0 ? { AND: and } : undefined;
 }
 
+// Customer browse/search filter shape shared by count/findIds below.
+type CustomerListingFilters = {
+  categoryIds?: number[];
+  searchIds?: number[];
+  brandIds?: number[];
+  priceMin?: number;
+  priceMax?: number;
+  yearMin?: number;
+  yearMax?: number;
+  onSale?: boolean;
+  bulkDiscountEventId?: number;
+  featured?: boolean;
+  usdToGelRate?: number;
+  specFilters?: SpecFilterInput;
+};
+
 export type VehicleListingSortBy = "newest" | "year-desc" | "price-asc" | "price-desc";
 
-// Only the DB-orderable sorts — price-asc/price-desc depend on each
-// listing's *effective* (discount-aware) price, which isn't a plain column
-// (the active discount is a separate, time-windowed table row), so those two
-// are computed in JS by the service instead (fetch-all-matching, sort, slice
-// — see vehicle-listing.service.ts's listVehicleListings).
+// Only the plain-column sorts — price-asc/price-desc order by each listing's
+// *effective* (discount-aware, GEL-normalized) price, which isn't a column,
+// so those go through findIdsOrderedByEffectivePrice's raw query instead
+// (see vehicle-listing.service.ts's listVehicleListings).
 function resolveOrderBy(sortBy: VehicleListingSortBy | undefined): Prisma.VehicleListingOrderByWithRelationInput[] {
   if (sortBy === "year-desc") return [{ year: "desc" }];
   // Most-garaged vehicles first (VehicleCatalog.popularity, kept live by the
@@ -208,6 +270,8 @@ export const vehicleListingRepository = {
     yearMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
+    usdToGelRate?: number;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
     limit?: number;
@@ -226,37 +290,113 @@ export const vehicleListingRepository = {
   }) {
     const structuredWhere = buildWhere(filters);
     const suppressPagination = !filters.paginate && filters.searchIds != null;
+    // adminListInclude, not the full 7-join `include` — this is the
+    // card-rendering storefront browse/search path (shop/category grid,
+    // search), same reasoning as adminListInclude's own comment above (and
+    // the identical fix already applied to cart/wishlist): a card never
+    // reads the 7 VehicleCatalog spec-lookup joins, the full discount
+    // history, or the full image gallery. vehicle-listing.service.ts
+    // null-fills the 7 dropped lookups after the fetch, same as its
+    // existing admin-list branch.
     return prisma.vehicleListing.findMany({
       // Customer-facing path only (findManyForAdmin below is the admin
       // equivalent) — a listing an admin has pulled from sale must not
       // appear in storefront browsing/search.
       where: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] },
-      include,
+      include: adminListInclude,
       orderBy: resolveOrderBy(filters.sortBy),
       skip: suppressPagination ? undefined : filters.skip,
       take: suppressPagination ? undefined : filters.limit,
     });
   },
 
+  findSitemapEntries() {
+    return prisma.vehicleListing.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        year: true,
+        updatedAt: true,
+        vehicleCatalog: {
+          select: {
+            brand: { select: { slug: true } },
+            model: { select: { slug: true, category: { select: { slug: true } } } },
+          },
+        },
+      },
+      orderBy: { id: "asc" },
+    });
+  },
+
   // Paired with findMany above — same where-shape (including the isActive
   // exclusion and searchIds, when present), for real "how many pages"
   // totals on the customer browse/search path.
-  count(filters: {
-    categoryIds?: number[];
-    searchIds?: number[];
-    brandIds?: number[];
-    priceMin?: number;
-    priceMax?: number;
-    yearMin?: number;
-    yearMax?: number;
-    onSale?: boolean;
-    bulkDiscountEventId?: number;
-    specFilters?: SpecFilterInput;
-  }) {
+  count(filters: CustomerListingFilters) {
     const structuredWhere = buildWhere(filters);
     return prisma.vehicleListing.count({
       where: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] },
     });
+  },
+
+  // Just the ids of every customer-visible listing matching `filters` (same
+  // where-shape as count above) — the input to
+  // findIdsOrderedByEffectivePrice, cheap even for a large filtered set,
+  // unlike full card rows.
+  async findIds(filters: CustomerListingFilters): Promise<number[]> {
+    const structuredWhere = buildWhere(filters);
+    const rows = await prisma.vehicleListing.findMany({
+      where: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] },
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  },
+
+  // One page of `ids`, ordered in Postgres by the price the listing card
+  // shows: its currently-active discount price if any (the latest-starting
+  // discount whose [startDate, endDate] contains now — same rule as
+  // lib/discounts.ts's findActiveDiscount over the startDate-desc rows the
+  // card loads), else its regular price — normalized to GEL (a USD listing
+  // and its discount share the listing's currency) so GEL and USD listings
+  // sort together. Ties keep the shop's default order (most-garaged model
+  // first, then newest), then id so pages never overlap. Replaces a
+  // fetch-every-match + JS sort + slice.
+  async findIdsOrderedByEffectivePrice(
+    ids: number[],
+    direction: "asc" | "desc",
+    usdToGelRate: number,
+    skip: number,
+    take: number,
+  ): Promise<number[]> {
+    if (ids.length === 0) return [];
+    const order = direction === "asc" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+    // DateTime columns are UTC wall time in `timestamp` (no zone) — casting
+    // the ISO string to ::timestamp compares in that same frame.
+    const now = new Date().toISOString();
+    const rows = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT vl."id"
+      FROM "dbo"."VehicleListing" vl
+      JOIN "dbo"."VehicleCatalog" vc ON vc."id" = vl."vehicleCatalogId"
+      WHERE vl."id" = ANY(${ids}::int[])
+      ORDER BY
+        COALESCE(
+          (
+            SELECT d."discountPrice"
+            FROM "dbo"."VehicleListingDiscount" d
+            WHERE d."vehicleListingId" = vl."id"
+              AND d."startDate" <= ${now}::timestamp
+              AND ${now}::timestamp <= d."endDate"
+            ORDER BY d."startDate" DESC
+            LIMIT 1
+          ),
+          vl."price"
+        ) * CASE WHEN vl."priceCurrency" = 'USD' THEN ${usdToGelRate}::numeric ELSE 1 END ${order},
+        vc."popularity" DESC,
+        vl."createdAt" DESC,
+        vl."id" DESC
+      OFFSET ${skip}
+      LIMIT ${take}
+    `;
+    return rows.map((row) => row.id);
   },
 
   // See adminListInclude above for why this is a separate method rather
@@ -274,6 +414,8 @@ export const vehicleListingRepository = {
     yearMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
+    usdToGelRate?: number;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
     skip?: number;
@@ -299,10 +441,32 @@ export const vehicleListingRepository = {
     yearMax?: number;
     onSale?: boolean;
     bulkDiscountEventId?: number;
+    featured?: boolean;
+    usdToGelRate?: number;
     specFilters?: SpecFilterInput;
     adminFilters?: FilterEntry[];
   }) {
     return prisma.vehicleListing.count({ where: buildWhere(filters) });
+  },
+
+  // Backs VehicleShopPage.tsx's brand-checkbox facet list — the distinct
+  // brands among listings matching these filters, same where-shape as
+  // findMany (including the isActive exclusion), but one lean ref row per
+  // brand instead of every matching listing's full card data (same fix as
+  // findDistinctCategoryFacets in products.repository.ts).
+  findDistinctBrandFacets(filters: { categoryIds?: number[]; bulkDiscountEventId?: number }) {
+    const structuredWhere = buildWhere(filters);
+    return prisma.vehicleListing
+      .findMany({
+        where: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] },
+        select: { vehicleCatalog: { select: { brand: { select: brandModelRefSelect } } } },
+        distinct: ["vehicleCatalogId"],
+      })
+      .then((rows) => {
+        const byId = new Map<number, (typeof rows)[number]["vehicleCatalog"]["brand"]>();
+        for (const row of rows) byId.set(row.vehicleCatalog.brand.id, row.vehicleCatalog.brand);
+        return Array.from(byId.values());
+      });
   },
 
   // Typo-tolerant, relevance-ranked search across brand/model name — see
@@ -335,11 +499,12 @@ export const vehicleListingRepository = {
 
   // Customer-facing only (vehicle-listing.service.ts's
   // listPopularVehicleListings) — excludes a listing an admin has since
-  // deactivated, same reasoning as findMany above.
+  // deactivated, same reasoning as findMany above. adminListInclude, not the
+  // full include, for the same card-rendering reasoning as findMany above.
   findByIds(ids: number[]) {
     return prisma.vehicleListing.findMany({
       where: { id: { in: ids }, isActive: true },
-      include,
+      include: adminListInclude,
     });
   },
 
@@ -363,6 +528,55 @@ export const vehicleListingRepository = {
 
   findById(id: number) {
     return prisma.vehicleListing.findUnique({ where: { id }, include });
+  },
+
+  // Lean projection for promo-codes.service.ts's cart-item matching —
+  // batched across every listing in the cart instead of a per-item findById
+  // pulling the full detail `include` (fuelType/transmissionType/
+  // coolingType/finalDriveType/driveType/startType/powertrainType lookup
+  // objects, images, discounts, ...), none of which that matching logic
+  // reads. Every scalar VehicleSpecField.column (vehicle-spec-fields.
+  // registry.ts) is selected directly — cheap (plain ints/booleans on the
+  // one row already being fetched), and it's simpler and just as fast as
+  // resolving only the one column a given promo code's own specField
+  // happens to need.
+  findManyForPromoMatch(ids: number[]) {
+    return prisma.vehicleListing.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        vehicleCatalog: {
+          select: {
+            brandId: true,
+            modelId: true,
+            model: { select: { categoryId: true } },
+            fuelTypeId: true,
+            transmissionTypeId: true,
+            coolingTypeId: true,
+            finalDriveTypeId: true,
+            driveTypeId: true,
+            startTypeId: true,
+            powertrainTypeId: true,
+            engineVolumeCc: true,
+            enginePowerHp: true,
+            cylinderCount: true,
+            gearCount: true,
+            seatCount: true,
+            weightKg: true,
+            seatHeightMm: true,
+            fuelTankLiters: true,
+            topSpeedKmh: true,
+            motorPowerWatt: true,
+            batteryCapacityWh: true,
+            rangeKm: true,
+            chargingTimeMinutes: true,
+            hasAbs: true,
+            hasLockingDifferential: true,
+            isCustomsCleared: true,
+          },
+        },
+      },
+    });
   },
 
   // Global counter bump — see getVehicleListing in vehicle-listing.service.ts.

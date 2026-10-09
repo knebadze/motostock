@@ -1,5 +1,8 @@
 import { z } from "zod";
+import { newPasswordField } from "../../lib/password.js";
 import { registry } from "../../docs/registry.js";
+import { phoneField } from "../../lib/phone.js";
+import { dateOfBirthField } from "../../lib/date-of-birth.js";
 
 export const changePasswordSchema = registry.register(
   "ChangePasswordInput",
@@ -8,7 +11,7 @@ export const changePasswordSchema = registry.register(
     // yet) have nothing to confirm; whether it's actually required for a
     // given user is checked in the service against their stored hash.
     currentPassword: z.string().min(1).optional(),
-    newPassword: z.string().min(8).max(100).openapi({ example: "supersecret123" }),
+    newPassword: newPasswordField.openapi({ example: "supersecret123" }),
   }),
 );
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
@@ -24,7 +27,47 @@ export const userIdParamSchema = z.object({
 // errorLogsQuerySchema).
 export const listUsersQuerySchema = z.object({
   q: z.string().trim().min(1).max(200).optional(),
+  role: z.enum(["USER", "ADMIN", "OPERATOR"]).optional(),
+  // Mirrors the admin list's own badges (see UsersManager.tsx): WALK_IN is
+  // isWalkIn regardless of merge status (a manually-merged walk-in keeps
+  // isWalkIn: true — see users.service.ts's mergeUserInto), REGISTERED is
+  // !isWalkIn, MERGED is mergedIntoUserId set (independent of the other two).
+  customerType: z.enum(["WALK_IN", "REGISTERED", "MERGED"]).optional(),
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
 export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;
+
+// Admin workshop "+ ახალი სტუმარი მომხმარებელი" action — see
+// users.service.ts's createWalkInUser. No email/password: this customer
+// never logs in as themselves until (if ever) they self-register, at which
+// point auth.service.ts's registerUser matches them by phone and converts
+// this same row in place.
+export const createWalkInUserSchema = registry.register(
+  "CreateWalkInUserInput",
+  z.object({
+    firstName: z.string().trim().min(2).max(50).openapi({ example: "Nika" }),
+    lastName: z.string().trim().min(2).max(50).openapi({ example: "Beridze" }),
+    phone: phoneField,
+    dateOfBirth: dateOfBirthField,
+  }),
+);
+export type CreateWalkInUserInput = z.infer<typeof createWalkInUserSchema>;
+
+// Admin manual-merge fallback (users.service.ts's mergeUserInto) — path
+// params only, no body.
+export const mergeUserParamsSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  targetUserId: z.coerce.number().int().positive(),
+});
+
+// Admin-only role change (users.service.ts's updateUserRole) — the only way
+// to grant/revoke OPERATOR today (no self-registration path ever produces
+// it — see auth.service.ts's registerUser, which always assigns ROLES.USER).
+export const updateUserRoleSchema = registry.register(
+  "UpdateUserRoleInput",
+  z.object({
+    role: z.enum(["USER", "ADMIN", "OPERATOR"]),
+  }),
+);
+export type UpdateUserRoleInput = z.infer<typeof updateUserRoleSchema>;

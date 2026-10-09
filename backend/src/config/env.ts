@@ -73,9 +73,28 @@ const envSchema = z.object({
   // webhook call so an attacker who finds the webhook URL can't inject a
   // fake "staff reply" into an arbitrary chat session.
   WHATSAPP_APP_SECRET: z.string().optional(),
+  // Sentry error monitoring (backend project's DSN, from sentry.io →
+  // Project Settings → Client Keys). Optional and dormant while unset — the
+  // admin Settings → "მონიტორინგი" toggle can only be switched on once this
+  // exists (see settings.service.ts's updateSettings). See lib/sentry.ts.
+  SENTRY_DSN: z.url().optional(),
+  // Defaults to NODE_ENV — lets a staging box report separately from prod.
+  SENTRY_ENVIRONMENT: z.string().optional(),
+  // Usually the deployed git commit; groups errors by deploy in Sentry.
+  SENTRY_RELEASE: z.string().optional(),
 });
 
-const parsed = envSchema.safeParse(process.env);
+// `KEY=` (present but empty) is treated exactly like a missing key. The
+// .env.example files ship optional integrations as blank `KEY=` lines meant
+// to be filled in later, and dotenv turns those into "" — which an
+// `.optional()` field with a format rule (z.url(), .min(16), z.coerce.number)
+// rejects, so a server whose .env was copied from the example would refuse
+// to boot. Every consumer already treats "unset" and "empty" the same
+// (Boolean(env.X) checks), so dropping blanks changes nothing else. A
+// REQUIRED key left blank still fails, now as "missing".
+const nonEmptyEnv = Object.fromEntries(Object.entries(process.env).filter(([, value]) => value !== ""));
+
+const parsed = envSchema.safeParse(nonEmptyEnv);
 
 if (!parsed.success) {
   console.error("Invalid environment variables:", z.treeifyError(parsed.error));

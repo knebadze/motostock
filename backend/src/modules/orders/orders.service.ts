@@ -1,5 +1,6 @@
 import { randomInt } from "node:crypto";
 import { ApiError } from "../../lib/ApiError.js";
+import { logger } from "../../lib/logger.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { Prisma, type OrderDeliverySpeed, type OrderFulfillmentMethod } from "../../generated/prisma/index.js";
@@ -7,7 +8,11 @@ import { cartRepository } from "../cart/cart.repository.js";
 import { addressesRepository } from "../addresses/addresses.repository.js";
 import { banksRepository } from "../banks/banks.repository.js";
 import { usersRepository } from "../users/users.repository.js";
-import { syncVariantStockByIds, pushOrderSale } from "../fina-sync/fina-sync.service.js";
+import {
+  orderNeedsFinaPush,
+  processOrderFinaPush,
+  syncVariantStockByIds,
+} from "../fina-sync/fina-sync.service.js";
 import { sendEmailTemplate } from "../email-templates/email-templates.service.js";
 import { evaluateOrderRisk } from "../fraud/fraud.service.js";
 import { resolvePromoCodeForItems, promoCodeItemKey } from "../promo-codes/promo-codes.service.js";
@@ -19,6 +24,8 @@ import {
   getDeliveryRegionsTime,
   getDeliveryExpressPrice,
   getDeliveryExpressTime,
+  getAdminNotificationEmail,
+  getUsdToGelRateOrThrow,
 } from "../settings/settings.service.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
@@ -196,6 +203,10 @@ function buildBreakdownItem(row: CartRow, unitPrice: number): BreakdownItem {
 // (base price vs. active ProductVariantDiscount/VehicleListingDiscount),
 // then layers a promo-code discount on top per the admin-configured
 // stacking setting.
+function roundToCents(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 export async function computeCheckoutTotals(userId: number, promoCodeInput?: string): Promise<CheckoutBreakdown> {
   const initialRows = await cartRepository.findByOwner({ userId });
   if (initialRows.length === 0) {
@@ -284,11 +295,34 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
   let subtotal = 0;
   let total = 0;
 
+  // This store only ever charges in GEL — a USD-priced vehicle listing (see
+  // vehicle-listing.prisma's priceCurrency comment) gets converted to GEL
+  // right here, at the current NBG rate, before any further math runs.
+  // OrderItem.unitPrice/lineTotal are a frozen snapshot from this point on
+  // (never re-derived later), so this is the only place this conversion
+  // needs to happen. A same-currency VehicleListingDiscount.discountPrice
+  // gets the identical conversion.
+  //
+  // Uses the throwing variant, not `?? 1` — this is the one place that
+  // actually charges the customer, so a rate that's never been fetched yet
+  // (fresh install, or between a Settings wipe and the next scheduled-job
+  // run) must fail the checkout loudly instead of silently billing a
+  // USD-priced listing as if 1 USD = 1 GEL (an ~2.7x undercharge). Only
+  // fetched at all when the cart actually has a USD item, so a GEL-only
+  // order never depends on this rate being available.
+  const hasUsdVehicleListing = cartRows.some((row) => row.vehicleListing?.priceCurrency === "USD");
+  const usdToGelRate = hasUsdVehicleListing ? await getUsdToGelRateOrThrow() : 1;
+
   const items = cartRows.map((row, index) => {
-    const baseUnitPrice = Number(row.productVariant?.price ?? row.vehicleListing?.price ?? 0);
+    const rate = row.vehicleListing?.priceCurrency === "USD" ? usdToGelRate : 1;
+    // Rounded to cents right after the USD->GEL conversion, so every branch
+    // below (not just the promo one) stores a whole-cent unitPrice and
+    // lineTotal is exactly unitPrice × quantity — an unrounded converted
+    // price left them a cent apart.
+    const baseUnitPrice = roundToCents(Number(row.productVariant?.price ?? row.vehicleListing?.price ?? 0) * rate);
     const activeDiscount = itemDiscounts[index];
     const hasActiveDiscount = activeDiscount !== null;
-    const effectivePrice = activeDiscount ? Number(activeDiscount.discountPrice) : baseUnitPrice;
+    const effectivePrice = activeDiscount ? roundToCents(Number(activeDiscount.discountPrice) * rate) : baseUnitPrice;
 
     const matchKey = promoCodeItemKey({
       itemType: row.itemType,
@@ -320,7 +354,7 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
         unitPrice = effectivePrice;
       } else {
         const basis = stackingEnabled ? effectivePrice : baseUnitPrice;
-        unitPrice = Math.round(basis * (1 - promoMatch.discountPercent / 100) * 100) / 100;
+        unitPrice = roundToCents(basis * (1 - promoMatch.discountPercent / 100));
       }
     } else {
       unitPrice = effectivePrice;
@@ -658,35 +692,55 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
         // No gateway integration exists yet (see PaymentStatus's own
         // comment) — this is purely additive labeling for now.
         paymentStatus: input.fulfillmentMethod === "CARD" ? "AWAITING_PAYMENT" : "NOT_APPLICABLE",
+        // Outbox: queued in the order's own transaction, so the FINA sale
+        // push can't be lost to a crash/redeploy right after commit — see
+        // processOrderFinaPush below and the sweep in server.ts.
+        finaSyncStatus: orderNeedsFinaPush(items) ? "PENDING" : "NOT_APPLICABLE",
         items,
         soldStatusId,
         cartItemIds: breakdown.cartItemIds,
       });
 
-      await sendEmailTemplate("ORDER_PLACED", order.user.email, {
+      // Fired without awaiting the response — the customer's browser was
+      // blocking on 2 SMTP round-trips and a FINA API call for a checkout
+      // response that carries zero information back from any of them (all
+      // three are documented best-effort/never-throw and already log their
+      // own failures internally). `.catch()` here is defense-in-depth, not
+      // a sign they actually reject: now that these run detached from the
+      // request's own try/catch, an unexpected rejection would otherwise
+      // become a process-crashing unhandledRejection (see server.ts)
+      // instead of just failing this one request as it used to.
+      void sendEmailTemplate("ORDER_PLACED", order.user.email, {
         customerName: `${order.user.firstName} ${order.user.lastName}`.trim(),
         orderCode: order.orderCode,
         total: Number(order.total).toFixed(2),
-      });
+      }).catch((err: unknown) => logger.error({ err, orderId: order.id }, "ORDER_PLACED email failed"));
+
+      void getAdminNotificationEmail()
+        .then((adminNotificationEmail) => {
+          if (!adminNotificationEmail) return;
+          return sendEmailTemplate("NEW_ORDER_ADMIN", adminNotificationEmail, {
+            customerName: `${order.user.firstName} ${order.user.lastName}`.trim(),
+            orderCode: order.orderCode,
+            total: Number(order.total).toFixed(2),
+          });
+        })
+        .catch((err: unknown) => logger.error({ err, orderId: order.id }, "NEW_ORDER_ADMIN email failed"));
 
       // Never throws (see fraud.service.ts) — safe to await inline without
-      // its own try/catch here.
+      // its own try/catch here. Kept awaited (unlike the two above): its
+      // result has no external side effect to race against, and it's a pure
+      // DB check, not a slow outbound network call.
       await evaluateOrderRisk(
         { id: order.id, userId, total: Number(order.total), promoCodeId, ipAddress },
         user.createdAt,
       );
 
-      // Never throws (see fina-sync.service.ts) — best-effort, same as
-      // evaluateOrderRisk above.
-      await pushOrderSale({
-        id: order.id,
-        orderCode: order.orderCode,
-        items: order.items.map((item) => ({
-          productVariantId: item.productVariantId,
-          quantity: item.quantity,
-          unitPrice: Number(item.unitPrice),
-        })),
-      });
+      // Immediate attempt; a failure (or a restart before it runs) is
+      // retried by the PENDING sweep. A no-op for a NOT_APPLICABLE order.
+      if (order.finaSyncStatus === "PENDING") {
+        void processOrderFinaPush(order.id);
+      }
 
       return toOrderResponse(order);
     } catch (error) {

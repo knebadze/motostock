@@ -5,6 +5,12 @@ enum HomepageSectionType {
   POPULAR_VEHICLES
   DISCOUNTED_MIXED
   POPULAR_MIXED
+  // Manually curated, not algorithmic — membership is whichever Products/
+  // VehicleListings have their own isFeaturedOnHomepage checkbox ticked
+  // (see product.prisma/vehicle-listing.prisma), not a discount/popularity
+  // computation. Otherwise identical to the other *_MIXED types (uses
+  // productItemCount/vehicleItemCount below).
+  FEATURED_MIXED
   CATEGORIES
   // Algorithmic — products compatible with the shopper's SELECTED_VEHICLE_COOKIE
   // pick, ranked by the same order-quantity popularity as POPULAR_PRODUCTS.

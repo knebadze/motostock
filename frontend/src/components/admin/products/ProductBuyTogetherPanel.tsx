@@ -10,10 +10,10 @@ import {
   listProductBuyTogether,
   type ProductBuyTogether,
 } from "@/lib/api/product-buy-together";
-import type { Product } from "@/lib/api/products";
+import type { ProductListItem } from "@/lib/api/products";
 import { ApiRequestError } from "@/lib/api/client";
 
-function productLabel(product: Product): string {
+function productLabel(product: ProductListItem): string {
   return `${product.name.ka} — ${product.category.name.ka}`;
 }
 
@@ -31,7 +31,7 @@ export function ProductBuyTogetherPanel({
   allProducts,
 }: {
   productId: number;
-  allProducts: Product[];
+  allProducts: ProductListItem[];
 }) {
   const [links, setLinks] = useState<ProductBuyTogether[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -142,7 +142,7 @@ export function ProductBuyTogetherPanel({
           type="button"
           onClick={handleAdd}
           disabled={adding}
-          className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+          className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-text disabled:opacity-50"
         >
           + დამატება
         </button>

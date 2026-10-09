@@ -1,19 +1,19 @@
 import { apiClient } from "./client";
+import type { components } from "./generated/schema";
 
-export type User = {
-  id: number;
-  email: string;
-  name: string;
-  role: "USER" | "ADMIN";
-  createdAt: string;
-  emailVerified: boolean;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
+
+export type User = Schemas["User"];
 
 export async function registerUser(input: {
   firstName: string;
   lastName: string;
   email: string;
   password: string;
+  phone: string;
+  dateOfBirth: string;
 }): Promise<User> {
   const { data } = await apiClient.post<{ user: User }>("/auth/register", input);
   return data.user;

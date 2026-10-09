@@ -6,6 +6,14 @@ import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import type { GalleryImage } from "./ProductGallery";
 
+// Same selector/Tab-wrap/focus-restore approach as Modal.tsx — this is a
+// genuine full-screen dialog (opened from ProductGallery.tsx's zoom button)
+// but predates being built on Modal.tsx, which has no fullscreen size
+// variant to reuse directly, so the same logic is duplicated here rather
+// than restructuring Modal.tsx for one caller.
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 const closeIcon = (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -117,15 +125,53 @@ export function ImageLightbox({
 }) {
   const tModal = useTranslations("Common.modal");
   const tCarousel = useTranslations("Common.imageCarousel");
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     if (!open) return;
+
+    // Same reasoning as Modal.tsx: remember what had focus before opening
+    // (restored on close, so a keyboard user doesn't lose their place on the
+    // underlying page) and move focus into the dialog itself immediately —
+    // without this, focus stayed wherever it was on the page behind the
+    // lightbox, and Tab could wander the whole page underneath it.
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         onClose();
-      } else if (event.key === "ArrowLeft" && images.length > 1) {
+        return;
+      }
+      if (event.key === "ArrowLeft" && images.length > 1) {
         onIndexChange((index - 1 + images.length) % images.length);
-      } else if (event.key === "ArrowRight" && images.length > 1) {
+        return;
+      }
+      if (event.key === "ArrowRight" && images.length > 1) {
         onIndexChange((index + 1) % images.length);
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      // Wraps Tab at the dialog's edges instead of letting it escape onto
+      // the (visually hidden behind bg-black/95, but otherwise still
+      // focusable) page behind it.
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
       }
     }
     document.addEventListener("keydown", handleKeyDown);
@@ -133,6 +179,7 @@ export function ImageLightbox({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
+      previouslyFocused.current?.focus();
     };
   }, [open, onClose, images.length, index, onIndexChange]);
 
@@ -141,7 +188,14 @@ export function ImageLightbox({
   const activeImage = images[Math.min(index, images.length - 1)];
 
   return createPortal(
-    <div className="fixed inset-0 z-100 flex flex-col bg-black/95">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={alt}
+      tabIndex={-1}
+      className="fixed inset-0 z-100 flex flex-col bg-black/95 outline-none"
+    >
       <div className="flex shrink-0 items-center justify-between px-4 py-3 sm:px-6">
         <span className="text-sm font-medium text-white/70">
           {images.length > 1 ? `${index + 1} / ${images.length}` : ""}

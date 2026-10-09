@@ -1,14 +1,12 @@
 import { apiClient } from "./client";
 import type { PagedResult } from "@/components/shared/Pagination";
+import type { components } from "./generated/schema";
 
-export type Session = {
-  id: number;
-  user: { id: number; name: string; email: string };
-  ipAddress: string | null;
-  userAgent: string | null;
-  createdAt: string;
-  lastSeenAt: string;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
+
+export type Session = Schemas["Session"];
 
 // Real server-side pagination (skip/take) — same pattern as
 // listNewsletterSubscribers. Returns the shared PagedResult<T> shape

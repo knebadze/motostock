@@ -293,6 +293,7 @@ type CandidateListingRow = {
   id: number;
   year: number;
   price: { toString(): string };
+  priceCurrency: "GEL" | "USD";
   condition: LookupRow;
   color: LookupRow;
   vehicleCatalog: CandidateVehicleCatalogRow;
@@ -339,6 +340,7 @@ function toVehicleCandidateResponse(row: CandidateListingRow) {
     color: row.color,
     specValues: specValuesFor(row.vehicleCatalog),
     price: Number(row.price),
+    priceCurrency: row.priceCurrency,
     activeDiscount: activeDiscount
       ? {
           discountPercent: activeDiscount.discountPercent != null ? Number(activeDiscount.discountPercent) : null,
@@ -427,6 +429,7 @@ type VehicleDiscountHistoryRow = {
     id: number;
     year: number;
     price: { toString(): string };
+    priceCurrency: "GEL" | "USD";
     condition: LookupRow;
     color: LookupRow;
     vehicleCatalog: { variant: string; brand: BrandModelRefRow; model: BrandModelRefRow };
@@ -444,6 +447,7 @@ function toVehicleDiscountHistoryRow(row: VehicleDiscountHistoryRow) {
     condition: row.vehicleListing.condition,
     color: row.vehicleListing.color,
     price: Number(row.vehicleListing.price),
+    priceCurrency: row.vehicleListing.priceCurrency,
     discountPrice: Number(row.discountPrice),
     discountPercent: row.discountPercent != null ? Number(row.discountPercent) : null,
     startDate: row.startDate,

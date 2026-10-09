@@ -40,6 +40,14 @@ const ADMIN_PASSWORD = "admin123";
 const ADMIN_FIRST_NAME = "Admin";
 const ADMIN_LAST_NAME = "User";
 
+// A real seeded account (unlike most other roles, which an existing admin
+// assigns via the Users admin page) — lets the OPERATOR role be tested
+// immediately after a fresh seed, without first logging in as ADMIN.
+const OPERATOR_EMAIL = "operator@gmail.com";
+const OPERATOR_PASSWORD = "operator123";
+const OPERATOR_FIRST_NAME = "Operator";
+const OPERATOR_LAST_NAME = "User";
+
 type LookupEntry = { key: string; nameKa: string; nameEn: string; nameRu: string };
 
 type LookupDelegate = {
@@ -931,6 +939,12 @@ async function main() {
     create: { name: ROLES.ADMIN },
   });
 
+  const operatorRole = await prisma.role.upsert({
+    where: { name: ROLES.OPERATOR },
+    update: {},
+    create: { name: ROLES.OPERATOR },
+  });
+
   const existingAdmin = await prisma.user.findUnique({ where: { email: ADMIN_EMAIL } });
 
   if (existingAdmin) {
@@ -955,7 +969,26 @@ async function main() {
     console.log(`Created admin user: ${ADMIN_EMAIL}`);
   }
 
-  console.log(`Roles ready: ${userRole.name}, ${adminRole.name}`);
+  const existingOperator = await prisma.user.findUnique({ where: { email: OPERATOR_EMAIL } });
+
+  if (existingOperator) {
+    console.log(`Operator user already exists: ${OPERATOR_EMAIL}`);
+  } else {
+    const passwordHash = await hashPassword(OPERATOR_PASSWORD);
+    await prisma.user.create({
+      data: {
+        email: OPERATOR_EMAIL,
+        firstName: OPERATOR_FIRST_NAME,
+        lastName: OPERATOR_LAST_NAME,
+        passwordHash,
+        roleId: operatorRole.id,
+        emailVerifiedAt: new Date(),
+      },
+    });
+    console.log(`Created operator user: ${OPERATOR_EMAIL}`);
+  }
+
+  console.log(`Roles ready: ${userRole.name}, ${adminRole.name}, ${operatorRole.name}`);
 
   await prisma.setting.upsert({
     where: { key: USE_CLOUD_STORAGE_KEY },

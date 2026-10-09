@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { Select } from "@/components/shared/Select";
+import { DateInput } from "@/components/shared/DateInput";
 import { formatDate, formatDateTime, formatPrice, toTbilisiDateOnly } from "@/lib/format";
 import { ApiRequestError } from "@/lib/api/client";
 import {
@@ -104,7 +105,7 @@ const columns: DataTableColumn<AdminOrderSummary>[] = [
   {
     header: "თანხა",
     render: (order) => formatPrice(order.total),
-    cellClassName: "font-semibold text-primary",
+    cellClassName: "font-semibold text-primary-text",
   },
   {
     header: "თარიღი",
@@ -136,9 +137,21 @@ const columns: DataTableColumn<AdminOrderSummary>[] = [
 export function OrdersManager({
   initialData,
   statuses,
+  initialFilters = {},
+  initialOpenOrderId,
+  scopeUserId,
 }: {
   initialData: AdminOrdersPage;
   statuses: LookupItem[];
+  // Pre-applied from the page URL (dashboard / user-detail deep links) —
+  // initialData was already fetched with these, so the controls just need
+  // to reflect them.
+  initialFilters?: ListOrdersFilters;
+  initialOpenOrderId?: number;
+  // Embedded in a customer's order-history modal (see CustomerOrdersModal):
+  // every query is pinned to this user, "clear" keeps that pin, and the
+  // page title / buyer column / "one customer" notice are dropped.
+  scopeUserId?: number;
 }) {
   const { data, totalPages, loading, load } = useServerPagination<AdminOrderSummary>({
     items: initialData.orders,
@@ -147,12 +160,18 @@ export function OrdersManager({
     pageSize: initialData.pageSize,
   });
   const [search, setSearch] = useState("");
-  const [statusIds, setStatusIds] = useState<string[]>([]);
+  const [statusIds, setStatusIds] = useState<string[]>(() => (initialFilters.statusIds ?? []).map(String));
   const [fulfillmentMethods, setFulfillmentMethods] = useState<string[]>([]);
   const [createdFrom, setCreatedFrom] = useState("");
   const [createdTo, setCreatedTo] = useState("");
-  const [flaggedOnly, setFlaggedOnly] = useState(false);
-  const [viewingOrderId, setViewingOrderId] = useState<number | null>(null);
+  const [flaggedOnly, setFlaggedOnly] = useState(initialFilters.flaggedOnly ?? false);
+  const [finaFailedOnly, setFinaFailedOnly] = useState(initialFilters.finaFailedOnly ?? false);
+  const [viewingOrderId, setViewingOrderId] = useState<number | null>(initialOpenOrderId ?? null);
+  // No dedicated control — only set via the user-detail deep link, shown as
+  // a removable notice above the table instead.
+  const [userIdFilter, setUserIdFilter] = useState<number | undefined>(scopeUserId ?? initialFilters.userId);
+  const filteredBuyer = userIdFilter != null ? data.items[0]?.buyer : undefined;
+  const visibleColumns = scopeUserId != null ? columns.filter((column) => column.header !== "მყიდველი") : columns;
 
   const statusOptions = statuses.map((status) => ({ value: String(status.id), label: status.nameKa }));
   const hasActiveFilters =
@@ -161,7 +180,9 @@ export function OrdersManager({
     fulfillmentMethods.length > 0 ||
     createdFrom !== "" ||
     createdTo !== "" ||
-    flaggedOnly;
+    flaggedOnly ||
+    finaFailedOnly ||
+    (userIdFilter != null && scopeUserId == null);
 
   function currentFilters(): ListOrdersFilters {
     return {
@@ -172,6 +193,8 @@ export function OrdersManager({
       createdFrom: createdFrom || undefined,
       createdTo: createdTo || undefined,
       flaggedOnly: flaggedOnly || undefined,
+      finaFailedOnly: finaFailedOnly || undefined,
+      userId: userIdFilter,
     };
   }
 
@@ -203,7 +226,14 @@ export function OrdersManager({
     setCreatedFrom("");
     setCreatedTo("");
     setFlaggedOnly(false);
-    load(() => fetchOrdersPage({}, 1), onLoadError);
+    setFinaFailedOnly(false);
+    setUserIdFilter(scopeUserId);
+    load(() => fetchOrdersPage({ userId: scopeUserId }, 1), onLoadError);
+  }
+
+  function handleClearUserFilter() {
+    setUserIdFilter(undefined);
+    load(() => fetchOrdersPage({ ...currentFilters(), userId: undefined }, 1), onLoadError);
   }
 
   function loadPage(page: number) {
@@ -223,8 +253,30 @@ export function OrdersManager({
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight">შეკვეთები</h1>
+      {scopeUserId == null && <h1 className="text-2xl font-bold tracking-tight">შეკვეთები</h1>}
       <p className="mt-1 text-sm text-muted-foreground">სულ {data.total}.</p>
+
+      {userIdFilter != null && scopeUserId == null && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+          <span>
+            ნაჩვენებია მხოლოდ ერთი მომხმარებლის შეკვეთები
+            {filteredBuyer ? (
+              <>
+                : <span className="font-semibold">{filteredBuyer.firstName} {filteredBuyer.lastName}</span> (
+                {filteredBuyer.email})
+              </>
+            ) : null}
+          </span>
+          <button
+            type="button"
+            onClick={handleClearUserFilter}
+            disabled={loading}
+            className="text-sm font-medium text-primary-text hover:underline disabled:opacity-50"
+          >
+            ყველა შეკვეთის ჩვენება
+          </button>
+        </div>
+      )}
 
       <div className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4">
         <div className="flex min-w-48 flex-1 flex-col gap-1.5">
@@ -232,7 +284,7 @@ export function OrdersManager({
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="კოდი, სახელი ან ელფოსტა"
+            placeholder={scopeUserId != null ? "შეკვეთის კოდი" : "კოდი, სახელი ან ელფოსტა"}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
         </div>
@@ -264,21 +316,11 @@ export function OrdersManager({
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">თარიღი (დან)</label>
-          <input
-            type="date"
-            value={createdFrom}
-            onChange={(event) => setCreatedFrom(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
+          <DateInput value={createdFrom} onChange={setCreatedFrom} max={toTbilisiDateOnly(new Date().toISOString())} />
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">თარიღი (მდე)</label>
-          <input
-            type="date"
-            value={createdTo}
-            onChange={(event) => setCreatedTo(event.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          />
+          <DateInput value={createdTo} onChange={setCreatedTo} max={toTbilisiDateOnly(new Date().toISOString())} />
         </div>
         <label className="flex items-center gap-2 pb-2 text-sm font-medium text-foreground">
           <input
@@ -288,6 +330,15 @@ export function OrdersManager({
             className="size-4 accent-primary"
           />
           მხოლოდ დროშიანი (რისკის სიგნალი)
+        </label>
+        <label className="flex items-center gap-2 pb-2 text-sm font-medium text-foreground">
+          <input
+            type="checkbox"
+            checked={finaFailedOnly}
+            onChange={(event) => setFinaFailedOnly(event.target.checked)}
+            className="size-4 accent-primary"
+          />
+          მხოლოდ FINA შეცდომით
         </label>
         <button
           type="button"
@@ -302,7 +353,7 @@ export function OrdersManager({
             type="button"
             onClick={handleClearFilters}
             disabled={loading}
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary disabled:opacity-50"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text disabled:opacity-50"
           >
             გაწმენდა
           </button>
@@ -311,7 +362,7 @@ export function OrdersManager({
 
       <div className="mt-6">
         <DataTable
-          columns={columns}
+          columns={visibleColumns}
           data={data.items}
           getRowKey={(order) => order.id}
           emptyMessage="შეკვეთა არ მოიძებნა"
@@ -322,7 +373,7 @@ export function OrdersManager({
                 onClick={() => setViewingOrderId(order.id)}
                 aria-label="სრულად ნახვა"
                 title="სრულად ნახვა"
-                className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

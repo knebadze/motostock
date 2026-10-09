@@ -1,21 +1,13 @@
 import { apiClient } from "./client";
-import type { LocalizedString } from "./categories";
+import type { components } from "./generated/schema";
 
-export type Faq = {
-  id: number;
-  question: LocalizedString;
-  answer: LocalizedString;
-  isActive: boolean;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-};
+// Response/input shapes below aliasing `Schemas[...]` are generated from the
+// backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
+type Schemas = components["schemas"];
 
-export type FaqInput = {
-  question: LocalizedString;
-  answer: LocalizedString;
-  isActive?: boolean;
-};
+export type Faq = Schemas["Faq"];
+
+export type FaqInput = Schemas["CreateFaqInput"];
 
 export async function listFaqs(): Promise<Faq[]> {
   const { data } = await apiClient.get<{ items: Faq[] }>("/faq");

@@ -69,6 +69,26 @@ const DEFAULTS: Record<
     bodyEn: "<p>Hi {{customerName}},</p><p>Your order #{{orderCode}} has been cancelled. Contact us if you have any questions.</p>",
     bodyRu: "<p>Здравствуйте, {{customerName}}!</p><p>Ваш заказ №{{orderCode}} отменён. Свяжитесь с нами, если у вас есть вопросы.</p>",
   },
+  // Sent to the admin-configurable address, not a customer — vars are the
+  // same customerName/orderCode/total set, phrased for the admin reader.
+  NEW_ORDER_ADMIN: {
+    subjectKa: "ახალი შეკვეთა მიღებულია — {{orderCode}}",
+    subjectEn: "New order received — {{orderCode}}",
+    subjectRu: "Получен новый заказ — {{orderCode}}",
+    bodyKa: "<p>მიღებულია ახალი შეკვეთა #{{orderCode}}.</p><p>მომხმარებელი: {{customerName}}</p><p>ჯამური თანხა: {{total}} ₾</p>",
+    bodyEn: "<p>A new order has been received — #{{orderCode}}.</p><p>Customer: {{customerName}}</p><p>Total: {{total}} GEL</p>",
+    bodyRu: "<p>Получен новый заказ №{{orderCode}}.</p><p>Клиент: {{customerName}}</p><p>Сумма: {{total}} GEL</p>",
+  },
+  // Sent once a year by the BIRTHDAY_EMAIL scheduled job (see
+  // birthday-email.service.ts) — only vars available here are customerName.
+  BIRTHDAY: {
+    subjectKa: "გილოცავთ დაბადების დღეს, {{customerName}}!",
+    subjectEn: "Happy Birthday, {{customerName}}!",
+    subjectRu: "С днём рождения, {{customerName}}!",
+    bodyKa: "<p>გამარჯობა, {{customerName}}!</p><p>Motostock-ის გუნდი გულითადად გილოცავთ დაბადების დღეს! გისურვებთ ჯანმრთელობას და უსაფრთხო გზებს.</p>",
+    bodyEn: "<p>Hi {{customerName}},</p><p>The Motostock team wishes you a very happy birthday! Stay healthy and ride safe.</p>",
+    bodyRu: "<p>Здравствуйте, {{customerName}}!</p><p>Команда Motostock от всей души поздравляет вас с днём рождения! Желаем здоровья и безопасных дорог.</p>",
+  },
 };
 
 // Derived from DEFAULTS' own keys, not a separate hand-typed list — a key

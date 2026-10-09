@@ -56,6 +56,7 @@ export const VEHICLE_SPEC_FIELDS: {
   { field: "CHARGING_TIME_MINUTES", label: "დატენვის დრო (წთ)", kind: "NUMBER" },
   { field: "HAS_ABS", label: "ABS სისტემა", kind: "BOOLEAN" },
   { field: "HAS_LOCKING_DIFFERENTIAL", label: "დიფერენციალის ბლოკირება", kind: "BOOLEAN" },
+  { field: "IS_CUSTOMS_CLEARED", label: "განბაჟებულია", kind: "BOOLEAN" },
 ];
 
 export function getVehicleSpecFieldLabel(field: VehicleSpecField): string {

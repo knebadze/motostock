@@ -1,11 +1,17 @@
 import { ApiError } from "../../lib/ApiError.js";
 import type { ServicePosition } from "../../generated/prisma/index.js";
 import { startOfDayTbilisi, toTbilisiDateOnly } from "../../lib/tbilisi-dates.js";
+import { resolvePage } from "../../lib/pagination.js";
 import { garageRepository } from "../garage/garage.repository.js";
 import { serviceTypesRepository } from "../service-types/service-types.repository.js";
 import { teamMembersRepository } from "../team-members/team-members.repository.js";
-import { serviceRecordsRepository } from "./service-records.repository.js";
-import type { CreateServiceRecordInput, UpdateServiceRecordInput } from "./service-records.schema.js";
+import { toVehicleCatalogResponse } from "../vehicle-catalog/vehicle-catalog.service.js";
+import { serviceRecordsRepository, type AdminServiceRecordFilters } from "./service-records.repository.js";
+import type {
+  CreateServiceRecordInput,
+  ListServiceRecordsAdminQuery,
+  UpdateServiceRecordInput,
+} from "./service-records.schema.js";
 
 type ServiceRecordRow = {
   id: number;
@@ -116,6 +122,37 @@ export async function listServiceRecordsForVehicle(
 
   const rows = await serviceRecordsRepository.findByGarageVehicleId(garageVehicleId);
   return rows.map(toResponse);
+}
+
+// Workshop "სერვისის ისტორია" screen's admin-wide overview table — every
+// customer's recent services at once, newest first, filterable/paginated.
+export async function listServiceRecordsAdmin(query: ListServiceRecordsAdminQuery) {
+  const { page, pageSize, skip, take } = resolvePage(query);
+  const filters: AdminServiceRecordFilters = {
+    search: query.search,
+    serviceTypeId: query.serviceTypeId,
+    mechanicId: query.mechanicId,
+    performedFrom: query.performedFrom ? startOfDayTbilisi(query.performedFrom) : undefined,
+    performedTo: query.performedTo ? startOfDayTbilisi(query.performedTo) : undefined,
+  };
+
+  const [rows, total] = await Promise.all([
+    serviceRecordsRepository.findManyAdmin(filters, skip, take),
+    serviceRecordsRepository.countAdmin(filters),
+  ]);
+
+  return {
+    items: rows.map((row) => ({
+      ...toResponse(row),
+      customerId: row.garageVehicle.user.id,
+      customerName: `${row.garageVehicle.user.firstName} ${row.garageVehicle.user.lastName}`,
+      garageVehicleYear: row.garageVehicle.year,
+      vehicleCatalog: toVehicleCatalogResponse(row.garageVehicle.vehicleCatalog),
+    })),
+    total,
+    page,
+    pageSize,
+  };
 }
 
 export async function createServiceRecord(input: CreateServiceRecordInput, recordedByUserId: number) {

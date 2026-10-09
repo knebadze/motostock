@@ -7,6 +7,9 @@ import swaggerUi from "swagger-ui-express";
 import { pinoHttp } from "pino-http";
 import { corsAllowedOrigins, env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
+import { prisma } from "./config/prisma.js";
+import { responseValidationMiddleware } from "./middleware/response-validation.middleware.js";
+import { ApiError } from "./lib/ApiError.js";
 import { generateOpenApiDocument } from "./docs/openapi.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { oauthRouter } from "./modules/oauth/oauth.routes.js";
@@ -48,6 +51,7 @@ import { cacheRouter } from "./modules/cache/cache.routes.js";
 import { errorLogsRouter } from "./modules/error-logs/error-logs.routes.js";
 import { companyInfoRouter } from "./modules/company-info/company-info.routes.js";
 import { termsRouter } from "./modules/terms/terms.routes.js";
+import { privacyPolicyRouter } from "./modules/privacy-policy/privacy-policy.routes.js";
 import { emailTemplatesRouter } from "./modules/email-templates/email-templates.routes.js";
 import { orderStatusesRouter } from "./modules/order-statuses/order-statuses.routes.js";
 import { vinDecodeRouter } from "./modules/vin-decode/vin-decode.routes.js";
@@ -70,7 +74,10 @@ import { analyticsRouter } from "./modules/analytics/analytics.routes.js";
 import { teamMembersRouter } from "./modules/team-members/team-members.routes.js";
 import { banksRouter } from "./modules/banks/banks.routes.js";
 import { mediaRouter } from "./modules/media/media.routes.js";
+import { shareImageRouter } from "./modules/share-image/share-image.routes.js";
+import { slugRedirectsRouter } from "./modules/slug-redirects/slug-redirects.routes.js";
 import { faqRouter } from "./modules/faq/faq.routes.js";
+import { vacanciesRouter } from "./modules/vacancies/vacancies.routes.js";
 import { serviceTypesRouter } from "./modules/service-types/service-types.routes.js";
 import { serviceRecordsRouter } from "./modules/service-records/service-records.routes.js";
 import { sessionsRouter } from "./modules/sessions/sessions.routes.js";
@@ -78,7 +85,7 @@ import { visitorsRouter } from "./modules/visitors/visitors.routes.js";
 import { whatsappChatRouter } from "./modules/whatsapp-chat/whatsapp-chat.routes.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
-import { globalRateLimit } from "./middleware/rateLimit.middleware.js";
+import { globalReadRateLimit, globalWriteRateLimit } from "./middleware/rateLimit.middleware.js";
 import { ROLES } from "./lib/roles.js";
 
 export const app = express();
@@ -121,7 +128,11 @@ app.use(
         callback(null, true);
         return;
       }
-      callback(new Error("Not allowed by CORS"));
+      // ApiError (403), not a plain Error — a plain Error reached
+      // error.middleware.ts as a 500 and was persisted to ErrorLog, so any
+      // request with a forged Origin header (even a GET) wrote a row.
+      // Still rejected outright, same as before, just without the log.
+      callback(new ApiError(403, "Not allowed by CORS"));
     },
     credentials: true,
   }),
@@ -140,19 +151,58 @@ app.use(
 );
 app.use(pinoHttp({ logger }));
 
-app.get("/api/health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
+// Dev-only: warns when a JSON response doesn't match its documented OpenAPI
+// schema (the frontend's types are generated from those docs) — see
+// response-validation.middleware.ts.
+if (env.NODE_ENV !== "production") {
+  app.use(responseValidationMiddleware);
+}
+
+// Readiness, not just "the process is up": answers 503 when the database is
+// unreachable, so the Docker healthcheck (docker-compose.yml) and any
+// external uptime monitor see the outage instead of a cheerful "ok" from an
+// app that can't serve a single real page. Bounded by a short timeout so a
+// hung DB connection fails the check rather than hanging it. Failures log
+// at warn, not error — logger.error persists to ErrorLog and goes to Sentry,
+// and this runs every 10s while the DB is down.
+const HEALTH_DB_TIMEOUT_MS = 2_000;
+
+app.get("/api/health", async (_req, res) => {
+  try {
+    await Promise.race([
+      prisma.$queryRaw`SELECT 1`,
+      new Promise((_resolve, reject) =>
+        setTimeout(() => reject(new Error("Database health check timed out")), HEALTH_DB_TIMEOUT_MS).unref(),
+      ),
+    ]);
+    res.status(200).json({ status: "ok", db: "up" });
+  } catch (err) {
+    logger.warn({ err }, "Health check: database unreachable");
+    res.status(503).json({ status: "error", db: "down" });
+  }
 });
 
 // Applied to every /api route (uploads/static assets are exempt — browsers
-// legitimately fetch many images per page). Auth routes stack an additional,
-// much tighter authRateLimit on top of this (see auth.routes.ts).
-app.use("/api", globalRateLimit);
+// legitimately fetch many images per page). Each middleware only acts on its
+// own half of the split (GET/HEAD vs everything else — see
+// rateLimit.middleware.ts's comment), so exactly one of the two actually
+// counts a given request. Auth routes stack an additional, much tighter
+// authRateLimit on top of the write budget (see auth.routes.ts).
+app.use("/api", globalReadRateLimit, globalWriteRateLimit);
 
 app.use(
   "/uploads",
   helmet.crossOriginResourcePolicy({ policy: "cross-origin" }),
-  express.static(path.resolve("uploads")),
+  // maxAge/immutable is safe here specifically because storage.ts's
+  // filenames are never reused — every upload gets its own
+  // `${Date.now()}-${random}${extension}` name, and "replacing" an image
+  // (product photo, hero slide, ...) deletes the old file and writes a new
+  // name rather than overwriting bytes at the same path (see
+  // deleteUploadedImage). Without this, every product/vehicle/hero-slide
+  // photo was re-fetched on every repeat visit instead of served from the
+  // browser's own cache — Express defaults express.static's Cache-Control
+  // to no caching at all.
+  express.static(path.resolve("uploads"), { maxAge: "1y", immutable: true }),
 );
 
 app.use("/api/auth", authRouter);
@@ -193,6 +243,7 @@ app.use("/api/cache", cacheRouter);
 app.use("/api/error-logs", errorLogsRouter);
 app.use("/api/company-info", companyInfoRouter);
 app.use("/api/terms", termsRouter);
+app.use("/api/privacy-policy", privacyPolicyRouter);
 app.use("/api/email-templates", emailTemplatesRouter);
 app.use("/api/order-statuses", orderStatusesRouter);
 app.use("/api/vin-decode", vinDecodeRouter);
@@ -213,7 +264,10 @@ app.use("/api/analytics", analyticsRouter);
 app.use("/api/team-members", teamMembersRouter);
 app.use("/api/banks", banksRouter);
 app.use("/api/media", mediaRouter);
+app.use("/api/share-image", shareImageRouter);
+app.use("/api/slug-redirects", slugRedirectsRouter);
 app.use("/api/faq", faqRouter);
+app.use("/api/vacancies", vacanciesRouter);
 app.use("/api/service-types", serviceTypesRouter);
 app.use("/api/service-records", serviceRecordsRouter);
 app.use("/api/sessions", sessionsRouter);

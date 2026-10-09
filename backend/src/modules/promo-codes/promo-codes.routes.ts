@@ -20,32 +20,64 @@ import {
 
 export const promoCodesRouter = Router();
 
-promoCodesRouter.use(requireAuth, requireRole(ROLES.ADMIN));
-
-promoCodesRouter.get("/", validate(listPromoCodesQuerySchema, "query"), promoCodesController.list);
-promoCodesRouter.post("/", validate(createPromoCodeSchema), promoCodesController.create);
-promoCodesRouter.get("/:id", validate(promoCodeIdParamSchema, "params"), promoCodesController.get);
+// Per-route (not a blanket `.use()`) — the two GETs (view-only) grant
+// OPERATOR too; every write stays ADMIN-only.
+promoCodesRouter.get(
+  "/",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(listPromoCodesQuerySchema, "query"),
+  promoCodesController.list,
+);
+promoCodesRouter.post(
+  "/",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  validate(createPromoCodeSchema),
+  promoCodesController.create,
+);
+promoCodesRouter.get(
+  "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(promoCodeIdParamSchema, "params"),
+  promoCodesController.get,
+);
 promoCodesRouter.patch(
   "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(promoCodeIdParamSchema, "params"),
   validate(updatePromoCodeSchema),
   promoCodesController.update,
 );
-promoCodesRouter.delete("/:id", validate(promoCodeIdParamSchema, "params"), promoCodesController.remove);
+promoCodesRouter.delete(
+  "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  validate(promoCodeIdParamSchema, "params"),
+  promoCodesController.remove,
+);
 
 promoCodesRouter.get(
   "/:id/hero-slide",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(promoCodeIdParamSchema, "params"),
   promoCodesController.getHeroSlide,
 );
 promoCodesRouter.put(
   "/:id/hero-slide",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   validate(promoCodeIdParamSchema, "params"),
   validate(promoCodeHeroSlideInputSchema),
   promoCodesController.setHeroSlide,
 );
 promoCodesRouter.post(
   "/:id/hero-slide/image",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
   uploadRateLimit,
   validate(promoCodeIdParamSchema, "params"),
   imageUpload().single("image"),

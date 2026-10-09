@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import type { CollectionItem } from "@/lib/api/collection-api";
+import { buildVehicleListingSlug } from "@/lib/api/vehicle-listings";
+import {
+  dispatchCountChanged,
+  COMPARE_COUNT_CHANGED_EVENT,
+  WISHLIST_COUNT_CHANGED_EVENT,
+} from "@/lib/badge-count-events";
 import { usePopoverMenu } from "./usePopoverMenu";
 
 const PREVIEW_LIMIT = 4;
@@ -26,7 +32,7 @@ function itemDisplay(item: CollectionItem, locale: "ka" | "en" | "ru") {
   if (item.itemType === "VEHICLE_LISTING" && item.vehicleListing) {
     const { vehicleListing } = item;
     return {
-      href: `/${vehicleListing.vehicleCatalog.category.slug}/${vehicleListing.id}`,
+      href: `/${vehicleListing.vehicleCatalog.category.slug}/${buildVehicleListingSlug(vehicleListing)}`,
       name: `${vehicleListing.vehicleCatalog.brand.name} ${vehicleListing.vehicleCatalog.model.name}`,
       imageUrl: resolveMediaUrl(
         vehicleListing.images[0]?.imageUrl ?? vehicleListing.vehicleCatalog.imageUrl,
@@ -68,17 +74,31 @@ export function CollectionDropdown({
   const tHeader = useTranslations("Header");
   const t = useTranslations(translationNamespace);
   const tErrors = useTranslations("ApiErrors");
-  const router = useRouter();
   const { open, setOpen, containerRef, triggerRef } = usePopoverMenu({ arrowNav: false });
   const [items, setItems] = useState<CollectionItem[] | null>(null);
   const [loading, setLoading] = useState(false);
+  // Reflects a mutation made elsewhere on the page (WishlistButton/
+  // CompareButton on a product/vehicle card) without a `router.refresh()` —
+  // see badge-count-events.ts. Only matters while the dropdown is closed
+  // (`items === null`, badge showing `initialCount`); once opened, `items`'
+  // own length takes over below.
+  const countChangedEvent = headerLabelKey === "wishlist" ? WISHLIST_COUNT_CHANGED_EVENT : COMPARE_COUNT_CHANGED_EVENT;
+  const [countOverride, setCountOverride] = useState<number | null>(null);
+  useEffect(() => {
+    function handleCountChanged(event: Event) {
+      setCountOverride((event as CustomEvent<number>).detail);
+    }
+    window.addEventListener(countChangedEvent, handleCountChanged);
+    return () => window.removeEventListener(countChangedEvent, handleCountChanged);
+  }, [countChangedEvent]);
 
   async function handleToggle() {
     const next = !open;
     setOpen(next);
     if (!next) {
       // Drops the locally-fetched list on close so the badge falls back to
-      // `initialCount` again instead of permanently shadowing it.
+      // countOverride/initialCount again instead of permanently shadowing
+      // them.
       setItems(null);
       return;
     }
@@ -94,12 +114,23 @@ export function CollectionDropdown({
   }
 
   async function handleRemove(id: number) {
-    setItems((current) => (current ? current.filter((item) => item.id !== id) : current));
+    // Captured from inside the setItems updater (always sees the latest
+    // `items`) so the dispatch below carries the exact same count the badge
+    // itself just switched to.
+    let newLength: number | null = null;
+    setItems((current) => {
+      if (!current) return current;
+      const filtered = current.filter((item) => item.id !== id);
+      newLength = filtered.length;
+      return filtered;
+    });
     try {
       await removeItem(id);
-      // Refreshes server components (the header's own count badge, read
-      // here as `initialCount`).
-      router.refresh();
+      // Tells this badge (and any other page's instance, though there's
+      // only ever one) the fresh count directly, instead of a
+      // `router.refresh()` that would re-run this whole route's server
+      // component tree just to update one integer.
+      if (newLength != null) dispatchCountChanged(countChangedEvent, newLength);
     } catch (error) {
       // The row is already gone from the visible list — a failed DELETE
       // just leaves a stale row server-side, harmless and self-corrects on
@@ -112,7 +143,7 @@ export function CollectionDropdown({
 
   // Falls back to the server-rendered count until the dropdown is opened
   // for the first time, same reasoning as CartDropdown's count.
-  const count = items?.length ?? initialCount;
+  const count = items?.length ?? countOverride ?? initialCount;
 
   return (
     <div ref={containerRef} className="relative">
@@ -123,7 +154,7 @@ export function CollectionDropdown({
         aria-label={tHeader(headerLabelKey)}
         aria-haspopup="true"
         aria-expanded={open}
-        className="relative flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary sm:size-9"
+        className="relative flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-10"
       >
         {icon}
         {count > 0 && (
@@ -153,7 +184,7 @@ export function CollectionDropdown({
                       <Link
                         href={href}
                         onClick={() => setOpen(false)}
-                        className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:text-primary"
+                        className="flex min-w-0 flex-1 items-center gap-3 transition-colors hover:text-primary-text"
                       >
                         <div className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-muted">
                           {imageUrl ? (
@@ -165,7 +196,7 @@ export function CollectionDropdown({
                         <div className="flex min-w-0 flex-1 flex-col">
                           <span className="truncate text-sm font-medium text-foreground">{name}</span>
                           {price != null && (
-                            <span className="text-xs font-semibold text-primary">{formatPrice(price)}</span>
+                            <span className="text-xs font-semibold text-primary-text">{formatPrice(price)}</span>
                           )}
                         </div>
                       </Link>
@@ -173,7 +204,7 @@ export function CollectionDropdown({
                         type="button"
                         onClick={() => handleRemove(item.id)}
                         aria-label={t("removeLabel")}
-                        className="shrink-0 text-muted-foreground transition-colors hover:text-primary"
+                        className="shrink-0 text-muted-foreground transition-colors hover:text-primary-text"
                       >
                         ✕
                       </button>
