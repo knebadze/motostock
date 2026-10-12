@@ -117,7 +117,11 @@
     "outOfStock": "Нет в наличии",
     "lowStock": "Осталось всего {count} шт.",
     "yes": "Да",
-    "no": "Нет"
+    "no": "Нет",
+    "buyTogetherThisProduct": "Этот товар",
+    "buyTogetherSelectedCount": "{count, plural, one {Выбран # товар} few {Выбрано # товара} many {Выбрано # товаров} other {Выбрано # товаров}}",
+    "buyTogetherSavings": "Экономия {amount}",
+    "buyTogetherAddSelected": "{count, plural, =1 {Добавить в корзину} other {Добавить все (#) в корзину}}"
   },
   "Cart": {
     "empty": "Корзина пуста.",
