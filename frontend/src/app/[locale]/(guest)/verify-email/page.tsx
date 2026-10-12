@@ -7,7 +7,7 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function VerifyEmailPage() {
   return (
-    <div className="flex items-center justify-center px-4 py-24">
+    <div className="flex items-center justify-center px-4 py-10 sm:py-16 lg:py-24">
       <VerifyEmailView />
     </div>
   );

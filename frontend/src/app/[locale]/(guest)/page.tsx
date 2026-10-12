@@ -88,8 +88,8 @@ export default async function HomePage({
         // Fallback for before any slide is configured (or all disabled) — the
         // original static hero, unchanged, so the homepage is never empty.
         <section className="border-b border-border bg-muted/40">
-          <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-24 sm:px-6 lg:px-8">
-            <h1 className="max-w-2xl text-4xl font-extrabold tracking-tight sm:text-5xl">
+          <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-12 sm:py-24 sm:px-6 lg:px-8">
+            <h1 className="max-w-2xl text-3xl font-extrabold tracking-tight sm:text-5xl">
               {t.rich("heroTitle", {
                 hl: (chunks) => <span className="text-primary-text">{chunks}</span>,
               })}

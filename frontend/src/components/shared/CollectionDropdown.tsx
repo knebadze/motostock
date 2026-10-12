@@ -166,7 +166,7 @@ export function CollectionDropdown({
 
       {open && (
         <div
-          className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+          className="fixed inset-x-3 top-[4.25rem] z-50 overflow-hidden rounded-xl border border-border bg-card shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-80"
         >
           {loading ? (
             <p className="p-4 text-sm text-muted-foreground">…</p>

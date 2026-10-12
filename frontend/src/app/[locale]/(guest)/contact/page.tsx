@@ -197,7 +197,7 @@ function ContactPageView({ companyInfo }: { companyInfo: CompanyInfo }) {
       </div>
 
       {hasMap && (
-        <div className="mt-8 h-96 overflow-hidden rounded-2xl border border-border">
+        <div className="mt-8 h-64 sm:h-96 overflow-hidden rounded-2xl border border-border">
           <iframe
             title={t("addressLabel")}
             src={`https://www.google.com/maps?q=${companyInfo.latitude},${companyInfo.longitude}&output=embed`}

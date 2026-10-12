@@ -141,6 +141,14 @@ export function HeroSlider({
 
   const slide = slides[index];
   const imageUrl = resolveMediaUrl(slide.imageUrl);
+  // On phones a 4:3 box (~270px tall at 360px wide) can't fit the stacked
+  // vehicle-search/category form, and overflow-hidden clipped its button.
+  // When the slider has any form slide, phones get one shared min-height
+  // for every slide (so autoplay doesn't make the page jump between slide
+  // types), and a form slide's content is in normal flow so it can grow
+  // past it if needed (e.g. with the garage picker). sm+ is unchanged.
+  const hasFormSlide = slides.some((item) => item.type === "VEHICLE_SEARCH" || item.type === "CATEGORY_FILTER");
+  const isFormSlide = slide.type === "VEHICLE_SEARCH" || slide.type === "CATEGORY_FILTER";
 
   return (
     <section
@@ -148,7 +156,9 @@ export function HeroSlider({
       onMouseLeave={() => setPaused(false)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className="relative aspect-4/3 w-full overflow-hidden border-b border-border sm:aspect-video lg:aspect-21/9 lg:max-h-130"
+      className={`relative w-full overflow-hidden border-b border-border sm:aspect-video sm:min-h-0 lg:aspect-21/9 lg:max-h-130 ${
+        hasFormSlide ? "min-h-[34rem]" : "aspect-4/3"
+      }`}
     >
       {imageUrl ? (
         <Image
@@ -178,7 +188,7 @@ export function HeroSlider({
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 
           <div
-            className={`absolute inset-0 flex flex-col px-4 py-8 sm:px-8 sm:py-12 lg:px-16 ${VERTICAL_POSITION_CLASSES[slide.verticalPosition]}`}
+            className={`${isFormSlide ? "relative min-h-[34rem] sm:absolute sm:min-h-0" : "absolute"} inset-0 flex flex-col px-4 py-8 sm:px-8 sm:py-12 lg:px-16 ${VERTICAL_POSITION_CLASSES[slide.verticalPosition]}`}
           >
             <div
               className={`mx-auto flex w-full max-w-6xl flex-col gap-4 ${TEXT_POSITION_CLASSES[slide.textPosition]}`}
@@ -187,7 +197,7 @@ export function HeroSlider({
                   stable <h1> (see [locale]/page.tsx), since this per-slide
                   heading is conditional (absent entirely for POSTER slides)
                   and changes with whichever slide is currently showing. */}
-              <h2 className="max-w-2xl text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
+              <h2 className="max-w-2xl text-2xl font-extrabold tracking-tight text-white sm:text-5xl">
                 {slide.title[locale]}
               </h2>
               {slide.type === "DISCOUNT" && slide.bulkDiscountEvent && (

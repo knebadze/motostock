@@ -18,7 +18,7 @@ function NotFoundView({ companyInfo }: { companyInfo: CompanyInfo }) {
   return (
     <>
       <Header companyInfo={companyInfo} />
-      <main className="flex flex-1 items-center justify-center px-4 py-24">
+      <main className="flex flex-1 items-center justify-center px-4 py-10 sm:py-16 lg:py-24">
         <div className="text-center">
           <p className="text-sm font-semibold text-primary-text">404</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">

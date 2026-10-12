@@ -63,8 +63,8 @@ function FooterView({
 
   return (
     <footer className="border-t border-border bg-muted/40">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-5 lg:px-8">
-        <div className="sm:col-span-2 lg:col-span-2">
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-8 px-4 py-10 sm:gap-8 sm:px-6 sm:py-12 lg:grid-cols-5 lg:px-8">
+        <div className="col-span-2 lg:col-span-2">
           <Logo className="h-9 w-auto" />
           <p className="mt-3 max-w-sm text-sm text-muted-foreground">
             {tFooter("description")}
@@ -134,7 +134,7 @@ function FooterView({
           </ul>
         </div>
 
-        <div>
+        <div className="col-span-2 sm:col-span-1">
           <h3 className="text-sm font-semibold">{tFooter("contactTitle")}</h3>
           <ul className="mt-4 flex flex-col gap-2.5 text-sm text-muted-foreground">
             {address && <li>{address}</li>}

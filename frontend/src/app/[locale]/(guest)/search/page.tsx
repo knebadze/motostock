@@ -55,7 +55,7 @@ export default async function SearchPage({
 
   if (query.length < SEARCH_MIN_LENGTH) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
         <h1 className="text-2xl font-bold tracking-tight">{t("emptyTitle")}</h1>
         <p className="mt-2 text-muted-foreground">
           {query ? t("minChars", { count: SEARCH_MIN_LENGTH }) : t("emptyHint")}
