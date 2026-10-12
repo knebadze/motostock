@@ -234,6 +234,7 @@
     "weightLabel": "წონა",
     "seatHeightLabel": "სავარძლის სიმაღლე",
     "fuelTankLabel": "საწვავის ავზი",
+    "oilCapacityLabel": "ზეთის მოცულობა",
     "topSpeedLabel": "მაქს. სიჩქარე",
     "absLabel": "ABS"
   },

@@ -49,6 +49,7 @@ export const VEHICLE_SPEC_FIELDS: {
   { field: "WEIGHT_KG", label: "წონა (კგ)", kind: "NUMBER" },
   { field: "SEAT_HEIGHT_MM", label: "სავარძლის სიმაღლე (მმ)", kind: "NUMBER" },
   { field: "FUEL_TANK_LITERS", label: "საწვავის ავზი (ლ)", kind: "NUMBER" },
+  { field: "OIL_CAPACITY_LITERS", label: "ზეთის მოცულობა (ლ)", kind: "NUMBER" },
   { field: "TOP_SPEED_KMH", label: "მაქსიმალური სიჩქარე (კმ/სთ)", kind: "NUMBER" },
   { field: "MOTOR_POWER_WATT", label: "ელექტროძრავის სიმძლავრე (ვტ)", kind: "NUMBER" },
   { field: "BATTERY_CAPACITY_WH", label: "ბატარეის ტევადობა (ვტ*სთ)", kind: "NUMBER" },

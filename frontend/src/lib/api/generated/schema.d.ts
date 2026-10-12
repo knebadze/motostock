@@ -14970,6 +14970,7 @@ export interface components {
             weightKg?: number | null;
             seatHeightMm?: number | null;
             fuelTankLiters?: number | null;
+            oilCapacityLiters?: number | null;
             topSpeedKmh?: number | null;
             hasAbs?: boolean | null;
             fuelTypeId?: number | null;
@@ -15002,6 +15003,7 @@ export interface components {
             weightKg?: number | null;
             seatHeightMm?: number | null;
             fuelTankLiters?: number | null;
+            oilCapacityLiters?: number | null;
             topSpeedKmh?: number | null;
             hasAbs?: boolean | null;
             fuelTypeId?: number | null;
@@ -15110,6 +15112,7 @@ export interface components {
             weightKg: number | null;
             seatHeightMm: number | null;
             fuelTankLiters: number | null;
+            oilCapacityLiters: number | null;
             topSpeedKmh: number | null;
             hasAbs: boolean | null;
             fuelType: components["schemas"]["LookupItem"] | null;
@@ -15581,7 +15584,7 @@ export interface components {
             /** @enum {string} */
             filterType: "PRICE" | "YEAR" | "BRAND" | "SPEC";
             /** @enum {string|null} */
-            specField?: "FUEL_TYPE" | "TRANSMISSION_TYPE" | "COOLING_TYPE" | "FINAL_DRIVE_TYPE" | "DRIVE_TYPE" | "START_TYPE" | "POWERTRAIN_TYPE" | "ENGINE_VOLUME_CC" | "ENGINE_POWER_HP" | "CYLINDER_COUNT" | "GEAR_COUNT" | "SEAT_COUNT" | "WEIGHT_KG" | "SEAT_HEIGHT_MM" | "FUEL_TANK_LITERS" | "TOP_SPEED_KMH" | "MOTOR_POWER_WATT" | "BATTERY_CAPACITY_WH" | "RANGE_KM" | "CHARGING_TIME_MINUTES" | "HAS_ABS" | "HAS_LOCKING_DIFFERENTIAL" | "IS_CUSTOMS_CLEARED" | null;
+            specField?: "FUEL_TYPE" | "TRANSMISSION_TYPE" | "COOLING_TYPE" | "FINAL_DRIVE_TYPE" | "DRIVE_TYPE" | "START_TYPE" | "POWERTRAIN_TYPE" | "ENGINE_VOLUME_CC" | "ENGINE_POWER_HP" | "CYLINDER_COUNT" | "GEAR_COUNT" | "SEAT_COUNT" | "WEIGHT_KG" | "SEAT_HEIGHT_MM" | "FUEL_TANK_LITERS" | "OIL_CAPACITY_LITERS" | "TOP_SPEED_KMH" | "MOTOR_POWER_WATT" | "BATTERY_CAPACITY_WH" | "RANGE_KM" | "CHARGING_TIME_MINUTES" | "HAS_ABS" | "HAS_LOCKING_DIFFERENTIAL" | "IS_CUSTOMS_CLEARED" | null;
         };
         UpdateVehicleCategoryFilterInput: {
             sortOrder: number;
@@ -15603,7 +15606,7 @@ export interface components {
             filterType: "PRICE" | "YEAR" | "BRAND" | "SPEC";
             sortOrder: number;
             /** @enum {string|null} */
-            specField: "FUEL_TYPE" | "TRANSMISSION_TYPE" | "COOLING_TYPE" | "FINAL_DRIVE_TYPE" | "DRIVE_TYPE" | "START_TYPE" | "POWERTRAIN_TYPE" | "ENGINE_VOLUME_CC" | "ENGINE_POWER_HP" | "CYLINDER_COUNT" | "GEAR_COUNT" | "SEAT_COUNT" | "WEIGHT_KG" | "SEAT_HEIGHT_MM" | "FUEL_TANK_LITERS" | "TOP_SPEED_KMH" | "MOTOR_POWER_WATT" | "BATTERY_CAPACITY_WH" | "RANGE_KM" | "CHARGING_TIME_MINUTES" | "HAS_ABS" | "HAS_LOCKING_DIFFERENTIAL" | "IS_CUSTOMS_CLEARED" | null;
+            specField: "FUEL_TYPE" | "TRANSMISSION_TYPE" | "COOLING_TYPE" | "FINAL_DRIVE_TYPE" | "DRIVE_TYPE" | "START_TYPE" | "POWERTRAIN_TYPE" | "ENGINE_VOLUME_CC" | "ENGINE_POWER_HP" | "CYLINDER_COUNT" | "GEAR_COUNT" | "SEAT_COUNT" | "WEIGHT_KG" | "SEAT_HEIGHT_MM" | "FUEL_TANK_LITERS" | "OIL_CAPACITY_LITERS" | "TOP_SPEED_KMH" | "MOTOR_POWER_WATT" | "BATTERY_CAPACITY_WH" | "RANGE_KM" | "CHARGING_TIME_MINUTES" | "HAS_ABS" | "HAS_LOCKING_DIFFERENTIAL" | "IS_CUSTOMS_CLEARED" | null;
             specFieldLabel: {
                 ka: string;
                 en: string;
@@ -15703,6 +15706,7 @@ export interface components {
                 weightKg: number | null;
                 seatHeightMm: number | null;
                 fuelTankLiters: number | null;
+                oilCapacityLiters: number | null;
                 topSpeedKmh: number | null;
                 hasAbs: boolean | null;
                 fuelType: components["schemas"]["LookupItem"] | null;

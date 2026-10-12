@@ -565,6 +565,7 @@ export const vehicleListingRepository = {
             weightKg: true,
             seatHeightMm: true,
             fuelTankLiters: true,
+            oilCapacityLiters: true,
             topSpeedKmh: true,
             motorPowerWatt: true,
             batteryCapacityWh: true,

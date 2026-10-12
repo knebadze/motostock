@@ -211,6 +211,14 @@ export function buildVehicleSpecRows(
       raw: catalog.fuelTankLiters,
     });
   }
+  if (catalog.oilCapacityLiters != null) {
+    rows.push({
+      key: "oilCapacity",
+      label: t("oilCapacityLabel"),
+      value: `${catalog.oilCapacityLiters} L`,
+      raw: catalog.oilCapacityLiters,
+    });
+  }
   if (catalog.topSpeedKmh != null) {
     rows.push({
       key: "topSpeed",

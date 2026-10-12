@@ -234,6 +234,7 @@
     "weightLabel": "Weight",
     "seatHeightLabel": "Seat height",
     "fuelTankLabel": "Fuel tank",
+    "oilCapacityLabel": "Oil capacity",
     "topSpeedLabel": "Top speed",
     "absLabel": "ABS"
   },

@@ -26,6 +26,7 @@ export const vehicleSpecFieldSchema = z.enum([
   "WEIGHT_KG",
   "SEAT_HEIGHT_MM",
   "FUEL_TANK_LITERS",
+  "OIL_CAPACITY_LITERS",
   "TOP_SPEED_KMH",
   "MOTOR_POWER_WATT",
   "BATTERY_CAPACITY_WH",

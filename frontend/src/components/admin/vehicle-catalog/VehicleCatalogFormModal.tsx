@@ -94,6 +94,9 @@ export function VehicleCatalogFormModal({
   const [fuelTankLiters, setFuelTankLiters] = useState(
     entry?.fuelTankLiters != null ? String(entry.fuelTankLiters) : "",
   );
+  const [oilCapacityLiters, setOilCapacityLiters] = useState(
+    entry?.oilCapacityLiters != null ? String(entry.oilCapacityLiters) : "",
+  );
   const [topSpeedKmh, setTopSpeedKmh] = useState(toInputValue(entry?.topSpeedKmh));
   const [hasAbs, setHasAbs] = useState(entry?.hasAbs ?? false);
   const [fuelTypeId, setFuelTypeId] = useState(toInputValue(entry?.fuelType?.id));
@@ -214,6 +217,7 @@ export function VehicleCatalogFormModal({
       weightKg,
       seatHeightMm,
       fuelTankLiters,
+      oilCapacityLiters,
       topSpeedKmh,
       motorPowerWatt,
       batteryCapacityWh,
@@ -244,6 +248,7 @@ export function VehicleCatalogFormModal({
         weightKg: toNullableInt(weightKg),
         seatHeightMm: toNullableInt(seatHeightMm),
         fuelTankLiters: toNullableFloat(fuelTankLiters),
+        oilCapacityLiters: toNullableFloat(oilCapacityLiters),
         topSpeedKmh: toNullableInt(topSpeedKmh),
         hasAbs,
         fuelTypeId: toNullableInt(fuelTypeId),
@@ -351,6 +356,8 @@ export function VehicleCatalogFormModal({
                   onTopSpeedKmhChange={setTopSpeedKmh}
                   fuelTankLiters={fuelTankLiters}
                   onFuelTankLitersChange={setFuelTankLiters}
+                  oilCapacityLiters={oilCapacityLiters}
+                  onOilCapacityLitersChange={setOilCapacityLiters}
                   hasAbs={hasAbs}
                   onHasAbsChange={setHasAbs}
                   fuelTypes={fuelTypes}

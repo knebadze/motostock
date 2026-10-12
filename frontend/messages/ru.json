@@ -234,6 +234,7 @@
     "weightLabel": "Вес",
     "seatHeightLabel": "Высота седла",
     "fuelTankLabel": "Топливный бак",
+    "oilCapacityLabel": "Объём масла",
     "topSpeedLabel": "Макс. скорость",
     "absLabel": "ABS"
   },

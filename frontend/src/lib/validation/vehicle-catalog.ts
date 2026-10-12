@@ -27,6 +27,10 @@ export const vehicleCatalogFormSchema = z
     weightKg: optionalPositiveIntString,
     seatHeightMm: optionalPositiveIntString,
     fuelTankLiters: optionalPositiveDecimalString(),
+    oilCapacityLiters: optionalPositiveDecimalString().refine(
+      (value) => value.trim() === "" || Number(value) <= 99.99,
+      { message: "მაქსიმუმ 99.99 ლ" },
+    ),
     topSpeedKmh: optionalPositiveIntString,
     motorPowerWatt: optionalPositiveIntString,
     batteryCapacityWh: optionalPositiveIntString,

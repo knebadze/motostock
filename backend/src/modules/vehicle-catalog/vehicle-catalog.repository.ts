@@ -36,6 +36,7 @@ type VehicleCatalogWriteData = {
   weightKg?: number | null;
   seatHeightMm?: number | null;
   fuelTankLiters?: number | null;
+  oilCapacityLiters?: number | null;
   topSpeedKmh?: number | null;
   hasAbs?: boolean | null;
   fuelTypeId?: number | null;

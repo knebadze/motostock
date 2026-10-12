@@ -119,6 +119,7 @@ export async function bulkImportVehicleCatalog(fileBuffer: Buffer) {
       weightKg: cellNumber(row.getCell(COLUMN_INDEX.weightKg)),
       seatHeightMm: cellNumber(row.getCell(COLUMN_INDEX.seatHeightMm)),
       fuelTankLiters: cellNumber(row.getCell(COLUMN_INDEX.fuelTankLiters)),
+      oilCapacityLiters: cellNumber(row.getCell(COLUMN_INDEX.oilCapacityLiters)),
       topSpeedKmh: cellNumber(row.getCell(COLUMN_INDEX.topSpeedKmh)),
       hasAbs: cellBoolean(row.getCell(COLUMN_INDEX.hasAbs)),
       fuelTypeId: cellNumber(row.getCell(COLUMN_INDEX.fuelTypeId)),

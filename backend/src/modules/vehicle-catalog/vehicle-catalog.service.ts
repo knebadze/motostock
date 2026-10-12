@@ -41,6 +41,7 @@ type VehicleCatalogRow = {
   weightKg: number | null;
   seatHeightMm: number | null;
   fuelTankLiters: { toString(): string } | null;
+  oilCapacityLiters: { toString(): string } | null;
   topSpeedKmh: number | null;
   hasAbs: boolean | null;
   fuelType: LookupRow;
@@ -88,6 +89,7 @@ export function toVehicleCatalogResponse(row: VehicleCatalogRow) {
     weightKg: row.weightKg,
     seatHeightMm: row.seatHeightMm,
     fuelTankLiters: row.fuelTankLiters != null ? Number(row.fuelTankLiters) : null,
+    oilCapacityLiters: row.oilCapacityLiters != null ? Number(row.oilCapacityLiters) : null,
     topSpeedKmh: row.topSpeedKmh,
     hasAbs: row.hasAbs,
     fuelType: row.fuelType,

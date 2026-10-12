@@ -56,6 +56,9 @@ export const DATA_COLUMNS: { key: string; header: string }[] = [
   { key: "descriptionKa", header: "აღწერა (ka)" },
   { key: "descriptionEn", header: "აღწერა (en)" },
   { key: "descriptionRu", header: "აღწერა (ru)" },
+  // Added after the original columns (2026-10) — appended, not inserted
+  // next to fuelTankLiters, so templates downloaded earlier still import.
+  { key: "oilCapacityLiters", header: "ზეთის მოცულობა (ლ)" },
 ];
 
 const DATA_SHEET_NAME = "მონაცემები";

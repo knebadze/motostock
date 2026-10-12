@@ -220,6 +220,7 @@ export const vehicleListingResponseSchema = registry.register(
       weightKg: z.int().nullable(),
       seatHeightMm: z.int().nullable(),
       fuelTankLiters: z.number().nullable(),
+      oilCapacityLiters: z.number().nullable(),
       topSpeedKmh: z.int().nullable(),
       hasAbs: z.boolean().nullable(),
       fuelType: lookupItemResponseSchema.nullable(),
