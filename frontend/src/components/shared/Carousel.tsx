@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 // directly instead of threading translated label props from every caller.
 // The card slots below are a fixed w-56 (224px) / sm:w-64 (256px) — cards
 // rendered inside pass this as their image `sizes`.
-export const CAROUSEL_CARD_IMAGE_SIZES = "(min-width: 640px) 256px, 224px";
+export const CAROUSEL_CARD_IMAGE_SIZES = "(min-width: 1024px) 256px, (min-width: 640px) 224px, 47vw";
 
 export function Carousel<T>({
   items,
@@ -76,10 +76,10 @@ export function Carousel<T>({
 
       <div
         ref={trackRef}
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto sm:gap-4 scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {items.map((item) => (
-          <div key={getKey(item)} className="w-56 shrink-0 snap-start sm:w-64">
+          <div key={getKey(item)} className="w-[calc((100%-0.75rem)/2.15)] shrink-0 snap-start sm:w-56 lg:w-64">
             {renderItem(item)}
           </div>
         ))}

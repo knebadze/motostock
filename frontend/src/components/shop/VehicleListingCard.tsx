@@ -59,8 +59,8 @@ export function VehicleListingCard({
     // an <a> (invalid HTML — interactive content inside interactive
     // content).
     <div
-      className={`group relative h-full rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg ${
-        layout === "list" ? "flex items-center gap-4" : "flex flex-col gap-3"
+      className={`group relative h-full rounded-xl border border-border bg-card p-2.5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:shadow-lg sm:rounded-2xl sm:p-4 ${
+        layout === "list" ? "flex items-center gap-3 sm:gap-4" : "flex flex-col gap-2 sm:gap-3"
       }`}
     >
       <Link
@@ -80,19 +80,19 @@ export function VehicleListingCard({
             src={imageUrl}
             alt={vehicleLabel}
             fill
-            sizes={layout === "list" ? "96px" : (imageSizes ?? "(min-width: 1024px) 22vw, (min-width: 640px) 45vw, 90vw")}
+            sizes={layout === "list" ? "96px" : (imageSizes ?? "(min-width: 1280px) 200px, (min-width: 1024px) 220px, (min-width: 640px) 33vw, 50vw")}
             className="object-cover"
           />
         ) : (
           <div className="size-full border border-dashed border-border" />
         )}
         {outOfStock && (
-          <span className="absolute left-1.5 top-1.5 rounded-full bg-foreground/80 px-2 py-0.5 text-xs font-semibold text-background shadow-sm">
+          <span className="absolute left-1.5 top-1.5 rounded-full bg-foreground/80 px-1.5 py-0.5 text-[11px] font-semibold text-background shadow-sm sm:px-2 sm:text-xs">
             {t("outOfStock")}
           </span>
         )}
         {activeDiscount && (
-          <span className="absolute right-1.5 top-1.5 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground shadow-sm">
+          <span className="absolute right-1.5 top-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-primary-foreground shadow-sm sm:px-2 sm:text-xs">
             {t("discountBadge")}
           </span>
         )}
@@ -118,13 +118,13 @@ export function VehicleListingCard({
 
       <div className="pointer-events-none flex flex-1 flex-col justify-between gap-1">
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground sm:text-xs">
             {listing.vehicleCatalog.brand.name} · {listing.year}
           </span>
-          <span className="line-clamp-2 min-h-12 font-semibold text-foreground">
+          <span className="line-clamp-2 min-h-10 text-sm font-semibold leading-snug text-foreground sm:min-h-12 sm:text-base sm:leading-normal">
             {listing.vehicleCatalog.model.name}
           </span>
-          <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
+          <div className="flex flex-wrap gap-1 text-[11px] text-muted-foreground sm:gap-1.5 sm:text-xs">
             {listing.isCustomsCleared ? (
               // text-*-600 measured at ~3.2-3.3:1 against this badge's own
               // tinted background in light mode — short of the 4.5:1 AA
@@ -148,18 +148,18 @@ export function VehicleListingCard({
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2">
           {activeDiscount ? (
             <>
-              <span className="text-sm text-muted-foreground line-through">
+              <span className="text-xs text-muted-foreground line-through sm:text-sm">
                 {formatPrice(priceDisplay.convert(listing.price), priceDisplay.displayCurrency)}
               </span>
-              <span className="text-lg font-bold text-primary-text">
+              <span className="text-base font-bold text-primary-text sm:text-lg">
                 {formatPrice(priceDisplay.convert(activeDiscount.discountPrice), priceDisplay.displayCurrency)}
               </span>
             </>
           ) : (
-            <span className="text-lg font-bold text-primary-text">
+            <span className="text-base font-bold text-primary-text sm:text-lg">
               {formatPrice(priceDisplay.convert(listing.price), priceDisplay.displayCurrency)}
             </span>
           )}

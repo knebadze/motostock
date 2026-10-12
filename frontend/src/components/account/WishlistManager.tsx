@@ -36,7 +36,7 @@ export function WishlistManager({ initialItems }: { initialItems: WishlistItem[]
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {t("productsHeading")}
           </h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
             {productItems.map((item) => (
               <ProductCard
                 key={item.id}
@@ -57,7 +57,7 @@ export function WishlistManager({ initialItems }: { initialItems: WishlistItem[]
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {t("vehiclesHeading")}
           </h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
             {vehicleItems.map((item) => (
               <VehicleListingCard
                 key={item.id}
