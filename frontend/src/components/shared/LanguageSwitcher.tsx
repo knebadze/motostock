@@ -21,7 +21,17 @@ const CODES: Record<string, string> = {
 // desktop utility bar's h-10 row, the mobile drawer's inline row) — the
 // default bordered pill is sized for the main header row and clips against
 // a thinner container.
-export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
+// `align`: which edge of the trigger the dropdown lines up with — "right"
+// (grows leftward, the default) for triggers near the right edge, "left"
+// for one at the left edge of its row (the mobile menu's settings row),
+// where a right-aligned list ran off the screen.
+export function LanguageSwitcher({
+  compact = false,
+  align = "right",
+}: {
+  compact?: boolean;
+  align?: "left" | "right";
+}) {
   const locale = useLocale();
   const t = useTranslations("Header");
   const pathname = usePathname();
@@ -76,7 +86,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
       {open && (
         <ul
           role="listbox"
-          className={`absolute right-0 z-50 w-36 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg ${
+          className={`absolute ${align === "left" ? "left-0" : "right-0"} z-50 w-36 overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg ${
             compact ? "top-6" : "top-11"
           }`}
         >

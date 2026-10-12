@@ -744,7 +744,7 @@ export function Header({
                     the menu) — the language dropdown opens downward, so it
                     stays here rather than near the scrollable menu's end. */}
                 <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6">
-                  <LanguageSwitcher />
+                  <LanguageSwitcher align="left" />
                   <ThemeToggle />
                 </div>
 
