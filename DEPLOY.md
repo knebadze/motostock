@@ -76,6 +76,7 @@ docker compose up -d
 ```bash
 docker compose run --rm migrate npx tsx prisma/seed-products.ts
 docker compose run --rm migrate npx tsx prisma/seed-vehicles.ts
+docker compose run --rm migrate npx tsx prisma/seed-tags.ts      # დემო ტეგები „ერთად შეძენისთვის" (seed-products-ის შემდეგ)
 ```
 
 ⚠️ **ადმინის ანგარიშის default პაროლი** (`admin@gmail.com` / `admin123`, იხ. `prisma/seed.ts`)
