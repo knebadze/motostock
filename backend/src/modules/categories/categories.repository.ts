@@ -12,6 +12,7 @@ type CategoryWriteData = {
   sortOrder?: number;
   lowStockBadgeEnabled?: boolean;
   onlinePurchaseEnabled?: boolean;
+  vehicleFitmentEnabled?: boolean;
 };
 
 export const categoriesRepository = {
@@ -31,10 +32,12 @@ export const categoriesRepository = {
     return prisma.category.findUnique({ where: { slug } });
   },
 
-  // The whole tree's purchase switches — tiny (one row per category), read
-  // fresh on every cart add/checkout so an admin change applies at once.
-  findOnlinePurchaseTree() {
-    return prisma.category.findMany({ select: { id: true, parentId: true, onlinePurchaseEnabled: true } });
+  // The whole tree's inherited switches — tiny (one row per category), read
+  // fresh on every use so an admin change applies at once.
+  findInheritedFlagTree() {
+    return prisma.category.findMany({
+      select: { id: true, parentId: true, onlinePurchaseEnabled: true, vehicleFitmentEnabled: true },
+    });
   },
 
   countChildren(id: number) {

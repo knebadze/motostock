@@ -22,6 +22,7 @@ type CategoryRow = {
   sortOrder: number;
   lowStockBadgeEnabled: boolean;
   onlinePurchaseEnabled: boolean;
+  vehicleFitmentEnabled: boolean;
   parentId: number | null;
   createdAt: Date;
   updatedAt: Date;
@@ -38,6 +39,7 @@ function toResponse(category: CategoryRow) {
     sortOrder: category.sortOrder,
     lowStockBadgeEnabled: category.lowStockBadgeEnabled,
     onlinePurchaseEnabled: category.onlinePurchaseEnabled,
+    vehicleFitmentEnabled: category.vehicleFitmentEnabled,
     parentId: category.parentId,
     parent: category.parent
       ? {
@@ -54,28 +56,52 @@ function toResponse(category: CategoryRow) {
   };
 }
 
-// Ids of every category whose items can't be bought on the site: switched
-// off itself, or under a switched-off ancestor (so turning off "Transport"
+type InheritedFlag = "onlinePurchaseEnabled" | "vehicleFitmentEnabled";
+
+// Ids of every category where `flag` is effectively off: switched off
+// itself, or under a switched-off ancestor (so turning it off on "Transport"
 // covers all its subcategories).
-export async function getOnlinePurchaseBlockedCategoryIds(): Promise<Set<number>> {
-  const rows = await categoriesRepository.findOnlinePurchaseTree();
+async function getCategoryIdsWithFlagOff(flag: InheritedFlag): Promise<Set<number>> {
+  const rows = await categoriesRepository.findInheritedFlagTree();
   const byId = new Map(rows.map((row) => [row.id, row]));
-  const blocked = new Set<number>();
+  const off = new Set<number>();
   for (const row of rows) {
     // Walk up to the root; `seen` guards against a (should-be-impossible,
     // see assertNoCycle) parent cycle.
     const seen = new Set<number>();
     let current: typeof row | undefined = row;
     while (current && !seen.has(current.id)) {
-      if (!current.onlinePurchaseEnabled) {
-        blocked.add(row.id);
+      if (!current[flag]) {
+        off.add(row.id);
         break;
       }
       seen.add(current.id);
       current = current.parentId != null ? byId.get(current.parentId) : undefined;
     }
   }
-  return blocked;
+  return off;
+}
+
+// Categories whose items can't be bought on the site (cart/checkout).
+export function getOnlinePurchaseBlockedCategoryIds(): Promise<Set<number>> {
+  return getCategoryIdsWithFlagOff("onlinePurchaseEnabled");
+}
+
+// Categories whose products are vehicle-independent (no fitment) — see
+// products.service.ts's buildVehicleCompatibilityWhere.
+export function getVehicleFitmentDisabledCategoryIds(): Promise<Set<number>> {
+  return getCategoryIdsWithFlagOff("vehicleFitmentEnabled");
+}
+
+// Admin fitment/fitment-rule writes on a product in such a category.
+export async function assertCategoryVehicleFitmentEnabled(categoryId: number) {
+  if ((await getVehicleFitmentDisabledCategoryIds()).has(categoryId)) {
+    throw new ApiError(
+      400,
+      "ამ კატეგორიისთვის ტრანსპორტთან თავსებადობა გამორთულია (კატეგორიის პარამეტრებში)",
+      "VEHICLE_FITMENT_DISABLED_FOR_CATEGORY",
+    );
+  }
 }
 
 async function assertNoCycle(categoryId: number, proposedParentId: number) {
@@ -175,6 +201,9 @@ export async function createCategory(input: CreateCategoryInput) {
         ...(input.onlinePurchaseEnabled !== undefined
           ? { onlinePurchaseEnabled: input.onlinePurchaseEnabled }
           : {}),
+        ...(input.vehicleFitmentEnabled !== undefined
+          ? { vehicleFitmentEnabled: input.vehicleFitmentEnabled }
+          : {}),
       }),
     "slug",
     "ეს slug უკვე გამოყენებულია",
@@ -215,6 +244,9 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
           : {}),
         ...(input.onlinePurchaseEnabled !== undefined
           ? { onlinePurchaseEnabled: input.onlinePurchaseEnabled }
+          : {}),
+        ...(input.vehicleFitmentEnabled !== undefined
+          ? { vehicleFitmentEnabled: input.vehicleFitmentEnabled }
           : {}),
       }),
     "slug",

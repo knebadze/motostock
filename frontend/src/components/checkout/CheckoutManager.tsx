@@ -33,6 +33,7 @@ export function CheckoutManager({
   cart,
   vehicleCatalog,
   garageVehicles,
+  vehicleFitmentDisabledCategoryIds,
   banks,
 }: {
   addresses: Address[];
@@ -40,6 +41,9 @@ export function CheckoutManager({
   cart: Cart;
   vehicleCatalog: VehicleSearchOption[];
   garageVehicles: GarageVehicle[];
+  // Vehicle-independent categories (Category.vehicleFitmentEnabled off) —
+  // their products are left out of the compatibility check.
+  vehicleFitmentDisabledCategoryIds: number[];
   banks: PublicBank[];
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
@@ -54,12 +58,17 @@ export function CheckoutManager({
   const cartProducts = useMemo(() => {
     const byId = new Map<number, { id: number; name: LocalizedString }>();
     for (const item of cart.items) {
-      if (item.itemType === "PRODUCT_VARIANT" && item.productVariant) {
+      // Vehicle-independent products (e.g. helmets) aren't checked at all.
+      if (
+        item.itemType === "PRODUCT_VARIANT" &&
+        item.productVariant &&
+        !vehicleFitmentDisabledCategoryIds.includes(item.productVariant.product.category.id)
+      ) {
         byId.set(item.productVariant.product.id, item.productVariant.product);
       }
     }
     return Array.from(byId.values());
-  }, [cart]);
+  }, [cart, vehicleFitmentDisabledCategoryIds]);
 
   const [addresses, setAddresses] = useState(initialAddresses);
   const [addressModalOpen, setAddressModalOpen] = useState(false);

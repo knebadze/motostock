@@ -66,6 +66,9 @@ export function CategoryFormModal({
   const [onlinePurchaseEnabled, setOnlinePurchaseEnabled] = useState(
     category?.onlinePurchaseEnabled ?? true,
   );
+  const [vehicleFitmentEnabled, setVehicleFitmentEnabled] = useState(
+    category?.vehicleFitmentEnabled ?? true,
+  );
   const { file: imageFile, previewUrl, onChange: handleImageChange } = useFileUploadPreview(
     resolveMediaUrl(category?.imageUrl ?? null),
   );
@@ -106,6 +109,7 @@ export function CategoryFormModal({
         sortOrder,
         lowStockBadgeEnabled,
         onlinePurchaseEnabled,
+        vehicleFitmentEnabled,
       };
 
       const savedCategory = isEditing
@@ -251,6 +255,25 @@ export function CategoryFormModal({
               checked={onlinePurchaseEnabled}
               onChange={setOnlinePurchaseEnabled}
               label="საიტიდან შეძენა"
+            />
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">ტრანსპორტთან თავსებადობა</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                ჩართეთ კატეგორიებზე, რომელთა პროდუქტები კონკრეტულ ტრანსპორტზეა დამოკიდებული
+                (ნაწილები, ზეთები): პროდუქტის ფორმაში გამოჩნდება „თავსებადობის&rdquo; ჩანართი, საიტზე
+                კი თავსებადობის სია, „ჩემი ტრანსპორტის&rdquo; ფილტრი და შემოწმება checkout-ზე.
+                გამორთეთ, მაგალითად, ჩაფხუტებზე. ვრცელდება ყველა ქვეკატეგორიაზეც.
+              </p>
+            </div>
+            <Toggle
+              checked={vehicleFitmentEnabled}
+              onChange={setVehicleFitmentEnabled}
+              label="ტრანსპორტთან თავსებადობა"
             />
           </div>
         </div>

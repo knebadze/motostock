@@ -71,8 +71,13 @@ export const vehicleCatalogRepository = {
   // rule on one of its spec values / ALL), restricted to products with at
   // least one active variant (what the storefront counts as listable).
   // Four queries total, instead of three per catalog entry.
-  async findCompatibilityInputs() {
-    const listableProduct = { variants: { some: { isActive: true } } };
+  // fitmentDisabledCategoryIds: products there are vehicle-independent and
+  // never count as fitting a vehicle (see buildVehicleCompatibilityWhere).
+  async findCompatibilityInputs(fitmentDisabledCategoryIds: number[]) {
+    const listableProduct = {
+      variants: { some: { isActive: true } },
+      ...(fitmentDisabledCategoryIds.length > 0 ? { categoryId: { notIn: fitmentDisabledCategoryIds } } : {}),
+    };
     const [fitments, rules, specs, categories] = await Promise.all([
       prisma.productFitment.findMany({
         where: { product: listableProduct },

@@ -13,7 +13,12 @@ import { listProductBrands, type ProductBrand } from "@/lib/api/product-brands";
 import type { LookupItem } from "@/lib/api/lookups";
 import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
-import { flattenTree, isVehicleCategory, slugify } from "@/lib/categories-tree";
+import {
+  flattenTree,
+  getVehicleFitmentDisabledCategoryIds,
+  isVehicleCategory,
+  slugify,
+} from "@/lib/categories-tree";
 import { generateVariantCombinations } from "@/lib/variant-matrix";
 import { productFormSchema, buildAttributeValuesSchema, type AttributeFieldValue } from "@/lib/validation/products";
 import { productVariantFormSchema } from "@/lib/validation/product-variants";
@@ -79,6 +84,11 @@ export function ProductForm({
   );
 
   const [categoryId, setCategoryId] = useState(product ? String(product.category.id) : "");
+  // Vehicle-independent category (Category.vehicleFitmentEnabled off, e.g.
+  // helmets) — no fitment tab, and draft fitments picked under a previously
+  // selected category aren't saved (the backend would refuse them).
+  const fitmentEnabled =
+    !categoryId || !getVehicleFitmentDisabledCategoryIds(categories).has(Number(categoryId));
   const [productBrandId, setProductBrandId] = useState(
     product?.productBrand ? String(product.productBrand.id) : "",
   );
@@ -433,7 +443,7 @@ export function ProductForm({
         productInput,
         imageFile,
         draftVariants,
-        draftFitments,
+        draftFitments: fitmentEnabled ? draftFitments : [],
       });
 
       if (result.ok) {
@@ -578,25 +588,29 @@ export function ProductForm({
             ),
           },
         ]),
-    {
-      key: "fitment",
-      label: "თავსებადობა",
-      content: isEditing ? (
-        <ProductFitmentPanel
-          productId={product.id}
-          vehicleCatalog={vehicleCatalog}
-          categories={categories}
-          vehicleSpecLookups={vehicleSpecLookups}
-        />
-      ) : (
-        <DraftFitmentEditor
-          vehicleCatalog={vehicleCatalog}
-          fitments={draftFitments}
-          onAdd={addDraftFitment}
-          onRemove={removeDraftFitment}
-        />
-      ),
-    },
+    ...(fitmentEnabled
+      ? [
+          {
+            key: "fitment",
+            label: "თავსებადობა",
+            content: isEditing ? (
+              <ProductFitmentPanel
+                productId={product.id}
+                vehicleCatalog={vehicleCatalog}
+                categories={categories}
+                vehicleSpecLookups={vehicleSpecLookups}
+              />
+            ) : (
+              <DraftFitmentEditor
+                vehicleCatalog={vehicleCatalog}
+                fitments={draftFitments}
+                onAdd={addDraftFitment}
+                onRemove={removeDraftFitment}
+              />
+            ),
+          },
+        ]
+      : []),
     ...(isEditing
       ? [
           {

@@ -29,6 +29,10 @@ export const createCategorySchema = registry.register(
     // = storefront shows "visit the showroom" instead; applies to every
     // subcategory too. See Category.onlinePurchaseEnabled.
     onlinePurchaseEnabled: z.boolean().optional().openapi({ example: true }),
+    // Do this category's products depend on the vehicle (fitment)? Off =
+    // vehicle-independent (e.g. helmets); applies to every subcategory too.
+    // See Category.vehicleFitmentEnabled.
+    vehicleFitmentEnabled: z.boolean().optional().openapi({ example: true }),
   }),
 );
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
@@ -60,6 +64,7 @@ export const categoryResponseSchema = registry.register(
     sortOrder: z.int().openapi({ example: 0 }),
     lowStockBadgeEnabled: z.boolean().openapi({ example: true }),
     onlinePurchaseEnabled: z.boolean().openapi({ example: true }),
+    vehicleFitmentEnabled: z.boolean().openapi({ example: true }),
     parentId: z.int().nullable(),
     parent: z
       .object({ id: z.int(), name: localizedStringSchema })

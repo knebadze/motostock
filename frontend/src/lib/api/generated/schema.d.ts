@@ -15938,6 +15938,8 @@ export interface components {
             lowStockBadgeEnabled?: boolean;
             /** @example true */
             onlinePurchaseEnabled?: boolean;
+            /** @example true */
+            vehicleFitmentEnabled?: boolean;
         };
         UpdateCategoryInput: {
             /**
@@ -15962,6 +15964,8 @@ export interface components {
             lowStockBadgeEnabled?: boolean;
             /** @example true */
             onlinePurchaseEnabled?: boolean;
+            /** @example true */
+            vehicleFitmentEnabled?: boolean;
         };
         Category: {
             /** @example 1 */
@@ -15990,6 +15994,8 @@ export interface components {
             lowStockBadgeEnabled: boolean;
             /** @example true */
             onlinePurchaseEnabled: boolean;
+            /** @example true */
+            vehicleFitmentEnabled: boolean;
             parentId: number | null;
             parent?: {
                 id: number;

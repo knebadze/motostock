@@ -79,6 +79,7 @@ export function ProductDetailPage({
   product,
   breadcrumbChain,
   purchasableOnline,
+  vehicleFitmentEnabled,
   onlinePurchaseBlockedCategoryIds,
   companionRecommendations,
   similarRecommendations,
@@ -95,6 +96,9 @@ export function ProductDetailPage({
   // every such category, for the buy-together companions.
   purchasableOnline: boolean;
   onlinePurchaseBlockedCategoryIds: number[];
+  // False for a vehicle-independent category (Category.vehicleFitmentEnabled
+  // off, e.g. helmets) — no "compatible vehicles" list.
+  vehicleFitmentEnabled: boolean;
   // Server-rendered, streamed sections (see the route page's
   // <Suspense>-wrapped recommendation components) — the gallery, price and
   // add-to-cart no longer wait for the recommendation queries.
@@ -214,7 +218,7 @@ export function ProductDetailPage({
 
           <ProductSpecs attributeValues={product.attributeValues} />
 
-          {(product.fitments.length > 0 || product.fitmentRules.length > 0) && (
+          {vehicleFitmentEnabled && (product.fitments.length > 0 || product.fitmentRules.length > 0) && (
             <div className="flex flex-col gap-2">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("compatibleVehiclesHeading")}

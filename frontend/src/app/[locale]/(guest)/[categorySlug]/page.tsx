@@ -12,7 +12,7 @@ import {
   getVehicleCategoryFiltersFromServer,
   getVehicleListingsPageFromServer,
 } from "@/lib/api/server";
-import { isVehicleCategory, getAncestorChain } from "@/lib/categories-tree";
+import { isVehicleCategory, getAncestorChain, getVehicleFitmentDisabledCategoryIds } from "@/lib/categories-tree";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 import { JsonLd } from "@/components/shared/JsonLd";
@@ -180,12 +180,18 @@ export default async function CategoryShopPage({
   // `brandFacets` feeds the brand-checkbox facet list, same reasoning as the
   // vehicle branch above; `productsPage` feeds the actual grid.
   const productSortBy = parseProductSortBy(initialSort);
-  const [brandFacets, productsPage, filters, garageVehicles] = await Promise.all([
+  // Vehicle-independent category (Category.vehicleFitmentEnabled off, e.g.
+  // helmets): no "my vehicle" filter even if one is configured for it.
+  const vehicleFitmentEnabled = !getVehicleFitmentDisabledCategoryIds(categories).has(category.id);
+  const [brandFacets, productsPage, configuredFilters, garageVehicles] = await Promise.all([
     getProductBrandFacetsFromServer(category.id),
     getProductsPageFromServer(category.id, initialPage, productSortBy),
     getCategoryFiltersFromServer(category.id),
-    getMyGarageFromServer(),
+    vehicleFitmentEnabled ? getMyGarageFromServer() : Promise.resolve([]),
   ]);
+  const filters = vehicleFitmentEnabled
+    ? configuredFilters
+    : configuredFilters.filter((filter) => filter.filterType !== "MY_VEHICLE");
   return (
     <>
       {breadcrumbScript}

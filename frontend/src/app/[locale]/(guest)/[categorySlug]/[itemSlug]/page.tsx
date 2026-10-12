@@ -15,7 +15,12 @@ import {
   getViewedTogetherFromServer,
 } from "@/lib/api/server";
 import { buildVehicleListingSlug, parseVehicleListingIdFromSlug } from "@/lib/api/vehicle-listings";
-import { getAncestorChain, getOnlinePurchaseBlockedCategoryIds, isVehicleCategory } from "@/lib/categories-tree";
+import {
+  getAncestorChain,
+  getOnlinePurchaseBlockedCategoryIds,
+  getVehicleFitmentDisabledCategoryIds,
+  isVehicleCategory,
+} from "@/lib/categories-tree";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { siteConfig } from "@/config/site";
@@ -348,6 +353,9 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
   // (add-to-cart vs "visit the showroom") and its buy-together companions'.
   const onlinePurchaseBlockedCategoryIds = getOnlinePurchaseBlockedCategoryIds(categories);
   const purchasableOnline = !productCategory || !onlinePurchaseBlockedCategoryIds.has(productCategory.id);
+  // Vehicle-independent category (e.g. helmets) — no compatibility list.
+  const vehicleFitmentEnabled =
+    !productCategory || !getVehicleFitmentDisabledCategoryIds(categories).has(productCategory.id);
 
 
   const pathname = `/${product.category.slug}/${itemSlug}`;
@@ -438,6 +446,7 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
         }}
         breadcrumbChain={breadcrumbChain}
         purchasableOnline={purchasableOnline}
+        vehicleFitmentEnabled={vehicleFitmentEnabled}
         onlinePurchaseBlockedCategoryIds={[...onlinePurchaseBlockedCategoryIds]}
         companionRecommendations={
           <Suspense fallback={null}>

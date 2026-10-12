@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import { getVehicleFitmentDisabledCategoryIds } from "../categories/categories.service.js";
 import { ApiError } from "../../lib/ApiError.js";
 import type { Expect, ResponseMatches } from "../../lib/response-contract.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
@@ -425,14 +426,31 @@ async function buildAttributeValueWriteData(
 // Exported for reuse by getProductDetail below — filters a product's
 // buyTogether companions down to ones compatible with the customer's
 // selected vehicle, instead of always showing every configured companion.
+//
+// Products in a category with vehicle fitment switched off (e.g. helmets —
+// see Category.vehicleFitmentEnabled) are never "compatible" here, even with
+// leftover fitment rows/rules: this answers "which parts fit this vehicle"
+// (the compatible-products page, the "my vehicle" filter, popular for your
+// vehicle, the checkout check). Callers that only NARROW a list by vehicle
+// (recommendations, buy-together) wrap it in includeVehicleIndependent
+// instead, so those products aren't dropped just because a vehicle is
+// selected.
 export async function buildVehicleCompatibilityWhere(
   vehicleCatalogId: number,
 ): Promise<Prisma.ProductWhereInput> {
-  const vehicle = await vehicleCatalogRepository.findById(vehicleCatalogId);
+  const [vehicle, fitmentDisabledCategoryIds] = await Promise.all([
+    vehicleCatalogRepository.findById(vehicleCatalogId),
+    getVehicleFitmentDisabledCategoryIds(),
+  ]);
+  const excludeFitmentDisabled = (where: Prisma.ProductWhereInput): Prisma.ProductWhereInput =>
+    fitmentDisabledCategoryIds.size > 0
+      ? { AND: [where, { categoryId: { notIn: [...fitmentDisabledCategoryIds] } }] }
+      : where;
+
   if (!vehicle) {
     // Unknown id — fall back to the exact-match clause alone, which simply
     // (and correctly) returns nothing.
-    return { fitments: { some: { vehicleCatalogId } } };
+    return excludeFitmentDisabled({ fitments: { some: { vehicleCatalogId } } });
   }
 
   const ancestorCategoryIds = await resolveCategoryAndAncestorIds(vehicle.model.category.id);
@@ -454,14 +472,26 @@ export async function buildVehicleCompatibilityWhere(
       specLookupItemId: entry.value,
     }));
 
-  return {
+  return excludeFitmentDisabled({
     OR: [
       { fitments: { some: { vehicleCatalogId } } },
       { fitmentRules: { some: { type: "ALL" } } },
       { fitmentRules: { some: { type: "CATEGORY", categoryId: { in: ancestorCategoryIds } } } },
       ...(specOr.length > 0 ? [{ fitmentRules: { some: { OR: specOr } } }] : []),
     ],
-  };
+  });
+}
+
+// For narrowing an existing list by the selected vehicle (recommendations,
+// buy-together companions): compatible products PLUS every product in a
+// fitment-disabled category, which fits any vehicle.
+export async function includeVehicleIndependent(
+  compatibilityWhere: Prisma.ProductWhereInput,
+): Promise<Prisma.ProductWhereInput> {
+  const fitmentDisabledCategoryIds = await getVehicleFitmentDisabledCategoryIds();
+  return fitmentDisabledCategoryIds.size > 0
+    ? { OR: [compatibilityWhere, { categoryId: { in: [...fitmentDisabledCategoryIds] } }] }
+    : compatibilityWhere;
 }
 
 // Homepage sliders (on-sale/popular) hit these with the exact same
@@ -782,7 +812,7 @@ export async function getProductDetail(slug: string, vehicleCatalogId?: number) 
   // still legitimately not fit every vehicle the anchor itself fits (e.g. an
   // oil that fits every sport bike, paired with a filter that only fits
   // some of them).
-  const compatWhere = await buildVehicleCompatibilityWhere(vehicleCatalogId);
+  const compatWhere = await includeVehicleIndependent(await buildVehicleCompatibilityWhere(vehicleCatalogId));
   const compatibleIds = await productsRepository.findIdsMatchingWhere(
     response.buyTogether.map((product) => product.id),
     compatWhere,

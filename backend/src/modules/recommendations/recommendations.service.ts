@@ -2,7 +2,11 @@ import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { cache } from "../../lib/cache.js";
 import { productsRepository } from "../products/products.repository.js";
-import { toCardResponse as toProductResponse, buildVehicleCompatibilityWhere } from "../products/products.service.js";
+import {
+  toCardResponse as toProductResponse,
+  buildVehicleCompatibilityWhere,
+  includeVehicleIndependent,
+} from "../products/products.service.js";
 import { productFitmentRepository } from "../product-fitment/product-fitment.repository.js";
 import { productViewsRepository } from "../product-views/product-views.repository.js";
 import {
@@ -55,8 +59,10 @@ export async function listSimilarProducts(
   const limit = options.limit ?? (await getRecommendationsDefaultLimit());
   const poolSize = Math.min(100, limit * 5);
 
+  // Narrowing, not "parts that fit" — vehicle-independent products (e.g.
+  // helmets) stay in (see includeVehicleIndependent).
   const vehicleCompatibilityWhere = options.vehicleCatalogId
-    ? await buildVehicleCompatibilityWhere(options.vehicleCatalogId)
+    ? await includeVehicleIndependent(await buildVehicleCompatibilityWhere(options.vehicleCatalogId))
     : undefined;
 
   const candidates = await productsRepository.findMany({
@@ -101,7 +107,7 @@ async function computeFrequentlyBoughtTogether(
 
   let rankedIds = coOccurringIds;
   if (options.vehicleCatalogId != null) {
-    const where = await buildVehicleCompatibilityWhere(options.vehicleCatalogId);
+    const where = await includeVehicleIndependent(await buildVehicleCompatibilityWhere(options.vehicleCatalogId));
     const matching = await productsRepository.findIdsMatchingWhere(coOccurringIds, where);
     const allowedIds = new Set(matching.map((row) => row.id));
     rankedIds = coOccurringIds.filter((id) => allowedIds.has(id));
@@ -158,7 +164,7 @@ async function computeViewedTogether(productId: number, options: { vehicleCatalo
 
   let rankedIds = coViewedIds;
   if (options.vehicleCatalogId != null) {
-    const where = await buildVehicleCompatibilityWhere(options.vehicleCatalogId);
+    const where = await includeVehicleIndependent(await buildVehicleCompatibilityWhere(options.vehicleCatalogId));
     const matching = await productsRepository.findIdsMatchingWhere(coViewedIds, where);
     const allowedIds = new Set(matching.map((row) => row.id));
     rankedIds = coViewedIds.filter((id) => allowedIds.has(id));

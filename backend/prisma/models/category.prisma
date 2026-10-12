@@ -18,6 +18,12 @@ model Category {
   // purchasable only if it AND every ancestor have this on (see
   // categories.service.ts's getOnlinePurchaseBlockedCategoryIds).
   onlinePurchaseEnabled Boolean                      @default(true)
+  // Whether this category's products depend on the vehicle (parts, oils):
+  // admin fitment editing, the storefront compatibility list, "my vehicle"
+  // filter and checkout check. Off (e.g. helmets) = the products are
+  // vehicle-independent. Inherited the same way as onlinePurchaseEnabled
+  // (see categories.service.ts's getVehicleFitmentDisabledCategoryIds).
+  vehicleFitmentEnabled Boolean                      @default(true)
   parentId             Int?
   parent               Category?                     @relation("CategoryChildren", fields: [parentId], references: [id])
   children             Category[]                    @relation("CategoryChildren")
