@@ -440,7 +440,7 @@ export function Header({
       {/* Category bar (desktop) — its own full-width row under the logo row
           (RevZilla-style), opening a full-width mega menu on hover/focus. */}
       <nav onMouseLeave={scheduleMegaMenuClose} className="hidden border-t border-border lg:block">
-        <div className="mx-auto flex max-w-7xl items-stretch gap-1 px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl items-stretch justify-center gap-1 px-6 lg:px-8">
           {topLevelCategories.map((category) => {
             const href = `/${category.slug}`;
             const hasChildren = childrenOf(category.id).length > 0;
