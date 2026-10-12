@@ -10,7 +10,7 @@ export function AccountSidebar({ user }: { user: User }) {
   const pathname = usePathname();
 
   return (
-    <aside className="h-fit rounded-2xl border border-border bg-card p-4 shadow-sm md:sticky md:top-24">
+    <aside className="h-fit rounded-2xl border border-border bg-card p-4 shadow-sm md:sticky md:top-24 lg:top-40">
       <div className="flex items-center gap-3 border-b border-border pb-4">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground">
           {user.name.charAt(0).toUpperCase()}

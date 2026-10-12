@@ -392,7 +392,7 @@ export function VehicleShopPage({
       <div className="border-t border-border bg-muted/40">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr]">
-            <aside className="hidden h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:block md:sticky md:top-24">
+            <aside className="hidden h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:block md:sticky md:top-24 lg:top-40">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("filtersHeading")}
               </h2>

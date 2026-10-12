@@ -71,6 +71,29 @@
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+
+  /* Mobile menu drill-down (Header.tsx): a subcategory panel slides in
+     from the right, going back slides the previous level in from the left. */
+  --animate-slide-in-right: slide-in-from-right 0.25s ease-out;
+  --animate-slide-in-left: slide-in-from-left 0.25s ease-out;
+}
+
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 body {

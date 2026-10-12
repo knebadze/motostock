@@ -51,7 +51,8 @@
     "language": "Language",
     "settings": "Settings",
     "themeHeading": "Theme",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "mainMenu": "Main menu"
   },
   "Shop": {
     "filtersHeading": "Filters",

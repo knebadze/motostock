@@ -190,7 +190,7 @@ export function CompatibleProductsPage({
           </h1>
 
           <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr]">
-            <aside className="hidden h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:block md:sticky md:top-24">
+            <aside className="hidden h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:block md:sticky md:top-24 lg:top-40">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("filtersHeading")}
               </h2>

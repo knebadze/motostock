@@ -51,7 +51,8 @@
     "language": "Язык",
     "settings": "Настройки",
     "themeHeading": "Тема",
-    "viewAll": "Смотреть все"
+    "viewAll": "Смотреть все",
+    "mainMenu": "Главное меню"
   },
   "Shop": {
     "filtersHeading": "Фильтры",
