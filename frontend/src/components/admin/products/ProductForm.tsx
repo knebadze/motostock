@@ -8,6 +8,8 @@ import { Tabs } from "@/components/shared/Tabs";
 import type { Product, ProductListItem } from "@/lib/api/products";
 import { siteConfig } from "@/config/site";
 import type { Attribute } from "@/lib/api/attributes";
+import { Select } from "@/components/shared/Select";
+import type { Tag } from "@/lib/api/tags";
 import type { Category } from "@/lib/api/categories";
 import { listProductBrands, type ProductBrand } from "@/lib/api/product-brands";
 import type { LookupItem } from "@/lib/api/lookups";
@@ -63,6 +65,8 @@ export function ProductForm({
   vehicleSpecLookups,
   allProducts,
   product,
+  tags,
+  initialTagIds = [],
 }: {
   categories: Category[];
   sizes: LookupItem[];
@@ -73,6 +77,10 @@ export function ProductForm({
   vehicleSpecLookups: VehicleSpecLookupMap;
   allProducts: ProductListItem[];
   product: Product | null;
+  // Every buy-together tag (the multi-select's options) and, when editing,
+  // the product's current ones.
+  tags: Tag[];
+  initialTagIds?: number[];
 }) {
   const router = useRouter();
   const isEditing = product !== null;
@@ -84,6 +92,7 @@ export function ProductForm({
   );
 
   const [categoryId, setCategoryId] = useState(product ? String(product.category.id) : "");
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(() => initialTagIds.map(String));
   // Vehicle-independent category (Category.vehicleFitmentEnabled off, e.g.
   // helmets) — no fitment tab, and draft fitments picked under a previously
   // selected category aren't saved (the backend would refuse them).
@@ -444,6 +453,8 @@ export function ProductForm({
         imageFile,
         draftVariants,
         draftFitments: fitmentEnabled ? draftFitments : [],
+        tagIds: selectedTagIds.map(Number),
+        initialTagIds,
       });
 
       if (result.ok) {
@@ -611,15 +622,43 @@ export function ProductForm({
           },
         ]
       : []),
-    ...(isEditing
-      ? [
-          {
-            key: "buy-together",
-            label: "ერთად შეძენა",
-            content: <ProductBuyTogetherPanel productId={product.id} allProducts={allProducts} />,
-          },
-        ]
-      : []),
+    {
+      key: "buy-together",
+      label: "ერთად შეძენა",
+      content: (
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="product-tags" className="text-sm font-medium">
+              ტეგები
+            </label>
+            <Select
+              id="product-tags"
+              multiple
+              searchable
+              options={tags.map((tag) => ({
+                value: String(tag.id),
+                label: tag.isActive ? tag.name : `${tag.name} (გამორთული)`,
+              }))}
+              value={selectedTagIds}
+              onChange={setSelectedTagIds}
+              placeholder={tags.length > 0 ? "აირჩიეთ ტეგები" : "ტეგები ჯერ არ არის შექმნილი"}
+              emptyLabel="ტეგი ვერ მოიძებნა"
+            />
+            <p className="text-xs text-muted-foreground">
+              „ერთად შეძენაში&rdquo; ერთმანეთს შეეთავაზება საერთო ტეგის მქონე, სხვადასხვა კატეგორიის
+              პროდუქტები. ტეგების მართვა — მენიუში „ტეგები&rdquo;. ინახება პროდუქტის შენახვისას.
+            </p>
+          </div>
+          {isEditing ? (
+            <ProductBuyTogetherPanel productId={product.id} allProducts={allProducts} />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              კონკრეტული პროდუქტების ხელით მიბმა ხელმისაწვდომი იქნება პროდუქტის შენახვის შემდეგ.
+            </p>
+          )}
+        </div>
+      ),
+    },
   ];
 
   return (

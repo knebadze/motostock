@@ -37,6 +37,7 @@ import { productBrandsRouter } from "./modules/product-brands/product-brands.rou
 import { unitsRouter } from "./modules/units/units.routes.js";
 import { productsRouter } from "./modules/products/products.routes.js";
 import { searchRouter } from "./modules/search/search.routes.js";
+import { productTagsRouter, tagsRouter } from "./modules/tags/tags.routes.js";
 import { productFitmentRouter } from "./modules/product-fitment/product-fitment.routes.js";
 import { productFitmentRulesRouter } from "./modules/product-fitment-rules/product-fitment-rules.routes.js";
 import {
@@ -233,6 +234,8 @@ app.use("/api/units", unitsRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/search", searchRouter);
 app.use("/api/products/:productId/fitments", productFitmentRouter);
+app.use("/api/products/:productId/tags", productTagsRouter);
+app.use("/api/tags", tagsRouter);
 app.use("/api/products/:productId/fitment-rules", productFitmentRulesRouter);
 app.use("/api/products/:productId/buy-together", productBuyTogetherRouter);
 app.use("/api/product-buy-together", productBuyTogetherAdminRouter);

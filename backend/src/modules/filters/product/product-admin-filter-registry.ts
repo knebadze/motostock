@@ -32,6 +32,8 @@ const FIXED_HANDLERS: Record<string, Handler> = {
   SLUG: (value) => buildContainsAnyClause([["slug"]], asText(value)),
   CATEGORY: (value) => buildInClause(["categoryId"], asArray(value)),
   BRAND: (value) => buildInClause(["productBrandId"], asArray(value)),
+  // Buy-together tags (ProductTag) — products carrying any of the picked tags.
+  TAG: (value) => buildInClauseInSome("tags", "tagId", asArray(value)),
   SEARCH: (value) =>
     buildContainsAnyClause([["nameKa"], ["nameEn"], ["nameRu"]], asText(value)),
   PRICE: (value) => buildRangeInSomeClause("variants", "price", asRange(value)),

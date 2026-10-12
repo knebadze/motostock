@@ -166,21 +166,24 @@ export async function generateMetadata({
 async function CompanionRecommendations({
   productId,
   vehicleCatalogId,
-  hasCuratedBuyTogether,
+  bundleProductIds,
 }: {
   productId: number;
   vehicleCatalogId: string | undefined;
-  hasCuratedBuyTogether: boolean;
+  // What the "ერთად შეძენა" bundle above already shows (admin-curated +
+  // tag companions) — left out of the algorithmic carousel so nothing
+  // appears twice.
+  bundleProductIds: number[];
 }) {
-  // Algorithmic FBT is only a fallback for when the admin hasn't curated a
-  // buyTogether list (see BuyTogether.tsx vs FrequentlyBoughtTogether.tsx).
   const [frequentlyBoughtTogether, viewedTogether] = await Promise.all([
-    hasCuratedBuyTogether ? Promise.resolve([]) : getFrequentlyBoughtTogetherFromServer(productId, vehicleCatalogId),
+    getFrequentlyBoughtTogetherFromServer(productId, vehicleCatalogId),
     getViewedTogetherFromServer(productId, vehicleCatalogId),
   ]);
   return (
     <>
-      <FrequentlyBoughtTogether products={frequentlyBoughtTogether} />
+      <FrequentlyBoughtTogether
+        products={frequentlyBoughtTogether.filter((item) => !bundleProductIds.includes(item.id))}
+      />
       <ViewedTogether products={viewedTogether} />
     </>
   );
@@ -453,7 +456,16 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
             <CompanionRecommendations
               productId={product.id}
               vehicleCatalogId={selectedVehicleCatalogId}
-              hasCuratedBuyTogether={product.buyTogether.length > 0}
+              bundleProductIds={
+                // Mirrors ProductDetailPage/BuyTogether: the bundle is hidden
+                // for a non-purchasable product and drops non-purchasable
+                // companions.
+                purchasableOnline
+                  ? product.buyTogether
+                      .filter((item) => !onlinePurchaseBlockedCategoryIds.has(item.category.id))
+                      .map((item) => item.id)
+                  : []
+              }
             />
           </Suspense>
         }

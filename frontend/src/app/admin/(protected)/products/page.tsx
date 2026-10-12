@@ -3,11 +3,12 @@ import {
   getCategoriesFromServer,
   getLookupItemsFromServer,
   getProductBrandsFromServer,
+  getTagsFromServer,
 } from "@/lib/api/server";
 import { ProductsManager } from "@/components/admin/products/ProductsManager";
 
 export default async function ProductsPage() {
-  const [products, categories, productBrands, sizes, colors, conditions, statuses] =
+  const [products, categories, productBrands, sizes, colors, conditions, statuses, tags] =
     await Promise.all([
       getAdminProductsFromServer(),
       getCategoriesFromServer(),
@@ -16,6 +17,7 @@ export default async function ProductsPage() {
       getLookupItemsFromServer("colors"),
       getLookupItemsFromServer("conditions"),
       getLookupItemsFromServer("listing-statuses"),
+      getTagsFromServer(),
     ]);
 
   return (
@@ -27,6 +29,7 @@ export default async function ProductsPage() {
       colors={colors}
       conditions={conditions}
       statuses={statuses}
+      tags={tags}
     />
   );
 }

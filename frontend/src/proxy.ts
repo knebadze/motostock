@@ -64,6 +64,7 @@ const OPERATOR_ALLOWED_PATHS = new Set([
   "/admin/promo-codes",
   "/admin/compatibility",
   "/admin/buy-together",
+  "/admin/tags",
   "/admin/change-password",
 ]);
 const OPERATOR_DEFAULT_PATH = "/admin";

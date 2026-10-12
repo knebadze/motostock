@@ -20,6 +20,8 @@ import { buildProductFilterFields } from "@/config/admin-filters/product-filters
 import { formatPrice } from "@/lib/format";
 import { useAdminRole } from "@/components/admin/AdminRoleContext";
 import { ProductDetailModal } from "./ProductDetailModal";
+import { ProductTagBulkBar } from "./ProductTagBulkBar";
+import type { Tag } from "@/lib/api/tags";
 
 const columns: DataTableColumn<ProductListItem>[] = [
   {
@@ -84,6 +86,7 @@ export function ProductsManager({
   colors,
   conditions,
   statuses,
+  tags,
 }: {
   initialData: AdminListPage<ProductListItem>;
   categories: Category[];
@@ -92,6 +95,7 @@ export function ProductsManager({
   colors: LookupItem[];
   conditions: LookupItem[];
   statuses: LookupItem[];
+  tags: Tag[];
 }) {
   const router = useRouter();
   const role = useAdminRole();
@@ -101,6 +105,8 @@ export function ProductsManager({
   const [deletingProduct, setDeletingProduct] = useState<ProductListItem | null>(null);
   const [viewingProductId, setViewingProductId] = useState<number | null>(null);
   const [syncingProductId, setSyncingProductId] = useState<number | null>(null);
+  // Bulk tag assignment selection (ADMIN only) — kept across pages/filters.
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   const canCreate = categories.length > 0;
@@ -112,7 +118,39 @@ export function ProductsManager({
     colors,
     conditions,
     statuses,
+    tags,
   });
+
+  const pageIds = data.items.map((product) => product.id);
+  const allOnPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
+
+  function toggleSelected(productId: number) {
+    setSelectedIds((current) =>
+      current.includes(productId) ? current.filter((id) => id !== productId) : [...current, productId],
+    );
+  }
+
+  function togglePageSelected() {
+    setSelectedIds((current) =>
+      allOnPageSelected
+        ? current.filter((id) => !pageIds.includes(id))
+        : [...current, ...pageIds.filter((id) => !current.includes(id))],
+    );
+  }
+
+  const selectionColumn: DataTableColumn<ProductListItem> = {
+    header: "",
+    render: (product) => (
+      <input
+        type="checkbox"
+        checked={selectedIds.includes(product.id)}
+        onChange={() => toggleSelected(product.id)}
+        aria-label={`მონიშვნა: ${product.name.ka}`}
+        className="size-4 rounded border-border accent-primary"
+      />
+    ),
+  };
+  const tableColumns = isOperator ? columns : [selectionColumn, ...columns];
 
   async function loadPage(page: number, filters: AdminFilterEntry[] = adminFilters) {
     try {
@@ -183,9 +221,32 @@ export function ProductsManager({
         <AdminFilterPanel fields={filterFields} onChange={handleFilterApply} />
       </div>
 
+      {!isOperator && (
+        <>
+          <label className="mt-4 flex w-fit items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={allOnPageSelected}
+              onChange={togglePageSelected}
+              className="size-4 rounded border-border accent-primary"
+            />
+            გვერდის ყველა პროდუქტის მონიშვნა (ტეგების მასობრივი მინიჭებისთვის)
+          </label>
+          <ProductTagBulkBar
+            selectedIds={selectedIds}
+            tags={tags}
+            onClearSelection={() => setSelectedIds([])}
+            onDone={() => {
+              setSelectedIds([]);
+              void loadPage(data.page);
+            }}
+          />
+        </>
+      )}
+
       <div className="mt-6">
         <DataTable
-          columns={columns}
+          columns={tableColumns}
           data={data.items}
           getRowKey={(product) => product.id}
           emptyMessage="პროდუქტი არ არსებობს"

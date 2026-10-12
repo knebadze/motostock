@@ -1,5 +1,10 @@
 import type { z } from "zod";
-import { getVehicleFitmentDisabledCategoryIds } from "../categories/categories.service.js";
+import {
+  getOnlinePurchaseBlockedCategoryIds,
+  getVehicleFitmentDisabledCategoryIds,
+} from "../categories/categories.service.js";
+import { tagsRepository } from "../tags/tags.repository.js";
+import { pickTagCompanionIds } from "./tag-companions.js";
 import { ApiError } from "../../lib/ApiError.js";
 import type { Expect, ResponseMatches } from "../../lib/response-contract.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
@@ -793,6 +798,55 @@ export function listProductSitemapEntries() {
   return productsRepository.findSitemapEntries();
 }
 
+// The "ერთად შეძენა" bundle's size: the admin-curated companions first,
+// then tag companions fill the free slots.
+const BUY_TOGETHER_MAX = 4;
+// How many ranked tag candidates to pull before the eligibility filter.
+const TAG_COMPANION_POOL = 40;
+
+// Tag-based buy-together companions (see tagsRepository.
+// findCompanionCandidateIds for the ranking): of the ranked candidates,
+// only ones that are in stock (an active variant with stock), buyable on
+// the site (Category.onlinePurchaseEnabled) and — when a vehicle is
+// selected — fit it (or are vehicle-independent). Not cached: one indexed
+// query per product page, and tag edits show up immediately.
+async function findTagCompanions(
+  productId: number,
+  categoryId: number,
+  options: { excludeIds: number[]; limit: number; compatWhere?: Prisma.ProductWhereInput },
+) {
+  if (options.limit <= 0) return [];
+  const ranked = await tagsRepository.findCompanionCandidateIds(productId, categoryId, TAG_COMPANION_POOL);
+  if (ranked.length === 0) return [];
+  const rankedIds = ranked.map((row) => row.id);
+
+  const blockedCategoryIds = await getOnlinePurchaseBlockedCategoryIds();
+  const eligibilityWhere: Prisma.ProductWhereInput = {
+    AND: [
+      { variants: { some: { isActive: true, stockQuantity: { gt: 0 } } } },
+      ...(blockedCategoryIds.size > 0 ? [{ categoryId: { notIn: [...blockedCategoryIds] } }] : []),
+      ...(options.compatWhere ? [options.compatWhere] : []),
+    ],
+  };
+  const eligible = await productsRepository.findIdsMatchingWhere(rankedIds, eligibilityWhere);
+  const pickedIds = pickTagCompanionIds(
+    rankedIds,
+    new Set(eligible.map((row) => row.id)),
+    new Set(options.excludeIds),
+    options.limit,
+  );
+  if (pickedIds.length === 0) return [];
+
+  const rows = await productsRepository.findByIds(pickedIds);
+  const rowById = new Map(rows.map((row) => [row.id, row]));
+  return Promise.all(
+    pickedIds
+      .map((id) => rowById.get(id))
+      .filter((row): row is NonNullable<typeof row> => row != null)
+      .map((row) => toCardResponse(row)),
+  );
+}
+
 export async function getProductDetail(slug: string, vehicleCatalogId?: number) {
   const row = await productsRepository.findDetailBySlug(slug);
   // findDetailBySlug already excludes inactive variants (see
@@ -806,25 +860,34 @@ export async function getProductDetail(slug: string, vehicleCatalogId?: number) 
   await productsRepository.incrementViewCount(row.id);
 
   const response = await toDetailResponse(row);
-  if (vehicleCatalogId == null || response.buyTogether.length === 0) {
-    return response;
+  const compatWhere =
+    vehicleCatalogId != null
+      ? await includeVehicleIndependent(await buildVehicleCompatibilityWhere(vehicleCatalogId))
+      : undefined;
+
+  // Narrow the curated buyTogether companions down to ones actually
+  // compatible with the shopper's selected vehicle — a companion attached
+  // to the anchor can still legitimately not fit every vehicle the anchor
+  // itself fits (e.g. an oil that fits every sport bike, paired with a
+  // filter that only fits some of them).
+  let curated = response.buyTogether;
+  if (compatWhere && curated.length > 0) {
+    const compatibleIds = await productsRepository.findIdsMatchingWhere(
+      curated.map((product) => product.id),
+      compatWhere,
+    );
+    const compatibleIdSet = new Set(compatibleIds.map((idRow) => idRow.id));
+    curated = curated.filter((product) => compatibleIdSet.has(product.id));
   }
 
-  // Narrow buyTogether companions down to ones actually compatible with the
-  // shopper's selected vehicle — a companion attached to the anchor can
-  // still legitimately not fit every vehicle the anchor itself fits (e.g. an
-  // oil that fits every sport bike, paired with a filter that only fits
-  // some of them).
-  const compatWhere = await includeVehicleIndependent(await buildVehicleCompatibilityWhere(vehicleCatalogId));
-  const compatibleIds = await productsRepository.findIdsMatchingWhere(
-    response.buyTogether.map((product) => product.id),
+  // Free slots filled by tag companions (same vehicle filter).
+  const tagCompanions = await findTagCompanions(row.id, row.category.id, {
+    excludeIds: curated.map((product) => product.id),
+    limit: BUY_TOGETHER_MAX - curated.length,
     compatWhere,
-  );
-  const compatibleIdSet = new Set(compatibleIds.map((row) => row.id));
-  return {
-    ...response,
-    buyTogether: response.buyTogether.filter((product) => compatibleIdSet.has(product.id)),
-  };
+  });
+
+  return { ...response, buyTogether: [...curated, ...tagCompanions] };
 }
 
 // Admin "full view" counterpart to getProductDetail — unlike that

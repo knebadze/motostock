@@ -5,6 +5,7 @@ import {
   banksIcon,
   brandsIcon,
   buyTogetherIcon,
+  tagsIcon,
   categoriesIcon,
   classifierIcon,
   companyInfoIcon,
@@ -117,6 +118,8 @@ export const adminNav: AdminNavSection[] = [
         icon: buyTogetherIcon,
         allowedRoles: ["OPERATOR"],
       },
+      // Read-only for OPERATOR (writes are ADMIN-only, see TagsManager).
+      { label: "ტეგები", href: "/admin/tags", icon: tagsIcon, allowedRoles: ["OPERATOR"] },
     ],
   },
   {

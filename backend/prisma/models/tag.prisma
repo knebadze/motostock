@@ -1,0 +1,35 @@
+// Admin-defined "kit/purpose" tags for buy-together recommendations (e.g.
+// "ზეთის შეცვლა" on an engine oil, its oil filter and a chain lube):
+// products sharing a tag but in DIFFERENT categories are suggested together
+// (recommendation integration: phase 2). Internal only — never shown to
+// customers, so a single Georgian name (the admin panel is KA-only).
+// Name uniqueness is case/whitespace-insensitive via a raw
+// lower(trim(name)) unique index (migration SQL only — Prisma can't express
+// it).
+model Tag {
+  id          Int          @id @default(autoincrement())
+  name        String
+  description String?
+  // Inactive tags keep their product assignments but are ignored by the
+  // recommendations.
+  isActive    Boolean      @default(true)
+  products    ProductTag[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@schema("cla")
+}
+
+// Product <-> Tag link. Owned by both sides (CASCADE): deleting a tag
+// removes it from its products, deleting a product removes its links.
+model ProductTag {
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tagId     Int
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([productId, tagId])
+  @@index([tagId])
+  @@schema("dbo")
+}
