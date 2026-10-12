@@ -2427,6 +2427,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/categories/item-counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Storefront item counts per category, rolled up over subcategories (public) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Counts */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CategoryItemCounts"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/categories/{id}": {
         parameters: {
             query?: never;
@@ -16513,6 +16549,12 @@ export interface components {
             onlinePurchaseEnabled?: boolean;
             /** @example true */
             vehicleFitmentEnabled?: boolean;
+        };
+        CategoryItemCounts: {
+            items: {
+                categoryId: number;
+                count: number;
+            }[];
         };
         Category: {
             /** @example 1 */

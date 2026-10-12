@@ -7,6 +7,11 @@ import type {
   UpdateCategoryInput,
 } from "./categories.schema.js";
 
+export async function itemCounts(_req: Request, res: Response) {
+  const items = await categoriesService.getCategoryItemCounts();
+  res.status(200).json({ items });
+}
+
 export async function list(
   req: Request<unknown, unknown, unknown, CategoryListQuery>,
   res: Response,

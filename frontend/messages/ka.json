@@ -329,7 +329,8 @@
     "searchGaragePlaceholder": "აირჩიეთ თქვენი ტექნიკა",
     "searchOrDivider": "ან",
     "searchButton": "ძებნა",
-    "seoHeading": "მოტოციკლები, ნაწილები, ეკიპირება და მოტოსერვისი"
+    "seoHeading": "მოტოციკლები, ნაწილები, ეკიპირება და მოტოსერვისი",
+    "categoryItemCount": "{count} პროდუქტი"
   },
   "HomeInfoCards": {
     "heading": "გაიცანით MotoStock 22",

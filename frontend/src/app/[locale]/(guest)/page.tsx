@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { SELECTED_VEHICLE_COOKIE } from "@/lib/vehicle-selection";
 import {
   getCategoriesFromServer,
+  getCategoryItemCountsFromServer,
   getMyGarageFromServer,
   getPublicHeroSlidesFromServer,
   getPublicHomepageSectionsFromServer,
@@ -59,6 +60,11 @@ export default async function HomePage({
   const topLevelCategories = allCategories
     .filter((category) => category.parentId === null)
     .sort((a, b) => a.sortOrder - b.sortOrder);
+  // Item count per category (rolled up over subcategories) for the
+  // CATEGORIES section's cards — only fetched when that section is active.
+  const categoryItemCounts = activeSections.some((section) => section.type === "CATEGORIES")
+    ? await getCategoryItemCountsFromServer()
+    : {};
 
   return (
     <>
@@ -117,6 +123,7 @@ export default async function HomePage({
             <HomepageSectionContent
               section={section}
               topLevelCategories={topLevelCategories}
+              categoryItemCounts={categoryItemCounts}
               selectedVehicleCatalogId={selectedVehicleCatalogId}
               localeKey={localeKey}
             />

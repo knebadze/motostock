@@ -40,6 +40,33 @@ export const categoriesRepository = {
     });
   },
 
+  // Storefront-visible items directly in each category (not rolled up):
+  // products with an active variant, and active vehicle listings (counted
+  // under their catalog model's category). Same visibility rules as the
+  // shop listings.
+  async countItemsPerCategory() {
+    const [productRows, listingRows] = await Promise.all([
+      prisma.$queryRaw<{ categoryId: number; count: bigint }[]>`
+        SELECT p."categoryId", COUNT(*) AS count
+        FROM "dbo"."Product" p
+        WHERE EXISTS (
+          SELECT 1 FROM "dbo"."ProductVariant" v WHERE v."productId" = p."id" AND v."isActive" = true
+        )
+        GROUP BY p."categoryId"`,
+      prisma.$queryRaw<{ categoryId: number; count: bigint }[]>`
+        SELECT m."categoryId", COUNT(*) AS count
+        FROM "dbo"."VehicleListing" l
+        JOIN "dbo"."VehicleCatalog" vc ON vc."id" = l."vehicleCatalogId"
+        JOIN "cla"."Model" m ON m."id" = vc."modelId"
+        WHERE l."isActive" = true
+        GROUP BY m."categoryId"`,
+    ]);
+    return [...productRows, ...listingRows].map((row) => ({
+      categoryId: row.categoryId,
+      count: Number(row.count),
+    }));
+  },
+
   countChildren(id: number) {
     return prisma.category.count({ where: { parentId: id } });
   },

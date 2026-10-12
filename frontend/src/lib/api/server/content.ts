@@ -260,3 +260,20 @@ export const getPublicHomepageSectionsFromServer = cache(async (): Promise<Homep
     { fallback: [], extract: (data) => data.items },
   );
 });
+
+// Storefront item counts per category, rolled up over subcategories
+// (products, or vehicle listings for transport) — the homepage categories
+// section's numbers. Same short cross-request cache as the backend's.
+const getCachedCategoryItemCounts = unstable_cache(
+  () =>
+    fetchPublicCacheable<{ items: { categoryId: number; count: number }[] }, Record<number, number>>(
+      "/categories/item-counts",
+      {
+        fallback: {},
+        extract: (data) => Object.fromEntries(data.items.map((item) => [item.categoryId, item.count])),
+      },
+    ),
+  ["category-item-counts"],
+  { revalidate: 300 },
+);
+export const getCategoryItemCountsFromServer = cache(getCachedCategoryItemCounts);

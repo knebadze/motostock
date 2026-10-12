@@ -9,6 +9,7 @@ import { errorResponseSchema } from "../../docs/schemas.js";
 import { ROLES } from "../../lib/roles.js";
 import * as categoriesController from "./categories.controller.js";
 import {
+  categoryItemCountsResponseSchema,
   categoryIdParamSchema,
   categoryListQuerySchema,
   categoryResponseSchema,
@@ -27,6 +28,9 @@ categoriesRouter.get(
   validate(categoryListQuerySchema, "query"),
   categoriesController.list,
 );
+
+// Public: per-category item counts (homepage categories section).
+categoriesRouter.get("/item-counts", categoriesController.itemCounts);
 
 categoriesRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
@@ -90,6 +94,19 @@ registry.registerPath({
           schema: z.object({ categories: z.array(categoryResponseSchema) }),
         },
       },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/categories/item-counts",
+  tags: ["Categories"],
+  summary: "Storefront item counts per category, rolled up over subcategories (public)",
+  responses: {
+    200: {
+      description: "Counts",
+      content: { "application/json": { schema: categoryItemCountsResponseSchema } },
     },
   },
 });

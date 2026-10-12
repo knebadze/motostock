@@ -1,3 +1,4 @@
+import { cache } from "../../lib/cache.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
@@ -56,6 +57,39 @@ function toResponse(category: CategoryRow) {
     createdAt: category.createdAt,
     updatedAt: category.updatedAt,
   };
+}
+
+const ITEM_COUNTS_CACHE_KEY = "categories:item-counts";
+const ITEM_COUNTS_CACHE_TTL_MS = 5 * 60 * 1000;
+
+// Per-category storefront item counts, each ROLLED UP over its whole
+// subtree (a parent shows everything under it — products, or vehicle
+// listings for transport categories), for the homepage categories section.
+// Cached briefly: it's a full-table aggregate and a few minutes' lag on a
+// count is harmless.
+export async function getCategoryItemCounts(): Promise<{ categoryId: number; count: number }[]> {
+  const cached = cache.get<{ categoryId: number; count: number }[]>(ITEM_COUNTS_CACHE_KEY);
+  if (cached) return cached;
+
+  const [tree, direct] = await Promise.all([
+    categoriesRepository.findInheritedFlagTree(),
+    categoriesRepository.countItemsPerCategory(),
+  ]);
+  const parentById = new Map(tree.map((row) => [row.id, row.parentId]));
+  const totals = new Map<number, number>(tree.map((row) => [row.id, 0]));
+  for (const { categoryId, count } of direct) {
+    // Add to the category and every ancestor (guarding against a cycle).
+    const seen = new Set<number>();
+    let current: number | null | undefined = categoryId;
+    while (current != null && !seen.has(current) && totals.has(current)) {
+      seen.add(current);
+      totals.set(current, (totals.get(current) ?? 0) + count);
+      current = parentById.get(current);
+    }
+  }
+  const result = [...totals].map(([categoryId, count]) => ({ categoryId, count }));
+  cache.set(ITEM_COUNTS_CACHE_KEY, result, ITEM_COUNTS_CACHE_TTL_MS);
+  return result;
 }
 
 type InheritedFlag = "onlinePurchaseEnabled" | "vehicleFitmentEnabled";

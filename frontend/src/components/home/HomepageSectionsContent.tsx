@@ -27,11 +27,13 @@ type Locale = "ka" | "en" | "ru";
 export async function HomepageSectionContent({
   section,
   topLevelCategories,
+  categoryItemCounts,
   selectedVehicleCatalogId,
   localeKey,
 }: {
   section: HomepageSection;
   topLevelCategories: Category[];
+  categoryItemCounts: Record<number, number>;
   selectedVehicleCatalogId: string | undefined;
   localeKey: Locale;
 }) {
@@ -85,6 +87,7 @@ export async function HomepageSectionContent({
         <CategoriesSection
           title={title}
           categories={topLevelCategories.slice(0, section.itemCount)}
+          itemCounts={categoryItemCounts}
           locale={localeKey}
         />
       );

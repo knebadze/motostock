@@ -329,7 +329,8 @@
     "searchGaragePlaceholder": "Choose your vehicle",
     "searchOrDivider": "or",
     "searchButton": "Search",
-    "seoHeading": "Motorcycles, parts, riding gear and motorcycle service"
+    "seoHeading": "Motorcycles, parts, riding gear and motorcycle service",
+    "categoryItemCount": "{count, plural, one {# item} other {# items}}"
   },
   "HomeInfoCards": {
     "heading": "Get to know MotoStock 22",

@@ -53,6 +53,20 @@ export const categoryListQuerySchema = z.object({
 });
 export type CategoryListQuery = z.infer<typeof categoryListQuerySchema>;
 
+export const categoryItemCountsResponseSchema = registry.register(
+  "CategoryItemCounts",
+  z.object({
+    items: z.array(
+      z.object({
+        categoryId: z.int(),
+        // Storefront-visible products (or vehicle listings for transport
+        // categories) in the category and all its subcategories.
+        count: z.int(),
+      }),
+    ),
+  }),
+);
+
 export const categoryResponseSchema = registry.register(
   "Category",
   z.object({

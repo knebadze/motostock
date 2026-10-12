@@ -329,7 +329,8 @@
     "searchGaragePlaceholder": "Выберите вашу технику",
     "searchOrDivider": "или",
     "searchButton": "Поиск",
-    "seoHeading": "Мотоциклы, запчасти, экипировка и мотосервис"
+    "seoHeading": "Мотоциклы, запчасти, экипировка и мотосервис",
+    "categoryItemCount": "{count, plural, one {# товар} few {# товара} many {# товаров} other {# товаров}}"
   },
   "HomeInfoCards": {
     "heading": "Познакомьтесь с MotoStock 22",
