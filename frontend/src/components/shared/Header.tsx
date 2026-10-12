@@ -740,41 +740,12 @@ export function Header({
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-6">
-                  <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                    {companyInfo?.phone && (
-                      <a href={`tel:${companyInfo.phone}`} className="flex items-center gap-1.5">
-                        {phoneIcon}
-                        {companyInfo.phone}
-                      </a>
-                    )}
-                    {companyInfo?.email && (
-                      <a href={`mailto:${companyInfo.email}`} className="flex items-center gap-1.5">
-                        {mailIcon}
-                        {companyInfo.email}
-                      </a>
-                    )}
-                    {socialLinks.length > 0 && (
-                      <div className="mt-1 flex items-center gap-3">
-                        {socialLinks.map((social) => (
-                          <a
-                            key={social.label}
-                            href={social.href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={social.label}
-                            className="text-primary-text transition-opacity hover:opacity-70 [&>svg]:size-4"
-                          >
-                            {social.icon}
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <LanguageSwitcher />
-                    <ThemeToggle />
-                  </div>
+                {/* Settings only up top (contact details moved to the bottom of
+                    the menu) — the language dropdown opens downward, so it
+                    stays here rather than near the scrollable menu's end. */}
+                <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6">
+                  <LanguageSwitcher />
+                  <ThemeToggle />
                 </div>
 
                 <nav className="flex flex-col gap-1 px-4 py-3 text-sm font-medium sm:px-6">
@@ -933,6 +904,48 @@ export function Header({
                         {tHeader("login")}
                       </Link>
                     </>
+                  )}
+
+                  {(companyInfo?.phone || companyInfo?.email || socialLinks.length > 0) && (
+                    <div className="mt-4 flex flex-col gap-1 border-t border-border pt-4">
+                      <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {tFooter("contactTitle")}
+                      </p>
+                      {companyInfo?.phone && (
+                        <a
+                          href={`tel:${companyInfo.phone}`}
+                          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                        >
+                          {phoneIcon}
+                          {companyInfo.phone}
+                        </a>
+                      )}
+                      {companyInfo?.email && (
+                        <a
+                          href={`mailto:${companyInfo.email}`}
+                          className="flex min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                        >
+                          {mailIcon}
+                          <span className="truncate">{companyInfo.email}</span>
+                        </a>
+                      )}
+                      {socialLinks.length > 0 && (
+                        <div className="mt-2 flex items-center gap-2 px-3">
+                          {socialLinks.map((social) => (
+                            <a
+                              key={social.label}
+                              href={social.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={social.label}
+                              className="flex size-9 items-center justify-center rounded-full border border-border text-primary-text transition-colors hover:border-primary [&>svg]:size-4"
+                            >
+                              {social.icon}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </nav>
               </>
