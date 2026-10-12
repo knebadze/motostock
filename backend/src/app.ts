@@ -36,6 +36,7 @@ import { vehicleCategoryFiltersRouter } from "./modules/vehicle-category-filters
 import { productBrandsRouter } from "./modules/product-brands/product-brands.routes.js";
 import { unitsRouter } from "./modules/units/units.routes.js";
 import { productsRouter } from "./modules/products/products.routes.js";
+import { searchRouter } from "./modules/search/search.routes.js";
 import { productFitmentRouter } from "./modules/product-fitment/product-fitment.routes.js";
 import { productFitmentRulesRouter } from "./modules/product-fitment-rules/product-fitment-rules.routes.js";
 import {
@@ -230,6 +231,7 @@ app.use("/api/vehicle-category-filters", vehicleCategoryFiltersRouter);
 app.use("/api/product-brands", productBrandsRouter);
 app.use("/api/units", unitsRouter);
 app.use("/api/products", productsRouter);
+app.use("/api/search", searchRouter);
 app.use("/api/products/:productId/fitments", productFitmentRouter);
 app.use("/api/products/:productId/fitment-rules", productFitmentRulesRouter);
 app.use("/api/products/:productId/buy-together", productBuyTogetherRouter);

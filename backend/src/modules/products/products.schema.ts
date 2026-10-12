@@ -107,6 +107,8 @@ export const productCategoryFacetsQuerySchema = z.object({
   brandIds: brandIdsQuerySchema,
   onSale: z.coerce.boolean().optional(),
   bulkDiscountEventId: z.coerce.number().int().positive().optional(),
+  // The /search results page: only categories with matching products.
+  search: z.string().trim().min(1).max(200).optional(),
 });
 export type ProductCategoryFacetsQuery = z.infer<typeof productCategoryFacetsQuerySchema>;
 

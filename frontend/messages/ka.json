@@ -774,5 +774,29 @@
     "partsHeading": "ნაწილები შენს მოტოზე",
     "partsText": "დაამატე მოტო გარაჟში და ნახე მხოლოდ მასზე თავსებადი ნაწილები.",
     "partsLink": "გარაჟის გახსნა"
+  },
+  "Search": {
+    "placeholder": "მოძებნეთ პროდუქტი, ტექნიკა ან კატეგორია…",
+    "label": "ძიება",
+    "openSearch": "ძიების გახსნა",
+    "closeSearch": "ძიების დახურვა",
+    "clear": "გასუფთავება",
+    "products": "პროდუქტები",
+    "vehicles": "მოტოტექნიკა",
+    "categories": "კატეგორიები",
+    "recent": "ბოლო ძიებები",
+    "clearRecent": "გასუფთავება",
+    "searching": "იძებნება…",
+    "noResults": "„{q}“ — ვერაფერი მოიძებნა",
+    "minChars": "ჩაწერეთ მინიმუმ {count} სიმბოლო",
+    "viewAllResults": "ყველა შედეგის ნახვა",
+    "error": "ძიება ვერ შესრულდა, სცადეთ ხელახლა",
+    "resultsTitle": "ძიების შედეგები: „{q}“",
+    "metaTitle": "ძიება: {q}",
+    "emptyTitle": "ძიება",
+    "emptyHint": "ჩაწერეთ საძიებო სიტყვა ზედა ველში.",
+    "productsHeading": "პროდუქტები",
+    "vehiclesHeading": "მოტოტექნიკა",
+    "categoriesHeading": "კატეგორიები"
   }
 }

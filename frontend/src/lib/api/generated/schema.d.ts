@@ -6423,6 +6423,7 @@ export interface paths {
                     brandIds?: number[];
                     onSale?: boolean | null;
                     bulkDiscountEventId?: number;
+                    search?: string;
                 };
                 header?: never;
                 path?: never;
@@ -6824,6 +6825,53 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/search/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Global search suggestions: top matching products, vehicle listings and categories (public) */
+        get: {
+            parameters: {
+                query: {
+                    q: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Suggestions */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SearchSuggestions"];
+                    };
+                };
+                /** @description Query too short/long */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -16510,6 +16558,57 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        SearchSuggestions: {
+            products: {
+                id: number;
+                name: {
+                    ka: string;
+                    en: string;
+                    ru: string;
+                };
+                slug: string;
+                categorySlug: string;
+                categoryName: {
+                    ka: string;
+                    en: string;
+                    ru: string;
+                };
+                imageUrl: string | null;
+                price: number | null;
+                discountPrice: number | null;
+            }[];
+            vehicleListings: {
+                id: number;
+                title: string;
+                year: number;
+                categorySlug: string;
+                categoryName: {
+                    ka: string;
+                    en: string;
+                    ru: string;
+                };
+                itemSlug: string;
+                imageUrl: string | null;
+                price: number;
+                discountPrice: number | null;
+                /** @enum {string} */
+                priceCurrency: "GEL" | "USD";
+            }[];
+            categories: {
+                id: number;
+                name: {
+                    ka: string;
+                    en: string;
+                    ru: string;
+                };
+                slug: string;
+                parentName: {
+                    ka: string;
+                    en: string;
+                    ru: string;
+                } | null;
+            }[];
         };
         CreateProductFitmentInput: {
             vehicleCatalogId: number;

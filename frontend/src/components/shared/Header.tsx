@@ -11,6 +11,7 @@ import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { WishlistDropdown } from "@/components/shared/WishlistDropdown";
 import { CompareDropdown } from "@/components/shared/CompareDropdown";
 import { CartDropdown } from "@/components/shared/CartDropdown";
+import { HeaderSearch } from "@/components/shared/HeaderSearch";
 import { Logo } from "@/components/shared/Logo";
 import { usePopoverMenu } from "@/components/shared/usePopoverMenu";
 import { facebookIcon, instagramIcon, tiktokIcon, youtubeIcon } from "@/components/shared/social-icons";
@@ -119,6 +120,9 @@ export function Header({
   const tHeader = useTranslations("Header");
   const tFooter = useTranslations("Footer");
   const [isOpen, setIsOpen] = useState(false);
+  // Mobile search panel (below lg — desktop has the search box inline in the logo row).
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const tSearch = useTranslations("Search");
   const {
     open: accountMenuOpen,
     setOpen: setAccountMenuOpen,
@@ -220,11 +224,11 @@ export function Header({
   }, [activeCategoryId]);
 
   useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
+    document.body.style.overflow = isOpen || mobileSearchOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isOpen]);
+  }, [isOpen, mobileSearchOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -324,7 +328,45 @@ export function Header({
           <Logo className="h-8 w-auto sm:h-9" padding="px-3 py-1 sm:px-4" />
         </Link>
 
+        {/* Global search (desktop) — right of the logo. Below lg it's the
+            search button + panel instead (see mobileSearchOpen). */}
+        <div className="mx-6 hidden max-w-xl flex-1 lg:block xl:mx-10">
+          <HeaderSearch />
+        </div>
+
         <div className="flex items-center gap-1.5 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setMobileSearchOpen((open) => !open);
+              setIsOpen(false);
+            }}
+            aria-expanded={mobileSearchOpen}
+            aria-controls="mobile-search"
+            aria-label={mobileSearchOpen ? tSearch("closeSearch") : tSearch("openSearch")}
+            className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-10 lg:hidden"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="size-5"
+              aria-hidden
+            >
+              {mobileSearchOpen ? (
+                <path d="M6 6l12 12M18 6L6 18" />
+              ) : (
+                <>
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" />
+                </>
+              )}
+            </svg>
+          </button>
           <WishlistDropdown initialCount={wishlistCount} />
           <CompareDropdown initialCount={compareCount} />
           <CartDropdown initialCount={cartCount} />
@@ -413,6 +455,7 @@ export function Header({
             type="button"
             onClick={() => {
               setIsOpen((open) => !open);
+              setMobileSearchOpen(false);
               setMobileCategoryPath([]);
               setMobileSlideDirection("none");
             }}
@@ -588,6 +631,18 @@ export function Header({
               </div>
             </Link>
           </div>
+        </div>
+      )}
+
+      {/* Mobile search panel — overlays the page below the h-16 bar like the
+          mobile menu; mounted only while open so the input autofocuses (and
+          the keyboard opens) each time. */}
+      {mobileSearchOpen && (
+        <div
+          id="mobile-search"
+          className="absolute inset-x-0 top-full h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain bg-background px-4 py-4 sm:px-6 lg:hidden"
+        >
+          <HeaderSearch inline autoFocus onNavigate={() => setMobileSearchOpen(false)} />
         </div>
       )}
 

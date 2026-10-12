@@ -553,14 +553,17 @@ export async function listProductCategoryFacets(query: {
   brandIds?: number[];
   onSale?: boolean;
   bulkDiscountEventId?: number;
+  search?: string;
 }) {
   const categoryIds =
     query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
   const vehicleCompatibilityWhere =
     query.vehicleCatalogId != null ? await buildVehicleCompatibilityWhere(query.vehicleCatalogId) : undefined;
+  const searchIds = query.search != null ? await productsRepository.findSearchRankedIds(query.search) : undefined;
   const rows = await productsRepository.findDistinctCategoryFacets({
     categoryIds,
     vehicleCompatibilityWhere,
+    searchIds,
     brandIds: query.brandIds,
     onSale: query.onSale,
     bulkDiscountEventId: query.bulkDiscountEventId,

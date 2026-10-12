@@ -774,5 +774,29 @@
     "partsHeading": "Parts for your bike",
     "partsText": "Add your motorcycle to the garage and see only the parts that fit it.",
     "partsLink": "Open garage"
+  },
+  "Search": {
+    "placeholder": "Search products, vehicles or categories…",
+    "label": "Search",
+    "openSearch": "Open search",
+    "closeSearch": "Close search",
+    "clear": "Clear",
+    "products": "Products",
+    "vehicles": "Motor vehicles",
+    "categories": "Categories",
+    "recent": "Recent searches",
+    "clearRecent": "Clear",
+    "searching": "Searching…",
+    "noResults": "No results for “{q}”",
+    "minChars": "Type at least {count} characters",
+    "viewAllResults": "View all results",
+    "error": "Search failed, please try again",
+    "resultsTitle": "Search results for “{q}”",
+    "metaTitle": "Search: {q}",
+    "emptyTitle": "Search",
+    "emptyHint": "Type a search term in the box above.",
+    "productsHeading": "Products",
+    "vehiclesHeading": "Motor vehicles",
+    "categoriesHeading": "Categories"
   }
 }

@@ -249,6 +249,7 @@ export const getShopCategoryFacetsFromServer = cache(async (filters: {
   brandIds?: number[];
   onSale?: boolean;
   bulkDiscountEventId?: number;
+  search?: string;
 }): Promise<NamedRef[]> => {
   // Public endpoint (the /shop page) — must not bail out just because there
   // is no admin session cookie, same fix as getCategoriesFromServer.
@@ -259,6 +260,7 @@ export const getShopCategoryFacetsFromServer = cache(async (filters: {
       brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
       onSale: filters.onSale || undefined,
       bulkDiscountEventId: filters.bulkDiscountEventId,
+      search: filters.search || undefined,
     },
     fallback: [],
     extract: (data) => data.items,
@@ -274,6 +276,7 @@ export const getShopProductsPageFromServer = cache(async (filters: {
   brandIds?: number[];
   onSale?: boolean;
   bulkDiscountEventId?: number;
+  search?: string;
 }): Promise<AdminListPage<ProductListItem>> => {
   return fetchFromServer<AdminListPage<ProductListItem>, AdminListPage<ProductListItem>>("/products", {
     params: {
@@ -281,6 +284,7 @@ export const getShopProductsPageFromServer = cache(async (filters: {
       brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
       onSale: filters.onSale || undefined,
       bulkDiscountEventId: filters.bulkDiscountEventId,
+      search: filters.search || undefined,
       page: 1,
       pageSize: SHOP_PAGE_SIZE,
       sortBy: "newest",

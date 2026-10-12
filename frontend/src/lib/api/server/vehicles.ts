@@ -101,6 +101,17 @@ export const getVehicleListingFromServer = cache(async (id: number): Promise<Veh
   );
 });
 
+// /search results page — top vehicle listings matching the query (same
+// ranked search as the shop pages).
+export const SEARCH_VEHICLE_LISTINGS_LIMIT = 8;
+export const searchVehicleListingsFromServer = cache(async (search: string): Promise<VehicleListing[]> => {
+  return fetchFromServer<{ items: VehicleListing[] }, VehicleListing[]>("/vehicle-listings", {
+    params: { search, limit: SEARCH_VEHICLE_LISTINGS_LIMIT },
+    fallback: [],
+    extract: (data) => data.items,
+  });
+});
+
 // Homepage "discounted vehicles" slider.
 export const getOnSaleVehicleListingsFromServer = cache(async (limit: number): Promise<VehicleListing[]> => {
   return fetchFromServer<{ items: VehicleListing[] }, VehicleListing[]>("/vehicle-listings", {

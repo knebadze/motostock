@@ -43,6 +43,8 @@ export function ShopAllProductsPage({
   initialCategoryId,
   initialBrandIds,
   initialEventId,
+  initialSearch = "",
+  title,
 }: {
   // The distinct categories present among matching products — feeds the
   // category-checkbox facet list. Computed server-side by a lean, dedicated
@@ -60,6 +62,12 @@ export function ShopAllProductsPage({
   // for this page's lifetime, same "not a togglable UI control" treatment as
   // initialOnSale/initialCategoryId/initialBrandIds above.
   initialEventId?: number;
+  // The /search results page — seeds the search box (initialData is already
+  // filtered by it server-side).
+  initialSearch?: string;
+  // Replaces the default page heading, as an <h2> — for when the page
+  // around it has its own <h1> (the /search results page).
+  title?: string;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
@@ -67,7 +75,7 @@ export function ShopAllProductsPage({
   const tErrors = useTranslations("ApiErrors");
   const myVehicleSelectId = useId();
   const [vehicleCatalogId, setVehicleCatalogId] = useState("");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [sortBy, setSortBy] = useState<SortBy>(() => parseSortBy("newest"));
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
@@ -263,9 +271,13 @@ export function ShopAllProductsPage({
     <>
       <div className="border-t border-border bg-muted/40">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-          <h1 className="text-2xl font-bold tracking-tight">
-            {initialOnSale ? t("saleHeading") : t("shopHeading")}
-          </h1>
+          {title ? (
+            <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
+          ) : (
+            <h1 className="text-2xl font-bold tracking-tight">
+              {initialOnSale ? t("saleHeading") : t("shopHeading")}
+            </h1>
+          )}
 
           <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr]">
             <aside className="hidden h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:block md:sticky md:top-24 lg:top-40">
