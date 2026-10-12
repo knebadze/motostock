@@ -149,6 +149,9 @@ export const productListQuerySchema = z.object({
   // across every category. Unlike onSale/bulkDiscountEventId this isn't
   // computed from discount rows at all — it's a plain admin-curated flag.
   featured: z.coerce.boolean().optional(),
+  // Homepage SEASONAL_PRODUCTS carousel: only products whose season
+  // attribute matches the current season (see lib/season.ts).
+  seasonal: z.coerce.boolean().optional(),
   // Homepage sliders (see homepage-sections module) cap how many products
   // they pull — optional everywhere else.
   limit: z.coerce.number().int().positive().max(50).optional(),

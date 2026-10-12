@@ -198,7 +198,7 @@ const PRODUCTS: ProductSeed[] = [
     descriptionRu: "<p>Всесезонная текстильная куртка, совместима с отдельной защитой.</p>",
     attributes: [
       { kind: "select", definingCategorySlug: "gear", nameKa: "მასალა", optionKey: "TEXTILE" },
-      { kind: "select", definingCategorySlug: "gear", nameKa: "სეზონი", optionKey: "ALL_SEASON" },
+      { kind: "select", definingCategorySlug: "gear", nameKa: "სეზონი", optionKey: "WINTER" },
       { kind: "boolean", definingCategorySlug: "gear", nameKa: "წყალგამძლეობა", value: true },
       { kind: "select", definingCategorySlug: "jackets", nameKa: "დამცავის CE დონე", optionKey: "CE1" },
     ],
@@ -241,7 +241,7 @@ const PRODUCTS: ProductSeed[] = [
     descriptionRu: "<p>Всесезонные текстильные перчатки с защитой костяшек.</p>",
     attributes: [
       { kind: "select", definingCategorySlug: "gear", nameKa: "მასალა", optionKey: "TEXTILE" },
-      { kind: "select", definingCategorySlug: "gear", nameKa: "სეზონი", optionKey: "ALL_SEASON" },
+      { kind: "select", definingCategorySlug: "gear", nameKa: "სეზონი", optionKey: "WINTER" },
       { kind: "boolean", definingCategorySlug: "gear", nameKa: "წყალგამძლეობა", value: true },
       { kind: "select", definingCategorySlug: "gloves", nameKa: "სამაჯურის ტიპი", optionKey: "SHORT_CUFF" },
       { kind: "boolean", definingCategorySlug: "gloves", nameKa: "სახსრის დაცვა", value: true },
@@ -307,7 +307,7 @@ const PRODUCTS: ProductSeed[] = [
     descriptionRu: "<p>Туристические ботинки средней высоты, водонепроницаемые.</p>",
     attributes: [
       { kind: "select", definingCategorySlug: "gear", nameKa: "მასალა", optionKey: "TEXTILE" },
-      { kind: "select", definingCategorySlug: "gear", nameKa: "სეზონი", optionKey: "ALL_SEASON" },
+      { kind: "select", definingCategorySlug: "gear", nameKa: "სეზონი", optionKey: "WINTER" },
       { kind: "boolean", definingCategorySlug: "gear", nameKa: "წყალგამძლეობა", value: true },
       { kind: "select", definingCategorySlug: "boots", nameKa: "სიმაღლე", optionKey: "MEDIUM" },
     ],
@@ -362,7 +362,7 @@ const PRODUCTS: ProductSeed[] = [
     descriptionRu: "<p>Лёгкая непромокаемая куртка, складывается в небольшой чехол.</p>",
     attributes: [
       { kind: "select", definingCategorySlug: "gear", nameKa: "მასალა", optionKey: "TEXTILE" },
-      { kind: "select", definingCategorySlug: "gear", nameKa: "სეზონი", optionKey: "ALL_SEASON" },
+      { kind: "select", definingCategorySlug: "gear", nameKa: "სეზონი", optionKey: "WINTER" },
       { kind: "boolean", definingCategorySlug: "gear", nameKa: "წყალგამძლეობა", value: true },
     ],
     variants: [
@@ -381,7 +381,7 @@ const PRODUCTS: ProductSeed[] = [
     descriptionRu: "<p>Непромокаемые штаны, надеваются поверх обычной экипировки.</p>",
     attributes: [
       { kind: "select", definingCategorySlug: "gear", nameKa: "მასალა", optionKey: "TEXTILE" },
-      { kind: "select", definingCategorySlug: "gear", nameKa: "სეზონი", optionKey: "ALL_SEASON" },
+      { kind: "select", definingCategorySlug: "gear", nameKa: "სეზონი", optionKey: "WINTER" },
       { kind: "boolean", definingCategorySlug: "gear", nameKa: "წყალგამძლეობა", value: true },
     ],
     variants: [

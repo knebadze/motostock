@@ -107,6 +107,16 @@ export const getFeaturedProductsFromServer = cache(async (limit: number): Promis
   });
 });
 
+// Homepage "seasonal products" slider — products whose season attribute
+// matches the current season (resolved by the backend, see lib/season.ts).
+export const getSeasonalProductsFromServer = cache(async (limit: number): Promise<ProductListItem[]> => {
+  return fetchFromServer<{ items: ProductListItem[] }, ProductListItem[]>("/products", {
+    params: { seasonal: true, limit },
+    fallback: [],
+    extract: (data) => data.items,
+  });
+});
+
 // Homepage "popular products" slider.
 export const getPopularProductsFromServer = cache(async (limit: number): Promise<ProductListItem[]> => {
   return fetchFromServer<{ items: ProductListItem[] }, ProductListItem[]>("/products/popular", {

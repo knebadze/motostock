@@ -8,6 +8,7 @@ import { pickTagCompanionIds } from "./tag-companions.js";
 import { ApiError } from "../../lib/ApiError.js";
 import type { Expect, ResponseMatches } from "../../lib/response-contract.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
+import { currentSeasonKey } from "../../lib/season.js";
 import { cache } from "../../lib/cache.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { computeLowStockQuantity } from "../../lib/low-stock.js";
@@ -534,6 +535,7 @@ function isCacheableOnSaleQuery(query: ProductListQuery): boolean {
     query.priceMax == null &&
     query.bulkDiscountEventId == null &&
     query.featured == null &&
+    query.seasonal == null &&
     query.attributeFilters == null &&
     query.adminFilters == null &&
     query.page == null &&
@@ -601,10 +603,19 @@ export async function listProducts(query: ProductListQuery) {
     query.categoryId != null
       ? await resolveCategoryAndDescendantIds(query.categoryId)
       : query.categoryIds;
-  const vehicleCompatibilityWhere =
+  const compatibilityWhere =
     query.vehicleCatalogId != null
       ? await buildVehicleCompatibilityWhere(query.vehicleCatalogId)
       : undefined;
+  // Seasonal carousel filter, ANDed through the same free-form where slot
+  // as vehicle compatibility (buildWhere just ANDs it in).
+  const seasonalWhere: Prisma.ProductWhereInput | undefined = query.seasonal
+    ? { attributeValues: { some: { option: { key: currentSeasonKey() } } } }
+    : undefined;
+  const vehicleCompatibilityWhere =
+    compatibilityWhere && seasonalWhere
+      ? { AND: [compatibilityWhere, seasonalWhere] }
+      : (compatibilityWhere ?? seasonalWhere);
   // Resolved to a ranked id list first (see findSearchRankedIds) so
   // buildWhere can AND it together with every other structured filter, the
   // same way buildVehicleCompatibilityWhere's output is threaded through.

@@ -6357,6 +6357,7 @@ export interface paths {
                     onSale?: boolean | null;
                     bulkDiscountEventId?: number;
                     featured?: boolean | null;
+                    seasonal?: boolean | null;
                     limit?: number;
                     attributeFilters?: string;
                     adminFilters?: string;
@@ -18062,7 +18063,7 @@ export interface components {
             /** @example 1 */
             id: number;
             /** @enum {string} */
-            type: "DISCOUNTED_PRODUCTS" | "POPULAR_PRODUCTS" | "DISCOUNTED_VEHICLES" | "POPULAR_VEHICLES" | "DISCOUNTED_MIXED" | "POPULAR_MIXED" | "FEATURED_MIXED" | "CATEGORIES" | "POPULAR_FOR_VEHICLE" | "RECOMMENDED_FOR_YOU" | "RECENTLY_VIEWED";
+            type: "DISCOUNTED_PRODUCTS" | "POPULAR_PRODUCTS" | "DISCOUNTED_VEHICLES" | "POPULAR_VEHICLES" | "DISCOUNTED_MIXED" | "POPULAR_MIXED" | "FEATURED_MIXED" | "CATEGORIES" | "POPULAR_FOR_VEHICLE" | "RECOMMENDED_FOR_YOU" | "RECENTLY_VIEWED" | "SEASONAL_PRODUCTS";
             title: {
                 ka: string;
                 en: string;

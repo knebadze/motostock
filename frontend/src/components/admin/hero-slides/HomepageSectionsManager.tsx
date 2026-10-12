@@ -23,6 +23,7 @@ const TYPE_LABELS: Record<HomepageSection["type"], string> = {
   POPULAR_FOR_VEHICLE: "პოპულარული მომხმარებლის ტრანსპორტისთვის",
   RECOMMENDED_FOR_YOU: "რეკომენდებული (პერსონალიზებული)",
   RECENTLY_VIEWED: "ბოლოს ნანახი",
+  SEASONAL_PRODUCTS: "სეზონური პროდუქტები (ავტომატური: აპრ–სექ ზაფხულის, ოქტ–მარ ზამთრის)",
 };
 
 const MIXED_TYPES: HomepageSection["type"][] = ["DISCOUNTED_MIXED", "POPULAR_MIXED", "FEATURED_MIXED"];
