@@ -1,9 +1,9 @@
 import "dotenv/config";
 import { prisma } from "../src/config/prisma.js";
 
-// Demo vehicle-for-sale catalog: one Brand + Model + VehicleCatalog +
-// VehicleListing per leaf "transport" category (all 11 motorcycle subtypes
-// plus ATV/scooter/kick-scooter). Deliberately mixes fully-specified and
+// Demo vehicle-for-sale catalog: Brand + Model + VehicleCatalog +
+// VehicleListing rows across the "transport" categories (motorcycles, ATV,
+// scooter). Deliberately mixes fully-specified and
 // partially-specified vehicles (only required + a couple of optional spec
 // fields) to exercise how the admin UI handles missing optional data, and
 // every description is real multi-paragraph/bold/list HTML to exercise the
@@ -83,7 +83,7 @@ type VehicleSeed = {
 
 const VEHICLES: VehicleSeed[] = [
   {
-    categorySlug: "moto-naked",
+    categorySlug: "motorcycles",
     brand: { slug: "kawasaki", name: "Kawasaki" },
     modelSlug: "z900",
     modelName: "Z900",
@@ -124,7 +124,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-sportbike",
+    categorySlug: "motorcycles",
     brand: { slug: "yamaha", name: "Yamaha" },
     modelSlug: "yzf-r6",
     modelName: "YZF-R6",
@@ -165,7 +165,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-sportbike",
+    categorySlug: "motorcycles",
     brand: { slug: "kawasaki", name: "Kawasaki" },
     modelSlug: "ninja-zx-6r",
     modelName: "Ninja ZX-6R",
@@ -206,7 +206,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-sportbike",
+    categorySlug: "motorcycles",
     brand: { slug: "suzuki", name: "Suzuki" },
     modelSlug: "gsx-r750",
     modelName: "GSX-R750",
@@ -247,7 +247,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-sportbike",
+    categorySlug: "motorcycles",
     brand: { slug: "honda", name: "Honda" },
     modelSlug: "cbr600rr",
     modelName: "CBR600RR",
@@ -288,7 +288,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-sportbike",
+    categorySlug: "motorcycles",
     brand: { slug: "ducati", name: "Ducati" },
     modelSlug: "panigale-v2",
     modelName: "Panigale V2",
@@ -329,7 +329,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-sportbike",
+    categorySlug: "motorcycles",
     brand: { slug: "bmw", name: "BMW" },
     modelSlug: "s1000rr",
     modelName: "S 1000 RR",
@@ -370,7 +370,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-cruiser",
+    categorySlug: "motorcycles",
     brand: { slug: "harley-davidson", name: "Harley-Davidson" },
     modelSlug: "iron-883",
     modelName: "Iron 883",
@@ -397,7 +397,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-touring",
+    categorySlug: "motorcycles",
     brand: { slug: "honda", name: "Honda" },
     modelSlug: "gold-wing",
     modelName: "Gold Wing",
@@ -420,7 +420,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-adventure",
+    categorySlug: "motorcycles",
     brand: { slug: "bmw", name: "BMW" },
     modelSlug: "r-1250-gs",
     modelName: "R 1250 GS",
@@ -461,7 +461,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-dual-sport",
+    categorySlug: "motorcycles",
     brand: { slug: "suzuki", name: "Suzuki" },
     modelSlug: "dr650",
     modelName: "DR650",
@@ -484,7 +484,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-enduro",
+    categorySlug: "motorcycles",
     brand: { slug: "ktm", name: "KTM" },
     modelSlug: "300-exc",
     modelName: "300 EXC",
@@ -525,7 +525,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-supermoto",
+    categorySlug: "motorcycles",
     brand: { slug: "ktm", name: "KTM" },
     modelSlug: "690-smc-r",
     modelName: "690 SMC R",
@@ -546,7 +546,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-cafe-racer",
+    categorySlug: "motorcycles",
     brand: { slug: "triumph", name: "Triumph" },
     modelSlug: "street-twin",
     modelName: "Street Twin",
@@ -569,7 +569,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-bobber",
+    categorySlug: "motorcycles",
     brand: { slug: "triumph", name: "Triumph" },
     modelSlug: "bonneville-bobber",
     modelName: "Bonneville Bobber",
@@ -590,7 +590,7 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-sport-touring",
+    categorySlug: "motorcycles",
     brand: { slug: "kawasaki", name: "Kawasaki" },
     modelSlug: "ninja-1000sx",
     modelName: "Ninja 1000SX",
@@ -648,41 +648,6 @@ const VEHICLES: VehicleSeed[] = [
       descriptionKa: "<p><strong>Honda PCX150</strong> — ეკონომიური საქალაქო სკუტერი ავტომატური გადაცემათა კოლოფით.</p>",
       descriptionEn: "<p><strong>Honda PCX150</strong> — an economical city scooter with automatic transmission.</p>",
       descriptionRu: "<p><strong>Honda PCX150</strong> — экономичный городской скутер с автоматической коробкой.</p>",
-    },
-  },
-  {
-    categorySlug: "kick-scooters",
-    brand: { slug: "xiaomi", name: "Xiaomi" },
-    modelSlug: "electric-scooter-4",
-    modelName: "Electric Scooter 4",
-    yearFrom: 2022,
-    yearTo: 2025,
-    spec: {
-      weightKg: 18,
-      topSpeedKmh: 25,
-      hasAbs: false,
-      fuelTypeKey: "ELECTRIC",
-      transmissionTypeKey: "AUTOMATIC",
-      startTypeKey: "ELECTRIC",
-      powertrainTypeKey: "ELECTRIC",
-      motorPowerWatt: 300,
-      batteryCapacityWh: 275,
-      rangeKm: 30,
-      chargingTimeMinutes: 360,
-    },
-    listing: {
-      year: 2023,
-      conditionKey: "NEW",
-      statusKey: "AVAILABLE",
-      colorKey: "BLACK",
-      price: 650,
-      stockQuantity: 6,
-      descriptionKa:
-        "<p><strong>Xiaomi Electric Scooter 4</strong> — მსუბუქი ელექტრო სქროლი ყოველდღიური საქალაქო გადაადგილებისთვის.</p><ul><li>დამუხტვის დრო: 6 საათი</li><li>მანძილი ერთ დამუხტვაზე: 30 კმ</li></ul>",
-      descriptionEn:
-        "<p><strong>Xiaomi Electric Scooter 4</strong> — a lightweight electric kick scooter for daily city commuting.</p><ul><li>Charging time: 6 hours</li><li>Range per charge: 30 km</li></ul>",
-      descriptionRu:
-        "<p><strong>Xiaomi Electric Scooter 4</strong> — лёгкий электросамокат для ежедневных городских поездок.</p><ul><li>Время зарядки: 6 часов</li><li>Запас хода: 30 км</li></ul>",
     },
   },
 ];

@@ -217,68 +217,66 @@ type CategorySeed = {
   nameKa: string;
   nameEn: string;
   nameRu: string;
+  // Only applied when the category is first created — after that both
+  // switches are admin-controlled (Categories page), like the image.
+  onlinePurchaseEnabled?: false;
+  vehicleFitmentEnabled?: false;
   children?: CategorySeed[];
 };
 
-// Starter category tree for the non-vehicle product lines (accessories/gear/
-// parts). Purely a practical starting point — the admin can freely
-// restructure this tree later (split/merge/rename/move branches) since
-// nothing in the schema hardcodes this shape.
+// The store's catalog structure (client-supplied "მოტოსტოკის ვებკატალოგის
+// სარჩევი", 2026-10). Existing slugs were kept wherever the concept stayed
+// the same (helmets, gear, jackets, brakes, tires, ...) so images, attributes,
+// brands, filters and demo products keep pointing at the right place.
+// "transport" must keep its slug — it's the vehicle root the code keys on
+// (VEHICLE_ROOT_CATEGORY_SLUG).
 const PRODUCT_CATEGORY_TREE: CategorySeed[] = [
   {
-    slug: "gear",
-    nameKa: "ეკიპირება",
-    nameEn: "Gear",
-    nameRu: "Экипировка",
-    children: [
-      { slug: "jackets", nameKa: "ქურთუკები", nameEn: "Jackets", nameRu: "Куртки" },
-      { slug: "gloves", nameKa: "ხელთათმანები", nameEn: "Gloves", nameRu: "Перчатки" },
-      { slug: "boots", nameKa: "ჩექმები", nameEn: "Boots", nameRu: "Ботинки" },
-      { slug: "protection", nameKa: "დამცავები", nameEn: "Protection", nameRu: "Защита" },
-      { slug: "rain-gear", nameKa: "წვიმის ეკიპირება", nameEn: "Rain Gear", nameRu: "Дождевая экипировка" },
-    ],
-  },
-  {
     slug: "helmets",
-    nameKa: "ჩაფხუტები",
+    nameKa: "ჩაფხუტი",
     nameEn: "Helmets",
     nameRu: "Шлемы",
+    vehicleFitmentEnabled: false,
     children: [
+      { slug: "helmet-full-face", nameKa: "დახურული", nameEn: "Full-Face", nameRu: "Закрытые" },
+      { slug: "helmet-open-face", nameKa: "ღია", nameEn: "Open-Face", nameRu: "Открытые" },
+      { slug: "helmet-modular", nameKa: "მოდულარი", nameEn: "Modular", nameRu: "Модуляры" },
       { slug: "helmet-enduro", nameKa: "ენდურო", nameEn: "Enduro", nameRu: "Эндуро" },
-      { slug: "helmet-full-face", nameKa: "დახურული", nameEn: "Full-Face", nameRu: "Закрытый" },
-      { slug: "helmet-open-face", nameKa: "ღია", nameEn: "Open-Face", nameRu: "Открытый" },
-      { slug: "helmet-modular", nameKa: "მოდულარული ჩაფხუტი", nameEn: "Modular Helmet", nameRu: "Модульный шлем" },
-      { slug: "helmet-visor", nameKa: "ვიზორი", nameEn: "Visor", nameRu: "Визор" },
+      { slug: "helmet-dual-sport", nameKa: "დუალ-სპორტი", nameEn: "Dual-Sport", nameRu: "Дуал-спорт" },
+      {
+        slug: "helmet-accessories",
+        nameKa: "ჩაფხუტის აქსესუარები",
+        nameEn: "Helmet Accessories",
+        nameRu: "Аксессуары для шлемов",
+        children: [
+          { slug: "intercoms", nameKa: "ინტერკომი", nameEn: "Intercoms", nameRu: "Мотогарнитуры" },
+          { slug: "helmet-visor", nameKa: "ვიზორი", nameEn: "Visors", nameRu: "Визоры" },
+          { slug: "pinlock", nameKa: "პინლოქი", nameEn: "Pinlock", nameRu: "Пинлок" },
+          { slug: "balaclavas", nameKa: "ბალაკლავა", nameEn: "Balaclavas", nameRu: "Балаклавы" },
+          { slug: "goggles", nameKa: "მოტოსათვალეები", nameEn: "Goggles", nameRu: "Мотоочки" },
+          { slug: "helmet-care", nameKa: "ჩაფხუტის მოვლის საშუალებები", nameEn: "Helmet Care", nameRu: "Средства ухода за шлемом" },
+          { slug: "helmet-decor", nameKa: "დეკორატიული აქსესუარები", nameEn: "Decorative Accessories", nameRu: "Декоративные аксессуары" },
+        ],
+      },
     ],
   },
   {
-    slug: "transport",
-    nameKa: "ტრანსპორტი",
-    nameEn: "Transport",
-    nameRu: "Транспорт",
+    slug: "gear",
+    nameKa: "მოტოეკიპირება",
+    nameEn: "Riding Gear",
+    nameRu: "Мотоэкипировка",
+    vehicleFitmentEnabled: false,
     children: [
-      {
-        slug: "motorcycles",
-        nameKa: "მოტოციკლი",
-        nameEn: "Motorcycle",
-        nameRu: "Мотоцикл",
-        children: [
-          { slug: "moto-naked", nameKa: "ქუჩის/სტანდარტული", nameEn: "Naked / Standard", nameRu: "Naked / Стандарт" },
-          { slug: "moto-sportbike", nameKa: "სპორტული", nameEn: "Sportbike", nameRu: "Спортбайк" },
-          { slug: "moto-cruiser", nameKa: "კრუიზერი", nameEn: "Cruiser", nameRu: "Круизер" },
-          { slug: "moto-touring", nameKa: "ტურისტული/ტურერი", nameEn: "Touring", nameRu: "Турер" },
-          { slug: "moto-adventure", nameKa: "სათავგადასავლო/ადვენჩერი", nameEn: "Adventure / ADV", nameRu: "Адвенчер" },
-          { slug: "moto-dual-sport", nameKa: "დუალური დანიშნულების", nameEn: "Dual-Sport", nameRu: "Дуал-спорт" },
-          { slug: "moto-enduro", nameKa: "ენდურო/ოფროუდი", nameEn: "Enduro / Dirt Bike", nameRu: "Эндуро" },
-          { slug: "moto-supermoto", nameKa: "სუპერმოტო", nameEn: "Supermoto", nameRu: "Супермото" },
-          { slug: "moto-cafe-racer", nameKa: "კაფე რეისერი/ნეო-რეტრო", nameEn: "Café Racer / Neo-Retro", nameRu: "Кафе-рейсер / Нео-ретро" },
-          { slug: "moto-bobber", nameKa: "ბობერი/ჩოპერი", nameEn: "Bobber / Chopper", nameRu: "Бобер / Чоппер" },
-          { slug: "moto-sport-touring", nameKa: "სპორტ-ტურერი", nameEn: "Sport-Touring", nameRu: "Спорт-турер" },
-        ],
-      },
-      { slug: "atvs", nameKa: "კვადროციკლი", nameEn: "ATV", nameRu: "Квадроцикл" },
-      { slug: "scooters", nameKa: "სკუტერი", nameEn: "Scooter", nameRu: "Скутер" },
-      { slug: "kick-scooters", nameKa: "სქროლი", nameEn: "Kick Scooter", nameRu: "Самокат" },
+      { slug: "jackets", nameKa: "ქურთუკი", nameEn: "Jackets", nameRu: "Куртки" },
+      { slug: "gloves", nameKa: "ხელთათმანი", nameEn: "Gloves", nameRu: "Перчатки" },
+      { slug: "pants", nameKa: "შარვალი", nameEn: "Pants", nameRu: "Брюки" },
+      { slug: "riding-suits", nameKa: "მოტო კომბინიზონი", nameEn: "Riding Suits", nameRu: "Мотокомбинезоны" },
+      { slug: "protection", nameKa: "დამცავი აღჭურვილობა", nameEn: "Protective Gear", nameRu: "Защитная экипировка" },
+      { slug: "rain-gear", nameKa: "საწვიმარი", nameEn: "Rain Gear", nameRu: "Дождевики" },
+      { slug: "boots", nameKa: "მოტოჩექმები და ფეხსაცმელი", nameEn: "Boots & Shoes", nameRu: "Мотоботы и обувь" },
+      { slug: "shoe-protectors", nameKa: "ფეხსაცმლის დამცავები", nameEn: "Shoe Protectors", nameRu: "Защита обуви" },
+      { slug: "apparel", nameKa: "ტანსაცმელი", nameEn: "Apparel", nameRu: "Одежда" },
+      { slug: "luggage", nameKa: "ჩანთა და საბარგული", nameEn: "Bags & Luggage", nameRu: "Сумки и багаж" },
     ],
   },
   {
@@ -286,48 +284,319 @@ const PRODUCT_CATEGORY_TREE: CategorySeed[] = [
     nameKa: "აქსესუარები",
     nameEn: "Accessories",
     nameRu: "Аксессуары",
+    vehicleFitmentEnabled: false,
     children: [
-      { slug: "luggage", nameKa: "ბარგი", nameEn: "Luggage", nameRu: "Багаж" },
-      { slug: "electronics", nameKa: "ელექტრონიკა", nameEn: "Electronics", nameRu: "Электроника" },
-      { slug: "security", nameKa: "უსაფრთხოება", nameEn: "Security", nameRu: "Безопасность" },
+      {
+        slug: "phone-navigation",
+        nameKa: "ტელეფონი და ნავიგაცია",
+        nameEn: "Phone & Navigation",
+        nameRu: "Телефон и навигация",
+        children: [
+          { slug: "phone-mounts", nameKa: "ტელეფონის სამაგრები", nameEn: "Phone Mounts", nameRu: "Держатели для телефона" },
+          { slug: "phone-chargers", nameKa: "ტელეფონის დამტენები", nameEn: "Phone Chargers", nameRu: "Зарядные устройства для телефона" },
+          { slug: "gps-navigators", nameKa: "GPS ნავიგატორები", nameEn: "GPS Navigators", nameRu: "GPS-навигаторы" },
+        ],
+      },
+      {
+        slug: "security",
+        nameKa: "დაცვა და უსაფრთხოება",
+        nameEn: "Security",
+        nameRu: "Защита и безопасность",
+        children: [
+          { slug: "locks", nameKa: "საკეტი", nameEn: "Locks", nameRu: "Замки" },
+          { slug: "disc-locks", nameKa: "დისკის საკეტი", nameEn: "Disc Locks", nameRu: "Замки на диск" },
+          { slug: "alarms", nameKa: "სიგნალიზაცია", nameEn: "Alarms", nameRu: "Сигнализации" },
+        ],
+      },
+      {
+        slug: "care-practical",
+        nameKa: "მოტოციკლის მოვლა და პრაქტიკული აქსესუარები",
+        nameEn: "Motorcycle Care & Practical Accessories",
+        nameRu: "Уход за мотоциклом и практичные аксессуары",
+        children: [
+          { slug: "bike-covers", nameKa: "მოტოციკლის გადასაფარებელი", nameEn: "Motorcycle Covers", nameRu: "Чехлы для мотоцикла" },
+          { slug: "cargo-nets", nameKa: "ბარგის დასამაგრებელი ბადე", nameEn: "Cargo Nets", nameRu: "Багажные сетки" },
+          { slug: "chain-brushes", nameKa: "ჯაჭვის საწმენდი ჯაგრისი", nameEn: "Chain Cleaning Brushes", nameRu: "Щётки для чистки цепи" },
+          { slug: "wrenches", nameKa: "გასაღები", nameEn: "Wrenches", nameRu: "Ключи" },
+          { slug: "tools", nameKa: "ხელსაწყოები", nameEn: "Tools", nameRu: "Инструменты" },
+          // Same name as the gear subcategory "shoe-protectors" — listed in
+          // both places in the client's catalog, so it needs its own slug.
+          { slug: "care-shoe-protectors", nameKa: "ფეხსაცმლის დამცავები", nameEn: "Shoe Protectors", nameRu: "Защита обуви" },
+          { slug: "brake-reservoir-covers", nameKa: "სამუხრუჭე სითხის რეზერვუარის დამცავი", nameEn: "Brake Reservoir Covers", nameRu: "Защита бачка тормозной жидкости" },
+          { slug: "helmet-hangers", nameKa: "ჩაფხუტის საკიდი", nameEn: "Helmet Hangers", nameRu: "Держатели для шлема" },
+          { slug: "cup-holders", nameKa: "ჭიქის დამჭერი", nameEn: "Cup Holders", nameRu: "Подстаканники" },
+        ],
+      },
+      {
+        slug: "visual-accessories",
+        nameKa: "ვიზუალური აქსესუარები",
+        nameEn: "Visual Accessories",
+        nameRu: "Визуальные аксессуары",
+        children: [
+          { slug: "stickers", nameKa: "სტიკერები", nameEn: "Stickers", nameRu: "Наклейки" },
+          { slug: "keychains", nameKa: "ბრელოკი", nameEn: "Keychains", nameRu: "Брелоки" },
+        ],
+      },
+      {
+        slug: "gifts",
+        nameKa: "საჩუქრები",
+        nameEn: "Gifts",
+        nameRu: "Подарки",
+        children: [
+          { slug: "puzzles", nameKa: "ფაზლები", nameEn: "Puzzles", nameRu: "Пазлы" },
+          { slug: "scale-models", nameKa: "მოტოციკლების მინიატურული მოდელები", nameEn: "Scale Motorcycle Models", nameRu: "Масштабные модели мотоциклов" },
+          { slug: "gift-vouchers", nameKa: "სასაჩუქრე ვაუჩერი", nameEn: "Gift Vouchers", nameRu: "Подарочные сертификаты" },
+        ],
+      },
     ],
   },
   {
     slug: "parts",
-    nameKa: "ნაწილები",
-    nameEn: "Parts",
+    nameKa: "სათადარიგო ნაწილები",
+    nameEn: "Spare Parts",
     nameRu: "Запчасти",
     children: [
-      { slug: "brakes", nameKa: "სამუხრუჭე სისტემა", nameEn: "Brakes", nameRu: "Тормозная система" },
-      { slug: "batteries", nameKa: "აკუმულატორები", nameEn: "Batteries", nameRu: "Аккумуляторы" },
-      { slug: "tires", nameKa: "საბურავები", nameEn: "Tires", nameRu: "Шины" },
-      { slug: "filters", nameKa: "ფილტრები", nameEn: "Filters", nameRu: "Фильтры" },
-      { slug: "fluids", nameKa: "ზეთები და სითხეები", nameEn: "Oils & Fluids", nameRu: "Масла и жидкости" },
-      { slug: "exhaust", nameKa: "გამონაბოლქვის სისტემა", nameEn: "Exhaust", nameRu: "Выхлопная система" },
+      {
+        slug: "fluids",
+        nameKa: "ზეთები და მოვლის საშუალებები",
+        nameEn: "Oils & Care Products",
+        nameRu: "Масла и средства ухода",
+        children: [
+          { slug: "engine-oil", nameKa: "ძრავის ზეთი", nameEn: "Engine Oil", nameRu: "Моторное масло" },
+          { slug: "fork-oil", nameKa: "ამორტიზატორის ზეთი", nameEn: "Fork & Shock Oil", nameRu: "Масло для амортизаторов" },
+          { slug: "chain-cleaners", nameKa: "ჯაჭვის საწმენდი საშუალება", nameEn: "Chain Cleaners", nameRu: "Очистители цепи" },
+          { slug: "chain-lubes", nameKa: "ჯაჭვის საპოხი საშუალება", nameEn: "Chain Lubes", nameRu: "Смазки для цепи" },
+          { slug: "engine-cleaners", nameKa: "ძრავის საწმენდი საშუალება", nameEn: "Engine Cleaners", nameRu: "Очистители двигателя" },
+          { slug: "fuel-system-cleaners", nameKa: "საწვავის სისტემის საწმენდი საშუალება", nameEn: "Fuel System Cleaners", nameRu: "Очистители топливной системы" },
+          { slug: "cooling-system-cleaners", nameKa: "გაგრილების სისტემის საწმენდი საშუალება", nameEn: "Cooling System Cleaners", nameRu: "Очистители системы охлаждения" },
+          { slug: "leather-cleaners", nameKa: "ტყავის საწმენდი საშუალება", nameEn: "Leather Cleaners", nameRu: "Средства для чистки кожи" },
+          { slug: "antifreeze", nameKa: "ანტიფრიზი", nameEn: "Antifreeze", nameRu: "Антифриз" },
+        ],
+      },
+      {
+        slug: "filters",
+        nameKa: "ფილტრები",
+        nameEn: "Filters",
+        nameRu: "Фильтры",
+        children: [
+          { slug: "air-filters", nameKa: "ჰაერის ფილტრი", nameEn: "Air Filters", nameRu: "Воздушные фильтры" },
+          { slug: "oil-filters", nameKa: "ზეთის ფილტრი", nameEn: "Oil Filters", nameRu: "Масляные фильтры" },
+        ],
+      },
+      {
+        slug: "wear-parts",
+        nameKa: "ცვეთადი ნაწილები",
+        nameEn: "Wear Parts",
+        nameRu: "Расходные запчасти",
+        children: [
+          { slug: "brake-pads", nameKa: "სამუხრუჭე ხუნდი", nameEn: "Brake Pads", nameRu: "Тормозные колодки" },
+          { slug: "spark-plugs", nameKa: "აალების სანთელი", nameEn: "Spark Plugs", nameRu: "Свечи зажигания" },
+          { slug: "batteries", nameKa: "აკუმულატორი", nameEn: "Batteries", nameRu: "Аккумуляторы" },
+          { slug: "battery-chargers", nameKa: "აკუმულატორის დამტენი", nameEn: "Battery Chargers", nameRu: "Зарядные устройства для АКБ" },
+          { slug: "chains-sprockets", nameKa: "ჯაჭვები და კბილანები", nameEn: "Chains & Sprockets", nameRu: "Цепи и звёзды" },
+          { slug: "fork-seals", nameKa: "ჩანგლის ჩობალი", nameEn: "Fork Seals", nameRu: "Сальники вилки" },
+          { slug: "clutch-plates", nameKa: "გადაბმულობის ფირფიტები", nameEn: "Clutch Plates", nameRu: "Диски сцепления" },
+        ],
+      },
+      {
+        slug: "engine-transmission",
+        nameKa: "ძრავი და გადაცემათა კოლოფი",
+        nameEn: "Engine & Transmission",
+        nameRu: "Двигатель и коробка передач",
+        children: [
+          { slug: "engine-parts", nameKa: "ძრავის ნაწილები", nameEn: "Engine Parts", nameRu: "Детали двигателя" },
+          { slug: "transmission-parts", nameKa: "გადაცემათა კოლოფის ნაწილები", nameEn: "Transmission Parts", nameRu: "Детали коробки передач" },
+        ],
+      },
+      {
+        slug: "electrical",
+        nameKa: "ელექტროსისტემა",
+        nameEn: "Electrical System",
+        nameRu: "Электросистема",
+        children: [
+          { slug: "relays", nameKa: "რელე", nameEn: "Relays", nameRu: "Реле" },
+          { slug: "ignition-coils", nameKa: "აალების კოჭები (ბაბინები)", nameEn: "Ignition Coils", nameRu: "Катушки зажигания" },
+          { slug: "spark-plug-caps", nameKa: "სანთლის ჩიბუხი", nameEn: "Spark Plug Caps", nameRu: "Колпачки свечей" },
+          {
+            slug: "sensors",
+            nameKa: "სენსორები",
+            nameEn: "Sensors",
+            nameRu: "Датчики",
+            children: [
+              { slug: "abs-sensors", nameKa: "ABS-ის სენსორები", nameEn: "ABS Sensors", nameRu: "Датчики ABS" },
+              { slug: "temperature-sensors", nameKa: "ტემპერატურის სენსორები", nameEn: "Temperature Sensors", nameRu: "Датчики температуры" },
+              { slug: "oil-sensors", nameKa: "ზეთის სენსორები", nameEn: "Oil Sensors", nameRu: "Датчики масла" },
+              { slug: "pressure-sensors", nameKa: "წნევის სენსორები", nameEn: "Pressure Sensors", nameRu: "Датчики давления" },
+              { slug: "speed-sensors", nameKa: "სიჩქარის სენსორები", nameEn: "Speed Sensors", nameRu: "Датчики скорости" },
+            ],
+          },
+        ],
+      },
+      {
+        slug: "cooling",
+        nameKa: "გაგრილების სისტემა",
+        nameEn: "Cooling System",
+        nameRu: "Система охлаждения",
+        children: [
+          { slug: "radiators", nameKa: "რადიატორები", nameEn: "Radiators", nameRu: "Радиаторы" },
+          { slug: "radiator-caps", nameKa: "რადიატორის თავსახურები", nameEn: "Radiator Caps", nameRu: "Крышки радиатора" },
+          { slug: "water-pumps", nameKa: "წყლის ტუმბოები", nameEn: "Water Pumps", nameRu: "Водяные насосы" },
+          { slug: "coolant-hoses", nameKa: "გამაგრილებელი სითხის მილები", nameEn: "Coolant Hoses", nameRu: "Патрубки охлаждения" },
+          { slug: "cooling-fans", nameKa: "ვენტილატორები", nameEn: "Cooling Fans", nameRu: "Вентиляторы" },
+        ],
+      },
+      {
+        slug: "exhaust",
+        nameKa: "გამონაბოლქვის სისტემა",
+        nameEn: "Exhaust System",
+        nameRu: "Выхлопная система",
+        children: [
+          { slug: "slip-ons", nameKa: "სლიპონი", nameEn: "Slip-Ons", nameRu: "Слипоны" },
+          { slug: "full-exhaust-systems", nameKa: "გამონაბოლქვის სრული სისტემა", nameEn: "Full Exhaust Systems", nameRu: "Полные выхлопные системы" },
+          { slug: "link-pipes", nameKa: "შუალედური მილები", nameEn: "Link Pipes", nameRu: "Промежуточные трубы" },
+          { slug: "mufflers", nameKa: "ხმის ჩამხშობი", nameEn: "Mufflers", nameRu: "Глушители" },
+          { slug: "exhaust-wrap", nameKa: "თბოსაიზოლაციო ლენტა", nameEn: "Exhaust Wrap", nameRu: "Термолента" },
+          { slug: "exhaust-headers", nameKa: "გამონაბოლქვის კოლექტორი", nameEn: "Exhaust Headers", nameRu: "Выпускные коллекторы" },
+        ],
+      },
+      {
+        slug: "suspension",
+        nameKa: "ამორტიზატორები და სავალი ნაწილი",
+        nameEn: "Suspension & Chassis",
+        nameRu: "Подвеска и ходовая часть",
+        children: [
+          { slug: "front-forks", nameKa: "წინა ჩანგალი", nameEn: "Front Forks", nameRu: "Передние вилки" },
+          { slug: "rear-shocks", nameKa: "უკანა ამორტიზატორები", nameEn: "Rear Shocks", nameRu: "Задние амортизаторы" },
+          { slug: "bearings", nameKa: "საკისრები", nameEn: "Bearings", nameRu: "Подшипники" },
+          { slug: "bushings", nameKa: "ბუშინგები (რეზინის ბუდეები)", nameEn: "Bushings", nameRu: "Втулки (сайлентблоки)" },
+          { slug: "triple-clamps", nameKa: "ტრავერსები", nameEn: "Triple Clamps", nameRu: "Траверсы" },
+          { slug: "seals", nameKa: "ჩობალი", nameEn: "Seals", nameRu: "Сальники" },
+        ],
+      },
+      {
+        slug: "controls",
+        nameKa: "საჭე და მართვის ელემენტები",
+        nameEn: "Handlebars & Controls",
+        nameRu: "Руль и органы управления",
+        children: [
+          { slug: "handlebars", nameKa: "საჭეები და კლიპონები", nameEn: "Handlebars & Clip-Ons", nameRu: "Рули и клипоны" },
+          { slug: "grips", nameKa: "გრიპსები (სახელურები)", nameEn: "Grips", nameRu: "Грипсы" },
+          { slug: "levers", nameKa: "ბერკეტები (ლევერი)", nameEn: "Levers", nameRu: "Рычаги" },
+          { slug: "handlebar-sliders", nameKa: "საჭის სლაიდერები", nameEn: "Handlebar Sliders", nameRu: "Слайдеры руля" },
+          { slug: "mirrors", nameKa: "სარკეები", nameEn: "Mirrors", nameRu: "Зеркала" },
+          { slug: "hand-guards", nameKa: "ხელის დამცავები", nameEn: "Hand Guards", nameRu: "Защита рук" },
+          { slug: "switch-controls", nameKa: "მართვის ბლოკები", nameEn: "Switch Controls", nameRu: "Блоки управления" },
+          { slug: "steering-dampers", nameKa: "საჭის დემპფერები", nameEn: "Steering Dampers", nameRu: "Рулевые демпферы" },
+        ],
+      },
+      {
+        slug: "brakes",
+        nameKa: "სამუხრუჭე სისტემა",
+        nameEn: "Brake System",
+        nameRu: "Тормозная система",
+        children: [
+          { slug: "master-cylinders", nameKa: "მთავარი სამუხრუჭე ცილინდრები", nameEn: "Master Cylinders", nameRu: "Главные тормозные цилиндры" },
+          { slug: "brake-discs", nameKa: "სამუხრუჭე დისკები", nameEn: "Brake Discs", nameRu: "Тормозные диски" },
+          { slug: "brake-lines", nameKa: "სამუხრუჭე შლანგები და კაბელები", nameEn: "Brake Lines & Cables", nameRu: "Тормозные шланги и тросы" },
+          { slug: "brake-calipers", nameKa: "სამუხრუჭე სუპორტები", nameEn: "Brake Calipers", nameRu: "Тормозные суппорты" },
+        ],
+      },
+      {
+        slug: "fasteners",
+        nameKa: "სამაგრები",
+        nameEn: "Fasteners",
+        nameRu: "Крепёж",
+        children: [
+          { slug: "bolts", nameKa: "ჭანჭიკები, ბოლტები და სხვა სამაგრები", nameEn: "Nuts, Bolts & Other Fasteners", nameRu: "Гайки, болты и прочий крепёж" },
+        ],
+      },
+      {
+        slug: "body-parts",
+        nameKa: "გარე ნაწილები და ვიზუალი",
+        nameEn: "Body Parts & Styling",
+        nameRu: "Внешние детали и стайлинг",
+        children: [
+          { slug: "windscreens", nameKa: "საქარე მინები", nameEn: "Windscreens", nameRu: "Ветровые стёкла" },
+          { slug: "body-kits", nameKa: "ბოდი-კიტები", nameEn: "Body Kits", nameRu: "Обвесы" },
+          { slug: "radiator-guards", nameKa: "რადიატორის ცხაურები", nameEn: "Radiator Guards", nameRu: "Решётки радиатора" },
+          { slug: "license-plate-holders", nameKa: "სანომრე ნიშნების სამაგრები", nameEn: "License Plate Holders", nameRu: "Рамки номерного знака" },
+          { slug: "sissy-bars", nameKa: "სისი-ბარები (უკანა მგზავრის საზურგე/სამაგრი)", nameEn: "Sissy Bars", nameRu: "Спинки пассажира (сисибары)" },
+        ],
+      },
+      {
+        slug: "seats",
+        nameKa: "სკამი",
+        nameEn: "Seats",
+        nameRu: "Сиденья",
+        children: [
+          { slug: "motorcycle-seats", nameKa: "მოტოციკლის სკამები", nameEn: "Motorcycle Seats", nameRu: "Сиденья для мотоцикла" },
+          { slug: "seat-covers", nameKa: "სკამის გადასაკრავები", nameEn: "Seat Covers", nameRu: "Чехлы для сиденья" },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "transport",
+    nameKa: "მოტოტექნიკა",
+    nameEn: "Motor Vehicles",
+    nameRu: "Мототехника",
+    // Vehicles are bought at the showroom, not through the cart; and they
+    // aren't parts, so product fitment doesn't apply to them.
+    onlinePurchaseEnabled: false,
+    vehicleFitmentEnabled: false,
+    children: [
+      { slug: "motorcycles", nameKa: "მოტოციკლები", nameEn: "Motorcycles", nameRu: "Мотоциклы" },
+      { slug: "atvs", nameKa: "კვადროციკლები", nameEn: "ATVs", nameRu: "Квадроциклы" },
+      { slug: "scooters", nameKa: "სკუტერები", nameEn: "Scooters", nameRu: "Скутеры" },
+      { slug: "mopeds", nameKa: "მოპედები", nameEn: "Mopeds", nameRu: "Мопеды" },
+      { slug: "trikes", nameKa: "ტრიციკლები", nameEn: "Trikes", nameRu: "Трициклы" },
+    ],
+  },
+  {
+    slug: "tires",
+    nameKa: "საბურავები",
+    nameEn: "Tires",
+    nameRu: "Шины",
+    children: [
+      { slug: "motorcycle-tires", nameKa: "მოტოციკლის საბურავები", nameEn: "Motorcycle Tires", nameRu: "Мотошины" },
+      { slug: "atv-tires", nameKa: "კვადროციკლის საბურავები", nameEn: "ATV Tires", nameRu: "Шины для квадроциклов" },
+      { slug: "kick-scooter-tires", nameKa: "სქროლის საბურავები", nameEn: "Kick Scooter Tires", nameRu: "Шины для самокатов" },
+      { slug: "trike-tires", nameKa: "ტრიციკლის საბურავები", nameEn: "Trike Tires", nameRu: "Шины для трициклов" },
     ],
   },
 ];
 
+// The seed is the source of truth for the catalog STRUCTURE: re-running it
+// creates missing categories and re-syncs existing ones' names, parent and
+// order (sibling position). Images and the two switches above are only set
+// on create — those stay admin-controlled afterwards. Categories that were
+// dropped from this tree are left alone (they may still hold products).
 async function seedCategoryTree(
   nodes: CategorySeed[],
   parentId: number | null,
   idBySlug: Map<string, number> = new Map(),
 ) {
-  for (const node of nodes) {
+  for (const [index, node] of nodes.entries()) {
     // Backfill a seed image only when the category doesn't already have one —
     // re-running the seed must never clobber an image an admin uploaded/changed by hand.
     const existing = await prisma.category.findUnique({ where: { slug: node.slug } });
     const imageUrl = existing?.imageUrl ? undefined : await seedImageUrl("categories", node.slug);
+    const structure = {
+      nameKa: node.nameKa,
+      nameEn: node.nameEn,
+      nameRu: node.nameRu,
+      parentId,
+      sortOrder: index,
+    };
 
     const category = await prisma.category.upsert({
       where: { slug: node.slug },
-      update: { ...(imageUrl ? { imageUrl } : {}) },
+      update: { ...structure, ...(imageUrl ? { imageUrl } : {}) },
       create: {
         slug: node.slug,
-        nameKa: node.nameKa,
-        nameEn: node.nameEn,
-        nameRu: node.nameRu,
-        parentId,
+        ...structure,
+        ...(node.onlinePurchaseEnabled === false ? { onlinePurchaseEnabled: false } : {}),
+        ...(node.vehicleFitmentEnabled === false ? { vehicleFitmentEnabled: false } : {}),
         ...(imageUrl ? { imageUrl } : {}),
       },
     });
@@ -520,13 +789,6 @@ const ATTRIBUTE_SEEDS: AttributeSeed[] = [
     unitNameKa: "ლიტრი",
   },
   {
-    categorySlug: "luggage",
-    nameKa: "წყალგამძლეობა",
-    nameEn: "Waterproof",
-    nameRu: "Водонепроницаемость",
-    valueType: "BOOLEAN",
-  },
-  {
     categorySlug: "parts",
     nameKa: "წარმოშობა",
     nameEn: "Origin",
@@ -540,6 +802,18 @@ const ATTRIBUTE_SEEDS: AttributeSeed[] = [
   },
   {
     categorySlug: "brakes",
+    nameKa: "მასალა/კომპაუნდი",
+    nameEn: "Material/Compound",
+    nameRu: "Материал/Компаунд",
+    valueType: "SELECT",
+    options: [
+      { key: "SINTERED", labelKa: "სინტერული", labelEn: "Sintered", labelRu: "Спечённый" },
+      { key: "ORGANIC", labelKa: "ორგანული", labelEn: "Organic", labelRu: "Органический" },
+      { key: "CERAMIC", labelKa: "კერამიკული", labelEn: "Ceramic", labelRu: "Керамический" },
+    ],
+  },
+  {
+    categorySlug: "brake-pads",
     nameKa: "მასალა/კომპაუნდი",
     nameEn: "Material/Compound",
     nameRu: "Материал/Компаунд",
@@ -684,8 +958,8 @@ const PRODUCT_BRAND_SEEDS: ProductBrandSeed[] = [
   { categorySlug: "helmets", name: "AGV", slug: "agv" },
   { categorySlug: "helmets", name: "Shoei", slug: "shoei" },
   { categorySlug: "helmets", name: "Arai", slug: "arai" },
-  { categorySlug: "accessories", name: "Givi", slug: "givi" },
-  { categorySlug: "accessories", name: "SW-Motech", slug: "sw-motech" },
+  { categorySlug: "luggage", name: "Givi", slug: "givi" },
+  { categorySlug: "luggage", name: "SW-Motech", slug: "sw-motech" },
   { categorySlug: "security", name: "Xena", slug: "xena" },
   { categorySlug: "tires", name: "Michelin", slug: "michelin" },
   { categorySlug: "tires", name: "Pirelli", slug: "pirelli" },
@@ -857,8 +1131,6 @@ type VehicleCategoryFilterSeed =
 // Demo filter-panel composition for a few transport categories — shows all
 // filter kinds (built-in Price/Year/Brand plus LOOKUP/NUMBER spec fields) so
 // the vehicle shop's filter sidebar has something to render out of the box.
-// "motorcycles" is a parent category, so its filters are inherited by every
-// moto-* leaf category too (same inheritance convention as CATEGORY_FILTER_SEEDS).
 const VEHICLE_CATEGORY_FILTER_SEEDS: VehicleCategoryFilterSeed[] = [
   { categorySlug: "motorcycles", filterType: "PRICE", sortOrder: 0 },
   { categorySlug: "motorcycles", filterType: "YEAR", sortOrder: 1 },
@@ -1030,7 +1302,7 @@ async function main() {
   const unitIdByNameKa = await seedUnits();
 
   const categoryIdBySlug = await seedCategoryTree(PRODUCT_CATEGORY_TREE, null);
-  console.log(`Product category tree ready: ${categoryIdBySlug.size} categories`);
+  console.log(`Category tree ready: ${categoryIdBySlug.size} categories`);
 
   await seedAttributes(categoryIdBySlug, unitIdByNameKa);
   await seedProductBrands(categoryIdBySlug);
