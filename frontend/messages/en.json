@@ -137,7 +137,9 @@
     "addedToCart": "Added",
     "outOfStock": "Out of stock",
     "addError": "Couldn't add to cart",
-    "goToCheckout": "Go to checkout"
+    "goToCheckout": "Go to checkout",
+    "visitShowroom": "Visit our showroom to purchase",
+    "itemNotPurchasableOnline": "This item can't be bought online — visit our showroom to purchase. Remove it from your cart to check out."
   },
   "Checkout": {
     "title": "Checkout",
@@ -694,7 +696,9 @@
     "CURRENT_PASSWORD_REQUIRED": "Your current password is required",
     "CURRENT_PASSWORD_INCORRECT": "Your current password is incorrect",
     "VALIDATION_FAILED": "The submitted data is invalid",
-    "USD_GEL_RATE_UNAVAILABLE": "Items priced in USD can't be purchased right now — the exchange rate is being updated, please try again later"
+    "USD_GEL_RATE_UNAVAILABLE": "Items priced in USD can't be purchased right now — the exchange rate is being updated, please try again later",
+    "NOT_PURCHASABLE_ONLINE": "This item can't be bought online — visit our showroom to purchase",
+    "NOT_PURCHASABLE_ONLINE_ITEM": "\"{itemNameEn}\" can't be bought online — visit our showroom to purchase"
   },
   "Common": {
     "genericError": "Something went wrong, please try again",

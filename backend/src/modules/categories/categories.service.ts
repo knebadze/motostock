@@ -21,6 +21,7 @@ type CategoryRow = {
   bannerImageUrl: string | null;
   sortOrder: number;
   lowStockBadgeEnabled: boolean;
+  onlinePurchaseEnabled: boolean;
   parentId: number | null;
   createdAt: Date;
   updatedAt: Date;
@@ -36,6 +37,7 @@ function toResponse(category: CategoryRow) {
     bannerImageUrl: category.bannerImageUrl,
     sortOrder: category.sortOrder,
     lowStockBadgeEnabled: category.lowStockBadgeEnabled,
+    onlinePurchaseEnabled: category.onlinePurchaseEnabled,
     parentId: category.parentId,
     parent: category.parent
       ? {
@@ -50,6 +52,30 @@ function toResponse(category: CategoryRow) {
     createdAt: category.createdAt,
     updatedAt: category.updatedAt,
   };
+}
+
+// Ids of every category whose items can't be bought on the site: switched
+// off itself, or under a switched-off ancestor (so turning off "Transport"
+// covers all its subcategories).
+export async function getOnlinePurchaseBlockedCategoryIds(): Promise<Set<number>> {
+  const rows = await categoriesRepository.findOnlinePurchaseTree();
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const blocked = new Set<number>();
+  for (const row of rows) {
+    // Walk up to the root; `seen` guards against a (should-be-impossible,
+    // see assertNoCycle) parent cycle.
+    const seen = new Set<number>();
+    let current: typeof row | undefined = row;
+    while (current && !seen.has(current.id)) {
+      if (!current.onlinePurchaseEnabled) {
+        blocked.add(row.id);
+        break;
+      }
+      seen.add(current.id);
+      current = current.parentId != null ? byId.get(current.parentId) : undefined;
+    }
+  }
+  return blocked;
 }
 
 async function assertNoCycle(categoryId: number, proposedParentId: number) {
@@ -146,6 +172,9 @@ export async function createCategory(input: CreateCategoryInput) {
         ...(input.lowStockBadgeEnabled !== undefined
           ? { lowStockBadgeEnabled: input.lowStockBadgeEnabled }
           : {}),
+        ...(input.onlinePurchaseEnabled !== undefined
+          ? { onlinePurchaseEnabled: input.onlinePurchaseEnabled }
+          : {}),
       }),
     "slug",
     "ეს slug უკვე გამოყენებულია",
@@ -183,6 +212,9 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
         ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
         ...(input.lowStockBadgeEnabled !== undefined
           ? { lowStockBadgeEnabled: input.lowStockBadgeEnabled }
+          : {}),
+        ...(input.onlinePurchaseEnabled !== undefined
+          ? { onlinePurchaseEnabled: input.onlinePurchaseEnabled }
           : {}),
       }),
     "slug",

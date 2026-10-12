@@ -6,6 +6,7 @@ import { formatPrice, pickLookupName } from "@/lib/format";
 import { WishlistButton } from "@/components/shared/WishlistButton";
 import { CompareButton } from "@/components/shared/CompareButton";
 import { AddToCartButton } from "@/components/shared/AddToCartButton";
+import { ShowroomPurchaseNotice } from "@/components/shared/ShowroomPurchaseNotice";
 import type {
   ProductDetail,
   ProductFitmentRuleSummary,
@@ -77,6 +78,8 @@ function resolvePreferredImage(
 export function ProductDetailPage({
   product,
   breadcrumbChain,
+  purchasableOnline,
+  onlinePurchaseBlockedCategoryIds,
   companionRecommendations,
   similarRecommendations,
   descriptionHtml,
@@ -87,6 +90,11 @@ export function ProductDetailPage({
   // other two languages' descriptions aren't serialized into the page.
   descriptionHtml: string | null;
   breadcrumbChain: Category[];
+  // False when the product's category is switched off for online purchase
+  // (admin) — "visit the showroom" instead of add-to-cart. The id list is
+  // every such category, for the buy-together companions.
+  purchasableOnline: boolean;
+  onlinePurchaseBlockedCategoryIds: number[];
   // Server-rendered, streamed sections (see the route page's
   // <Suspense>-wrapped recommendation components) — the gallery, price and
   // add-to-cart no longer wait for the recommendation queries.
@@ -173,7 +181,10 @@ export function ProductDetailPage({
           )}
 
           <div className="flex flex-wrap items-center gap-3">
-            {selectedVariant && (
+            {selectedVariant && !purchasableOnline && !outOfStock && (
+              <ShowroomPurchaseNotice label={tCart("visitShowroom")} />
+            )}
+            {selectedVariant && purchasableOnline && (
               <AddToCartButton
                 itemType="PRODUCT_VARIANT"
                 id={selectedVariant.id}
@@ -228,7 +239,9 @@ export function ProductDetailPage({
         </div>
       </div>
 
-      <BuyTogether product={product} />
+      {purchasableOnline && (
+        <BuyTogether product={product} blockedCategoryIds={onlinePurchaseBlockedCategoryIds} />
+      )}
       {companionRecommendations}
 
       {descriptionHtml && (

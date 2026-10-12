@@ -63,6 +63,9 @@ export function CategoryFormModal({
   const [lowStockBadgeEnabled, setLowStockBadgeEnabled] = useState(
     category?.lowStockBadgeEnabled ?? true,
   );
+  const [onlinePurchaseEnabled, setOnlinePurchaseEnabled] = useState(
+    category?.onlinePurchaseEnabled ?? true,
+  );
   const { file: imageFile, previewUrl, onChange: handleImageChange } = useFileUploadPreview(
     resolveMediaUrl(category?.imageUrl ?? null),
   );
@@ -102,6 +105,7 @@ export function CategoryFormModal({
         parentId: parentId ? Number(parentId) : null,
         sortOrder,
         lowStockBadgeEnabled,
+        onlinePurchaseEnabled,
       };
 
       const savedCategory = isEditing
@@ -230,6 +234,23 @@ export function CategoryFormModal({
               checked={lowStockBadgeEnabled}
               onChange={setLowStockBadgeEnabled}
               label="„დარჩა მხოლოდ N ცალი” ბეჯი"
+            />
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">საიტიდან შეძენა (კალათა)</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                გამორთვის შემთხვევაში ამ კატეგორიის ნივთებს კალათაში დამატების ღილაკის ნაცვლად
+                გამოუჩნდება „შესაძენად ეწვიეთ შოურუმს&rdquo;. ვრცელდება ყველა ქვეკატეგორიაზეც.
+              </p>
+            </div>
+            <Toggle
+              checked={onlinePurchaseEnabled}
+              onChange={setOnlinePurchaseEnabled}
+              label="საიტიდან შეძენა"
             />
           </div>
         </div>

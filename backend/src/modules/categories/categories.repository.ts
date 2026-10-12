@@ -11,6 +11,7 @@ type CategoryWriteData = {
   parentId: number | null;
   sortOrder?: number;
   lowStockBadgeEnabled?: boolean;
+  onlinePurchaseEnabled?: boolean;
 };
 
 export const categoriesRepository = {
@@ -28,6 +29,12 @@ export const categoriesRepository = {
 
   findBySlug(slug: string) {
     return prisma.category.findUnique({ where: { slug } });
+  },
+
+  // The whole tree's purchase switches — tiny (one row per category), read
+  // fresh on every cart add/checkout so an admin change applies at once.
+  findOnlinePurchaseTree() {
+    return prisma.category.findMany({ select: { id: true, parentId: true, onlinePurchaseEnabled: true } });
   },
 
   countChildren(id: number) {

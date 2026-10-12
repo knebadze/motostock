@@ -56,6 +56,29 @@ export function getAncestorChain(categories: Category[], categoryId: number): Ca
   return chain;
 }
 
+// Mirrors the backend's getOnlinePurchaseBlockedCategoryIds (which is what
+// actually enforces it at cart/checkout): a category's items can't be bought
+// on the site if it, or any ancestor, has onlinePurchaseEnabled off.
+export function getOnlinePurchaseBlockedCategoryIds(
+  categories: Pick<Category, "id" | "parentId" | "onlinePurchaseEnabled">[],
+): Set<number> {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const blocked = new Set<number>();
+  for (const category of categories) {
+    const seen = new Set<number>();
+    let current: (typeof categories)[number] | undefined = category;
+    while (current && !seen.has(current.id)) {
+      if (!current.onlinePurchaseEnabled) {
+        blocked.add(category.id);
+        break;
+      }
+      seen.add(current.id);
+      current = current.parentId != null ? byId.get(current.parentId) : undefined;
+    }
+  }
+  return blocked;
+}
+
 export function getDescendantIds(categories: Category[], id: number): Set<number> {
   const byParent = new Map<number, Category[]>();
   for (const category of categories) {

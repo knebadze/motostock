@@ -15,7 +15,7 @@ import {
   getViewedTogetherFromServer,
 } from "@/lib/api/server";
 import { buildVehicleListingSlug, parseVehicleListingIdFromSlug } from "@/lib/api/vehicle-listings";
-import { getAncestorChain, isVehicleCategory } from "@/lib/categories-tree";
+import { getAncestorChain, getOnlinePurchaseBlockedCategoryIds, isVehicleCategory } from "@/lib/categories-tree";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { siteConfig } from "@/config/site";
@@ -232,6 +232,9 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
     }
 
     const breadcrumbChain = getAncestorChain(categories, listing.vehicleCatalog.category.id);
+    // Category switched off for online purchase (admin) — "visit the
+    // showroom" instead of add-to-cart.
+    const purchasableOnline = !getOnlinePurchaseBlockedCategoryIds(categories).has(listing.vehicleCatalog.category.id);
 
     const title = [listing.vehicleCatalog.brand.name, listing.vehicleCatalog.model.name]
       .filter(Boolean)
@@ -266,7 +269,11 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
         priceCurrency: listing.priceCurrency,
         price: listing.activeDiscount?.discountPrice ?? listing.price,
         availability:
-          listing.stockQuantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+          listing.stockQuantity <= 0
+            ? "https://schema.org/OutOfStock"
+            : purchasableOnline
+              ? "https://schema.org/InStock"
+              : "https://schema.org/InStoreOnly",
         url: canonicalUrl,
       },
     };
@@ -305,6 +312,7 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
           // serialized to the browser — the current one is passed sanitized.
           listing={{ ...listing, descriptionKa: null, descriptionEn: null, descriptionRu: null }}
           breadcrumbChain={breadcrumbChain}
+          purchasableOnline={purchasableOnline}
           similarListings={
             <Suspense fallback={null}>
               <SimilarListingsSection categoryId={listing.vehicleCatalog.category.id} listingId={listing.id} />
@@ -336,6 +344,10 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
 
   const productCategory = categories.find((item) => item.slug === product.category.slug);
   const breadcrumbChain = productCategory ? getAncestorChain(categories, productCategory.id) : [];
+  // Categories switched off for online purchase (admin) — the product's own
+  // (add-to-cart vs "visit the showroom") and its buy-together companions'.
+  const onlinePurchaseBlockedCategoryIds = getOnlinePurchaseBlockedCategoryIds(categories);
+  const purchasableOnline = !productCategory || !onlinePurchaseBlockedCategoryIds.has(productCategory.id);
 
 
   const pathname = `/${product.category.slug}/${itemSlug}`;
@@ -369,7 +381,11 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
               ? { lowPrice: Math.min(...effectivePrices), highPrice: Math.max(...effectivePrices) }
               : { price: effectivePrices[0] }),
             availability:
-              totalStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+              totalStock <= 0
+                ? "https://schema.org/OutOfStock"
+                : purchasableOnline
+                  ? "https://schema.org/InStock"
+                  : "https://schema.org/InStoreOnly",
             url: canonicalUrl,
           }
         : undefined,
@@ -421,6 +437,8 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
           metaDescriptionRu: null,
         }}
         breadcrumbChain={breadcrumbChain}
+        purchasableOnline={purchasableOnline}
+        onlinePurchaseBlockedCategoryIds={[...onlinePurchaseBlockedCategoryIds]}
         companionRecommendations={
           <Suspense fallback={null}>
             <CompanionRecommendations

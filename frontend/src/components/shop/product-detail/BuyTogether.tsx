@@ -51,19 +51,28 @@ function BuyTogetherCard({ product }: { product: ProductListItem }) {
   );
 }
 
-export function BuyTogether({ product }: { product: ProductDetail }) {
+export function BuyTogether({
+  product,
+  blockedCategoryIds,
+}: {
+  product: ProductDetail;
+  // Categories switched off for online purchase — companions in them are
+  // left out of the bundle (the cart would refuse them).
+  blockedCategoryIds: number[];
+}) {
   const t = useTranslations("ProductDetail");
   const tCart = useTranslations("Cart");
   const tErrors = useTranslations("ApiErrors");
   const router = useRouter();
   const pathname = usePathname();
   const [status, setStatus] = useState<"idle" | "loading" | "added">("idle");
+  const companions = product.buyTogether.filter((item) => !blockedCategoryIds.includes(item.category.id));
 
-  if (product.buyTogether.length === 0) return null;
+  if (companions.length === 0) return null;
 
   const total =
     effectivePrice(product) +
-    product.buyTogether.reduce((sum, item) => sum + effectivePrice(item), 0);
+    companions.reduce((sum, item) => sum + effectivePrice(item), 0);
 
   async function handleAddAll() {
     if (status === "loading") return;
@@ -75,7 +84,7 @@ export function BuyTogether({ product }: { product: ProductDetail }) {
       // variants get fetched on demand — only when the shopper actually
       // clicks this button, not on every page load.
       const companionDetails = await Promise.all(
-        product.buyTogether.map((item) => getProductBySlug(item.slug)),
+        companions.map((item) => getProductBySlug(item.slug)),
       );
 
       const candidateVariants = [
@@ -124,7 +133,7 @@ export function BuyTogether({ product }: { product: ProductDetail }) {
       </h2>
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <BuyTogetherCard product={product} />
-        {product.buyTogether.map((item) => (
+        {companions.map((item) => (
           <div key={item.id} className="flex items-center gap-3">
             <span className="text-xl text-muted-foreground">+</span>
             <BuyTogetherCard product={item} />

@@ -45,6 +45,9 @@ function CartLineRow({
           {title}
         </Link>
         {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
+        {item.purchasableOnline === false && (
+          <p className="text-sm font-medium text-red-600">{t("itemNotPurchasableOnline")}</p>
+        )}
 
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <QuantityStepper
@@ -103,7 +106,13 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
     try {
       const updated = await updateCartItemQuantity(item.id, nextQuantity);
       setCart((current) =>
-        recomputeCart(current.items.map((existing) => (existing.id === item.id ? updated : existing))),
+        // The update response doesn't carry purchasableOnline (only GET
+        // /cart computes it) — kept from the row being replaced.
+        recomputeCart(
+          current.items.map((existing) =>
+            existing.id === item.id ? { ...updated, purchasableOnline: existing.purchasableOnline } : existing,
+          ),
+        ),
       );
       // Keeps the Header's server-rendered cart badge in sync — same fix
       // CartDropdown.tsx's handleQuantityChange already applies.
@@ -171,12 +180,24 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
           <span>{t("subtotal")}</span>
           <span className="text-primary-text">{formatPrice(cart.subtotal)}</span>
         </div>
-        <Link
-          href="/checkout"
-          className="mt-4 block rounded-full bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
-        >
-          {t("goToCheckout")}
-        </Link>
+        {/* Checkout would refuse an item whose category can't be bought
+            online (NOT_PURCHASABLE_ONLINE_ITEM) — blocked here until it's
+            removed (each such row says so). */}
+        {cart.items.some((item) => item.purchasableOnline === false) ? (
+          <span
+            aria-disabled
+            className="mt-4 block cursor-not-allowed rounded-full bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground opacity-50"
+          >
+            {t("goToCheckout")}
+          </span>
+        ) : (
+          <Link
+            href="/checkout"
+            className="mt-4 block rounded-full bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+          >
+            {t("goToCheckout")}
+          </Link>
+        )}
       </div>
 
       <ConfirmDialog

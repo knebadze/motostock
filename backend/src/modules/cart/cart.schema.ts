@@ -69,6 +69,10 @@ export const cartItemResponseSchema = registry.register(
     lineTotal: z.number().openapi({ example: 179.98 }),
     productVariant: cartProductVariantResponseSchema.nullable(),
     vehicleListing: vehicleListingResponseSchema.nullable(),
+    // Set on GET /cart: false when the item's category was switched off for
+    // online purchase after it was added — checkout refuses it
+    // (NOT_PURCHASABLE_ONLINE), so the cart page flags it for removal.
+    purchasableOnline: z.boolean().optional(),
     createdAt: z.iso.datetime(),
   }),
 );

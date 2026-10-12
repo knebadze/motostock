@@ -6418,6 +6418,7 @@ export interface paths {
             parameters: {
                 query?: {
                     categoryId?: number;
+                    vehicleCatalogId?: number;
                     brandIds?: number[];
                     onSale?: boolean | null;
                     bulkDiscountEventId?: number;
@@ -15803,6 +15804,7 @@ export interface components {
             lineTotal: number;
             productVariant: components["schemas"]["CartProductVariant"] | null;
             vehicleListing: components["schemas"]["VehicleListing"] | null;
+            purchasableOnline?: boolean;
             /** Format: date-time */
             createdAt: string;
         };
@@ -15934,6 +15936,8 @@ export interface components {
             sortOrder?: number;
             /** @example true */
             lowStockBadgeEnabled?: boolean;
+            /** @example true */
+            onlinePurchaseEnabled?: boolean;
         };
         UpdateCategoryInput: {
             /**
@@ -15956,6 +15960,8 @@ export interface components {
             sortOrder?: number;
             /** @example true */
             lowStockBadgeEnabled?: boolean;
+            /** @example true */
+            onlinePurchaseEnabled?: boolean;
         };
         Category: {
             /** @example 1 */
@@ -15982,6 +15988,8 @@ export interface components {
             sortOrder: number;
             /** @example true */
             lowStockBadgeEnabled: boolean;
+            /** @example true */
+            onlinePurchaseEnabled: boolean;
             parentId: number | null;
             parent?: {
                 id: number;

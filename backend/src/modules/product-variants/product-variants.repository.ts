@@ -3,7 +3,8 @@ import { prisma } from "../../config/prisma.js";
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true } as const;
 
 const include = {
-  product: { select: namedRefSelect },
+  // categoryId: cart.service.ts's online-purchase check.
+  product: { select: { ...namedRefSelect, categoryId: true } },
   size: true,
   color: true,
   condition: true,

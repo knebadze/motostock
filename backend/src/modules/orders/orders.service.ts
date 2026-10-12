@@ -32,6 +32,7 @@ import { getLookupDelegate } from "../lookups/lookups.registry.js";
 import { orderStatusesRepository } from "../order-statuses/order-statuses.repository.js";
 import { ordersRepository, type PlaceOrderItemInput } from "./orders.repository.js";
 import type { CheckoutInput } from "./orders.schema.js";
+import { getOnlinePurchaseBlockedCategoryIds } from "../categories/categories.service.js";
 
 // Checkout pricing + order placement, plus the mapper/status-resolution
 // helpers shared with the rest of the module. Split from a single 1100+
@@ -225,6 +226,23 @@ export async function computeCheckoutTotals(userId: number, promoCodeInput?: str
     .filter((id): id is number => id != null);
   const finaConfirmed = await syncVariantStockByIds(productVariantIds);
   const cartRows = productVariantIds.length > 0 ? await cartRepository.findByOwner({ userId }) : initialRows;
+
+  // Items added before an admin switched their category off for online
+  // purchase (see Category.onlinePurchaseEnabled) — refused here, which
+  // covers both the checkout preview and placeOrder.
+  const blockedCategoryIds = await getOnlinePurchaseBlockedCategoryIds();
+  const blockedRow = cartRows.find((row) =>
+    blockedCategoryIds.has(row.productVariant?.product.category.id ?? row.vehicleListing!.vehicleCatalog.model.category.id),
+  );
+  if (blockedRow) {
+    const { itemNameKa, itemNameEn, itemNameRu } = buildBreakdownItem(blockedRow, 0);
+    throw new ApiError(
+      400,
+      `"${itemNameKa}" — საიტიდან შეძენა შეუძლებელია, შესაძენად ეწვიეთ შოურუმს`,
+      "NOT_PURCHASABLE_ONLINE_ITEM",
+      { itemNameKa, itemNameEn, itemNameRu },
+    );
+  }
 
   const stackingEnabled = await isPromoStackingEnabled();
 

@@ -7,6 +7,7 @@ import { useVehiclePriceDisplay } from "@/lib/useVehiclePriceDisplay";
 import { WishlistButton } from "@/components/shared/WishlistButton";
 import { CompareButton } from "@/components/shared/CompareButton";
 import { AddToCartButton } from "@/components/shared/AddToCartButton";
+import { ShowroomPurchaseNotice } from "@/components/shared/ShowroomPurchaseNotice";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 import type { Category } from "@/lib/api/categories";
 import { Breadcrumb } from "../Breadcrumb";
@@ -17,11 +18,15 @@ import { CurrencyToggleButton } from "../CurrencyToggleButton";
 export function VehicleListingDetailPage({
   listing,
   breadcrumbChain,
+  purchasableOnline,
   similarListings,
   descriptionHtml,
 }: {
   listing: VehicleListing;
   breadcrumbChain: Category[];
+  // False when the listing's category is switched off for online purchase
+  // (admin) — "visit the showroom" instead of add-to-cart.
+  purchasableOnline: boolean;
   // Streamed server section (see the route page) — the listing itself
   // doesn't wait for the similar-listings query.
   similarListings: ReactNode;
@@ -88,16 +93,20 @@ export function VehicleListingDetailPage({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <AddToCartButton
-              itemType="VEHICLE_LISTING"
-              id={listing.id}
-              stockQuantity={listing.stockQuantity}
-              disabled={outOfStock}
-              labelAdd={tCart("addToCart")}
-              labelAdded={tCart("addedToCart")}
-              labelOutOfStock={tCart("outOfStock")}
-              errorMessage={tCart("addError")}
-            />
+            {purchasableOnline ? (
+              <AddToCartButton
+                itemType="VEHICLE_LISTING"
+                id={listing.id}
+                stockQuantity={listing.stockQuantity}
+                disabled={outOfStock}
+                labelAdd={tCart("addToCart")}
+                labelAdded={tCart("addedToCart")}
+                labelOutOfStock={tCart("outOfStock")}
+                errorMessage={tCart("addError")}
+              />
+            ) : (
+              !outOfStock && <ShowroomPurchaseNotice label={tCart("visitShowroom")} />
+            )}
             <WishlistButton
               itemType="VEHICLE_LISTING"
               id={listing.id}

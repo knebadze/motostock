@@ -13,6 +13,21 @@ import { cartRepository, type CartOwner } from "./cart.repository.js";
 import type { CreateCartItemInput } from "./cart.schema.js";
 import type { CartItemType } from "../../generated/prisma/index.js";
 import { getCartMaxQuantity, getUsdToGelRate } from "../settings/settings.service.js";
+import { getOnlinePurchaseBlockedCategoryIds } from "../categories/categories.service.js";
+
+// Category switched off for online purchase (Category.onlinePurchaseEnabled,
+// inherited from ancestors). Items already in a cart are caught again at
+// checkout — see orders.service.ts's computeCheckoutTotals.
+async function assertCategoryPurchasableOnline(categoryId: number) {
+  const blocked = await getOnlinePurchaseBlockedCategoryIds();
+  if (blocked.has(categoryId)) {
+    throw new ApiError(
+      400,
+      "ამ კატეგორიის ნივთის შეძენა საიტიდან შეუძლებელია — შესაძენად ეწვიეთ შოურუმს",
+      "NOT_PURCHASABLE_ONLINE",
+    );
+  }
+}
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
 type LookupRow = { id: number; key: string; nameKa: string; nameEn: string; nameRu: string } | null;
@@ -150,8 +165,18 @@ export async function toResponse(row: CartItemRow) {
 }
 
 export async function listMyCart(owner: CartOwner) {
-  const rows = await cartRepository.findByOwner(owner);
-  const items = await Promise.all(rows.map(toResponse));
+  const [rows, blockedCategoryIds] = await Promise.all([
+    cartRepository.findByOwner(owner),
+    getOnlinePurchaseBlockedCategoryIds(),
+  ]);
+  const items = await Promise.all(
+    rows.map(async (row) => ({
+      ...(await toResponse(row)),
+      purchasableOnline: !blockedCategoryIds.has(
+        row.productVariant?.product.category.id ?? row.vehicleListing!.vehicleCatalog.model.category.id,
+      ),
+    })),
+  );
   const subtotal = Math.round(items.reduce((sum, item) => sum + item.lineTotal, 0) * 100) / 100;
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   return { items, subtotal, itemCount };
@@ -204,6 +229,7 @@ async function addProductVariantToCart(owner: CartOwner, productVariantId: numbe
   if (!variant.isActive || variant.stockQuantity <= 0) {
     throw new ApiError(400, "პროდუქტი არ არის მარაგში", "OUT_OF_STOCK");
   }
+  await assertCategoryPurchasableOnline(variant.product.categoryId);
 
   const existing = await cartRepository.findByOwnerAndProductVariant(owner, productVariantId);
   if (existing) {
@@ -245,6 +271,7 @@ async function addVehicleListingToCart(owner: CartOwner, vehicleListingId: numbe
   if (!listing.isActive || listing.stockQuantity <= 0) {
     throw new ApiError(400, "ეს ერთეული ხელმისაწვდომი აღარ არის", "VEHICLE_LISTING_UNAVAILABLE");
   }
+  await assertCategoryPurchasableOnline(listing.vehicleCatalog.model.category.id);
 
   const existing = await cartRepository.findByOwnerAndVehicleListing(owner, vehicleListingId);
   if (existing) {

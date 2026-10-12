@@ -12,6 +12,12 @@ model Category {
   // typical stock level of ~1 unit makes the badge meaningless noise
   // rather than a genuine urgency signal.
   lowStockBadgeEnabled Boolean                       @default(true)
+  // Whether this category's products/vehicle listings can be bought from
+  // the site (add to cart -> checkout). Off for e.g. vehicles, where the
+  // storefront shows "visit the showroom" instead. Inherited: a category is
+  // purchasable only if it AND every ancestor have this on (see
+  // categories.service.ts's getOnlinePurchaseBlockedCategoryIds).
+  onlinePurchaseEnabled Boolean                      @default(true)
   parentId             Int?
   parent               Category?                     @relation("CategoryChildren", fields: [parentId], references: [id])
   children             Category[]                    @relation("CategoryChildren")
