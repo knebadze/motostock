@@ -25,7 +25,7 @@ import { VehicleFilters, type SpecFilterState } from "./VehicleFilters";
 import type { BrandOption } from "./ProductFilters";
 import { VehicleListingCard } from "./VehicleListingCard";
 import { ShopHero } from "./ShopHero";
-import { SubcategoryGrid } from "./SubcategoryGrid";
+import { SubcategoryFilter } from "./SubcategoryFilter";
 import { ShopToolbar } from "./ShopToolbar";
 import { ShopItemGrid } from "./ShopItemGrid";
 import type { ViewMode } from "./ViewModeToggle";
@@ -49,6 +49,7 @@ export function VehicleShopPage({
   category,
   breadcrumbChain,
   subcategories,
+  subcategoryCategoryIds,
   brands,
   initialData,
   filters,
@@ -57,7 +58,11 @@ export function VehicleShopPage({
 }: {
   category: Category;
   breadcrumbChain: Category[];
+  // Direct subcategories, shown as filter checkboxes (SubcategoryFilter).
   subcategories: Category[];
+  // Each subcategory's id -> itself + all its descendants: picking one
+  // filters by that whole subtree (categoryIds is an exact-match set).
+  subcategoryCategoryIds: Record<number, number[]>;
   // The distinct brands present among matching listings — feeds the
   // brand-checkbox facet list. Computed server-side by a lean, dedicated
   // query (getVehicleBrandFacetsFromServer) instead of shipping every
@@ -80,6 +85,7 @@ export function VehicleShopPage({
   const tErrors = useTranslations("ApiErrors");
 
   const [search, setSearch] = useState("");
+  const [selectedSubcategoryIds, setSelectedSubcategoryIds] = useState<number[]>([]);
   const [selectedBrandIds, setSelectedBrandIds] = useState<number[]>([]);
   const [yearMin, setYearMin] = useState("");
   const [yearMax, setYearMax] = useState("");
@@ -162,7 +168,15 @@ export function VehicleShopPage({
     return load(
       () =>
         listVehicleListingsPage({
-          categoryId: category.id,
+          // Picked subcategories narrow the list to their subtrees;
+          // otherwise the whole category (+ descendants).
+          ...(selectedSubcategoryIds.length > 0
+            ? {
+                categoryIds: [
+                  ...new Set(selectedSubcategoryIds.flatMap((id) => subcategoryCategoryIds[id] ?? [id])),
+                ],
+              }
+            : { categoryId: category.id }),
           search: search.trim() || undefined,
           brandIds: selectedBrandIds.length > 0 ? selectedBrandIds : undefined,
           yearMin: yearMin.trim() ? Number(yearMin) : undefined,
@@ -198,6 +212,7 @@ export function VehicleShopPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     category.id,
+    selectedSubcategoryIds,
     search,
     selectedBrandIds,
     yearMin,
@@ -243,6 +258,17 @@ export function VehicleShopPage({
 
     if (search.trim()) {
       tags.push({ key: "search", label: search.trim(), onRemove: () => setSearch("") });
+    }
+
+    for (const subcategoryId of selectedSubcategoryIds) {
+      const subcategory = subcategories.find((item) => item.id === subcategoryId);
+      if (subcategory) {
+        tags.push({
+          key: `subcategory-${subcategoryId}`,
+          label: subcategory.name[locale],
+          onRemove: () => setSelectedSubcategoryIds((current) => current.filter((id) => id !== subcategoryId)),
+        });
+      }
     }
 
     for (const brandId of selectedBrandIds) {
@@ -318,6 +344,8 @@ export function VehicleShopPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     search,
+    selectedSubcategoryIds,
+    subcategories,
     selectedBrandIds,
     brandOptions,
     yearMin,
@@ -331,6 +359,7 @@ export function VehicleShopPage({
 
   function handleClearAllFilters() {
     setSearch("");
+    setSelectedSubcategoryIds([]);
     setSelectedBrandIds([]);
     setYearMin("");
     setYearMax("");
@@ -350,6 +379,19 @@ export function VehicleShopPage({
       />
       <VehicleFilters
         search={search}
+        subcategoryFilter={
+          <SubcategoryFilter
+            subcategories={subcategories}
+            selectedIds={selectedSubcategoryIds}
+            onToggle={(subcategoryId) =>
+              setSelectedSubcategoryIds((current) =>
+                current.includes(subcategoryId)
+                  ? current.filter((id) => id !== subcategoryId)
+                  : [...current, subcategoryId],
+              )
+            }
+          />
+        }
         onSearchChange={(value) => {
           setSearch(value);
         }}
@@ -388,7 +430,6 @@ export function VehicleShopPage({
   return (
     <>
       <ShopHero category={category} breadcrumbChain={breadcrumbChain} />
-      <SubcategoryGrid subcategories={subcategories} />
       <div className="border-t border-border bg-muted/40">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr]">

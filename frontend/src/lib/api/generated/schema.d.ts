@@ -4243,6 +4243,7 @@ export interface paths {
             parameters: {
                 query?: {
                     categoryId?: number;
+                    categoryIds?: number[];
                     search?: string;
                     brandIds?: number[];
                     priceMin?: number | null;

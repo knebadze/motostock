@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Select } from "@/components/shared/Select";
 import { Link } from "@/i18n/navigation";
@@ -20,6 +20,7 @@ export type AttributeFilterState = {
 export function ProductFilters({
   search,
   onSearchChange,
+  subcategoryFilter,
   filters,
   brandOptions,
   selectedBrandIds,
@@ -38,6 +39,8 @@ export function ProductFilters({
 }: {
   search: string;
   onSearchChange: (value: string) => void;
+  // SubcategoryFilter, rendered right under the search box.
+  subcategoryFilter?: ReactNode;
   filters: CategoryFilter[];
   brandOptions: BrandOption[];
   selectedBrandIds: number[];
@@ -69,6 +72,8 @@ export function ProductFilters({
           className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
       </div>
+
+      {subcategoryFilter}
 
       {filters.map((filter) => {
         if (filter.filterType === "BRAND") {

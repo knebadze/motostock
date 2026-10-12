@@ -260,6 +260,7 @@ function isCacheableOnSaleQuery(query: VehicleListingListQuery): boolean {
   return (
     query.onSale === true &&
     query.categoryId == null &&
+    query.categoryIds == null &&
     query.search == null &&
     query.brandIds == null &&
     query.priceMin == null &&
@@ -316,8 +317,10 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     if (cached) return { items: cached, total: cached.length, page: 1, pageSize: cached.length || 1 };
   }
 
+  // categoryId (one category + its descendants) wins over categoryIds (an
+  // exact-match set — the shop page's subcategory checkboxes).
   const categoryIds =
-    query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
+    query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : query.categoryIds;
   const searchIds =
     query.search != null
       ? await vehicleListingRepository.findSearchRankedIds(query.search, query.limit)

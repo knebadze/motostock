@@ -12,7 +12,12 @@ import {
   getVehicleCategoryFiltersFromServer,
   getVehicleListingsPageFromServer,
 } from "@/lib/api/server";
-import { isVehicleCategory, getAncestorChain, getVehicleFitmentDisabledCategoryIds } from "@/lib/categories-tree";
+import {
+  isVehicleCategory,
+  getAncestorChain,
+  getDescendantIds,
+  getVehicleFitmentDisabledCategoryIds,
+} from "@/lib/categories-tree";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 import { JsonLd } from "@/components/shared/JsonLd";
@@ -143,6 +148,10 @@ export default async function CategoryShopPage({
 
   const isVehicle = isVehicleCategory(categories, category.id);
   const subcategories = categories.filter((item) => item.parentId === category.id);
+  // Subcategory filter checkboxes filter by each one's whole subtree.
+  const subcategoryCategoryIds = Object.fromEntries(
+    subcategories.map((subcategory) => [subcategory.id, [subcategory.id, ...getDescendantIds(categories, subcategory.id)]]),
+  );
 
   const breadcrumbScript = <JsonLd data={breadcrumbJsonLd} />;
 
@@ -164,6 +173,7 @@ export default async function CategoryShopPage({
           category={category}
           breadcrumbChain={ancestorChain}
           subcategories={subcategories}
+          subcategoryCategoryIds={subcategoryCategoryIds}
           brands={brandFacets}
           initialData={listingsPage}
           filters={vehicleFilters}
@@ -199,6 +209,7 @@ export default async function CategoryShopPage({
         category={category}
         breadcrumbChain={ancestorChain}
         subcategories={subcategories}
+        subcategoryCategoryIds={subcategoryCategoryIds}
         brands={brandFacets}
         initialData={productsPage}
         filters={filters}
