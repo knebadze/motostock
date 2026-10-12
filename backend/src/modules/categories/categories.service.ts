@@ -19,6 +19,7 @@ type CategoryRow = {
   slug: string;
   imageUrl: string | null;
   bannerImageUrl: string | null;
+  menuImageUrl: string | null;
   sortOrder: number;
   lowStockBadgeEnabled: boolean;
   onlinePurchaseEnabled: boolean;
@@ -36,6 +37,7 @@ function toResponse(category: CategoryRow) {
     slug: category.slug,
     imageUrl: category.imageUrl,
     bannerImageUrl: category.bannerImageUrl,
+    menuImageUrl: category.menuImageUrl,
     sortOrder: category.sortOrder,
     lowStockBadgeEnabled: category.lowStockBadgeEnabled,
     onlinePurchaseEnabled: category.onlinePurchaseEnabled,
@@ -285,6 +287,7 @@ export async function deleteCategory(id: number) {
   }
   void deleteUploadedImage(existing.imageUrl);
   void deleteUploadedImage(existing.bannerImageUrl);
+  void deleteUploadedImage(existing.menuImageUrl);
 }
 
 export async function setCategoryImage(id: number, file: Express.Multer.File) {
@@ -308,5 +311,18 @@ export async function setCategoryBannerImage(id: number, file: Express.Multer.Fi
   const bannerImageUrl = await saveUploadedImage("categories-banner", file);
   const category = await categoriesRepository.updateBannerImage(id, bannerImageUrl);
   void deleteUploadedImage(existing.bannerImageUrl);
+  return toResponse(category);
+}
+
+// The header mega menu's promo tile image (see Category.menuImageUrl).
+export async function setCategoryMenuImage(id: number, file: Express.Multer.File) {
+  const existing = await categoriesRepository.findById(id);
+  if (!existing) {
+    throw new ApiError(404, "კატეგორია ვერ მოიძებნა");
+  }
+
+  const menuImageUrl = await saveUploadedImage("categories-menu", file);
+  const category = await categoriesRepository.updateMenuImage(id, menuImageUrl);
+  void deleteUploadedImage(existing.menuImageUrl);
   return toResponse(category);
 }

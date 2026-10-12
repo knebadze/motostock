@@ -61,6 +61,7 @@ export const categoryResponseSchema = registry.register(
     slug: z.string().openapi({ example: "helmets" }),
     imageUrl: z.string().nullable().openapi({ example: "/uploads/categories/123.jpg" }),
     bannerImageUrl: z.string().nullable().openapi({ example: "/uploads/categories-banner/123.jpg" }),
+    menuImageUrl: z.string().nullable().openapi({ example: "/uploads/categories-menu/123.jpg" }),
     sortOrder: z.int().openapi({ example: 0 }),
     lowStockBadgeEnabled: z.boolean().openapi({ example: true }),
     onlinePurchaseEnabled: z.boolean().openapi({ example: true }),

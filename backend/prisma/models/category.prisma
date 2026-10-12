@@ -6,6 +6,9 @@ model Category {
   slug                 String                        @unique
   imageUrl             String?
   bannerImageUrl       String?
+  // The header mega menu's promo tile (shown for top-level categories);
+  // falls back to imageUrl when unset.
+  menuImageUrl         String?
   sortOrder            Int                           @default(0)
   // Storefront "only N left" urgency badge on this category's products —
   // on by default; admin can turn it off per-category for ones where a

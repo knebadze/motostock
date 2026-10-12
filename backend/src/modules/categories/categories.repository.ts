@@ -67,6 +67,10 @@ export const categoriesRepository = {
     return prisma.category.update({ where: { id }, data: { bannerImageUrl } });
   },
 
+  updateMenuImage(id: number, menuImageUrl: string) {
+    return prisma.category.update({ where: { id }, data: { menuImageUrl } });
+  },
+
   delete(id: number) {
     return prisma.category.delete({ where: { id } });
   },

@@ -13,6 +13,7 @@ import {
   createCategory,
   updateCategory,
   uploadCategoryBannerImage,
+  uploadCategoryMenuImage,
   uploadCategoryImage,
   type Category,
 } from "@/lib/api/categories";
@@ -77,6 +78,11 @@ export function CategoryFormModal({
     previewUrl: bannerPreviewUrl,
     onChange: handleBannerImageChange,
   } = useFileUploadPreview(resolveMediaUrl(category?.bannerImageUrl ?? null));
+  const {
+    file: menuImageFile,
+    previewUrl: menuPreviewUrl,
+    onChange: handleMenuImageChange,
+  } = useFileUploadPreview(resolveMediaUrl(category?.menuImageUrl ?? null));
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
 
@@ -132,6 +138,19 @@ export function CategoryFormModal({
           await uploadCategoryBannerImage(savedCategory.id, bannerImageFile);
         } catch {
           toast.error("კატეგორია შენახულია, მაგრამ hero ბანერის ატვირთვა ვერ მოხერხდა");
+          onSaved();
+          onClose();
+          return;
+        }
+      }
+
+      // Only top-level categories open a header mega menu (see the field
+      // below), so a file picked before switching to a parent is ignored.
+      if (menuImageFile && !parentId) {
+        try {
+          await uploadCategoryMenuImage(savedCategory.id, menuImageFile);
+        } catch {
+          toast.error("კატეგორია შენახულია, მაგრამ მენიუს სურათის ატვირთვა ვერ მოხერხდა");
           onSaved();
           onClose();
           return;
@@ -324,6 +343,34 @@ export function CategoryFormModal({
             ზომა 1920×480px (ფართო ბანერი), თორემ სურათი გაჭიმული/დაბლურებული გამოჩნდება
           </p>
         </div>
+
+        {!parentId && (
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="category-menu-image" className="text-sm font-medium">
+              ჰედერის მენიუს სურათი
+            </label>
+            {menuPreviewUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={menuPreviewUrl}
+                alt=""
+                className="size-32 rounded-lg border border-border object-cover"
+              />
+            )}
+            <input
+              id="category-menu-image"
+              type="file"
+              accept="image/*"
+              onChange={handleMenuImageChange}
+              className="text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-border"
+            />
+            <p className="text-xs text-muted-foreground">
+              ჩანს ჰედერის ჩამოსაშლელ მენიუში, ქვეკატეგორიების მარჯვნივ (მხოლოდ მთავარ კატეგორიებზე).
+              რეკომენდებული ზომა 512×512px (კვადრატული). თუ არ ატვირთავთ, გამოჩნდება კატეგორიის
+              ზემოთა სურათი
+            </p>
+          </div>
+        )}
 
         <FormActions onCancel={onClose} loading={loading} />
       </form>

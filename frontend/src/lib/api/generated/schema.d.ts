@@ -2699,6 +2699,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/categories/{id}/menu-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload a category's header mega menu image (the promo tile beside its subcategory columns) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "multipart/form-data": {
+                        /** Format: binary */
+                        image: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Uploaded */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            category: components["schemas"]["Category"];
+                        };
+                    };
+                };
+                /** @description Invalid file */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/vin-decode-status": {
         parameters: {
             query?: never;
@@ -16041,6 +16106,8 @@ export interface components {
             imageUrl: string | null;
             /** @example /uploads/categories-banner/123.jpg */
             bannerImageUrl: string | null;
+            /** @example /uploads/categories-menu/123.jpg */
+            menuImageUrl: string | null;
             /** @example 0 */
             sortOrder: number;
             /** @example true */

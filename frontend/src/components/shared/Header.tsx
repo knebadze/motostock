@@ -607,15 +607,16 @@ export function Header({
               </div>
             </div>
 
-            {/* Promo tile — the category's own image with a "view all" CTA. */}
+            {/* Promo tile — the category's menu image (Category.menuImageUrl,
+                falling back to its regular image) with a "view all" CTA. */}
             <Link
               href={`/${activeCategory.slug}`}
               onClick={() => setActiveCategoryId(null)}
               className="group relative hidden min-h-64 w-64 shrink-0 self-start overflow-hidden rounded-2xl bg-muted xl:block"
             >
-              {resolveMediaUrl(activeCategory.imageUrl) && (
+              {resolveMediaUrl(activeCategory.menuImageUrl ?? activeCategory.imageUrl) && (
                 <Image
-                  src={resolveMediaUrl(activeCategory.imageUrl)!}
+                  src={resolveMediaUrl(activeCategory.menuImageUrl ?? activeCategory.imageUrl)!}
                   alt={activeCategory.name}
                   fill
                   sizes="256px"

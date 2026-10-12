@@ -65,6 +65,13 @@ categoriesRouter.post(
   imageUpload().single("image"),
   categoriesController.uploadBannerImage,
 );
+categoriesRouter.post(
+  "/:id/menu-image",
+  uploadRateLimit,
+  validate(categoryIdParamSchema, "params"),
+  imageUpload().single("image"),
+  categoriesController.uploadMenuImage,
+);
 
 const security = [{ cookieAuth: [] }];
 const categoryListResponse = z.object({ category: categoryResponseSchema });
@@ -176,6 +183,29 @@ registry.registerPath({
   path: "/categories/{id}/banner-image",
   tags: ["Categories"],
   summary: "Upload a category hero banner image (wide-format, used on the guest shop page)",
+  security,
+  request: {
+    params: categoryIdParamSchema,
+    body: {
+      content: {
+        "multipart/form-data": {
+          schema: z.object({ image: z.string().openapi({ format: "binary" }) }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: { description: "Uploaded", content: { "application/json": { schema: categoryListResponse } } },
+    400: { description: "Invalid file", content: { "application/json": { schema: errorResponseSchema } } },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/categories/{id}/menu-image",
+  tags: ["Categories"],
+  summary: "Upload a category's header mega menu image (the promo tile beside its subcategory columns)",
   security,
   request: {
     params: categoryIdParamSchema,
