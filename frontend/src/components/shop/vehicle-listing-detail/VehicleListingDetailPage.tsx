@@ -8,6 +8,7 @@ import { WishlistButton } from "@/components/shared/WishlistButton";
 import { CompareButton } from "@/components/shared/CompareButton";
 import { AddToCartButton } from "@/components/shared/AddToCartButton";
 import { ShowroomPurchaseNotice } from "@/components/shared/ShowroomPurchaseNotice";
+import { ShowroomContactActions } from "./ShowroomContactActions";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 import type { Category } from "@/lib/api/categories";
 import { Breadcrumb } from "../Breadcrumb";
@@ -21,6 +22,9 @@ export function VehicleListingDetailPage({
   purchasableOnline,
   similarListings,
   descriptionHtml,
+  pageUrl,
+  whatsappPhone,
+  whatsappChatEnabled,
 }: {
   listing: VehicleListing;
   breadcrumbChain: Category[];
@@ -33,6 +37,10 @@ export function VehicleListingDetailPage({
   // Current locale's description, sanitized on the server (see
   // ProductDetailPage's identical prop).
   descriptionHtml: string | null;
+  // For the "call me back" / WhatsApp actions on a showroom-only listing.
+  pageUrl: string;
+  whatsappPhone: string | null;
+  whatsappChatEnabled: boolean;
 }) {
   const t = useTranslations("VehicleListingDetail");
   const tShop = useTranslations("Shop");
@@ -105,7 +113,18 @@ export function VehicleListingDetailPage({
                 errorMessage={tCart("addError")}
               />
             ) : (
-              !outOfStock && <ShowroomPurchaseNotice label={tCart("visitShowroom")} />
+              !outOfStock && (
+                <>
+                  <ShowroomContactActions
+                    listingId={listing.id}
+                    itemTitle={`${listing.vehicleCatalog.brand.name} ${title} ${listing.year}`}
+                    pageUrl={pageUrl}
+                    whatsappPhone={whatsappPhone}
+                    whatsappChatEnabled={whatsappChatEnabled}
+                  />
+                  <ShowroomPurchaseNotice label={tCart("visitShowroom")} />
+                </>
+              )
             )}
             <WishlistButton
               itemType="VEHICLE_LISTING"

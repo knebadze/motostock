@@ -55,6 +55,7 @@ import { companyInfoRouter } from "./modules/company-info/company-info.routes.js
 import { termsRouter } from "./modules/terms/terms.routes.js";
 import { privacyPolicyRouter } from "./modules/privacy-policy/privacy-policy.routes.js";
 import { shippingPolicyRouter } from "./modules/shipping-policy/shipping-policy.routes.js";
+import { callbackRequestsRouter } from "./modules/callback-requests/callback-requests.routes.js";
 import { emailTemplatesRouter } from "./modules/email-templates/email-templates.routes.js";
 import { orderStatusesRouter } from "./modules/order-statuses/order-statuses.routes.js";
 import { vinDecodeRouter } from "./modules/vin-decode/vin-decode.routes.js";
@@ -251,6 +252,7 @@ app.use("/api/company-info", companyInfoRouter);
 app.use("/api/terms", termsRouter);
 app.use("/api/privacy-policy", privacyPolicyRouter);
 app.use("/api/shipping-policy", shippingPolicyRouter);
+app.use("/api/callback-requests", callbackRequestsRouter);
 app.use("/api/email-templates", emailTemplatesRouter);
 app.use("/api/order-statuses", orderStatusesRouter);
 app.use("/api/vin-decode", vinDecodeRouter);

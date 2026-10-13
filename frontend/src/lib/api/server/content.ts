@@ -52,6 +52,7 @@ const COMPANY_INFO_FALLBACK: CompanyInfo = {
   city: null,
   street: null,
   phone: null,
+  whatsappPhone: null,
   email: null,
   facebookUrl: null,
   instagramUrl: null,

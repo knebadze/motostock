@@ -86,6 +86,14 @@ function WhatsAppThread({ messages }: { messages: WhatsAppChatMessage[] }) {
   );
 }
 
+// Lets another component (e.g. a listing page's "write on WhatsApp") open
+// this chat straight on its WhatsApp view with a message already typed in.
+const OPEN_WHATSAPP_CHAT_EVENT = "motostock-open-whatsapp-chat";
+
+export function openWhatsAppChat(text: string) {
+  window.dispatchEvent(new CustomEvent(OPEN_WHATSAPP_CHAT_EVENT, { detail: { text } }));
+}
+
 export function ChatWidget({
   faqs,
   whatsappChatEnabled,
@@ -122,6 +130,18 @@ export function ChatWidget({
   useEffect(() => {
     window.dispatchEvent(new CustomEvent(CHAT_WIDGET_OPEN_CHANGED_EVENT, { detail: { open } }));
   }, [open]);
+
+  useEffect(() => {
+    if (!whatsappChatEnabled) return;
+    function handleOpenRequest(event: Event) {
+      const prefill = (event as CustomEvent<{ text?: string }>).detail?.text ?? "";
+      setOpen(true);
+      setView("whatsapp");
+      if (prefill) setText(prefill);
+    }
+    window.addEventListener(OPEN_WHATSAPP_CHAT_EVENT, handleOpenRequest);
+    return () => window.removeEventListener(OPEN_WHATSAPP_CHAT_EVENT, handleOpenRequest);
+  }, [whatsappChatEnabled]);
 
   async function refreshThread() {
     try {

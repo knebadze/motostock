@@ -122,6 +122,16 @@ export const newsletterRateLimit = rateLimit({
   message: { error: { message: "Too many requests, please try again later" } },
 });
 
+// Public "call me back" form (callback-requests module) — anonymous and
+// every call emails staff, same reasoning as newsletterRateLimit.
+export const callbackRequestRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { message: "Too many requests, please try again later" } },
+});
+
 // Authenticated (requireAuth on the whole router — see vin-decode.routes.ts)
 // but every call triggers a real outbound lookup against NHTSA and/or
 // Vincario (vin-decode.providers.ts), the latter a keyed, presumably

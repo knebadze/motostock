@@ -269,9 +269,11 @@ function RequestCard({
 export function OrderRequestsManager({
   initialOpen,
   cancelledStatusId,
+  onOpenCountChange,
 }: {
   initialOpen: AdminOrderRequest[];
   cancelledStatusId: number | null;
+  onOpenCountChange: (count: number) => void;
 }) {
   const [tab, setTab] = useState<Tab>("OPEN");
   const [open, setOpen] = useState(initialOpen);
@@ -282,7 +284,11 @@ export function OrderRequestsManager({
     setTab(next);
     setLoading(true);
     try {
-      if (next === "OPEN") setOpen(await listOrderRequests("OPEN"));
+      if (next === "OPEN") {
+        const items = await listOrderRequests("OPEN");
+        setOpen(items);
+        onOpenCountChange(items.length);
+      }
       else setResolved(await listOrderRequests("RESOLVED"));
     } catch {
       toast.error("მოთხოვნების ჩატვირთვა ვერ მოხერხდა");
@@ -304,13 +310,17 @@ export function OrderRequestsManager({
   // The backend resolved the request along with the cancellation; the
   // resolved tab reloads when opened.
   function handleOrderCancelled(requestId: number) {
-    setOpen((current) => current.filter((item) => item.id !== requestId));
+    const next = open.filter((item) => item.id !== requestId);
+    setOpen(next);
+    onOpenCountChange(next.length);
     setResolved(null);
     window.dispatchEvent(new Event(ORDER_REQUESTS_CHANGED_EVENT));
   }
 
   function handleResolved(updated: AdminOrderRequest) {
-    setOpen((current) => current.filter((item) => item.id !== updated.id));
+    const next = open.filter((item) => item.id !== updated.id);
+    setOpen(next);
+    onOpenCountChange(next.length);
     setResolved((current) => (current ? [updated, ...current] : current));
     window.dispatchEvent(new Event(ORDER_REQUESTS_CHANGED_EVENT));
   }
@@ -319,8 +329,7 @@ export function OrderRequestsManager({
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight">მომხმარებლის მოთხოვნები</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         შეკვეთის გაუქმებისა და დაბრუნების მოთხოვნები. დაუკავშირდით მომხმარებელს, საჭიროებისამებრ გააუქმეთ შეკვეთა
         და მონიშნეთ მოთხოვნა დამუშავებულად.
       </p>

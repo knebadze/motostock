@@ -278,7 +278,28 @@
     "fuelTankLabel": "Топливный бак",
     "oilCapacityLabel": "Объём масла",
     "topSpeedLabel": "Макс. скорость",
-    "absLabel": "ABS"
+    "absLabel": "ABS",
+    "callbackButton": "Заказать звонок",
+    "whatsappButton": "Написать в WhatsApp",
+    "whatsappMessage": "Здравствуйте! Меня интересует: {item} — {url}",
+    "callbackTitle": "Заказать звонок",
+    "callbackIntro": "Оставьте номер, и мы перезвоним по поводу: {item}",
+    "callbackName": "Имя",
+    "callbackPhone": "Телефон",
+    "callbackPreferredTime": "Когда вам позвонить",
+    "callbackTime": {
+      "any": "В любое время",
+      "morning": "Утром (10–13)",
+      "afternoon": "Днём (13–17)",
+      "evening": "Вечером (17–20)"
+    },
+    "callbackNote": "Вопрос или комментарий (необязательно)",
+    "callbackSubmit": "Отправить",
+    "callbackSending": "Отправка…",
+    "callbackSent": "Спасибо! Заявка получена — мы скоро перезвоним.",
+    "callbackClose": "Закрыть",
+    "callbackValidation": "Укажите имя и номер телефона",
+    "callbackError": "Не удалось отправить заявку"
   },
   "Auth": {
     "loginTitle": "Вход",

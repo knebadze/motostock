@@ -90,6 +90,16 @@ const DEFAULTS: Record<
     bodyEn: "<p>A customer sent a request: <strong>{{requestType}}</strong></p><p>Order: #{{orderCode}} ({{total}} GEL)</p><p>Customer: {{customerName}}</p><p>Reason: {{reason}}</p><p>Contact the customer and handle the request in the admin panel.</p>",
     bodyRu: "<p>Клиент отправил запрос: <strong>{{requestType}}</strong></p><p>Заказ: №{{orderCode}} ({{total}} GEL)</p><p>Клиент: {{customerName}}</p><p>Причина: {{reason}}</p><p>Свяжитесь с клиентом и обработайте запрос в админ-панели.</p>",
   },
+  // "Call me back" from a listing page (callback-requests.service.ts) — vars
+  // customerName, phone, itemTitle, preferredTime, note ("—" when empty).
+  CALLBACK_REQUEST_ADMIN: {
+    subjectKa: "დარეკვის თხოვნა: {{itemTitle}}",
+    subjectEn: "Callback request: {{itemTitle}}",
+    subjectRu: "Просьба перезвонить: {{itemTitle}}",
+    bodyKa: "<p>მომხმარებელი ითხოვს დარეკვას.</p><p>სახელი: {{customerName}}</p><p>ტელეფონი: {{phone}}</p><p>რაზე: {{itemTitle}}</p><p>სასურველი დრო: {{preferredTime}}</p><p>შენიშვნა: {{note}}</p>",
+    bodyEn: "<p>A customer asked to be called back.</p><p>Name: {{customerName}}</p><p>Phone: {{phone}}</p><p>About: {{itemTitle}}</p><p>Preferred time: {{preferredTime}}</p><p>Note: {{note}}</p>",
+    bodyRu: "<p>Клиент просит перезвонить.</p><p>Имя: {{customerName}}</p><p>Телефон: {{phone}}</p><p>По поводу: {{itemTitle}}</p><p>Удобное время: {{preferredTime}}</p><p>Комментарий: {{note}}</p>",
+  },
   // Sent once a year by the BIRTHDAY_EMAIL scheduled job (see
   // birthday-email.service.ts) — only vars available here are customerName.
   BIRTHDAY: {

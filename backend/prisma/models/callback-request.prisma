@@ -1,0 +1,35 @@
+enum CallbackRequestStatus {
+  OPEN
+  RESOLVED
+
+  @@schema("dbo")
+}
+
+// "Call me back" from a showroom-only listing's page (guests included —
+// that's the main audience). Staff call the customer, then mark it
+// resolved in the admin requests inbox. Emailed to the admin address too
+// (CALLBACK_REQUEST_ADMIN).
+model CallbackRequest {
+  id               Int                   @id @default(autoincrement())
+  // SetNull — the request stays readable through itemTitle after the
+  // listing is deleted.
+  vehicleListingId Int?
+  vehicleListing   VehicleListing?       @relation(fields: [vehicleListingId], references: [id], onDelete: SetNull)
+  // What the customer was looking at, snapshotted (brand model variant year).
+  itemTitle        String
+  name             String
+  phone            String
+  preferredTime    String?
+  note             String?
+  status           CallbackRequestStatus @default(OPEN)
+  adminNote        String?
+  resolvedAt       DateTime?
+  resolvedByUserId Int?
+  resolvedBy       User?                 @relation("CallbackRequestResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  createdAt        DateTime              @default(now())
+
+  @@index([status, createdAt])
+  @@index([vehicleListingId])
+  @@index([resolvedByUserId])
+  @@schema("dbo")
+}

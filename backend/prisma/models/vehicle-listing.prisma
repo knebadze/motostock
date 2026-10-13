@@ -70,6 +70,7 @@ model VehicleListing {
   cartItems        CartItem[]
   orderItems       OrderItem[]
   views            VehicleListingView[]
+  callbackRequests CallbackRequest[]
   createdAt        DateTime                 @default(now())
   updatedAt        DateTime                 @updatedAt
 

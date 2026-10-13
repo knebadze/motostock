@@ -33,6 +33,8 @@ export const updateCompanyInfoSchema = registry.register(
     cityId: z.int().positive().nullable().optional(),
     street: z.string().trim().max(200).nullable().optional(),
     phone: z.string().trim().max(30).nullable().optional().openapi({ example: "+995555123456" }),
+    // For wa.me links — empty falls back to phone.
+    whatsappPhone: z.string().trim().max(30).nullable().optional().openapi({ example: "+995555123456" }),
     email: z.email().nullable().optional(),
     facebookUrl: z.url().nullable().optional(),
     instagramUrl: z.url().nullable().optional(),
@@ -64,6 +66,7 @@ export const companyInfoResponseSchema = registry.register(
     city: lookupItemResponseSchema.nullable(),
     street: z.string().nullable(),
     phone: z.string().nullable(),
+    whatsappPhone: z.string().nullable(),
     email: z.string().nullable(),
     facebookUrl: z.string().nullable(),
     instagramUrl: z.string().nullable(),

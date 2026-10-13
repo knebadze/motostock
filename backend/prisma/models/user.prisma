@@ -85,6 +85,7 @@ model User {
   recordedServiceRecords  ServiceRecord[]
   whatsappChatSessions    WhatsAppChatSession[]
   consents                UserConsent[]
+  resolvedCallbackRequests CallbackRequest[] @relation("CallbackRequestResolvedBy")
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
 

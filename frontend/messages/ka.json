@@ -278,7 +278,28 @@
     "fuelTankLabel": "საწვავის ავზი",
     "oilCapacityLabel": "ზეთის მოცულობა",
     "topSpeedLabel": "მაქს. სიჩქარე",
-    "absLabel": "ABS"
+    "absLabel": "ABS",
+    "callbackButton": "დარეკვის თხოვნა",
+    "whatsappButton": "WhatsApp-ში მოწერა",
+    "whatsappMessage": "გამარჯობა! მაინტერესებს: {item} — {url}",
+    "callbackTitle": "დარეკვის თხოვნა",
+    "callbackIntro": "დატოვეთ ნომერი და დაგირეკავთ: {item}",
+    "callbackName": "სახელი",
+    "callbackPhone": "ტელეფონი",
+    "callbackPreferredTime": "როდის დაგირეკოთ",
+    "callbackTime": {
+      "any": "ნებისმიერ დროს",
+      "morning": "დილით (10–13)",
+      "afternoon": "შუადღისას (13–17)",
+      "evening": "საღამოს (17–20)"
+    },
+    "callbackNote": "შეკითხვა ან შენიშვნა (არასავალდებულო)",
+    "callbackSubmit": "გაგზავნა",
+    "callbackSending": "იგზავნება…",
+    "callbackSent": "გმადლობთ! თხოვნა მიღებულია — მალე დაგირეკავთ.",
+    "callbackClose": "დახურვა",
+    "callbackValidation": "მიუთითეთ სახელი და ტელეფონის ნომერი",
+    "callbackError": "თხოვნის გაგზავნა ვერ მოხერხდა"
   },
   "Auth": {
     "loginTitle": "შესვლა",

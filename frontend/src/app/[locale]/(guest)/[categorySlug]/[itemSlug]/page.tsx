@@ -261,6 +261,7 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
       .join(" ");
     const pathname = `/${listing.vehicleCatalog.category.slug}/${buildVehicleListingSlug(listing)}`;
     const canonicalUrl = getAlternateLanguages(pathname)[locale];
+    const listingCompanyInfo = await getCompanyInfoFromServer();
     const images = listing.images
       .map((image) => resolveMediaUrl(image.imageUrl))
       .filter((url): url is string => Boolean(url));
@@ -341,6 +342,9 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
           descriptionHtml={localizedHtml(
             locale === "en" ? listing.descriptionEn : locale === "ru" ? listing.descriptionRu : listing.descriptionKa,
           )}
+          pageUrl={canonicalUrl}
+          whatsappPhone={listingCompanyInfo.whatsappPhone || listingCompanyInfo.phone || null}
+          whatsappChatEnabled={listingCompanyInfo.whatsappChatEnabled}
         />
       </>
     );

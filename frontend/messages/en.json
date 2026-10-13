@@ -278,7 +278,28 @@
     "fuelTankLabel": "Fuel tank",
     "oilCapacityLabel": "Oil capacity",
     "topSpeedLabel": "Top speed",
-    "absLabel": "ABS"
+    "absLabel": "ABS",
+    "callbackButton": "Request a call",
+    "whatsappButton": "Message on WhatsApp",
+    "whatsappMessage": "Hello! I'm interested in: {item} — {url}",
+    "callbackTitle": "Request a call",
+    "callbackIntro": "Leave your number and we'll call you about: {item}",
+    "callbackName": "Name",
+    "callbackPhone": "Phone",
+    "callbackPreferredTime": "When should we call",
+    "callbackTime": {
+      "any": "Any time",
+      "morning": "Morning (10–13)",
+      "afternoon": "Afternoon (13–17)",
+      "evening": "Evening (17–20)"
+    },
+    "callbackNote": "Question or note (optional)",
+    "callbackSubmit": "Send",
+    "callbackSending": "Sending…",
+    "callbackSent": "Thank you! We got your request and will call you soon.",
+    "callbackClose": "Close",
+    "callbackValidation": "Please enter your name and phone number",
+    "callbackError": "Couldn't send the request"
   },
   "Auth": {
     "loginTitle": "Log in",

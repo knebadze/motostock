@@ -9772,6 +9772,172 @@ export interface paths {
         };
         trace?: never;
     };
+    "/callback-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Callback requests inbox (admin/operator) */
+        get: {
+            parameters: {
+                query?: {
+                    status?: "OPEN" | "RESOLVED";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Requests, newest first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            requests: components["schemas"]["CallbackRequest"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Ask the shop to call back about a listing (public; notifies staff) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateCallbackRequestInput"];
+                };
+            };
+            responses: {
+                /** @description Sent */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: number;
+                        };
+                    };
+                };
+                /** @description Listing not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/callback-requests/open-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Open callback requests count (admin/operator) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Count */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            count: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/callback-requests/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Mark a callback request handled (admin/operator) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ResolveCallbackRequestInput"];
+                };
+            };
+            responses: {
+                /** @description Resolved */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            request: components["schemas"]["CallbackRequest"];
+                        };
+                    };
+                };
+                /** @description Already resolved */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/email-templates": {
         parameters: {
             query?: never;
@@ -18235,6 +18401,8 @@ export interface components {
             street?: string | null;
             /** @example +995555123456 */
             phone?: string | null;
+            /** @example +995555123456 */
+            whatsappPhone?: string | null;
             /** Format: email */
             email?: string | null;
             /** Format: uri */
@@ -18270,6 +18438,7 @@ export interface components {
             city: components["schemas"]["LookupItem"] | null;
             street: string | null;
             phone: string | null;
+            whatsappPhone: string | null;
             email: string | null;
             facebookUrl: string | null;
             instagramUrl: string | null;
@@ -18337,6 +18506,39 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        CreateCallbackRequestInput: {
+            vehicleListingId: number;
+            name: string;
+            /** @example +995555123456 */
+            phone: string;
+            preferredTime?: string;
+            note?: string;
+        };
+        ResolveCallbackRequestInput: {
+            adminNote?: string;
+        };
+        CallbackRequest: {
+            id: number;
+            itemTitle: string;
+            vehicleListing: {
+                id: number;
+            } | null;
+            name: string;
+            phone: string;
+            preferredTime: string | null;
+            note: string | null;
+            /** @enum {string} */
+            status: "OPEN" | "RESOLVED";
+            adminNote: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            resolvedAt: string | null;
+            resolvedBy: {
+                firstName: string;
+                lastName: string;
+            } | null;
+        };
         UpdateEmailTemplateInput: {
             subject: {
                 ka: string;
@@ -18353,7 +18555,7 @@ export interface components {
             /** @example 1 */
             id: number;
             /** @enum {string} */
-            key: "ORDER_PLACED" | "ORDER_CONFIRMED" | "ORDER_SHIPPED" | "ORDER_DELIVERED" | "ORDER_CANCELLED" | "NEW_ORDER_ADMIN" | "ORDER_REQUEST_ADMIN" | "BIRTHDAY";
+            key: "ORDER_PLACED" | "ORDER_CONFIRMED" | "ORDER_SHIPPED" | "ORDER_DELIVERED" | "ORDER_CANCELLED" | "NEW_ORDER_ADMIN" | "ORDER_REQUEST_ADMIN" | "CALLBACK_REQUEST_ADMIN" | "BIRTHDAY";
             subject: {
                 ka: string;
                 en: string;

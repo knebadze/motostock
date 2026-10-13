@@ -27,6 +27,9 @@ model CompanyInfo {
   city         City?    @relation(fields: [cityId], references: [id])
   street       String?
   phone        String?
+  // The shop's WhatsApp number for "write on WhatsApp" links (wa.me) —
+  // empty means the main phone is used.
+  whatsappPhone String?
   email        String?
   facebookUrl  String?
   instagramUrl String?

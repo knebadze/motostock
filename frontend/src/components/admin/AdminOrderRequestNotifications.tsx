@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { countOpenOrderRequests } from "@/lib/api/orders";
+import { countOpenCallbackRequests } from "@/lib/api/callback-requests";
 import { playNotificationSound } from "@/lib/playNotificationSound";
 
 const POLL_INTERVAL_MS = 30000;
@@ -43,10 +44,14 @@ export function AdminOrderRequestNotifications() {
   useEffect(() => {
     async function poll() {
       try {
-        const count = await countOpenOrderRequests();
+        const [orderCount, callbackCount] = await Promise.all([
+          countOpenOrderRequests(),
+          countOpenCallbackRequests(),
+        ]);
+        const count = orderCount + callbackCount;
         if (lastCountRef.current !== null && count > lastCountRef.current) {
           playNotificationSound();
-          toast.warning("მომხმარებელმა გამოგზავნა შეკვეთის გაუქმების/დაბრუნების მოთხოვნა");
+          toast.warning("ახალი მოთხოვნა მომხმარებლისგან (გაუქმება/დაბრუნება ან დარეკვა)");
         }
         lastCountRef.current = count;
         setOpenCount(count);
