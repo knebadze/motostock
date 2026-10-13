@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
+import { Pagination, usePageHref, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
+import { replaceUrlQueryParams } from "@/lib/url-query-state";
 import type { SelectOption } from "@/components/shared/Select";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
 import { ActiveFilterTags, type ActiveFilterTag } from "./ActiveFilterTags";
@@ -97,6 +98,14 @@ export function CompatibleProductsPage({
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, selectedCategoryIds, sortBy]);
+
+  // The page number is in the URL (?page=N is server-rendered and has its
+  // own canonical — see the route page), so page 2+ are crawlable via the
+  // pagination links below.
+  useEffect(() => {
+    replaceUrlQueryParams({ page: data.page > 1 ? String(data.page) : null });
+  }, [data.page]);
+  const getPageHref = usePageHref({});
 
   function toggleCategory(categoryId: number) {
     setSelectedCategoryIds((current) =>
@@ -232,6 +241,7 @@ export function CompatibleProductsPage({
                 currentPage={data.page}
                 totalPages={totalPages}
                 onPageChange={(nextPage) => void fetchPage(nextPage)}
+                getPageHref={getPageHref}
                 navLabel={tCommon("pagination.nav")}
                 prevLabel={tCommon("pagination.prev")}
                 nextLabel={tCommon("pagination.next")}

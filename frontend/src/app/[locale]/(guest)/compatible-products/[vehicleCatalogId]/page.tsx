@@ -18,6 +18,12 @@ import { buildSocialMetadata } from "@/lib/share-metadata";
 // buildVehicleCatalogSlug) — the folder keeps its old [vehicleCatalogId]
 // name; only the trailing id is read from it.
 type PageParams = { locale: "ka" | "en" | "ru"; vehicleCatalogId: string };
+type PageSearchParams = { page?: string };
+
+function parsePage(page: string | undefined): number {
+  const parsed = Number(page);
+  return Number.isInteger(parsed) && parsed > 1 ? parsed : 1;
+}
 
 // Was a blanket noindex — but "parts for <brand> <model>" is exactly the
 // search this shop most wants to rank for, and this page is the answer.
@@ -25,15 +31,22 @@ type PageParams = { locale: "ka" | "en" | "ru"; vehicleCatalogId: string };
 // vehicle with zero compatible products stays noindex: an empty page is
 // thin content that would only dilute the site in Google's eyes. Both
 // fetches are cache()'d, so the page body below reuses them.
-export async function generateMetadata({ params }: { params: Promise<PageParams> }): Promise<Metadata> {
-  const { locale, vehicleCatalogId } = await params;
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<PageParams>;
+  searchParams: Promise<PageSearchParams>;
+}): Promise<Metadata> {
+  const [{ locale, vehicleCatalogId }, { page }] = await Promise.all([params, searchParams]);
+  const pageNum = parsePage(page);
   const id = parseVehicleCatalogIdFromSlug(vehicleCatalogId);
   if (id == null) return {};
 
   // Same cached requests as the page body below.
   const [vehicle, firstPage] = await Promise.all([
     getVehicleCatalogEntryFromServer(id),
-    getCompatibleProductsPageFromServer(id),
+    getCompatibleProductsPageFromServer(id, pageNum),
   ]);
   if (!vehicle) return {};
 
@@ -55,8 +68,9 @@ export async function generateMetadata({ params }: { params: Promise<PageParams>
     ...(firstPage.total === 0
       ? noindexMetadata({ follow: true })
       : {
+          // Page 2+ self-canonicalize (each lists different products).
           alternates: {
-            canonical: buildCanonicalUrl(pathname, locale),
+            canonical: buildCanonicalUrl(pathname, locale, { page: pageNum }),
             languages: getAlternateLanguages(pathname),
           },
         }),
@@ -66,10 +80,13 @@ export async function generateMetadata({ params }: { params: Promise<PageParams>
 
 export default async function VehicleCompatibleProductsPage({
   params,
+  searchParams,
 }: {
   params: Promise<PageParams>;
+  searchParams: Promise<PageSearchParams>;
 }) {
-  const { locale, vehicleCatalogId } = await params;
+  const [{ locale, vehicleCatalogId }, { page }] = await Promise.all([params, searchParams]);
+  const pageNum = parsePage(page);
   const id = parseVehicleCatalogIdFromSlug(vehicleCatalogId);
   if (id == null) {
     notFound();
@@ -80,10 +97,14 @@ export default async function VehicleCompatibleProductsPage({
   // the catalog) plus the category facets, fetched alongside the vehicle.
   const [vehicle, firstPage, categories] = await Promise.all([
     getVehicleCatalogEntryFromServer(id),
-    getCompatibleProductsPageFromServer(id),
+    getCompatibleProductsPageFromServer(id, pageNum),
     getShopCategoryFacetsFromServer({ vehicleCatalogId: id }),
   ]);
   if (!vehicle) {
+    notFound();
+  }
+  // A page past the end (?page=99) — 404, not an empty duplicate.
+  if (pageNum > 1 && firstPage.items.length === 0) {
     notFound();
   }
 
@@ -92,7 +113,13 @@ export default async function VehicleCompatibleProductsPage({
   // slugged form, so search engines consolidate on it.
   const canonicalSlug = buildVehicleCatalogSlug(vehicle);
   if (vehicleCatalogId !== canonicalSlug) {
-    permanentRedirect({ href: `/compatible-products/${canonicalSlug}`, locale });
+    permanentRedirect({
+      href: {
+        pathname: `/compatible-products/${canonicalSlug}`,
+        query: pageNum > 1 ? { page: String(pageNum) } : undefined,
+      },
+      locale,
+    });
   }
 
   return <CompatibleProductsPage vehicle={vehicle} initialData={firstPage} categories={categories} />;

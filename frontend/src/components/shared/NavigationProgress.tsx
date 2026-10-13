@@ -37,6 +37,8 @@ export function NavigationProgress() {
       const anchor = (event.target as Element | null)?.closest?.("a");
       if (!anchor || !anchor.href) return;
       if ((anchor.target && anchor.target !== "_self") || anchor.hasAttribute("download")) return;
+      // Links that load in place (list pagination) show their own loading state.
+      if (anchor.hasAttribute("data-no-progress")) return;
       const url = new URL(anchor.href, window.location.href);
       if (url.origin !== window.location.origin) return;
       // Same page (or only the #hash differs) — nothing to load.

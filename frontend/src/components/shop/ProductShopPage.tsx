@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { replaceUrlQueryParams } from "@/lib/url-query-state";
 import type { SelectOption } from "@/components/shared/Select";
-import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
+import { Pagination, usePageHref, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { listProductsPage, type ProductListItem, type ProductAttributeFilters } from "@/lib/api/products";
@@ -228,6 +228,9 @@ export function ProductShopPage({
       sort: sortBy !== "newest" ? sortBy : null,
     });
   }, [data.page, sortBy]);
+
+  // Crawlable page links — same URL state the effect above mirrors.
+  const getPageHref = usePageHref({ sort: sortBy !== "newest" ? sortBy : null });
 
   const sortOptions: SelectOption[] = [
     { value: "newest", label: t("sortNewest") },
@@ -468,6 +471,7 @@ export function ProductShopPage({
                 currentPage={data.page}
                 totalPages={totalPages}
                 onPageChange={fetchPage}
+                getPageHref={getPageHref}
                 navLabel={tCommon("pagination.nav")}
                 prevLabel={tCommon("pagination.prev")}
                 nextLabel={tCommon("pagination.next")}

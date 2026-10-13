@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { replaceUrlQueryParams } from "@/lib/url-query-state";
 import type { SelectOption } from "@/components/shared/Select";
-import { Pagination, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
+import { Pagination, usePageHref, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import type { Category } from "@/lib/api/categories";
@@ -237,6 +237,12 @@ export function VehicleShopPage({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.page, sortBy]);
+
+  // Crawlable page links — same URL state the effect above mirrors.
+  const getPageHref = usePageHref({
+    sort: sortBy !== "newest" ? sortBy : null,
+    eventId: initialEventId != null ? String(initialEventId) : null,
+  });
 
   const sortOptions: SelectOption[] = [
     { value: "newest", label: t("sortNewest") },
@@ -475,6 +481,7 @@ export function VehicleShopPage({
                 currentPage={data.page}
                 totalPages={totalPages}
                 onPageChange={fetchPage}
+                getPageHref={getPageHref}
                 navLabel={tCommon("pagination.nav")}
                 prevLabel={tCommon("pagination.prev")}
                 nextLabel={tCommon("pagination.next")}

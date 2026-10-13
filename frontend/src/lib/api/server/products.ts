@@ -62,10 +62,11 @@ export const getProductsPageFromServer = cache(async (
 // pages/filters/sorts itself (listProductsPage), like the /shop page.
 export const getCompatibleProductsPageFromServer = cache(async (
   vehicleCatalogId: number,
+  page = 1,
 ): Promise<AdminListPage<ProductListItem>> => {
   return fetchFromServer<AdminListPage<ProductListItem>, AdminListPage<ProductListItem>>("/products", {
-    params: { vehicleCatalogId, page: 1, pageSize: SHOP_PAGE_SIZE, sortBy: "newest" },
-    fallback: { items: [], total: 0, page: 1, pageSize: SHOP_PAGE_SIZE },
+    params: { vehicleCatalogId, page, pageSize: SHOP_PAGE_SIZE, sortBy: "newest" },
+    fallback: { items: [], total: 0, page, pageSize: SHOP_PAGE_SIZE },
     extract: (data) => data,
   });
 });
