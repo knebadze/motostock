@@ -76,6 +76,18 @@
      from the right, going back slides the previous level in from the left. */
   --animate-slide-in-right: slide-in-from-right 0.25s ease-out;
   --animate-slide-in-left: slide-in-from-left 0.25s ease-out;
+  /* NavigationProgress.tsx: fills fast, then crawls toward 90% until the
+     new page lands (the bar is removed then). */
+  --animate-nav-progress: nav-progress 8s cubic-bezier(0.1, 0.6, 0.2, 1) forwards;
+}
+
+@keyframes nav-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(0.9);
+  }
 }
 
 @keyframes slide-in-from-right {

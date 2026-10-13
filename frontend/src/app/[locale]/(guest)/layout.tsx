@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getLocale } from "next-intl/server";
 import { Header } from "@/components/shared/Header";
 import { toHeaderCategories } from "@/lib/api/categories";
@@ -6,6 +7,7 @@ import { Footer } from "@/components/shared/Footer";
 import { CookieNotice } from "@/components/shared/CookieNotice";
 import { ScrollToTopButton } from "@/components/shared/ScrollToTopButton";
 import { ChatWidget } from "@/components/shared/ChatWidget";
+import { NavigationProgress } from "@/components/shared/NavigationProgress";
 import {
   getCategoriesFromServer,
   getCompanyInfoFromServer,
@@ -39,6 +41,10 @@ export default async function GuestLayout({
 
   return (
     <>
+      {/* useSearchParams needs a Suspense boundary of its own. */}
+      <Suspense fallback={null}>
+        <NavigationProgress />
+      </Suspense>
       <Header
         user={user}
         categories={toHeaderCategories(categories, typedLocale)}
