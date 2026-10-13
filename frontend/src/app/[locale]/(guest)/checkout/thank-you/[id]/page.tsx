@@ -5,10 +5,11 @@ import { Link } from "@/i18n/navigation";
 import { getCompanyInfoFromServer, getMyOrderFromServer } from "@/lib/api/server";
 import { localizedLookupName } from "@/lib/api/lookups";
 import { formatPrice } from "@/lib/format";
+import { noindexMetadata } from "@/lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Checkout");
-  return { title: t("thankYouTitle"), robots: { index: false, follow: false } };
+  return { title: t("thankYouTitle"), ...noindexMetadata({ follow: false }) };
 }
 
 // Where checkout lands after a successful placeOrder: confirmation, the

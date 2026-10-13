@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { NewsletterUnsubscribeView } from "@/components/shared/NewsletterUnsubscribeView";
+import { noindexMetadata } from "@/lib/seo";
 
 // Auth/transactional flow, not content — keep it out of search results,
 // same as reset-password.
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 export default function NewsletterUnsubscribePage() {
   return (

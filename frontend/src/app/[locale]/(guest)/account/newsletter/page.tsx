@@ -3,8 +3,9 @@ import { useTranslations } from "next-intl";
 import { getMyNewsletterStatusFromServer } from "@/lib/api/server";
 import { AccountNewsletterCard } from "@/components/account/AccountNewsletterCard";
 import type { MyNewsletterStatus } from "@/lib/api/newsletter";
+import { noindexMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 export default async function AccountNewsletterPage() {
   const status = await getMyNewsletterStatusFromServer();

@@ -8,7 +8,7 @@ import {
 } from "@/lib/api/server";
 import { buildVehicleCatalogSlug, parseVehicleCatalogIdFromSlug } from "@/lib/api/vehicle-catalog";
 import { permanentRedirect } from "@/i18n/navigation";
-import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
+import { buildCanonicalUrl, getAlternateLanguages, noindexMetadata } from "@/lib/seo";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 import { siteConfig } from "@/config/site";
 import { CompatibleProductsPage } from "@/components/shop/CompatibleProductsPage";
@@ -50,11 +50,16 @@ export async function generateMetadata({ params }: { params: Promise<PageParams>
   return {
     title,
     description,
-    robots: firstPage.total === 0 ? { index: false, follow: true } : undefined,
-    alternates: {
-      canonical: buildCanonicalUrl(pathname, locale),
-      languages: getAlternateLanguages(pathname),
-    },
+    // No compatible products yet → thin page, kept out of the index (and
+    // then without a canonical — see noindexMetadata).
+    ...(firstPage.total === 0
+      ? noindexMetadata({ follow: true })
+      : {
+          alternates: {
+            canonical: buildCanonicalUrl(pathname, locale),
+            languages: getAlternateLanguages(pathname),
+          },
+        }),
     ...(await buildSocialMetadata({ locale, title, description, pathname, imageSrc: vehicle.imageUrl })),
   };
 }

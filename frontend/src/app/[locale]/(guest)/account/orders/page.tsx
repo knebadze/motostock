@@ -4,8 +4,9 @@ import { Link } from "@/i18n/navigation";
 import { getMyOrdersFromServer } from "@/lib/api/server";
 import { formatDateTime, formatPrice } from "@/lib/format";
 import { ReorderButton } from "@/components/shared/ReorderButton";
+import { noindexMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 export default async function OrdersPage() {
   const orders = await getMyOrdersFromServer();

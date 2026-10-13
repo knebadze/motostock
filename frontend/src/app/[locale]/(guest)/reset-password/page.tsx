@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { ResetPasswordForm } from "@/components/shared/ResetPasswordForm";
+import { noindexMetadata } from "@/lib/seo";
 
 // Auth flows aren't content — keep them out of search results.
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 // Deliberately no already-authenticated redirect here (unlike login/register/
 // forgot-password) — someone already logged in on this device may still have

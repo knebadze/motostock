@@ -3,9 +3,10 @@ import { useTranslations } from "next-intl";
 import { getCurrentUserFromServer } from "@/lib/api/server";
 import { Link } from "@/i18n/navigation";
 import { accountNav } from "@/config/account-nav";
+import { noindexMetadata } from "@/lib/seo";
 
 // Private, user-specific data — keep it out of search results.
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 export default async function AccountDashboardPage() {
   const user = await getCurrentUserFromServer();

@@ -4,9 +4,10 @@ import { redirect } from "@/i18n/navigation";
 import { getCurrentUserFromServer, getOAuthStatusFromServer } from "@/lib/api/server";
 import { resolveRedirectTarget } from "@/lib/auth-redirect";
 import { RegisterForm } from "@/components/shared/RegisterForm";
+import { noindexMetadata } from "@/lib/seo";
 
 // Auth flows aren't content — keep them out of search results.
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 export default async function RegisterPage({
   searchParams,

@@ -8,8 +8,9 @@ import { formatDateTime, formatPrice } from "@/lib/format";
 import { getOrderInvoiceUrl, type OrderFulfillmentMethod, type PaymentStatus } from "@/lib/api/orders";
 import { ReorderButton } from "@/components/shared/ReorderButton";
 import { OrderRequestPanel } from "@/components/account/OrderRequestPanel";
+import { noindexMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 const FULFILLMENT_KEY: Record<OrderFulfillmentMethod, "cardPayment" | "courierPayment" | "pickup"> = {
   CARD: "cardPayment",

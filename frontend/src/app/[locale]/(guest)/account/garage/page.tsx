@@ -8,8 +8,9 @@ import {
   getVinDecodeStatusFromServer,
 } from "@/lib/api/server";
 import { GarageManager } from "@/components/account/GarageManager";
+import { noindexMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 export default async function GaragePage() {
   const [garage, vehicleCatalog, models, fuelTypes, transmissionTypes, vinDecodeStatus] =

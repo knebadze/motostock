@@ -11,6 +11,7 @@ import {
 import { SEARCH_MIN_LENGTH } from "@/lib/api/search";
 import { ShopAllProductsPage } from "@/components/shop/ShopAllProductsPage";
 import { VehicleListingsCarouselSection } from "@/components/home/VehicleListingsCarouselSection";
+import { noindexMetadata } from "@/lib/seo";
 
 type Locale = "ka" | "en" | "ru";
 const MAX_QUERY_LENGTH = 100;
@@ -32,8 +33,9 @@ export async function generateMetadata({
   const query = normalizeQuery(q);
   return {
     title: query ? t("metaTitle", { q: query }) : t("emptyTitle"),
-    // Result pages for arbitrary queries shouldn't be indexed.
-    robots: { index: false, follow: true },
+    // Result pages for arbitrary queries shouldn't be indexed (their
+    // results' links are still worth following).
+    ...noindexMetadata({ follow: true }),
   };
 }
 

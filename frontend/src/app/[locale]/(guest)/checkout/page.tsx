@@ -13,8 +13,9 @@ import {
 } from "@/lib/api/server";
 import { CheckoutManager } from "@/components/checkout/CheckoutManager";
 import { getVehicleFitmentDisabledCategoryIds } from "@/lib/categories-tree";
+import { noindexMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 // Not under /account — checkout is a step in the shopping flow, not an
 // account-settings page, so it keeps the conventional top-level /checkout

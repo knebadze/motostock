@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getPathname } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 
@@ -43,4 +44,17 @@ export function buildCanonicalUrl(
   const page = options?.page;
   const query = page && page > 1 ? `?page=${page}` : "";
   return `${siteUrl}${localizedPath}${query}`;
+}
+
+// Metadata for a page that must not be indexed. Also resets `alternates`:
+// [locale]/layout.tsx sets the home page as the site-wide canonical/hreflang
+// default, and a page that only set `robots` inherited it — telling crawlers
+// "don't index this" and "this is a duplicate of the home page" at once. A
+// noindex page needs no canonical at all. (Next merges metadata shallowly,
+// so an empty `alternates` replaces the inherited one entirely.)
+//
+// follow: true where the page lists real catalog links worth crawling
+// (search, shop listings); false for private/utility pages.
+export function noindexMetadata({ follow }: { follow: boolean }): Pick<Metadata, "robots" | "alternates"> {
+  return { robots: { index: false, follow }, alternates: {} };
 }

@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { getDeliveryInfoFromServer, getMyCartFromServer } from "@/lib/api/server";
 import { CartManager } from "@/components/account/CartManager";
+import { noindexMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 // Not under /account — same reasoning as /wishlist: that section
 // hard-redirects guests to /login, but cart must work for guests too when
