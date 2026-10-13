@@ -572,7 +572,10 @@ export function Header({
                         style={megaMenuGroups.length === 1 ? { display: "block" } : undefined}
                       >
                         {group.items.map((item) => {
-                          const grandchildren = childrenOf(item.id);
+                          // The menu stops at this level (category → group →
+                          // item): anything deeper (e.g. the sensor types under
+                          // "სენსორები") is picked on that category's page via
+                          // its subcategory filter, not listed here.
                           return (
                             <li key={item.id}>
                               <Link
@@ -582,21 +585,6 @@ export function Header({
                               >
                                 {item.name}
                               </Link>
-                              {grandchildren.length > 0 && (
-                                <ul className="mt-1.5 flex flex-col gap-1 border-l border-border pl-3">
-                                  {grandchildren.map((grandchild) => (
-                                    <li key={grandchild.id}>
-                                      <Link
-                                        href={`/${grandchild.slug}`}
-                                        onClick={() => setActiveCategoryId(null)}
-                                        className="text-[13px] text-muted-foreground transition-colors hover:text-primary-text"
-                                      >
-                                        {grandchild.name}
-                                      </Link>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
                             </li>
                           );
                         })}
@@ -715,7 +703,10 @@ export function Header({
                   </Link>
                   <div className="my-1 border-t border-border" />
                   {childrenOf(mobileCategory.id).map((child) =>
-                    childrenOf(child.id).length > 0 ? (
+                    // Same 3-level cap as the desktop mega menu: inside a
+                    // group (path depth 2) items are plain links even if they
+                    // have subcategories — those are a filter on their page.
+                    childrenOf(child.id).length > 0 && mobileCategoryPath.length < 2 ? (
                       <button
                         key={child.id}
                         type="button"
