@@ -17,6 +17,9 @@ export const registerSchema = registry.register(
     // nullable on the model for pre-existing rows and OAuth signups).
     phone: phoneField,
     dateOfBirth: dateOfBirthField,
+    // The register form's terms + privacy policy checkbox — recorded as a
+    // UserConsent row (account-data.service.ts's recordConsents).
+    agreedToTerms: z.literal(true),
   }),
 );
 export type RegisterInput = z.infer<typeof registerSchema>;

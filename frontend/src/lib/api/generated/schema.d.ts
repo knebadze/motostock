@@ -580,7 +580,60 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete own account (anonymized instead when orders must be kept); logs out */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["DeleteAccountInput"];
+                };
+            };
+            responses: {
+                /** @description Deleted */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            anonymized: boolean;
+                        };
+                    };
+                };
+                /** @description Wrong confirmation */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Staff account */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Orders in progress */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -1001,6 +1054,151 @@ export interface paths {
                 };
             };
         };
+        trace?: never;
+    };
+    "/users/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's own profile, login methods and consent status */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Profile */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            profile: components["schemas"]["Profile"];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit own name, phone and date of birth */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateProfileInput"];
+                };
+            };
+            responses: {
+                /** @description Updated profile */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            profile: components["schemas"]["Profile"];
+                        };
+                    };
+                };
+                /** @description Phone in use */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/users/me/consents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept the current terms and privacy policy (recorded with version, time and IP) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Updated profile */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            profile: components["schemas"]["Profile"];
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/me/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download everything stored about the caller (JSON file) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description JSON attachment */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/users/me/addresses": {
@@ -15736,6 +15934,8 @@ export interface components {
              * @example 1995-06-15
              */
             dateOfBirth: string;
+            /** @enum {boolean} */
+            agreedToTerms: true;
         };
         LoginInput: {
             /** @example rider@motostock.ge */
@@ -16760,6 +16960,38 @@ export interface components {
         UpdateUserRoleInput: {
             /** @enum {string} */
             role: "USER" | "ADMIN" | "OPERATOR";
+        };
+        UpdateProfileInput: {
+            firstName: string;
+            lastName: string;
+            phone?: string | "";
+            dateOfBirth?: string | "";
+        };
+        Profile: {
+            /** Format: email */
+            email: string;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            /** Format: date */
+            dateOfBirth: string | null;
+            hasPassword: boolean;
+            hasGoogle: boolean;
+            hasFacebook: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            consent: {
+                /** Format: date-time */
+                termsAcceptedAt: string | null;
+                /** Format: date-time */
+                privacyAcceptedAt: string | null;
+                upToDate: boolean;
+            };
+            canDelete: boolean;
+        };
+        DeleteAccountInput: {
+            password?: string;
+            confirmEmail?: string;
         };
         AdminUser: {
             /** @example 1 */

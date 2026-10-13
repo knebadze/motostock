@@ -23,6 +23,7 @@ import { passwordResetTokenRepository } from "./password-reset-token.repository.
 import { emailVerificationTokenRepository } from "./email-verification-token.repository.js";
 import { sessionRepository } from "./session.repository.js";
 import type { ForgotPasswordInput, LoginInput, RegisterInput, ResetPasswordInput } from "./auth.schema.js";
+import { recordConsents } from "../users/account-data.service.js";
 
 function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
@@ -149,6 +150,7 @@ export async function registerUser(
   });
 
   await recordAuthEvent("REGISTER", user.email, user.id, ipAddress);
+  await recordConsents(user.id, "REGISTRATION_CHECKBOX", { ipAddress, userAgent });
 
   // Fire-and-forget — registration must succeed (and log the user in, per
   // the "soft gate" decision: checkout requires verification, login/browsing

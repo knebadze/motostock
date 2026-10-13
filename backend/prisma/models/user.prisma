@@ -84,6 +84,7 @@ model User {
   // that side).
   recordedServiceRecords  ServiceRecord[]
   whatsappChatSessions    WhatsAppChatSession[]
+  consents                UserConsent[]
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
 

@@ -307,7 +307,7 @@
     "confirmPasswordRequiredError": "Confirm your password",
     "phoneError": "Invalid phone number",
     "dateOfBirthError": "Invalid date of birth, you must be at least 16 years old",
-    "termsAgreement": "I agree to the <terms>Terms and Conditions</terms>",
+    "termsAgreement": "I agree to the <terms>terms and conditions</terms> and the <privacy>privacy policy</privacy>",
     "termsRequiredError": "You must agree to the Terms and Conditions to continue",
     "loginError": "Log in failed",
     "registerError": "Registration failed",
@@ -351,7 +351,8 @@
     "verifyRequiredLogoutError": "Couldn't log out",
     "passwordTooLongError": "Password is too long — max 72 characters",
     "passwordInvalidCharsError": "Password may contain only Latin letters, digits and symbols",
-    "oauthEmailExists": "An account with this email already exists — please sign in the way you registered (e.g. with Google)"
+    "oauthEmailExists": "An account with this email already exists — please sign in the way you registered (e.g. with Google)",
+    "oauthConsentNotice": "By continuing with Google or Facebook you agree to the <terms>terms and conditions</terms> and the <privacy>privacy policy</privacy>."
   },
   "Home": {
     "heroTitle": "Gear you can trust on the <hl>road</hl>",
@@ -526,7 +527,8 @@
       "orders": "Order history",
       "address": "Address",
       "changePassword": "Change password",
-      "newsletter": "Newsletter"
+      "newsletter": "Newsletter",
+      "profile": "Profile & data"
     },
     "dashboard": {
       "greeting": "Welcome, {name}",
@@ -697,6 +699,47 @@
       "subscribeSuccess": "A confirmation email has been sent to your address",
       "unsubscribeSuccess": "Unsubscribed",
       "error": "Action failed"
+    },
+    "profile": {
+      "detailsHeading": "Personal details",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "phone": "Phone",
+      "dateOfBirth": "Date of birth",
+      "email": "Email",
+      "emailNote": "To change your email, please contact us.",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Details updated",
+      "saveError": "Couldn't save",
+      "nameError": "First and last name must be at least 2 characters",
+      "consentHeading": "Consent",
+      "consentAcceptedAt": "You accepted the terms and privacy policy on {date}",
+      "consentMissing": "No consent on record yet.",
+      "consentPrompt": "Please read and accept the terms and the privacy policy.",
+      "consentOutdated": "The terms or privacy policy have been updated — please read and accept the new version.",
+      "consentAcceptButton": "I agree",
+      "consentAccepted": "Consent recorded",
+      "termsLink": "Terms and conditions",
+      "privacyLink": "Privacy policy",
+      "exportHeading": "Download my data",
+      "exportDescription": "Download everything we store about you: profile, addresses, garage and service history, orders, wishlist, consents and login history (JSON file).",
+      "exportButton": "Download data",
+      "deleteHeading": "Delete account",
+      "deleteDescription": "Your account and personal data will be permanently deleted. This can't be undone.",
+      "deleteButton": "Delete account",
+      "deleteConfirmTitle": "Delete account",
+      "deleteConfirmText": "Are you sure? The account can't be restored.",
+      "deleteConfirmRemoved": "Deleted: profile, addresses, garage and service history, wishlist, cart, consents and login history; you're also unsubscribed from the newsletter.",
+      "deleteConfirmOrders": "Order records (items, amounts, delivery address) are kept for the legally required accounting period, without your name or email.",
+      "deleteConfirmActive": "An order still in progress has to be completed or cancelled first.",
+      "deletePasswordLabel": "Enter your password to confirm",
+      "deleteEmailLabel": "Type your email to confirm ({email})",
+      "deleteConfirmButton": "Delete permanently",
+      "deleting": "Deleting…",
+      "deleted": "Account deleted",
+      "deleteError": "Couldn't delete the account",
+      "cancel": "Cancel"
     }
   },
   "NotFound": {
@@ -769,7 +812,12 @@
     "ORDER_CANCEL_REQUEST_NOT_ALLOWED": "The order can't be cancelled online at this stage — please call us.",
     "ORDER_RETURN_REQUEST_NOT_ALLOWED": "A return can only be requested for a delivered order.",
     "ORDER_RETURN_PERIOD_EXPIRED": "The return period ({days} days) has ended — please call us.",
-    "ORDER_REQUEST_ALREADY_OPEN": "You've already sent this request — the shop will contact you soon."
+    "ORDER_REQUEST_ALREADY_OPEN": "You've already sent this request — the shop will contact you soon.",
+    "PHONE_ALREADY_IN_USE": "This phone number is already in use — if it's yours, please contact us.",
+    "ACCOUNT_DELETE_WRONG_PASSWORD": "Incorrect password",
+    "ACCOUNT_DELETE_EMAIL_MISMATCH": "The email doesn't match",
+    "ACCOUNT_HAS_ACTIVE_ORDERS": "You have an order in progress — the account can be deleted once it's completed or cancelled.",
+    "STAFF_ACCOUNT_DELETE_FORBIDDEN": "Staff accounts can't be deleted here."
   },
   "Common": {
     "genericError": "Something went wrong, please try again",

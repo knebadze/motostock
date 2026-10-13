@@ -1,0 +1,41 @@
+enum UserConsentType {
+  TERMS
+  PRIVACY_POLICY
+
+  @@schema("dbo")
+}
+
+enum UserConsentMethod {
+  // The register form's required checkbox.
+  REGISTRATION_CHECKBOX
+  // "By continuing with Google/Facebook you agree…" notice next to the
+  // OAuth buttons — recorded when the OAuth account is first created.
+  OAUTH_NOTICE
+  // Accepted later on the account's profile page (accounts created before
+  // consent was recorded, or after the documents changed).
+  ACCOUNT_PAGE
+
+  @@schema("dbo")
+}
+
+// Proof of acceptance (personal data protection law, 2023): which document,
+// which version of it (its updatedAt at that moment), when, how, and from
+// where. Append-only — a re-acceptance adds a row. Deleted with the account
+// (Cascade; an anonymized account's rows are removed explicitly — see
+// account-data.service.ts).
+model UserConsent {
+  id              Int               @id @default(autoincrement())
+  userId          Int
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            UserConsentType
+  method          UserConsentMethod
+  // The document's updatedAt when accepted — null if it had never been
+  // saved yet.
+  documentVersion DateTime?
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime          @default(now())
+
+  @@index([userId, type])
+  @@schema("dbo")
+}

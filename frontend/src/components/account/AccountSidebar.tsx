@@ -38,13 +38,15 @@ export function AccountSidebar({ user }: { user: User }) {
               href={item.href}
               ref={isActive ? activeRef : undefined}
               aria-current={isActive ? "page" : undefined}
-              className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors md:gap-3 md:py-2.5 ${
+              className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors md:gap-3 md:whitespace-normal md:py-2.5 ${
                 isActive
                   ? "bg-primary/10 font-semibold text-primary-text"
                   : "text-foreground hover:bg-muted hover:text-primary-text"
               }`}
             >
-              {item.icon}
+              {/* shrink-0: a long label (e.g. "პროფილი და მონაცემები") used to
+                  squeeze the icon down to nothing in the narrow sidebar. */}
+              <span className="flex shrink-0">{item.icon}</span>
               {t(`nav.${item.labelKey}`)}
             </Link>
           );

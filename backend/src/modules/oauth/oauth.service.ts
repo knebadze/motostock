@@ -12,6 +12,7 @@ import {
   exchangeGoogleCode,
   type OAuthProfile,
 } from "./oauth-providers.js";
+import { recordConsents } from "../users/account-data.service.js";
 
 type Provider = "google" | "facebook";
 
@@ -62,7 +63,11 @@ function resolveOAuthEmailMatch(existingByEmail: ExistingUser, profile: OAuthPro
     : usersRepository.linkFacebookId(existingByEmail.id, profile.providerId);
 }
 
-async function findOrCreateOAuthUser(profile: OAuthProfile, provider: Provider) {
+async function findOrCreateOAuthUser(
+  profile: OAuthProfile,
+  provider: Provider,
+  meta: { ipAddress: string | null; userAgent: string | null },
+) {
   const existingByProvider =
     provider === "google"
       ? await usersRepository.findByGoogleId(profile.providerId)
@@ -88,7 +93,7 @@ async function findOrCreateOAuthUser(profile: OAuthProfile, provider: Provider) 
   }
 
   try {
-    return await usersRepository.createOAuthUser({
+    const created = await usersRepository.createOAuthUser({
       email,
       ...splitName(profile.name),
       roleId: userRole.id,
@@ -96,6 +101,9 @@ async function findOrCreateOAuthUser(profile: OAuthProfile, provider: Provider) 
         ? { googleId: profile.providerId }
         : { facebookId: profile.providerId }),
     });
+    // The OAuth buttons carry the "by continuing you agree…" notice.
+    await recordConsents(created.id, "OAUTH_NOTICE", meta);
+    return created;
   } catch (err) {
     // Two near-simultaneous requests can both pass the checks above before
     // either commits (e.g. a double-clicked "Sign in with Google" opening
@@ -131,7 +139,7 @@ async function completeOAuthLogin(
   ipAddress: string | null,
   userAgent: string | null,
 ) {
-  const user = await findOrCreateOAuthUser(profile, provider);
+  const user = await findOrCreateOAuthUser(profile, provider, { ipAddress, userAgent });
   const session = await sessionRepository.create(user.id, { ipAddress, userAgent });
   const token = await signJwt({
     sub: user.id,
