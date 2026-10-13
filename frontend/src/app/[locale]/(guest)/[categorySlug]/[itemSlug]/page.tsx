@@ -179,12 +179,16 @@ async function CompanionRecommendations({
     getFrequentlyBoughtTogetherFromServer(productId, vehicleCatalogId),
     getViewedTogetherFromServer(productId, vehicleCatalogId),
   ]);
+  // Explicit keys: this server component's fragment reaches the client
+  // ProductDetailPage as a slot, where RSC hands it over as an array — keyless
+  // siblings there trigger React's "unique key" warning.
   return (
     <>
       <FrequentlyBoughtTogether
+        key="frequently-bought-together"
         products={frequentlyBoughtTogether.filter((item) => !bundleProductIds.includes(item.id))}
       />
-      <ViewedTogether products={viewedTogether} />
+      <ViewedTogether key="viewed-together" products={viewedTogether} />
     </>
   );
 }
