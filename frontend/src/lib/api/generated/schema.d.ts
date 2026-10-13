@@ -12245,6 +12245,217 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/me/{id}/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask the shop to cancel or take back an order (notifies the admin; changes nothing by itself) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateOrderRequestInput"];
+                };
+            };
+            responses: {
+                /** @description Request sent — the updated order */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            order: components["schemas"]["Order"];
+                        };
+                    };
+                };
+                /** @description Not allowed at this order status / return period over */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Order not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An open request of this type already exists */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Customer cancel/return requests (admin/operator) */
+        get: {
+            parameters: {
+                query?: {
+                    status?: "OPEN" | "RESOLVED";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Requests, newest first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            requests: components["schemas"]["AdminOrderRequest"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/requests/open-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Number of open customer requests — admin header bell (admin/operator) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Open count */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            count: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/requests/{requestId}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Mark a customer request handled (admin/operator) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    requestId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ResolveOrderRequestInput"];
+                };
+            };
+            responses: {
+                /** @description Resolved request */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            request: components["schemas"]["AdminOrderRequest"];
+                        };
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Already resolved */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/compatibility": {
         parameters: {
             query?: never;
@@ -17579,6 +17790,26 @@ export interface components {
             promoCodeBlocked: boolean;
             hasStockIssues: boolean;
         };
+        OrderRequest: {
+            id: number;
+            /** @enum {string} */
+            type: "CANCEL" | "RETURN";
+            /** @enum {string} */
+            status: "OPEN" | "RESOLVED";
+            reason: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            resolvedAt: string | null;
+        };
+        CreateOrderRequestInput: {
+            /** @enum {string} */
+            type: "CANCEL" | "RETURN";
+            reason?: string;
+        };
+        ResolveOrderRequestInput: {
+            adminNote?: string;
+        };
         Order: {
             /** @example 1 */
             id: number;
@@ -17632,6 +17863,12 @@ export interface components {
             total: number;
             /** Format: date-time */
             createdAt: string;
+            statusHistory: {
+                status: components["schemas"]["LookupItem"];
+                /** Format: date-time */
+                createdAt: string;
+            }[];
+            requests: components["schemas"]["OrderRequest"][];
         };
         OrderSummary: {
             id: number;
@@ -17680,6 +17917,18 @@ export interface components {
             finaSyncStatus: "NOT_APPLICABLE" | "PENDING" | "SYNCED" | "FAILED";
         };
         AdminOrder: components["schemas"]["Order"] & {
+            statusHistory?: {
+                status: components["schemas"]["LookupItem"];
+                /** Format: date-time */
+                createdAt: string;
+                changedBy: {
+                    firstName: string;
+                    lastName: string;
+                } | null;
+            }[];
+            requests?: (components["schemas"]["OrderRequest"] & {
+                adminNote: string | null;
+            })[];
             buyer: {
                 id: number;
                 firstName: string;
@@ -17695,6 +17944,27 @@ export interface components {
             finaOutOperationId: number | null;
             finaLastError: string | null;
             finaPushUncertain: boolean;
+        };
+        AdminOrderRequest: components["schemas"]["OrderRequest"] & {
+            adminNote: string | null;
+            order: {
+                id: number;
+                orderCode: string;
+                total: number;
+                status: components["schemas"]["LookupItem"];
+            };
+            buyer: {
+                id: number;
+                firstName: string;
+                lastName: string;
+                /** Format: email */
+                email: string;
+                phone: string | null;
+            };
+            resolvedBy: {
+                firstName: string;
+                lastName: string;
+            } | null;
         };
         FinaSyncRun: {
             id: number;
@@ -17851,7 +18121,7 @@ export interface components {
             /** @example 1 */
             id: number;
             /** @enum {string} */
-            key: "ORDER_PLACED" | "ORDER_CONFIRMED" | "ORDER_SHIPPED" | "ORDER_DELIVERED" | "ORDER_CANCELLED" | "NEW_ORDER_ADMIN" | "BIRTHDAY";
+            key: "ORDER_PLACED" | "ORDER_CONFIRMED" | "ORDER_SHIPPED" | "ORDER_DELIVERED" | "ORDER_CANCELLED" | "NEW_ORDER_ADMIN" | "ORDER_REQUEST_ADMIN" | "BIRTHDAY";
             subject: {
                 ka: string;
                 en: string;

@@ -157,6 +157,53 @@ const orderBankSchema = z.object({
 // fulfillmentMethod/status. NOT_APPLICABLE covers both non-CARD orders and
 // CARD orders placed before any gateway integration exists; nothing in the
 // checkout/status flow reads or enforces this yet (see orders.service.ts).
+export const orderRequestTypeSchema = z.enum(["CANCEL", "RETURN"]);
+export const orderRequestStatusSchema = z.enum(["OPEN", "RESOLVED"]);
+
+const orderStatusHistoryEntrySchema = z.object({
+  status: lookupItemResponseSchema,
+  createdAt: z.iso.datetime(),
+});
+
+export const orderRequestResponseSchema = registry.register(
+  "OrderRequest",
+  z.object({
+    id: z.int(),
+    type: orderRequestTypeSchema,
+    status: orderRequestStatusSchema,
+    reason: z.string().nullable(),
+    createdAt: z.iso.datetime(),
+    resolvedAt: z.iso.datetime().nullable(),
+  }),
+);
+
+// Customer's cancel/return request — a message to the shop, not an action.
+export const createOrderRequestSchema = registry.register(
+  "CreateOrderRequestInput",
+  z.object({
+    type: orderRequestTypeSchema,
+    reason: z.string().trim().max(1000).optional(),
+  }),
+);
+export type CreateOrderRequestInput = z.infer<typeof createOrderRequestSchema>;
+
+export const orderRequestIdParamSchema = z.object({
+  requestId: z.coerce.number().int().positive(),
+});
+
+export const resolveOrderRequestSchema = registry.register(
+  "ResolveOrderRequestInput",
+  z.object({
+    adminNote: z.string().trim().max(1000).optional(),
+  }),
+);
+export type ResolveOrderRequestInput = z.infer<typeof resolveOrderRequestSchema>;
+
+export const listOrderRequestsQuerySchema = z.object({
+  status: orderRequestStatusSchema.optional(),
+});
+export type ListOrderRequestsQuery = z.infer<typeof listOrderRequestsQuerySchema>;
+
 export const paymentStatusSchema = z.enum([
   "NOT_APPLICABLE",
   "AWAITING_PAYMENT",
@@ -187,6 +234,10 @@ export const orderResponseSchema = registry.register(
     deliveryTimeSnapshot: z.string().nullable(),
     total: z.number(),
     createdAt: z.iso.datetime(),
+    // Oldest first.
+    statusHistory: z.array(orderStatusHistoryEntrySchema),
+    // Newest first.
+    requests: z.array(orderRequestResponseSchema),
   }),
 );
 
@@ -327,6 +378,35 @@ export const adminOrderResponseSchema = registry.register(
     // FINA may or may not have the last document — the admin must check
     // FINA and resolve (POST /orders/{id}/fina-resolve) instead of retrying.
     finaPushUncertain: z.boolean(),
+    statusHistory: z.array(
+      orderStatusHistoryEntrySchema.extend({
+        // null — automatic (checkout, FINA re-check) or a backfilled entry.
+        changedBy: z.object({ firstName: z.string(), lastName: z.string() }).nullable(),
+      }),
+    ),
+    requests: z.array(orderRequestResponseSchema.extend({ adminNote: z.string().nullable() })),
+  }),
+);
+
+// Admin "requests" inbox row.
+export const adminOrderRequestResponseSchema = registry.register(
+  "AdminOrderRequest",
+  orderRequestResponseSchema.extend({
+    adminNote: z.string().nullable(),
+    order: z.object({
+      id: z.int(),
+      orderCode: z.string(),
+      total: z.number(),
+      status: lookupItemResponseSchema,
+    }),
+    buyer: z.object({
+      id: z.int(),
+      firstName: z.string(),
+      lastName: z.string(),
+      email: z.email(),
+      phone: z.string().nullable(),
+    }),
+    resolvedBy: z.object({ firstName: z.string(), lastName: z.string() }).nullable(),
   }),
 );
 

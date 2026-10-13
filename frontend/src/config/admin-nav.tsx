@@ -69,6 +69,12 @@ export const adminNav: AdminNavSection[] = [
         allowedRoles: ["OPERATOR"],
       },
       { label: "შეკვეთები", href: "/admin/orders", icon: ordersIcon, allowedRoles: ["OPERATOR"] },
+      {
+        label: "მომხმარებლის მოთხოვნები",
+        href: "/admin/order-requests",
+        icon: ordersIcon,
+        allowedRoles: ["OPERATOR"],
+      },
       { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon, allowedRoles: ["OPERATOR"] },
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },
       {

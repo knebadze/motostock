@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useEffectEvent, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 
 const SIZE_CLASSES = {
@@ -42,6 +42,12 @@ export function Modal({
   // Unique per instance — a fixed id would be duplicated while two modals
   // are open, breaking aria-labelledby for the inner one.
   const titleId = useId();
+  // Callers usually pass an inline onClose (a new function every render).
+  // With onClose in the effect's deps, every keystroke in a form inside the
+  // modal re-ran the effect — and its focus-the-dialog step stole focus from
+  // the input being typed into. An effect event always sees the latest
+  // onClose without being a dependency.
+  const handleEscapeClose = useEffectEvent(() => onClose());
 
   useEffect(() => {
     if (!open) return;
@@ -62,7 +68,7 @@ export function Modal({
       // Only the innermost open modal reacts to keys.
       if (openModalStack[openModalStack.length - 1] !== stackToken) return;
       if (event.key === "Escape") {
-        onClose();
+        handleEscapeClose();
         return;
       }
       if (event.key !== "Tab" || !dialogRef.current) return;
@@ -97,7 +103,7 @@ export function Modal({
       if (openModalStack.length === 0) document.body.style.overflow = "";
       previouslyFocused.current?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

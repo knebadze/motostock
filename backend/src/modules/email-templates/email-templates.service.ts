@@ -79,6 +79,17 @@ const DEFAULTS: Record<
     bodyEn: "<p>A new order has been received — #{{orderCode}}.</p><p>Customer: {{customerName}}</p><p>Total: {{total}} GEL</p>",
     bodyRu: "<p>Получен новый заказ №{{orderCode}}.</p><p>Клиент: {{customerName}}</p><p>Сумма: {{total}} GEL</p>",
   },
+  // Customer asked to cancel/return an order (see order-requests.service.ts)
+  // — admin address again; extra vars requestType ("გაუქმება"/"დაბრუნება")
+  // and reason ("—" when the customer left none).
+  ORDER_REQUEST_ADMIN: {
+    subjectKa: "მომხმარებლის მოთხოვნა: {{requestType}} — {{orderCode}}",
+    subjectEn: "Customer request: {{requestType}} — {{orderCode}}",
+    subjectRu: "Запрос клиента: {{requestType}} — {{orderCode}}",
+    bodyKa: "<p>მომხმარებელმა გამოგზავნა მოთხოვნა: <strong>{{requestType}}</strong></p><p>შეკვეთა: #{{orderCode}} ({{total}} ₾)</p><p>მომხმარებელი: {{customerName}}</p><p>მიზეზი: {{reason}}</p><p>დაუკავშირდით მომხმარებელს და მოთხოვნა ადმინ პანელში დაამუშავეთ.</p>",
+    bodyEn: "<p>A customer sent a request: <strong>{{requestType}}</strong></p><p>Order: #{{orderCode}} ({{total}} GEL)</p><p>Customer: {{customerName}}</p><p>Reason: {{reason}}</p><p>Contact the customer and handle the request in the admin panel.</p>",
+    bodyRu: "<p>Клиент отправил запрос: <strong>{{requestType}}</strong></p><p>Заказ: №{{orderCode}} ({{total}} GEL)</p><p>Клиент: {{customerName}}</p><p>Причина: {{reason}}</p><p>Свяжитесь с клиентом и обработайте запрос в админ-панели.</p>",
+  },
   // Sent once a year by the BIRTHDAY_EMAIL scheduled job (see
   // birthday-email.service.ts) — only vars available here are customerName.
   BIRTHDAY: {

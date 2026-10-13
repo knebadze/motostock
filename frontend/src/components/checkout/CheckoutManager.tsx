@@ -247,7 +247,7 @@ export function CheckoutManager({
       // else (e.g. opening the cart dropdown) forced a live fetch. Navigate
       // first, then refresh — now "current route" is the order page, so its
       // shared layout actually refetches.
-      router.push(`/account/orders/${order.id}`);
+      router.push(`/checkout/thank-you/${order.id}`);
       router.refresh();
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 403) {

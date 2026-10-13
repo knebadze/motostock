@@ -155,6 +155,8 @@ model Order {
   // and multi-accounting; never shown to the customer.
   ipAddress String?
   riskFlags OrderRiskFlag[]
+  statusHistory OrderStatusHistory[]
+  requests      OrderRequest[]
 
   // Set once placeOrder successfully records this order as a sale in FINA
   // (see fina-client.ts's saveDocProductOut) — the returned FINA operation

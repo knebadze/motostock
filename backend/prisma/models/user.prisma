@@ -77,6 +77,8 @@ model User {
   visitorPresence         VisitorPresence?
   visitorVisits           VisitorVisit[]
   orders                  Order[]
+  orderStatusChanges      OrderStatusHistory[] @relation("OrderStatusHistoryChangedBy")
+  resolvedOrderRequests   OrderRequest[]       @relation("OrderRequestResolvedBy")
   // Service history rows this admin logged in the workshop (not this
   // user's own vehicles' history — see GarageVehicle.serviceRecords for
   // that side).

@@ -116,7 +116,16 @@ export type PaymentStatus = "NOT_APPLICABLE" | "AWAITING_PAYMENT" | "PAID" | "FA
 
 export type AdminOrderSummary = Schemas["AdminOrderSummary"];
 
-export type AdminOrder = Schemas["AdminOrder"];
+// The generated AdminOrder is `Order & {...}`, which intersects the two
+// statusHistory/requests element types instead of replacing them — spelled
+// out here so the admin-only fields (changedBy, adminNote) are visible.
+export type AdminOrderStatusHistoryEntry = OrderStatusHistoryEntry & {
+  changedBy: { firstName: string; lastName: string } | null;
+};
+export type AdminOrder = Omit<Schemas["AdminOrder"], "statusHistory" | "requests"> & {
+  statusHistory: AdminOrderStatusHistoryEntry[];
+  requests: (OrderRequest & { adminNote: string | null })[];
+};
 
 export type ListOrdersFilters = {
   search?: string;
@@ -181,4 +190,41 @@ export type ResolveFinaPushInput = Schemas["ResolveFinaPushInput"];
 export async function resolveOrderFinaSync(id: number, input: ResolveFinaPushInput): Promise<AdminOrder> {
   const { data } = await apiClient.post<{ order: AdminOrder }>(`/orders/${id}/fina-resolve`, input);
   return data.order;
+}
+
+// Customer cancel/return requests — a message to the shop, never an action
+// by itself (see backend order-requests.service.ts).
+export type OrderRequestType = "CANCEL" | "RETURN";
+export type OrderRequest = Schemas["OrderRequest"];
+export type OrderStatusHistoryEntry = Order["statusHistory"][number];
+
+export async function createOrderRequest(
+  orderId: number,
+  input: { type: OrderRequestType; reason?: string },
+): Promise<Order> {
+  const { data } = await apiClient.post<{ order: Order }>(`/orders/me/${orderId}/requests`, input);
+  return data.order;
+}
+
+// Admin/operator requests inbox.
+export type AdminOrderRequest = Schemas["AdminOrderRequest"];
+
+export async function listOrderRequests(status?: "OPEN" | "RESOLVED"): Promise<AdminOrderRequest[]> {
+  const { data } = await apiClient.get<{ requests: AdminOrderRequest[] }>("/orders/requests", {
+    params: { status },
+  });
+  return data.requests;
+}
+
+export async function countOpenOrderRequests(): Promise<number> {
+  const { data } = await apiClient.get<{ count: number }>("/orders/requests/open-count");
+  return data.count;
+}
+
+export async function resolveOrderRequest(requestId: number, adminNote?: string): Promise<AdminOrderRequest> {
+  const { data } = await apiClient.patch<{ request: AdminOrderRequest }>(
+    `/orders/requests/${requestId}/resolve`,
+    { adminNote: adminNote || undefined },
+  );
+  return data.request;
 }

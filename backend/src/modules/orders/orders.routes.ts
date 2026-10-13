@@ -20,6 +20,11 @@ import {
   orderSummaryResponseSchema,
   reorderResultResponseSchema,
   updateOrderStatusSchema,
+  createOrderRequestSchema,
+  orderRequestIdParamSchema,
+  resolveOrderRequestSchema,
+  listOrderRequestsQuerySchema,
+  adminOrderRequestResponseSchema,
 } from "./orders.schema.js";
 
 export const ordersRouter = Router();
@@ -57,6 +62,15 @@ ordersRouter.post(
   validate(orderIdParamSchema, "params"),
   ordersController.reorder,
 );
+// Customer cancel/return request — a message to the shop (see
+// order-requests.service.ts). Same rate limit as checkout: it emails staff.
+ordersRouter.post(
+  "/me/:id/requests",
+  checkoutRateLimit,
+  validate(orderIdParamSchema, "params"),
+  validate(createOrderRequestSchema),
+  ordersController.createRequest,
+);
 
 // Admin-only, declared after /checkout*, /me, /me/:id above — "/me" is a
 // literal path matched before Express ever tries "/:id" against it, so
@@ -68,6 +82,25 @@ ordersRouter.get(
   requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(listOrdersQuerySchema, "query"),
   ordersController.listAll,
+);
+// Requests inbox — literal paths, declared before "/:id".
+ordersRouter.get(
+  "/requests",
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(listOrderRequestsQuerySchema, "query"),
+  ordersController.listRequests,
+);
+ordersRouter.get(
+  "/requests/open-count",
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  ordersController.countOpenRequests,
+);
+ordersRouter.patch(
+  "/requests/:requestId/resolve",
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(orderRequestIdParamSchema, "params"),
+  validate(resolveOrderRequestSchema),
+  ordersController.resolveRequest,
 );
 ordersRouter.get(
   "/:id",
@@ -318,5 +351,75 @@ registry.registerPath({
     401: { description: "Not authenticated", content: { "application/json": { schema: errorResponseSchema } } },
     403: { description: "Not an admin/operator", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Order not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/orders/me/{id}/requests",
+  tags: ["Orders"],
+  summary: "Ask the shop to cancel or take back an order (notifies the admin; changes nothing by itself)",
+  security,
+  request: {
+    params: orderIdParamSchema,
+    body: { content: { "application/json": { schema: createOrderRequestSchema } } },
+  },
+  responses: {
+    201: { description: "Request sent — the updated order", content: { "application/json": { schema: orderResponse } } },
+    400: {
+      description: "Not allowed at this order status / return period over",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+    404: { description: "Order not found", content: { "application/json": { schema: errorResponseSchema } } },
+    409: {
+      description: "An open request of this type already exists",
+      content: { "application/json": { schema: errorResponseSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/orders/requests",
+  tags: ["Orders"],
+  summary: "Customer cancel/return requests (admin/operator)",
+  security,
+  request: { query: listOrderRequestsQuerySchema },
+  responses: {
+    200: {
+      description: "Requests, newest first",
+      content: { "application/json": { schema: z.object({ requests: z.array(adminOrderRequestResponseSchema) }) } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/orders/requests/open-count",
+  tags: ["Orders"],
+  summary: "Number of open customer requests — admin header bell (admin/operator)",
+  security,
+  responses: {
+    200: { description: "Open count", content: { "application/json": { schema: z.object({ count: z.int() }) } } },
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/orders/requests/{requestId}/resolve",
+  tags: ["Orders"],
+  summary: "Mark a customer request handled (admin/operator)",
+  security,
+  request: {
+    params: orderRequestIdParamSchema,
+    body: { content: { "application/json": { schema: resolveOrderRequestSchema } } },
+  },
+  responses: {
+    200: {
+      description: "Resolved request",
+      content: { "application/json": { schema: z.object({ request: adminOrderRequestResponseSchema }) } },
+    },
+    404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+    409: { description: "Already resolved", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

@@ -604,6 +604,47 @@ export function toOrderResponse(order: OrderRow) {
     deliveryTimeSnapshot: order.deliveryTimeSnapshot,
     total: Number(order.total),
     createdAt: order.createdAt,
+    statusHistory: order.statusHistory.map((entry) => ({ status: entry.status, createdAt: entry.createdAt })),
+    requests: order.requests.map((request) => ({
+      id: request.id,
+      type: request.type,
+      status: request.status,
+      reason: request.reason,
+      createdAt: request.createdAt,
+      resolvedAt: request.resolvedAt,
+    })),
+  };
+}
+
+// Admin-only additions on top of toOrderResponse — who changed each status,
+// the internal request notes, and the cancellation reason. Shared by the
+// admin order detail and the status-update response.
+export function toAdminOrderExtras(order: OrderRow) {
+  return {
+    statusHistory: order.statusHistory.map((entry) => ({
+      status: entry.status,
+      createdAt: entry.createdAt,
+      changedBy: entry.changedBy,
+    })),
+    requests: order.requests.map((request) => ({
+      id: request.id,
+      type: request.type,
+      status: request.status,
+      reason: request.reason,
+      adminNote: request.adminNote,
+      createdAt: request.createdAt,
+      resolvedAt: request.resolvedAt,
+    })),
+    cancellationReason: order.cancellationReason
+      ? {
+          id: order.cancellationReason.id,
+          key: order.cancellationReason.key,
+          nameKa: order.cancellationReason.nameKa,
+          nameEn: order.cancellationReason.nameEn,
+          nameRu: order.cancellationReason.nameRu,
+        }
+      : null,
+    cancellationNote: order.cancellationNote,
   };
 }
 

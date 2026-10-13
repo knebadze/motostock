@@ -1,0 +1,64 @@
+// One row per status an order has entered, oldest first — the customer's
+// "order timeline" and the admin's audit trail. Written in the same
+// transaction as the status change itself (orders.repository.ts's placeOrder
+// and updateStatus), so it can never drift from Order.statusId. Orders that
+// existed before this table got a backfilled PENDING row at createdAt plus
+// their then-current status (see the migration).
+model OrderStatusHistory {
+  id       Int         @id @default(autoincrement())
+  orderId  Int
+  order    Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  statusId Int
+  status   OrderStatus @relation(fields: [statusId], references: [id], onDelete: Restrict)
+  // The admin/operator who made the change; null for the initial status set
+  // at checkout (and for backfilled rows). SetNull — deleting a staff
+  // account mustn't erase or block the order's history.
+  changedByUserId Int?
+  changedBy       User?    @relation("OrderStatusHistoryChangedBy", fields: [changedByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now())
+
+  @@index([orderId])
+  @@index([statusId])
+  @@index([changedByUserId])
+  @@schema("dbo")
+}
+
+enum OrderRequestType {
+  CANCEL
+  RETURN
+
+  @@schema("dbo")
+}
+
+enum OrderRequestStatus {
+  OPEN
+  RESOLVED
+
+  @@schema("dbo")
+}
+
+// A customer's "please cancel" / "I want to return this" request — only a
+// message to the shop, never an automatic change: the admin calls the
+// customer, then cancels the order (or handles the return) by hand and marks
+// the request resolved. At most one OPEN request per (order, type) — a
+// partial unique index in the migration SQL (Prisma has no syntax for it).
+model OrderRequest {
+  id      Int                @id @default(autoincrement())
+  orderId Int
+  order   Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type    OrderRequestType
+  status  OrderRequestStatus @default(OPEN)
+  // The customer's own explanation (optional).
+  reason    String?
+  // What the admin did / agreed with the customer — internal only.
+  adminNote String?
+  resolvedAt       DateTime?
+  resolvedByUserId Int?
+  resolvedBy       User?     @relation("OrderRequestResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  createdAt        DateTime  @default(now())
+
+  @@index([orderId])
+  @@index([status, createdAt])
+  @@index([resolvedByUserId])
+  @@schema("dbo")
+}

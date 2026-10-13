@@ -31,6 +31,12 @@ const orderItemsInclude = {
   cancellationReason: true,
   user: { select: buyerSelect },
   riskFlags: { orderBy: { createdAt: "desc" } },
+  // Timeline (oldest first) — changedBy is only shown on the admin side.
+  statusHistory: {
+    orderBy: { createdAt: "asc" },
+    include: { status: true, changedBy: { select: { firstName: true, lastName: true } } },
+  },
+  requests: { orderBy: { createdAt: "desc" } },
 } as const;
 
 // Advisory-lock namespace for the promo-code usage-limit recheck below —
@@ -228,6 +234,9 @@ export const ordersRepository = {
       queueFinaReturn: boolean;
     } | undefined,
     expectedCurrentStatusId: number,
+    // Staff member making the change (null — automatic, e.g. the FINA
+    // re-check confirming a PENDING order).
+    changedByUserId: number | null,
   ) {
     await prisma.$transaction(async (tx) => {
       const result = await tx.order.updateMany({
@@ -256,7 +265,15 @@ export const ordersRepository = {
         );
       }
 
+      await tx.orderStatusHistory.create({ data: { orderId: id, statusId, changedByUserId } });
+
       if (!stockAdjustment) return;
+
+      // Cancelling answers any open customer cancel request.
+      await tx.orderRequest.updateMany({
+        where: { orderId: id, type: "CANCEL", status: "OPEN" },
+        data: { status: "RESOLVED", resolvedAt: new Date(), resolvedByUserId: changedByUserId },
+      });
 
       // Variant rows locked in id order — same order as
       // fina-sync.repository.ts's applyFinaAvailability, so a concurrent
@@ -448,6 +465,7 @@ export const ordersRepository = {
 
       const { items, soldStatusId: _soldStatusId, cartItemIds, ...orderData } = input;
       const order = await tx.order.create({ data: orderData });
+      await tx.orderStatusHistory.create({ data: { orderId: order.id, statusId: orderData.statusId } });
       await tx.orderItem.createMany({
         data: items.map((item) => ({ ...item, orderId: order.id })),
       });

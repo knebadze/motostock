@@ -4,7 +4,7 @@ import type { CartItemType } from "../../generated/prisma/index.js";
 import { cartRepository, type CartOwner } from "../cart/cart.repository.js";
 import { addCartItem } from "../cart/cart.service.js";
 import { ordersRepository } from "./orders.repository.js";
-import { toOrderResponse, computeEstimatedDeliveryDate } from "./orders.service.js";
+import { toOrderResponse, toAdminOrderExtras, computeEstimatedDeliveryDate } from "./orders.service.js";
 import {
   generateOrderInvoicePdf,
   generateOrderPackingSlipPdf,
@@ -239,5 +239,6 @@ export async function getAnyOrder(id: number) {
     finaOutOperationId: row.finaOutOperationId,
     finaLastError: row.finaLastError,
     finaPushUncertain: row.finaPushUncertain,
+    ...toAdminOrderExtras(row),
   };
 }
