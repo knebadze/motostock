@@ -30,6 +30,7 @@ const SERVER_ONLY_NAMESPACES = [
   "Contact",
   "Catalog",
   "PrivacyPolicy",
+  "ShippingPolicy",
   "Faq",
   "Vacancies",
   "NotFound",

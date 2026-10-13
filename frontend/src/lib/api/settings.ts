@@ -31,3 +31,6 @@ export async function getMonitoringStatus(): Promise<MonitoringStatus> {
 export async function sendSentryTestEvent(): Promise<void> {
   await apiClient.post("/settings/monitoring/test-sentry");
 }
+
+// Public delivery prices/times + return window (product page / cart block).
+export type PublicDeliveryInfo = components["schemas"]["PublicDeliveryInfo"];

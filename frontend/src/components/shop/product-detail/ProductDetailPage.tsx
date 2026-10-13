@@ -84,6 +84,8 @@ export function ProductDetailPage({
   companionRecommendations,
   similarRecommendations,
   descriptionHtml,
+  fitBadge,
+  deliveryInfo,
 }: {
   product: ProductDetail;
   // The current locale's description, sanitized on the server — so this
@@ -104,6 +106,11 @@ export function ProductDetailPage({
   // add-to-cart no longer wait for the recommendation queries.
   companionRecommendations: ReactNode;
   similarRecommendations: ReactNode;
+  // "Fits your bike?" badge (fitment categories with fitment data only)
+  // and the delivery/pickup/returns block (purchasable products only) —
+  // null when not applicable.
+  fitBadge: ReactNode;
+  deliveryInfo: ReactNode;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("ProductDetail");
@@ -184,6 +191,8 @@ export function ProductDetailPage({
             />
           )}
 
+          {fitBadge}
+
           <div className="flex flex-wrap items-center gap-3">
             {selectedVariant && !purchasableOnline && !outOfStock && (
               <ShowroomPurchaseNotice label={tCart("visitShowroom")} />
@@ -215,6 +224,8 @@ export function ProductDetailPage({
               labelAdded={tShop("compareAddedLabel")}
             />
           </div>
+
+          {deliveryInfo}
 
           <ProductSpecs attributeValues={product.attributeValues} />
 

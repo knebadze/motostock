@@ -20,6 +20,8 @@ import {
   DELIVERY_REGIONS_TIME_KEY,
   DELIVERY_EXPRESS_PRICE_KEY,
   DELIVERY_EXPRESS_TIME_KEY,
+  RETURN_PERIOD_DAYS_KEY,
+  RETURN_PERIOD_DAYS_DEFAULT,
   FRAUD_VELOCITY_ORDER_COUNT_KEY,
   FRAUD_VELOCITY_WINDOW_MINUTES_KEY,
   FRAUD_NEW_ACCOUNT_WINDOW_HOURS_KEY,
@@ -191,6 +193,34 @@ export async function getDeliveryExpressTime(): Promise<string> {
     const setting = await settingsRepository.findByKey(DELIVERY_EXPRESS_TIME_KEY);
     return setting?.value ?? "";
   });
+}
+
+export async function getReturnPeriodDays(): Promise<number> {
+  return cached(RETURN_PERIOD_DAYS_KEY, async () => {
+    const setting = await settingsRepository.findByKey(RETURN_PERIOD_DAYS_KEY);
+    return setting?.value != null ? Number(setting.value) : RETURN_PERIOD_DAYS_DEFAULT;
+  });
+}
+
+// Public — the storefront's delivery/returns info block (product page, cart).
+// Only the customer-facing delivery prices/times and the return window.
+export async function getPublicDeliveryInfo() {
+  const [tbilisiPrice, tbilisiTime, regionsPrice, regionsTime, expressPrice, expressTime, returnPeriodDays] =
+    await Promise.all([
+      getDeliveryTbilisiPrice(),
+      getDeliveryTbilisiTime(),
+      getDeliveryRegionsPrice(),
+      getDeliveryRegionsTime(),
+      getDeliveryExpressPrice(),
+      getDeliveryExpressTime(),
+      getReturnPeriodDays(),
+    ]);
+  return {
+    tbilisi: { price: tbilisiPrice, time: tbilisiTime },
+    regions: { price: regionsPrice, time: regionsTime },
+    express: { price: expressPrice, time: expressTime },
+    returnPeriodDays,
+  };
 }
 
 export async function getFraudVelocityOrderCount(): Promise<number> {
@@ -549,6 +579,7 @@ export async function getSettings() {
     deliveryRegionsTime: await getDeliveryRegionsTime(),
     deliveryExpressPrice: await getDeliveryExpressPrice(),
     deliveryExpressTime: await getDeliveryExpressTime(),
+    returnPeriodDays: await getReturnPeriodDays(),
     fraudVelocityOrderCount: await getFraudVelocityOrderCount(),
     fraudVelocityWindowMinutes: await getFraudVelocityWindowMinutes(),
     fraudNewAccountWindowHours: await getFraudNewAccountWindowHours(),
@@ -683,6 +714,7 @@ export async function updateSettings(input: UpdateSettingsInput) {
       tx,
     );
     await settingsRepository.upsert(DELIVERY_EXPRESS_TIME_KEY, input.deliveryExpressTime, tx);
+    await settingsRepository.upsert(RETURN_PERIOD_DAYS_KEY, String(input.returnPeriodDays), tx);
     await settingsRepository.upsert(
       FRAUD_VELOCITY_ORDER_COUNT_KEY,
       String(input.fraudVelocityOrderCount),

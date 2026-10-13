@@ -25,7 +25,9 @@
     "descriptionWithCity": "მოტოციკლები, ნაწილები, ჩაფხუტები და ეკიპირება, მოტოციკლების სერვისი და შეკეთება — {city}. შეარჩიე შენს მოტოზე თავსებადი ნაწილები ონლაინ.",
     "serviceTitle": "მოტოციკლების სერვისი და შეკეთება — {siteName}",
     "serviceDescription": "მოტოციკლების სერვისი {siteName}-ში: {services}. სამუშაო საათები, მისამართი და ჩაწერა.",
-    "serviceDescriptionGeneric": "მოტოციკლების სერვისი და შეკეთება {siteName}-ში — სამუშაო საათები, მისამართი და ჩაწერა."
+    "serviceDescriptionGeneric": "მოტოციკლების სერვისი და შეკეთება {siteName}-ში — სამუშაო საათები, მისამართი და ჩაწერა.",
+    "shippingTitle": "მიწოდება და დაბრუნება — {siteName}",
+    "shippingDescription": "{siteName}: მიწოდების ფასები და ვადები, მაღაზიიდან გატანა და დაბრუნების პირობები."
   },
   "Nav": {
     "home": "მთავარი",
@@ -121,7 +123,27 @@
     "buyTogetherThisProduct": "ეს პროდუქტი",
     "buyTogetherSelectedCount": "არჩეულია {count} ნივთი",
     "buyTogetherSavings": "დაზოგავთ {amount}",
-    "buyTogetherAddSelected": "{count, plural, =1 {კალათაში დამატება} other {#-ვე კალათაში დამატება}}"
+    "buyTogetherAddSelected": "{count, plural, =1 {კალათაში დამატება} other {#-ვე კალათაში დამატება}}",
+    "deliveryHeading": "მიწოდება",
+    "deliveryTbilisi": "თბილისი",
+    "deliveryRegions": "რეგიონები",
+    "deliveryExpress": "ექსპრეს მიწოდება",
+    "deliveryFree": "უფასო",
+    "pickupHeading": "მაღაზიიდან გატანა — უფასოდ",
+    "returnsLine": "დაბრუნება {days} დღის განმავლობაში",
+    "deliveryDetailsLink": "მიწოდება და დაბრუნება — დეტალურად",
+    "fitQuestion": "ერგება თუ არა თქვენს მოტოს?",
+    "fitCheckButton": "შეამოწმეთ",
+    "fitChangeVehicle": "სხვა მოტო",
+    "fitChecking": "თავსებადობის შემოწმება…",
+    "fitLoading": "იტვირთება…",
+    "fitYes": "ერგება თქვენს მოტოს: {vehicle}",
+    "fitNo": "არ ერგება თქვენს მოტოს: {vehicle}",
+    "fitNoGarage": "არ ერგება თქვენი გარაჟის მოტოებს",
+    "fitCompatibleLink": "ნახეთ თქვენს მოტოზე თავსებადი ნაწილები",
+    "fitSubmit": "შემოწმება",
+    "fitCancel": "გაუქმება",
+    "fitLoadError": "მოტოების სია ვერ ჩაიტვირთა"
   },
   "Cart": {
     "empty": "კალათა ცარიელია.",
@@ -144,7 +166,10 @@
     "addError": "კალათაში დამატება ვერ მოხერხდა",
     "goToCheckout": "გადახდაზე გადასვლა",
     "visitShowroom": "შესაძენად ეწვიეთ შოურუმს",
-    "itemNotPurchasableOnline": "ამ ნივთის საიტიდან შეძენა შეუძლებელია — შესაძენად ეწვიეთ შოურუმს. შეკვეთის გასაფორმებლად წაშალეთ კალათიდან."
+    "itemNotPurchasableOnline": "ამ ნივთის საიტიდან შეძენა შეუძლებელია — შესაძენად ეწვიეთ შოურუმს. შეკვეთის გასაფორმებლად წაშალეთ კალათიდან.",
+    "deliveryHint": "მიწოდება: თბილისი {tbilisi} · რეგიონები {regions} · მაღაზიიდან გატანა უფასოდ. ზუსტი ფასი — შეკვეთის გაფორმებისას.",
+    "deliveryFree": "უფასო",
+    "deliveryHintLink": "დეტალურად"
   },
   "Checkout": {
     "title": "შეკვეთის გაფორმება",
@@ -369,7 +394,8 @@
     "fridayShort": "პარ",
     "saturdayShort": "შაბ",
     "sundayShort": "კვ",
-    "serviceTitle": "სერვისი"
+    "serviceTitle": "სერვისი",
+    "shippingTitle": "მიწოდება და დაბრუნება"
   },
   "Catalog": {
     "title": "კატალოგი",
@@ -804,5 +830,10 @@
     "productsHeading": "პროდუქტები",
     "vehiclesHeading": "მოტოტექნიკა",
     "categoriesHeading": "კატეგორიები"
+  },
+  "ShippingPolicy": {
+    "title": "მიწოდება და დაბრუნება",
+    "empty": "ინფორმაცია მალე დაემატება.",
+    "loading": "იტვირთება..."
   }
 }

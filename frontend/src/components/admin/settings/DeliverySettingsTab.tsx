@@ -11,6 +11,7 @@ type DeliveryDraft = Pick<
   | "deliveryRegionsTime"
   | "deliveryExpressPrice"
   | "deliveryExpressTime"
+  | "returnPeriodDays"
 >;
 
 function deliveryDraftFrom(settings: Settings): DeliveryDraft {
@@ -21,6 +22,7 @@ function deliveryDraftFrom(settings: Settings): DeliveryDraft {
     deliveryRegionsTime: settings.deliveryRegionsTime,
     deliveryExpressPrice: settings.deliveryExpressPrice,
     deliveryExpressTime: settings.deliveryExpressTime,
+    returnPeriodDays: settings.returnPeriodDays,
   };
 }
 
@@ -144,6 +146,36 @@ export function DeliverySettingsTab({
                 }
                 className={inputClassName}
               />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-sm font-semibold text-foreground">დაბრუნება</p>
+          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="return-period-days" className="text-sm font-medium">
+                დაბრუნების ვადა (დღე)
+              </label>
+              <input
+                id="return-period-days"
+                type="number"
+                min={0}
+                max={365}
+                step={1}
+                value={deliveryDraft.returnPeriodDays}
+                onChange={(event) =>
+                  setDeliveryDraft((draft) => ({
+                    ...draft,
+                    returnPeriodDays: Math.max(0, Math.min(365, Math.round(Number(event.target.value) || 0))),
+                  }))
+                }
+                className={inputClassName}
+              />
+              <p className="text-xs text-muted-foreground">
+                ჩანს პროდუქტის გვერდზე და კალათაში („დაბრუნება N დღეში&rdquo;). 0 — არ ჩანს. დეტალური
+                პირობები: მენიუში „მიწოდება და დაბრუნება&rdquo;.
+              </p>
             </div>
           </div>
         </div>

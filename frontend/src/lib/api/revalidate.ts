@@ -9,6 +9,8 @@ export type RevalidatableTag =
   | "terms"
   | "privacy-policy"
   | "faq-public"
+  | "shipping-policy"
+  | "delivery-info"
   | "vehicle-catalog";
 
 export async function revalidatePublicCache(tag: RevalidatableTag): Promise<void> {

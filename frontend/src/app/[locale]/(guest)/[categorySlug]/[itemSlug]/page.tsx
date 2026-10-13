@@ -6,15 +6,21 @@ import { getTranslations } from "next-intl/server";
 import {
   getCategoriesFromServer,
   getCategorySlugRedirectFromServer,
+  getCompanyInfoFromServer,
+  getDeliveryInfoFromServer,
   getFrequentlyBoughtTogetherFromServer,
+  getMyGarageFromServer,
   getProductSlugRedirectFromServer,
   getProductDetailFromServer,
   getSimilarProductsFromServer,
   getVehicleListingFromServer,
   getSimilarVehicleListingsFromServer,
+  getVehicleSearchOptionsFromServer,
   getViewedTogetherFromServer,
 } from "@/lib/api/server";
 import { buildVehicleListingSlug, parseVehicleListingIdFromSlug } from "@/lib/api/vehicle-listings";
+import { buildVehicleCatalogSlug, type VehicleSearchOption } from "@/lib/api/vehicle-catalog";
+import { localizedLookupName } from "@/lib/api/lookups";
 import {
   getAncestorChain,
   getOnlinePurchaseBlockedCategoryIds,
@@ -32,9 +38,11 @@ import { SimilarVehicleListings } from "@/components/shop/vehicle-listing-detail
 import { SimilarProducts } from "@/components/shop/product-detail/SimilarProducts";
 import { FrequentlyBoughtTogether } from "@/components/shop/product-detail/FrequentlyBoughtTogether";
 import { ViewedTogether } from "@/components/shop/product-detail/ViewedTogether";
+import { DeliveryInfoBlock } from "@/components/shop/product-detail/DeliveryInfoBlock";
+import { VehicleFitBadge, type FitVehicle } from "@/components/shop/product-detail/VehicleFitBadge";
 import { buildSocialMetadata } from "@/lib/share-metadata";
 import { permanentRedirect } from "@/i18n/navigation";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, formatVehicleCatalogLabel } from "@/lib/format";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 
 type Locale = "ka" | "en" | "ru";
@@ -363,6 +371,31 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
   // Vehicle-independent category (e.g. helmets) — no compatibility list.
   const vehicleFitmentEnabled =
     !productCategory || !getVehicleFitmentDisabledCategoryIds(categories).has(productCategory.id);
+  // The fit badge only makes sense when the product has fitment data at all
+  // — without any it fits nothing and would always say "doesn't fit".
+  const showFitBadge = vehicleFitmentEnabled && (product.fitments.length > 0 || product.fitmentRules.length > 0);
+
+  const [deliveryInfo, companyInfo, vehicleOptions, garage] = await Promise.all([
+    purchasableOnline ? getDeliveryInfoFromServer() : null,
+    purchasableOnline ? getCompanyInfoFromServer() : null,
+    showFitBadge && selectedVehicleCatalogId ? getVehicleSearchOptionsFromServer() : [],
+    showFitBadge ? getMyGarageFromServer() : [],
+  ]);
+  const pickupAddress = companyInfo
+    ? [companyInfo.city ? localizedLookupName(companyInfo.city, locale) : null, companyInfo.street]
+        .filter(Boolean)
+        .join(", ") || null
+    : null;
+  const toFitVehicle = (entry: VehicleSearchOption): FitVehicle => ({
+    id: entry.id,
+    label: formatVehicleCatalogLabel(entry),
+    slug: buildVehicleCatalogSlug(entry),
+  });
+  // An unknown/deleted vehicle id in the cookie counts as no selection.
+  const selectedVehicleEntry = vehicleOptions.find((entry) => String(entry.id) === selectedVehicleCatalogId);
+  const garageFitVehicles = [
+    ...new Map(garage.map((vehicle) => [vehicle.vehicleCatalog.id, toFitVehicle(vehicle.vehicleCatalog)])).values(),
+  ];
 
 
   const pathname = `/${product.category.slug}/${itemSlug}`;
@@ -481,6 +514,16 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
         descriptionHtml={localizedHtml(
           locale === "en" ? product.descriptionEn : locale === "ru" ? product.descriptionRu : product.descriptionKa,
         )}
+        fitBadge={
+          showFitBadge ? (
+            <VehicleFitBadge
+              productId={product.id}
+              selectedVehicle={selectedVehicleEntry ? toFitVehicle(selectedVehicleEntry) : null}
+              garageVehicles={garageFitVehicles}
+            />
+          ) : null
+        }
+        deliveryInfo={deliveryInfo ? <DeliveryInfoBlock info={deliveryInfo} pickupAddress={pickupAddress} /> : null}
       />
     </>
   );

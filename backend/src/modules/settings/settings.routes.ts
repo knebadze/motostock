@@ -7,6 +7,7 @@ import { errorResponseSchema } from "../../docs/schemas.js";
 import { ROLES } from "../../lib/roles.js";
 import * as settingsController from "./settings.controller.js";
 import {
+  publicDeliveryInfoSchema,
   guestFeatureStatusResponseSchema,
   settingsResponseSchema,
   updateSettingsSchema,
@@ -32,6 +33,10 @@ settingsRouter.get("/guest-feature-status", settingsController.getGuestFeatureSt
 // Public — the frontend gates its own browser/SSR Sentry reporting on the
 // same admin toggle the backend uses (exposes only the on/off flag).
 settingsRouter.get("/monitoring-public", settingsController.getPublicMonitoringStatus);
+
+// Public — delivery prices/times and the return window for the storefront's
+// product-page/cart info block (nothing else from Settings).
+settingsRouter.get("/delivery-info", settingsController.getPublicDeliveryInfo);
 
 settingsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
@@ -129,5 +134,15 @@ registry.registerPath({
   responses: {
     200: { description: "Sent", content: { "application/json": { schema: z.object({ sent: z.boolean() }) } } },
     400: { description: "SENTRY_DSN not configured", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/settings/delivery-info",
+  tags: ["Settings"],
+  summary: "Delivery prices/times and the return window (public — product page/cart info block)",
+  responses: {
+    200: { description: "Delivery info", content: { "application/json": { schema: publicDeliveryInfoSchema } } },
   },
 });

@@ -10,6 +10,7 @@ import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import { getCartItemDisplay, recomputeCart } from "@/lib/cart-item-display";
 import { removeFromCart, updateCartItemQuantity, type Cart, type CartItem } from "@/lib/api/cart";
+import type { PublicDeliveryInfo } from "@/lib/api/settings";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { QuantityStepper } from "@/components/shared/QuantityStepper";
 
@@ -78,7 +79,15 @@ function CartLineRow({
   );
 }
 
-export function CartManager({ initialCart }: { initialCart: Cart }) {
+// deliveryInfo: Settings → delivery prices for the "delivery: Tbilisi X ·
+// regions Y · pickup free" hint under the subtotal (null — no hint).
+export function CartManager({
+  initialCart,
+  deliveryInfo = null,
+}: {
+  initialCart: Cart;
+  deliveryInfo?: PublicDeliveryInfo | null;
+}) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Cart");
   const tCommon = useTranslations("Common");
@@ -180,6 +189,17 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
           <span>{t("subtotal")}</span>
           <span className="text-primary-text">{formatPrice(cart.subtotal)}</span>
         </div>
+        {deliveryInfo && (
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            {t("deliveryHint", {
+              tbilisi: deliveryInfo.tbilisi.price > 0 ? formatPrice(deliveryInfo.tbilisi.price) : t("deliveryFree"),
+              regions: deliveryInfo.regions.price > 0 ? formatPrice(deliveryInfo.regions.price) : t("deliveryFree"),
+            })}{" "}
+            <Link href="/shipping" className="font-medium text-primary-text hover:underline">
+              {t("deliveryHintLink")}
+            </Link>
+          </p>
+        )}
         {/* Checkout would refuse an item whose category can't be bought
             online (NOT_PURCHASABLE_ONLINE_ITEM) — blocked here until it's
             removed (each such row says so). */}

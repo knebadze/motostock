@@ -21,6 +21,7 @@ const SETTINGS_FALLBACK: Settings = {
   deliveryRegionsTime: "",
   deliveryExpressPrice: 0,
   deliveryExpressTime: "",
+  returnPeriodDays: 14,
   fraudVelocityOrderCount: 3,
   fraudVelocityWindowMinutes: 30,
   fraudNewAccountWindowHours: 24,

@@ -18,6 +18,9 @@ const REVALIDATABLE_TAGS = [
   "terms",
   "privacy-policy",
   "faq-public",
+  "shipping-policy",
+  // Settings → delivery prices/times + return window (product page, cart).
+  "delivery-info",
   // The vehicle search options (home hero search, checkout compatibility
   // check) — refreshed after vehicle catalog/brand/model saves.
   "vehicle-catalog",

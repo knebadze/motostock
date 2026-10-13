@@ -10,6 +10,8 @@ import type { HomepageSection } from "../homepage-sections";
 import type { CompanyInfo, WeekDay } from "../company-info";
 import type { Terms } from "../terms";
 import type { PrivacyPolicy } from "../privacy-policy";
+import type { ShippingPolicy } from "../shipping-policy";
+import type { PublicDeliveryInfo } from "../settings";
 import type { Faq } from "../faq";
 import type { Vacancy } from "../vacancies";
 import type { PublicServiceType } from "../service-types";
@@ -277,3 +279,30 @@ const getCachedCategoryItemCounts = unstable_cache(
   { revalidate: 300 },
 );
 export const getCategoryItemCountsFromServer = cache(getCachedCategoryItemCounts);
+
+// The /shipping ("delivery & returns") page — same cross-request caching as
+// the privacy policy above (revalidated on admin save, tag "shipping-policy").
+const getCachedShippingPolicy = unstable_cache(
+  () =>
+    fetchPublicCacheable<{ shippingPolicy: ShippingPolicy }, ShippingPolicy>("/shipping-policy", {
+      fallback: { id: 0, content: { ka: "", en: "", ru: "" }, updatedAt: new Date(0).toISOString() },
+      extract: (data) => data.shippingPolicy,
+    }),
+  ["shipping-policy"],
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["shipping-policy"] },
+);
+export const getShippingPolicyFromServer = cache(getCachedShippingPolicy);
+
+// Delivery prices/times + return window for the product page and cart info
+// block (public, admin-edited in Settings → delivery). null when unavailable
+// — the block then just isn't shown.
+const getCachedDeliveryInfo = unstable_cache(
+  () =>
+    fetchPublicCacheable<PublicDeliveryInfo, PublicDeliveryInfo | null>("/settings/delivery-info", {
+      fallback: null,
+      extract: (data) => data,
+    }),
+  ["delivery-info"],
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["delivery-info"] },
+);
+export const getDeliveryInfoFromServer = cache(getCachedDeliveryInfo);

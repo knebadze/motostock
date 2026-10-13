@@ -3100,6 +3100,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/delivery-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Delivery prices/times and the return window (public — product page/cart info block) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Delivery info */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PublicDeliveryInfo"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/brands": {
         parameters: {
             query?: never;
@@ -9431,6 +9467,88 @@ export interface paths {
                     content: {
                         "application/json": {
                             privacyPolicy: components["schemas"]["PrivacyPolicy"];
+                        };
+                    };
+                };
+                /** @description Not authenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Insufficient permissions */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/shipping-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the delivery & returns policy content (public) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Delivery & returns policy */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            shippingPolicy: components["schemas"]["ShippingPolicy"];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the delivery & returns policy content (admin only) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateShippingPolicyInput"];
+                };
+            };
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            shippingPolicy: components["schemas"]["ShippingPolicy"];
                         };
                     };
                 };
@@ -16636,6 +16754,8 @@ export interface components {
             deliveryExpressPrice: number;
             /** @example 2-4 საათი */
             deliveryExpressTime: string;
+            /** @example 14 */
+            returnPeriodDays: number;
             /** @example 3 */
             fraudVelocityOrderCount: number;
             /** @example 30 */
@@ -16744,6 +16864,8 @@ export interface components {
             deliveryExpressPrice: number;
             /** @example 2-4 საათი */
             deliveryExpressTime: string;
+            /** @example 14 */
+            returnPeriodDays: number;
             /** @example 3 */
             fraudVelocityOrderCount: number;
             /** @example 30 */
@@ -16837,6 +16959,21 @@ export interface components {
         };
         PublicMonitoringStatus: {
             sentryEnabled: boolean;
+        };
+        PublicDeliveryInfo: {
+            tbilisi: {
+                price: number;
+                time: string;
+            };
+            regions: {
+                price: number;
+                time: string;
+            };
+            express: {
+                price: number;
+                time: string;
+            };
+            returnPeriodDays: number;
         };
         CreateBrandInput: {
             /** @example Honda */
@@ -17670,6 +17807,24 @@ export interface components {
             };
         };
         PrivacyPolicy: {
+            /** @example 1 */
+            id: number;
+            content: {
+                ka: string;
+                en: string;
+                ru: string;
+            };
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        UpdateShippingPolicyInput: {
+            content: {
+                ka: string;
+                en: string;
+                ru: string;
+            };
+        };
+        ShippingPolicy: {
             /** @example 1 */
             id: number;
             content: {

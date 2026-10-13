@@ -117,6 +117,11 @@ function FooterView({
               </Link>
             </li>
             <li>
+              <Link href="/shipping" className="transition-colors hover:text-primary-text">
+                {tFooter("shippingTitle")}
+              </Link>
+            </li>
+            <li>
               <Link href="/privacy" className="transition-colors hover:text-primary-text">
                 {tFooter("privacyTitle")}
               </Link>

@@ -187,6 +187,7 @@ export const adminNav: AdminNavSection[] = [
       { label: "გუნდი", href: "/admin/team-members", icon: teamIcon },
       { label: "წესები და პირობები", href: "/admin/terms", icon: termsIcon },
       { label: "კონფიდენციალობის პოლიტიკა", href: "/admin/privacy-policy", icon: privacyPolicyIcon },
+      { label: "მიწოდება და დაბრუნება", href: "/admin/shipping-policy", icon: privacyPolicyIcon },
       { label: "ხშირად დასმული კითხვები", href: "/admin/faq", icon: faqIcon },
       { label: "ვაკანსიები", href: "/admin/vacancies", icon: vacanciesIcon },
       { label: "იმეილის შაბლონები", href: "/admin/email-templates", icon: emailTemplatesIcon },

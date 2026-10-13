@@ -25,7 +25,9 @@
     "descriptionWithCity": "Мотоциклы, запчасти, шлемы и экипировка, сервис и ремонт мотоциклов — {city}. Подберите совместимые с вашим мотоциклом запчасти онлайн.",
     "serviceTitle": "Сервис и ремонт мотоциклов — {siteName}",
     "serviceDescription": "Мотосервис {siteName}: {services}. Часы работы, адрес и запись.",
-    "serviceDescriptionGeneric": "Сервис и ремонт мотоциклов в {siteName} — часы работы, адрес и запись."
+    "serviceDescriptionGeneric": "Сервис и ремонт мотоциклов в {siteName} — часы работы, адрес и запись.",
+    "shippingTitle": "Доставка и возврат — {siteName}",
+    "shippingDescription": "{siteName}: стоимость и сроки доставки, самовывоз из магазина и условия возврата."
   },
   "Nav": {
     "home": "Главная",
@@ -121,7 +123,27 @@
     "buyTogetherThisProduct": "Этот товар",
     "buyTogetherSelectedCount": "{count, plural, one {Выбран # товар} few {Выбрано # товара} many {Выбрано # товаров} other {Выбрано # товаров}}",
     "buyTogetherSavings": "Экономия {amount}",
-    "buyTogetherAddSelected": "{count, plural, =1 {Добавить в корзину} other {Добавить все (#) в корзину}}"
+    "buyTogetherAddSelected": "{count, plural, =1 {Добавить в корзину} other {Добавить все (#) в корзину}}",
+    "deliveryHeading": "Доставка",
+    "deliveryTbilisi": "Тбилиси",
+    "deliveryRegions": "Регионы",
+    "deliveryExpress": "Экспресс-доставка",
+    "deliveryFree": "Бесплатно",
+    "pickupHeading": "Самовывоз из магазина — бесплатно",
+    "returnsLine": "Возврат в течение {days} дней",
+    "deliveryDetailsLink": "Доставка и возврат — подробнее",
+    "fitQuestion": "Подходит ли к вашему мотоциклу?",
+    "fitCheckButton": "Проверить",
+    "fitChangeVehicle": "Другой мотоцикл",
+    "fitChecking": "Проверка совместимости…",
+    "fitLoading": "Загрузка…",
+    "fitYes": "Подходит к вашему мотоциклу: {vehicle}",
+    "fitNo": "Не подходит к вашему мотоциклу: {vehicle}",
+    "fitNoGarage": "Не подходит к мотоциклам в вашем гараже",
+    "fitCompatibleLink": "Смотреть совместимые запчасти",
+    "fitSubmit": "Проверить",
+    "fitCancel": "Отмена",
+    "fitLoadError": "Не удалось загрузить список мотоциклов"
   },
   "Cart": {
     "empty": "Корзина пуста.",
@@ -144,7 +166,10 @@
     "addError": "Не удалось добавить в корзину",
     "goToCheckout": "Перейти к оформлению",
     "visitShowroom": "Для покупки посетите наш шоурум",
-    "itemNotPurchasableOnline": "Этот товар нельзя купить на сайте — посетите наш шоурум. Чтобы оформить заказ, удалите его из корзины."
+    "itemNotPurchasableOnline": "Этот товар нельзя купить на сайте — посетите наш шоурум. Чтобы оформить заказ, удалите его из корзины.",
+    "deliveryHint": "Доставка: Тбилиси {tbilisi} · регионы {regions} · самовывоз бесплатно. Точная цена — при оформлении.",
+    "deliveryFree": "бесплатно",
+    "deliveryHintLink": "Подробнее"
   },
   "Checkout": {
     "title": "Оформление заказа",
@@ -369,7 +394,8 @@
     "fridayShort": "Пт",
     "saturdayShort": "Сб",
     "sundayShort": "Вс",
-    "serviceTitle": "Сервис"
+    "serviceTitle": "Сервис",
+    "shippingTitle": "Доставка и возврат"
   },
   "Catalog": {
     "title": "Каталог",
@@ -804,5 +830,10 @@
     "productsHeading": "Товары",
     "vehiclesHeading": "Мототехника",
     "categoriesHeading": "Категории"
+  },
+  "ShippingPolicy": {
+    "title": "Доставка и возврат",
+    "empty": "Информация скоро появится.",
+    "loading": "Загрузка..."
   }
 }

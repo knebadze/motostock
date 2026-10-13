@@ -25,7 +25,9 @@
     "descriptionWithCity": "Motorcycles, parts, helmets and riding gear, plus motorcycle service and repair in {city}. Find parts that fit your bike online.",
     "serviceTitle": "Motorcycle Service & Repair — {siteName}",
     "serviceDescription": "Motorcycle service at {siteName}: {services}. Working hours, address and booking.",
-    "serviceDescriptionGeneric": "Motorcycle service and repair at {siteName} — working hours, address and booking."
+    "serviceDescriptionGeneric": "Motorcycle service and repair at {siteName} — working hours, address and booking.",
+    "shippingTitle": "Delivery & Returns — {siteName}",
+    "shippingDescription": "{siteName}: delivery prices and times, in-store pickup and return conditions."
   },
   "Nav": {
     "home": "Home",
@@ -121,7 +123,27 @@
     "buyTogetherThisProduct": "This item",
     "buyTogetherSelectedCount": "{count, plural, one {# item selected} other {# items selected}}",
     "buyTogetherSavings": "You save {amount}",
-    "buyTogetherAddSelected": "{count, plural, =1 {Add to cart} other {Add all # to cart}}"
+    "buyTogetherAddSelected": "{count, plural, =1 {Add to cart} other {Add all # to cart}}",
+    "deliveryHeading": "Delivery",
+    "deliveryTbilisi": "Tbilisi",
+    "deliveryRegions": "Regions",
+    "deliveryExpress": "Express delivery",
+    "deliveryFree": "Free",
+    "pickupHeading": "In-store pickup — free",
+    "returnsLine": "Returns within {days} days",
+    "deliveryDetailsLink": "Delivery & returns — details",
+    "fitQuestion": "Does it fit your bike?",
+    "fitCheckButton": "Check",
+    "fitChangeVehicle": "Another bike",
+    "fitChecking": "Checking compatibility…",
+    "fitLoading": "Loading…",
+    "fitYes": "Fits your bike: {vehicle}",
+    "fitNo": "Doesn't fit your bike: {vehicle}",
+    "fitNoGarage": "Doesn't fit the bikes in your garage",
+    "fitCompatibleLink": "See parts that fit your bike",
+    "fitSubmit": "Check",
+    "fitCancel": "Cancel",
+    "fitLoadError": "Couldn't load the vehicle list"
   },
   "Cart": {
     "empty": "Your cart is empty.",
@@ -144,7 +166,10 @@
     "addError": "Couldn't add to cart",
     "goToCheckout": "Go to checkout",
     "visitShowroom": "Visit our showroom to purchase",
-    "itemNotPurchasableOnline": "This item can't be bought online — visit our showroom to purchase. Remove it from your cart to check out."
+    "itemNotPurchasableOnline": "This item can't be bought online — visit our showroom to purchase. Remove it from your cart to check out.",
+    "deliveryHint": "Delivery: Tbilisi {tbilisi} · regions {regions} · in-store pickup free. Exact price at checkout.",
+    "deliveryFree": "free",
+    "deliveryHintLink": "Details"
   },
   "Checkout": {
     "title": "Checkout",
@@ -369,7 +394,8 @@
     "fridayShort": "Fri",
     "saturdayShort": "Sat",
     "sundayShort": "Sun",
-    "serviceTitle": "Service"
+    "serviceTitle": "Service",
+    "shippingTitle": "Delivery & Returns"
   },
   "Catalog": {
     "title": "Catalog",
@@ -804,5 +830,10 @@
     "productsHeading": "Products",
     "vehiclesHeading": "Motor vehicles",
     "categoriesHeading": "Categories"
+  },
+  "ShippingPolicy": {
+    "title": "Delivery & Returns",
+    "empty": "Content coming soon.",
+    "loading": "Loading..."
   }
 }
