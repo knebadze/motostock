@@ -98,6 +98,11 @@ export function HeroSlider({
   const t = useTranslations("Common.heroSlider");
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  // Set to the current slide's index when focus enters the slider (e.g. the
+  // shopper starts filling the vehicle-search form) — autoplay holds while
+  // that slide is still showing, so it isn't swapped out mid-input. Any
+  // slide change (swipe/dots/arrows) releases it.
+  const [focusHoldIndex, setFocusHoldIndex] = useState<number | null>(null);
   // Touch-swipe support — previously the only way to change slides on a
   // touch device was the arrow buttons, which are hidden below the `sm`
   // breakpoint (`hidden sm:flex`), and the 10px dots at the bottom, leaving
@@ -128,8 +133,12 @@ export function HeroSlider({
     }
   }
 
+  const heldForInput = focusHoldIndex === index;
+
+  // Restarts on every slide change (index in the deps), so a manual swipe
+  // gets a full AUTOPLAY_MS before the next automatic advance.
   useEffect(() => {
-    if (slides.length <= 1 || paused) return;
+    if (slides.length <= 1 || paused || heldForInput) return;
     const timer = setInterval(() => {
       // Not while the tab is hidden — no one sees it, and each change would
       // start loading the next slide's image for nothing.
@@ -137,7 +146,7 @@ export function HeroSlider({
       setIndex((current) => (current + 1) % slides.length);
     }, AUTOPLAY_MS);
     return () => clearInterval(timer);
-  }, [slides.length, paused]);
+  }, [slides.length, paused, heldForInput, index]);
 
   const slide = slides[index];
   const imageUrl = resolveMediaUrl(slide.imageUrl);
@@ -152,8 +161,16 @@ export function HeroSlider({
 
   return (
     <section
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      // Hover-pause for a real mouse only: on phones a tap fires emulated
+      // mouseenter (after touchend) with no mouseleave ever following, which
+      // used to stop autoplay for good after the first touch.
+      onPointerEnter={(event) => {
+        if (event.pointerType === "mouse") setPaused(true);
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType === "mouse") setPaused(false);
+      }}
+      onFocusCapture={() => setFocusHoldIndex(index)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       className={`relative w-full overflow-hidden border-b border-border sm:aspect-video sm:min-h-0 lg:aspect-21/9 lg:max-h-130 ${

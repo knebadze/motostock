@@ -1,12 +1,14 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { AutoScrollTrack } from "@/components/shared/AutoScrollTrack";
 import type { Category } from "@/lib/api/categories";
 
 // Compact tinted tiles (no images — the page around it is image-heavy
 // already): the name, "N products" (rolled up over subcategories, so it
 // reads the same whether the section shows a parent or a subcategory) and a
 // round arrow. Phones: a horizontal snap slider (~1.6 tiles visible, the
-// peeking next one signals it scrolls; full-bleed to the screen edges) —
+// peeking next one signals it scrolls; full-bleed to the screen edges;
+// auto-advancing, see AutoScrollTrack) —
 // a 2-column grid truncated the names and took a lot of height. sm+: a
 // 2/3-column grid. Same heading rhythm/spacing as the carousels around it.
 export async function CategoriesSection({
@@ -33,7 +35,7 @@ export async function CategoriesSection({
         </Link>
       </div>
 
-      <ul className="-mx-4 mt-6 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden">
+      <AutoScrollTrack className="-mx-4 mt-6 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden">
         {categories.map((category) => (
           <li key={category.id} className="w-[calc((100%-0.75rem)/1.6)] shrink-0 snap-start sm:w-auto">
             <Link
@@ -66,7 +68,7 @@ export async function CategoriesSection({
             </Link>
           </li>
         ))}
-      </ul>
+      </AutoScrollTrack>
     </section>
   );
 }
