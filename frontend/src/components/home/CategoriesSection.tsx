@@ -5,8 +5,10 @@ import type { Category } from "@/lib/api/categories";
 // Compact tinted tiles (no images — the page around it is image-heavy
 // already): the name, "N products" (rolled up over subcategories, so it
 // reads the same whether the section shows a parent or a subcategory) and a
-// round arrow; 2 per row on phones, 3 on larger screens. Same heading
-// rhythm/spacing as the carousels around it.
+// round arrow. Phones: a horizontal snap slider (~1.6 tiles visible, the
+// peeking next one signals it scrolls; full-bleed to the screen edges) —
+// a 2-column grid truncated the names and took a lot of height. sm+: a
+// 2/3-column grid. Same heading rhythm/spacing as the carousels around it.
 export async function CategoriesSection({
   title,
   categories,
@@ -31,15 +33,15 @@ export async function CategoriesSection({
         </Link>
       </div>
 
-      <ul className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3">
+      <ul className="-mx-4 mt-6 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden">
         {categories.map((category) => (
-          <li key={category.id}>
+          <li key={category.id} className="w-[calc((100%-0.75rem)/1.6)] shrink-0 snap-start sm:w-auto">
             <Link
               href={`/${category.slug}`}
-              className="group flex items-center justify-between gap-3 rounded-2xl bg-primary/5 px-4 py-4 transition-colors hover:bg-primary/10"
+              className="group flex h-full items-center justify-between gap-3 rounded-2xl bg-primary/5 px-4 py-4 transition-colors hover:bg-primary/10"
             >
               <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold text-foreground sm:text-base">
+                <span className="line-clamp-2 text-sm font-semibold leading-snug text-foreground sm:line-clamp-1 sm:text-base">
                   {category.name[locale]}
                 </span>
                 <span className="mt-0.5 block text-xs text-muted-foreground">
