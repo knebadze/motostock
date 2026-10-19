@@ -919,7 +919,8 @@
       "promoCodeBadge": "-{percent}% скидка по коду {code} ({scope}), {startDate} – {endDate}",
       "promoCodeScopeAllProducts": "все товары",
       "promoCodeScopeAllVehicles": "вся техника"
-    }
+    },
+    "skipToContent": "Перейти к основному содержимому"
   },
   "Service": {
     "title": "Мотосервис",

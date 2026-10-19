@@ -919,7 +919,8 @@
       "promoCodeBadge": "-{percent}% off with code {code} ({scope}), {startDate} – {endDate}",
       "promoCodeScopeAllProducts": "all products",
       "promoCodeScopeAllVehicles": "all vehicles"
-    }
+    },
+    "skipToContent": "Skip to main content"
   },
   "Service": {
     "title": "Motorcycle Service",

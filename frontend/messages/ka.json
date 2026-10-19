@@ -919,7 +919,8 @@
       "promoCodeBadge": "-{percent}% ფასდაკლება კოდით {code} ({scope}), {startDate}-დან {endDate}-მდე",
       "promoCodeScopeAllProducts": "ყველა პროდუქტი",
       "promoCodeScopeAllVehicles": "მთელი ტრანსპორტი"
-    }
+    },
+    "skipToContent": "მთავარ შიგთავსზე გადასვლა"
   },
   "Service": {
     "title": "მოტოციკლების სერვისი",

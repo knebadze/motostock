@@ -36,13 +36,15 @@ export default async function AccountLayout({
   }
 
   return (
-    <main className="flex-1">
+    // A <div>, not <main>: this already renders inside the guest layout's
+    // <main> — a page has only one.
+    <div className="flex-1">
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-[260px_1fr]">
           <AccountSidebar user={user} />
           <div className="min-w-0">{children}</div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
