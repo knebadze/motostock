@@ -30,8 +30,8 @@ import { NewsletterCampaignFormModal } from "./NewsletterCampaignFormModal";
 const CAMPAIGN_STATUS_BADGE_CLASSES: Record<NewsletterCampaignStatus, string> = {
   DRAFT: "bg-muted text-muted-foreground",
   SENDING: "bg-amber-500/15 text-amber-600",
-  SENT: "bg-green-500/15 text-green-600",
-  FAILED: "bg-red-500/15 text-red-600",
+  SENT: "bg-green-500/15 text-success",
+  FAILED: "bg-red-500/15 text-destructive",
 };
 
 const CAMPAIGN_STATUS_LABELS: Record<NewsletterCampaignStatus, string> = {
@@ -43,7 +43,7 @@ const CAMPAIGN_STATUS_LABELS: Record<NewsletterCampaignStatus, string> = {
 
 const SUBSCRIBER_STATUS_BADGE_CLASSES: Record<NewsletterSubscriberStatus, string> = {
   PENDING: "bg-amber-500/15 text-amber-600",
-  CONFIRMED: "bg-green-500/15 text-green-600",
+  CONFIRMED: "bg-green-500/15 text-success",
   UNSUBSCRIBED: "bg-muted text-muted-foreground",
 };
 
@@ -299,7 +299,7 @@ export function NewsletterManager({
                   onClick={() => setDeletingSubscriber(subscriber)}
                   aria-label="წაშლა"
                   title="წაშლა"
-                  className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-red-600"
+                  className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

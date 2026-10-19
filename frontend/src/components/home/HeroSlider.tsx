@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -98,6 +99,11 @@ export function HeroSlider({
   const t = useTranslations("Common.heroSlider");
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  // Pause/play (WCAG 2.2.2): the shopper's explicit choice; until they make
+  // one, autoplay is off for anyone with the OS "reduce motion" setting.
+  const reducedMotion = usePrefersReducedMotion();
+  const [userStopped, setUserStopped] = useState<boolean | null>(null);
+  const autoplayStopped = userStopped ?? reducedMotion;
   // Set to the current slide's index when focus enters the slider (e.g. the
   // shopper starts filling the vehicle-search form) — autoplay holds while
   // that slide is still showing, so it isn't swapped out mid-input. Any
@@ -138,7 +144,7 @@ export function HeroSlider({
   // Restarts on every slide change (index in the deps), so a manual swipe
   // gets a full AUTOPLAY_MS before the next automatic advance.
   useEffect(() => {
-    if (slides.length <= 1 || paused || heldForInput) return;
+    if (slides.length <= 1 || paused || heldForInput || autoplayStopped) return;
     const timer = setInterval(() => {
       // Not while the tab is hidden — no one sees it, and each change would
       // start loading the next slide's image for nothing.
@@ -146,7 +152,7 @@ export function HeroSlider({
       setIndex((current) => (current + 1) % slides.length);
     }, AUTOPLAY_MS);
     return () => clearInterval(timer);
-  }, [slides.length, paused, heldForInput, index]);
+  }, [slides.length, paused, heldForInput, index, autoplayStopped]);
 
   const slide = slides[index];
   const imageUrl = resolveMediaUrl(slide.imageUrl);
@@ -161,6 +167,8 @@ export function HeroSlider({
 
   return (
     <section
+      aria-roledescription="carousel"
+      aria-label={t("regionLabel")}
       // Hover-pause for a real mouse only: on phones a tap fires emulated
       // mouseenter (after touchend) with no mouseleave ever following, which
       // used to stop autoplay for good after the first touch.
@@ -289,6 +297,18 @@ export function HeroSlider({
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="size-5">
               <path d="m9 18 6-6-6-6" />
             </svg>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setUserStopped(!autoplayStopped)}
+            aria-label={autoplayStopped ? t("play") : t("pause")}
+            aria-pressed={autoplayStopped}
+            className="absolute bottom-3 right-3 z-10 flex size-8 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-3.5" aria-hidden>
+                {autoplayStopped ? <path d="M8 5v14l11-7z" /> : <path d="M7 5h4v14H7zM13 5h4v14h-4z" />}
+              </svg>
           </button>
 
           <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2">

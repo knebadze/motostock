@@ -119,7 +119,7 @@ export function OrderRequestPanel({
               <button
                 type="button"
                 onClick={() => setDialogType("CANCEL")}
-                className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-red-500 hover:text-red-600"
+                className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-red-500 hover:text-destructive"
               >
                 {t("requestCancelButton")}
               </button>

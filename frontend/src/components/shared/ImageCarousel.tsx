@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 
@@ -38,6 +39,11 @@ export function ImageCarousel({
   const t = useTranslations("Common.imageCarousel");
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  // Pause/play (WCAG 2.2.2): the shopper's explicit choice; until they make
+  // one, autoplay is off for anyone with the OS "reduce motion" setting.
+  const reducedMotion = usePrefersReducedMotion();
+  const [userStopped, setUserStopped] = useState<boolean | null>(null);
+  const autoplayStopped = userStopped ?? reducedMotion;
   // Touch-swipe support — previously the only way to change images on a
   // touch device was the arrow buttons, which are hidden below the `sm`
   // breakpoint (`hidden sm:flex`), leaving mobile visitors with no real way
@@ -68,12 +74,12 @@ export function ImageCarousel({
   }
 
   useEffect(() => {
-    if (images.length <= 1 || paused) return;
+    if (images.length <= 1 || paused || autoplayStopped) return;
     const timer = setInterval(() => {
       setIndex((current) => (current + 1) % images.length);
     }, AUTOPLAY_MS);
     return () => clearInterval(timer);
-  }, [images.length, paused]);
+  }, [images.length, paused, autoplayStopped]);
 
   if (images.length === 0) return null;
 
@@ -81,6 +87,9 @@ export function ImageCarousel({
 
   return (
     <div
+      role="region"
+      aria-roledescription="carousel"
+      aria-label={t("regionLabel")}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={handleTouchStart}
@@ -125,6 +134,18 @@ export function ImageCarousel({
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="size-5">
               <path d="m9 18 6-6-6-6" />
             </svg>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setUserStopped(!autoplayStopped)}
+            aria-label={autoplayStopped ? t("play") : t("pause")}
+            aria-pressed={autoplayStopped}
+            className="absolute bottom-3 right-3 z-10 flex size-8 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-3.5" aria-hidden>
+                {autoplayStopped ? <path d="M8 5v14l11-7z" /> : <path d="M7 5h4v14H7zM13 5h4v14h-4z" />}
+              </svg>
           </button>
 
           <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2">

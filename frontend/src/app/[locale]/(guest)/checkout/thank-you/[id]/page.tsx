@@ -45,7 +45,7 @@ export default async function CheckoutThankYouPage({ params }: { params: Promise
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
       <div className="flex flex-col items-center text-center">
-        <span className="flex size-16 items-center justify-center rounded-full bg-green-500/15 text-green-600 dark:text-green-500">
+        <span className="flex size-16 items-center justify-center rounded-full bg-green-500/15 text-success dark:text-green-500">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="size-8" aria-hidden>
             <path d="m5 12.5 4.5 4.5L19 7.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>

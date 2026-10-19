@@ -253,7 +253,7 @@ export function GarageManager({
                       type="button"
                       onClick={() => setDeleteTarget(vehicle)}
                       aria-label={t("delete")}
-                      className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600"
+                      className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-destructive"
                     >
                       {trashIcon}
                     </button>

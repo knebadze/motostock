@@ -430,7 +430,7 @@ export function HeaderSearch({
               <p className="px-3 py-3 text-sm text-muted-foreground">{t("minChars", { count: SEARCH_MIN_LENGTH })}</p>
             )
           ) : status === "error" ? (
-            <p className="px-3 py-3 text-sm text-red-600">{t("error")}</p>
+            <p className="px-3 py-3 text-sm text-destructive">{t("error")}</p>
           ) : !results || (status === "loading" && !hasResults) ? (
             <p className="px-3 py-3 text-sm text-muted-foreground">{t("searching")}</p>
           ) : !hasResults ? (

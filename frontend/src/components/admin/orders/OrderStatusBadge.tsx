@@ -8,8 +8,8 @@ export const ORDER_STATUS_BADGE_CLASSES: Record<string, string> = {
   PENDING: "bg-muted text-muted-foreground",
   CONFIRMED: "bg-blue-500/15 text-blue-600",
   SHIPPED: "bg-amber-500/15 text-amber-600",
-  DELIVERED: "bg-green-500/15 text-green-600",
-  CANCELLED: "bg-red-500/15 text-red-600",
+  DELIVERED: "bg-green-500/15 text-success",
+  CANCELLED: "bg-red-500/15 text-destructive",
 };
 
 export function OrderStatusBadge({ status }: { status: Pick<LookupItem, "key" | "nameKa"> }) {

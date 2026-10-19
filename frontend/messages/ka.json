@@ -54,7 +54,8 @@
     "settings": "პარამეტრები",
     "themeHeading": "თემა",
     "viewAll": "ყველას ნახვა",
-    "mainMenu": "მთავარი მენიუ"
+    "mainMenu": "მთავარი მენიუ",
+    "megaMenuHint": "ქვეკატეგორიების სანახავად დააჭირეთ ქვემოთ ისარს"
   },
   "Shop": {
     "filtersHeading": "ფილტრი",
@@ -895,7 +896,10 @@
     "imageCarousel": {
       "prevImage": "წინა სურათი",
       "nextImage": "შემდეგი სურათი",
-      "imageDot": "სურათი {index}"
+      "imageDot": "სურათი {index}",
+      "pause": "სლაიდების შეჩერება",
+      "play": "სლაიდების გაშვება",
+      "regionLabel": "სურათების გალერეა"
     },
     "compareButton": {
       "add": "შედარებაში დამატება",
@@ -918,7 +922,10 @@
       "discountBadge": "-{percent}% ფასდაკლება {startDate}-დან {endDate}-მდე",
       "promoCodeBadge": "-{percent}% ფასდაკლება კოდით {code} ({scope}), {startDate}-დან {endDate}-მდე",
       "promoCodeScopeAllProducts": "ყველა პროდუქტი",
-      "promoCodeScopeAllVehicles": "მთელი ტრანსპორტი"
+      "promoCodeScopeAllVehicles": "მთელი ტრანსპორტი",
+      "pause": "სლაიდერის შეჩერება",
+      "play": "სლაიდერის გაშვება",
+      "regionLabel": "მთავარი სლაიდები"
     },
     "skipToContent": "მთავარ შიგთავსზე გადასვლა"
   },

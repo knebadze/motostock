@@ -26,7 +26,7 @@ const columns: DataTableColumn<Tag>[] = [
     header: "სტატუსი",
     render: (tag) =>
       tag.isActive ? (
-        <span className="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-green-600">აქტიური</span>
+        <span className="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-success">აქტიური</span>
       ) : (
         <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">გამორთული</span>
       ),

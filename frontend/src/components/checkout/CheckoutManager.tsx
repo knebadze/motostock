@@ -471,7 +471,9 @@ export function CheckoutManager({
                 the two required-field sections consistent and covers any
                 future bank-selection path that doesn't auto-default it. */}
             {requiresBank && bankId == null && (
-              <p className="mt-2 text-sm font-medium text-red-600">{t("bankRequired")}</p>
+              <p role="alert" className="mt-2 text-sm font-medium text-destructive">
+                {t("bankRequired")}
+              </p>
             )}
           </section>
         )}
@@ -505,6 +507,8 @@ export function CheckoutManager({
                     <input
                       type="radio"
                       name="addressId"
+                      aria-invalid={addressId == null || undefined}
+                      aria-describedby={addressId == null ? "checkout-address-error" : undefined}
                       className="mt-1"
                       checked={addressId === address.id}
                       onChange={() => setAddressId(address.id)}
@@ -526,7 +530,9 @@ export function CheckoutManager({
                 button below always has a nearby explanation instead of
                 only the toast handlePlaceOrder falls back to. */}
             {requiresAddress && addressId == null && (
-              <p className="mt-2 text-sm font-medium text-red-600">{t("addressRequired")}</p>
+              <p id="checkout-address-error" role="alert" className="mt-2 text-sm font-medium text-destructive">
+                {t("addressRequired")}
+              </p>
             )}
           </section>
         )}
@@ -607,7 +613,7 @@ export function CheckoutManager({
                       {item.quantity} × {formatPrice(item.unitPrice)}
                     </span>
                     {item.stockIssue != null && (
-                      <span className="mt-1 text-xs font-medium text-red-600">
+                      <span className="mt-1 text-xs font-medium text-destructive">
                         {item.stockIssue > 0
                           ? t("limitedStockItem", { count: item.stockIssue })
                           : t("outOfStockItem")}
@@ -637,7 +643,7 @@ export function CheckoutManager({
               <button
                 type="button"
                 onClick={handleRemovePromoCode}
-                className="text-muted-foreground hover:text-red-600"
+                className="text-muted-foreground hover:text-destructive"
               >
                 {t("removePromo")}
               </button>
@@ -720,7 +726,9 @@ export function CheckoutManager({
           </div>
 
           {displayPreview?.hasStockIssues && (
-            <p className="mt-3 text-sm font-medium text-red-600">{t("stockIssueMessage")}</p>
+            <p role="alert" className="mt-3 text-sm font-medium text-destructive">
+              {t("stockIssueMessage")}
+            </p>
           )}
 
           <button

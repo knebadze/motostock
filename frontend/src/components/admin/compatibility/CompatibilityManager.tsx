@@ -30,7 +30,7 @@ const KIND_LABELS: Record<CompatibilityItem["kind"], string> = {
 
 const KIND_BADGE_CLASSES: Record<CompatibilityItem["kind"], string> = {
   FITMENT: "bg-primary/15 text-primary-text",
-  RULE_ALL: "bg-green-500/15 text-green-600",
+  RULE_ALL: "bg-green-500/15 text-success",
   RULE_CATEGORY: "bg-blue-500/15 text-blue-600",
   RULE_SPEC: "bg-amber-500/15 text-amber-600",
 };

@@ -47,7 +47,7 @@ function CartLineRow({
         </Link>
         {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
         {item.purchasableOnline === false && (
-          <p className="text-sm font-medium text-red-600">{t("itemNotPurchasableOnline")}</p>
+          <p className="text-sm font-medium text-destructive">{t("itemNotPurchasableOnline")}</p>
         )}
 
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
@@ -68,7 +68,7 @@ function CartLineRow({
               type="button"
               onClick={onRemove}
               disabled={pending}
-              className="text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-red-600 hover:underline disabled:opacity-40"
+              className="text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-destructive hover:underline disabled:opacity-40"
             >
               {t("remove")}
             </button>

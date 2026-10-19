@@ -9,7 +9,7 @@ export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
 
   if (status === "PAID") {
     return (
-      <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-green-600">
+      <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-success">
         გადახდილია
       </span>
     );
@@ -32,7 +32,7 @@ export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
   }
 
   return (
-    <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-semibold text-red-600">
+    <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-semibold text-destructive">
       გადახდა ვერ შედგა
     </span>
   );

@@ -108,8 +108,8 @@ export function VehicleCatalogBulkImportModal({
           <div className="flex flex-col gap-3">
             <div className="flex gap-4 text-sm">
               <span className="text-foreground">სულ რიგი: {result.totalRows}</span>
-              <span className="font-semibold text-green-600">დაემატა: {result.createdCount}</span>
-              <span className="font-semibold text-red-600">შეცდომა: {result.errorCount}</span>
+              <span className="font-semibold text-success">დაემატა: {result.createdCount}</span>
+              <span className="font-semibold text-destructive">შეცდომა: {result.errorCount}</span>
             </div>
 
             {errorRows.length > 0 && (
@@ -125,7 +125,7 @@ export function VehicleCatalogBulkImportModal({
                     {errorRows.map((row) => (
                       <tr key={row.row} className="border-t border-border">
                         <td className="px-3 py-2 text-muted-foreground">{row.row}</td>
-                        <td className="px-3 py-2 text-red-600">{row.message}</td>
+                        <td className="px-3 py-2 text-destructive">{row.message}</td>
                       </tr>
                     ))}
                   </tbody>

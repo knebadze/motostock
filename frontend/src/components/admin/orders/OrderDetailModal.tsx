@@ -287,7 +287,7 @@ export function OrderDetailModal({
 
           {order.cancellationReason && (
             <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-red-600">
+              <p className="text-xs font-semibold uppercase tracking-wide text-destructive">
                 გაუქმების მიზეზი
               </p>
               <p className="mt-1 text-sm text-foreground">{order.cancellationReason.nameKa}</p>
@@ -450,8 +450,8 @@ export function OrderDetailModal({
                             stockResult.newStock === null
                               ? "text-muted-foreground"
                               : stockResult.newStock > 0
-                                ? "text-green-600"
-                                : "text-red-600"
+                                ? "text-success"
+                                : "text-destructive"
                           }`}
                         >
                           {stockResult.newStock === null

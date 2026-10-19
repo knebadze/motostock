@@ -6,7 +6,7 @@
     "categoryTitleWithPage": "{category} — Страница {page} — {siteName}",
     "categoryDescription": "{category} — лучший выбор и цены в {siteName}.",
     "compatibleProductsTitle": "{vehicle} — запчасти и аксессуары | {siteName}",
-    "compatibleProductsDescription": "Запчасти, аксессуары и экипировка для {vehicle} в {siteName} — {count} товаров.",
+    "compatibleProductsDescription": "Запчасти, аксессуары и экипировка для {vehicle} в {siteName} — {count, plural, one {# товар} few {# товара} many {# товаров} other {# товара}}.",
     "aboutTitle": "О нас — {siteName}",
     "aboutDescription": "Узнайте больше о {siteName} — надёжном магазине мотоэкипировки, аксессуаров и запчастей в Грузии.",
     "faqTitle": "Часто задаваемые вопросы — {siteName}",
@@ -54,7 +54,8 @@
     "settings": "Настройки",
     "themeHeading": "Тема",
     "viewAll": "Смотреть все",
-    "mainMenu": "Главное меню"
+    "mainMenu": "Главное меню",
+    "megaMenuHint": "Нажмите стрелку вниз, чтобы открыть подкатегории"
   },
   "Shop": {
     "filtersHeading": "Фильтры",
@@ -86,7 +87,7 @@
     "viewList": "Список",
     "resultCount": "{count, plural, one {# результат} few {# результата} many {# результатов} other {# результатов}}",
     "outOfStock": "Нет в наличии",
-    "lowStock": "Осталось всего {count} шт.",
+    "lowStock": "{count, plural, one {Осталась всего # шт.} other {Осталось всего # шт.}}",
     "discountBadge": "Скидка",
     "customsCleared": "Растаможен",
     "customsNotCleared": "Не растаможен",
@@ -117,7 +118,7 @@
     "selectSizeLabel": "Размер",
     "selectColorLabel": "Цвет",
     "outOfStock": "Нет в наличии",
-    "lowStock": "Осталось всего {count} шт.",
+    "lowStock": "{count, plural, one {Осталась всего # шт.} other {Осталось всего # шт.}}",
     "yes": "Да",
     "no": "Нет",
     "buyTogetherThisProduct": "Этот товар",
@@ -130,7 +131,7 @@
     "deliveryExpress": "Экспресс-доставка",
     "deliveryFree": "Бесплатно",
     "pickupHeading": "Самовывоз из магазина — бесплатно",
-    "returnsLine": "Возврат в течение {days} дней",
+    "returnsLine": "{days, plural, one {Возврат в течение # дня} other {Возврат в течение # дней}}",
     "deliveryDetailsLink": "Доставка и возврат — подробнее",
     "fitQuestion": "Подходит ли к вашему мотоциклу?",
     "fitCheckButton": "Проверить",
@@ -218,7 +219,7 @@
     "placeError": "Не удалось оформить заказ",
     "emailVerificationRequired": "Для оформления заказа необходимо подтвердить email — проверьте почту или отправьте письмо повторно.",
     "outOfStockItem": "Нет в наличии",
-    "limitedStockItem": "В наличии осталось {count}",
+    "limitedStockItem": "{count, plural, one {В наличии остался # товар} few {В наличии осталось # товара} many {В наличии осталось # товаров} other {В наличии осталось # товара}}",
     "stockIssueMessage": "Некоторых товаров в корзине больше нет в запрошенном количестве — уменьшите количество или удалите их из корзины, чтобы оформить заказ.",
     "compatibilityHeading": "Проверка совместимости",
     "compatibilityIntro": "Выберите транспорт из гаража или укажите марку, модель и год — мы проверим, подходят ли товары в корзине для него.",
@@ -688,7 +689,7 @@
       "requestContactNoteWithPhone": "Магазин скоро свяжется с вами по этому вопросу. Можете позвонить и сами:",
       "requestResolvedCancel": "Запрос на отмену обработан ({date}).",
       "requestResolvedReturn": "Запрос на возврат обработан ({date}).",
-      "returnWindowNote": "Возврат возможен в течение {days} дней после получения."
+      "returnWindowNote": "{days, plural, one {Возврат возможен в течение # дня после получения.} other {Возврат возможен в течение # дней после получения.}}"
     },
     "address": {
       "description": "Укажите адреса доставки и контактный телефон — мы используем их при доставке заказов. Можно сохранить несколько адресов.",
@@ -850,7 +851,7 @@
     "NOT_PURCHASABLE_ONLINE_ITEM": "«{itemNameRu}» нельзя купить на сайте — посетите наш шоурум",
     "ORDER_CANCEL_REQUEST_NOT_ALLOWED": "На этом этапе отменить заказ онлайн нельзя — позвоните нам.",
     "ORDER_RETURN_REQUEST_NOT_ALLOWED": "Возврат можно запросить только для доставленного заказа.",
-    "ORDER_RETURN_PERIOD_EXPIRED": "Срок возврата ({days} дней) истёк — позвоните нам.",
+    "ORDER_RETURN_PERIOD_EXPIRED": "{days, plural, one {Срок возврата (# день) истёк — позвоните нам.} few {Срок возврата (# дня) истёк — позвоните нам.} many {Срок возврата (# дней) истёк — позвоните нам.} other {Срок возврата (# дня) истёк — позвоните нам.}}",
     "ORDER_REQUEST_ALREADY_OPEN": "Такой запрос уже отправлен — магазин скоро свяжется с вами.",
     "PHONE_ALREADY_IN_USE": "Этот номер телефона уже используется — если он ваш, свяжитесь с нами.",
     "ACCOUNT_DELETE_WRONG_PASSWORD": "Неверный пароль",
@@ -895,7 +896,10 @@
     "imageCarousel": {
       "prevImage": "Предыдущее изображение",
       "nextImage": "Следующее изображение",
-      "imageDot": "Изображение {index}"
+      "imageDot": "Изображение {index}",
+      "pause": "Остановить слайды",
+      "play": "Запустить слайды",
+      "regionLabel": "Галерея изображений"
     },
     "compareButton": {
       "add": "Добавить к сравнению",
@@ -918,7 +922,10 @@
       "discountBadge": "-{percent}% скидка, {startDate} – {endDate}",
       "promoCodeBadge": "-{percent}% скидка по коду {code} ({scope}), {startDate} – {endDate}",
       "promoCodeScopeAllProducts": "все товары",
-      "promoCodeScopeAllVehicles": "вся техника"
+      "promoCodeScopeAllVehicles": "вся техника",
+      "pause": "Остановить слайдер",
+      "play": "Запустить слайдер",
+      "regionLabel": "Главные слайды"
     },
     "skipToContent": "Перейти к основному содержимому"
   },
@@ -948,7 +955,7 @@
     "clearRecent": "Очистить",
     "searching": "Поиск…",
     "noResults": "По запросу «{q}» ничего не найдено",
-    "minChars": "Введите не менее {count} символов",
+    "minChars": "{count, plural, one {Введите не менее # символа} other {Введите не менее # символов}}",
     "viewAllResults": "Все результаты",
     "error": "Не удалось выполнить поиск, попробуйте ещё раз",
     "resultsTitle": "Результаты поиска: «{q}»",

@@ -142,7 +142,7 @@ export function TeamMembersManager({
                 <button
                   type="button"
                   onClick={() => setDeletingMember(member)}
-                  className="rounded-full px-3 py-1.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-500/10"
+                  className="rounded-full px-3 py-1.5 text-sm font-semibold text-destructive transition-colors hover:bg-red-500/10"
                 >
                   წაშლა
                 </button>

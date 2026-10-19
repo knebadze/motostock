@@ -192,7 +192,7 @@ export function CompatibilityChecker({
                 <span className="truncate text-foreground">{product.name[locale]}</span>
                 <span
                   className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    isCompatible ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"
+                    isCompatible ? "bg-green-500/10 text-success" : "bg-red-500/10 text-destructive"
                   }`}
                 >
                   {isCompatible ? t("compatibleLabel") : t("incompatibleLabel")}

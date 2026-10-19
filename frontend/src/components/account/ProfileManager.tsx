@@ -214,12 +214,12 @@ export function ProfileManager({ initialProfile }: { initialProfile: Profile }) 
       {/* Delete account */}
       {profile.canDelete && (
         <section className="rounded-2xl border border-red-500/40 bg-card p-5 sm:p-6">
-          <h2 className="font-semibold text-red-600">{t("deleteHeading")}</h2>
+          <h2 className="font-semibold text-destructive">{t("deleteHeading")}</h2>
           <p className="mt-2 text-sm text-muted-foreground">{t("deleteDescription")}</p>
           <button
             type="button"
             onClick={() => setDeleteOpen(true)}
-            className="mt-3 rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-500/10"
+            className="mt-3 rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-red-500/10"
           >
             {t("deleteButton")}
           </button>

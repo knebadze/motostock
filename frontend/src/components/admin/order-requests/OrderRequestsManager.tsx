@@ -101,7 +101,7 @@ function RequestCard({
         <div className="flex flex-wrap items-center gap-2">
           <span
             className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-              request.type === "CANCEL" ? "bg-red-500/10 text-red-600" : "bg-amber-500/10 text-amber-600"
+              request.type === "CANCEL" ? "bg-red-500/10 text-destructive" : "bg-amber-500/10 text-amber-600"
             }`}
           >
             {TYPE_LABELS[request.type]}

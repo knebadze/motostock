@@ -23,9 +23,9 @@ import { FinaSyncBadge } from "./FinaSyncBadge";
 import { DELIVERY_METHOD_LABELS, PAYMENT_METHOD_LABELS, DELIVERY_METHOD_OPTIONS, PAYMENT_METHOD_OPTIONS } from "./order-labels";
 
 const DELIVERY_URGENCY_CLASSES: Record<"green" | "yellow" | "red", string> = {
-  green: "bg-green-500/15 text-green-600",
+  green: "bg-green-500/15 text-success",
   yellow: "bg-amber-500/15 text-amber-600",
-  red: "bg-red-500/15 text-red-600",
+  red: "bg-red-500/15 text-destructive",
 };
 
 // Terminal statuses stop counting down — a delivered/cancelled order isn't

@@ -42,14 +42,14 @@ export default async function DashboardPage() {
       hint: "რისკის სიგნალით",
       count: stats.needsAction.flaggedPendingOrders,
       href: "/admin/orders?status=PENDING&flagged=1",
-      tone: "text-red-600",
+      tone: "text-destructive",
     },
     {
       label: "FINA-ში ვერ გაიგზავნა",
       hint: "ხელით გასაშვები",
       count: stats.needsAction.finaFailedOrders,
       href: "/admin/orders?fina=failed",
-      tone: "text-red-600",
+      tone: "text-destructive",
     },
   ];
 

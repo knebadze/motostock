@@ -6,7 +6,7 @@
     "categoryTitleWithPage": "{category} — Page {page} — {siteName}",
     "categoryDescription": "{category} — best selection and prices at {siteName}.",
     "compatibleProductsTitle": "{vehicle} — Parts & Accessories | {siteName}",
-    "compatibleProductsDescription": "Parts, accessories and gear that fit the {vehicle} at {siteName} — {count} products.",
+    "compatibleProductsDescription": "Parts, accessories and gear that fit the {vehicle} at {siteName} — {count, plural, one {# product} other {# products}}.",
     "aboutTitle": "About Us — {siteName}",
     "aboutDescription": "Learn about {siteName} — your trusted store for motorcycle gear, apparel, and parts in Georgia.",
     "faqTitle": "Frequently Asked Questions — {siteName}",
@@ -54,7 +54,8 @@
     "settings": "Settings",
     "themeHeading": "Theme",
     "viewAll": "View all",
-    "mainMenu": "Main menu"
+    "mainMenu": "Main menu",
+    "megaMenuHint": "Press the down arrow to open its subcategories"
   },
   "Shop": {
     "filtersHeading": "Filters",
@@ -130,7 +131,7 @@
     "deliveryExpress": "Express delivery",
     "deliveryFree": "Free",
     "pickupHeading": "In-store pickup — free",
-    "returnsLine": "Returns within {days} days",
+    "returnsLine": "{days, plural, one {Returns within # day} other {Returns within # days}}",
     "deliveryDetailsLink": "Delivery & returns — details",
     "fitQuestion": "Does it fit your bike?",
     "fitCheckButton": "Check",
@@ -688,7 +689,7 @@
       "requestContactNoteWithPhone": "The shop will contact you about it soon. You can also call us:",
       "requestResolvedCancel": "Cancellation request handled ({date}).",
       "requestResolvedReturn": "Return request handled ({date}).",
-      "returnWindowNote": "Returns are possible within {days} days of delivery."
+      "returnWindowNote": "{days, plural, one {Returns are possible within # day of delivery.} other {Returns are possible within # days of delivery.}}"
     },
     "address": {
       "description": "Add your delivery addresses and contact phone number — we'll use them to deliver your orders. You can save more than one.",
@@ -850,7 +851,7 @@
     "NOT_PURCHASABLE_ONLINE_ITEM": "\"{itemNameEn}\" can't be bought online — visit our showroom to purchase",
     "ORDER_CANCEL_REQUEST_NOT_ALLOWED": "The order can't be cancelled online at this stage — please call us.",
     "ORDER_RETURN_REQUEST_NOT_ALLOWED": "A return can only be requested for a delivered order.",
-    "ORDER_RETURN_PERIOD_EXPIRED": "The return period ({days} days) has ended — please call us.",
+    "ORDER_RETURN_PERIOD_EXPIRED": "{days, plural, one {The return period (# day) has ended — please call us.} other {The return period (# days) has ended — please call us.}}",
     "ORDER_REQUEST_ALREADY_OPEN": "You've already sent this request — the shop will contact you soon.",
     "PHONE_ALREADY_IN_USE": "This phone number is already in use — if it's yours, please contact us.",
     "ACCOUNT_DELETE_WRONG_PASSWORD": "Incorrect password",
@@ -895,7 +896,10 @@
     "imageCarousel": {
       "prevImage": "Previous image",
       "nextImage": "Next image",
-      "imageDot": "Image {index}"
+      "imageDot": "Image {index}",
+      "pause": "Pause the slideshow",
+      "play": "Play the slideshow",
+      "regionLabel": "Image gallery"
     },
     "compareButton": {
       "add": "Add to compare",
@@ -918,7 +922,10 @@
       "discountBadge": "-{percent}% off, {startDate} – {endDate}",
       "promoCodeBadge": "-{percent}% off with code {code} ({scope}), {startDate} – {endDate}",
       "promoCodeScopeAllProducts": "all products",
-      "promoCodeScopeAllVehicles": "all vehicles"
+      "promoCodeScopeAllVehicles": "all vehicles",
+      "pause": "Pause the slideshow",
+      "play": "Play the slideshow",
+      "regionLabel": "Featured slides"
     },
     "skipToContent": "Skip to main content"
   },
@@ -948,7 +955,7 @@
     "clearRecent": "Clear",
     "searching": "Searching…",
     "noResults": "No results for “{q}”",
-    "minChars": "Type at least {count} characters",
+    "minChars": "{count, plural, one {Type at least # character} other {Type at least # characters}}",
     "viewAllResults": "View all results",
     "error": "Search failed, please try again",
     "resultsTitle": "Search results for “{q}”",

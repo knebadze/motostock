@@ -195,6 +195,28 @@ export function Header({
     mobileScrollRef.current?.scrollTo({ top: 0 });
   }
 
+  // Keyboard access to the mega menu (it's rendered after the category bar,
+  // so Tab from a category goes to the next category, not into its panel):
+  // ArrowDown on a category opens it and moves focus to its first link;
+  // Escape closes it and returns focus to the category; focus leaving both
+  // the bar and the panel closes it.
+  const megaNavRef = useRef<HTMLElement>(null);
+  const megaPanelRef = useRef<HTMLDivElement>(null);
+  const megaTriggerRefs = useRef(new Map<number, HTMLAnchorElement>());
+  // Set while focus is sent back to a category on Escape, so its onFocus
+  // doesn't immediately reopen the menu.
+  const suppressFocusOpenRef = useRef(false);
+
+  function focusFirstMegaMenuLink() {
+    requestAnimationFrame(() => megaPanelRef.current?.querySelector<HTMLElement>("a")?.focus());
+  }
+
+  function handleMegaMenuBlur(event: React.FocusEvent) {
+    const next = event.relatedTarget as Node | null;
+    if (next && (megaNavRef.current?.contains(next) || megaPanelRef.current?.contains(next))) return;
+    setActiveCategoryId(null);
+  }
+
   function cancelMegaMenuClose() {
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
@@ -217,7 +239,12 @@ export function Header({
   useEffect(() => {
     if (activeCategoryId === null) return;
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setActiveCategoryId(null);
+      if (event.key !== "Escape") return;
+      if (megaPanelRef.current?.contains(document.activeElement) && activeCategoryId !== null) {
+        suppressFocusOpenRef.current = true;
+        megaTriggerRefs.current.get(activeCategoryId)?.focus();
+      }
+      setActiveCategoryId(null);
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -482,7 +509,15 @@ export function Header({
 
       {/* Category bar (desktop) — its own full-width row under the logo row
           (RevZilla-style), opening a full-width mega menu on hover/focus. */}
-      <nav onMouseLeave={scheduleMegaMenuClose} className="hidden border-t border-border lg:block">
+      <nav
+        ref={megaNavRef}
+        onMouseLeave={scheduleMegaMenuClose}
+        onBlur={handleMegaMenuBlur}
+        className="hidden border-t border-border lg:block"
+      >
+        <span id="mega-menu-hint" className="sr-only">
+          {tHeader("megaMenuHint")}
+        </span>
         <div className="mx-auto flex max-w-7xl items-stretch justify-center gap-1 px-6 lg:px-8">
           {topLevelCategories.map((category) => {
             const href = `/${category.slug}`;
@@ -495,10 +530,28 @@ export function Header({
                 onMouseEnter={() => (hasChildren ? openMegaMenu(category.id) : scheduleMegaMenuClose())}
               >
                 <Link
+                  ref={(element) => {
+                    if (element) megaTriggerRefs.current.set(category.id, element);
+                    else megaTriggerRefs.current.delete(category.id);
+                  }}
                   href={href}
                   onClick={() => setActiveCategoryId(null)}
-                  onFocus={() => hasChildren && openMegaMenu(category.id)}
+                  onFocus={() => {
+                    if (suppressFocusOpenRef.current) {
+                      suppressFocusOpenRef.current = false;
+                      return;
+                    }
+                    if (hasChildren) openMegaMenu(category.id);
+                  }}
+                  onKeyDown={(event) => {
+                    if (!hasChildren || event.key !== "ArrowDown") return;
+                    event.preventDefault();
+                    openMegaMenu(category.id);
+                    focusFirstMegaMenuLink();
+                  }}
                   aria-expanded={hasChildren ? isOpenNow : undefined}
+                  aria-controls={hasChildren && isOpenNow ? "mega-menu-panel" : undefined}
+                  aria-describedby={hasChildren ? "mega-menu-hint" : undefined}
                   className={`flex h-11 items-center gap-1 border-b-2 px-3 text-sm font-semibold transition-colors ${
                     isOpenNow || isActive
                       ? "border-primary text-primary-text"
@@ -530,8 +583,11 @@ export function Header({
 
       {activeCategory && megaMenuGroups.length > 0 && (
         <div
+          id="mega-menu-panel"
+          ref={megaPanelRef}
           onMouseEnter={cancelMegaMenuClose}
           onMouseLeave={scheduleMegaMenuClose}
+          onBlur={handleMegaMenuBlur}
           className="absolute inset-x-0 top-full hidden max-h-[calc(100dvh-9.5rem)] overflow-y-auto border-b border-border bg-background shadow-xl lg:block"
         >
           <div className="mx-auto flex max-w-7xl gap-10 px-6 py-8 lg:px-8">

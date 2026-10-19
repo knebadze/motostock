@@ -5,7 +5,7 @@ import type { ScheduledJobRun } from "@/lib/api/scheduled-jobs";
 const STATUS_STYLE: Record<ScheduledJobRun["status"], string> = {
   RUNNING: "bg-blue-500/15 text-blue-600",
   SUCCESS: "bg-primary/15 text-primary-text",
-  FAILED: "bg-red-500/15 text-red-600",
+  FAILED: "bg-red-500/15 text-destructive",
 };
 
 const STATUS_LABEL: Record<ScheduledJobRun["status"], string> = {

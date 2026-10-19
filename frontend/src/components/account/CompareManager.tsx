@@ -16,8 +16,8 @@ import { buildVehicleListingSlug, type VehicleListing } from "@/lib/api/vehicle-
 type Locale = "ka" | "en" | "ru";
 type Direction = "higherIsBetter" | "lowerIsBetter";
 
-const BETTER_CLASS = "bg-green-500/10 text-green-600";
-const WORSE_CLASS = "bg-red-500/10 text-red-600";
+const BETTER_CLASS = "bg-green-500/10 text-success";
+const WORSE_CLASS = "bg-red-500/10 text-destructive";
 
 // Known vehicle spec rows worth a better/worse call — anything not listed
 // here (text/lookup rows like color, condition, fuel type, ...) has no
