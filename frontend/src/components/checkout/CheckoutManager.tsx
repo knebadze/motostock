@@ -105,7 +105,12 @@ export function CheckoutManager({
   const noCheckoutMethods = availableDeliveries.length === 0 || paymentMethod == null;
   const [addressId, setAddressId] = useState<number | null>(addresses[0]?.id ?? null);
   const [bankId, setBankId] = useState<number | null>(banks[0]?.id ?? null);
-  const [deliverySpeed, setDeliverySpeed] = useState<OrderDeliverySpeed>("STANDARD");
+  const [selectedDeliverySpeed, setDeliverySpeed] = useState<OrderDeliverySpeed>("STANDARD");
+  // Express exists only when the admin configured it (a price or a time —
+  // same rule as the product page's delivery block); otherwise standard.
+  const expressAvailable =
+    deliveryInfo == null || deliveryInfo.express.price > 0 || deliveryInfo.express.time.trim() !== "";
+  const deliverySpeed: OrderDeliverySpeed = expressAvailable ? selectedDeliverySpeed : "STANDARD";
   const [promoCodeInput, setPromoCodeInput] = useState("");
   const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
   const [preview, setPreview] = useState<CheckoutPreview | null>(null);
@@ -526,28 +531,50 @@ export function CheckoutManager({
           </section>
         )}
 
-        {requiresAddress && (
+        {/* Only a real choice when express is set up — otherwise there's
+            nothing to pick (standard is applied). */}
+        {requiresAddress && expressAvailable && (
           <section className="rounded-2xl border border-border bg-card p-5">
             <h2 className="font-semibold text-foreground">{t("deliverySpeedHeading")}</h2>
             <div className="mt-3 flex flex-col gap-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="deliverySpeed"
-                  checked={deliverySpeed === "STANDARD"}
-                  onChange={() => setDeliverySpeed("STANDARD")}
-                />
-                {t("deliveryStandard")}
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="deliverySpeed"
-                  checked={deliverySpeed === "EXPRESS"}
-                  onChange={() => setDeliverySpeed("EXPRESS")}
-                />
-                {t("deliveryExpress")}
-              </label>
+              {(["STANDARD", "EXPRESS"] as const).map((speed) => {
+                const selectedAddress = addresses.find((address) => address.id === addressId);
+                const option =
+                  deliveryInfo == null
+                    ? null
+                    : speed === "EXPRESS"
+                      ? deliveryInfo.express
+                      : selectedAddress
+                        ? selectedAddress.city.isTbilisi
+                          ? deliveryInfo.tbilisi
+                          : deliveryInfo.regions
+                        : null;
+                return (
+                  <label
+                    key={speed}
+                    className="flex items-start gap-2 rounded-xl border border-border p-3 text-sm has-[:checked]:border-primary"
+                  >
+                    <input
+                      type="radio"
+                      name="deliverySpeed"
+                      className="mt-1"
+                      checked={deliverySpeed === speed}
+                      onChange={() => setDeliverySpeed(speed)}
+                    />
+                    <span>
+                      <span className="block font-medium text-foreground">
+                        {t(speed === "EXPRESS" ? "deliveryExpress" : "deliveryStandard")}
+                      </span>
+                      {option && (
+                        <span className="block text-muted-foreground">
+                          {priceLabel(option.price)}
+                          {option.time.trim() ? ` · ${option.time.trim()}` : ""}
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           </section>
         )}

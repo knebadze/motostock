@@ -857,7 +857,8 @@
     "ACCOUNT_DELETE_EMAIL_MISMATCH": "The email doesn't match",
     "ACCOUNT_HAS_ACTIVE_ORDERS": "You have an order in progress — the account can be deleted once it's completed or cancelled.",
     "STAFF_ACCOUNT_DELETE_FORBIDDEN": "Staff accounts can't be deleted here.",
-    "CHECKOUT_METHOD_UNAVAILABLE": "The chosen delivery or payment method is currently unavailable — refresh the page and choose another."
+    "CHECKOUT_METHOD_UNAVAILABLE": "The chosen delivery or payment method is currently unavailable — refresh the page and choose another.",
+    "EXPRESS_DELIVERY_UNAVAILABLE": "Express delivery is currently unavailable — please choose standard."
   },
   "Common": {
     "genericError": "Something went wrong, please try again",

@@ -439,6 +439,14 @@ async function resolveDelivery(
   }
 
   const speed: OrderDeliverySpeed = deliverySpeed === "EXPRESS" ? "EXPRESS" : "STANDARD";
+  // Express is only offered once the admin set it up (a price or a time) —
+  // same rule as the storefront (product-page delivery block, checkout).
+  if (speed === "EXPRESS") {
+    const [expressPrice, expressTime] = await Promise.all([getDeliveryExpressPrice(), getDeliveryExpressTime()]);
+    if (expressPrice <= 0 && expressTime.trim() === "") {
+      throw new ApiError(400, "ექსპრეს მიწოდება ამჟამად მიუწვდომელია", "EXPRESS_DELIVERY_UNAVAILABLE");
+    }
+  }
   const [deliveryCost, deliveryTimeSnapshot] =
     speed === "EXPRESS"
       ? await Promise.all([getDeliveryExpressPrice(), getDeliveryExpressTime()])
