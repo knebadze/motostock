@@ -58,6 +58,8 @@ export function ScrollToTopButton() {
       type="button"
       onClick={scrollToTop}
       aria-label={t("label")}
+      // Lifted above MobileActionBar's sticky bar when it's showing.
+      style={{ translate: "0 calc(-1 * var(--mobile-action-bar-height, 0px))" }}
       className={`fixed right-4 z-40 flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-[bottom] duration-200 hover:bg-primary-hover sm:right-6 ${
         cookieNoticeVisible ? "bottom-40 sm:bottom-44" : "bottom-20"
       }`}

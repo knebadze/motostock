@@ -232,7 +232,8 @@ export function ChatWidget({
           className={`fixed right-4 z-50 flex w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl transition-[bottom] duration-200 sm:right-6 ${
             cookieNoticeVisible ? "bottom-40 sm:bottom-44" : "bottom-22 sm:bottom-24"
           }`}
-          style={{ maxHeight: "min(28rem, 70vh)" }}
+          // translate: lifted above MobileActionBar's sticky bar when it's showing.
+          style={{ maxHeight: "min(28rem, 70vh)", translate: "0 calc(-1 * var(--mobile-action-bar-height, 0px))" }}
         >
           <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
             <h2 className="text-sm font-bold tracking-tight">{t("title")}</h2>
@@ -368,6 +369,8 @@ export function ChatWidget({
         type="button"
         onClick={() => setOpen((current) => !current)}
         aria-label={open ? t("closeLabel") : t("openLabel")}
+        // Lifted above MobileActionBar's sticky bar when it's showing.
+        style={{ translate: "0 calc(-1 * var(--mobile-action-bar-height, 0px))" }}
         className={`fixed right-4 z-50 flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-[bottom] duration-200 hover:bg-primary-hover sm:right-6 ${
           cookieNoticeVisible ? "bottom-24 sm:bottom-28" : "bottom-6"
         }`}

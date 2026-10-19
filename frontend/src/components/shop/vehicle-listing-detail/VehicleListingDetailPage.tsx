@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/format";
 import { useVehiclePriceDisplay } from "@/lib/useVehiclePriceDisplay";
@@ -8,6 +8,7 @@ import { WishlistButton } from "@/components/shared/WishlistButton";
 import { CompareButton } from "@/components/shared/CompareButton";
 import { AddToCartButton } from "@/components/shared/AddToCartButton";
 import { ShowroomPurchaseNotice } from "@/components/shared/ShowroomPurchaseNotice";
+import { MobileActionBar } from "@/components/shared/MobileActionBar";
 import { ShowroomContactActions } from "./ShowroomContactActions";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 import type { Category } from "@/lib/api/categories";
@@ -47,6 +48,7 @@ export function VehicleListingDetailPage({
   const tCart = useTranslations("Cart");
 
   const outOfStock = listing.stockQuantity === 0;
+  const buyRowRef = useRef<HTMLDivElement>(null);
   const priceDisplay = useVehiclePriceDisplay(listing.priceCurrency);
   const title = [listing.vehicleCatalog.model.name, listing.vehicleCatalog.variant]
     .filter(Boolean)
@@ -100,7 +102,7 @@ export function VehicleListingDetailPage({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div ref={buyRowRef} className="flex flex-wrap items-center gap-3">
             {purchasableOnline ? (
               <AddToCartButton
                 itemType="VEHICLE_LISTING"
@@ -145,6 +147,31 @@ export function VehicleListingDetailPage({
           <VehicleSpecs listing={listing} />
         </div>
       </div>
+
+      {purchasableOnline && (
+        <MobileActionBar targetRef={buyRowRef}>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs text-muted-foreground">{title}</p>
+            <p className="text-base font-bold text-primary-text">
+              {formatPrice(
+                priceDisplay.convert(listing.activeDiscount?.discountPrice ?? listing.price),
+                priceDisplay.displayCurrency,
+              )}
+            </p>
+          </div>
+          <AddToCartButton
+            itemType="VEHICLE_LISTING"
+            id={listing.id}
+            stockQuantity={listing.stockQuantity}
+            disabled={outOfStock}
+            labelAdd={tCart("addToCart")}
+            labelAdded={tCart("addedToCart")}
+            labelOutOfStock={tCart("outOfStock")}
+            errorMessage={tCart("addError")}
+            className="shrink-0"
+          />
+        </MobileActionBar>
+      )}
 
       {descriptionHtml && (
         <section className="mt-14 border-t border-border pt-8">

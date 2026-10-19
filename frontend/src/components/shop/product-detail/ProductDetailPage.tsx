@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatPrice, pickLookupName } from "@/lib/format";
 import { WishlistButton } from "@/components/shared/WishlistButton";
 import { CompareButton } from "@/components/shared/CompareButton";
 import { AddToCartButton } from "@/components/shared/AddToCartButton";
 import { ShowroomPurchaseNotice } from "@/components/shared/ShowroomPurchaseNotice";
+import { MobileActionBar } from "@/components/shared/MobileActionBar";
 import type {
   ProductDetail,
   ProductFitmentRuleSummary,
@@ -126,6 +127,8 @@ export function ProductDetailPage({
     product.variants.find((variant) => variant.id === selectedVariantId) ?? defaultVariant;
 
   const outOfStock = !selectedVariant || selectedVariant.stockQuantity === 0;
+  // The add-to-cart row — the mobile sticky bar shows once it scrolls away.
+  const buyRowRef = useRef<HTMLDivElement>(null);
   const images = collectGalleryImages(product);
   const preferredImage = resolvePreferredImage(product, selectedVariant);
 
@@ -193,7 +196,7 @@ export function ProductDetailPage({
 
           {fitBadge}
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div ref={buyRowRef} className="flex flex-wrap items-center gap-3">
             {selectedVariant && !purchasableOnline && !outOfStock && (
               <ShowroomPurchaseNotice label={tCart("visitShowroom")} />
             )}
@@ -253,6 +256,28 @@ export function ProductDetailPage({
           )}
         </div>
       </div>
+
+      {selectedVariant && purchasableOnline && (
+        <MobileActionBar targetRef={buyRowRef}>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs text-muted-foreground">{product.name[locale]}</p>
+            <p className="text-base font-bold text-primary-text">
+              {formatPrice(selectedVariant.activeDiscount?.discountPrice ?? selectedVariant.price)}
+            </p>
+          </div>
+          <AddToCartButton
+            itemType="PRODUCT_VARIANT"
+            id={selectedVariant.id}
+            stockQuantity={selectedVariant.stockQuantity}
+            disabled={outOfStock}
+            labelAdd={tCart("addToCart")}
+            labelAdded={tCart("addedToCart")}
+            labelOutOfStock={tCart("outOfStock")}
+            errorMessage={tCart("addError")}
+            className="shrink-0"
+          />
+        </MobileActionBar>
+      )}
 
       {purchasableOnline && (
         <BuyTogether product={product} blockedCategoryIds={onlinePurchaseBlockedCategoryIds} />

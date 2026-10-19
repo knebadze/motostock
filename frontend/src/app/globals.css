@@ -116,6 +116,7 @@ body {
      never overlaps real content (a short page's submit button, checkout
      fields) — 0px the rest of the time, so this is a no-op everywhere the
      banner doesn't render (e.g. the admin panel). */
-  padding-bottom: var(--cookie-notice-height, 0px);
+  /* + MobileActionBar.tsx's sticky bar (0 when not shown). */
+  padding-bottom: calc(var(--cookie-notice-height, 0px) + var(--mobile-action-bar-height, 0px));
   transition: padding-bottom 0.2s ease;
 }

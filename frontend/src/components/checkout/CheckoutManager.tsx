@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -28,6 +28,7 @@ import type { GarageVehicle, VehicleSearchOption } from "@/lib/api/vehicle-catal
 import type { LocalizedString } from "@/lib/api/categories";
 import type { PublicBank } from "@/lib/api/banks";
 import { AddressFormModal } from "@/components/account/AddressFormModal";
+import { MobileActionBar } from "@/components/shared/MobileActionBar";
 import { CompatibilityChecker } from "./CompatibilityChecker";
 
 export function CheckoutManager({
@@ -122,6 +123,9 @@ export function CheckoutManager({
   // is refusing to silently attach it to a cart that's since changed, so a
   // real *new* attempt needs a key of its own.
   const [idempotencyKey, setIdempotencyKey] = useState(() => generateUuid());
+  // The summary's own "place order" button — on phones the sticky bar shows
+  // once it's off screen (it sits at the very end of the single column).
+  const placeOrderButtonRef = useRef<HTMLButtonElement>(null);
 
   const priceLabel = (price: number) => (price > 0 ? formatPrice(price) : t("free"));
   const requiresAddress = deliveryMethod === "COURIER";
@@ -693,6 +697,7 @@ export function CheckoutManager({
           )}
 
           <button
+            ref={placeOrderButtonRef}
             type="button"
             onClick={handlePlaceOrder}
             disabled={
@@ -704,6 +709,25 @@ export function CheckoutManager({
           </button>
         </section>
       </div>
+
+      <MobileActionBar targetRef={placeOrderButtonRef}>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-muted-foreground">{displayPreview ? t("total") : t("itemsTotal")}</p>
+          <p className="text-base font-bold text-primary-text">
+            {formatPrice(displayPreview ? displayPreview.total : cart.subtotal)}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handlePlaceOrder}
+          disabled={
+            noCheckoutMethods || placing || previewLoading || !displayPreview || displayPreview.hasStockIssues
+          }
+          className="shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
+        >
+          {placing ? t("placing") : t("placeOrder")}
+        </button>
+      </MobileActionBar>
 
       <AddressFormModal
         key={String(addressModalOpen)}
