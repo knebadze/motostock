@@ -54,6 +54,8 @@ export const getProductsPageFromServer = cache(async (
     params: { categoryId, vehicleCatalogId, page, pageSize: SHOP_PAGE_SIZE, sortBy },
     fallback: { items: [], total: 0, page: 1, pageSize: SHOP_PAGE_SIZE },
     extract: (data) => data,
+    // Category page only: an empty page 2+ 404s, so an outage must 5xx.
+    throwIfUnavailable: true,
   });
 });
 
@@ -68,6 +70,7 @@ export const getCompatibleProductsPageFromServer = cache(async (
     params: { vehicleCatalogId, page, pageSize: SHOP_PAGE_SIZE, sortBy: "newest" },
     fallback: { items: [], total: 0, page, pageSize: SHOP_PAGE_SIZE },
     extract: (data) => data,
+    throwIfUnavailable: true,
   });
 });
 

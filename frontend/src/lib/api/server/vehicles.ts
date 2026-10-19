@@ -71,6 +71,7 @@ export const getVehicleListingsPageFromServer = cache(async (
       params: { categoryId, page, pageSize: SHOP_PAGE_SIZE, sortBy, bulkDiscountEventId },
       fallback: { items: [], total: 0, page: 1, pageSize: SHOP_PAGE_SIZE },
       extract: (data) => data,
+      throwIfUnavailable: true,
     },
   );
 });

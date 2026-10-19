@@ -64,6 +64,13 @@ async function resolveIsVehicleCategory(categorySlug: string): Promise<boolean> 
   return category ? isVehicleCategory(categories, category.id) : false;
 }
 
+// Condition lookup key (NEW / USED) → schema.org itemCondition.
+function schemaItemCondition(key: string | undefined): string | undefined {
+  if (key === "NEW") return "https://schema.org/NewCondition";
+  if (key === "USED") return "https://schema.org/UsedCondition";
+  return undefined;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -266,9 +273,18 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
       .map((image) => resolveMediaUrl(image.imageUrl))
       .filter((url): url is string => Boolean(url));
 
+    const listingCondition = schemaItemCondition(listing.condition?.key);
     const vehicleJsonLd = {
       "@context": "https://schema.org",
-      "@type": "Product",
+      // Vehicle (a Product subtype) unlocks the vehicle properties below.
+      "@type": ["Product", "Vehicle"],
+      model: listing.vehicleCatalog.model.name,
+      vehicleModelDate: String(listing.year),
+      mileageFromOdometer:
+        listing.mileageKm != null
+          ? { "@type": "QuantitativeValue", value: listing.mileageKm, unitCode: "KMT" }
+          : undefined,
+      itemCondition: listingCondition,
       name: title,
       image: images.length > 0 ? images : undefined,
       description: (() => {
@@ -289,12 +305,19 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
         // cost ₾8,000.
         priceCurrency: listing.priceCurrency,
         price: listing.activeDiscount?.discountPrice ?? listing.price,
+        // The listing's own status wins (an admin marks a bike SOLD/RESERVED
+        // without necessarily zeroing its stock).
         availability:
-          listing.stockQuantity <= 0
-            ? "https://schema.org/OutOfStock"
-            : purchasableOnline
-              ? "https://schema.org/InStock"
-              : "https://schema.org/InStoreOnly",
+          listing.status?.key === "SOLD"
+            ? "https://schema.org/SoldOut"
+            : listing.status?.key === "RESERVED"
+              ? "https://schema.org/LimitedAvailability"
+              : listing.stockQuantity <= 0
+                ? "https://schema.org/OutOfStock"
+                : purchasableOnline
+                  ? "https://schema.org/InStock"
+                  : "https://schema.org/InStoreOnly",
+        itemCondition: listingCondition,
         url: canonicalUrl,
       },
     };
@@ -408,15 +431,47 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
   const images = product.variants
     .flatMap((variant) => variant.images.map((image) => resolveMediaUrl(image.imageUrl)))
     .filter((url): url is string => Boolean(url));
-  const totalStock = product.variants.reduce((sum, variant) => sum + variant.stockQuantity, 0);
-  const effectivePrices = product.variants.map(
-    (variant) => variant.activeDiscount?.discountPrice ?? variant.price,
-  );
+
+  // Shipping + returns, from the same Settings the page's delivery block
+  // shows — only for products bought online (deliveryInfo is fetched then).
+  const shippingDetails =
+    deliveryInfo && deliveryInfo.methods.courier
+      ? [
+          {
+            "@type": "OfferShippingDetails",
+            shippingRate: { "@type": "MonetaryAmount", value: deliveryInfo.tbilisi.price, currency: "GEL" },
+            shippingDestination: { "@type": "DefinedRegion", addressCountry: "GE", addressRegion: "GE-TB" },
+          },
+          {
+            "@type": "OfferShippingDetails",
+            shippingRate: { "@type": "MonetaryAmount", value: deliveryInfo.regions.price, currency: "GEL" },
+            shippingDestination: { "@type": "DefinedRegion", addressCountry: "GE" },
+          },
+        ]
+      : undefined;
+  const returnPolicy =
+    deliveryInfo && deliveryInfo.returnPeriodDays > 0
+      ? {
+          "@type": "MerchantReturnPolicy",
+          applicableCountry: "GE",
+          returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+          merchantReturnDays: deliveryInfo.returnPeriodDays,
+        }
+      : undefined;
+  const variantAvailability = (stock: number) =>
+    stock <= 0
+      ? "https://schema.org/OutOfStock"
+      : purchasableOnline
+        ? "https://schema.org/InStock"
+        : "https://schema.org/InStoreOnly";
 
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name[locale],
+    // One sku for a single-variant product; per-variant skus go on each
+    // variant's Offer below.
+    sku: product.variants.length === 1 ? (product.variants[0].sku ?? undefined) : undefined,
     image: images.length > 0 ? images : undefined,
     description: (() => {
       const raw =
@@ -424,22 +479,21 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
       return raw ? stripHtml(raw) : undefined;
     })(),
     brand: product.productBrand ? { "@type": "Brand", name: product.productBrand.name } : undefined,
+    // One Offer per variant (its own sku, price, stock, condition), each with
+    // the shop's shipping and return terms.
     offers:
-      effectivePrices.length > 0
-        ? {
-            "@type": effectivePrices.length > 1 ? "AggregateOffer" : "Offer",
+      product.variants.length > 0
+        ? product.variants.map((variant) => ({
+            "@type": "Offer",
+            sku: variant.sku ?? undefined,
             priceCurrency: "GEL",
-            ...(effectivePrices.length > 1
-              ? { lowPrice: Math.min(...effectivePrices), highPrice: Math.max(...effectivePrices) }
-              : { price: effectivePrices[0] }),
-            availability:
-              totalStock <= 0
-                ? "https://schema.org/OutOfStock"
-                : purchasableOnline
-                  ? "https://schema.org/InStock"
-                  : "https://schema.org/InStoreOnly",
+            price: variant.activeDiscount?.discountPrice ?? variant.price,
+            availability: variantAvailability(variant.stockQuantity),
+            itemCondition: schemaItemCondition(variant.condition?.key),
             url: canonicalUrl,
-          }
+            shippingDetails,
+            hasMerchantReturnPolicy: returnPolicy,
+          }))
         : undefined,
   };
 

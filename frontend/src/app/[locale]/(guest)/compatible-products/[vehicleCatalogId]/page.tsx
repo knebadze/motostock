@@ -8,7 +8,7 @@ import {
 } from "@/lib/api/server";
 import { buildVehicleCatalogSlug, parseVehicleCatalogIdFromSlug } from "@/lib/api/vehicle-catalog";
 import { permanentRedirect } from "@/i18n/navigation";
-import { buildCanonicalUrl, getAlternateLanguages, noindexMetadata } from "@/lib/seo";
+import { buildCanonicalUrl, getAlternateLanguages, noindexMetadata, parsePageParam } from "@/lib/seo";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 import { siteConfig } from "@/config/site";
 import { CompatibleProductsPage } from "@/components/shop/CompatibleProductsPage";
@@ -19,11 +19,6 @@ import { buildSocialMetadata } from "@/lib/share-metadata";
 // name; only the trailing id is read from it.
 type PageParams = { locale: "ka" | "en" | "ru"; vehicleCatalogId: string };
 type PageSearchParams = { page?: string };
-
-function parsePage(page: string | undefined): number {
-  const parsed = Number(page);
-  return Number.isInteger(parsed) && parsed > 1 ? parsed : 1;
-}
 
 // Was a blanket noindex — but "parts for <brand> <model>" is exactly the
 // search this shop most wants to rank for, and this page is the answer.
@@ -39,7 +34,7 @@ export async function generateMetadata({
   searchParams: Promise<PageSearchParams>;
 }): Promise<Metadata> {
   const [{ locale, vehicleCatalogId }, { page }] = await Promise.all([params, searchParams]);
-  const pageNum = parsePage(page);
+  const pageNum = parsePageParam(page);
   const id = parseVehicleCatalogIdFromSlug(vehicleCatalogId);
   if (id == null) return {};
 
@@ -71,7 +66,7 @@ export async function generateMetadata({
           // Page 2+ self-canonicalize (each lists different products).
           alternates: {
             canonical: buildCanonicalUrl(pathname, locale, { page: pageNum }),
-            languages: getAlternateLanguages(pathname),
+            languages: getAlternateLanguages(pathname, { page: pageNum }),
           },
         }),
     ...(await buildSocialMetadata({ locale, title, description, pathname, imageSrc: vehicle.imageUrl })),
@@ -86,7 +81,7 @@ export default async function VehicleCompatibleProductsPage({
   searchParams: Promise<PageSearchParams>;
 }) {
   const [{ locale, vehicleCatalogId }, { page }] = await Promise.all([params, searchParams]);
-  const pageNum = parsePage(page);
+  const pageNum = parsePageParam(page);
   const id = parseVehicleCatalogIdFromSlug(vehicleCatalogId);
   if (id == null) {
     notFound();

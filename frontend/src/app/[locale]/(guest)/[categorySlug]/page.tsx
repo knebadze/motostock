@@ -18,7 +18,7 @@ import {
   getDescendantIds,
   getVehicleFitmentDisabledCategoryIds,
 } from "@/lib/categories-tree";
-import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
+import { buildCanonicalUrl, getAlternateLanguages, parsePageParam } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 import { JsonLd } from "@/components/shared/JsonLd";
 import { ProductShopPage } from "@/components/shop/ProductShopPage";
@@ -56,7 +56,7 @@ export async function generateMetadata({
   const category = categories.find((item) => item.slug === categorySlug);
   if (!category) return {};
 
-  const pageNum = Number(page) || 1;
+  const pageNum = parsePageParam(page);
   const t = await getTranslations({ locale, namespace: "Metadata" });
   const title =
     pageNum > 1
@@ -77,7 +77,7 @@ export async function generateMetadata({
     description,
     alternates: {
       canonical: buildCanonicalUrl(pathname, locale, { page: pageNum }),
-      languages: getAlternateLanguages(pathname),
+      languages: getAlternateLanguages(pathname, { page: pageNum }),
     },
     ...(await buildSocialMetadata({
       locale,
@@ -114,7 +114,7 @@ export default async function CategoryShopPage({
     notFound();
   }
 
-  const initialPage = Number(page) || 1;
+  const initialPage = parsePageParam(page);
   const initialSort = sort ?? "newest";
   // Set by the homepage hero-slider's event-scoped DISCOUNT slides (see
   // HeroSlider.tsx's buildDiscountLink) when a BulkDiscountEvent targets
@@ -166,6 +166,9 @@ export default async function CategoryShopPage({
       getVehicleListingsPageFromServer(category.id, initialPage, vehicleSortBy, parsedEventId),
       getVehicleCategoryFiltersFromServer(category.id),
     ]);
+    // A page past the end (?page=999) — 404, not an empty page that would
+    // be indexed as its own self-canonical URL.
+    if (initialPage > 1 && listingsPage.items.length === 0) notFound();
     return (
       <>
         {breadcrumbScript}
@@ -199,6 +202,8 @@ export default async function CategoryShopPage({
     getCategoryFiltersFromServer(category.id),
     vehicleFitmentEnabled ? getMyGarageFromServer() : Promise.resolve([]),
   ]);
+  // Same past-the-end 404 as the vehicle branch above.
+  if (initialPage > 1 && productsPage.items.length === 0) notFound();
   const filters = vehicleFitmentEnabled
     ? configuredFilters
     : configuredFilters.filter((filter) => filter.filterType !== "MY_VEHICLE");

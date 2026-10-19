@@ -111,7 +111,7 @@
 body {
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), var(--font-cyrillic), Arial, Helvetica, sans-serif;
   /* Set by CookieNotice.tsx while its fixed bottom bar is visible, so it
      never overlaps real content (a short page's submit button, checkout
      fields) — 0px the rest of the time, so this is a no-op everywhere the
