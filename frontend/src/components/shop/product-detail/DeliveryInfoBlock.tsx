@@ -44,7 +44,7 @@ export function DeliveryInfoBlock({ info, pickupAddress }: { info: PublicDeliver
     { label: t("deliveryTbilisi"), ...info.tbilisi },
     { label: t("deliveryRegions"), ...info.regions },
     { label: t("deliveryExpress"), ...info.express },
-  ].filter((option) => option.price > 0 || option.time.trim() !== "");
+  ].filter((option) => info.methods.courier && (option.price > 0 || option.time.trim() !== ""));
 
   return (
     <div className="flex flex-col divide-y divide-border rounded-2xl border border-border bg-card text-sm">
@@ -64,13 +64,15 @@ export function DeliveryInfoBlock({ info, pickupAddress }: { info: PublicDeliver
           </div>
         </div>
       )}
-      <div className="flex gap-3 p-4">
-        <StoreIcon />
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold text-foreground">{t("pickupHeading")}</p>
-          {pickupAddress && <p className="mt-1 text-muted-foreground">{pickupAddress}</p>}
+      {info.methods.pickup && (
+        <div className="flex gap-3 p-4">
+          <StoreIcon />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-foreground">{t("pickupHeading")}</p>
+            {pickupAddress && <p className="mt-1 text-muted-foreground">{pickupAddress}</p>}
+          </div>
         </div>
-      </div>
+      )}
       {info.returnPeriodDays > 0 && (
         <div className="flex gap-3 p-4">
           <ReturnIcon />

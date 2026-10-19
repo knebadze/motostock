@@ -22,7 +22,7 @@ import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
 import { FinaSyncBadge } from "./FinaSyncBadge";
 import { FinaResolvePanel } from "./FinaResolvePanel";
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
-import { DELIVERY_SPEED_LABELS, FULFILLMENT_LABELS, RISK_FLAG_LABELS } from "./order-labels";
+import { DELIVERY_SPEED_LABELS, DELIVERY_METHOD_LABELS, PAYMENT_METHOD_LABELS, RISK_FLAG_LABELS } from "./order-labels";
 
 export function OrderDetailModal({
   orderId,
@@ -370,7 +370,8 @@ export function OrderDetailModal({
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 მიწოდება
               </p>
-              <p className="mt-1 text-sm">{FULFILLMENT_LABELS[order.fulfillmentMethod]}</p>
+              <p className="mt-1 text-sm">{DELIVERY_METHOD_LABELS[order.deliveryMethod]}</p>
+              <p className="text-sm text-muted-foreground">{PAYMENT_METHOD_LABELS[order.paymentMethod]}</p>
               {order.deliverySpeed && (
                 <p className="text-sm text-muted-foreground">{DELIVERY_SPEED_LABELS[order.deliverySpeed]}</p>
               )}

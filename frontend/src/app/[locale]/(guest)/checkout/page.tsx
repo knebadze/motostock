@@ -9,6 +9,7 @@ import {
   getMyCartFromServer,
   getMyGarageFromServer,
   getPublicBanksFromServer,
+  getDeliveryInfoFromServer,
   getVehicleSearchOptionsFromServer,
 } from "@/lib/api/server";
 import { CheckoutManager } from "@/components/checkout/CheckoutManager";
@@ -64,7 +65,7 @@ export default async function CheckoutPage() {
     ? await Promise.all([getVehicleSearchOptionsFromServer(), getMyGarageFromServer()])
     : [[], []];
 
-  const t = await getTranslations("Checkout");
+  const [t, deliveryInfo] = await Promise.all([getTranslations("Checkout"), getDeliveryInfoFromServer()]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
@@ -77,6 +78,7 @@ export default async function CheckoutPage() {
         garageVehicles={garageVehicles}
         vehicleFitmentDisabledCategoryIds={[...vehicleFitmentDisabledCategoryIds]}
         banks={banks}
+        deliveryInfo={deliveryInfo}
       />
     </div>
   );

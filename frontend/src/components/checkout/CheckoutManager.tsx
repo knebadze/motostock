@@ -15,9 +15,12 @@ import {
   placeOrder,
   previewCheckout,
   type CheckoutPreview,
+  PAYMENT_METHODS_BY_DELIVERY,
+  type OrderDeliveryMethod,
   type OrderDeliverySpeed,
-  type OrderFulfillmentMethod,
+  type OrderPaymentMethod,
 } from "@/lib/api/orders";
+import type { PublicDeliveryInfo } from "@/lib/api/settings";
 import type { Address } from "@/lib/api/addresses";
 import type { LookupItem } from "@/lib/api/lookups";
 import type { Cart } from "@/lib/api/cart";
@@ -35,6 +38,7 @@ export function CheckoutManager({
   garageVehicles,
   vehicleFitmentDisabledCategoryIds,
   banks,
+  deliveryInfo,
 }: {
   addresses: Address[];
   cities: LookupItem[];
@@ -45,6 +49,10 @@ export function CheckoutManager({
   // their products are left out of the compatibility check.
   vehicleFitmentDisabledCategoryIds: number[];
   banks: PublicBank[];
+  // Delivery prices (shown on the delivery options) and which delivery /
+  // payment methods the admin left switched on. null (couldn't load) —
+  // everything is offered and the server still validates.
+  deliveryInfo: PublicDeliveryInfo | null;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Checkout");
@@ -72,9 +80,28 @@ export function CheckoutManager({
 
   const [addresses, setAddresses] = useState(initialAddresses);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
-  const [fulfillmentMethod, setFulfillmentMethod] = useState<OrderFulfillmentMethod>(
-    addresses.length > 0 ? "CARD" : "PICKUP",
+  // Only enabled, mutually compatible methods are offered (backend
+  // orders.service.ts's assertCheckoutMethods is the authority). Card also
+  // needs at least one active bank to pay through.
+  const methods = deliveryInfo?.methods ?? { courier: true, pickup: true, card: true, onDelivery: true, inStore: true };
+  const isPaymentEnabled = (method: OrderPaymentMethod) =>
+    method === "CARD" ? methods.card && banks.length > 0 : method === "ON_DELIVERY" ? methods.onDelivery : methods.inStore;
+  const paymentsFor = (delivery: OrderDeliveryMethod) => PAYMENT_METHODS_BY_DELIVERY[delivery].filter(isPaymentEnabled);
+  const availableDeliveries = (["COURIER", "PICKUP"] as const).filter(
+    (delivery) => (delivery === "COURIER" ? methods.courier : methods.pickup) && paymentsFor(delivery).length > 0,
   );
+  const [deliveryMethod, setDeliveryMethod] = useState<OrderDeliveryMethod>(() =>
+    availableDeliveries.includes("COURIER") && (addresses.length > 0 || !availableDeliveries.includes("PICKUP"))
+      ? "COURIER"
+      : (availableDeliveries[0] ?? "PICKUP"),
+  );
+  // The shopper's pick; when it doesn't fit the chosen delivery method, the
+  // first compatible one is used instead (derived, no effect needed).
+  const [selectedPayment, setSelectedPayment] = useState<OrderPaymentMethod | null>(null);
+  const availablePayments = paymentsFor(deliveryMethod);
+  const paymentMethod: OrderPaymentMethod | null =
+    selectedPayment && availablePayments.includes(selectedPayment) ? selectedPayment : (availablePayments[0] ?? null);
+  const noCheckoutMethods = availableDeliveries.length === 0 || paymentMethod == null;
   const [addressId, setAddressId] = useState<number | null>(addresses[0]?.id ?? null);
   const [bankId, setBankId] = useState<number | null>(banks[0]?.id ?? null);
   const [deliverySpeed, setDeliverySpeed] = useState<OrderDeliverySpeed>("STANDARD");
@@ -96,9 +123,11 @@ export function CheckoutManager({
   // real *new* attempt needs a key of its own.
   const [idempotencyKey, setIdempotencyKey] = useState(() => generateUuid());
 
-  const requiresAddress = fulfillmentMethod !== "PICKUP";
-  const requiresBank = fulfillmentMethod === "CARD";
-  const canFetchPreview = (!requiresAddress || addressId != null) && (!requiresBank || bankId != null);
+  const priceLabel = (price: number) => (price > 0 ? formatPrice(price) : t("free"));
+  const requiresAddress = deliveryMethod === "COURIER";
+  const requiresBank = paymentMethod === "CARD";
+  const canFetchPreview =
+    !noCheckoutMethods && (!requiresAddress || addressId != null) && (!requiresBank || bankId != null);
   // Derived rather than reset via setState in the effect below (nothing to
   // preview yet when a courier method has no address picked) — avoids a
   // synchronous setState-in-effect that could instead just be computed here.
@@ -142,7 +171,8 @@ export function CheckoutManager({
     const timeoutId = setTimeout(() => {
       setPreviewLoading(true);
       previewCheckout({
-        fulfillmentMethod,
+        deliveryMethod,
+        paymentMethod: paymentMethod!,
         addressId: requiresAddress ? (addressId ?? undefined) : undefined,
         deliverySpeed: requiresAddress ? deliverySpeed : undefined,
         promoCode: appliedPromoCode ?? undefined,
@@ -173,7 +203,8 @@ export function CheckoutManager({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    fulfillmentMethod,
+    deliveryMethod,
+    paymentMethod,
     addressId,
     bankId,
     deliverySpeed,
@@ -190,7 +221,8 @@ export function CheckoutManager({
     setPromoApplying(true);
     try {
       const result = await previewCheckout({
-        fulfillmentMethod,
+        deliveryMethod,
+        paymentMethod: paymentMethod!,
         addressId: requiresAddress ? (addressId ?? undefined) : undefined,
         deliverySpeed: requiresAddress ? deliverySpeed : undefined,
         promoCode: code,
@@ -218,6 +250,7 @@ export function CheckoutManager({
   }
 
   async function handlePlaceOrder() {
+    if (noCheckoutMethods) return;
     if (requiresAddress && addressId == null) {
       toast.error(t("addressRequired"));
       return;
@@ -230,7 +263,8 @@ export function CheckoutManager({
     setPlacing(true);
     try {
       const order = await placeOrder({
-        fulfillmentMethod,
+        deliveryMethod,
+        paymentMethod: paymentMethod!,
         addressId: requiresAddress ? (addressId ?? undefined) : undefined,
         deliverySpeed: requiresAddress ? deliverySpeed : undefined,
         promoCode: appliedPromoCode ?? undefined,
@@ -279,143 +313,86 @@ export function CheckoutManager({
 
     <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
       <div className="flex flex-col gap-6">
-        {requiresAddress && (
-          <section
-            className={`rounded-2xl border bg-card p-5 ${
-              addressId == null ? "border-red-300" : "border-border"
-            }`}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="font-semibold text-foreground">{t("addressHeading")}</h2>
-              <button
-                type="button"
-                onClick={() => setAddressModalOpen(true)}
-                className="text-sm font-medium text-primary-text hover:underline"
-              >
-                {t("addAddressButton")}
-              </button>
-            </div>
-
-            {addresses.length === 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">{t("noAddresses")}</p>
-            ) : (
-              <div className="mt-3 flex flex-col gap-2">
-                {addresses.map((address) => (
-                  <label
-                    key={address.id}
-                    className="flex items-start gap-2 rounded-xl border border-border p-3 text-sm has-[:checked]:border-primary"
-                  >
-                    <input
-                      type="radio"
-                      name="addressId"
-                      className="mt-1"
-                      checked={addressId === address.id}
-                      onChange={() => setAddressId(address.id)}
-                    />
-                    <span>
-                      <span className="block font-medium text-foreground">{address.phone}</span>
-                      <span className="block text-muted-foreground">
-                        {address.city[cityLabelKey]}, {address.street}
-                        {address.building ? `, ${address.building}` : ""}
-                      </span>
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <h2 className="font-semibold text-foreground">{t("deliveryMethodHeading")}</h2>
+          {noCheckoutMethods ? (
+            <p className="mt-2 text-sm text-muted-foreground">{t("noCheckoutMethods")}</p>
+          ) : (
+            <div className="mt-3 flex flex-col gap-2">
+              {availableDeliveries.map((delivery) => (
+                <label
+                  key={delivery}
+                  className="flex items-start gap-2 rounded-xl border border-border p-3 text-sm has-[:checked]:border-primary"
+                >
+                  <input
+                    type="radio"
+                    name="deliveryMethod"
+                    className="mt-1"
+                    checked={deliveryMethod === delivery}
+                    onChange={() => setDeliveryMethod(delivery)}
+                  />
+                  <span>
+                    <span className="block font-medium text-foreground">
+                      {t(delivery === "COURIER" ? "deliveryCourier" : "deliveryPickup")}
                     </span>
-                  </label>
-                ))}
-              </div>
-            )}
-            {/* Ambient, not just on failed submit — shows the moment this
-                section is incomplete (e.g. switching to a delivery method
-                with no saved address yet), so the disabled Place Order
-                button below always has a nearby explanation instead of
-                only the toast handlePlaceOrder falls back to. */}
-            {requiresAddress && addressId == null && (
-              <p className="mt-2 text-sm font-medium text-red-600">{t("addressRequired")}</p>
-            )}
+                    <span className="block text-muted-foreground">
+                      {delivery === "COURIER"
+                        ? deliveryInfo
+                          ? t("deliveryCourierHint", {
+                              tbilisi: priceLabel(deliveryInfo.tbilisi.price),
+                              regions: priceLabel(deliveryInfo.regions.price),
+                            })
+                          : t("deliveryCourierHintPlain")
+                        : t("deliveryPickupHint")}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {!noCheckoutMethods && (
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <h2 className="font-semibold text-foreground">{t("paymentMethodHeading")}</h2>
+            <div className="mt-3 flex flex-col gap-2">
+              {availablePayments.map((payment) => (
+                <label
+                  key={payment}
+                  className="flex items-start gap-2 rounded-xl border border-border p-3 text-sm has-[:checked]:border-primary"
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    className="mt-1"
+                    checked={paymentMethod === payment}
+                    onChange={() => setSelectedPayment(payment)}
+                  />
+                  <span>
+                    <span className="block font-medium text-foreground">
+                      {t(
+                        payment === "CARD"
+                          ? "paymentCard"
+                          : payment === "ON_DELIVERY"
+                            ? "paymentOnDelivery"
+                            : "paymentInStore",
+                      )}
+                    </span>
+                    <span className="block text-muted-foreground">
+                      {t(
+                        payment === "CARD"
+                          ? "paymentCardHint"
+                          : payment === "ON_DELIVERY"
+                            ? "paymentOnDeliveryHint"
+                            : "paymentInStoreHint",
+                      )}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
           </section>
         )}
-
-        <section className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="font-semibold text-foreground">{t("itemsHeading")}</h2>
-          <ul className="mt-3 flex flex-col gap-3">
-            {summaryItems.map((item) => {
-              const imageUrl = item.imageUrl;
-              return (
-                <li key={item.key} className="flex items-center gap-3">
-                  <div className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-muted">
-                    {imageUrl ? (
-                      <Image
-                        src={imageUrl}
-                        alt={item.title}
-                        fill
-                        sizes="56px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="size-full border border-dashed border-border" />
-                    )}
-                  </div>
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-sm font-medium text-foreground">
-                      {item.title}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {item.quantity} × {formatPrice(item.unitPrice)}
-                    </span>
-                    {item.stockIssue != null && (
-                      <span className="mt-1 text-xs font-medium text-red-600">
-                        {item.stockIssue > 0
-                          ? t("limitedStockItem", { count: item.stockIssue })
-                          : t("outOfStockItem")}
-                      </span>
-                    )}
-                  </div>
-                  <span className="font-semibold text-foreground">{formatPrice(item.lineTotal)}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-
-        <CompatibilityChecker
-          vehicleCatalog={vehicleCatalog}
-          garageVehicles={garageVehicles}
-          products={cartProducts}
-        />
-      </div>
-
-      <div className="flex h-fit flex-col gap-4">
-        <section className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="font-semibold text-foreground">{t("fulfillmentHeading")}</h2>
-          <div className="mt-3 flex flex-col gap-2">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="fulfillmentMethod"
-                checked={fulfillmentMethod === "CARD"}
-                onChange={() => setFulfillmentMethod("CARD")}
-              />
-              {t("cardPayment")}
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="fulfillmentMethod"
-                checked={fulfillmentMethod === "COURIER"}
-                onChange={() => setFulfillmentMethod("COURIER")}
-              />
-              {t("courierPayment")}
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="fulfillmentMethod"
-                checked={fulfillmentMethod === "PICKUP"}
-                onChange={() => setFulfillmentMethod("PICKUP")}
-              />
-              {t("pickup")}
-            </label>
-          </div>
-        </section>
 
         {requiresBank && (
           <section
@@ -491,6 +468,61 @@ export function CheckoutManager({
         )}
 
         {requiresAddress && (
+          <section
+            className={`rounded-2xl border bg-card p-5 ${
+              addressId == null ? "border-red-300" : "border-border"
+            }`}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="font-semibold text-foreground">{t("addressHeading")}</h2>
+              <button
+                type="button"
+                onClick={() => setAddressModalOpen(true)}
+                className="text-sm font-medium text-primary-text hover:underline"
+              >
+                {t("addAddressButton")}
+              </button>
+            </div>
+
+            {addresses.length === 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">{t("noAddresses")}</p>
+            ) : (
+              <div className="mt-3 flex flex-col gap-2">
+                {addresses.map((address) => (
+                  <label
+                    key={address.id}
+                    className="flex items-start gap-2 rounded-xl border border-border p-3 text-sm has-[:checked]:border-primary"
+                  >
+                    <input
+                      type="radio"
+                      name="addressId"
+                      className="mt-1"
+                      checked={addressId === address.id}
+                      onChange={() => setAddressId(address.id)}
+                    />
+                    <span>
+                      <span className="block font-medium text-foreground">{address.phone}</span>
+                      <span className="block text-muted-foreground">
+                        {address.city[cityLabelKey]}, {address.street}
+                        {address.building ? `, ${address.building}` : ""}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+            {/* Ambient, not just on failed submit — shows the moment this
+                section is incomplete (e.g. switching to a delivery method
+                with no saved address yet), so the disabled Place Order
+                button below always has a nearby explanation instead of
+                only the toast handlePlaceOrder falls back to. */}
+            {requiresAddress && addressId == null && (
+              <p className="mt-2 text-sm font-medium text-red-600">{t("addressRequired")}</p>
+            )}
+          </section>
+        )}
+
+        {requiresAddress && (
           <section className="rounded-2xl border border-border bg-card p-5">
             <h2 className="font-semibold text-foreground">{t("deliverySpeedHeading")}</h2>
             <div className="mt-3 flex flex-col gap-2">
@@ -516,6 +548,56 @@ export function CheckoutManager({
           </section>
         )}
 
+        <section className="rounded-2xl border border-border bg-card p-5">
+          <h2 className="font-semibold text-foreground">{t("itemsHeading")}</h2>
+          <ul className="mt-3 flex flex-col gap-3">
+            {summaryItems.map((item) => {
+              const imageUrl = item.imageUrl;
+              return (
+                <li key={item.key} className="flex items-center gap-3">
+                  <div className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+                    {imageUrl ? (
+                      <Image
+                        src={imageUrl}
+                        alt={item.title}
+                        fill
+                        sizes="56px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="size-full border border-dashed border-border" />
+                    )}
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-sm font-medium text-foreground">
+                      {item.title}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {item.quantity} × {formatPrice(item.unitPrice)}
+                    </span>
+                    {item.stockIssue != null && (
+                      <span className="mt-1 text-xs font-medium text-red-600">
+                        {item.stockIssue > 0
+                          ? t("limitedStockItem", { count: item.stockIssue })
+                          : t("outOfStockItem")}
+                      </span>
+                    )}
+                  </div>
+                  <span className="font-semibold text-foreground">{formatPrice(item.lineTotal)}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+
+        <CompatibilityChecker
+          vehicleCatalog={vehicleCatalog}
+          garageVehicles={garageVehicles}
+          products={cartProducts}
+        />
+      </div>
+
+      <div className="flex h-fit flex-col gap-4">
         <section className="rounded-2xl border border-border bg-card p-5">
           <h2 className="font-semibold text-foreground">{t("promoHeading")}</h2>
           {appliedPromoCode ? (
@@ -614,7 +696,7 @@ export function CheckoutManager({
             type="button"
             onClick={handlePlaceOrder}
             disabled={
-              placing || previewLoading || !displayPreview || displayPreview.hasStockIssues
+              noCheckoutMethods || placing || previewLoading || !displayPreview || displayPreview.hasStockIssues
             }
             className="mt-5 w-full rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
           >

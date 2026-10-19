@@ -3,7 +3,7 @@ import { ApiError } from "../../lib/ApiError.js";
 import { logger } from "../../lib/logger.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
-import { Prisma, type OrderDeliverySpeed, type OrderFulfillmentMethod } from "../../generated/prisma/index.js";
+import { Prisma, type OrderDeliverySpeed, type OrderDeliveryMethod, type OrderPaymentMethod } from "../../generated/prisma/index.js";
 import { cartRepository } from "../cart/cart.repository.js";
 import { addressesRepository } from "../addresses/addresses.repository.js";
 import { banksRepository } from "../banks/banks.repository.js";
@@ -25,6 +25,7 @@ import {
   getDeliveryExpressPrice,
   getDeliveryExpressTime,
   getAdminNotificationEmail,
+  getCheckoutMethods,
   getUsdToGelRateOrThrow,
 } from "../settings/settings.service.js";
 import { lookupsRepository } from "../lookups/lookups.repository.js";
@@ -418,11 +419,11 @@ type DeliveryResolution = {
 // getDeliveryRegionsPrice/getDeliveryExpressPrice.
 async function resolveDelivery(
   userId: number,
-  fulfillmentMethod: OrderFulfillmentMethod,
+  deliveryMethod: OrderDeliveryMethod,
   addressId: number | undefined,
   deliverySpeed: OrderDeliverySpeed | undefined,
 ): Promise<DeliveryResolution> {
-  if (fulfillmentMethod === "PICKUP") {
+  if (deliveryMethod === "PICKUP") {
     return {
       addressId: null,
       shippingSnapshot: undefined,
@@ -468,15 +469,41 @@ async function resolveDelivery(
   };
 }
 
-// Only meaningful for CARD — COURIER/PICKUP never carry a bank. Shared by
-// placeOrder below (checkoutInputSchema's superRefine already requires
-// bankId when fulfillmentMethod=CARD, but that's just presence — this is
-// where "does it actually exist and is it active" gets checked).
+// Which payment method goes with which delivery method: paying the courier
+// only exists with courier delivery, paying in store only with pickup; an
+// online card payment works with both.
+const PAYMENT_METHODS_BY_DELIVERY: Record<OrderDeliveryMethod, OrderPaymentMethod[]> = {
+  COURIER: ["CARD", "ON_DELIVERY"],
+  PICKUP: ["CARD", "IN_STORE"],
+};
+
+// Rejects a combination that doesn't exist or that the admin switched off
+// (Settings → delivery & payment) — the checkout UI only offers enabled,
+// compatible ones, so this is the server-side guard (stale page, crafted
+// request). Shared by the preview and placeOrder.
+async function assertCheckoutMethods(deliveryMethod: OrderDeliveryMethod, paymentMethod: OrderPaymentMethod) {
+  const methods = await getCheckoutMethods();
+  const deliveryEnabled = deliveryMethod === "COURIER" ? methods.courier : methods.pickup;
+  const paymentEnabled =
+    paymentMethod === "CARD" ? methods.card : paymentMethod === "ON_DELIVERY" ? methods.onDelivery : methods.inStore;
+  if (!deliveryEnabled || !paymentEnabled || !PAYMENT_METHODS_BY_DELIVERY[deliveryMethod].includes(paymentMethod)) {
+    throw new ApiError(
+      400,
+      "არჩეული მიწოდების ან გადახდის ხერხი ამჟამად მიუწვდომელია",
+      "CHECKOUT_METHOD_UNAVAILABLE",
+    );
+  }
+}
+
+// Only meaningful for CARD — the other payment methods never carry a bank.
+// Shared by placeOrder below (checkoutInputSchema's superRefine already
+// requires bankId when paymentMethod=CARD, but that's just presence — this
+// is where "does it actually exist and is it active" gets checked).
 async function resolveBank(
-  fulfillmentMethod: OrderFulfillmentMethod,
+  paymentMethod: OrderPaymentMethod,
   bankId: number | undefined,
 ): Promise<number | null> {
-  if (fulfillmentMethod !== "CARD") return null;
+  if (paymentMethod !== "CARD") return null;
 
   const bank = bankId ? await banksRepository.findById(bankId) : null;
   if (!bank || !bank.isActive) {
@@ -542,8 +569,9 @@ async function assertEmailVerified(userId: number) {
 
 export async function previewCheckout(userId: number, input: CheckoutInput) {
   await assertEmailVerified(userId);
+  await assertCheckoutMethods(input.deliveryMethod, input.paymentMethod);
   const breakdown = await computeCheckoutTotals(userId, input.promoCode);
-  const delivery = await resolveDelivery(userId, input.fulfillmentMethod, input.addressId, input.deliverySpeed);
+  const delivery = await resolveDelivery(userId, input.deliveryMethod, input.addressId, input.deliverySpeed);
   return toBreakdownResponse(breakdown, delivery);
 }
 
@@ -558,7 +586,8 @@ export function toOrderResponse(order: OrderRow) {
     id: order.id,
     orderCode: order.orderCode,
     status: order.status,
-    fulfillmentMethod: order.fulfillmentMethod,
+    deliveryMethod: order.deliveryMethod,
+    paymentMethod: order.paymentMethod,
     shippingSnapshot: order.shippingSnapshot as {
       phone: string;
       city: { id: number; key: string; nameKa: string; nameEn: string; nameRu: string; isTbilisi: boolean };
@@ -715,8 +744,9 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
     }
   }
 
-  const delivery = await resolveDelivery(userId, input.fulfillmentMethod, input.addressId, input.deliverySpeed);
-  const bankId = await resolveBank(input.fulfillmentMethod, input.bankId);
+  await assertCheckoutMethods(input.deliveryMethod, input.paymentMethod);
+  const delivery = await resolveDelivery(userId, input.deliveryMethod, input.addressId, input.deliverySpeed);
+  const bankId = await resolveBank(input.paymentMethod, input.bankId);
 
   const items: PlaceOrderItemInput[] = breakdown.items.map(({ stockQuantity: _stockQuantity, ...item }) => item);
   const total = Math.round((breakdown.total + delivery.deliveryCost) * 100) / 100;
@@ -733,7 +763,8 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
         orderCode: generateOrderCode(),
         idempotencyKey: input.idempotencyKey,
         userId,
-        fulfillmentMethod: input.fulfillmentMethod,
+        deliveryMethod: input.deliveryMethod,
+        paymentMethod: input.paymentMethod,
         statusId,
         addressId: delivery.addressId,
         shippingSnapshot: delivery.shippingSnapshot,
@@ -750,7 +781,7 @@ export async function placeOrder(userId: number, input: CheckoutInput, ipAddress
         ipAddress,
         // No gateway integration exists yet (see PaymentStatus's own
         // comment) — this is purely additive labeling for now.
-        paymentStatus: input.fulfillmentMethod === "CARD" ? "AWAITING_PAYMENT" : "NOT_APPLICABLE",
+        paymentStatus: input.paymentMethod === "CARD" ? "AWAITING_PAYMENT" : "NOT_APPLICABLE",
         // Outbox: queued in the order's own transaction, so the FINA sale
         // push can't be lost to a crash/redeploy right after commit — see
         // processOrderFinaPush below and the sweep in server.ts.

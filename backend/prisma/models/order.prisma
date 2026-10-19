@@ -1,7 +1,20 @@
-enum OrderFulfillmentMethod {
-  CARD
+// How the order reaches the customer — chosen at checkout separately from
+// how it's paid (OrderPaymentMethod). Each method can be switched off by
+// the admin (Settings → delivery & payment).
+enum OrderDeliveryMethod {
   COURIER
   PICKUP
+
+  @@schema("dbo")
+}
+
+// How the customer pays. ON_DELIVERY (to the courier) only goes with
+// COURIER, IN_STORE only with PICKUP, CARD (online, via the chosen bank)
+// with either — enforced in orders.service.ts's assertCheckoutMethods.
+enum OrderPaymentMethod {
+  CARD
+  ON_DELIVERY
+  IN_STORE
 
   @@schema("dbo")
 }
@@ -43,12 +56,12 @@ enum FinaOrderSyncStatus {
 // A real bank-gateway integration is not built yet (see Bank's own comment
 // and orders.service.ts's resolveBank, which is still a plain DB lookup, no
 // gateway call) — this tracks whether one has actually been paid, entirely
-// independent of fulfillmentMethod/status. Deliberately the same shape as
+// independent of delivery/payment method/status. Deliberately the same shape as
 // FinaOrderSyncStatus: a parallel status field on Order, not folded into the
 // PENDING/CONFIRMED/... fulfillment lifecycle, since "paid" and "shipped"
 // are orthogonal facts about an order.
 enum PaymentStatus {
-  // Default — fulfillmentMethod is COURIER/PICKUP (no payment gateway
+  // Default — paymentMethod is ON_DELIVERY/IN_STORE (no payment gateway
   // involved at all), or CARD but no gateway is wired up for the chosen
   // bank yet. Not a failure state.
   NOT_APPLICABLE
@@ -68,7 +81,7 @@ enum PaymentStatus {
 // OrderItem.itemName below), because an already-placed order must never
 // visually change just because a user edited their address or an admin
 // renamed a product. No payment provider is integrated (none is installed
-// in this codebase yet) — fulfillmentMethod just records how the customer
+// in this codebase yet) — paymentMethod just records how the customer
 // said they'd pay/receive; status starts PENDING (see orders.service.ts's
 // resolvePendingStatusId) and is confirmed/updated manually.
 model Order {
@@ -90,7 +103,8 @@ model Order {
   // orphaning order history.
   userId            Int
   user              User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
-  fulfillmentMethod OrderFulfillmentMethod
+  deliveryMethod    OrderDeliveryMethod
+  paymentMethod     OrderPaymentMethod
   statusId          Int
   status            OrderStatus            @relation(fields: [statusId], references: [id], onDelete: Restrict)
 
@@ -101,7 +115,7 @@ model Order {
   address          Address? @relation(fields: [addressId], references: [id], onDelete: SetNull)
   shippingSnapshot Json?
 
-  // null when fulfillmentMethod is PICKUP (no delivery needed). Cost/time
+  // null when deliveryMethod is PICKUP (no delivery needed). Cost/time
   // are snapshotted from Settings at checkout time (see settings.service.ts's
   // getDeliveryTbilisiPrice/getDeliveryRegionsPrice/getDeliveryExpressPrice)
   // so an already-placed order never changes if the admin later edits
@@ -118,7 +132,7 @@ model Order {
   promoCodeSnapshot    String?
   promoDiscountPercent Decimal?   @db.Decimal(5, 2)
 
-  // Only set when fulfillmentMethod=CARD (see orders.service.ts's
+  // Only set when paymentMethod=CARD (see orders.service.ts's
   // resolveBank) — which bank the customer said they'd pay through. SetNull
   // (not snapshotted like address/promo code): a bank's identity doesn't
   // drift the way delivery pricing or a promo's discount percent does, so

@@ -74,7 +74,8 @@ type Labels = {
   delivery: string;
   promoCode: string;
   totalDue: string;
-  fulfillment: Record<OrderRow["fulfillmentMethod"], string>;
+  delivery_method: Record<OrderRow["deliveryMethod"], string>;
+  payment_method: Record<OrderRow["paymentMethod"], string>;
   paymentStatusValue: Partial<Record<OrderRow["paymentStatus"], string>>;
 };
 
@@ -96,11 +97,8 @@ const LABELS: Record<InvoiceLocale, Labels> = {
     delivery: "მიწოდება",
     promoCode: "პრომოკოდი",
     totalDue: "ჯამი გადასახდელი",
-    fulfillment: {
-      CARD: "ბარათით გადახდა",
-      COURIER: "კურიერით მიწოდება (ადგილზე გადახდა)",
-      PICKUP: "თვითმიღება მაღაზიიდან",
-    },
+    delivery_method: { COURIER: "კურიერით მიწოდება", PICKUP: "თვითმიღება მაღაზიიდან" },
+    payment_method: { CARD: "ბარათით გადახდა", ON_DELIVERY: "გადახდა კურიერთან", IN_STORE: "გადახდა მაღაზიაში" },
     paymentStatusValue: {
       AWAITING_PAYMENT: "გადახდის მოლოდინში",
       PAID: "გადახდილია",
@@ -125,11 +123,8 @@ const LABELS: Record<InvoiceLocale, Labels> = {
     delivery: "Delivery",
     promoCode: "Promo code",
     totalDue: "Total due",
-    fulfillment: {
-      CARD: "Card payment",
-      COURIER: "Courier delivery (cash on delivery)",
-      PICKUP: "Store pickup",
-    },
+    delivery_method: { COURIER: "Courier delivery", PICKUP: "Store pickup" },
+    payment_method: { CARD: "Card payment", ON_DELIVERY: "Pay the courier", IN_STORE: "Pay in store" },
     paymentStatusValue: {
       AWAITING_PAYMENT: "Awaiting payment",
       PAID: "Paid",
@@ -154,11 +149,8 @@ const LABELS: Record<InvoiceLocale, Labels> = {
     delivery: "Доставка",
     promoCode: "Промокод",
     totalDue: "Итого к оплате",
-    fulfillment: {
-      CARD: "Оплата картой",
-      COURIER: "Доставка курьером (оплата при получении)",
-      PICKUP: "Самовывоз из магазина",
-    },
+    delivery_method: { COURIER: "Доставка курьером", PICKUP: "Самовывоз из магазина" },
+    payment_method: { CARD: "Оплата картой", ON_DELIVERY: "Оплата курьеру", IN_STORE: "Оплата в магазине" },
     paymentStatusValue: {
       AWAITING_PAYMENT: "Ожидает оплаты",
       PAID: "Оплачено",
@@ -339,7 +331,7 @@ export async function generateOrderInvoicePdf(order: OrderRow, locale: InvoiceLo
       y += 14;
     }
 
-    drawRuns(L.fulfillment[order.fulfillmentMethod], 50, y, { size: 10, color: "#333" });
+    drawRuns(`${L.delivery_method[order.deliveryMethod]} · ${L.payment_method[order.paymentMethod]}`, 50, y, { size: 10, color: "#333" });
     y += 14;
     if (order.bank) {
       drawRuns(`${L.bank}: ${trilingualName(order.bank, locale)}`, 50, y, { size: 10, color: "#333" });
@@ -436,7 +428,7 @@ export async function generateOrderPackingSlipPdf(
     y += 16;
     const shipping = order.shippingSnapshot as ShippingSnapshot | null;
     drawRuns(`${order.user.firstName} ${order.user.lastName}`, 50, y, { size: 10, color: "#333" });
-    drawRuns(L.fulfillment[order.fulfillmentMethod], 330, y, { size: 10, color: "#333" });
+    drawRuns(`${L.delivery_method[order.deliveryMethod]} · ${L.payment_method[order.paymentMethod]}`, 330, y, { size: 10, color: "#333" });
     y += 14;
     const phone = shipping?.phone ?? extras.customerPhone;
     if (phone) {

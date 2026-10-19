@@ -26,6 +26,11 @@ export const updateSettingsSchema = registry.register(
     deliveryExpressPrice: z.number().nonnegative().openapi({ example: 40 }),
     deliveryExpressTime: z.string().openapi({ example: "2-4 საათი" }),
     returnPeriodDays: z.int().min(0).max(365).openapi({ example: 14 }),
+    checkoutCourierEnabled: z.boolean().openapi({ example: true }),
+    checkoutPickupEnabled: z.boolean().openapi({ example: true }),
+    paymentCardEnabled: z.boolean().openapi({ example: true }),
+    paymentOnDeliveryEnabled: z.boolean().openapi({ example: true }),
+    paymentInStoreEnabled: z.boolean().openapi({ example: true }),
     fraudVelocityOrderCount: z.int().positive().openapi({ example: 3 }),
     fraudVelocityWindowMinutes: z.int().positive().openapi({ example: 30 }),
     fraudNewAccountWindowHours: z.int().positive().openapi({ example: 24 }),
@@ -108,6 +113,11 @@ export const settingsResponseSchema = registry.register(
     deliveryExpressPrice: z.number().nonnegative().openapi({ example: 40 }),
     deliveryExpressTime: z.string().openapi({ example: "2-4 საათი" }),
     returnPeriodDays: z.int().min(0).max(365).openapi({ example: 14 }),
+    checkoutCourierEnabled: z.boolean().openapi({ example: true }),
+    checkoutPickupEnabled: z.boolean().openapi({ example: true }),
+    paymentCardEnabled: z.boolean().openapi({ example: true }),
+    paymentOnDeliveryEnabled: z.boolean().openapi({ example: true }),
+    paymentInStoreEnabled: z.boolean().openapi({ example: true }),
     fraudVelocityOrderCount: z.int().positive().openapi({ example: 3 }),
     fraudVelocityWindowMinutes: z.int().positive().openapi({ example: 30 }),
     fraudNewAccountWindowHours: z.int().positive().openapi({ example: 24 }),
@@ -201,5 +211,13 @@ export const publicDeliveryInfoSchema = registry.register(
     express: deliveryOptionSchema,
     // 0 = no return line shown.
     returnPeriodDays: z.int(),
+    // Checkout methods currently switched on (admin).
+    methods: z.object({
+      courier: z.boolean(),
+      pickup: z.boolean(),
+      card: z.boolean(),
+      onDelivery: z.boolean(),
+      inStore: z.boolean(),
+    }),
   }),
 );

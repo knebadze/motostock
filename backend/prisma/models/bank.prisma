@@ -1,5 +1,5 @@
 // Admin-configurable list of banks a customer can pay through when
-// checking out with fulfillmentMethod=CARD. No real payment gateway is
+// checking out with paymentMethod=CARD. No real payment gateway is
 // integrated yet (see order.prisma's note) — this exists so the admin can
 // set up the bank list ahead of that integration, and so the checkout UI
 // has something real to let the customer choose between right now.

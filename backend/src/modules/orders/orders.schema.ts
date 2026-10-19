@@ -4,14 +4,19 @@ import { localizedStringSchema } from "../../lib/localized.js";
 import { cartItemTypeSchema } from "../cart/cart.schema.js";
 import { lookupItemResponseSchema } from "../lookups/lookups.schema.js";
 
-export const orderFulfillmentMethodSchema = z.enum(["CARD", "COURIER", "PICKUP"]);
+// How the order is delivered vs how it's paid — chosen separately at
+// checkout (see orders.service.ts's assertCheckoutMethods for which
+// combinations are valid and which ones the admin switched off).
+export const orderDeliveryMethodSchema = z.enum(["COURIER", "PICKUP"]);
+export const orderPaymentMethodSchema = z.enum(["CARD", "ON_DELIVERY", "IN_STORE"]);
 export const orderDeliverySpeedSchema = z.enum(["STANDARD", "EXPRESS"]);
 
 export const checkoutInputSchema = registry.register(
   "CheckoutInput",
   z
     .object({
-      fulfillmentMethod: orderFulfillmentMethodSchema,
+      deliveryMethod: orderDeliveryMethodSchema,
+      paymentMethod: orderPaymentMethodSchema,
       addressId: z.int().positive().optional(),
       deliverySpeed: orderDeliverySpeedSchema.optional(),
       promoCode: z.string().trim().min(1).max(30).optional(),
@@ -23,14 +28,14 @@ export const checkoutInputSchema = registry.register(
       idempotencyKey: z.string().trim().min(1).max(100),
     })
     .superRefine((data, ctx) => {
-      if (data.fulfillmentMethod !== "PICKUP" && data.addressId == null) {
+      if (data.deliveryMethod === "COURIER" && data.addressId == null) {
         ctx.addIssue({
           code: "custom",
           message: "კურიერით მიწოდებისას მისამართის მითითება საჭიროა",
           path: ["addressId"],
         });
       }
-      if (data.fulfillmentMethod === "CARD" && data.bankId == null) {
+      if (data.paymentMethod === "CARD" && data.bankId == null) {
         ctx.addIssue({
           code: "custom",
           message: "ბარათით გადახდისას ბანკის მითითება საჭიროა",
@@ -154,7 +159,7 @@ const orderBankSchema = z.object({
 
 // See order.prisma's PaymentStatus — whether a real bank gateway has
 // actually confirmed payment for this order, entirely independent of
-// fulfillmentMethod/status. NOT_APPLICABLE covers both non-CARD orders and
+// delivery/payment method/status. NOT_APPLICABLE covers both non-CARD orders and
 // CARD orders placed before any gateway integration exists; nothing in the
 // checkout/status flow reads or enforces this yet (see orders.service.ts).
 export const orderRequestTypeSchema = z.enum(["CANCEL", "RETURN"]);
@@ -218,7 +223,8 @@ export const orderResponseSchema = registry.register(
     id: z.int().openapi({ example: 1 }),
     orderCode: z.string().openapi({ example: "4K7QRX9P" }),
     status: lookupItemResponseSchema,
-    fulfillmentMethod: orderFulfillmentMethodSchema,
+    deliveryMethod: orderDeliveryMethodSchema,
+    paymentMethod: orderPaymentMethodSchema,
     shippingSnapshot: shippingSnapshotSchema.nullable(),
     promoCode: promoCodeSummarySchema.nullable(),
     bank: orderBankSchema.nullable(),
@@ -298,17 +304,25 @@ const idListQuerySchema = z
   )
   .optional();
 
-const fulfillmentMethodListQuerySchema = z
+const deliveryMethodListQuerySchema = z
   .preprocess(
     (value) => (value == null ? undefined : Array.isArray(value) ? value : [value]),
-    z.array(orderFulfillmentMethodSchema),
+    z.array(orderDeliveryMethodSchema),
+  )
+  .optional();
+
+const paymentMethodListQuerySchema = z
+  .preprocess(
+    (value) => (value == null ? undefined : Array.isArray(value) ? value : [value]),
+    z.array(orderPaymentMethodSchema),
   )
   .optional();
 
 export const listOrdersQuerySchema = z.object({
   search: z.string().trim().min(1).max(100).optional(),
   statusIds: idListQuerySchema,
-  fulfillmentMethods: fulfillmentMethodListQuerySchema,
+  deliveryMethods: deliveryMethodListQuerySchema,
+  paymentMethods: paymentMethodListQuerySchema,
   createdFrom: z.iso.date().optional(),
   createdTo: z.iso.date().optional(),
   // Narrows to orders with at least one OrderRiskFlag row — see
@@ -357,7 +371,8 @@ export const finaOrderSyncStatusSchema = z.enum(["NOT_APPLICABLE", "PENDING", "S
 export const adminOrderSummaryResponseSchema = registry.register(
   "AdminOrderSummary",
   orderSummaryResponseSchema.extend({
-    fulfillmentMethod: orderFulfillmentMethodSchema,
+    deliveryMethod: orderDeliveryMethodSchema,
+    paymentMethod: orderPaymentMethodSchema,
     buyer: buyerSummarySchema,
     hasRiskFlags: z.boolean(),
     finaSyncStatus: finaOrderSyncStatusSchema,

@@ -91,7 +91,7 @@ export const changePasswordRateLimit = createAuthRateLimit();
 // Checkout preview/place both accept a free-typed promoCode — without this,
 // a logged-in account could brute-force short/guessable codes at
 // globalWriteRateLimit's full 300/min. Budgeted for real interactive use
-// (toggling fulfillment method/address/bank/delivery speed each re-fires a
+// (toggling delivery/payment method/address/bank/delivery speed each re-fires a
 // preview) while still meaningfully capping scripted guessing.
 export const checkoutRateLimit = rateLimit({
   windowMs: 5 * 60 * 1000,

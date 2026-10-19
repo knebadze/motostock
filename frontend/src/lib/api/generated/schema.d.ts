@@ -12093,13 +12093,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List every order across every buyer, with search/status/fulfillment/date filters (admin only) */
+        /** List every order across every buyer, with search/status/delivery/payment/date filters (admin only) */
         get: {
             parameters: {
                 query?: {
                     search?: string;
                     statusIds?: number[];
-                    fulfillmentMethods?: ("CARD" | "COURIER" | "PICKUP")[];
+                    deliveryMethods?: ("COURIER" | "PICKUP")[];
+                    paymentMethods?: ("CARD" | "ON_DELIVERY" | "IN_STORE")[];
                     createdFrom?: string;
                     createdTo?: string;
                     flaggedOnly?: boolean | null;
@@ -17365,6 +17366,16 @@ export interface components {
             deliveryExpressTime: string;
             /** @example 14 */
             returnPeriodDays: number;
+            /** @example true */
+            checkoutCourierEnabled: boolean;
+            /** @example true */
+            checkoutPickupEnabled: boolean;
+            /** @example true */
+            paymentCardEnabled: boolean;
+            /** @example true */
+            paymentOnDeliveryEnabled: boolean;
+            /** @example true */
+            paymentInStoreEnabled: boolean;
             /** @example 3 */
             fraudVelocityOrderCount: number;
             /** @example 30 */
@@ -17475,6 +17486,16 @@ export interface components {
             deliveryExpressTime: string;
             /** @example 14 */
             returnPeriodDays: number;
+            /** @example true */
+            checkoutCourierEnabled: boolean;
+            /** @example true */
+            checkoutPickupEnabled: boolean;
+            /** @example true */
+            paymentCardEnabled: boolean;
+            /** @example true */
+            paymentOnDeliveryEnabled: boolean;
+            /** @example true */
+            paymentInStoreEnabled: boolean;
             /** @example 3 */
             fraudVelocityOrderCount: number;
             /** @example 30 */
@@ -17583,6 +17604,13 @@ export interface components {
                 time: string;
             };
             returnPeriodDays: number;
+            methods: {
+                courier: boolean;
+                pickup: boolean;
+                card: boolean;
+                onDelivery: boolean;
+                inStore: boolean;
+            };
         };
         CreateBrandInput: {
             /** @example Honda */
@@ -18130,7 +18158,9 @@ export interface components {
         };
         CheckoutInput: {
             /** @enum {string} */
-            fulfillmentMethod: "CARD" | "COURIER" | "PICKUP";
+            deliveryMethod: "COURIER" | "PICKUP";
+            /** @enum {string} */
+            paymentMethod: "CARD" | "ON_DELIVERY" | "IN_STORE";
             addressId?: number;
             /** @enum {string} */
             deliverySpeed?: "STANDARD" | "EXPRESS";
@@ -18215,7 +18245,9 @@ export interface components {
             orderCode: string;
             status: components["schemas"]["LookupItem"];
             /** @enum {string} */
-            fulfillmentMethod: "CARD" | "COURIER" | "PICKUP";
+            deliveryMethod: "COURIER" | "PICKUP";
+            /** @enum {string} */
+            paymentMethod: "CARD" | "ON_DELIVERY" | "IN_STORE";
             shippingSnapshot: {
                 phone: string;
                 city: {
@@ -18302,7 +18334,9 @@ export interface components {
         };
         AdminOrderSummary: components["schemas"]["OrderSummary"] & {
             /** @enum {string} */
-            fulfillmentMethod: "CARD" | "COURIER" | "PICKUP";
+            deliveryMethod: "COURIER" | "PICKUP";
+            /** @enum {string} */
+            paymentMethod: "CARD" | "ON_DELIVERY" | "IN_STORE";
             buyer: {
                 id: number;
                 firstName: string;

@@ -243,7 +243,7 @@ registry.registerPath({
   method: "get",
   path: "/orders",
   tags: ["Orders"],
-  summary: "List every order across every buyer, with search/status/fulfillment/date filters (admin only)",
+  summary: "List every order across every buyer, with search/status/delivery/payment/date filters (admin only)",
   security,
   request: { query: listOrdersQuerySchema },
   responses: {

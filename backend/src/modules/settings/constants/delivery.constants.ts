@@ -12,6 +12,15 @@ export const DELIVERY_EXPRESS_TIME_KEY = "delivery_express_time";
 export const RETURN_PERIOD_DAYS_KEY = "return_period_days";
 export const RETURN_PERIOD_DAYS_DEFAULT = 14;
 
+// Checkout methods the admin can switch off (e.g. paying the courier causes
+// trouble). Unset = on. At least one delivery+payment combination must stay
+// available — enforced in settings.service.ts's updateSettings.
+export const CHECKOUT_COURIER_ENABLED_KEY = "checkout_courier_enabled";
+export const CHECKOUT_PICKUP_ENABLED_KEY = "checkout_pickup_enabled";
+export const PAYMENT_CARD_ENABLED_KEY = "payment_card_enabled";
+export const PAYMENT_ON_DELIVERY_ENABLED_KEY = "payment_on_delivery_enabled";
+export const PAYMENT_IN_STORE_ENABLED_KEY = "payment_in_store_enabled";
+
 export const DELIVERY_SETTING_KEYS = [
   DELIVERY_TBILISI_PRICE_KEY,
   DELIVERY_TBILISI_TIME_KEY,
@@ -20,4 +29,9 @@ export const DELIVERY_SETTING_KEYS = [
   DELIVERY_EXPRESS_PRICE_KEY,
   DELIVERY_EXPRESS_TIME_KEY,
   RETURN_PERIOD_DAYS_KEY,
+  CHECKOUT_COURIER_ENABLED_KEY,
+  CHECKOUT_PICKUP_ENABLED_KEY,
+  PAYMENT_CARD_ENABLED_KEY,
+  PAYMENT_ON_DELIVERY_ENABLED_KEY,
+  PAYMENT_IN_STORE_ENABLED_KEY,
 ];

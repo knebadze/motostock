@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Settings } from "@/lib/api/settings";
+import { Toggle } from "@/components/shared/Toggle";
 
 type DeliveryDraft = Pick<
   Settings,
@@ -12,6 +13,11 @@ type DeliveryDraft = Pick<
   | "deliveryExpressPrice"
   | "deliveryExpressTime"
   | "returnPeriodDays"
+  | "checkoutCourierEnabled"
+  | "checkoutPickupEnabled"
+  | "paymentCardEnabled"
+  | "paymentOnDeliveryEnabled"
+  | "paymentInStoreEnabled"
 >;
 
 function deliveryDraftFrom(settings: Settings): DeliveryDraft {
@@ -23,6 +29,11 @@ function deliveryDraftFrom(settings: Settings): DeliveryDraft {
     deliveryExpressPrice: settings.deliveryExpressPrice,
     deliveryExpressTime: settings.deliveryExpressTime,
     returnPeriodDays: settings.returnPeriodDays,
+    checkoutCourierEnabled: settings.checkoutCourierEnabled,
+    checkoutPickupEnabled: settings.checkoutPickupEnabled,
+    paymentCardEnabled: settings.paymentCardEnabled,
+    paymentOnDeliveryEnabled: settings.paymentOnDeliveryEnabled,
+    paymentInStoreEnabled: settings.paymentInStoreEnabled,
   };
 }
 
@@ -48,6 +59,39 @@ export function DeliverySettingsTab({
       </p>
 
       <div className="mt-4 flex flex-col gap-5">
+        <div>
+          <p className="text-sm font-semibold text-foreground">მიწოდებისა და გადახდის ხერხები</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            გამორთული ხერხი შეკვეთის გაფორმებისას აღარ გამოჩნდება. კურიერთან გადახდა მხოლოდ კურიერით მიწოდებასთან
+            მუშაობს, მაღაზიაში გადახდა — მხოლოდ გატანასთან, ბარათით გადახდა — ორივესთან (და საჭიროებს მინიმუმ ერთ აქტიურ
+            ბანკს). მინიმუმ ერთი ასეთი წყვილი ჩართული უნდა დარჩეს.
+          </p>
+          <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+            {(
+              [
+                ["checkoutCourierEnabled", "კურიერით მიწოდება"],
+                ["checkoutPickupEnabled", "მაღაზიიდან გატანა"],
+                ["paymentOnDeliveryEnabled", "კურიერთან გადახდა"],
+                ["paymentInStoreEnabled", "მაღაზიაში გადახდა"],
+                ["paymentCardEnabled", "ბარათით გადახდა (ონლაინ)"],
+              ] as const
+            ).map(([key, label]) => (
+              <div
+                key={key}
+                className="flex items-center justify-between gap-4 rounded-xl border border-border px-3 py-2"
+              >
+                <span className="text-sm">{label}</span>
+                <Toggle
+                  checked={deliveryDraft[key]}
+                  onChange={(next) => setDeliveryDraft((draft) => ({ ...draft, [key]: next }))}
+                  disabled={saving}
+                  label={label}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div>
           <p className="text-sm font-semibold text-foreground">თბილისი</p>
           <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -173,8 +217,8 @@ export function DeliverySettingsTab({
                 className={inputClassName}
               />
               <p className="text-xs text-muted-foreground">
-                ჩანს პროდუქტის გვერდზე და კალათაში („დაბრუნება N დღეში&rdquo;). 0 — არ ჩანს. დეტალური
-                პირობები: მენიუში „მიწოდება და დაბრუნება&rdquo;.
+                ჩანს პროდუქტის გვერდზე და კალათაში („დაბრუნება N დღეში&rdquo;). 0 — არ ჩანს. დეტალური პირობები: მენიუში
+                „მიწოდება და დაბრუნება&rdquo;.
               </p>
             </div>
           </div>

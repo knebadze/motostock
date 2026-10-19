@@ -169,7 +169,9 @@
     "itemNotPurchasableOnline": "Этот товар нельзя купить на сайте — посетите наш шоурум. Чтобы оформить заказ, удалите его из корзины.",
     "deliveryHint": "Доставка: Тбилиси {tbilisi} · регионы {regions} · самовывоз бесплатно. Точная цена — при оформлении.",
     "deliveryFree": "бесплатно",
-    "deliveryHintLink": "Подробнее"
+    "deliveryHintLink": "Подробнее",
+    "deliveryHintNoPickup": "Доставка: Тбилиси {tbilisi} · регионы {regions}. Точная цена — при оформлении.",
+    "deliveryHintPickupOnly": "Доставка: только самовывоз из магазина (бесплатно)."
   },
   "Checkout": {
     "title": "Оформление заказа",
@@ -237,7 +239,22 @@
     "thankYouStepTrack": "Статус заказа всегда можно посмотреть в личном кабинете.",
     "thankYouQuestions": "Есть вопросы? Звоните:",
     "thankYouViewOrder": "Детали заказа",
-    "thankYouContinue": "Продолжить покупки"
+    "thankYouContinue": "Продолжить покупки",
+    "deliveryMethodHeading": "Способ получения",
+    "paymentMethodHeading": "Способ оплаты",
+    "deliveryCourier": "Доставка курьером",
+    "deliveryCourierHint": "Тбилиси {tbilisi} · регионы {regions}",
+    "deliveryCourierHintPlain": "По выбранному адресу",
+    "deliveryPickup": "Самовывоз из магазина",
+    "deliveryPickupHint": "Бесплатно, в нашем магазине",
+    "paymentCard": "Картой онлайн",
+    "paymentCardHint": "Через выбранный банк",
+    "paymentOnDelivery": "Оплата курьеру",
+    "paymentOnDeliveryHint": "Наличными или картой при получении",
+    "paymentInStore": "Оплата в магазине",
+    "paymentInStoreHint": "При самовывозе",
+    "free": "бесплатно",
+    "noCheckoutMethods": "Онлайн-заказ временно недоступен — позвоните нам."
   },
   "VehicleListingDetail": {
     "descriptionHeading": "Описание",
@@ -839,7 +856,8 @@
     "ACCOUNT_DELETE_WRONG_PASSWORD": "Неверный пароль",
     "ACCOUNT_DELETE_EMAIL_MISMATCH": "Эл. почта не совпадает",
     "ACCOUNT_HAS_ACTIVE_ORDERS": "У вас есть текущий заказ — аккаунт можно удалить после его завершения или отмены.",
-    "STAFF_ACCOUNT_DELETE_FORBIDDEN": "Аккаунт сотрудника нельзя удалить здесь."
+    "STAFF_ACCOUNT_DELETE_FORBIDDEN": "Аккаунт сотрудника нельзя удалить здесь.",
+    "CHECKOUT_METHOD_UNAVAILABLE": "Выбранный способ доставки или оплаты сейчас недоступен — обновите страницу и выберите другой."
   },
   "Common": {
     "genericError": "Произошла ошибка, попробуйте снова",

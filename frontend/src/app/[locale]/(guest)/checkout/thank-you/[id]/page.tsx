@@ -30,7 +30,7 @@ export default async function CheckoutThankYouPage({ params }: { params: Promise
   if (!order) notFound();
 
   const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
-  const isPickup = order.fulfillmentMethod === "PICKUP";
+  const isPickup = order.deliveryMethod === "PICKUP";
   const shopAddress =
     [companyInfo.city ? localizedLookupName(companyInfo.city, locale as "ka" | "en" | "ru") : null, companyInfo.street]
       .filter(Boolean)
@@ -60,7 +60,16 @@ export default async function CheckoutThankYouPage({ params }: { params: Promise
       <div className="mt-8 rounded-2xl border border-border bg-card p-5">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>{t("thankYouItemCount", { count: itemCount })}</span>
-          <span>{t(isPickup ? "pickup" : order.fulfillmentMethod === "CARD" ? "cardPayment" : "courierPayment")}</span>
+          <span>
+            {t(isPickup ? "deliveryPickup" : "deliveryCourier")} ·{" "}
+            {t(
+              order.paymentMethod === "CARD"
+                ? "paymentCard"
+                : order.paymentMethod === "ON_DELIVERY"
+                  ? "paymentOnDelivery"
+                  : "paymentInStore",
+            )}
+          </span>
         </div>
         <div className="mt-2 flex items-center justify-between text-lg font-bold text-foreground">
           <span>{t("total")}</span>

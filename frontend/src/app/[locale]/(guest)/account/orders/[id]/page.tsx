@@ -5,17 +5,27 @@ import { useLocale, useTranslations } from "next-intl";
 import { getCompanyInfoFromServer, getDeliveryInfoFromServer, getMyOrderFromServer } from "@/lib/api/server";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { formatDateTime, formatPrice } from "@/lib/format";
-import { getOrderInvoiceUrl, type OrderFulfillmentMethod, type PaymentStatus } from "@/lib/api/orders";
+import {
+  getOrderInvoiceUrl,
+  type OrderDeliveryMethod,
+  type OrderPaymentMethod,
+  type PaymentStatus,
+} from "@/lib/api/orders";
 import { ReorderButton } from "@/components/shared/ReorderButton";
 import { OrderRequestPanel } from "@/components/account/OrderRequestPanel";
 import { noindexMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = noindexMetadata({ follow: false });
 
-const FULFILLMENT_KEY: Record<OrderFulfillmentMethod, "cardPayment" | "courierPayment" | "pickup"> = {
-  CARD: "cardPayment",
-  COURIER: "courierPayment",
-  PICKUP: "pickup",
+const DELIVERY_METHOD_KEY: Record<OrderDeliveryMethod, "deliveryCourier" | "deliveryPickup"> = {
+  COURIER: "deliveryCourier",
+  PICKUP: "deliveryPickup",
+};
+
+const PAYMENT_METHOD_KEY: Record<OrderPaymentMethod, "paymentCard" | "paymentOnDelivery" | "paymentInStore"> = {
+  CARD: "paymentCard",
+  ON_DELIVERY: "paymentOnDelivery",
+  IN_STORE: "paymentInStore",
 };
 
 // NOT_APPLICABLE has no key — it's rendered as nothing (see below), same as
@@ -111,7 +121,7 @@ function OrderDetailPageView({
           <section className="rounded-2xl border border-border bg-card p-5">
             <h2 className="font-semibold text-foreground">{t("fulfillmentHeading")}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {t(FULFILLMENT_KEY[order.fulfillmentMethod])}
+              {t(DELIVERY_METHOD_KEY[order.deliveryMethod])} · {t(PAYMENT_METHOD_KEY[order.paymentMethod])}
             </p>
             {order.bank && (
               <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">

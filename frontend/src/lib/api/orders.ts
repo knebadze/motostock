@@ -6,7 +6,16 @@ import type { ApiResponse } from "./generated-helpers";
 // backend's OpenAPI document (npm run api:types → generated/schema.d.ts).
 type Schemas = components["schemas"];
 
-export type OrderFulfillmentMethod = "CARD" | "COURIER" | "PICKUP";
+// Chosen separately at checkout (see backend orders.service.ts's
+// assertCheckoutMethods): ON_DELIVERY only with COURIER, IN_STORE only
+// with PICKUP, CARD with either.
+export type OrderDeliveryMethod = "COURIER" | "PICKUP";
+export type OrderPaymentMethod = "CARD" | "ON_DELIVERY" | "IN_STORE";
+export const PAYMENT_METHODS_BY_DELIVERY: Record<OrderDeliveryMethod, OrderPaymentMethod[]> = {
+  // Pay-on-the-spot first: it's the default pick (no card gateway yet).
+  COURIER: ["ON_DELIVERY", "CARD"],
+  PICKUP: ["IN_STORE", "CARD"],
+};
 export type OrderDeliverySpeed = "STANDARD" | "EXPRESS";
 
 export type CheckoutInput = Schemas["CheckoutInput"];
@@ -108,7 +117,7 @@ export type OrderRiskFlag = Schemas["OrderRiskFlag"];
 export type FinaOrderSyncStatus = "NOT_APPLICABLE" | "PENDING" | "SYNCED" | "FAILED";
 
 // See backend's PaymentStatus — whether a real bank gateway has actually
-// confirmed payment, entirely independent of fulfillmentMethod/status. No
+// confirmed payment, entirely independent of delivery/payment method/status. No
 // gateway integration exists yet, so every order is NOT_APPLICABLE or
 // AWAITING_PAYMENT today; PAID/FAILED/REFUNDED aren't reachable until one
 // does.
@@ -130,7 +139,8 @@ export type AdminOrder = Omit<Schemas["AdminOrder"], "statusHistory" | "requests
 export type ListOrdersFilters = {
   search?: string;
   statusIds?: number[];
-  fulfillmentMethods?: OrderFulfillmentMethod[];
+  deliveryMethods?: OrderDeliveryMethod[];
+  paymentMethods?: OrderPaymentMethod[];
   createdFrom?: string;
   createdTo?: string;
   flaggedOnly?: boolean;

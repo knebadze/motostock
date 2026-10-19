@@ -191,10 +191,13 @@ export function CartManager({
         </div>
         {deliveryInfo && (
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            {t("deliveryHint", {
-              tbilisi: deliveryInfo.tbilisi.price > 0 ? formatPrice(deliveryInfo.tbilisi.price) : t("deliveryFree"),
-              regions: deliveryInfo.regions.price > 0 ? formatPrice(deliveryInfo.regions.price) : t("deliveryFree"),
-            })}{" "}
+            {/* Follows which delivery methods the admin left on. */}
+            {deliveryInfo.methods.courier
+              ? t(deliveryInfo.methods.pickup ? "deliveryHint" : "deliveryHintNoPickup", {
+                  tbilisi: deliveryInfo.tbilisi.price > 0 ? formatPrice(deliveryInfo.tbilisi.price) : t("deliveryFree"),
+                  regions: deliveryInfo.regions.price > 0 ? formatPrice(deliveryInfo.regions.price) : t("deliveryFree"),
+                })
+              : t("deliveryHintPickupOnly")}{" "}
             <Link href="/shipping" className="font-medium text-primary-text hover:underline">
               {t("deliveryHintLink")}
             </Link>

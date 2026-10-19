@@ -5,7 +5,8 @@ import type {
   CartItemType,
   FinaOrderSyncStatus,
   OrderDeliverySpeed,
-  OrderFulfillmentMethod,
+  OrderDeliveryMethod,
+  OrderPaymentMethod,
   PaymentStatus,
   Prisma,
 } from "../../generated/prisma/index.js";
@@ -49,7 +50,8 @@ const PROMO_CODE_LOCK_NAMESPACE = 604710823;
 function buildAdminWhere(filters: {
   search?: string;
   statusIds?: number[];
-  fulfillmentMethods?: OrderFulfillmentMethod[];
+  deliveryMethods?: OrderDeliveryMethod[];
+  paymentMethods?: OrderPaymentMethod[];
   createdFrom?: string;
   createdTo?: string;
   flaggedOnly?: boolean;
@@ -85,8 +87,12 @@ function buildAdminWhere(filters: {
     and.push({ statusId: { in: filters.statusIds } });
   }
 
-  if (filters.fulfillmentMethods && filters.fulfillmentMethods.length > 0) {
-    and.push({ fulfillmentMethod: { in: filters.fulfillmentMethods } });
+  if (filters.deliveryMethods && filters.deliveryMethods.length > 0) {
+    and.push({ deliveryMethod: { in: filters.deliveryMethods } });
+  }
+
+  if (filters.paymentMethods && filters.paymentMethods.length > 0) {
+    and.push({ paymentMethod: { in: filters.paymentMethods } });
   }
 
   if (filters.createdFrom || filters.createdTo) {
@@ -125,7 +131,8 @@ export type PlaceOrderInput = {
   orderCode: string;
   idempotencyKey: string;
   userId: number;
-  fulfillmentMethod: OrderFulfillmentMethod;
+  deliveryMethod: OrderDeliveryMethod;
+  paymentMethod: OrderPaymentMethod;
   statusId: number;
   addressId?: number | null;
   shippingSnapshot?: Prisma.InputJsonValue;
@@ -140,7 +147,7 @@ export type PlaceOrderInput = {
   deliveryTimeSnapshot?: string | null;
   total: number;
   ipAddress?: string | null;
-  // Resolved once by orders.service.ts from fulfillmentMethod (see
+  // Resolved once by orders.service.ts from paymentMethod (see
   // PaymentStatus's own comment in order.prisma) — purely additive labeling
   // until a real gateway integration exists.
   paymentStatus: PaymentStatus;
@@ -326,7 +333,8 @@ export const ordersRepository = {
     filters: {
       search?: string;
       statusIds?: number[];
-      fulfillmentMethods?: OrderFulfillmentMethod[];
+      deliveryMethods?: OrderDeliveryMethod[];
+      paymentMethods?: OrderPaymentMethod[];
       createdFrom?: string;
       createdTo?: string;
       flaggedOnly?: boolean;
@@ -353,7 +361,8 @@ export const ordersRepository = {
   count(filters: {
     search?: string;
     statusIds?: number[];
-    fulfillmentMethods?: OrderFulfillmentMethod[];
+    deliveryMethods?: OrderDeliveryMethod[];
+    paymentMethods?: OrderPaymentMethod[];
     createdFrom?: string;
     createdTo?: string;
     flaggedOnly?: boolean;
