@@ -1,3 +1,4 @@
+import { ApiError } from "../../lib/ApiError.js";
 import { prisma } from "../../config/prisma.js";
 import type { Prisma, UserConsentMethod, UserConsentType } from "../../generated/prisma/index.js";
 
@@ -28,7 +29,7 @@ export const accountDataRepository = {
 
   updateProfile(
     userId: number,
-    data: { firstName: string; lastName: string; phone: string | null; dateOfBirth: Date | null },
+    data: { firstName: string; lastName: string; phone?: string | null; dateOfBirth?: Date | null },
   ) {
     return prisma.user.update({ where: { id: userId }, data });
   },
@@ -140,33 +141,81 @@ export const accountDataRepository = {
     };
   },
 
-  countOrders(userId: number) {
-    return prisma.order.count({ where: { userId } });
-  },
-
-  // Orders not yet finished — deletion waits until they are.
-  countActiveOrders(userId: number, finalStatusKeys: string[]) {
-    return prisma.order.count({ where: { userId, status: { key: { notIn: finalStatusKeys } } } });
-  },
-
-  // No orders → the row and everything it owns goes (Cascade/SetNull on
-  // every relation). Merged-away walk-in rows of the same person go too.
-  deleteUser(userId: number, email: string) {
+  // Account deletion, decided and done in ONE transaction (the checks used to
+  // run before it, so an order placed in between could send a now-ordering
+  // account down the hard-delete path and fail on the Restrict FK as a 500).
+  //
+  // - An order still in progress blocks it (ApiError 409).
+  // - Nothing the shop must keep (no orders, no workshop service history) →
+  //   the row and everything it owns is deleted (Cascade/SetNull).
+  // - Otherwise the row stays as an anonymous stub: personal fields
+  //   overwritten, logins impossible, owned data deleted. Kept for the shop's
+  //   own records: orders (accounting) with their delivery snapshot scrubbed
+  //   down to the city, and garage vehicles that have workshop service
+  //   history (minus the photo), with that history.
+  //
+  // Returns the garage photo URLs to delete from storage after commit.
+  eraseAccount(args: {
+    userId: number;
+    email: string;
+    phone: string | null;
+    finalOrderStatusKeys: string[];
+    placeholderEmail: string;
+    placeholderName: { first: string; last: string };
+  }) {
+    const { userId, email, phone } = args;
     return prisma.$transaction(async (tx) => {
-      await deletePersonalExtras(tx, userId, email);
-      await tx.user.delete({ where: { id: userId } });
-    });
-  },
+      const activeOrders = await tx.order.count({
+        where: { userId, status: { key: { notIn: args.finalOrderStatusKeys } } },
+      });
+      if (activeOrders > 0) {
+        throw new ApiError(409, "Account has orders in progress", "ACCOUNT_HAS_ACTIVE_ORDERS");
+      }
 
-  // Has orders → Order.userId is Restrict and the orders must be kept for
-  // accounting, so the row stays as an anonymous stub: every personal field
-  // is overwritten, logins are made impossible, and everything else the
-  // user owns is deleted.
-  anonymizeUser(userId: number, email: string, placeholderEmail: string, placeholderName: { first: string; last: string }) {
-    return prisma.$transaction(async (tx) => {
-      await deletePersonalExtras(tx, userId, email);
+      const vehicles = await tx.garageVehicle.findMany({
+        where: { userId },
+        select: { id: true, imageUrl: true, _count: { select: { serviceRecords: true } } },
+      });
+      const imageUrls = vehicles.map((vehicle) => vehicle.imageUrl).filter((url): url is string => url != null);
+      const vehiclesWithHistory = vehicles.filter((vehicle) => vehicle._count.serviceRecords > 0);
+      const orderCount = await tx.order.count({ where: { userId } });
+
+      await deletePersonalExtras(tx, userId, email, phone);
+
+      if (orderCount === 0 && vehiclesWithHistory.length === 0) {
+        await tx.user.delete({ where: { id: userId } });
+        return { anonymized: false, imageUrls };
+      }
+
+      // Orders: keep what accounting needs, drop the rest of the personal
+      // data — the delivery snapshot keeps only the city; the checkout IP
+      // and the customer's own request texts go.
+      await tx.$executeRaw`
+        UPDATE "dbo"."Order"
+        SET "ipAddress" = NULL,
+            "shippingSnapshot" = CASE
+              WHEN "shippingSnapshot" IS NULL OR jsonb_typeof("shippingSnapshot") <> 'object'
+                THEN "shippingSnapshot"
+              ELSE jsonb_build_object(
+                'city', "shippingSnapshot"->'city',
+                'phone', '',
+                'street', '',
+                'building', NULL,
+                'apartment', NULL,
+                'postalCode', NULL
+              )
+            END
+        WHERE "userId" = ${userId}`;
+      await tx.orderRequest.updateMany({ where: { order: { userId } }, data: { reason: null } });
+
+      // Garage: vehicles with workshop history stay (the shop's service
+      // records), without their photo; the rest go.
+      await tx.garageVehicle.deleteMany({
+        where: { userId, id: { notIn: vehiclesWithHistory.map((vehicle) => vehicle.id) } },
+      });
+      await tx.garageVehicle.updateMany({ where: { userId }, data: { imageUrl: null } });
+
       await tx.address.deleteMany({ where: { userId } });
-      await tx.garageVehicle.deleteMany({ where: { userId } });
       await tx.wishlistItem.deleteMany({ where: { userId } });
       await tx.compareItem.deleteMany({ where: { userId } });
       await tx.cartItem.deleteMany({ where: { userId } });
@@ -183,9 +232,9 @@ export const accountDataRepository = {
       await tx.user.update({
         where: { id: userId },
         data: {
-          email: placeholderEmail,
-          firstName: placeholderName.first,
-          lastName: placeholderName.last,
+          email: args.placeholderEmail,
+          firstName: args.placeholderName.first,
+          lastName: args.placeholderName.last,
           passwordHash: null,
           googleId: null,
           facebookId: null,
@@ -196,14 +245,23 @@ export const accountDataRepository = {
           tokenVersion: { increment: 1 },
         },
       });
+      return { anonymized: true, imageUrls };
     });
   },
 };
 
-// Shared by both deletion paths: data keyed by the email address rather
-// than the user id, and walk-in rows already merged into this account.
-async function deletePersonalExtras(tx: Prisma.TransactionClient, userId: number, email: string) {
+// Shared by both deletion paths: data keyed by the email address / phone
+// rather than the user id, and walk-in rows already merged into this
+// account.
+async function deletePersonalExtras(
+  tx: Prisma.TransactionClient,
+  userId: number,
+  email: string,
+  phone: string | null,
+) {
   await tx.authEvent.deleteMany({ where: { OR: [{ userId }, { email }] } });
   await tx.newsletterSubscriber.deleteMany({ where: { email } });
+  // "Call me back" requests carry no user id — matched by the phone.
+  if (phone) await tx.callbackRequest.deleteMany({ where: { phone } });
   await tx.user.deleteMany({ where: { mergedIntoUserId: userId, isWalkIn: true, orders: { none: {} } } });
 }

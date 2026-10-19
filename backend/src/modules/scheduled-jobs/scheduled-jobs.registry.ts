@@ -8,6 +8,10 @@ import { sendBirthdayEmails } from "../users/birthday-email.service.js";
 import { pruneOldErrorLogs } from "../error-logs/error-logs.service.js";
 import { pruneOldAuthEvents } from "../fraud/fraud.service.js";
 import { pruneStaleGuestCollections } from "./guest-collections-prune.js";
+import {
+  RESOLVED_CALLBACK_RETENTION_DAYS,
+  pruneResolvedCallbackRequests,
+} from "../callback-requests/callback-requests-prune.js";
 import type { ScheduledJobKey } from "./scheduled-jobs.schema.js";
 
 // number for count-style detail (every existing prune job), string for
@@ -131,6 +135,12 @@ export const JOB_DEFINITIONS: JobDefinition[] = [
     labelKa: "შესვლის ისტორიის გასუფთავება (180 დღეზე ძველი)",
     cron: "16 3 * * *",
     run: async () => ({ itemsAffected: await pruneOldAuthEvents() }),
+  },
+  {
+    key: "DAILY_PRUNE_CALLBACK_REQUESTS",
+    labelKa: `დამუშავებული დარეკვის თხოვნების წაშლა (${RESOLVED_CALLBACK_RETENTION_DAYS} დღეზე ძველი)`,
+    cron: "18 3 * * *",
+    run: async () => ({ itemsAffected: await pruneResolvedCallbackRequests() }),
   },
   {
     key: "BIRTHDAY_EMAIL",

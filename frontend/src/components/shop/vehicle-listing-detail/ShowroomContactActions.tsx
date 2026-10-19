@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { Link } from "@/i18n/navigation";
 import { Modal } from "@/components/shared/Modal";
 import { Select } from "@/components/shared/Select";
 import { openWhatsAppChat } from "@/components/shared/ChatWidget";
@@ -190,6 +191,15 @@ export function ShowroomContactActions({
                 className={inputClassName}
               />
             </div>
+            <p className="text-xs text-muted-foreground">
+              {t.rich("callbackPrivacy", {
+                privacy: (chunks) => (
+                  <Link href="/privacy" target="_blank" className="font-medium text-primary-text hover:underline">
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            </p>
             <button
               type="submit"
               disabled={sending}

@@ -269,9 +269,11 @@ export const ordersRepository = {
 
       if (!stockAdjustment) return;
 
-      // Cancelling answers any open customer cancel request.
+      // Cancelling answers any open customer request on the order — a cancel
+      // request, or a return request handled by cancelling the delivered
+      // order (stock back + FINA return).
       await tx.orderRequest.updateMany({
-        where: { orderId: id, type: "CANCEL", status: "OPEN" },
+        where: { orderId: id, status: "OPEN" },
         data: { status: "RESOLVED", resolvedAt: new Date(), resolvedByUserId: changedByUserId },
       });
 

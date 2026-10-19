@@ -22,6 +22,9 @@ enum ScheduledJobKey {
   // AuthEvent rows older than the retention window (fraud.service.ts's
   // pruneOldAuthEvents).
   DAILY_PRUNE_AUTH_EVENTS
+  // Handled "call me back" requests past their retention window
+  // (callback-requests-prune.ts).
+  DAILY_PRUNE_CALLBACK_REQUESTS
 
   @@schema("dbo")
 }

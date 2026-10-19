@@ -9025,13 +9025,13 @@ export interface paths {
                         "application/json": {
                             jobs: {
                                 /** @enum {string} */
-                                key: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
+                                key: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS" | "DAILY_PRUNE_CALLBACK_REQUESTS";
                                 labelKa: string;
                                 scheduleLabelKa: string;
                                 lastRun: {
                                     id: number;
                                     /** @enum {string} */
-                                    jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
+                                    jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS" | "DAILY_PRUNE_CALLBACK_REQUESTS";
                                     /** @enum {string} */
                                     trigger: "SCHEDULED" | "MANUAL";
                                     /** @enum {string} */
@@ -9075,7 +9075,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    jobKey?: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
+                    jobKey?: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS" | "DAILY_PRUNE_CALLBACK_REQUESTS";
                     page?: number;
                     pageSize?: number;
                 };
@@ -9095,7 +9095,7 @@ export interface paths {
                             runs: {
                                 id: number;
                                 /** @enum {string} */
-                                jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
+                                jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS" | "DAILY_PRUNE_CALLBACK_REQUESTS";
                                 /** @enum {string} */
                                 trigger: "SCHEDULED" | "MANUAL";
                                 /** @enum {string} */
@@ -9145,7 +9145,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    key: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
+                    key: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS" | "DAILY_PRUNE_CALLBACK_REQUESTS";
                 };
                 cookie?: never;
             };
@@ -9161,7 +9161,7 @@ export interface paths {
                             run: {
                                 id: number;
                                 /** @enum {string} */
-                                jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
+                                jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS" | "DAILY_PRUNE_CALLBACK_REQUESTS";
                                 /** @enum {string} */
                                 trigger: "SCHEDULED" | "MANUAL";
                                 /** @enum {string} */

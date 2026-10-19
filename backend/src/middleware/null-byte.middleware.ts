@@ -15,6 +15,17 @@ function containsNullByte(value: unknown, depth = 0): boolean {
 // e.g. scanners probing GET /api/products/by-slug/%00.env — filling ErrorLog
 // and Sentry with noise. No legitimate input contains it. Route params are
 // covered via the URL check (they're decoded from it later, per route).
+// Same check for multipart text fields, which only exist once multer has
+// parsed the form — so it runs as part of the upload middleware (see
+// upload.middleware.ts), not the global one above.
+export function rejectNullBytesInBody(req: Request, res: Response, next: NextFunction) {
+  if (containsNullByte(req.body)) {
+    res.status(400).json({ error: { message: "Invalid characters in request", code: "INVALID_CHARACTERS" } });
+    return;
+  }
+  next();
+}
+
 export function rejectNullBytes(req: Request, res: Response, next: NextFunction) {
   if (
     /%00/i.test(req.originalUrl) ||

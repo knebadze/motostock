@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
-import { changePasswordRateLimit } from "../../middleware/rateLimit.middleware.js";
+import { changePasswordRateLimit, profileUpdateRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema, userResponseSchema } from "../../docs/schemas.js";
 import { addressResponseSchema } from "../addresses/addresses.schema.js";
@@ -55,7 +55,8 @@ usersRouter.patch(
 // Personal data self-service (personal data protection law) — see
 // account-data.service.ts. Literal /me/* paths, before "/:id".
 usersRouter.get("/me/profile", requireAuth, getMyProfile);
-usersRouter.patch("/me/profile", requireAuth, validate(updateProfileSchema), updateMyProfile);
+// Own limiter: a 409 on the phone reveals whether a number is registered.
+usersRouter.patch("/me/profile", requireAuth, profileUpdateRateLimit, validate(updateProfileSchema), updateMyProfile);
 usersRouter.post("/me/consents", requireAuth, acceptMyConsents);
 usersRouter.get("/me/export", requireAuth, exportMyData);
 // Same limiter as change-password — it checks the password too.

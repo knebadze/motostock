@@ -299,7 +299,8 @@
     "callbackSent": "Thank you! We got your request and will call you soon.",
     "callbackClose": "Close",
     "callbackValidation": "Please enter your name and phone number",
-    "callbackError": "Couldn't send the request"
+    "callbackError": "Couldn't send the request",
+    "callbackPrivacy": "We use your name and number only to call you back; a handled request is deleted after 90 days. <privacy>Privacy policy</privacy>"
   },
   "Auth": {
     "loginTitle": "Log in",
@@ -751,8 +752,8 @@
       "deleteButton": "Delete account",
       "deleteConfirmTitle": "Delete account",
       "deleteConfirmText": "Are you sure? The account can't be restored.",
-      "deleteConfirmRemoved": "Deleted: profile, addresses, garage and service history, wishlist, cart, consents and login history; you're also unsubscribed from the newsletter.",
-      "deleteConfirmOrders": "Order records (items, amounts, delivery address) are kept for the legally required accounting period, without your name or email.",
+      "deleteConfirmRemoved": "Deleted: profile, addresses, garage (with photos), wishlist, cart, consents, login history and callback requests; you're also unsubscribed from the newsletter.",
+      "deleteConfirmOrders": "Kept for the legally required period, without your name, email or phone: order records (items, amounts, delivery city) and workshop service history (if your bike was serviced with us).",
       "deleteConfirmActive": "An order still in progress has to be completed or cancelled first.",
       "deletePasswordLabel": "Enter your password to confirm",
       "deleteEmailLabel": "Type your email to confirm ({email})",

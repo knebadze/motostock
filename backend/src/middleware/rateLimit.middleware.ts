@@ -122,6 +122,16 @@ export const newsletterRateLimit = rateLimit({
   message: { error: { message: "Too many requests, please try again later" } },
 });
 
+// PATCH /users/me/profile — its phone-conflict 409 would otherwise let an
+// account probe which phone numbers are registered at the global write rate.
+export const profileUpdateRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { message: "Too many requests, please try again later" } },
+});
+
 // Public "call me back" form (callback-requests module) — anonymous and
 // every call emails staff, same reasoning as newsletterRateLimit.
 export const callbackRequestRateLimit = rateLimit({

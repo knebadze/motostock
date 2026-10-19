@@ -2,7 +2,8 @@ import { randomBytes } from "node:crypto";
 import { ApiError } from "../../lib/ApiError.js";
 import { logger } from "../../lib/logger.js";
 import { comparePassword } from "../../lib/password.js";
-import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
+import { isForeignKeyViolation, isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
+import { deleteUploadedImage } from "../../lib/storage.js";
 import { ROLES } from "../../lib/roles.js";
 import type { UserConsentMethod } from "../../generated/prisma/index.js";
 import { getTerms } from "../terms/terms.service.js";
@@ -84,14 +85,17 @@ export async function getProfile(userId: number) {
 }
 
 export async function updateProfile(userId: number, input: UpdateProfileInput) {
-  const phone = input.phone?.trim() || null;
+  // A field left out of the request keeps its value; "" clears it.
+  const phone = input.phone === undefined ? undefined : input.phone.trim() || null;
   if (phone) {
     const owner = await usersRepository.findByPhone(phone);
     if (owner && owner.id !== userId) {
       // A walk-in from the workshop with this phone: flag it for staff to
       // merge (same as registration does), but don't take the number over
-      // — nothing proves it's this customer's.
-      if (owner.isWalkIn && owner.mergedIntoUserId == null) {
+      // — nothing proves it's this customer's. An existing claim is never
+      // overwritten (someone guessing a walk-in's number mustn't be able to
+      // redirect staff's "confirm merge" to their own account).
+      if (owner.isWalkIn && owner.mergedIntoUserId == null && owner.phoneClaimedByUserId == null) {
         await usersRepository.setPhoneClaim(owner.id, userId);
       }
       throw new ApiError(409, "Phone number already in use", "PHONE_ALREADY_IN_USE");
@@ -102,8 +106,10 @@ export async function updateProfile(userId: number, input: UpdateProfileInput) {
     await accountDataRepository.updateProfile(userId, {
       firstName: input.firstName.trim(),
       lastName: input.lastName.trim(),
-      phone,
-      dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : null,
+      ...(phone !== undefined ? { phone } : {}),
+      ...(input.dateOfBirth !== undefined
+        ? { dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : null }
+        : {}),
     });
   } catch (err) {
     if (isUniqueConstraintViolation(err, "phone")) {
@@ -164,22 +170,30 @@ export async function deleteAccount(userId: number, input: DeleteAccountInput) {
     throw new ApiError(400, "Email doesn't match", "ACCOUNT_DELETE_EMAIL_MISMATCH");
   }
 
-  if ((await accountDataRepository.countActiveOrders(userId, FINAL_ORDER_STATUS_KEYS)) > 0) {
-    throw new ApiError(409, "Account has orders in progress", "ACCOUNT_HAS_ACTIVE_ORDERS");
+  const erase = () =>
+    accountDataRepository.eraseAccount({
+      userId,
+      email: user.email,
+      phone: user.phone,
+      finalOrderStatusKeys: FINAL_ORDER_STATUS_KEYS,
+      placeholderEmail: `deleted-${userId}-${randomBytes(6).toString("hex")}@deleted.invalid`,
+      placeholderName: { first: "წაშლილი", last: "მომხმარებელი" },
+    });
+
+  let result: Awaited<ReturnType<typeof erase>>;
+  try {
+    result = await erase();
+  } catch (err) {
+    // An order committed between the transaction's count and its hard
+    // delete (Restrict FK) — run again; it now takes the anonymize path.
+    if (!isForeignKeyViolation(err)) throw err;
+    result = await erase();
   }
 
-  if ((await accountDataRepository.countOrders(userId)) === 0) {
-    await accountDataRepository.deleteUser(userId, user.email);
-    logger.info({ userId }, "Account deleted by its owner");
-    return { anonymized: false };
-  }
+  // Garage photos — after commit, best-effort (a leftover file is harmless,
+  // a deleted file for a rolled-back account wouldn't be).
+  await Promise.all(result.imageUrls.map((url) => deleteUploadedImage(url)));
 
-  await accountDataRepository.anonymizeUser(
-    userId,
-    user.email,
-    `deleted-${userId}-${randomBytes(6).toString("hex")}@deleted.invalid`,
-    { first: "წაშლილი", last: "მომხმარებელი" },
-  );
-  logger.info({ userId }, "Account anonymized by its owner (orders kept)");
-  return { anonymized: true };
+  logger.info({ userId, anonymized: result.anonymized }, "Account deleted by its owner");
+  return { anonymized: result.anonymized };
 }
