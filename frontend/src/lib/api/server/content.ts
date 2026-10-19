@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { PUBLIC_STATIC_CACHE_SECONDS, fetchFromServer, fetchPublicCacheable } from "./core";
+import { PUBLIC_STATIC_CACHE_SECONDS, fetchFromServer, fetchPublicCacheable, withPublicFallback } from "./core";
 import type { Category } from "../categories";
 import type { HeroSlide } from "../hero-slides";
 import type { TeamMember } from "../team-members";
@@ -33,7 +33,7 @@ const getCachedCategories = unstable_cache(
   ["categories"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["categories"] },
 );
-export const getCategoriesFromServer = cache(getCachedCategories);
+export const getCategoriesFromServer = cache(withPublicFallback(getCachedCategories));
 
 const WEEK_DAYS: WeekDay[] = [
   "MONDAY",
@@ -82,7 +82,7 @@ const getCachedCompanyInfo = unstable_cache(
   ["company-info"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["company-info"] },
 );
-export const getCompanyInfoFromServer = cache(getCachedCompanyInfo);
+export const getCompanyInfoFromServer = cache(withPublicFallback(getCachedCompanyInfo));
 
 // The guest /terms page reads this on every load — cached across requests,
 // same reasoning as getCategoriesFromServer above.
@@ -95,7 +95,7 @@ const getCachedTerms = unstable_cache(
   ["terms"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["terms"] },
 );
-export const getTermsFromServer = cache(getCachedTerms);
+export const getTermsFromServer = cache(withPublicFallback(getCachedTerms));
 
 // The guest /privacy page reads this on every load — cached across requests,
 // same reasoning as getCategoriesFromServer above.
@@ -108,7 +108,7 @@ const getCachedPrivacyPolicy = unstable_cache(
   ["privacy-policy"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["privacy-policy"] },
 );
-export const getPrivacyPolicyFromServer = cache(getCachedPrivacyPolicy);
+export const getPrivacyPolicyFromServer = cache(withPublicFallback(getCachedPrivacyPolicy));
 
 // The guest /faq page reads this on every load — cached across requests,
 // same reasoning as getCategoriesFromServer above.
@@ -121,7 +121,7 @@ const getCachedFaqList = unstable_cache(
   ["faq-public"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["faq-public"] },
 );
-export const getFaqListFromServer = cache(getCachedFaqList);
+export const getFaqListFromServer = cache(withPublicFallback(getCachedFaqList));
 
 // The guest /service page's list of what the workshop does — cached across
 // requests like the other admin-edited public content above.
@@ -134,7 +134,7 @@ const getCachedPublicServiceTypes = unstable_cache(
   ["service-types-public"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["service-types-public"] },
 );
-export const getPublicServiceTypesFromServer = cache(getCachedPublicServiceTypes);
+export const getPublicServiceTypesFromServer = cache(withPublicFallback(getCachedPublicServiceTypes));
 
 // The whole vehicle catalog for the storefront's vehicle pickers (home hero
 // search, checkout compatibility check). Public and identical for every
@@ -158,7 +158,7 @@ const getCachedVehicleSearchOptions = unstable_cache(
   ["vehicle-search-options"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["vehicle-catalog"] },
 );
-export const getVehicleSearchOptionsFromServer = cache(getCachedVehicleSearchOptions);
+export const getVehicleSearchOptionsFromServer = cache(withPublicFallback(getCachedVehicleSearchOptions));
 
 // Admin — every FAQ entry, including inactive ones (see the admin FAQ
 // manager). Distinct from getFaqListFromServer's public/active-only list,
@@ -279,7 +279,7 @@ const getCachedCategoryItemCounts = unstable_cache(
   ["category-item-counts"],
   { revalidate: 300 },
 );
-export const getCategoryItemCountsFromServer = cache(getCachedCategoryItemCounts);
+export const getCategoryItemCountsFromServer = cache(withPublicFallback(getCachedCategoryItemCounts));
 
 // The /shipping ("delivery & returns") page — same cross-request caching as
 // the privacy policy above (revalidated on admin save, tag "shipping-policy").
@@ -292,7 +292,7 @@ const getCachedShippingPolicy = unstable_cache(
   ["shipping-policy"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["shipping-policy"] },
 );
-export const getShippingPolicyFromServer = cache(getCachedShippingPolicy);
+export const getShippingPolicyFromServer = cache(withPublicFallback(getCachedShippingPolicy));
 
 // Delivery prices/times + return window for the product page and cart info
 // block (public, admin-edited in Settings → delivery). null when unavailable
@@ -306,4 +306,4 @@ const getCachedDeliveryInfo = unstable_cache(
   ["delivery-info"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["delivery-info"] },
 );
-export const getDeliveryInfoFromServer = cache(getCachedDeliveryInfo);
+export const getDeliveryInfoFromServer = cache(withPublicFallback(getCachedDeliveryInfo));

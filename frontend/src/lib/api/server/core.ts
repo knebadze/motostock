@@ -116,8 +116,39 @@ export async function fetchPublicCacheable<TResponse, TResult>(
       const message = error instanceof Error ? error.message : String(error);
       console.error(`[fetchPublicCacheable] GET ${path} failed${status ? ` (${status})` : ""}: ${message}`);
     }
-    return options.fallback;
+    // Thrown, not returned: every caller runs inside unstable_cache, which
+    // stores whatever the function returns for PUBLIC_STATIC_CACHE_SECONDS.
+    // Returning the fallback cached it — one backend blip and e.g. an empty
+    // category list was served for 5 minutes, 404ing every category and
+    // product page (and emptying the menu) long after the backend was back.
+    // A throw is never cached (and on a stale entry's refresh, Next keeps
+    // serving the last good value); withPublicFallback turns it back into
+    // the fallback outside the cache, for this request only.
+    throw new PublicFetchFailedError(path, options.fallback);
   }
+}
+
+class PublicFetchFailedError<TResult> extends Error {
+  constructor(
+    path: string,
+    readonly fallback: TResult,
+  ) {
+    super(`Public fetch failed: ${path}`);
+    this.name = "PublicFetchFailedError";
+  }
+}
+
+// Wraps an unstable_cache'd fetchPublicCacheable caller: a failed fetch
+// yields its fallback for the current request, without having been cached.
+export function withPublicFallback<TResult>(cached: () => Promise<TResult>): () => Promise<TResult> {
+  return async () => {
+    try {
+      return await cached();
+    } catch (error) {
+      if (error instanceof PublicFetchFailedError) return error.fallback as TResult;
+      throw error;
+    }
+  };
 }
 
 // 5 minutes — admin-edited content (a category rename, a new FAQ entry, a
