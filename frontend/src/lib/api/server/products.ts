@@ -134,6 +134,7 @@ const getCachedProductDetail = cache(async (slug: string, vehicleCatalogId: stri
     params: { vehicleCatalogId: vehicleCatalogId || undefined },
     fallback: null,
     extract: (data) => data.item,
+    throwIfUnavailable: true,
   });
 });
 

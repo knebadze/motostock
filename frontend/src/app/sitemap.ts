@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import {
-  getCategoriesFromServer,
+  getCategoriesStrictFromServer,
   getProductSitemapEntriesFromServer,
   getVacancyListFromServer,
   getVehicleCatalogOptionsWithCompatibleProductsFromServer,
@@ -15,7 +15,9 @@ import { routing } from "@/i18n/routing";
 // content (see robots.ts, which also disallows them from crawling).
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [categories, products, vehicleListings, vacancies, fitmentVehicles] = await Promise.all([
-    getCategoriesFromServer(),
+    // Strict: a backend outage fails the sitemap (5xx, crawlers retry) instead
+    // of publishing one without any category/product URLs.
+    getCategoriesStrictFromServer(),
     getProductSitemapEntriesFromServer(),
     getVehicleListingSitemapEntriesFromServer(),
     getVacancyListFromServer(),

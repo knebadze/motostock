@@ -45,6 +45,12 @@ export async function fetchFromServer<TResponse, TResult>(
     extract: (data: TResponse) => TResult;
     requireAuth?: boolean;
     requireSession?: boolean;
+    // For a public page that 404s when this returns its fallback (a
+    // product/listing/vacancy detail): when the backend is unreachable or
+    // answers 5xx, throw BackendUnavailableError instead, so the page
+    // fails with a 5xx (temporary — crawlers retry, keep the URL indexed)
+    // rather than a 404 (crawlers drop it). A real 404 still falls back.
+    throwIfUnavailable?: boolean;
   },
 ): Promise<TResult> {
   const auth = await authHeaders();
@@ -82,6 +88,7 @@ export async function fetchFromServer<TResponse, TResult>(
     if (status === undefined || status >= 500) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`[fetchFromServer] GET ${path} failed${status ? ` (${status})` : ""}: ${message}`);
+      if (options.throwIfUnavailable) throw new BackendUnavailableError(path);
     }
     return options.fallback;
   }
@@ -128,6 +135,16 @@ export async function fetchPublicCacheable<TResponse, TResult>(
   }
 }
 
+// The backend couldn't answer (down / 5xx). Thrown from a page's render it
+// ends up in [locale]/error.tsx with a 500 status — the honest answer for a
+// temporary outage, unlike a 404 that tells crawlers the page is gone.
+export class BackendUnavailableError extends Error {
+  constructor(path: string) {
+    super(`Backend unavailable: ${path}`);
+    this.name = "BackendUnavailableError";
+  }
+}
+
 class PublicFetchFailedError<TResult> extends Error {
   constructor(
     path: string,
@@ -164,3 +181,18 @@ export type AdminListPage<T> = { items: T[]; total: number; page: number; pageSi
 
 export const ADMIN_LIST_INITIAL_PAGE_SIZE = 20;
 export const EMPTY_ADMIN_LIST_PAGE = { items: [], total: 0, page: 1, pageSize: ADMIN_LIST_INITIAL_PAGE_SIZE };
+
+// Strict counterpart of withPublicFallback, for a page whose 404 decision
+// depends on this data (e.g. "is there a category with this slug?"): when
+// the fetch failed and nothing good is cached, throw BackendUnavailableError
+// (→ 5xx) instead of handing back an empty fallback that would 404.
+export function withUnavailableError<TResult>(cached: () => Promise<TResult>): () => Promise<TResult> {
+  return async () => {
+    try {
+      return await cached();
+    } catch (error) {
+      if (error instanceof PublicFetchFailedError) throw new BackendUnavailableError(error.message);
+      throw error;
+    }
+  };
+}

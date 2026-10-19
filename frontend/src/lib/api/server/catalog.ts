@@ -74,7 +74,7 @@ export const getVehicleCatalogEntryFromServer = cache(async (
   // same fix as getCategoriesFromServer.
   return fetchFromServer<{ item: VehicleCatalogEntry }, VehicleCatalogEntry | null>(
     `/vehicle-catalog/${id}`,
-    { fallback: null, extract: (data) => data.item },
+    { fallback: null, extract: (data) => data.item, throwIfUnavailable: true },
   );
 });
 

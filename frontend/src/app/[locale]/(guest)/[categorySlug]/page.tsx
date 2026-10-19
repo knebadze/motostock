@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
-  getCategoriesFromServer,
+  getCategoriesStrictFromServer,
   getCategorySlugRedirectFromServer,
   getCategoryFiltersFromServer,
   getMyGarageFromServer,
@@ -52,7 +52,7 @@ export async function generateMetadata({
   const { locale, categorySlug } = await params;
   const { page } = await searchParams;
 
-  const categories = await getCategoriesFromServer();
+  const categories = await getCategoriesStrictFromServer();
   const category = categories.find((item) => item.slug === categorySlug);
   if (!category) return {};
 
@@ -99,7 +99,7 @@ export default async function CategoryShopPage({
   const { locale, categorySlug } = await params;
   const { page, sort, eventId } = await searchParams;
 
-  const categories = await getCategoriesFromServer();
+  const categories = await getCategoriesStrictFromServer();
   const category = categories.find((item) => item.slug === categorySlug);
   if (!category) {
     // A renamed category's old URL — 301 to its current slug, keeping the

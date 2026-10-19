@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { PUBLIC_STATIC_CACHE_SECONDS, fetchFromServer, fetchPublicCacheable, withPublicFallback } from "./core";
+import { PUBLIC_STATIC_CACHE_SECONDS, fetchFromServer, fetchPublicCacheable, withPublicFallback, withUnavailableError } from "./core";
 import type { Category } from "../categories";
 import type { HeroSlide } from "../hero-slides";
 import type { TeamMember } from "../team-members";
@@ -34,6 +34,10 @@ const getCachedCategories = unstable_cache(
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["categories"] },
 );
 export const getCategoriesFromServer = cache(withPublicFallback(getCachedCategories));
+// Same data, but throws (→ 5xx) when the backend is down and nothing is
+// cached — for public pages that would otherwise 404 on an empty list
+// (category/item pages) and for the sitemap (which would publish empty).
+export const getCategoriesStrictFromServer = cache(withUnavailableError(getCachedCategories));
 
 const WEEK_DAYS: WeekDay[] = [
   "MONDAY",
@@ -187,6 +191,7 @@ export const getVacancyListFromServer = cache(async (): Promise<Vacancy[]> => {
 export const getVacancyBySlugFromServer = cache(async (slug: string): Promise<Vacancy | null> => {
   return fetchFromServer<{ item: Vacancy }, Vacancy | null>(`/vacancies/by-slug/${slug}`, {
     fallback: null,
+    throwIfUnavailable: true,
     extract: (data) => data.item,
   });
 });

@@ -97,7 +97,7 @@ export const getVehicleListingFromServer = cache(async (id: number): Promise<Veh
   // because there's no admin session cookie, same fix as getCategoriesFromServer.
   return fetchFromServer<{ item: VehicleListing }, VehicleListing | null>(
     `/vehicle-listings/${id}`,
-    { fallback: null, extract: (data) => data.item },
+    { fallback: null, extract: (data) => data.item, throwIfUnavailable: true },
   );
 });
 

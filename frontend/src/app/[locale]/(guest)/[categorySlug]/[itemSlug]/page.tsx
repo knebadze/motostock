@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
-  getCategoriesFromServer,
+  getCategoriesStrictFromServer,
   getCategorySlugRedirectFromServer,
   getCompanyInfoFromServer,
   getDeliveryInfoFromServer,
@@ -59,7 +59,7 @@ function stripHtml(html: string): string {
 }
 
 async function resolveIsVehicleCategory(categorySlug: string): Promise<boolean> {
-  const categories = await getCategoriesFromServer();
+  const categories = await getCategoriesStrictFromServer();
   const category = categories.find((item) => item.slug === categorySlug);
   return category ? isVehicleCategory(categories, category.id) : false;
 }
@@ -220,7 +220,7 @@ async function SimilarListingsSection({ categoryId, listingId }: { categoryId: n
 export default async function ItemDetailRoute({ params }: { params: Promise<PageParams> }) {
   const { locale, categorySlug, itemSlug } = await params;
 
-  const categories = await getCategoriesFromServer();
+  const categories = await getCategoriesStrictFromServer();
   const category = categories.find((item) => item.slug === categorySlug);
   if (!category) {
     // A renamed category's old URL — 301 to its current slug (the item
