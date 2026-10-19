@@ -91,6 +91,7 @@ import { errorMiddleware } from "./middleware/error.middleware.js";
 import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
 import { globalReadRateLimit, globalWriteRateLimit } from "./middleware/rateLimit.middleware.js";
 import { ROLES } from "./lib/roles.js";
+import { rejectNullBytes } from "./middleware/null-byte.middleware.js";
 
 export const app = express();
 
@@ -154,6 +155,8 @@ app.use(
   }),
 );
 app.use(pinoHttp({ logger }));
+// Before any route can hand a NUL byte to Prisma — see null-byte.middleware.ts.
+app.use(rejectNullBytes);
 
 // Dev-only: warns when a JSON response doesn't match its documented OpenAPI
 // schema (the frontend's types are generated from those docs) — see
