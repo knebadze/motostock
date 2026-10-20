@@ -61,3 +61,21 @@ export const tiktokIcon = (
     <path d="M16.6 2c.4 2.3 1.9 3.9 4.4 4.1v3.1c-1.6 0-3.1-.5-4.4-1.5v6.8c0 3.6-2.9 6.5-6.5 6.5S3.6 18.1 3.6 14.5 6.5 8 10.1 8c.3 0 .6 0 .9.1v3.2a3.4 3.4 0 0 0-.9-.1 3.3 3.3 0 1 0 3.3 3.3V2h3.2Z" />
   </svg>
 );
+
+// Map pin — the footer's "where we are" link (→ /contact#map).
+export const locationIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-5"
+    aria-hidden
+  >
+    <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z" />
+    <circle cx="12" cy="9.5" r="2.5" />
+  </svg>
+);

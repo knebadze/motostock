@@ -335,8 +335,8 @@ export function Header({
               <Link href="/vacancies" className="transition-colors hover:text-primary-text">
                 {tFooter("vacanciesTitle")}
               </Link>
-              <Link href="/terms" className="transition-colors hover:text-primary-text">
-                {tFooter("termsTitle")}
+              <Link href="/catalog" className="transition-colors hover:text-primary-text">
+                {tFooter("catalogTitle")}
               </Link>
               {/* <Link href="/privacy" className="transition-colors hover:text-primary-text">
                 {tFooter("privacyTitle")}
@@ -863,11 +863,11 @@ export function Header({
                   </Link>
 
                   <Link
-                    href="/terms"
+                    href="/catalog"
                     onClick={() => setIsOpen(false)}
                     className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                   >
-                    {tFooter("termsTitle")}
+                    {tFooter("catalogTitle")}
                   </Link>
 
                   {/* <Link

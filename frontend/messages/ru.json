@@ -449,7 +449,13 @@
     "saturdayShort": "Сб",
     "sundayShort": "Вс",
     "serviceTitle": "Сервис",
-    "shippingTitle": "Доставка и возврат"
+    "shippingTitle": "Доставка и возврат",
+    "newsletterHeading": "Узнавайте первыми об акциях и новинках",
+    "visitTitle": "Приходите к нам",
+    "openNow": "Сейчас открыто",
+    "closedNow": "Сейчас закрыто",
+    "legalNavLabel": "Информация и правила",
+    "locationLabel": "Мы на карте"
   },
   "Catalog": {
     "title": "Каталог",
@@ -457,8 +463,6 @@
     "subcategoryCount": "{count, plural, one {# подкатегория} few {# подкатегории} many {# подкатегорий} other {# подкатегорий}}"
   },
   "Newsletter": {
-    "signupTitle": "Подпишитесь на новости",
-    "signupDescription": "Новинки и акции прямо на вашу почту.",
     "emailPlaceholder": "Ваш email",
     "subscribeSubmit": "Подписаться",
     "subscribeSubmitting": "Отправка...",

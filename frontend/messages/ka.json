@@ -449,7 +449,13 @@
     "saturdayShort": "შაბ",
     "sundayShort": "კვ",
     "serviceTitle": "სერვისი",
-    "shippingTitle": "მიწოდება და დაბრუნება"
+    "shippingTitle": "მიწოდება და დაბრუნება",
+    "newsletterHeading": "პირველმა გაიგეთ აქციებისა და სიახლეების შესახებ",
+    "visitTitle": "გვესტუმრეთ",
+    "openNow": "ახლა ღიაა",
+    "closedNow": "ახლა დაკეტილია",
+    "legalNavLabel": "ინფორმაცია და წესები",
+    "locationLabel": "ჩვენი მდებარეობა რუკაზე"
   },
   "Catalog": {
     "title": "კატალოგი",
@@ -457,8 +463,6 @@
     "subcategoryCount": "{count, plural, other {# ქვეკატეგორია}}"
   },
   "Newsletter": {
-    "signupTitle": "გამოიწერეთ სიახლეები",
-    "signupDescription": "ახალი პროდუქტები და აქციები პირველივე პირდაპირ თქვენს ელფოსტაზე.",
     "emailPlaceholder": "თქვენი ელფოსტა",
     "subscribeSubmit": "გამოწერა",
     "subscribeSubmitting": "იგზავნება...",

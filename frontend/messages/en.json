@@ -449,7 +449,13 @@
     "saturdayShort": "Sat",
     "sundayShort": "Sun",
     "serviceTitle": "Service",
-    "shippingTitle": "Delivery & Returns"
+    "shippingTitle": "Delivery & Returns",
+    "newsletterHeading": "Be the first to hear about deals and news",
+    "visitTitle": "Visit us",
+    "openNow": "Open now",
+    "closedNow": "Closed now",
+    "legalNavLabel": "Information and policies",
+    "locationLabel": "Our location on the map"
   },
   "Catalog": {
     "title": "Catalog",
@@ -457,8 +463,6 @@
     "subcategoryCount": "{count, plural, one {# subcategory} other {# subcategories}}"
   },
   "Newsletter": {
-    "signupTitle": "Subscribe to our newsletter",
-    "signupDescription": "New products and promotions straight to your inbox.",
     "emailPlaceholder": "Your email",
     "subscribeSubmit": "Subscribe",
     "subscribeSubmitting": "Sending...",
