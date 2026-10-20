@@ -27,8 +27,16 @@ const REVALIDATABLE_TAGS = [
 ] as const;
 type RevalidatableTag = (typeof REVALIDATABLE_TAGS)[number];
 
-function isRevalidatableTag(value: unknown): value is RevalidatableTag {
-  return typeof value === "string" && (REVALIDATABLE_TAGS as readonly string[]).includes(value);
+// "all" — the admin's "clear cache" action (UserMenu.tsx): every public
+// cross-request cache the storefront keeps, including the two that have no
+// admin save hook of their own. The backend's in-memory cache is cleared
+// separately by that same action; without this, the storefront kept
+// serving its own copy (e.g. company info changed straight in the DB) for
+// up to PUBLIC_STATIC_CACHE_SECONDS after the "clear".
+const ALL_PUBLIC_TAGS = [...REVALIDATABLE_TAGS, "service-types-public", "guest-feature-status"];
+
+function isRevalidatableTag(value: unknown): value is RevalidatableTag | "all" {
+  return value === "all" || (typeof value === "string" && (REVALIDATABLE_TAGS as readonly string[]).includes(value));
 }
 
 export async function POST(request: NextRequest) {
@@ -58,6 +66,8 @@ export async function POST(request: NextRequest) {
   // profile" argument now; 0 means "treat this tag's cached entries as
   // already expired", i.e. exactly the on-demand immediate-refresh behavior
   // this endpoint exists for.
-  revalidateTag(tag, { expire: 0 });
+  for (const each of tag === "all" ? ALL_PUBLIC_TAGS : [tag]) {
+    revalidateTag(each, { expire: 0 });
+  }
   return NextResponse.json({ revalidated: true, tag });
 }
