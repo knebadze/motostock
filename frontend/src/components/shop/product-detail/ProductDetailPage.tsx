@@ -282,8 +282,7 @@ export function ProductDetailPage({
       {purchasableOnline && (
         <BuyTogether product={product} blockedCategoryIds={onlinePurchaseBlockedCategoryIds} />
       )}
-      {companionRecommendations}
-
+      {/* Description before the "bought together / also viewed" rows. */}
       {descriptionHtml && (
         <section className="mt-14 border-t border-border pt-8">
           <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
@@ -297,6 +296,8 @@ export function ProductDetailPage({
           />
         </section>
       )}
+
+      {companionRecommendations}
 
       {similarRecommendations}
     </div>
