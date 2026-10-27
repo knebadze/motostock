@@ -296,7 +296,7 @@ test.describe("ტექნიკა და კატეგორიები", 
     );
   });
 
-  test("ტექნიკის ჩანაწერები: სტუმრის გარაჟში მყოფი დაცულია (ადმინს გარაჟიდან ამოღება არ შეუძლია); დანარჩენი იშლება", async () => {
+  test("ტექნიკის ჩანაწერები: გარაჟში მყოფი დაცულია (ჯერ გარაჟიდან უნდა წაიშალოს); დანარჩენი იშლება", async () => {
     await page.goto("/admin/vehicle-catalog");
     const rows = () => page.locator("main table tbody tr:visible").filter({ hasText: catalog.names.model });
     // Electric (2023) and the customer-submitted custom entry (2010) — their
@@ -308,12 +308,12 @@ test.describe("ტექნიკა და კატეგორიები", 
       test.info().annotations.push({ type: "note", description: `catalog entry ${year}: ${result.outcome}` });
     }
     // The combustion entry is in walk-in customers' garages (service history).
+    // Intended: a catalog entry can't be deleted while any garage holds it —
+    // refused with a readable message, the entry stays (and so do its model,
+    // brand and category below).
     const ice = rows().filter({ hasText: "2019" }).first();
-    const result = await deleteVia(ice, /\/api\/vehicle-catalog\/\d+$/, "catalog entry in walk-in garages");
-    checkFinding(
-      result.outcome === "deleted",
-      "წაშლა: სტუმრის გარაჟში მყოფი ტექნიკის ჩანაწერი ვერ იშლება და ადმინს გარაჟიდან ამოღების/სტუმრის წაშლის საშუალება არ აქვს",
-      `vehicle catalog ${catalog.ids.catalogEntry} → ${result.response.status()}; this also keeps its model, brand and category`,
+    await expectInUse(ice, /\/api\/vehicle-catalog\/\d+$/, "catalog entry in garages", async () =>
+      (await page.request.get(`${BACKEND_URL}/api/vehicle-catalog/${catalog.ids.catalogEntry}`)).ok(),
     );
   });
 

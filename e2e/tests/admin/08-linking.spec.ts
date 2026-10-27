@@ -101,8 +101,15 @@ test.describe("ტეგების მასობრივი მინიჭ
     const { items } = (await response.json()) as {
       items: { id: number; slug: string; name: { ka: string }; category: { id: number }; totalStock: number }[];
     };
+    // Not one the product form (03) already linked by hand — a curated
+    // companion stays in the bundle regardless of tags.
+    const curated = new Set(await publicBundleIds());
     const companion = items.find(
-      (item) => item.category.id !== catalog.ids.rootCategory && item.totalStock > 0 && !item.name.ka.startsWith("E2E"),
+      (item) =>
+        item.category.id !== catalog.ids.rootCategory &&
+        item.totalStock > 0 &&
+        !item.name.ka.startsWith("E2E") &&
+        !curated.has(item.id),
     );
     expect(companion, "a seeded in-stock product in another category").toBeTruthy();
     ids.companion = companion!.id;

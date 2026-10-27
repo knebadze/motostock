@@ -10,7 +10,8 @@
     "test:admin": "playwright test tests/admin --workers=1",
     "test:customer": "playwright test tests/customer/ --workers=1",
     "test:deletion": "playwright test tests/deletion/ --workers=1",
-    "test:full": "npm run test:admin && npm run test:customer && npm run test:deletion"
+    "test:full": "npm run test:admin && npm run test:customer && npm run test:operator && npm run test:deletion",
+    "test:operator": "playwright test tests/operator/ --workers=1"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
