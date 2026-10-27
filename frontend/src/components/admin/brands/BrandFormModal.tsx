@@ -12,6 +12,7 @@ import { slugify } from "@/lib/categories-tree";
 import { brandFormSchema } from "@/lib/validation/brands";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 import { revalidatePublicCache } from "@/lib/api/revalidate";
+import { uploadFailedMessage } from "@/lib/upload-error";
 
 export function BrandFormModal({
   open,
@@ -27,7 +28,9 @@ export function BrandFormModal({
   const isEditing = brand !== null;
   const [name, setName] = useState(brand?.name ?? "");
   const [slug, setSlug] = useState(brand?.slug ?? "");
-  const [slugTouched, setSlugTouched] = useState(false);
+  // On edit the stored slug is the live URL — renaming mustn't silently
+  // regenerate it; only an explicit edit of the slug field changes it.
+  const [slugTouched, setSlugTouched] = useState(isEditing);
   const { file: logoFile, previewUrl, onChange: handleLogoChange } = useFileUploadPreview(
     resolveMediaUrl(brand?.logoUrl ?? null),
   );
@@ -62,8 +65,8 @@ export function BrandFormModal({
       if (logoFile) {
         try {
           await uploadBrandLogo(savedBrand.id, logoFile);
-        } catch {
-          toast.error("მარკა შენახულია, მაგრამ ლოგოს ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("მარკა შენახულია, მაგრამ ლოგოს ატვირთვა ვერ მოხერხდა", error));
           onSaved();
           onClose();
           return;

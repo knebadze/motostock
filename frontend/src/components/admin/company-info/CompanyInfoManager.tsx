@@ -15,6 +15,7 @@ import {
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import type { LookupItem } from "@/lib/api/lookups";
 import { revalidatePublicCache } from "@/lib/api/revalidate";
+import { uploadFailedMessage } from "@/lib/upload-error";
 
 const WEEK_DAY_LABELS: Record<WeekDay, string> = {
   MONDAY: "ორშაბათი",
@@ -99,8 +100,8 @@ export function CompanyInfoManager({
         try {
           const withLogo = await uploadCompanyLogo(logoFile);
           resetLogoPreview(resolveMediaUrl(withLogo.logoUrl));
-        } catch {
-          toast.error("ინფორმაცია შენახულია, მაგრამ ლოგოს ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("ინფორმაცია შენახულია, მაგრამ ლოგოს ატვირთვა ვერ მოხერხდა", error));
           await revalidatePublicCache("company-info");
           setSaving(false);
           return;

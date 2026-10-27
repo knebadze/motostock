@@ -29,8 +29,9 @@ function buildColumns(priceCurrency: VehicleListingCurrency): DataTableColumn<Ve
       render: (discount) => formatPrice(discount.discountPrice, priceCurrency),
     },
     {
-      header: "პროცენტი",
-      render: (discount) => (discount.discountPercent != null ? `${discount.discountPercent}%` : "—"),
+      header: "ტიპი",
+      render: (discount) =>
+        discount.discountPercent != null ? `პროცენტული (−${discount.discountPercent}%)` : "ფიქსირებული ფასი",
       cellClassName: "text-muted-foreground",
     },
     { header: "დაწყება", render: (discount) => discount.startDate, cellClassName: "text-muted-foreground" },
@@ -217,7 +218,11 @@ export function VehicleListingDiscountsPanel({
             max={MAX_DECIMAL_10_2}
             placeholder={`ფასდაკლების ფასი (${priceCurrency === "USD" ? "$" : "₾"}) *`}
             value={discountPrice}
-            onChange={(event) => setDiscountPrice(event.target.value)}
+            onChange={(event) => {
+              // Typing a price by hand makes it a FIXED discount.
+              setDiscountPrice(event.target.value);
+              setDiscountPercent("");
+            }}
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
           <FieldError message={errors.discountPrice} />
@@ -240,8 +245,9 @@ export function VehicleListingDiscountsPanel({
         </button>
       </div>
       <p className="text-xs text-muted-foreground">
-        პროცენტის მითითებისას ფასდაკლების ფასი ავტომატურად გამოითვლება მიმდინარე ფასიდან
-        ({formatPrice(basePrice, priceCurrency)}) — შეგიძლიათ შემდეგ ხელითაც შეასწოროთ.
+        ორი ტიპი: პროცენტის მითითებისას ფასდაკლება პროცენტულია — ფასი გამოითვლება მიმდინარე ფასიდან
+        ({formatPrice(basePrice, priceCurrency)}) და ფასის შეცვლისას ავტომატურად გადაითვლება. ფასის ხელით ჩაწერა მას ფიქსირებულ
+        ფასდაკლებად აქცევს (პროცენტი იშლება).
       </p>
     </div>
   );

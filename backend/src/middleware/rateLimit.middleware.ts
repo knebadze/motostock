@@ -1,4 +1,5 @@
 import rateLimit from "express-rate-limit";
+import { ROLES } from "../lib/roles.js";
 
 // Baseline DoS/abuse guard applied to every /api request (see app.ts),
 // split into a generous read budget and a tighter write budget instead of
@@ -209,14 +210,23 @@ export const vehicleCatalogSubmitRateLimit = rateLimit({
   message: { error: { message: "Too many requests, please try again later" } },
 });
 
-// Image-upload routes (bank logos, etc.) sit behind requireRole(ADMIN)
-// already, so this is a second line of defense against a compromised admin
-// session being used to flood disk writes — generous enough for a normal
-// admin session setting up/editing several records in a row.
+// Image-upload routes. Almost all sit behind requireRole(ADMIN) already, so
+// for staff this is only a second line of defense against a compromised
+// session flooding disk writes — a real catalog session (several products,
+// each with logo/main image/variant images) easily passes 30 uploads in ten
+// minutes, which used to lock the admin out mid-work. Staff therefore get a
+// much larger budget; customers (garage photos) keep the tight one. Runs
+// after requireAuth on every route that uses it, so req.user is set.
+const STAFF_UPLOAD_LIMIT = 300;
+const CUSTOMER_UPLOAD_LIMIT = 30;
+
 export const uploadRateLimit = rateLimit({
   windowMs: 10 * 60 * 1000,
-  limit: 30,
+  limit: (req) =>
+    req.user?.role === ROLES.ADMIN || req.user?.role === ROLES.OPERATOR
+      ? STAFF_UPLOAD_LIMIT
+      : CUSTOMER_UPLOAD_LIMIT,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: { message: "Too many uploads, please slow down" } },
+  message: { error: { message: "ძალიან ბევრი ატვირთვა მოკლე დროში — სცადეთ რამდენიმე წუთში" } },
 });

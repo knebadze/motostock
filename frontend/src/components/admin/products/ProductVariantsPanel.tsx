@@ -15,7 +15,7 @@ import {
 import type { LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
-import { generateVariantCombinations, type VariantCombination } from "@/lib/variant-matrix";
+import { generateVariantCombinations, variantSkuFromBase, type VariantCombination } from "@/lib/variant-matrix";
 import { productVariantFormSchema } from "@/lib/validation/product-variants";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 import { ProductVariantImagesPanel } from "./ProductVariantImagesPanel";
@@ -157,7 +157,7 @@ export function ProductVariantsPanel({
           finaId,
           price: Number(addForm.price),
           stockQuantity: addForm.stockQuantity ? Number(addForm.stockQuantity) : undefined,
-          sku: addForm.sku.trim() ? addForm.sku.trim() : null,
+          sku: variantSkuFromBase(addForm.sku, combo, combinations.length, { sizes, colors }) || null,
           isActive: addForm.isActive,
         });
       }
@@ -461,7 +461,7 @@ export function ProductVariantsPanel({
               onStatusIdChange={(value) => setAddForm((prev) => ({ ...prev, statusId: value }))}
               sku={addForm.sku}
               onSkuChange={(value) => setAddForm((prev) => ({ ...prev, sku: value }))}
-              skuPlaceholder="საერთო ყველასთვის, ან ცარიელი"
+              skuPlaceholder="საბაზო SKU — რამდენიმე ვარიანტს ზომა/ფერი დაემატება, ან ცარიელი"
               finaId={addForm.finaId}
               onFinaIdChange={
                 willGenerateSingleVariant

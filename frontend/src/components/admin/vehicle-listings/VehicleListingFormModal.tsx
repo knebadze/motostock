@@ -25,6 +25,7 @@ import { VehicleListingDiscountsPanel } from "./VehicleListingDiscountsPanel";
 import { VehicleListingImagesPanel } from "./VehicleListingImagesPanel";
 import { vehicleListingFormSchema } from "@/lib/validation/vehicle-listing";
 import { MAX_DECIMAL_10_2, getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+import { uploadFailedMessage } from "@/lib/upload-error";
 
 function vehicleCatalogLabel(entry: VehicleCatalogOption): string {
   const year =
@@ -191,8 +192,8 @@ export function VehicleListingFormModal({
       if (!isEditing && pendingImageFilesRef.current.length > 0) {
         try {
           await uploadVehicleListingImages(saved.id, pendingImageFilesRef.current);
-        } catch {
-          toast.error("განცხადება შენახულია, მაგრამ სურათების ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("განცხადება შენახულია, მაგრამ სურათების ატვირთვა ვერ მოხერხდა", error));
           onSaved();
           onClose();
           return;
@@ -428,12 +429,32 @@ export function VehicleListingFormModal({
           {
             key: "discounts",
             label: "ფასდაკლებები",
+            // Discounts save immediately and the backend checks them against
+            // the STORED price — so the panel works from that too, not from
+            // an edited-but-unsaved price/currency in the main tab.
             content: (
-              <VehicleListingDiscountsPanel
-                listingId={listing.id}
-                basePrice={Number(price) || listing.price}
-                priceCurrency={priceCurrency}
-              />
+              <div className="flex flex-col gap-3">
+                {priceCurrency !== listing.priceCurrency ? (
+                  // The backend refuses a currency change while any discount
+                  // exists, so adding one now would only make the save fail.
+                  <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                    ვალუტა შეცვლილია, მაგრამ ჯერ არ არის შენახული. ჯერ შეინახეთ განცხადება და მერე
+                    დაამატეთ ფასდაკლება — ფასდაკლების არსებობისას ვალუტის შეცვლა შეუძლებელია.
+                  </p>
+                ) : (
+                  Number(price) !== listing.price && (
+                    <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                      ფასი შეცვლილია, მაგრამ ჯერ არ არის შენახული — ფასდაკლება ითვლება შენახული ფასიდან.
+                      ახალი ფასიდან ფასდაკლებისთვის ჯერ შეინახეთ განცხადება.
+                    </p>
+                  )
+                )}
+                <VehicleListingDiscountsPanel
+                  listingId={listing.id}
+                  basePrice={listing.price}
+                  priceCurrency={listing.priceCurrency}
+                />
+              </div>
             ),
           },
         ]

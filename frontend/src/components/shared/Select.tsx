@@ -336,6 +336,9 @@ export function Select(props: SelectProps) {
         break;
       case "Escape":
         event.preventDefault();
+        // Close just this panel, not a surrounding Modal too (its Escape
+        // listener sits on document).
+        event.stopPropagation();
         closePanel();
         break;
       case "Tab":

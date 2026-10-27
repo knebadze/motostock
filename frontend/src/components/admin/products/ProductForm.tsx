@@ -21,7 +21,7 @@ import {
   isVehicleCategory,
   slugify,
 } from "@/lib/categories-tree";
-import { generateVariantCombinations } from "@/lib/variant-matrix";
+import { generateVariantCombinations, variantSkuFromBase } from "@/lib/variant-matrix";
 import { productFormSchema, buildAttributeValuesSchema, type AttributeFieldValue } from "@/lib/validation/products";
 import { productVariantFormSchema } from "@/lib/validation/product-variants";
 import { productVariantDiscountFormSchema } from "@/lib/validation/product-variant-discounts";
@@ -106,7 +106,9 @@ export function ProductForm({
   const [nameEn, setNameEn] = useState(product?.name.en ?? "");
   const [nameRu, setNameRu] = useState(product?.name.ru ?? "");
   const [slug, setSlug] = useState(product?.slug ?? "");
-  const [slugTouched, setSlugTouched] = useState(false);
+  // On edit the stored slug is the live URL — renaming mustn't silently
+  // regenerate it; only an explicit edit of the slug field changes it.
+  const [slugTouched, setSlugTouched] = useState(isEditing);
   const [metaTitle, setMetaTitle] = useState<LocalizedMeta>(() => ({
     ka: product?.metaTitleKa ?? "",
     en: product?.metaTitleEn ?? "",
@@ -332,7 +334,7 @@ export function ProductForm({
         statusId,
         price: initialBasePrice,
         stockQuantity: initialBaseStockQuantity,
-        sku: initialBaseSku,
+        sku: variantSkuFromBase(initialBaseSku, combo, combinations.length, { sizes, colors }),
         finaId,
         isActive: initialIsActive,
         imageFiles: [],

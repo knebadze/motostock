@@ -11,6 +11,7 @@ import {
   type BulkDiscountEvent,
 } from "@/lib/api/bulk-discount-events";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
+import { uploadFailedMessage } from "@/lib/upload-error";
 
 // Metadata-only edit — name/description/image. discountPercent/dates/
 // itemCount/targetType describe the actual discount rows this event grouped
@@ -60,8 +61,8 @@ export function EditBulkDiscountEventModal({
       if (imageFile) {
         try {
           await uploadBulkDiscountEventImage(event.id, imageFile);
-        } catch {
-          toast.error("ივენთი განახლდა, მაგრამ სურათის ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("ივენთი განახლდა, მაგრამ სურათის ატვირთვა ვერ მოხერხდა", error));
           onSaved();
           onClose();
           return;

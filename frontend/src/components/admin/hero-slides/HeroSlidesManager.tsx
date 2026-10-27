@@ -18,6 +18,20 @@ import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { HERO_SLIDE_TYPE_SHORT_LABELS as TYPE_LABELS } from "@/lib/hero-slide-labels";
 import { HeroSlideFormModal } from "./HeroSlideFormModal";
 
+// Why a promo-code / event slide is held off the homepage even when its own
+// switch is on (mirrors the backend's isEffectivelyActive) — otherwise the
+// switch just snaps back off with no explanation.
+function campaignHoldReason(slide: HeroSlide): string | null {
+  const campaign = slide.promoCode ?? slide.bulkDiscountEvent;
+  if (!campaign) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  if (slide.promoCode && !slide.promoCode.isActive) return "პრომოკოდი გამორთულია";
+  if (campaign.startDate.slice(0, 10) > today) return `იწყება ${campaign.startDate.slice(0, 10)}`;
+  if (campaign.endDate.slice(0, 10) < today) return "ვადა ამოიწურა";
+  if (!slide.imageUrl) return "სურათი არ აქვს";
+  return null;
+}
+
 export function HeroSlidesManager({
   initialSlides,
   categories,
@@ -129,6 +143,11 @@ export function HeroSlidesManager({
                   {TYPE_LABELS[slide.type]}
                 </span>
                 <p className="mt-1 truncate font-semibold text-foreground">{slide.title.ka}</p>
+                {campaignHoldReason(slide) && (
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    მთავარ გვერდზე არ ჩანს: {campaignHoldReason(slide)}
+                  </p>
+                )}
               </div>
 
               <Toggle

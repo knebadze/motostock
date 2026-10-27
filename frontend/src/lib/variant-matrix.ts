@@ -27,3 +27,25 @@ export function generateVariantCombinations(
   }
   return combinations;
 }
+
+// SKUs are unique per variant (ProductVariant.sku @unique), so a base SKU
+// entered once for a whole generated batch can't be copied verbatim onto
+// every row — each row gets the base plus its size/color keys
+// ("JKT-100" → "JKT-100-XL-BLACK"). A single generated variant keeps the
+// base exactly as typed.
+export function variantSkuFromBase(
+  baseSku: string,
+  combo: VariantCombination,
+  batchSize: number,
+  lookups: { sizes: { id: number; key: string }[]; colors: { id: number; key: string }[] },
+): string {
+  const base = baseSku.trim();
+  if (!base || batchSize <= 1) return base;
+  const suffix = [
+    combo.sizeId != null ? lookups.sizes.find((size) => size.id === combo.sizeId)?.key ?? String(combo.sizeId) : null,
+    combo.colorId != null ? lookups.colors.find((color) => color.id === combo.colorId)?.key ?? String(combo.colorId) : null,
+  ]
+    .filter(Boolean)
+    .join("-");
+  return suffix ? `${base}-${suffix}` : base;
+}

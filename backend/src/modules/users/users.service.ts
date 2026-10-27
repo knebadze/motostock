@@ -287,6 +287,15 @@ export async function updateUserRole(id: number, callerId: number, input: Update
   if (!user) {
     throw new ApiError(404, "მომხმარებელი ვერ მოიძებნა", "USER_NOT_FOUND");
   }
+  // A walk-in is a workshop record, not an account — no password, can't log
+  // in — so a staff role on it is meaningless and only muddies staff lists.
+  if (user.isWalkIn && input.role !== ROLES.USER) {
+    throw new ApiError(
+      400,
+      "სტუმარ მომხმარებელს (ანგარიშის გარეშე) ადმინის ან ოპერატორის როლის მინიჭება შეუძლებელია",
+      "WALK_IN_ROLE_NOT_ALLOWED",
+    );
+  }
 
   const role = await rolesRepository.findByName(input.role);
   if (!role) {

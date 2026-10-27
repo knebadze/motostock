@@ -388,6 +388,7 @@ const heroSlideCampaignIncludes = {
       discountPercent: true,
       startDate: true,
       endDate: true,
+      isActive: true,
       category: { select: { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } },
       productBrand: { select: { id: true, name: true, slug: true } },
     },

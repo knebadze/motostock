@@ -32,6 +32,7 @@ import {
   heroSlideFormSchema,
 } from "@/lib/validation/hero-slides";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+import { uploadFailedMessage } from "@/lib/upload-error";
 
 const TEXT_POSITION_OPTIONS: { value: HeroSlideTextPosition; label: string }[] = [
   { value: "LEFT", label: "მარცხნივ" },
@@ -162,8 +163,8 @@ export function HeroSlideFormModal({
       if (imageFile) {
         try {
           await uploadHeroSlideImage(saved.id, imageFile);
-        } catch {
-          toast.error("სლაიდი შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("სლაიდი შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა", error));
           onSaved();
           onClose();
           return;

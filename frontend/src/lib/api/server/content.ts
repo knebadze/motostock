@@ -311,4 +311,23 @@ const getCachedDeliveryInfo = unstable_cache(
   ["delivery-info"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["delivery-info"] },
 );
-export const getDeliveryInfoFromServer = cache(withPublicFallback(getCachedDeliveryInfo));
+const getDeliveryInfoWithFallback = withPublicFallback(getCachedDeliveryInfo);
+
+// A cache entry written before a field existed keeps its old shape until it's
+// refreshed — an entry from before the per-method checkout switches had no
+// `methods` at all, and every product page that read `methods.courier`
+// crashed. Missing switches default to enabled, the same fallback
+// CheckoutManager uses when delivery info is unavailable.
+const DEFAULT_DELIVERY_METHODS: PublicDeliveryInfo["methods"] = {
+  courier: true,
+  pickup: true,
+  card: true,
+  onDelivery: true,
+  inStore: true,
+};
+
+export const getDeliveryInfoFromServer = cache(async (): Promise<PublicDeliveryInfo | null> => {
+  const info = await getDeliveryInfoWithFallback();
+  if (!info) return null;
+  return { ...info, methods: { ...DEFAULT_DELIVERY_METHODS, ...info.methods } };
+});

@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma.js";
+import { recomputePercentDiscounts } from "../../lib/discounts.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true } as const;
 
@@ -74,16 +75,24 @@ export const productVariantsRepository = {
   // save, even if the delta would otherwise drive it negative — same
   // "clamp, don't reject" spirit as everywhere else stock is touched.
   update(id: number, data: Partial<ProductVariantWriteData>, stockDelta?: number) {
-    if (!stockDelta) {
+    const priceChanged = data.price !== undefined;
+    if (!stockDelta && !priceChanged) {
       return prisma.productVariant.update({ where: { id }, data, include });
     }
     return prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`
-        UPDATE "dbo"."ProductVariant"
-        SET "stockQuantity" = GREATEST("stockQuantity" + ${stockDelta}, 0)
-        WHERE "id" = ${id}
-      `;
-      return tx.productVariant.update({ where: { id }, data, include });
+      if (stockDelta) {
+        await tx.$executeRaw`
+          UPDATE "dbo"."ProductVariant"
+          SET "stockQuantity" = GREATEST("stockQuantity" + ${stockDelta}, 0)
+          WHERE "id" = ${id}
+        `;
+      }
+      if (!priceChanged) return tx.productVariant.update({ where: { id }, data, include });
+      // A new list price re-derives its percent discounts (see
+      // lib/discounts.ts) before the row — with those discounts — is read back.
+      await tx.productVariant.update({ where: { id }, data });
+      await recomputePercentDiscounts(tx, "PRODUCT_VARIANT", id);
+      return tx.productVariant.findUniqueOrThrow({ where: { id }, include });
     });
   },
 

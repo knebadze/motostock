@@ -33,7 +33,9 @@ export function VacancyFormModal({
   const [descriptionEn, setDescriptionEn] = useState(vacancy?.description.en ?? "");
   const [descriptionRu, setDescriptionRu] = useState(vacancy?.description.ru ?? "");
   const [slug, setSlug] = useState(vacancy?.slug ?? "");
-  const [slugTouched, setSlugTouched] = useState(false);
+  // On edit the stored slug is the live URL — renaming mustn't silently
+  // regenerate it; only an explicit edit of the slug field changes it.
+  const [slugTouched, setSlugTouched] = useState(isEditing);
   const [isActive, setIsActive] = useState(vacancy?.isActive ?? true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});

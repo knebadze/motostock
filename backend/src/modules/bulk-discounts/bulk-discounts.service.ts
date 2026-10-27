@@ -1,6 +1,6 @@
 import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../lib/ApiError.js";
-import { findActiveDiscount } from "../../lib/discounts.js";
+import { applyPercentDiscount, findActiveDiscount } from "../../lib/discounts.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
@@ -25,10 +25,6 @@ import type { VehicleSpecField } from "../../generated/prisma/index.js";
 
 type BrandModelRefRow = { id: number; name: string; slug: string };
 type LookupRow = { id: number; key: string; nameKa: string; nameEn: string; nameRu: string };
-
-function applyPercentDiscount(price: number, percent: number): number {
-  return Math.round(price * (1 - percent / 100) * 100) / 100;
-}
 
 function computeDiscountStatus(row: { startDate: Date; endDate: Date }) {
   const now = new Date();

@@ -21,6 +21,7 @@ import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { getDescendantIds, slugify } from "@/lib/categories-tree";
 import { categoryFormSchema } from "@/lib/validation/categories";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+import { uploadFailedMessage } from "@/lib/upload-error";
 
 export function CategoryFormModal({
   open,
@@ -40,7 +41,9 @@ export function CategoryFormModal({
   const [nameEn, setNameEn] = useState(category?.name.en ?? "");
   const [nameRu, setNameRu] = useState(category?.name.ru ?? "");
   const [slug, setSlug] = useState(category?.slug ?? "");
-  const [slugTouched, setSlugTouched] = useState(false);
+  // On edit the stored slug is the live URL — renaming mustn't silently
+  // regenerate it; only an explicit edit of the slug field changes it.
+  const [slugTouched, setSlugTouched] = useState(isEditing);
   const [parentId, setParentId] = useState<string>(
     category?.parentId != null ? String(category.parentId) : "",
   );
@@ -125,8 +128,8 @@ export function CategoryFormModal({
       if (imageFile) {
         try {
           await uploadCategoryImage(savedCategory.id, imageFile);
-        } catch {
-          toast.error("კატეგორია შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("კატეგორია შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა", error));
           onSaved();
           onClose();
           return;
@@ -136,8 +139,8 @@ export function CategoryFormModal({
       if (bannerImageFile) {
         try {
           await uploadCategoryBannerImage(savedCategory.id, bannerImageFile);
-        } catch {
-          toast.error("კატეგორია შენახულია, მაგრამ hero ბანერის ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("კატეგორია შენახულია, მაგრამ hero ბანერის ატვირთვა ვერ მოხერხდა", error));
           onSaved();
           onClose();
           return;
@@ -149,8 +152,8 @@ export function CategoryFormModal({
       if (menuImageFile && !parentId) {
         try {
           await uploadCategoryMenuImage(savedCategory.id, menuImageFile);
-        } catch {
-          toast.error("კატეგორია შენახულია, მაგრამ მენიუს სურათის ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("კატეგორია შენახულია, მაგრამ მენიუს სურათის ატვირთვა ვერ მოხერხდა", error));
           onSaved();
           onClose();
           return;

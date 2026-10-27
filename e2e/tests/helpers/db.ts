@@ -22,3 +22,9 @@ async function withClient<T>(fn: (client: Client) => Promise<T>): Promise<T> {
 export async function deleteUserByEmail(email: string): Promise<void> {
   await withClient((client) => client.query(`DELETE FROM "dbo"."User" WHERE "email" = $1`, [email]));
 }
+
+// Teardown-only escape hatch for restoring a value the API has no way to
+// put back (e.g. clearing an uploaded logo).
+export function withDb<T>(fn: (client: Client) => Promise<T>): Promise<T> {
+  return withClient(fn);
+}

@@ -195,7 +195,10 @@ function DraftVariantRow({
                       step="0.01"
                       placeholder="ფასდაკლების ფასი"
                       value={variant.discountPrice}
-                      onChange={(event) => onChange(variant.draftId, { discountPrice: event.target.value })}
+                      // Typing a price by hand makes it a FIXED discount.
+                      onChange={(event) =>
+                        onChange(variant.draftId, { discountPrice: event.target.value, discountPercent: "" })
+                      }
                       className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                     />
                     <FieldError message={errors[`draft-${variant.draftId}-discountPrice`]} />
@@ -425,7 +428,7 @@ export function ProductPricingTab({
             type="text"
             value={initialBaseSku}
             onChange={(event) => onInitialBaseSkuChange(event.target.value)}
-            placeholder="საერთო ყველასთვის, ან ცარიელი"
+            placeholder="საბაზო SKU — რამდენიმე ვარიანტს ზომა/ფერი დაემატება, ან ცარიელი"
             className="rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
           />
         </div>

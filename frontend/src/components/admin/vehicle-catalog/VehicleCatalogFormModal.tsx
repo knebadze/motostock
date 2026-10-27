@@ -25,6 +25,7 @@ import { VehicleCatalogSpecsTab } from "./VehicleCatalogSpecsTab";
 import { VehicleCatalogDescriptionTab } from "./VehicleCatalogDescriptionTab";
 import { VehicleCatalogImageTab } from "./VehicleCatalogImageTab";
 import { revalidatePublicCache } from "@/lib/api/revalidate";
+import { uploadFailedMessage } from "@/lib/upload-error";
 
 function toNullableInt(value: string): number | null {
   return value.trim() === "" ? null : Number(value);
@@ -203,26 +204,45 @@ export function VehicleCatalogFormModal({
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
+    // Fields the chosen powertrain hides keep their state in the form (so
+    // flipping the select back and forth doesn't lose input), but must not
+    // be validated or saved — switching an entry from electric to
+    // combustion used to leave its battery/range values stored, and vice
+    // versa for engine/fuel values.
+    const shown = (value: string, combustionOnly: boolean) => (combustionOnly === isElectric ? "" : value);
+    const engineVolumeCcValue = shown(engineVolumeCc, true);
+    const enginePowerHpValue = shown(enginePowerHp, true);
+    const cylinderCountValue = shown(cylinderCount, true);
+    const gearCountValue = shown(gearCount, true);
+    const fuelTankLitersValue = shown(fuelTankLiters, true);
+    const oilCapacityLitersValue = shown(oilCapacityLiters, true);
+    const fuelTypeIdValue = shown(fuelTypeId, true);
+    const startTypeIdValue = shown(startTypeId, true);
+    const motorPowerWattValue = shown(motorPowerWatt, false);
+    const batteryCapacityWhValue = shown(batteryCapacityWh, false);
+    const rangeKmValue = shown(rangeKm, false);
+    const chargingTimeMinutesValue = shown(chargingTimeMinutes, false);
+
     const result = vehicleCatalogFormSchema.safeParse({
       brandId,
       modelId,
       variant,
       yearFrom,
       yearTo,
-      engineVolumeCc,
-      enginePowerHp,
-      cylinderCount,
-      gearCount,
+      engineVolumeCc: engineVolumeCcValue,
+      enginePowerHp: enginePowerHpValue,
+      cylinderCount: cylinderCountValue,
+      gearCount: gearCountValue,
       seatCount,
       weightKg,
       seatHeightMm,
-      fuelTankLiters,
-      oilCapacityLiters,
+      fuelTankLiters: fuelTankLitersValue,
+      oilCapacityLiters: oilCapacityLitersValue,
       topSpeedKmh,
-      motorPowerWatt,
-      batteryCapacityWh,
-      rangeKm,
-      chargingTimeMinutes,
+      motorPowerWatt: motorPowerWattValue,
+      batteryCapacityWh: batteryCapacityWhValue,
+      rangeKm: rangeKmValue,
+      chargingTimeMinutes: chargingTimeMinutesValue,
     });
     if (!result.success) {
       setErrors(getFieldErrors(result.error));
@@ -240,28 +260,28 @@ export function VehicleCatalogFormModal({
         variant: variant.trim(),
         yearFrom: toNullableInt(yearFrom),
         yearTo: toNullableInt(yearTo),
-        engineVolumeCc: toNullableInt(engineVolumeCc),
-        enginePowerHp: toNullableInt(enginePowerHp),
-        cylinderCount: toNullableInt(cylinderCount),
-        gearCount: toNullableInt(gearCount),
+        engineVolumeCc: toNullableInt(engineVolumeCcValue),
+        enginePowerHp: toNullableInt(enginePowerHpValue),
+        cylinderCount: toNullableInt(cylinderCountValue),
+        gearCount: toNullableInt(gearCountValue),
         seatCount: toNullableInt(seatCount),
         weightKg: toNullableInt(weightKg),
         seatHeightMm: toNullableInt(seatHeightMm),
-        fuelTankLiters: toNullableFloat(fuelTankLiters),
-        oilCapacityLiters: toNullableFloat(oilCapacityLiters),
+        fuelTankLiters: toNullableFloat(fuelTankLitersValue),
+        oilCapacityLiters: toNullableFloat(oilCapacityLitersValue),
         topSpeedKmh: toNullableInt(topSpeedKmh),
         hasAbs,
-        fuelTypeId: toNullableInt(fuelTypeId),
+        fuelTypeId: toNullableInt(fuelTypeIdValue),
         transmissionTypeId: toNullableInt(transmissionTypeId),
         coolingTypeId: toNullableInt(coolingTypeId),
         finalDriveTypeId: toNullableInt(finalDriveTypeId),
         driveTypeId: toNullableInt(driveTypeId),
-        startTypeId: toNullableInt(startTypeId),
+        startTypeId: toNullableInt(startTypeIdValue),
         powertrainTypeId: toNullableInt(powertrainTypeId),
-        motorPowerWatt: toNullableInt(motorPowerWatt),
-        batteryCapacityWh: toNullableInt(batteryCapacityWh),
-        rangeKm: toNullableInt(rangeKm),
-        chargingTimeMinutes: toNullableInt(chargingTimeMinutes),
+        motorPowerWatt: toNullableInt(motorPowerWattValue),
+        batteryCapacityWh: toNullableInt(batteryCapacityWhValue),
+        rangeKm: toNullableInt(rangeKmValue),
+        chargingTimeMinutes: toNullableInt(chargingTimeMinutesValue),
         hasLockingDifferential,
         descriptionKa: toNullableHtml(descriptionKa),
         descriptionEn: toNullableHtml(descriptionEn),
@@ -276,8 +296,8 @@ export function VehicleCatalogFormModal({
       if (imageFile) {
         try {
           await uploadVehicleCatalogImage(saved.id, imageFile);
-        } catch {
-          toast.error("ჩანაწერი შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("ჩანაწერი შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა", error));
           onSaved();
           onClose();
           return;

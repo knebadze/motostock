@@ -18952,6 +18952,7 @@ export interface components {
                 startDate: string;
                 /** Format: date */
                 endDate: string;
+                isActive: boolean;
                 category: {
                     id: number;
                     name: {

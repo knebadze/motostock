@@ -184,6 +184,10 @@ function Toolbar({ editor }: { editor: Editor }) {
   );
 }
 
+function normalizeEmptyHtml(html: string): string {
+  return html === "<p></p>" ? "" : html;
+}
+
 export function RichTextEditor({
   value,
   onChange,
@@ -220,8 +224,15 @@ export function RichTextEditor({
     },
   });
 
+  // Pushes an outside value change (e.g. existing content loading) into the
+  // editor. An empty field is "" in form state but "<p></p>" in Tiptap, so
+  // the two are compared normalized — otherwise they never matched and this
+  // re-set the content on every pass. Skipped while the editor has focus:
+  // the user's typing is the source of truth then, and a render carrying a
+  // slightly stale value used to be able to wipe what had just been typed.
   useEffect(() => {
-    if (editor && value !== editor.getHTML()) {
+    if (!editor || editor.isFocused) return;
+    if (normalizeEmptyHtml(value) !== normalizeEmptyHtml(editor.getHTML())) {
       editor.commands.setContent(value, { emitUpdate: false });
     }
   }, [value, editor]);

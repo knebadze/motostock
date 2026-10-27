@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Loader } from "@/components/shared/Loader";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { listUsers, mergeUserInto, type AdminUser } from "@/lib/api/users";
-import { ApiRequestError } from "@/lib/api/client";
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -26,7 +25,9 @@ export function LinkExistingUserModal({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<AdminUser[]>([]);
   const [searching, setSearching] = useState(false);
-  const [mergingId, setMergingId] = useState<number | null>(null);
+  // Merging is irreversible, so picking a result only asks first — same as
+  // the phone-claim path in ServiceHistoryManager.tsx.
+  const [pendingTarget, setPendingTarget] = useState<AdminUser | null>(null);
 
   function handleClose() {
     setQuery("");
@@ -54,23 +55,14 @@ export function LinkExistingUserModal({
   }, [query, sourceUser.id]);
 
   async function handleMerge(target: AdminUser) {
-    setMergingId(target.id);
-    try {
-      // mergeUserInto's response is the SOURCE row (now flagged as merged
-      // away, its garage emptied onto `target`) — not useful to re-select.
-      // `target` is the real account the admin just picked from the search
-      // results above, already known in full here, so it's what the panel
-      // should switch to.
-      await mergeUserInto(sourceUser.id, target.id);
-      toast.success("მომხმარებლები გაერთიანდა");
-      onMerged(target);
-      handleClose();
-    } catch (error) {
-      const message = error instanceof ApiRequestError ? error.message : "გაერთიანება ვერ მოხერხდა";
-      toast.error(message);
-    } finally {
-      setMergingId(null);
-    }
+    // mergeUserInto's response is the SOURCE row (now flagged as merged
+    // away, its garage emptied onto `target`) — not useful to re-select.
+    // `target` is the real account the admin just picked from the search
+    // results above, already known in full here, so it's what the panel
+    // should switch to.
+    await mergeUserInto(sourceUser.id, target.id);
+    onMerged(target);
+    handleClose();
   }
 
   return (
@@ -101,15 +93,13 @@ export function LinkExistingUserModal({
               <button
                 key={user.id}
                 type="button"
-                disabled={mergingId !== null}
-                onClick={() => handleMerge(user)}
+                onClick={() => setPendingTarget(user)}
                 className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-2.5 text-left text-sm transition-colors hover:border-primary disabled:opacity-50"
               >
                 <div>
                   <p className="font-semibold text-foreground">{user.name}</p>
                   <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
-                {mergingId === user.id && <Loader size="xs" />}
               </button>
             ))}
           </div>
@@ -119,6 +109,23 @@ export function LinkExistingUserModal({
           <p className="text-sm text-muted-foreground">მომხმარებელი ვერ მოიძებნა</p>
         )}
       </div>
+
+      <ConfirmDialog
+        open={pendingTarget !== null}
+        onClose={() => setPendingTarget(null)}
+        title="სტუმრის დაკავშირება ანგარიშთან"
+        message={
+          pendingTarget
+            ? `დარწმუნებული ხართ, რომ ${sourceUser.name} და ${pendingTarget.name} (${pendingTarget.email}) ერთი და იგივე პირია? გარაჟი და სერვისის ისტორია ამ ანგარიშს გადაეცემა — გაერთიანების გაუქმება შეუძლებელია.`
+            : ""
+        }
+        confirmLabel="დაკავშირება"
+        successMessage="მომხმარებლები გაერთიანდა"
+        errorFallback="გაერთიანება ვერ მოხერხდა"
+        onConfirm={async () => {
+          if (pendingTarget) await handleMerge(pendingTarget);
+        }}
+      />
     </Modal>
   );
 }

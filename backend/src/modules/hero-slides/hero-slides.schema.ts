@@ -111,6 +111,7 @@ export const heroSlideResponseSchema = registry.register(
         discountPercent: z.number(),
         startDate: z.iso.date(),
         endDate: z.iso.date(),
+        isActive: z.boolean(),
         // The code's own scope — null means "applies to everything in its
         // domain" (see promo-code.prisma). Used both to build a correctly
         // scoped (non-onSale) shop link and to show the scope as text on the
