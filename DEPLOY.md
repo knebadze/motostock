@@ -71,11 +71,13 @@ docker compose up -d
 როლები, ადმინის ანგარიში, კლასიფიკატორები (საწვავის ტიპები, ფერები, ზომები, ქალაქები,
 თანამდებობები და ა.შ.), კატეგორიების ხე, მახასიათებლები, ერთეულები, homepage სექციები. Idempotent
 არის (`upsert`-ზეა აწყობილი) — ხელახლა გაშვება უსაფრთხოა. **დემო პროდუქტები/ტრანსპორტი ცალკეა და
-ამ ბრძანებაში არ შედის** — თუ საჭიროა სატესტოდ, ცალკე გაუშვით:
+ამ ბრძანებაში არ შედის** — თუ საჭიროა სატესტოდ, ცალკე გაუშვით. ორივე ქვემოთ აღწერილ ტექნიკის
+კატალოგს იყენებს (საკუთარ მარკას/მოდელს/კატალოგის ჩანაწერს აღარ ქმნის), ამიტომ ჯერ
+`seed-brands.ts` და `seed-catalog.ts` უნდა გაეშვას:
 
 ```bash
-docker compose run --rm migrate npx tsx prisma/seed-products.ts
-docker compose run --rm migrate npx tsx prisma/seed-vehicles.ts
+docker compose run --rm migrate npx tsx prisma/seed-products.ts  # თავსებადობის დემოსთვის Yamaha MT-07
+docker compose run --rm migrate npx tsx prisma/seed-vehicles.ts  # 16 დემო განცხადება კატალოგის ჩანაწერებზე
 docker compose run --rm migrate npx tsx prisma/seed-tags.ts      # დემო ტეგები „ერთად შეძენისთვის" (seed-products-ის შემდეგ)
 ```
 
