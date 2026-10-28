@@ -31,6 +31,7 @@ export function buildVehicleListingFilterFields(data: {
 }): AdminFilterField[] {
   const brands = dedupeBrandModelRefs(data.vehicleCatalog.map((entry) => entry.brand));
   const models = dedupeBrandModelRefs(data.vehicleCatalog.map((entry) => entry.model));
+  const brandIdByModelId = new Map(data.vehicleCatalog.map((entry) => [entry.model.id, entry.brand.id]));
   const categories = dedupeNamedRefs(data.vehicleCatalog.map((entry) => entry.category));
 
   const basicFields: AdminFilterField[] = [
@@ -54,7 +55,12 @@ export function buildVehicleListingFilterFields(data: {
       label: "მოდელი",
       section: "ძირითადი",
       kind: "MULTI_SELECT",
-      options: models.map((m) => ({ value: String(m.id), label: m.name })),
+      options: models.map((m) => ({
+        value: String(m.id),
+        label: m.name,
+        parentValue: String(brandIdByModelId.get(m.id)),
+      })),
+      dependsOn: "BRAND",
     },
     { key: "PRICE", label: "ფასი", section: "ძირითადი", kind: "RANGE" },
     { key: "YEAR", label: "წელი", section: "ძირითადი", kind: "RANGE" },

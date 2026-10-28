@@ -7,13 +7,18 @@ import type { AdminFilterEntry } from "@/lib/api/admin-filters";
 
 export type { AdminFilterEntry };
 export type AdminFilterKind = "RANGE" | "MULTI_SELECT" | "BOOLEAN" | "TEXT";
-export type AdminFilterOption = { value: string; label: string };
+// `parentValue` ties an option to one option of the field named by its
+// field's `dependsOn` (e.g. a model to its brand).
+export type AdminFilterOption = { value: string; label: string; parentValue?: string };
 export type AdminFilterField = {
   key: string;
   label: string;
   section: string;
   kind: AdminFilterKind;
   options?: AdminFilterOption[];
+  // Key of a MULTI_SELECT field this one narrows by: once anything is picked
+  // there, only options whose parentValue was picked are offered.
+  dependsOn?: string;
 };
 
 type FieldState = {
@@ -78,8 +83,28 @@ export function AdminFilterPanel({
   const [applying, setApplying] = useState(false);
   const baseId = useId();
 
+  // Options offered for a field, narrowed by its parent field's picks.
+  function visibleOptions(field: AdminFilterField, current: Record<string, FieldState>) {
+    const options = field.options ?? [];
+    const parentValues = field.dependsOn ? (current[field.dependsOn]?.optionValues ?? []) : [];
+    if (parentValues.length === 0) return options;
+    return options.filter((option) => option.parentValue && parentValues.includes(option.parentValue));
+  }
+
   function updateField(key: string, patch: Partial<FieldState>) {
-    setState((current) => ({ ...current, [key]: { ...(current[key] ?? EMPTY_STATE), ...patch } }));
+    setState((current) => {
+      const next = { ...current, [key]: { ...(current[key] ?? EMPTY_STATE), ...patch } };
+      // Drop dependent picks the new parent selection no longer covers.
+      for (const field of fields) {
+        if (field.dependsOn !== key || !next[field.key]) continue;
+        const allowed = new Set(visibleOptions(field, next).map((option) => option.value));
+        const kept = next[field.key].optionValues.filter((value) => allowed.has(value));
+        if (kept.length !== next[field.key].optionValues.length) {
+          next[field.key] = { ...next[field.key], optionValues: kept };
+        }
+      }
+      return next;
+    });
   }
 
   async function handleApply() {
@@ -208,7 +233,7 @@ export function AdminFilterPanel({
                         id={selectId}
                         multiple
                         searchable
-                        options={field.options ?? []}
+                        options={visibleOptions(field, state)}
                         value={fieldState.optionValues}
                         onChange={(optionValues) => updateField(field.key, { optionValues })}
                         placeholder="აირჩიეთ"

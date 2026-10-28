@@ -22,6 +22,15 @@ export const vehicleCatalogInclude = {
 
 const include = vehicleCatalogInclude;
 
+// Alphabetical by brand, then model; a model's variants/generations by year.
+const catalogOrderBy: Prisma.VehicleCatalogOrderByWithRelationInput[] = [
+  { brand: { name: "asc" } },
+  { model: { name: "asc" } },
+  { variant: "asc" },
+  { yearFrom: { sort: "asc", nulls: "first" } },
+  { id: "asc" },
+];
+
 type VehicleCatalogWriteData = {
   brandId: number;
   modelId: number;
@@ -117,7 +126,7 @@ export const vehicleCatalogRepository = {
         brand: { select: brandModelRefSelect },
         model: { select: { ...brandModelRefSelect, category: { select: namedRefSelect } } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: catalogOrderBy,
     });
   },
 
@@ -125,7 +134,7 @@ export const vehicleCatalogRepository = {
     return prisma.vehicleCatalog.findMany({
       where,
       include,
-      orderBy: { createdAt: "desc" },
+      orderBy: catalogOrderBy,
       skip,
       take,
     });
