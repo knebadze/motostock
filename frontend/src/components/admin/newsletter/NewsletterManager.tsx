@@ -290,6 +290,7 @@ export function NewsletterManager({
           <DataTable
             columns={subscriberColumns}
             data={subscribersPage.items}
+            totalCount={subscribersPage.total}
             getRowKey={(subscriber) => subscriber.id}
             emptyMessage="გამომწერი ჯერ არ არსებობს"
             actions={(subscriber) => (

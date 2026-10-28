@@ -389,6 +389,7 @@ export function OrdersManager({
         <DataTable
           columns={visibleColumns}
           data={data.items}
+          totalCount={data.total}
           getRowKey={(order) => order.id}
           emptyMessage="შეკვეთა არ მოიძებნა"
           actions={(order) => (

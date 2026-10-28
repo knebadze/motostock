@@ -124,6 +124,7 @@ export function DiscountEventsPanel() {
         <DataTable
           columns={columns}
           data={data.items}
+          totalCount={data.total}
           getRowKey={(event) => event.id}
           emptyMessage="ივენთი ჯერ არ შექმნილა"
           actions={(event) => (

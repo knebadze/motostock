@@ -238,6 +238,7 @@ export function DiscountHistoryPanel() {
         <DataTable
           columns={columns}
           data={filteredRows}
+          totalCount={filteredRows.length}
           getRowKey={(row) => row.key}
           emptyMessage="ფასდაკლება არ არსებობს"
           actions={

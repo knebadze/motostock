@@ -248,6 +248,7 @@ export function ProductsManager({
         <DataTable
           columns={tableColumns}
           data={data.items}
+          totalCount={data.total}
           getRowKey={(product) => product.id}
           emptyMessage="პროდუქტი არ არსებობს"
           actions={(product) => (

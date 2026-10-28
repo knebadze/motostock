@@ -140,6 +140,7 @@ export function CategoriesManager({
         <DataTable
           columns={columns}
           data={rows}
+          totalCount={rows.length}
           getRowKey={(category) => category.id}
           emptyMessage="კატეგორია არ არსებობს"
           actions={(category) => (

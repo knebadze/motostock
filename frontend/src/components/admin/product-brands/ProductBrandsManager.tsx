@@ -122,6 +122,7 @@ export function ProductBrandsManager({
         <DataTable
           columns={columns}
           data={productBrands}
+          totalCount={productBrands.length}
           getRowKey={(productBrand) => productBrand.id}
           emptyMessage="ბრენდი არ არსებობს"
           actions={(productBrand) => (

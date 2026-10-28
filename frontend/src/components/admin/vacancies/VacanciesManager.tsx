@@ -76,6 +76,7 @@ export function VacanciesManager({ initialVacancies }: { initialVacancies: Vacan
         <DataTable
           columns={columns}
           data={vacancies}
+          totalCount={vacancies.length}
           getRowKey={(item) => item.id}
           emptyMessage="ვაკანსია არ არის დამატებული"
           actions={(item) => (

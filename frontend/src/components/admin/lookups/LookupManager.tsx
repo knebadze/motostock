@@ -65,6 +65,7 @@ export function LookupManager({
         <DataTable
           columns={columns}
           data={items}
+          totalCount={items.length}
           getRowKey={(item) => item.id}
           emptyMessage="ჩანაწერი არ არსებობს"
           actions={(item) => (

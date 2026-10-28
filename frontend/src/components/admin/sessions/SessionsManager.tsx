@@ -76,6 +76,7 @@ export function SessionsManager({ initialData }: { initialData: PagedResult<Sess
         <DataTable
           columns={columns}
           data={data.items}
+          totalCount={data.total}
           getRowKey={(session) => session.id}
           emptyMessage="აქტიური სესია არ არსებობს"
           actions={(session) => (

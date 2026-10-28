@@ -104,6 +104,7 @@ export function TagsManager({ initialTags }: { initialTags: Tag[] }) {
         <DataTable
           columns={columns}
           data={filteredTags}
+          totalCount={filteredTags.length}
           getRowKey={(tag) => tag.id}
           emptyMessage={search.trim() ? "ტეგი ვერ მოიძებნა" : "ტეგი ჯერ არ არსებობს"}
           actions={(tag) => (

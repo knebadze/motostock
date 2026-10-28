@@ -73,6 +73,7 @@ export function ErrorLogsManager({ initialData }: { initialData: ErrorLogsPage }
         <DataTable
           columns={columns}
           data={data.items}
+          totalCount={data.total}
           getRowKey={(log) => log.id}
           emptyMessage="შეცდომები არ დაფიქსირებულა"
           actions={(log) => (

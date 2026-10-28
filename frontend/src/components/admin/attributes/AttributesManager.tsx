@@ -122,6 +122,7 @@ export function AttributesManager({
         <DataTable
           columns={columns}
           data={attributes}
+          totalCount={attributes.length}
           getRowKey={(attribute) => attribute.id}
           emptyMessage="მახასიათებელი არ არსებობს"
           actions={(attribute) => (

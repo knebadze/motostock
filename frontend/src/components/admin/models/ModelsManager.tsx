@@ -110,6 +110,7 @@ export function ModelsManager({
         <DataTable
           columns={columns}
           data={models}
+          totalCount={models.length}
           getRowKey={(model) => model.id}
           emptyMessage="მოდელი არ არსებობს"
           actions={(model) => (

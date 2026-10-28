@@ -212,6 +212,7 @@ export function PromoCodesManager({
         <DataTable
           columns={columns}
           data={promoCodes}
+          totalCount={promoCodes.length}
           getRowKey={(item) => item.id}
           emptyMessage="პრომოკოდი არ არსებობს"
           actions={(item) => (

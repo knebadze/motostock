@@ -181,6 +181,7 @@ function AllCompatibilityTab({
         <DataTable
           columns={columns}
           data={data.items}
+          totalCount={data.total}
           getRowKey={(item) => item.id}
           emptyMessage="თავსებადობა არ მოიძებნა"
           actions={(item) => (

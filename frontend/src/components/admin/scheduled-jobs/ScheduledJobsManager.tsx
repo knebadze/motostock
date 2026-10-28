@@ -197,6 +197,7 @@ export function ScheduledJobsManager({
         <DataTable
           columns={runColumns}
           data={data.items}
+          totalCount={data.total}
           getRowKey={(run) => run.id}
           emptyMessage="გაშვების ისტორია ჯერ არ არსებობს"
         />

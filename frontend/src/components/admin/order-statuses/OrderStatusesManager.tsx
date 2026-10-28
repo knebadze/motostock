@@ -161,6 +161,7 @@ export function OrderStatusesManager({ initialItems }: { initialItems: OrderStat
         <DataTable
           columns={columns}
           data={items}
+          totalCount={items.length}
           getRowKey={(item) => item.id}
           emptyMessage="სტატუსი არ არსებობს"
           actions={(item) => (
