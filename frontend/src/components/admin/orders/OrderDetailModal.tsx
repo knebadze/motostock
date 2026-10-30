@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Loader } from "@/components/shared/Loader";
@@ -21,7 +22,7 @@ import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
 import { FinaSyncBadge } from "./FinaSyncBadge";
 import { FinaResolvePanel } from "./FinaResolvePanel";
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
-import { DELIVERY_SPEED_LABELS, FULFILLMENT_LABELS, RISK_FLAG_LABELS } from "./order-labels";
+import { DELIVERY_SPEED_LABELS, DELIVERY_METHOD_LABELS, PAYMENT_METHOD_LABELS, RISK_FLAG_LABELS } from "./order-labels";
 
 export function OrderDetailModal({
   orderId,
@@ -286,13 +287,56 @@ export function OrderDetailModal({
 
           {order.cancellationReason && (
             <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-red-600">
+              <p className="text-xs font-semibold uppercase tracking-wide text-destructive">
                 გაუქმების მიზეზი
               </p>
               <p className="mt-1 text-sm text-foreground">{order.cancellationReason.nameKa}</p>
               {order.cancellationNote && (
                 <p className="mt-1 text-sm text-muted-foreground">{order.cancellationNote}</p>
               )}
+            </div>
+          )}
+
+          {order.requests.some((request) => request.status === "OPEN") && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">
+                მომხმარებლის ღია მოთხოვნა
+              </p>
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {order.requests
+                  .filter((request) => request.status === "OPEN")
+                  .map((request) => (
+                    <li key={request.id} className="text-sm">
+                      <span className="font-medium text-foreground">
+                        {request.type === "CANCEL" ? "გაუქმება" : "დაბრუნება"}
+                      </span>
+                      <span className="text-muted-foreground"> · {formatDateTime(request.createdAt)}</span>
+                      {request.reason && <p className="whitespace-pre-line text-muted-foreground">{request.reason}</p>}
+                    </li>
+                  ))}
+              </ul>
+              <Link href="/admin/order-requests" className="mt-2 inline-block text-sm font-medium text-primary-text hover:underline">
+                მოთხოვნების გვერდი →
+              </Link>
+            </div>
+          )}
+
+          {order.statusHistory.length > 0 && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">სტატუსის ისტორია</p>
+              <ol className="mt-2 flex flex-col gap-1.5 border-l border-border pl-4">
+                {order.statusHistory.map((entry, index) => (
+                  <li key={index} className="relative text-sm">
+                    <span className="absolute -left-[1.3rem] top-1.5 size-2 rounded-full bg-primary" />
+                    <span className="font-medium text-foreground">{entry.status.nameKa}</span>
+                    <span className="text-muted-foreground">
+                      {" "}
+                      · {formatDateTime(entry.createdAt)}
+                      {entry.changedBy ? ` · ${entry.changedBy.firstName} ${entry.changedBy.lastName}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ol>
             </div>
           )}
 
@@ -326,7 +370,8 @@ export function OrderDetailModal({
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 მიწოდება
               </p>
-              <p className="mt-1 text-sm">{FULFILLMENT_LABELS[order.fulfillmentMethod]}</p>
+              <p className="mt-1 text-sm">{DELIVERY_METHOD_LABELS[order.deliveryMethod]}</p>
+              <p className="text-sm text-muted-foreground">{PAYMENT_METHOD_LABELS[order.paymentMethod]}</p>
               {order.deliverySpeed && (
                 <p className="text-sm text-muted-foreground">{DELIVERY_SPEED_LABELS[order.deliverySpeed]}</p>
               )}
@@ -405,8 +450,8 @@ export function OrderDetailModal({
                             stockResult.newStock === null
                               ? "text-muted-foreground"
                               : stockResult.newStock > 0
-                                ? "text-green-600"
-                                : "text-red-600"
+                                ? "text-success"
+                                : "text-destructive"
                           }`}
                         >
                           {stockResult.newStock === null

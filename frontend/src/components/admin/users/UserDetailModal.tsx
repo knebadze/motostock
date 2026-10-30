@@ -141,7 +141,9 @@ export function UserDetailModal({
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h3 className="text-lg font-semibold">{detail.name}</h3>
-              {viewerIsOperator ? (
+              {/* Walk-ins can't hold a staff role (backend rejects it), so
+                  they get the read-only badge too. */}
+              {viewerIsOperator || detail.isWalkIn ? (
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                     detail.role === "ADMIN"

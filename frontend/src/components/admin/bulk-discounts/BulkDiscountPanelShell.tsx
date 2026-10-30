@@ -17,6 +17,7 @@ import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 import { useBulkDiscountSelection } from "@/components/shared/useBulkDiscountSelection";
 import { useAdminRole } from "@/components/admin/AdminRoleContext";
 import { BulkDiscountEventFields, useBulkDiscountEventDraft } from "./BulkDiscountEventFields";
+import { uploadFailedMessage } from "@/lib/upload-error";
 
 // What a target type's candidate list (filters + table) gets from the shell.
 // Rendered with key={categoryId}, so its own filter state resets whenever
@@ -152,8 +153,8 @@ export function BulkDiscountPanelShell<T>({
       if (applied.eventId && eventDraft.image.file) {
         try {
           await uploadBulkDiscountEventImage(applied.eventId, eventDraft.image.file);
-        } catch {
-          toast.error("ივენთი შეიქმნა, მაგრამ სურათის ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("ივენთი შეიქმნა, მაგრამ სურათის ატვირთვა ვერ მოხერხდა", error));
         }
       }
 

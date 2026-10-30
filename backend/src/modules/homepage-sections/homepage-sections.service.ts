@@ -98,6 +98,13 @@ const DEFAULTS: Record<
     titleRu: "Недавно просмотренные",
     sortOrder: 9,
   },
+  SEASONAL_PRODUCTS: {
+    titleKa: "სეზონური შეთავაზებები",
+    titleEn: "Seasonal Picks",
+    titleRu: "Сезонные предложения",
+    // Next free position (see FEATURED_MIXED's note) — reorderable in admin.
+    sortOrder: 11,
+  },
 };
 
 const MIXED_TYPES: HomepageSectionType[] = ["DISCOUNTED_MIXED", "POPULAR_MIXED", "FEATURED_MIXED"];

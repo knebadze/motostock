@@ -1,3 +1,4 @@
+import { assertCategoryVehicleFitmentEnabled } from "../categories/categories.service.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { productsRepository } from "../products/products.repository.js";
@@ -42,6 +43,7 @@ async function assertProductExists(productId: number) {
   if (!product) {
     throw new ApiError(404, "პროდუქტი ვერ მოიძებნა");
   }
+  return product;
 }
 
 export async function listProductFitments(productId: number) {
@@ -54,7 +56,8 @@ export async function createProductFitment(
   productId: number,
   input: CreateProductFitmentInput,
 ) {
-  await assertProductExists(productId);
+  const product = await assertProductExists(productId);
+  await assertCategoryVehicleFitmentEnabled(product.categoryId);
 
   const catalogEntry = await vehicleCatalogRepository.findById(input.vehicleCatalogId);
   if (!catalogEntry) {

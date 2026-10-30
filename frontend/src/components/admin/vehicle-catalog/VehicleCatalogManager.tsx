@@ -200,6 +200,7 @@ export function VehicleCatalogManager({
         <DataTable
           columns={columns}
           data={data.items}
+          totalCount={data.total}
           getRowKey={(entry) => entry.id}
           emptyMessage="ტექნიკა არ არსებობს"
           actions={(entry) => (

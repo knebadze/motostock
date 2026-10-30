@@ -74,7 +74,7 @@ export function RowActions({
           onClick={onDelete}
           aria-label="წაშლა"
           title="წაშლა"
-          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-red-600"
+          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

@@ -2,6 +2,7 @@ import type { AdminFilterField } from "@/components/admin/shared/AdminFilterPane
 import type { Category } from "@/lib/api/categories";
 import type { ProductBrand } from "@/lib/api/product-brands";
 import type { LookupItem } from "@/lib/api/lookups";
+import type { Tag } from "@/lib/api/tags";
 
 function toLookupOptions(items: LookupItem[]) {
   return items.map((item) => ({ value: String(item.id), label: item.nameKa }));
@@ -18,6 +19,7 @@ export function buildProductFilterFields(data: {
   colors: LookupItem[];
   conditions: LookupItem[];
   statuses: LookupItem[];
+  tags: Tag[];
 }): AdminFilterField[] {
   return [
     { key: "SEARCH", label: "ძებნა (სახელი)", section: "ძირითადი", kind: "TEXT" },
@@ -38,6 +40,13 @@ export function buildProductFilterFields(data: {
       section: "ძირითადი",
       kind: "MULTI_SELECT",
       options: data.productBrands.map((brand) => ({ value: String(brand.id), label: brand.name })),
+    },
+    {
+      key: "TAG",
+      label: "ტეგი",
+      section: "ძირითადი",
+      kind: "MULTI_SELECT",
+      options: data.tags.map((tag) => ({ value: String(tag.id), label: tag.name })),
     },
     { key: "PRICE", label: "ფასი", section: "ვარიანტები", kind: "RANGE" },
     { key: "STOCK_QUANTITY", label: "მარაგი", section: "ვარიანტები", kind: "RANGE" },

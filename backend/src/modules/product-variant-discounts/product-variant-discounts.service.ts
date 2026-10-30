@@ -6,6 +6,7 @@ import type {
   CreateProductVariantDiscountInput,
   UpdateProductVariantDiscountInput,
 } from "./product-variant-discounts.schema.js";
+import { applyPercentDiscount } from "../../lib/discounts.js";
 
 export type DiscountRow = {
   id: number;
@@ -60,7 +61,13 @@ export async function createDiscount(
   input: CreateProductVariantDiscountInput,
 ) {
   const variant = await getVariantOrThrow(productVariantId);
-  assertDiscountPriceBelowListPrice(input.discountPrice, Number(variant.price));
+  // PERCENT discount: the price is derived here from the current list price,
+  // never taken from the client; FIXED: exactly what was entered.
+  const listPrice = Number(variant.price);
+  const discountPercent = input.discountPercent ?? null;
+  const discountPrice =
+    discountPercent != null ? applyPercentDiscount(listPrice, discountPercent) : input.discountPrice;
+  assertDiscountPriceBelowListPrice(discountPrice, listPrice);
 
   const startDate = startOfDayTbilisi(input.startDate);
   const endDate = endOfDayTbilisi(input.endDate);
@@ -79,8 +86,8 @@ export async function createDiscount(
 
   const row = await productVariantDiscountsRepository.create({
     productVariantId,
-    discountPrice: input.discountPrice,
-    discountPercent: input.discountPercent ?? null,
+    discountPrice,
+    discountPercent,
     startDate,
     endDate,
   });
@@ -103,14 +110,20 @@ export async function updateDiscount(
     throw new ApiError(400, "დასრულების თარიღი უნდა იყოს დაწყების თარიღის შემდეგ");
   }
 
-  if (input.discountPrice !== undefined) {
-    const variant = await getVariantOrThrow(productVariantId);
-    assertDiscountPriceBelowListPrice(input.discountPrice, Number(variant.price));
+  // A percent re-derives the price (PERCENT); a typed price without a
+  // percent — or the percent explicitly cleared — makes it FIXED.
+  let pricing: { discountPrice: number; discountPercent: number | null } | null = null;
+  if (input.discountPercent !== undefined || input.discountPrice !== undefined) {
+    const listPrice = Number((await getVariantOrThrow(productVariantId)).price);
+    pricing =
+      input.discountPercent != null
+        ? { discountPrice: applyPercentDiscount(listPrice, input.discountPercent), discountPercent: input.discountPercent }
+        : { discountPrice: input.discountPrice ?? Number(existing.discountPrice), discountPercent: null };
+    assertDiscountPriceBelowListPrice(pricing.discountPrice, listPrice);
   }
 
   const row = await productVariantDiscountsRepository.update(id, {
-    ...(input.discountPrice !== undefined ? { discountPrice: input.discountPrice } : {}),
-    ...(input.discountPercent !== undefined ? { discountPercent: input.discountPercent } : {}),
+    ...(pricing ?? {}),
     ...(input.startDate !== undefined ? { startDate } : {}),
     ...(input.endDate !== undefined ? { endDate } : {}),
   });

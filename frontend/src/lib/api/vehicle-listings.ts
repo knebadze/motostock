@@ -50,6 +50,9 @@ export type VehicleSpecFilters = {
 
 export type VehicleListingFilters = {
   categoryId?: number;
+  // Exact-match category set (shop page subcategory checkboxes) — ignored
+  // by the backend when categoryId is also sent.
+  categoryIds?: number[];
   search?: string;
   brandIds?: number[];
   priceMin?: number;
@@ -97,6 +100,7 @@ async function fetchVehicleListingsList(
   const { data } = await apiClient.get<VehicleListingListResponse>("/vehicle-listings", {
     params: {
       categoryId: filters.categoryId,
+      categoryIds: filters.categoryIds?.length ? filters.categoryIds : undefined,
       search: filters.search || undefined,
       brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
       priceMin: filters.priceMin,

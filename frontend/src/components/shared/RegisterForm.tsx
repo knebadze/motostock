@@ -215,6 +215,16 @@ export function RegisterForm({ oauthStatus }: { oauthStatus: OAuthStatus }) {
                     {chunks}
                   </button>
                 ),
+                privacy: (chunks) => (
+                  <Link
+                    href="/privacy"
+                    target="_blank"
+                    onClick={(event) => event.stopPropagation()}
+                    className="font-semibold text-primary-text hover:underline"
+                  >
+                    {chunks}
+                  </Link>
+                ),
               })}
             </span>
           </label>

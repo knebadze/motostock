@@ -2,6 +2,7 @@ import {
   getCategoriesFromServer,
   getLookupItemsFromServer,
   getVehicleCatalogFromServer,
+  getTagsFromServer,
 } from "@/lib/api/server";
 import { ProductForm } from "@/components/admin/products/ProductForm";
 import type { VehicleSpecLookupMap } from "@/components/admin/products/ProductFitmentPanel";
@@ -21,6 +22,7 @@ export default async function NewProductPage() {
     driveTypes,
     startTypes,
     powertrainTypes,
+    tags,
   ] = await Promise.all([
     getCategoriesFromServer(),
     getLookupItemsFromServer("sizes"),
@@ -35,6 +37,7 @@ export default async function NewProductPage() {
     getLookupItemsFromServer("drive-types"),
     getLookupItemsFromServer("start-types"),
     getLookupItemsFromServer("powertrain-types"),
+    getTagsFromServer(),
   ]);
 
   const vehicleSpecLookups: VehicleSpecLookupMap = {
@@ -58,6 +61,7 @@ export default async function NewProductPage() {
       vehicleSpecLookups={vehicleSpecLookups}
       allProducts={[]}
       product={null}
+      tags={tags}
     />
   );
 }

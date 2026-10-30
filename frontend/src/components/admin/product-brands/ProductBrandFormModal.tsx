@@ -18,6 +18,7 @@ import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { flattenTree, slugify } from "@/lib/categories-tree";
 import { productBrandFormSchema } from "@/lib/validation/product-brands";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+import { uploadFailedMessage } from "@/lib/upload-error";
 
 export function ProductBrandFormModal({
   open,
@@ -40,7 +41,9 @@ export function ProductBrandFormModal({
   );
   const [name, setName] = useState(productBrand?.name ?? "");
   const [slug, setSlug] = useState(productBrand?.slug ?? "");
-  const [slugTouched, setSlugTouched] = useState(false);
+  // On edit the stored slug is the live URL — renaming mustn't silently
+  // regenerate it; only an explicit edit of the slug field changes it.
+  const [slugTouched, setSlugTouched] = useState(isEditing);
   const { file: logoFile, previewUrl, onChange: handleLogoChange } = useFileUploadPreview(
     resolveMediaUrl(productBrand?.logoUrl ?? null),
   );
@@ -83,8 +86,8 @@ export function ProductBrandFormModal({
       if (logoFile) {
         try {
           await uploadProductBrandLogo(saved.id, logoFile);
-        } catch {
-          toast.error("ბრენდი შენახულია, მაგრამ ლოგოს ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("ბრენდი შენახულია, მაგრამ ლოგოს ატვირთვა ვერ მოხერხდა", error));
           onSaved();
           onClose();
           return;

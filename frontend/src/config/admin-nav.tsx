@@ -5,6 +5,7 @@ import {
   banksIcon,
   brandsIcon,
   buyTogetherIcon,
+  tagsIcon,
   categoriesIcon,
   classifierIcon,
   companyInfoIcon,
@@ -68,6 +69,12 @@ export const adminNav: AdminNavSection[] = [
         allowedRoles: ["OPERATOR"],
       },
       { label: "შეკვეთები", href: "/admin/orders", icon: ordersIcon, allowedRoles: ["OPERATOR"] },
+      {
+        label: "მომხმარებლის მოთხოვნები",
+        href: "/admin/order-requests",
+        icon: ordersIcon,
+        allowedRoles: ["OPERATOR"],
+      },
       { label: "მომხმარებლები", href: "/admin/users", icon: usersIcon, allowedRoles: ["OPERATOR"] },
       { label: "კატეგორიები", href: "/admin/categories", icon: categoriesIcon },
       {
@@ -117,6 +124,8 @@ export const adminNav: AdminNavSection[] = [
         icon: buyTogetherIcon,
         allowedRoles: ["OPERATOR"],
       },
+      // Read-only for OPERATOR (writes are ADMIN-only, see TagsManager).
+      { label: "ტეგები", href: "/admin/tags", icon: tagsIcon, allowedRoles: ["OPERATOR"] },
     ],
   },
   {
@@ -184,6 +193,7 @@ export const adminNav: AdminNavSection[] = [
       { label: "გუნდი", href: "/admin/team-members", icon: teamIcon },
       { label: "წესები და პირობები", href: "/admin/terms", icon: termsIcon },
       { label: "კონფიდენციალობის პოლიტიკა", href: "/admin/privacy-policy", icon: privacyPolicyIcon },
+      { label: "მიწოდება და დაბრუნება", href: "/admin/shipping-policy", icon: privacyPolicyIcon },
       { label: "ხშირად დასმული კითხვები", href: "/admin/faq", icon: faqIcon },
       { label: "ვაკანსიები", href: "/admin/vacancies", icon: vacanciesIcon },
       { label: "იმეილის შაბლონები", href: "/admin/email-templates", icon: emailTemplatesIcon },

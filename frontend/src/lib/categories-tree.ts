@@ -56,6 +56,49 @@ export function getAncestorChain(categories: Category[], categoryId: number): Ca
   return chain;
 }
 
+type InheritedCategoryFlag = "onlinePurchaseEnabled" | "vehicleFitmentEnabled";
+
+// Mirrors the backend's categories.service.ts helpers (which are what
+// actually enforce these): a flag is effectively off for a category if it,
+// or any ancestor, has it off.
+function getCategoryIdsWithFlagOff(
+  categories: Pick<Category, "id" | "parentId" | InheritedCategoryFlag>[],
+  flag: InheritedCategoryFlag,
+): Set<number> {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const off = new Set<number>();
+  for (const category of categories) {
+    const seen = new Set<number>();
+    let current: (typeof categories)[number] | undefined = category;
+    while (current && !seen.has(current.id)) {
+      if (!current[flag]) {
+        off.add(category.id);
+        break;
+      }
+      seen.add(current.id);
+      current = current.parentId != null ? byId.get(current.parentId) : undefined;
+    }
+  }
+  return off;
+}
+
+// Categories whose items can't be bought on the site (enforced at
+// cart/checkout).
+export function getOnlinePurchaseBlockedCategoryIds(
+  categories: Pick<Category, "id" | "parentId" | InheritedCategoryFlag>[],
+): Set<number> {
+  return getCategoryIdsWithFlagOff(categories, "onlinePurchaseEnabled");
+}
+
+// Categories whose products are vehicle-independent (e.g. helmets): no
+// fitment editing, compatibility list, "my vehicle" filter or checkout
+// compatibility check.
+export function getVehicleFitmentDisabledCategoryIds(
+  categories: Pick<Category, "id" | "parentId" | InheritedCategoryFlag>[],
+): Set<number> {
+  return getCategoryIdsWithFlagOff(categories, "vehicleFitmentEnabled");
+}
+
 export function getDescendantIds(categories: Category[], id: number): Set<number> {
   const byParent = new Map<number, Category[]>();
   for (const category of categories) {

@@ -6,12 +6,27 @@ model Category {
   slug                 String                        @unique
   imageUrl             String?
   bannerImageUrl       String?
+  // The header mega menu's promo tile (shown for top-level categories);
+  // falls back to imageUrl when unset.
+  menuImageUrl         String?
   sortOrder            Int                           @default(0)
   // Storefront "only N left" urgency badge on this category's products —
   // on by default; admin can turn it off per-category for ones where a
   // typical stock level of ~1 unit makes the badge meaningless noise
   // rather than a genuine urgency signal.
   lowStockBadgeEnabled Boolean                       @default(true)
+  // Whether this category's products/vehicle listings can be bought from
+  // the site (add to cart -> checkout). Off for e.g. vehicles, where the
+  // storefront shows "visit the showroom" instead. Inherited: a category is
+  // purchasable only if it AND every ancestor have this on (see
+  // categories.service.ts's getOnlinePurchaseBlockedCategoryIds).
+  onlinePurchaseEnabled Boolean                      @default(true)
+  // Whether this category's products depend on the vehicle (parts, oils):
+  // admin fitment editing, the storefront compatibility list, "my vehicle"
+  // filter and checkout check. Off (e.g. helmets) = the products are
+  // vehicle-independent. Inherited the same way as onlinePurchaseEnabled
+  // (see categories.service.ts's getVehicleFitmentDisabledCategoryIds).
+  vehicleFitmentEnabled Boolean                      @default(true)
   parentId             Int?
   parent               Category?                     @relation("CategoryChildren", fields: [parentId], references: [id])
   children             Category[]                    @relation("CategoryChildren")

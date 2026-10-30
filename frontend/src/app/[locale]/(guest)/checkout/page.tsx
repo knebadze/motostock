@@ -2,17 +2,21 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import {
+  getCategoriesFromServer,
   getCurrentUserFromServer,
   getLookupItemsFromServer,
   getMyAddressesFromServer,
   getMyCartFromServer,
   getMyGarageFromServer,
   getPublicBanksFromServer,
+  getDeliveryInfoFromServer,
   getVehicleSearchOptionsFromServer,
 } from "@/lib/api/server";
 import { CheckoutManager } from "@/components/checkout/CheckoutManager";
+import { getVehicleFitmentDisabledCategoryIds } from "@/lib/categories-tree";
+import { noindexMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 // Not under /account — checkout is a step in the shopping flow, not an
 // account-settings page, so it keeps the conventional top-level /checkout
@@ -35,26 +39,33 @@ export default async function CheckoutPage() {
     return null;
   }
 
-  const [addresses, cart, cities, banks] = await Promise.all([
+  const [addresses, cart, cities, banks, categories] = await Promise.all([
     getMyAddressesFromServer(),
     getMyCartFromServer(),
     getLookupItemsFromServer("cities"),
     getPublicBanksFromServer(),
+    getCategoriesFromServer(),
   ]);
   if (cart.items.length === 0) {
     redirect({ href: "/cart", locale });
     return null;
   }
 
-  // Only fetched when the cart actually has parts/accessories in it — the
-  // compatibility-check widget has nothing to check against a cart made up
-  // solely of vehicle listings.
-  const hasProductItems = cart.items.some((item) => item.itemType === "PRODUCT_VARIANT");
-  const [vehicleCatalog, garageVehicles] = hasProductItems
+  // Only fetched when the cart actually has vehicle-dependent products in it
+  // — the compatibility-check widget has nothing to check against vehicle
+  // listings, or products in a vehicle-independent category
+  // (Category.vehicleFitmentEnabled off, e.g. helmets), which it skips.
+  const vehicleFitmentDisabledCategoryIds = getVehicleFitmentDisabledCategoryIds(categories);
+  const hasFitmentItems = cart.items.some(
+    (item) =>
+      item.productVariant != null &&
+      !vehicleFitmentDisabledCategoryIds.has(item.productVariant.product.category.id),
+  );
+  const [vehicleCatalog, garageVehicles] = hasFitmentItems
     ? await Promise.all([getVehicleSearchOptionsFromServer(), getMyGarageFromServer()])
     : [[], []];
 
-  const t = await getTranslations("Checkout");
+  const [t, deliveryInfo] = await Promise.all([getTranslations("Checkout"), getDeliveryInfoFromServer()]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
@@ -65,7 +76,9 @@ export default async function CheckoutPage() {
         cart={cart}
         vehicleCatalog={vehicleCatalog}
         garageVehicles={garageVehicles}
+        vehicleFitmentDisabledCategoryIds={[...vehicleFitmentDisabledCategoryIds]}
         banks={banks}
+        deliveryInfo={deliveryInfo}
       />
     </div>
   );

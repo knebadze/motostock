@@ -1,7 +1,14 @@
 import type { z } from "zod";
+import {
+  getOnlinePurchaseBlockedCategoryIds,
+  getVehicleFitmentDisabledCategoryIds,
+} from "../categories/categories.service.js";
+import { tagsRepository } from "../tags/tags.repository.js";
+import { pickTagCompanionIds } from "./tag-companions.js";
 import { ApiError } from "../../lib/ApiError.js";
 import type { Expect, ResponseMatches } from "../../lib/response-contract.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
+import { currentSeasonKey } from "../../lib/season.js";
 import { cache } from "../../lib/cache.js";
 import { findActiveDiscount } from "../../lib/discounts.js";
 import { computeLowStockQuantity } from "../../lib/low-stock.js";
@@ -425,14 +432,31 @@ async function buildAttributeValueWriteData(
 // Exported for reuse by getProductDetail below — filters a product's
 // buyTogether companions down to ones compatible with the customer's
 // selected vehicle, instead of always showing every configured companion.
+//
+// Products in a category with vehicle fitment switched off (e.g. helmets —
+// see Category.vehicleFitmentEnabled) are never "compatible" here, even with
+// leftover fitment rows/rules: this answers "which parts fit this vehicle"
+// (the compatible-products page, the "my vehicle" filter, popular for your
+// vehicle, the checkout check). Callers that only NARROW a list by vehicle
+// (recommendations, buy-together) wrap it in includeVehicleIndependent
+// instead, so those products aren't dropped just because a vehicle is
+// selected.
 export async function buildVehicleCompatibilityWhere(
   vehicleCatalogId: number,
 ): Promise<Prisma.ProductWhereInput> {
-  const vehicle = await vehicleCatalogRepository.findById(vehicleCatalogId);
+  const [vehicle, fitmentDisabledCategoryIds] = await Promise.all([
+    vehicleCatalogRepository.findById(vehicleCatalogId),
+    getVehicleFitmentDisabledCategoryIds(),
+  ]);
+  const excludeFitmentDisabled = (where: Prisma.ProductWhereInput): Prisma.ProductWhereInput =>
+    fitmentDisabledCategoryIds.size > 0
+      ? { AND: [where, { categoryId: { notIn: [...fitmentDisabledCategoryIds] } }] }
+      : where;
+
   if (!vehicle) {
     // Unknown id — fall back to the exact-match clause alone, which simply
     // (and correctly) returns nothing.
-    return { fitments: { some: { vehicleCatalogId } } };
+    return excludeFitmentDisabled({ fitments: { some: { vehicleCatalogId } } });
   }
 
   const ancestorCategoryIds = await resolveCategoryAndAncestorIds(vehicle.model.category.id);
@@ -454,14 +478,26 @@ export async function buildVehicleCompatibilityWhere(
       specLookupItemId: entry.value,
     }));
 
-  return {
+  return excludeFitmentDisabled({
     OR: [
       { fitments: { some: { vehicleCatalogId } } },
       { fitmentRules: { some: { type: "ALL" } } },
       { fitmentRules: { some: { type: "CATEGORY", categoryId: { in: ancestorCategoryIds } } } },
       ...(specOr.length > 0 ? [{ fitmentRules: { some: { OR: specOr } } }] : []),
     ],
-  };
+  });
+}
+
+// For narrowing an existing list by the selected vehicle (recommendations,
+// buy-together companions): compatible products PLUS every product in a
+// fitment-disabled category, which fits any vehicle.
+export async function includeVehicleIndependent(
+  compatibilityWhere: Prisma.ProductWhereInput,
+): Promise<Prisma.ProductWhereInput> {
+  const fitmentDisabledCategoryIds = await getVehicleFitmentDisabledCategoryIds();
+  return fitmentDisabledCategoryIds.size > 0
+    ? { OR: [compatibilityWhere, { categoryId: { in: [...fitmentDisabledCategoryIds] } }] }
+    : compatibilityWhere;
 }
 
 // Homepage sliders (on-sale/popular) hit these with the exact same
@@ -499,6 +535,7 @@ function isCacheableOnSaleQuery(query: ProductListQuery): boolean {
     query.priceMax == null &&
     query.bulkDiscountEventId == null &&
     query.featured == null &&
+    query.seasonal == null &&
     query.attributeFilters == null &&
     query.adminFilters == null &&
     query.page == null &&
@@ -523,14 +560,17 @@ export async function listProductCategoryFacets(query: {
   brandIds?: number[];
   onSale?: boolean;
   bulkDiscountEventId?: number;
+  search?: string;
 }) {
   const categoryIds =
     query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : undefined;
   const vehicleCompatibilityWhere =
     query.vehicleCatalogId != null ? await buildVehicleCompatibilityWhere(query.vehicleCatalogId) : undefined;
+  const searchIds = query.search != null ? await productsRepository.findSearchRankedIds(query.search) : undefined;
   const rows = await productsRepository.findDistinctCategoryFacets({
     categoryIds,
     vehicleCompatibilityWhere,
+    searchIds,
     brandIds: query.brandIds,
     onSale: query.onSale,
     bulkDiscountEventId: query.bulkDiscountEventId,
@@ -563,10 +603,19 @@ export async function listProducts(query: ProductListQuery) {
     query.categoryId != null
       ? await resolveCategoryAndDescendantIds(query.categoryId)
       : query.categoryIds;
-  const vehicleCompatibilityWhere =
+  const compatibilityWhere =
     query.vehicleCatalogId != null
       ? await buildVehicleCompatibilityWhere(query.vehicleCatalogId)
       : undefined;
+  // Seasonal carousel filter, ANDed through the same free-form where slot
+  // as vehicle compatibility (buildWhere just ANDs it in).
+  const seasonalWhere: Prisma.ProductWhereInput | undefined = query.seasonal
+    ? { attributeValues: { some: { option: { key: currentSeasonKey() } } } }
+    : undefined;
+  const vehicleCompatibilityWhere =
+    compatibilityWhere && seasonalWhere
+      ? { AND: [compatibilityWhere, seasonalWhere] }
+      : (compatibilityWhere ?? seasonalWhere);
   // Resolved to a ranked id list first (see findSearchRankedIds) so
   // buildWhere can AND it together with every other structured filter, the
   // same way buildVehicleCompatibilityWhere's output is threaded through.
@@ -760,6 +809,55 @@ export function listProductSitemapEntries() {
   return productsRepository.findSitemapEntries();
 }
 
+// The "ერთად შეძენა" bundle's size: the admin-curated companions first,
+// then tag companions fill the free slots.
+const BUY_TOGETHER_MAX = 4;
+// How many ranked tag candidates to pull before the eligibility filter.
+const TAG_COMPANION_POOL = 40;
+
+// Tag-based buy-together companions (see tagsRepository.
+// findCompanionCandidateIds for the ranking): of the ranked candidates,
+// only ones that are in stock (an active variant with stock), buyable on
+// the site (Category.onlinePurchaseEnabled) and — when a vehicle is
+// selected — fit it (or are vehicle-independent). Not cached: one indexed
+// query per product page, and tag edits show up immediately.
+async function findTagCompanions(
+  productId: number,
+  categoryId: number,
+  options: { excludeIds: number[]; limit: number; compatWhere?: Prisma.ProductWhereInput },
+) {
+  if (options.limit <= 0) return [];
+  const ranked = await tagsRepository.findCompanionCandidateIds(productId, categoryId, TAG_COMPANION_POOL);
+  if (ranked.length === 0) return [];
+  const rankedIds = ranked.map((row) => row.id);
+
+  const blockedCategoryIds = await getOnlinePurchaseBlockedCategoryIds();
+  const eligibilityWhere: Prisma.ProductWhereInput = {
+    AND: [
+      { variants: { some: { isActive: true, stockQuantity: { gt: 0 } } } },
+      ...(blockedCategoryIds.size > 0 ? [{ categoryId: { notIn: [...blockedCategoryIds] } }] : []),
+      ...(options.compatWhere ? [options.compatWhere] : []),
+    ],
+  };
+  const eligible = await productsRepository.findIdsMatchingWhere(rankedIds, eligibilityWhere);
+  const pickedIds = pickTagCompanionIds(
+    rankedIds,
+    new Set(eligible.map((row) => row.id)),
+    new Set(options.excludeIds),
+    options.limit,
+  );
+  if (pickedIds.length === 0) return [];
+
+  const rows = await productsRepository.findByIds(pickedIds);
+  const rowById = new Map(rows.map((row) => [row.id, row]));
+  return Promise.all(
+    pickedIds
+      .map((id) => rowById.get(id))
+      .filter((row): row is NonNullable<typeof row> => row != null)
+      .map((row) => toCardResponse(row)),
+  );
+}
+
 export async function getProductDetail(slug: string, vehicleCatalogId?: number) {
   const row = await productsRepository.findDetailBySlug(slug);
   // findDetailBySlug already excludes inactive variants (see
@@ -773,25 +871,34 @@ export async function getProductDetail(slug: string, vehicleCatalogId?: number) 
   await productsRepository.incrementViewCount(row.id);
 
   const response = await toDetailResponse(row);
-  if (vehicleCatalogId == null || response.buyTogether.length === 0) {
-    return response;
+  const compatWhere =
+    vehicleCatalogId != null
+      ? await includeVehicleIndependent(await buildVehicleCompatibilityWhere(vehicleCatalogId))
+      : undefined;
+
+  // Narrow the curated buyTogether companions down to ones actually
+  // compatible with the shopper's selected vehicle — a companion attached
+  // to the anchor can still legitimately not fit every vehicle the anchor
+  // itself fits (e.g. an oil that fits every sport bike, paired with a
+  // filter that only fits some of them).
+  let curated = response.buyTogether;
+  if (compatWhere && curated.length > 0) {
+    const compatibleIds = await productsRepository.findIdsMatchingWhere(
+      curated.map((product) => product.id),
+      compatWhere,
+    );
+    const compatibleIdSet = new Set(compatibleIds.map((idRow) => idRow.id));
+    curated = curated.filter((product) => compatibleIdSet.has(product.id));
   }
 
-  // Narrow buyTogether companions down to ones actually compatible with the
-  // shopper's selected vehicle — a companion attached to the anchor can
-  // still legitimately not fit every vehicle the anchor itself fits (e.g. an
-  // oil that fits every sport bike, paired with a filter that only fits
-  // some of them).
-  const compatWhere = await buildVehicleCompatibilityWhere(vehicleCatalogId);
-  const compatibleIds = await productsRepository.findIdsMatchingWhere(
-    response.buyTogether.map((product) => product.id),
+  // Free slots filled by tag companions (same vehicle filter).
+  const tagCompanions = await findTagCompanions(row.id, row.category.id, {
+    excludeIds: curated.map((product) => product.id),
+    limit: BUY_TOGETHER_MAX - curated.length,
     compatWhere,
-  );
-  const compatibleIdSet = new Set(compatibleIds.map((row) => row.id));
-  return {
-    ...response,
-    buyTogether: response.buyTogether.filter((product) => compatibleIdSet.has(product.id)),
-  };
+  });
+
+  return { ...response, buyTogether: [...curated, ...tagCompanions] };
 }
 
 // Admin "full view" counterpart to getProductDetail — unlike that

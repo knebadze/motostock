@@ -580,7 +580,60 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete own account (anonymized instead when orders must be kept); logs out */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["DeleteAccountInput"];
+                };
+            };
+            responses: {
+                /** @description Deleted */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            anonymized: boolean;
+                        };
+                    };
+                };
+                /** @description Wrong confirmation */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Staff account */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Orders in progress */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -1001,6 +1054,151 @@ export interface paths {
                 };
             };
         };
+        trace?: never;
+    };
+    "/users/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's own profile, login methods and consent status */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Profile */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            profile: components["schemas"]["Profile"];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit own name, phone and date of birth */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateProfileInput"];
+                };
+            };
+            responses: {
+                /** @description Updated profile */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            profile: components["schemas"]["Profile"];
+                        };
+                    };
+                };
+                /** @description Phone in use */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/users/me/consents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept the current terms and privacy policy (recorded with version, time and IP) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Updated profile */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            profile: components["schemas"]["Profile"];
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/me/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download everything stored about the caller (JSON file) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description JSON attachment */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/users/me/addresses": {
@@ -2427,6 +2625,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/categories/item-counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Storefront item counts per category, rolled up over subcategories (public) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Counts */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CategoryItemCounts"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/categories/{id}": {
         parameters: {
             query?: never;
@@ -2644,6 +2878,71 @@ export interface paths {
         get?: never;
         put?: never;
         /** Upload a category hero banner image (wide-format, used on the guest shop page) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "multipart/form-data": {
+                        /** Format: binary */
+                        image: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Uploaded */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            category: components["schemas"]["Category"];
+                        };
+                    };
+                };
+                /** @description Invalid file */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/categories/{id}/menu-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload a category's header mega menu image (the promo tile beside its subcategory columns) */
         post: {
             parameters: {
                 query?: never;
@@ -2993,6 +3292,42 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/delivery-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Delivery prices/times and the return window (public — product page/cart info block) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Delivery info */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PublicDeliveryInfo"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4243,6 +4578,7 @@ export interface paths {
             parameters: {
                 query?: {
                     categoryId?: number;
+                    categoryIds?: number[];
                     search?: string;
                     brandIds?: number[];
                     priceMin?: number | null;
@@ -6291,6 +6627,7 @@ export interface paths {
                     onSale?: boolean | null;
                     bulkDiscountEventId?: number;
                     featured?: boolean | null;
+                    seasonal?: boolean | null;
                     limit?: number;
                     attributeFilters?: string;
                     adminFilters?: string;
@@ -6422,6 +6759,7 @@ export interface paths {
                     brandIds?: number[];
                     onSale?: boolean | null;
                     bulkDiscountEventId?: number;
+                    search?: string;
                 };
                 header?: never;
                 path?: never;
@@ -6813,6 +7151,481 @@ export interface paths {
                     };
                 };
                 /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/search/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Global search suggestions: top matching products, vehicle listings and categories (public) */
+        get: {
+            parameters: {
+                query: {
+                    q: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Suggestions */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SearchSuggestions"];
+                    };
+                };
+                /** @description Query too short/long */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List buy-together tags with product counts (admin/operator) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Tags */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["Tag"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create a tag */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateTagInput"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            item: components["schemas"]["Tag"];
+                        };
+                    };
+                };
+                /** @description Duplicate name */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a tag (also removes it from every product) */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Update a tag */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateTagInput"];
+                };
+            };
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            item: components["schemas"]["Tag"];
+                        };
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Duplicate name */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/tags/{id}/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Products carrying a tag (the kit preview) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Products */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["TagProduct"][];
+                        };
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/products/{productId}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A product's tags */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    productId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Tags */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["ProductTagRef"][];
+                        };
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        /** Replace a product's tag set */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    productId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["SetProductTagsInput"];
+                };
+            };
+            responses: {
+                /** @description Updated tags */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["ProductTagRef"][];
+                        };
+                    };
+                };
+                /** @description Unknown tag */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags/{id}/products/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a tag to many products (already-tagged ones are skipped) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["BulkTagProductsInput"];
+                };
+            };
+            responses: {
+                /** @description Done */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BulkTagProductsResult"];
+                    };
+                };
+                /** @description Unknown product */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Tag not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags/{id}/products/unassign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove a tag from many products */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["BulkTagProductsInput"];
+                };
+            };
+            responses: {
+                /** @description Done */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BulkTagProductsResult"];
+                    };
+                };
+                /** @description Unknown product */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Tag not found */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -8212,13 +9025,13 @@ export interface paths {
                         "application/json": {
                             jobs: {
                                 /** @enum {string} */
-                                key: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
+                                key: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS" | "DAILY_PRUNE_CALLBACK_REQUESTS";
                                 labelKa: string;
                                 scheduleLabelKa: string;
                                 lastRun: {
                                     id: number;
                                     /** @enum {string} */
-                                    jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
+                                    jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS" | "DAILY_PRUNE_CALLBACK_REQUESTS";
                                     /** @enum {string} */
                                     trigger: "SCHEDULED" | "MANUAL";
                                     /** @enum {string} */
@@ -8262,7 +9075,7 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    jobKey?: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
+                    jobKey?: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS" | "DAILY_PRUNE_CALLBACK_REQUESTS";
                     page?: number;
                     pageSize?: number;
                 };
@@ -8282,7 +9095,7 @@ export interface paths {
                             runs: {
                                 id: number;
                                 /** @enum {string} */
-                                jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
+                                jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS" | "DAILY_PRUNE_CALLBACK_REQUESTS";
                                 /** @enum {string} */
                                 trigger: "SCHEDULED" | "MANUAL";
                                 /** @enum {string} */
@@ -8332,7 +9145,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    key: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
+                    key: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS" | "DAILY_PRUNE_CALLBACK_REQUESTS";
                 };
                 cookie?: never;
             };
@@ -8348,7 +9161,7 @@ export interface paths {
                             run: {
                                 id: number;
                                 /** @enum {string} */
-                                jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS";
+                                jobKey: "DAILY_PRUNE_VISITOR_DATA" | "DAILY_PRUNE_AUTH_ARTIFACTS" | "DAILY_PRUNE_GUEST_PRODUCT_VIEWS" | "DAILY_PRUNE_GUEST_VEHICLE_LISTING_VIEWS" | "DAILY_PRUNE_RICH_TEXT_IMAGES" | "FETCH_USD_GEL_RATE" | "BIRTHDAY_EMAIL" | "DAILY_PRUNE_ERROR_LOGS" | "DAILY_PRUNE_GUEST_COLLECTIONS" | "DAILY_PRUNE_AUTH_EVENTS" | "DAILY_PRUNE_CALLBACK_REQUESTS";
                                 /** @enum {string} */
                                 trigger: "SCHEDULED" | "MANUAL";
                                 /** @enum {string} */
@@ -8866,6 +9679,254 @@ export interface paths {
                 };
                 /** @description Insufficient permissions */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/shipping-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the delivery & returns policy content (public) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Delivery & returns policy */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            shippingPolicy: components["schemas"]["ShippingPolicy"];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the delivery & returns policy content (admin only) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateShippingPolicyInput"];
+                };
+            };
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            shippingPolicy: components["schemas"]["ShippingPolicy"];
+                        };
+                    };
+                };
+                /** @description Not authenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Insufficient permissions */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/callback-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Callback requests inbox (admin/operator) */
+        get: {
+            parameters: {
+                query?: {
+                    status?: "OPEN" | "RESOLVED";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Requests, newest first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            requests: components["schemas"]["CallbackRequest"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Ask the shop to call back about a listing (public; notifies staff) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateCallbackRequestInput"];
+                };
+            };
+            responses: {
+                /** @description Sent */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: number;
+                        };
+                    };
+                };
+                /** @description Listing not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/callback-requests/open-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Open callback requests count (admin/operator) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Count */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            count: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/callback-requests/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Mark a callback request handled (admin/operator) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ResolveCallbackRequestInput"];
+                };
+            };
+            responses: {
+                /** @description Resolved */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            request: components["schemas"]["CallbackRequest"];
+                        };
+                    };
+                };
+                /** @description Already resolved */
+                409: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -11032,13 +12093,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List every order across every buyer, with search/status/fulfillment/date filters (admin only) */
+        /** List every order across every buyer, with search/status/delivery/payment/date filters (admin only) */
         get: {
             parameters: {
                 query?: {
                     search?: string;
                     statusIds?: number[];
-                    fulfillmentMethods?: ("CARD" | "COURIER" | "PICKUP")[];
+                    deliveryMethods?: ("COURIER" | "PICKUP")[];
+                    paymentMethods?: ("CARD" | "ON_DELIVERY" | "IN_STORE")[];
                     createdFrom?: string;
                     createdTo?: string;
                     flaggedOnly?: boolean | null;
@@ -11546,6 +12608,217 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/orders/me/{id}/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask the shop to cancel or take back an order (notifies the admin; changes nothing by itself) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateOrderRequestInput"];
+                };
+            };
+            responses: {
+                /** @description Request sent — the updated order */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            order: components["schemas"]["Order"];
+                        };
+                    };
+                };
+                /** @description Not allowed at this order status / return period over */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Order not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description An open request of this type already exists */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Customer cancel/return requests (admin/operator) */
+        get: {
+            parameters: {
+                query?: {
+                    status?: "OPEN" | "RESOLVED";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Requests, newest first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            requests: components["schemas"]["AdminOrderRequest"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/requests/open-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Number of open customer requests — admin header bell (admin/operator) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Open count */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            count: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/requests/{requestId}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Mark a customer request handled (admin/operator) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    requestId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ResolveOrderRequestInput"];
+                };
+            };
+            responses: {
+                /** @description Resolved request */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            request: components["schemas"]["AdminOrderRequest"];
+                        };
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Already resolved */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/compatibility": {
@@ -14828,6 +16101,8 @@ export interface components {
              * @example 1995-06-15
              */
             dateOfBirth: string;
+            /** @enum {boolean} */
+            agreedToTerms: true;
         };
         LoginInput: {
             /** @example rider@motostock.ge */
@@ -14921,6 +16196,7 @@ export interface components {
             weightKg?: number | null;
             seatHeightMm?: number | null;
             fuelTankLiters?: number | null;
+            oilCapacityLiters?: number | null;
             topSpeedKmh?: number | null;
             hasAbs?: boolean | null;
             fuelTypeId?: number | null;
@@ -14953,6 +16229,7 @@ export interface components {
             weightKg?: number | null;
             seatHeightMm?: number | null;
             fuelTankLiters?: number | null;
+            oilCapacityLiters?: number | null;
             topSpeedKmh?: number | null;
             hasAbs?: boolean | null;
             fuelTypeId?: number | null;
@@ -15061,6 +16338,7 @@ export interface components {
             weightKg: number | null;
             seatHeightMm: number | null;
             fuelTankLiters: number | null;
+            oilCapacityLiters: number | null;
             topSpeedKmh: number | null;
             hasAbs: boolean | null;
             fuelType: components["schemas"]["LookupItem"] | null;
@@ -15532,7 +16810,7 @@ export interface components {
             /** @enum {string} */
             filterType: "PRICE" | "YEAR" | "BRAND" | "SPEC";
             /** @enum {string|null} */
-            specField?: "FUEL_TYPE" | "TRANSMISSION_TYPE" | "COOLING_TYPE" | "FINAL_DRIVE_TYPE" | "DRIVE_TYPE" | "START_TYPE" | "POWERTRAIN_TYPE" | "ENGINE_VOLUME_CC" | "ENGINE_POWER_HP" | "CYLINDER_COUNT" | "GEAR_COUNT" | "SEAT_COUNT" | "WEIGHT_KG" | "SEAT_HEIGHT_MM" | "FUEL_TANK_LITERS" | "TOP_SPEED_KMH" | "MOTOR_POWER_WATT" | "BATTERY_CAPACITY_WH" | "RANGE_KM" | "CHARGING_TIME_MINUTES" | "HAS_ABS" | "HAS_LOCKING_DIFFERENTIAL" | "IS_CUSTOMS_CLEARED" | null;
+            specField?: "FUEL_TYPE" | "TRANSMISSION_TYPE" | "COOLING_TYPE" | "FINAL_DRIVE_TYPE" | "DRIVE_TYPE" | "START_TYPE" | "POWERTRAIN_TYPE" | "ENGINE_VOLUME_CC" | "ENGINE_POWER_HP" | "CYLINDER_COUNT" | "GEAR_COUNT" | "SEAT_COUNT" | "WEIGHT_KG" | "SEAT_HEIGHT_MM" | "FUEL_TANK_LITERS" | "OIL_CAPACITY_LITERS" | "TOP_SPEED_KMH" | "MOTOR_POWER_WATT" | "BATTERY_CAPACITY_WH" | "RANGE_KM" | "CHARGING_TIME_MINUTES" | "HAS_ABS" | "HAS_LOCKING_DIFFERENTIAL" | "IS_CUSTOMS_CLEARED" | null;
         };
         UpdateVehicleCategoryFilterInput: {
             sortOrder: number;
@@ -15554,7 +16832,7 @@ export interface components {
             filterType: "PRICE" | "YEAR" | "BRAND" | "SPEC";
             sortOrder: number;
             /** @enum {string|null} */
-            specField: "FUEL_TYPE" | "TRANSMISSION_TYPE" | "COOLING_TYPE" | "FINAL_DRIVE_TYPE" | "DRIVE_TYPE" | "START_TYPE" | "POWERTRAIN_TYPE" | "ENGINE_VOLUME_CC" | "ENGINE_POWER_HP" | "CYLINDER_COUNT" | "GEAR_COUNT" | "SEAT_COUNT" | "WEIGHT_KG" | "SEAT_HEIGHT_MM" | "FUEL_TANK_LITERS" | "TOP_SPEED_KMH" | "MOTOR_POWER_WATT" | "BATTERY_CAPACITY_WH" | "RANGE_KM" | "CHARGING_TIME_MINUTES" | "HAS_ABS" | "HAS_LOCKING_DIFFERENTIAL" | "IS_CUSTOMS_CLEARED" | null;
+            specField: "FUEL_TYPE" | "TRANSMISSION_TYPE" | "COOLING_TYPE" | "FINAL_DRIVE_TYPE" | "DRIVE_TYPE" | "START_TYPE" | "POWERTRAIN_TYPE" | "ENGINE_VOLUME_CC" | "ENGINE_POWER_HP" | "CYLINDER_COUNT" | "GEAR_COUNT" | "SEAT_COUNT" | "WEIGHT_KG" | "SEAT_HEIGHT_MM" | "FUEL_TANK_LITERS" | "OIL_CAPACITY_LITERS" | "TOP_SPEED_KMH" | "MOTOR_POWER_WATT" | "BATTERY_CAPACITY_WH" | "RANGE_KM" | "CHARGING_TIME_MINUTES" | "HAS_ABS" | "HAS_LOCKING_DIFFERENTIAL" | "IS_CUSTOMS_CLEARED" | null;
             specFieldLabel: {
                 ka: string;
                 en: string;
@@ -15654,6 +16932,7 @@ export interface components {
                 weightKg: number | null;
                 seatHeightMm: number | null;
                 fuelTankLiters: number | null;
+                oilCapacityLiters: number | null;
                 topSpeedKmh: number | null;
                 hasAbs: boolean | null;
                 fuelType: components["schemas"]["LookupItem"] | null;
@@ -15804,6 +17083,7 @@ export interface components {
             lineTotal: number;
             productVariant: components["schemas"]["CartProductVariant"] | null;
             vehicleListing: components["schemas"]["VehicleListing"] | null;
+            purchasableOnline?: boolean;
             /** Format: date-time */
             createdAt: string;
         };
@@ -15847,6 +17127,38 @@ export interface components {
         UpdateUserRoleInput: {
             /** @enum {string} */
             role: "USER" | "ADMIN" | "OPERATOR";
+        };
+        UpdateProfileInput: {
+            firstName: string;
+            lastName: string;
+            phone?: string | "";
+            dateOfBirth?: string | "";
+        };
+        Profile: {
+            /** Format: email */
+            email: string;
+            firstName: string;
+            lastName: string;
+            phone: string | null;
+            /** Format: date */
+            dateOfBirth: string | null;
+            hasPassword: boolean;
+            hasGoogle: boolean;
+            hasFacebook: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            consent: {
+                /** Format: date-time */
+                termsAcceptedAt: string | null;
+                /** Format: date-time */
+                privacyAcceptedAt: string | null;
+                upToDate: boolean;
+            };
+            canDelete: boolean;
+        };
+        DeleteAccountInput: {
+            password?: string;
+            confirmEmail?: string;
         };
         AdminUser: {
             /** @example 1 */
@@ -15935,6 +17247,10 @@ export interface components {
             sortOrder?: number;
             /** @example true */
             lowStockBadgeEnabled?: boolean;
+            /** @example true */
+            onlinePurchaseEnabled?: boolean;
+            /** @example true */
+            vehicleFitmentEnabled?: boolean;
         };
         UpdateCategoryInput: {
             /**
@@ -15957,6 +17273,16 @@ export interface components {
             sortOrder?: number;
             /** @example true */
             lowStockBadgeEnabled?: boolean;
+            /** @example true */
+            onlinePurchaseEnabled?: boolean;
+            /** @example true */
+            vehicleFitmentEnabled?: boolean;
+        };
+        CategoryItemCounts: {
+            items: {
+                categoryId: number;
+                count: number;
+            }[];
         };
         Category: {
             /** @example 1 */
@@ -15979,10 +17305,16 @@ export interface components {
             imageUrl: string | null;
             /** @example /uploads/categories-banner/123.jpg */
             bannerImageUrl: string | null;
+            /** @example /uploads/categories-menu/123.jpg */
+            menuImageUrl: string | null;
             /** @example 0 */
             sortOrder: number;
             /** @example true */
             lowStockBadgeEnabled: boolean;
+            /** @example true */
+            onlinePurchaseEnabled: boolean;
+            /** @example true */
+            vehicleFitmentEnabled: boolean;
             parentId: number | null;
             parent?: {
                 id: number;
@@ -16032,6 +17364,18 @@ export interface components {
             deliveryExpressPrice: number;
             /** @example 2-4 საათი */
             deliveryExpressTime: string;
+            /** @example 14 */
+            returnPeriodDays: number;
+            /** @example true */
+            checkoutCourierEnabled: boolean;
+            /** @example true */
+            checkoutPickupEnabled: boolean;
+            /** @example true */
+            paymentCardEnabled: boolean;
+            /** @example true */
+            paymentOnDeliveryEnabled: boolean;
+            /** @example true */
+            paymentInStoreEnabled: boolean;
             /** @example 3 */
             fraudVelocityOrderCount: number;
             /** @example 30 */
@@ -16140,6 +17484,18 @@ export interface components {
             deliveryExpressPrice: number;
             /** @example 2-4 საათი */
             deliveryExpressTime: string;
+            /** @example 14 */
+            returnPeriodDays: number;
+            /** @example true */
+            checkoutCourierEnabled: boolean;
+            /** @example true */
+            checkoutPickupEnabled: boolean;
+            /** @example true */
+            paymentCardEnabled: boolean;
+            /** @example true */
+            paymentOnDeliveryEnabled: boolean;
+            /** @example true */
+            paymentInStoreEnabled: boolean;
             /** @example 3 */
             fraudVelocityOrderCount: number;
             /** @example 30 */
@@ -16233,6 +17589,28 @@ export interface components {
         };
         PublicMonitoringStatus: {
             sentryEnabled: boolean;
+        };
+        PublicDeliveryInfo: {
+            tbilisi: {
+                price: number;
+                time: string;
+            };
+            regions: {
+                price: number;
+                time: string;
+            };
+            express: {
+                price: number;
+                time: string;
+            };
+            returnPeriodDays: number;
+            methods: {
+                courier: boolean;
+                pickup: boolean;
+                card: boolean;
+                onDelivery: boolean;
+                inStore: boolean;
+            };
         };
         CreateBrandInput: {
             /** @example Honda */
@@ -16497,6 +17875,117 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        SearchSuggestions: {
+            products: {
+                id: number;
+                name: {
+                    ka: string;
+                    en: string;
+                    ru: string;
+                };
+                slug: string;
+                categorySlug: string;
+                categoryName: {
+                    ka: string;
+                    en: string;
+                    ru: string;
+                };
+                imageUrl: string | null;
+                price: number | null;
+                discountPrice: number | null;
+            }[];
+            vehicleListings: {
+                id: number;
+                title: string;
+                year: number;
+                categorySlug: string;
+                categoryName: {
+                    ka: string;
+                    en: string;
+                    ru: string;
+                };
+                itemSlug: string;
+                imageUrl: string | null;
+                price: number;
+                discountPrice: number | null;
+                /** @enum {string} */
+                priceCurrency: "GEL" | "USD";
+            }[];
+            categories: {
+                id: number;
+                name: {
+                    ka: string;
+                    en: string;
+                    ru: string;
+                };
+                slug: string;
+                parentName: {
+                    ka: string;
+                    en: string;
+                    ru: string;
+                } | null;
+            }[];
+        };
+        CreateTagInput: {
+            /** @example ზეთის შეცვლა */
+            name: string;
+            /** @example ზეთის შეცვლის კომპლექტი */
+            description?: string | null;
+            isActive?: boolean;
+        };
+        UpdateTagInput: {
+            /** @example ზეთის შეცვლა */
+            name?: string;
+            /** @example ზეთის შეცვლის კომპლექტი */
+            description?: string | null;
+            isActive?: boolean;
+        };
+        SetProductTagsInput: {
+            tagIds: number[];
+        };
+        BulkTagProductsInput: {
+            productIds: number[];
+        };
+        Tag: {
+            /** @example 1 */
+            id: number;
+            name: string;
+            description: string | null;
+            isActive: boolean;
+            productCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        BulkTagProductsResult: {
+            changed: number;
+            tag: components["schemas"]["Tag"];
+        };
+        ProductTagRef: {
+            id: number;
+            name: string;
+            isActive: boolean;
+        };
+        TagProduct: {
+            id: number;
+            name: {
+                ka: string;
+                en: string;
+                ru: string;
+            };
+            slug: string;
+            imageUrl: string | null;
+            category: {
+                id: number;
+                name: {
+                    ka: string;
+                    en: string;
+                    ru: string;
+                };
+                slug: string;
+            };
+        };
         CreateProductFitmentInput: {
             vehicleCatalogId: number;
         };
@@ -16669,7 +18158,9 @@ export interface components {
         };
         CheckoutInput: {
             /** @enum {string} */
-            fulfillmentMethod: "CARD" | "COURIER" | "PICKUP";
+            deliveryMethod: "COURIER" | "PICKUP";
+            /** @enum {string} */
+            paymentMethod: "CARD" | "ON_DELIVERY" | "IN_STORE";
             addressId?: number;
             /** @enum {string} */
             deliverySpeed?: "STANDARD" | "EXPRESS";
@@ -16727,6 +18218,26 @@ export interface components {
             promoCodeBlocked: boolean;
             hasStockIssues: boolean;
         };
+        OrderRequest: {
+            id: number;
+            /** @enum {string} */
+            type: "CANCEL" | "RETURN";
+            /** @enum {string} */
+            status: "OPEN" | "RESOLVED";
+            reason: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            resolvedAt: string | null;
+        };
+        CreateOrderRequestInput: {
+            /** @enum {string} */
+            type: "CANCEL" | "RETURN";
+            reason?: string;
+        };
+        ResolveOrderRequestInput: {
+            adminNote?: string;
+        };
         Order: {
             /** @example 1 */
             id: number;
@@ -16734,7 +18245,9 @@ export interface components {
             orderCode: string;
             status: components["schemas"]["LookupItem"];
             /** @enum {string} */
-            fulfillmentMethod: "CARD" | "COURIER" | "PICKUP";
+            deliveryMethod: "COURIER" | "PICKUP";
+            /** @enum {string} */
+            paymentMethod: "CARD" | "ON_DELIVERY" | "IN_STORE";
             shippingSnapshot: {
                 phone: string;
                 city: {
@@ -16780,6 +18293,12 @@ export interface components {
             total: number;
             /** Format: date-time */
             createdAt: string;
+            statusHistory: {
+                status: components["schemas"]["LookupItem"];
+                /** Format: date-time */
+                createdAt: string;
+            }[];
+            requests: components["schemas"]["OrderRequest"][];
         };
         OrderSummary: {
             id: number;
@@ -16815,7 +18334,9 @@ export interface components {
         };
         AdminOrderSummary: components["schemas"]["OrderSummary"] & {
             /** @enum {string} */
-            fulfillmentMethod: "CARD" | "COURIER" | "PICKUP";
+            deliveryMethod: "COURIER" | "PICKUP";
+            /** @enum {string} */
+            paymentMethod: "CARD" | "ON_DELIVERY" | "IN_STORE";
             buyer: {
                 id: number;
                 firstName: string;
@@ -16828,6 +18349,18 @@ export interface components {
             finaSyncStatus: "NOT_APPLICABLE" | "PENDING" | "SYNCED" | "FAILED";
         };
         AdminOrder: components["schemas"]["Order"] & {
+            statusHistory?: {
+                status: components["schemas"]["LookupItem"];
+                /** Format: date-time */
+                createdAt: string;
+                changedBy: {
+                    firstName: string;
+                    lastName: string;
+                } | null;
+            }[];
+            requests?: (components["schemas"]["OrderRequest"] & {
+                adminNote: string | null;
+            })[];
             buyer: {
                 id: number;
                 firstName: string;
@@ -16843,6 +18376,27 @@ export interface components {
             finaOutOperationId: number | null;
             finaLastError: string | null;
             finaPushUncertain: boolean;
+        };
+        AdminOrderRequest: components["schemas"]["OrderRequest"] & {
+            adminNote: string | null;
+            order: {
+                id: number;
+                orderCode: string;
+                total: number;
+                status: components["schemas"]["LookupItem"];
+            };
+            buyer: {
+                id: number;
+                firstName: string;
+                lastName: string;
+                /** Format: email */
+                email: string;
+                phone: string | null;
+            };
+            resolvedBy: {
+                firstName: string;
+                lastName: string;
+            } | null;
         };
         FinaSyncRun: {
             id: number;
@@ -16881,6 +18435,8 @@ export interface components {
             street?: string | null;
             /** @example +995555123456 */
             phone?: string | null;
+            /** @example +995555123456 */
+            whatsappPhone?: string | null;
             /** Format: email */
             email?: string | null;
             /** Format: uri */
@@ -16916,6 +18472,7 @@ export interface components {
             city: components["schemas"]["LookupItem"] | null;
             street: string | null;
             phone: string | null;
+            whatsappPhone: string | null;
             email: string | null;
             facebookUrl: string | null;
             instagramUrl: string | null;
@@ -16965,6 +18522,57 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        UpdateShippingPolicyInput: {
+            content: {
+                ka: string;
+                en: string;
+                ru: string;
+            };
+        };
+        ShippingPolicy: {
+            /** @example 1 */
+            id: number;
+            content: {
+                ka: string;
+                en: string;
+                ru: string;
+            };
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CreateCallbackRequestInput: {
+            vehicleListingId: number;
+            name: string;
+            /** @example +995555123456 */
+            phone: string;
+            preferredTime?: string;
+            note?: string;
+        };
+        ResolveCallbackRequestInput: {
+            adminNote?: string;
+        };
+        CallbackRequest: {
+            id: number;
+            itemTitle: string;
+            vehicleListing: {
+                id: number;
+            } | null;
+            name: string;
+            phone: string;
+            preferredTime: string | null;
+            note: string | null;
+            /** @enum {string} */
+            status: "OPEN" | "RESOLVED";
+            adminNote: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            resolvedAt: string | null;
+            resolvedBy: {
+                firstName: string;
+                lastName: string;
+            } | null;
+        };
         UpdateEmailTemplateInput: {
             subject: {
                 ka: string;
@@ -16981,7 +18589,7 @@ export interface components {
             /** @example 1 */
             id: number;
             /** @enum {string} */
-            key: "ORDER_PLACED" | "ORDER_CONFIRMED" | "ORDER_SHIPPED" | "ORDER_DELIVERED" | "ORDER_CANCELLED" | "NEW_ORDER_ADMIN" | "BIRTHDAY";
+            key: "ORDER_PLACED" | "ORDER_CONFIRMED" | "ORDER_SHIPPED" | "ORDER_DELIVERED" | "ORDER_CANCELLED" | "NEW_ORDER_ADMIN" | "ORDER_REQUEST_ADMIN" | "CALLBACK_REQUEST_ADMIN" | "BIRTHDAY";
             subject: {
                 ka: string;
                 en: string;
@@ -17344,6 +18952,7 @@ export interface components {
                 startDate: string;
                 /** Format: date */
                 endDate: string;
+                isActive: boolean;
                 category: {
                     id: number;
                     name: {
@@ -17390,7 +18999,7 @@ export interface components {
             /** @example 1 */
             id: number;
             /** @enum {string} */
-            type: "DISCOUNTED_PRODUCTS" | "POPULAR_PRODUCTS" | "DISCOUNTED_VEHICLES" | "POPULAR_VEHICLES" | "DISCOUNTED_MIXED" | "POPULAR_MIXED" | "FEATURED_MIXED" | "CATEGORIES" | "POPULAR_FOR_VEHICLE" | "RECOMMENDED_FOR_YOU" | "RECENTLY_VIEWED";
+            type: "DISCOUNTED_PRODUCTS" | "POPULAR_PRODUCTS" | "DISCOUNTED_VEHICLES" | "POPULAR_VEHICLES" | "DISCOUNTED_MIXED" | "POPULAR_MIXED" | "FEATURED_MIXED" | "CATEGORIES" | "POPULAR_FOR_VEHICLE" | "RECOMMENDED_FOR_YOU" | "RECENTLY_VIEWED" | "SEASONAL_PRODUCTS";
             title: {
                 ka: string;
                 en: string;

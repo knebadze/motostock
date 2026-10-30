@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -98,6 +99,16 @@ export function HeroSlider({
   const t = useTranslations("Common.heroSlider");
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  // Pause/play (WCAG 2.2.2): the shopper's explicit choice; until they make
+  // one, autoplay is off for anyone with the OS "reduce motion" setting.
+  const reducedMotion = usePrefersReducedMotion();
+  const [userStopped, setUserStopped] = useState<boolean | null>(null);
+  const autoplayStopped = userStopped ?? reducedMotion;
+  // Set to the current slide's index when focus enters the slider (e.g. the
+  // shopper starts filling the vehicle-search form) — autoplay holds while
+  // that slide is still showing, so it isn't swapped out mid-input. Any
+  // slide change (swipe/dots/arrows) releases it.
+  const [focusHoldIndex, setFocusHoldIndex] = useState<number | null>(null);
   // Touch-swipe support — previously the only way to change slides on a
   // touch device was the arrow buttons, which are hidden below the `sm`
   // breakpoint (`hidden sm:flex`), and the 10px dots at the bottom, leaving
@@ -128,8 +139,12 @@ export function HeroSlider({
     }
   }
 
+  const heldForInput = focusHoldIndex === index;
+
+  // Restarts on every slide change (index in the deps), so a manual swipe
+  // gets a full AUTOPLAY_MS before the next automatic advance.
   useEffect(() => {
-    if (slides.length <= 1 || paused) return;
+    if (slides.length <= 1 || paused || heldForInput || autoplayStopped) return;
     const timer = setInterval(() => {
       // Not while the tab is hidden — no one sees it, and each change would
       // start loading the next slide's image for nothing.
@@ -137,18 +152,38 @@ export function HeroSlider({
       setIndex((current) => (current + 1) % slides.length);
     }, AUTOPLAY_MS);
     return () => clearInterval(timer);
-  }, [slides.length, paused]);
+  }, [slides.length, paused, heldForInput, index, autoplayStopped]);
 
   const slide = slides[index];
   const imageUrl = resolveMediaUrl(slide.imageUrl);
+  // On phones a 4:3 box (~270px tall at 360px wide) can't fit the stacked
+  // vehicle-search/category form, and overflow-hidden clipped its button.
+  // When the slider has any form slide, phones get one shared min-height
+  // for every slide (so autoplay doesn't make the page jump between slide
+  // types), and a form slide's content is in normal flow so it can grow
+  // past it if needed (e.g. with the garage picker). sm+ is unchanged.
+  const hasFormSlide = slides.some((item) => item.type === "VEHICLE_SEARCH" || item.type === "CATEGORY_FILTER");
+  const isFormSlide = slide.type === "VEHICLE_SEARCH" || slide.type === "CATEGORY_FILTER";
 
   return (
     <section
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      aria-roledescription="carousel"
+      aria-label={t("regionLabel")}
+      // Hover-pause for a real mouse only: on phones a tap fires emulated
+      // mouseenter (after touchend) with no mouseleave ever following, which
+      // used to stop autoplay for good after the first touch.
+      onPointerEnter={(event) => {
+        if (event.pointerType === "mouse") setPaused(true);
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType === "mouse") setPaused(false);
+      }}
+      onFocusCapture={() => setFocusHoldIndex(index)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className="relative aspect-4/3 w-full overflow-hidden border-b border-border sm:aspect-video lg:aspect-21/9 lg:max-h-130"
+      className={`relative w-full overflow-hidden border-b border-border sm:aspect-video sm:min-h-0 lg:aspect-21/9 lg:max-h-130 ${
+        hasFormSlide ? "min-h-[34rem]" : "aspect-4/3"
+      }`}
     >
       {imageUrl ? (
         <Image
@@ -178,7 +213,7 @@ export function HeroSlider({
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 
           <div
-            className={`absolute inset-0 flex flex-col px-4 py-8 sm:px-8 sm:py-12 lg:px-16 ${VERTICAL_POSITION_CLASSES[slide.verticalPosition]}`}
+            className={`${isFormSlide ? "relative min-h-[34rem] sm:absolute sm:min-h-0" : "absolute"} inset-0 flex flex-col px-4 py-8 sm:px-8 sm:py-12 lg:px-16 ${VERTICAL_POSITION_CLASSES[slide.verticalPosition]}`}
           >
             <div
               className={`mx-auto flex w-full max-w-6xl flex-col gap-4 ${TEXT_POSITION_CLASSES[slide.textPosition]}`}
@@ -187,7 +222,7 @@ export function HeroSlider({
                   stable <h1> (see [locale]/page.tsx), since this per-slide
                   heading is conditional (absent entirely for POSTER slides)
                   and changes with whichever slide is currently showing. */}
-              <h2 className="max-w-2xl text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
+              <h2 className="max-w-2xl text-2xl font-extrabold tracking-tight text-white sm:text-5xl">
                 {slide.title[locale]}
               </h2>
               {slide.type === "DISCOUNT" && slide.bulkDiscountEvent && (
@@ -262,6 +297,18 @@ export function HeroSlider({
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="size-5">
               <path d="m9 18 6-6-6-6" />
             </svg>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setUserStopped(!autoplayStopped)}
+            aria-label={autoplayStopped ? t("play") : t("pause")}
+            aria-pressed={autoplayStopped}
+            className="absolute bottom-3 right-3 z-10 flex size-8 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-3.5" aria-hidden>
+                {autoplayStopped ? <path d="M8 5v14l11-7z" /> : <path d="M7 5h4v14H7zM13 5h4v14h-4z" />}
+              </svg>
           </button>
 
           <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2">

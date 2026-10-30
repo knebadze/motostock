@@ -9,7 +9,11 @@ export type RevalidatableTag =
   | "terms"
   | "privacy-policy"
   | "faq-public"
-  | "vehicle-catalog";
+  | "shipping-policy"
+  | "delivery-info"
+  | "vehicle-catalog"
+  // Every public cache at once — the admin "clear cache" action.
+  | "all";
 
 export async function revalidatePublicCache(tag: RevalidatableTag): Promise<void> {
   try {

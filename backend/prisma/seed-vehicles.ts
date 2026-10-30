@@ -1,21 +1,14 @@
 import "dotenv/config";
 import { prisma } from "../src/config/prisma.js";
 
-// Demo vehicle-for-sale catalog: one Brand + Model + VehicleCatalog +
-// VehicleListing per leaf "transport" category (all 11 motorcycle subtypes
-// plus ATV/scooter/kick-scooter). Deliberately mixes fully-specified and
-// partially-specified vehicles (only required + a couple of optional spec
-// fields) to exercise how the admin UI handles missing optional data, and
-// every description is real multi-paragraph/bold/list HTML to exercise the
-// rich text editor. Separate from prisma/seed.ts and prisma/seed-products.ts
-// since this is demo/sample content, not baseline reference data. Run via
+// Demo vehicles for sale: VehicleListing rows attached to existing vehicle
+// catalog entries (found by brand + model name), so run
+// prisma/seed-brands.ts and prisma/seed-catalog.ts first — this seed creates
+// no brands, models or catalog entries of its own. Every description is real
+// multi-paragraph/bold/list HTML to exercise the rich text editor. Separate
+// from prisma/seed.ts and prisma/seed-products.ts since this is demo/sample
+// content, not baseline reference data. Run via
 // `npx tsx prisma/seed-vehicles.ts` — safe to re-run (skips existing rows).
-
-async function categoryId(slug: string): Promise<number> {
-  const category = await prisma.category.findUnique({ where: { slug } });
-  if (!category) throw new Error(`Unknown category slug: ${slug}`);
-  return category.id;
-}
 
 async function lookupId(
   delegate: { findUnique: (args: { where: { key: string } }) => Promise<{ id: number } | null> },
@@ -26,48 +19,9 @@ async function lookupId(
   return row.id;
 }
 
-type BrandSeed = { slug: string; name: string };
-
-async function getOrCreateBrand(seed: BrandSeed) {
-  return prisma.brand.upsert({
-    where: { slug: seed.slug },
-    update: {},
-    create: seed,
-  });
-}
-
-type FullSpec = {
-  engineVolumeCc?: number;
-  enginePowerHp?: number;
-  cylinderCount?: number;
-  gearCount?: number;
-  seatCount?: number;
-  weightKg?: number;
-  seatHeightMm?: number;
-  fuelTankLiters?: number;
-  topSpeedKmh?: number;
-  hasAbs?: boolean;
-  fuelTypeKey?: string;
-  transmissionTypeKey?: string;
-  coolingTypeKey?: string;
-  finalDriveTypeKey?: string;
-  driveTypeKey?: string;
-  startTypeKey?: string;
-  powertrainTypeKey?: string;
-  motorPowerWatt?: number;
-  batteryCapacityWh?: number;
-  rangeKm?: number;
-  chargingTimeMinutes?: number;
-};
-
 type VehicleSeed = {
-  categorySlug: string;
-  brand: BrandSeed;
-  modelSlug: string;
+  brandName: string;
   modelName: string;
-  yearFrom: number;
-  yearTo: number;
-  spec: FullSpec;
   listing: {
     year: number;
     conditionKey: string;
@@ -83,31 +37,8 @@ type VehicleSeed = {
 
 const VEHICLES: VehicleSeed[] = [
   {
-    categorySlug: "moto-naked",
-    brand: { slug: "kawasaki", name: "Kawasaki" },
-    modelSlug: "z900",
+    brandName: "Kawasaki",
     modelName: "Z900",
-    yearFrom: 2020,
-    yearTo: 2025,
-    spec: {
-      engineVolumeCc: 948,
-      enginePowerHp: 125,
-      cylinderCount: 4,
-      gearCount: 6,
-      seatCount: 2,
-      weightKg: 212,
-      seatHeightMm: 795,
-      fuelTankLiters: 17,
-      topSpeedKmh: 235,
-      hasAbs: true,
-      fuelTypeKey: "PETROL",
-      transmissionTypeKey: "MANUAL",
-      coolingTypeKey: "LIQUID",
-      finalDriveTypeKey: "CHAIN",
-      driveTypeKey: "TWO_WD",
-      startTypeKey: "ELECTRIC",
-      powertrainTypeKey: "COMBUSTION",
-    },
     listing: {
       year: 2023,
       conditionKey: "NEW",
@@ -124,31 +55,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-sportbike",
-    brand: { slug: "yamaha", name: "Yamaha" },
-    modelSlug: "yzf-r6",
+    brandName: "Yamaha",
     modelName: "YZF-R6",
-    yearFrom: 2017,
-    yearTo: 2020,
-    spec: {
-      engineVolumeCc: 599,
-      enginePowerHp: 118,
-      cylinderCount: 4,
-      gearCount: 6,
-      seatCount: 2,
-      weightKg: 190,
-      seatHeightMm: 850,
-      fuelTankLiters: 17,
-      topSpeedKmh: 260,
-      hasAbs: true,
-      fuelTypeKey: "PETROL",
-      transmissionTypeKey: "MANUAL",
-      coolingTypeKey: "LIQUID",
-      finalDriveTypeKey: "CHAIN",
-      driveTypeKey: "TWO_WD",
-      startTypeKey: "ELECTRIC",
-      powertrainTypeKey: "COMBUSTION",
-    },
     listing: {
       year: 2019,
       conditionKey: "NEW",
@@ -165,31 +73,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-sportbike",
-    brand: { slug: "kawasaki", name: "Kawasaki" },
-    modelSlug: "ninja-zx-6r",
+    brandName: "Kawasaki",
     modelName: "Ninja ZX-6R",
-    yearFrom: 2019,
-    yearTo: 2023,
-    spec: {
-      engineVolumeCc: 636,
-      enginePowerHp: 127,
-      cylinderCount: 4,
-      gearCount: 6,
-      seatCount: 2,
-      weightKg: 196,
-      seatHeightMm: 830,
-      fuelTankLiters: 17,
-      topSpeedKmh: 255,
-      hasAbs: true,
-      fuelTypeKey: "PETROL",
-      transmissionTypeKey: "MANUAL",
-      coolingTypeKey: "LIQUID",
-      finalDriveTypeKey: "CHAIN",
-      driveTypeKey: "TWO_WD",
-      startTypeKey: "ELECTRIC",
-      powertrainTypeKey: "COMBUSTION",
-    },
     listing: {
       year: 2021,
       conditionKey: "NEW",
@@ -206,31 +91,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-sportbike",
-    brand: { slug: "suzuki", name: "Suzuki" },
-    modelSlug: "gsx-r750",
+    brandName: "Suzuki",
     modelName: "GSX-R750",
-    yearFrom: 2018,
-    yearTo: 2022,
-    spec: {
-      engineVolumeCc: 750,
-      enginePowerHp: 148,
-      cylinderCount: 4,
-      gearCount: 6,
-      seatCount: 2,
-      weightKg: 190,
-      seatHeightMm: 810,
-      fuelTankLiters: 16,
-      topSpeedKmh: 265,
-      hasAbs: true,
-      fuelTypeKey: "PETROL",
-      transmissionTypeKey: "MANUAL",
-      coolingTypeKey: "LIQUID",
-      finalDriveTypeKey: "CHAIN",
-      driveTypeKey: "TWO_WD",
-      startTypeKey: "ELECTRIC",
-      powertrainTypeKey: "COMBUSTION",
-    },
     listing: {
       year: 2020,
       conditionKey: "USED",
@@ -247,31 +109,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-sportbike",
-    brand: { slug: "honda", name: "Honda" },
-    modelSlug: "cbr600rr",
+    brandName: "Honda",
     modelName: "CBR600RR",
-    yearFrom: 2019,
-    yearTo: 2024,
-    spec: {
-      engineVolumeCc: 599,
-      enginePowerHp: 121,
-      cylinderCount: 4,
-      gearCount: 6,
-      seatCount: 2,
-      weightKg: 194,
-      seatHeightMm: 820,
-      fuelTankLiters: 18,
-      topSpeedKmh: 260,
-      hasAbs: true,
-      fuelTypeKey: "PETROL",
-      transmissionTypeKey: "MANUAL",
-      coolingTypeKey: "LIQUID",
-      finalDriveTypeKey: "CHAIN",
-      driveTypeKey: "TWO_WD",
-      startTypeKey: "ELECTRIC",
-      powertrainTypeKey: "COMBUSTION",
-    },
     listing: {
       year: 2022,
       conditionKey: "NEW",
@@ -288,31 +127,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-sportbike",
-    brand: { slug: "ducati", name: "Ducati" },
-    modelSlug: "panigale-v2",
+    brandName: "Ducati",
     modelName: "Panigale V2",
-    yearFrom: 2020,
-    yearTo: 2024,
-    spec: {
-      engineVolumeCc: 955,
-      enginePowerHp: 155,
-      cylinderCount: 2,
-      gearCount: 6,
-      seatCount: 2,
-      weightKg: 200,
-      seatHeightMm: 840,
-      fuelTankLiters: 17,
-      topSpeedKmh: 270,
-      hasAbs: true,
-      fuelTypeKey: "PETROL",
-      transmissionTypeKey: "MANUAL",
-      coolingTypeKey: "LIQUID",
-      finalDriveTypeKey: "CHAIN",
-      driveTypeKey: "TWO_WD",
-      startTypeKey: "ELECTRIC",
-      powertrainTypeKey: "COMBUSTION",
-    },
     listing: {
       year: 2023,
       conditionKey: "NEW",
@@ -329,31 +145,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-sportbike",
-    brand: { slug: "bmw", name: "BMW" },
-    modelSlug: "s1000rr",
+    brandName: "BMW",
     modelName: "S 1000 RR",
-    yearFrom: 2021,
-    yearTo: 2025,
-    spec: {
-      engineVolumeCc: 999,
-      enginePowerHp: 210,
-      cylinderCount: 4,
-      gearCount: 6,
-      seatCount: 2,
-      weightKg: 197,
-      seatHeightMm: 824,
-      fuelTankLiters: 16.5,
-      topSpeedKmh: 299,
-      hasAbs: true,
-      fuelTypeKey: "PETROL",
-      transmissionTypeKey: "MANUAL",
-      coolingTypeKey: "LIQUID",
-      finalDriveTypeKey: "CHAIN",
-      driveTypeKey: "TWO_WD",
-      startTypeKey: "ELECTRIC",
-      powertrainTypeKey: "COMBUSTION",
-    },
     listing: {
       year: 2024,
       conditionKey: "NEW",
@@ -370,17 +163,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-cruiser",
-    brand: { slug: "harley-davidson", name: "Harley-Davidson" },
-    modelSlug: "iron-883",
-    modelName: "Iron 883",
-    yearFrom: 2015,
-    yearTo: 2022,
-    spec: {
-      engineVolumeCc: 883,
-      cylinderCount: 2,
-      fuelTypeKey: "PETROL",
-    },
+    brandName: "Harley-Davidson",
+    modelName: "Sportster Iron 883",
     listing: {
       year: 2018,
       conditionKey: "USED",
@@ -397,13 +181,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-touring",
-    brand: { slug: "honda", name: "Honda" },
-    modelSlug: "gold-wing",
-    modelName: "Gold Wing",
-    yearFrom: 2018,
-    yearTo: 2024,
-    spec: { engineVolumeCc: 1833, fuelTypeKey: "PETROL" },
+    brandName: "Honda",
+    modelName: "Gold Wing Audio Comfort",
     listing: {
       year: 2021,
       conditionKey: "NEW",
@@ -420,31 +199,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-adventure",
-    brand: { slug: "bmw", name: "BMW" },
-    modelSlug: "r-1250-gs",
+    brandName: "BMW",
     modelName: "R 1250 GS",
-    yearFrom: 2019,
-    yearTo: 2025,
-    spec: {
-      engineVolumeCc: 1254,
-      enginePowerHp: 136,
-      cylinderCount: 2,
-      gearCount: 6,
-      seatCount: 2,
-      weightKg: 249,
-      seatHeightMm: 850,
-      fuelTankLiters: 20,
-      topSpeedKmh: 220,
-      hasAbs: true,
-      fuelTypeKey: "PETROL",
-      transmissionTypeKey: "MANUAL",
-      coolingTypeKey: "LIQUID",
-      finalDriveTypeKey: "SHAFT",
-      driveTypeKey: "TWO_WD",
-      startTypeKey: "ELECTRIC",
-      powertrainTypeKey: "COMBUSTION",
-    },
     listing: {
       year: 2022,
       conditionKey: "NEW",
@@ -461,13 +217,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-dual-sport",
-    brand: { slug: "suzuki", name: "Suzuki" },
-    modelSlug: "dr650",
-    modelName: "DR650",
-    yearFrom: 2016,
-    yearTo: 2023,
-    spec: { engineVolumeCc: 644, fuelTypeKey: "PETROL" },
+    brandName: "Suzuki",
+    modelName: "DR 650",
     listing: {
       year: 2020,
       conditionKey: "USED",
@@ -484,31 +235,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-enduro",
-    brand: { slug: "ktm", name: "KTM" },
-    modelSlug: "300-exc",
+    brandName: "KTM",
     modelName: "300 EXC",
-    yearFrom: 2021,
-    yearTo: 2025,
-    spec: {
-      engineVolumeCc: 293,
-      enginePowerHp: 55,
-      cylinderCount: 1,
-      gearCount: 6,
-      seatCount: 1,
-      weightKg: 104,
-      seatHeightMm: 955,
-      fuelTankLiters: 9,
-      topSpeedKmh: 130,
-      hasAbs: false,
-      fuelTypeKey: "PETROL",
-      transmissionTypeKey: "MANUAL",
-      coolingTypeKey: "LIQUID",
-      finalDriveTypeKey: "CHAIN",
-      driveTypeKey: "TWO_WD",
-      startTypeKey: "KICK",
-      powertrainTypeKey: "COMBUSTION",
-    },
     listing: {
       year: 2023,
       conditionKey: "NEW",
@@ -525,57 +253,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-supermoto",
-    brand: { slug: "ktm", name: "KTM" },
-    modelSlug: "690-smc-r",
-    modelName: "690 SMC R",
-    yearFrom: 2019,
-    yearTo: 2024,
-    spec: { engineVolumeCc: 693, fuelTypeKey: "PETROL" },
-    listing: {
-      year: 2022,
-      conditionKey: "NEW",
-      statusKey: "SOLD",
-      colorKey: "ORANGE",
-      price: 11200,
-      stockQuantity: 0,
-      descriptionKa:
-        "<p><strong>KTM 690 SMC R</strong> — ერთცილინდრიანი სუპერმოტო, მკვეთრი მართვადობითა და დიდი სიმძლავრით.</p>",
-      descriptionEn: "<p><strong>KTM 690 SMC R</strong> — a single-cylinder supermoto with razor-sharp handling and strong power.</p>",
-      descriptionRu: "<p><strong>KTM 690 SMC R</strong> — одноцилиндровый супермото с острой управляемостью и хорошей мощностью.</p>",
-    },
-  },
-  {
-    categorySlug: "moto-cafe-racer",
-    brand: { slug: "triumph", name: "Triumph" },
-    modelSlug: "street-twin",
-    modelName: "Street Twin",
-    yearFrom: 2017,
-    yearTo: 2023,
-    spec: { engineVolumeCc: 900, fuelTypeKey: "PETROL" },
-    listing: {
-      year: 2020,
-      conditionKey: "NEW",
-      statusKey: "AVAILABLE",
-      colorKey: "BLACK",
-      price: 9500,
-      stockQuantity: 2,
-      descriptionKa:
-        "<p><strong>Triumph Street Twin</strong> — ნეო-რეტრო სტილი, თანამედროვე საიმედოობით.</p><p>კლასიკური silhouette, <em>თანამედროვე</em> ელექტრონიკის პაკეტით.</p>",
-      descriptionEn:
-        "<p><strong>Triumph Street Twin</strong> — neo-retro styling with modern reliability.</p><p>A classic silhouette with a <em>modern</em> electronics package.</p>",
-      descriptionRu:
-        "<p><strong>Triumph Street Twin</strong> — нео-ретро стиль с современной надёжностью.</p><p>Классический силуэт с <em>современным</em> пакетом электроники.</p>",
-    },
-  },
-  {
-    categorySlug: "moto-bobber",
-    brand: { slug: "triumph", name: "Triumph" },
-    modelSlug: "bonneville-bobber",
+    brandName: "Triumph",
     modelName: "Bonneville Bobber",
-    yearFrom: 2017,
-    yearTo: 2023,
-    spec: { engineVolumeCc: 1200, fuelTypeKey: "PETROL" },
     listing: {
       year: 2021,
       conditionKey: "USED",
@@ -590,13 +269,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "moto-sport-touring",
-    brand: { slug: "kawasaki", name: "Kawasaki" },
-    modelSlug: "ninja-1000sx",
+    brandName: "Kawasaki",
     modelName: "Ninja 1000SX",
-    yearFrom: 2020,
-    yearTo: 2025,
-    spec: { engineVolumeCc: 1043, fuelTypeKey: "PETROL" },
     listing: {
       year: 2023,
       conditionKey: "NEW",
@@ -611,13 +285,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "atvs",
-    brand: { slug: "can-am", name: "Can-Am" },
-    modelSlug: "outlander",
-    modelName: "Outlander",
-    yearFrom: 2019,
-    yearTo: 2024,
-    spec: { engineVolumeCc: 570, fuelTypeKey: "PETROL" },
+    brandName: "Can-Am",
+    modelName: "Outlander 650 EFI XT",
     listing: {
       year: 2021,
       conditionKey: "USED",
@@ -631,13 +300,8 @@ const VEHICLES: VehicleSeed[] = [
     },
   },
   {
-    categorySlug: "scooters",
-    brand: { slug: "honda", name: "Honda" },
-    modelSlug: "pcx150",
+    brandName: "Honda",
     modelName: "PCX150",
-    yearFrom: 2018,
-    yearTo: 2024,
-    spec: { engineVolumeCc: 150, fuelTypeKey: "PETROL" },
     listing: {
       year: 2022,
       conditionKey: "USED",
@@ -650,111 +314,26 @@ const VEHICLES: VehicleSeed[] = [
       descriptionRu: "<p><strong>Honda PCX150</strong> — экономичный городской скутер с автоматической коробкой.</p>",
     },
   },
-  {
-    categorySlug: "kick-scooters",
-    brand: { slug: "xiaomi", name: "Xiaomi" },
-    modelSlug: "electric-scooter-4",
-    modelName: "Electric Scooter 4",
-    yearFrom: 2022,
-    yearTo: 2025,
-    spec: {
-      weightKg: 18,
-      topSpeedKmh: 25,
-      hasAbs: false,
-      fuelTypeKey: "ELECTRIC",
-      transmissionTypeKey: "AUTOMATIC",
-      startTypeKey: "ELECTRIC",
-      powertrainTypeKey: "ELECTRIC",
-      motorPowerWatt: 300,
-      batteryCapacityWh: 275,
-      rangeKm: 30,
-      chargingTimeMinutes: 360,
-    },
-    listing: {
-      year: 2023,
-      conditionKey: "NEW",
-      statusKey: "AVAILABLE",
-      colorKey: "BLACK",
-      price: 650,
-      stockQuantity: 6,
-      descriptionKa:
-        "<p><strong>Xiaomi Electric Scooter 4</strong> — მსუბუქი ელექტრო სქროლი ყოველდღიური საქალაქო გადაადგილებისთვის.</p><ul><li>დამუხტვის დრო: 6 საათი</li><li>მანძილი ერთ დამუხტვაზე: 30 კმ</li></ul>",
-      descriptionEn:
-        "<p><strong>Xiaomi Electric Scooter 4</strong> — a lightweight electric kick scooter for daily city commuting.</p><ul><li>Charging time: 6 hours</li><li>Range per charge: 30 km</li></ul>",
-      descriptionRu:
-        "<p><strong>Xiaomi Electric Scooter 4</strong> — лёгкий электросамокат для ежедневных городских поездок.</p><ul><li>Время зарядки: 6 часов</li><li>Запас хода: 30 км</li></ul>",
-    },
-  },
 ];
 
 async function seedVehicle(seed: VehicleSeed) {
-  const catId = await categoryId(seed.categorySlug);
-  const brand = await getOrCreateBrand(seed.brand);
-
-  const model = await prisma.model.upsert({
-    where: { brandId_slug: { brandId: brand.id, slug: seed.modelSlug } },
-    update: {},
-    create: {
-      brandId: brand.id,
-      categoryId: catId,
-      slug: seed.modelSlug,
-      name: seed.modelName,
-    },
+  const label = `${seed.brandName} ${seed.modelName}`;
+  // The model's catalog entry whose years cover the listing's year, else its
+  // first one.
+  const entries = await prisma.vehicleCatalog.findMany({
+    where: { brand: { name: seed.brandName }, model: { name: seed.modelName } },
+    orderBy: { id: "asc" },
   });
-
-  const spec = seed.spec;
-  // No more @@unique on (modelId, variant, yearFrom, yearTo) in the Prisma
-  // schema (migration 20260908130000 replaced it with a raw NULLS NOT
-  // DISTINCT index, which Prisma's DSL can't express as a composite-unique
-  // input) — find-then-create instead of upsert, same as the app's own
-  // assertNoDuplicate pattern. Fine for a single-threaded seed script.
-  let vehicleCatalog = await prisma.vehicleCatalog.findFirst({
-    where: { modelId: model.id, variant: "", yearFrom: seed.yearFrom, yearTo: seed.yearTo },
-  });
-  if (!vehicleCatalog) {
-    vehicleCatalog = await prisma.vehicleCatalog.create({
-      data: {
-        brandId: brand.id,
-        modelId: model.id,
-        variant: "",
-        yearFrom: seed.yearFrom,
-        yearTo: seed.yearTo,
-        engineVolumeCc: spec.engineVolumeCc,
-        enginePowerHp: spec.enginePowerHp,
-        cylinderCount: spec.cylinderCount,
-        gearCount: spec.gearCount,
-        seatCount: spec.seatCount,
-        weightKg: spec.weightKg,
-        seatHeightMm: spec.seatHeightMm,
-        fuelTankLiters: spec.fuelTankLiters,
-        topSpeedKmh: spec.topSpeedKmh,
-        hasAbs: spec.hasAbs,
-        fuelTypeId: spec.fuelTypeKey ? await lookupId(prisma.fuelType, spec.fuelTypeKey) : null,
-        transmissionTypeId: spec.transmissionTypeKey
-          ? await lookupId(prisma.transmissionType, spec.transmissionTypeKey)
-          : null,
-        coolingTypeId: spec.coolingTypeKey ? await lookupId(prisma.coolingType, spec.coolingTypeKey) : null,
-        finalDriveTypeId: spec.finalDriveTypeKey
-          ? await lookupId(prisma.finalDriveType, spec.finalDriveTypeKey)
-          : null,
-        driveTypeId: spec.driveTypeKey ? await lookupId(prisma.driveType, spec.driveTypeKey) : null,
-        startTypeId: spec.startTypeKey ? await lookupId(prisma.startType, spec.startTypeKey) : null,
-        powertrainTypeId: spec.powertrainTypeKey
-          ? await lookupId(prisma.powertrainType, spec.powertrainTypeKey)
-          : null,
-        motorPowerWatt: spec.motorPowerWatt,
-        batteryCapacityWh: spec.batteryCapacityWh,
-        rangeKm: spec.rangeKm,
-        chargingTimeMinutes: spec.chargingTimeMinutes,
-      },
-    });
-  }
+  if (entries.length === 0) throw new Error(`No catalog entry for ${label} (run prisma/seed-catalog.ts first)`);
+  const year = seed.listing.year;
+  const vehicleCatalog =
+    entries.find((entry) => (entry.yearFrom ?? year) <= year && year <= (entry.yearTo ?? year)) ?? entries[0];
 
   const existingListing = await prisma.vehicleListing.findFirst({
     where: { vehicleCatalogId: vehicleCatalog.id },
   });
   if (existingListing) {
-    console.log(`Listing already exists for ${seed.brand.name} ${seed.modelName}, skipping`);
+    console.log(`Listing already exists for ${label}, skipping`);
     return;
   }
 
@@ -773,7 +352,7 @@ async function seedVehicle(seed: VehicleSeed) {
       descriptionRu: listing.descriptionRu,
     },
   });
-  console.log(`Created listing: ${seed.brand.name} ${seed.modelName} (${seed.categorySlug})`);
+  console.log(`Created listing: ${label}`);
 }
 
 async function main() {

@@ -54,6 +54,8 @@ export const getProductsPageFromServer = cache(async (
     params: { categoryId, vehicleCatalogId, page, pageSize: SHOP_PAGE_SIZE, sortBy },
     fallback: { items: [], total: 0, page: 1, pageSize: SHOP_PAGE_SIZE },
     extract: (data) => data,
+    // Category page only: an empty page 2+ 404s, so an outage must 5xx.
+    throwIfUnavailable: true,
   });
 });
 
@@ -62,11 +64,13 @@ export const getProductsPageFromServer = cache(async (
 // pages/filters/sorts itself (listProductsPage), like the /shop page.
 export const getCompatibleProductsPageFromServer = cache(async (
   vehicleCatalogId: number,
+  page = 1,
 ): Promise<AdminListPage<ProductListItem>> => {
   return fetchFromServer<AdminListPage<ProductListItem>, AdminListPage<ProductListItem>>("/products", {
-    params: { vehicleCatalogId, page: 1, pageSize: SHOP_PAGE_SIZE, sortBy: "newest" },
-    fallback: { items: [], total: 0, page: 1, pageSize: SHOP_PAGE_SIZE },
+    params: { vehicleCatalogId, page, pageSize: SHOP_PAGE_SIZE, sortBy: "newest" },
+    fallback: { items: [], total: 0, page, pageSize: SHOP_PAGE_SIZE },
     extract: (data) => data,
+    throwIfUnavailable: true,
   });
 });
 
@@ -107,6 +111,16 @@ export const getFeaturedProductsFromServer = cache(async (limit: number): Promis
   });
 });
 
+// Homepage "seasonal products" slider — products whose season attribute
+// matches the current season (resolved by the backend, see lib/season.ts).
+export const getSeasonalProductsFromServer = cache(async (limit: number): Promise<ProductListItem[]> => {
+  return fetchFromServer<{ items: ProductListItem[] }, ProductListItem[]>("/products", {
+    params: { seasonal: true, limit },
+    fallback: [],
+    extract: (data) => data.items,
+  });
+});
+
 // Homepage "popular products" slider.
 export const getPopularProductsFromServer = cache(async (limit: number): Promise<ProductListItem[]> => {
   return fetchFromServer<{ items: ProductListItem[] }, ProductListItem[]>("/products/popular", {
@@ -123,6 +137,7 @@ const getCachedProductDetail = cache(async (slug: string, vehicleCatalogId: stri
     params: { vehicleCatalogId: vehicleCatalogId || undefined },
     fallback: null,
     extract: (data) => data.item,
+    throwIfUnavailable: true,
   });
 });
 
@@ -249,6 +264,7 @@ export const getShopCategoryFacetsFromServer = cache(async (filters: {
   brandIds?: number[];
   onSale?: boolean;
   bulkDiscountEventId?: number;
+  search?: string;
 }): Promise<NamedRef[]> => {
   // Public endpoint (the /shop page) — must not bail out just because there
   // is no admin session cookie, same fix as getCategoriesFromServer.
@@ -259,6 +275,7 @@ export const getShopCategoryFacetsFromServer = cache(async (filters: {
       brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
       onSale: filters.onSale || undefined,
       bulkDiscountEventId: filters.bulkDiscountEventId,
+      search: filters.search || undefined,
     },
     fallback: [],
     extract: (data) => data.items,
@@ -274,6 +291,7 @@ export const getShopProductsPageFromServer = cache(async (filters: {
   brandIds?: number[];
   onSale?: boolean;
   bulkDiscountEventId?: number;
+  search?: string;
 }): Promise<AdminListPage<ProductListItem>> => {
   return fetchFromServer<AdminListPage<ProductListItem>, AdminListPage<ProductListItem>>("/products", {
     params: {
@@ -281,6 +299,7 @@ export const getShopProductsPageFromServer = cache(async (filters: {
       brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
       onSale: filters.onSale || undefined,
       bulkDiscountEventId: filters.bulkDiscountEventId,
+      search: filters.search || undefined,
       page: 1,
       pageSize: SHOP_PAGE_SIZE,
       sortBy: "newest",

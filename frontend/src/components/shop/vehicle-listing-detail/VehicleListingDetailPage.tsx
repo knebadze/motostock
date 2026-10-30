@@ -1,12 +1,15 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/format";
 import { useVehiclePriceDisplay } from "@/lib/useVehiclePriceDisplay";
 import { WishlistButton } from "@/components/shared/WishlistButton";
 import { CompareButton } from "@/components/shared/CompareButton";
 import { AddToCartButton } from "@/components/shared/AddToCartButton";
+import { ShowroomPurchaseNotice } from "@/components/shared/ShowroomPurchaseNotice";
+import { MobileActionBar } from "@/components/shared/MobileActionBar";
+import { ShowroomContactActions } from "./ShowroomContactActions";
 import type { VehicleListing } from "@/lib/api/vehicle-listings";
 import type { Category } from "@/lib/api/categories";
 import { Breadcrumb } from "../Breadcrumb";
@@ -17,23 +20,35 @@ import { CurrencyToggleButton } from "../CurrencyToggleButton";
 export function VehicleListingDetailPage({
   listing,
   breadcrumbChain,
+  purchasableOnline,
   similarListings,
   descriptionHtml,
+  pageUrl,
+  whatsappPhone,
+  whatsappChatEnabled,
 }: {
   listing: VehicleListing;
   breadcrumbChain: Category[];
+  // False when the listing's category is switched off for online purchase
+  // (admin) — "visit the showroom" instead of add-to-cart.
+  purchasableOnline: boolean;
   // Streamed server section (see the route page) — the listing itself
   // doesn't wait for the similar-listings query.
   similarListings: ReactNode;
   // Current locale's description, sanitized on the server (see
   // ProductDetailPage's identical prop).
   descriptionHtml: string | null;
+  // For the "call me back" / WhatsApp actions on a showroom-only listing.
+  pageUrl: string;
+  whatsappPhone: string | null;
+  whatsappChatEnabled: boolean;
 }) {
   const t = useTranslations("VehicleListingDetail");
   const tShop = useTranslations("Shop");
   const tCart = useTranslations("Cart");
 
   const outOfStock = listing.stockQuantity === 0;
+  const buyRowRef = useRef<HTMLDivElement>(null);
   const priceDisplay = useVehiclePriceDisplay(listing.priceCurrency);
   const title = [listing.vehicleCatalog.model.name, listing.vehicleCatalog.variant]
     .filter(Boolean)
@@ -87,17 +102,32 @@ export function VehicleListingDetailPage({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <AddToCartButton
-              itemType="VEHICLE_LISTING"
-              id={listing.id}
-              stockQuantity={listing.stockQuantity}
-              disabled={outOfStock}
-              labelAdd={tCart("addToCart")}
-              labelAdded={tCart("addedToCart")}
-              labelOutOfStock={tCart("outOfStock")}
-              errorMessage={tCart("addError")}
-            />
+          <div ref={buyRowRef} className="flex flex-wrap items-center gap-3">
+            {purchasableOnline ? (
+              <AddToCartButton
+                itemType="VEHICLE_LISTING"
+                id={listing.id}
+                stockQuantity={listing.stockQuantity}
+                disabled={outOfStock}
+                labelAdd={tCart("addToCart")}
+                labelAdded={tCart("addedToCart")}
+                labelOutOfStock={tCart("outOfStock")}
+                errorMessage={tCart("addError")}
+              />
+            ) : (
+              !outOfStock && (
+                <>
+                  <ShowroomContactActions
+                    listingId={listing.id}
+                    itemTitle={`${listing.vehicleCatalog.brand.name} ${title} ${listing.year}`}
+                    pageUrl={pageUrl}
+                    whatsappPhone={whatsappPhone}
+                    whatsappChatEnabled={whatsappChatEnabled}
+                  />
+                  <ShowroomPurchaseNotice label={tCart("visitShowroom")} />
+                </>
+              )
+            )}
             <WishlistButton
               itemType="VEHICLE_LISTING"
               id={listing.id}
@@ -117,6 +147,31 @@ export function VehicleListingDetailPage({
           <VehicleSpecs listing={listing} />
         </div>
       </div>
+
+      {purchasableOnline && (
+        <MobileActionBar targetRef={buyRowRef}>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs text-muted-foreground">{title}</p>
+            <p className="text-base font-bold text-primary-text">
+              {formatPrice(
+                priceDisplay.convert(listing.activeDiscount?.discountPrice ?? listing.price),
+                priceDisplay.displayCurrency,
+              )}
+            </p>
+          </div>
+          <AddToCartButton
+            itemType="VEHICLE_LISTING"
+            id={listing.id}
+            stockQuantity={listing.stockQuantity}
+            disabled={outOfStock}
+            labelAdd={tCart("addToCart")}
+            labelAdded={tCart("addedToCart")}
+            labelOutOfStock={tCart("outOfStock")}
+            errorMessage={tCart("addError")}
+            className="shrink-0"
+          />
+        </MobileActionBar>
+      )}
 
       {descriptionHtml && (
         <section className="mt-14 border-t border-border pt-8">

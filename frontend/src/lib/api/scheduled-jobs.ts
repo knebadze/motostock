@@ -11,7 +11,8 @@ export type ScheduledJobKey =
   | "BIRTHDAY_EMAIL"
   | "DAILY_PRUNE_ERROR_LOGS"
   | "DAILY_PRUNE_GUEST_COLLECTIONS"
-  | "DAILY_PRUNE_AUTH_EVENTS";
+  | "DAILY_PRUNE_AUTH_EVENTS"
+  | "DAILY_PRUNE_CALLBACK_REQUESTS";
 
 export type ScheduledJobRun = ScheduledJobRunsPage["runs"][number];
 

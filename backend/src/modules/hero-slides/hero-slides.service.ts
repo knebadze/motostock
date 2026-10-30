@@ -48,6 +48,7 @@ export type HeroSlideRow = {
     discountPercent: { toString(): string };
     startDate: Date;
     endDate: Date;
+    isActive: boolean;
     category: { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string } | null;
     productBrand: { id: number; name: string; slug: string } | null;
   } | null;
@@ -63,6 +64,25 @@ export type HeroSlideRow = {
 // own event-linked create/update/upsert calls return, without duplicating
 // this shape — same reuse pattern as product-variant-discounts.service.ts's
 // exported toDiscountResponse.
+// Whether a slide may show to customers right now, on top of the admin's own
+// on/off column. A campaign-linked slide (promo code / bulk-discount event)
+// only advertises a campaign that's actually running: within its date
+// window (not before the start — an event set up months ahead used to go
+// live immediately — nor after the end), and for a promo code, only while
+// the code itself is switched on (turning a code off left its slide
+// advertising a code that no longer works). It also needs a background
+// image: these slides are created image-less (a promo code has none of its
+// own) and used to go live with an empty background.
+function isEffectivelyActive(row: HeroSlideRow, now = new Date()): boolean {
+  if (!row.isActive) return false;
+  const event = row.discountBulkEvent;
+  const promo = row.discountPromoCode;
+  if (event && (now < event.startDate || now > event.endDate)) return false;
+  if (promo && (!promo.isActive || now < promo.startDate || now > promo.endDate)) return false;
+  if ((event || promo) && !row.imageUrl) return false;
+  return true;
+}
+
 export function toResponse(row: HeroSlideRow) {
   const hasSubtitle = row.subtitleKa != null && row.subtitleEn != null && row.subtitleRu != null;
   const hasButtonLabel =
@@ -103,6 +123,7 @@ export function toResponse(row: HeroSlideRow) {
           discountPercent: Number(row.discountPromoCode.discountPercent),
           startDate: row.discountPromoCode.startDate,
           endDate: row.discountPromoCode.endDate,
+          isActive: row.discountPromoCode.isActive,
           category: row.discountPromoCode.category
             ? {
                 id: row.discountPromoCode.category.id,
@@ -123,16 +144,14 @@ export function toResponse(row: HeroSlideRow) {
     // nothing about a linked campaign's own end date. A campaign-linked
     // slide the admin never bothered to turn off should still stop showing
     // to customers once that campaign ends, so the *effective* isActive
-    // reported here also folds in both expiry checks — same "compute from
+    // reported here also folds in the campaign checks (isEffectivelyActive
+    // above) — same "compute from
     // the date window at read time, never a stored/cronned status flag"
     // pattern this codebase already uses for discount rows (see
     // lib/discounts.ts's findActiveDiscount). listHeroSlides below
     // re-filters on this same value for the public (onlyActive) listing,
     // since the repository's own WHERE clause only sees the raw column.
-    isActive:
-      row.isActive &&
-      !(row.discountBulkEvent && new Date() > row.discountBulkEvent.endDate) &&
-      !(row.discountPromoCode && new Date() > row.discountPromoCode.endDate),
+    isActive: isEffectivelyActive(row),
     sortOrder: row.sortOrder,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

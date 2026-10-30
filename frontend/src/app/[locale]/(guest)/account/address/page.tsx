@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { getLookupItemsFromServer, getMyAddressesFromServer } from "@/lib/api/server";
 import { AddressManager } from "@/components/account/AddressManager";
+import { noindexMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 export default async function AddressPage() {
   const [addresses, cities] = await Promise.all([

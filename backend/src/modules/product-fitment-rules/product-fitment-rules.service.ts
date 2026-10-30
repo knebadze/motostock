@@ -1,3 +1,4 @@
+import { assertCategoryVehicleFitmentEnabled } from "../categories/categories.service.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
@@ -69,6 +70,7 @@ async function assertProductExists(productId: number) {
   if (!product) {
     throw new ApiError(404, "პროდუქტი ვერ მოიძებნა");
   }
+  return product;
 }
 
 async function assertIsVehicleCategory(categoryId: number) {
@@ -107,7 +109,8 @@ export async function createProductFitmentRule(
   productId: number,
   input: CreateProductFitmentRuleInput,
 ) {
-  await assertProductExists(productId);
+  const product = await assertProductExists(productId);
+  await assertCategoryVehicleFitmentEnabled(product.categoryId);
 
   if (input.type === "CATEGORY") {
     await assertIsVehicleCategory(input.categoryId!);

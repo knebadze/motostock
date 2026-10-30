@@ -60,6 +60,7 @@ export function UnitsManager({ initialUnits }: { initialUnits: Unit[] }) {
         <DataTable
           columns={columns}
           data={units}
+          totalCount={units.length}
           getRowKey={(unit) => unit.id}
           emptyMessage="ერთეული არ არსებობს"
           actions={(unit) => (

@@ -6,7 +6,7 @@
     "categoryTitleWithPage": "{category} — Страница {page} — {siteName}",
     "categoryDescription": "{category} — лучший выбор и цены в {siteName}.",
     "compatibleProductsTitle": "{vehicle} — запчасти и аксессуары | {siteName}",
-    "compatibleProductsDescription": "Запчасти, аксессуары и экипировка для {vehicle} в {siteName} — {count} товаров.",
+    "compatibleProductsDescription": "Запчасти, аксессуары и экипировка для {vehicle} в {siteName} — {count, plural, one {# товар} few {# товара} many {# товаров} other {# товара}}.",
     "aboutTitle": "О нас — {siteName}",
     "aboutDescription": "Узнайте больше о {siteName} — надёжном магазине мотоэкипировки, аксессуаров и запчастей в Грузии.",
     "faqTitle": "Часто задаваемые вопросы — {siteName}",
@@ -25,7 +25,9 @@
     "descriptionWithCity": "Мотоциклы, запчасти, шлемы и экипировка, сервис и ремонт мотоциклов — {city}. Подберите совместимые с вашим мотоциклом запчасти онлайн.",
     "serviceTitle": "Сервис и ремонт мотоциклов — {siteName}",
     "serviceDescription": "Мотосервис {siteName}: {services}. Часы работы, адрес и запись.",
-    "serviceDescriptionGeneric": "Сервис и ремонт мотоциклов в {siteName} — часы работы, адрес и запись."
+    "serviceDescriptionGeneric": "Сервис и ремонт мотоциклов в {siteName} — часы работы, адрес и запись.",
+    "shippingTitle": "Доставка и возврат — {siteName}",
+    "shippingDescription": "{siteName}: стоимость и сроки доставки, самовывоз из магазина и условия возврата."
   },
   "Nav": {
     "home": "Главная",
@@ -51,7 +53,9 @@
     "language": "Язык",
     "settings": "Настройки",
     "themeHeading": "Тема",
-    "viewAll": "Смотреть все"
+    "viewAll": "Смотреть все",
+    "mainMenu": "Главное меню",
+    "megaMenuHint": "Нажмите стрелку вниз, чтобы открыть подкатегории"
   },
   "Shop": {
     "filtersHeading": "Фильтры",
@@ -83,7 +87,7 @@
     "viewList": "Список",
     "resultCount": "{count, plural, one {# результат} few {# результата} many {# результатов} other {# результатов}}",
     "outOfStock": "Нет в наличии",
-    "lowStock": "Осталось всего {count} шт.",
+    "lowStock": "{count, plural, one {Осталась всего # шт.} other {Осталось всего # шт.}}",
     "discountBadge": "Скидка",
     "customsCleared": "Растаможен",
     "customsNotCleared": "Не растаможен",
@@ -114,9 +118,33 @@
     "selectSizeLabel": "Размер",
     "selectColorLabel": "Цвет",
     "outOfStock": "Нет в наличии",
-    "lowStock": "Осталось всего {count} шт.",
+    "lowStock": "{count, plural, one {Осталась всего # шт.} other {Осталось всего # шт.}}",
     "yes": "Да",
-    "no": "Нет"
+    "no": "Нет",
+    "buyTogetherThisProduct": "Этот товар",
+    "buyTogetherSelectedCount": "{count, plural, one {Выбран # товар} few {Выбрано # товара} many {Выбрано # товаров} other {Выбрано # товаров}}",
+    "buyTogetherSavings": "Экономия {amount}",
+    "buyTogetherAddSelected": "{count, plural, =1 {Добавить в корзину} other {Добавить все (#) в корзину}}",
+    "deliveryHeading": "Доставка",
+    "deliveryTbilisi": "Тбилиси",
+    "deliveryRegions": "Регионы",
+    "deliveryExpress": "Экспресс-доставка",
+    "deliveryFree": "Бесплатно",
+    "pickupHeading": "Самовывоз из магазина — бесплатно",
+    "returnsLine": "{days, plural, one {Возврат в течение # дня} other {Возврат в течение # дней}}",
+    "deliveryDetailsLink": "Доставка и возврат — подробнее",
+    "fitQuestion": "Подходит ли к вашему мотоциклу?",
+    "fitCheckButton": "Проверить",
+    "fitChangeVehicle": "Другой мотоцикл",
+    "fitChecking": "Проверка совместимости…",
+    "fitLoading": "Загрузка…",
+    "fitYes": "Подходит к вашему мотоциклу: {vehicle}",
+    "fitNo": "Не подходит к вашему мотоциклу: {vehicle}",
+    "fitNoGarage": "Не подходит к мотоциклам в вашем гараже",
+    "fitCompatibleLink": "Смотреть совместимые запчасти",
+    "fitSubmit": "Проверить",
+    "fitCancel": "Отмена",
+    "fitLoadError": "Не удалось загрузить список мотоциклов"
   },
   "Cart": {
     "empty": "Корзина пуста.",
@@ -137,7 +165,14 @@
     "addedToCart": "Добавлено",
     "outOfStock": "Нет в наличии",
     "addError": "Не удалось добавить в корзину",
-    "goToCheckout": "Перейти к оформлению"
+    "goToCheckout": "Перейти к оформлению",
+    "visitShowroom": "Для покупки посетите наш шоурум",
+    "itemNotPurchasableOnline": "Этот товар нельзя купить на сайте — посетите наш шоурум. Чтобы оформить заказ, удалите его из корзины.",
+    "deliveryHint": "Доставка: Тбилиси {tbilisi} · регионы {regions} · самовывоз бесплатно. Точная цена — при оформлении.",
+    "deliveryFree": "бесплатно",
+    "deliveryHintLink": "Подробнее",
+    "deliveryHintNoPickup": "Доставка: Тбилиси {tbilisi} · регионы {regions}. Точная цена — при оформлении.",
+    "deliveryHintPickupOnly": "Доставка: только самовывоз из магазина (бесплатно)."
   },
   "Checkout": {
     "title": "Оформление заказа",
@@ -184,7 +219,7 @@
     "placeError": "Не удалось оформить заказ",
     "emailVerificationRequired": "Для оформления заказа необходимо подтвердить email — проверьте почту или отправьте письмо повторно.",
     "outOfStockItem": "Нет в наличии",
-    "limitedStockItem": "В наличии осталось {count}",
+    "limitedStockItem": "{count, plural, one {В наличии остался # товар} few {В наличии осталось # товара} many {В наличии осталось # товаров} other {В наличии осталось # товара}}",
     "stockIssueMessage": "Некоторых товаров в корзине больше нет в запрошенном количестве — уменьшите количество или удалите их из корзины, чтобы оформить заказ.",
     "compatibilityHeading": "Проверка совместимости",
     "compatibilityIntro": "Выберите транспорт из гаража или укажите марку, модель и год — мы проверим, подходят ли товары в корзине для него.",
@@ -192,7 +227,35 @@
     "compatibilityChecking": "Проверяется...",
     "compatibilityError": "Не удалось проверить совместимость",
     "compatibleLabel": "Совместимо",
-    "incompatibleLabel": "Не совместимо"
+    "incompatibleLabel": "Не совместимо",
+    "thankYouTitle": "Спасибо! Заказ принят",
+    "thankYouOrderCode": "Номер заказа",
+    "thankYouEmailNote": "При каждом изменении статуса вы получите письмо.",
+    "thankYouItemCount": "{count, plural, one {# товар} few {# товара} many {# товаров} other {# товара}}",
+    "thankYouNextHeading": "Что дальше",
+    "thankYouStepReview": "Мы проверим заказ и подтвердим его.",
+    "thankYouStepDelivery": "Курьер доставит заказ по указанному адресу.",
+    "thankYouDeliveryTime": "Ориентировочный срок: {time}",
+    "thankYouStepPickup": "Заказ будет ждать вас в магазине — самовывоз бесплатный.",
+    "thankYouStepTrack": "Статус заказа всегда можно посмотреть в личном кабинете.",
+    "thankYouQuestions": "Есть вопросы? Звоните:",
+    "thankYouViewOrder": "Детали заказа",
+    "thankYouContinue": "Продолжить покупки",
+    "deliveryMethodHeading": "Способ получения",
+    "paymentMethodHeading": "Способ оплаты",
+    "deliveryCourier": "Доставка курьером",
+    "deliveryCourierHint": "Тбилиси {tbilisi} · регионы {regions}",
+    "deliveryCourierHintPlain": "По выбранному адресу",
+    "deliveryPickup": "Самовывоз из магазина",
+    "deliveryPickupHint": "Бесплатно, в нашем магазине",
+    "paymentCard": "Картой онлайн",
+    "paymentCardHint": "Через выбранный банк",
+    "paymentOnDelivery": "Оплата курьеру",
+    "paymentOnDeliveryHint": "Наличными или картой при получении",
+    "paymentInStore": "Оплата в магазине",
+    "paymentInStoreHint": "При самовывозе",
+    "free": "бесплатно",
+    "noCheckoutMethods": "Онлайн-заказ временно недоступен — позвоните нам."
   },
   "VehicleListingDetail": {
     "descriptionHeading": "Описание",
@@ -231,8 +294,31 @@
     "weightLabel": "Вес",
     "seatHeightLabel": "Высота седла",
     "fuelTankLabel": "Топливный бак",
+    "oilCapacityLabel": "Объём масла",
     "topSpeedLabel": "Макс. скорость",
-    "absLabel": "ABS"
+    "absLabel": "ABS",
+    "callbackButton": "Заказать звонок",
+    "whatsappButton": "Написать в WhatsApp",
+    "whatsappMessage": "Здравствуйте! Меня интересует: {item} — {url}",
+    "callbackTitle": "Заказать звонок",
+    "callbackIntro": "Оставьте номер, и мы перезвоним по поводу: {item}",
+    "callbackName": "Имя",
+    "callbackPhone": "Телефон",
+    "callbackPreferredTime": "Когда вам позвонить",
+    "callbackTime": {
+      "any": "В любое время",
+      "morning": "Утром (10–13)",
+      "afternoon": "Днём (13–17)",
+      "evening": "Вечером (17–20)"
+    },
+    "callbackNote": "Вопрос или комментарий (необязательно)",
+    "callbackSubmit": "Отправить",
+    "callbackSending": "Отправка…",
+    "callbackSent": "Спасибо! Заявка получена — мы скоро перезвоним.",
+    "callbackClose": "Закрыть",
+    "callbackValidation": "Укажите имя и номер телефона",
+    "callbackError": "Не удалось отправить заявку",
+    "callbackPrivacy": "Имя и номер используются только для обратного звонка; обработанная заявка удаляется через 90 дней. <privacy>Политика конфиденциальности</privacy>"
   },
   "Auth": {
     "loginTitle": "Вход",
@@ -261,7 +347,7 @@
     "confirmPasswordRequiredError": "Повторите пароль",
     "phoneError": "Неверный номер телефона",
     "dateOfBirthError": "Неверная дата рождения, возраст должен быть не менее 16 лет",
-    "termsAgreement": "Я согласен с <terms>условиями использования</terms>",
+    "termsAgreement": "Я согласен(на) с <terms>правилами и условиями</terms> и <privacy>политикой конфиденциальности</privacy>",
     "termsRequiredError": "Для продолжения необходимо согласиться с условиями использования",
     "loginError": "Не удалось войти",
     "registerError": "Регистрация не удалась",
@@ -305,7 +391,8 @@
     "verifyRequiredLogoutError": "Не удалось выйти",
     "passwordTooLongError": "Пароль слишком длинный — максимум 72 символа",
     "passwordInvalidCharsError": "Пароль может содержать только латинские буквы, цифры и символы",
-    "oauthEmailExists": "Аккаунт с этим email уже существует — войдите тем способом, которым регистрировались (например, через Google)"
+    "oauthEmailExists": "Аккаунт с этим email уже существует — войдите тем способом, которым регистрировались (например, через Google)",
+    "oauthConsentNotice": "Продолжая через Google или Facebook, вы соглашаетесь с <terms>правилами и условиями</terms> и <privacy>политикой конфиденциальности</privacy>."
   },
   "Home": {
     "heroTitle": "Экипировка, которой можно доверять на <hl>дороге</hl>",
@@ -325,7 +412,8 @@
     "searchGaragePlaceholder": "Выберите вашу технику",
     "searchOrDivider": "или",
     "searchButton": "Поиск",
-    "seoHeading": "Мотоциклы, запчасти, экипировка и мотосервис"
+    "seoHeading": "Мотоциклы, запчасти, экипировка и мотосервис",
+    "categoryItemCount": "{count, plural, one {# товар} few {# товара} many {# товаров} other {# товаров}}"
   },
   "HomeInfoCards": {
     "heading": "Познакомьтесь с MotoStock 22",
@@ -360,7 +448,14 @@
     "fridayShort": "Пт",
     "saturdayShort": "Сб",
     "sundayShort": "Вс",
-    "serviceTitle": "Сервис"
+    "serviceTitle": "Сервис",
+    "shippingTitle": "Доставка и возврат",
+    "newsletterHeading": "Узнавайте первыми об акциях и новинках",
+    "visitTitle": "Приходите к нам",
+    "openNow": "Сейчас открыто",
+    "closedNow": "Сейчас закрыто",
+    "legalNavLabel": "Информация и правила",
+    "locationLabel": "Мы на карте"
   },
   "Catalog": {
     "title": "Каталог",
@@ -368,8 +463,6 @@
     "subcategoryCount": "{count, plural, one {# подкатегория} few {# подкатегории} many {# подкатегорий} other {# подкатегорий}}"
   },
   "Newsletter": {
-    "signupTitle": "Подпишитесь на новости",
-    "signupDescription": "Новинки и акции прямо на вашу почту.",
     "emailPlaceholder": "Ваш email",
     "subscribeSubmit": "Подписаться",
     "subscribeSubmitting": "Отправка...",
@@ -478,7 +571,8 @@
       "orders": "История заказов",
       "address": "Адрес",
       "changePassword": "Смена пароля",
-      "newsletter": "Подписка на рассылку"
+      "newsletter": "Подписка на рассылку",
+      "profile": "Профиль и данные"
     },
     "dashboard": {
       "greeting": "Добро пожаловать, {name}",
@@ -578,7 +672,28 @@
       "reorderAllAdded": "Все товары добавлены в корзину",
       "reorderNoneAvailable": "Ни один товар не удалось добавить — нет в наличии",
       "reorderPartialSummary": "{added} товар(ов) добавлено в корзину, {issues} больше недоступны или их недостаточно на складе",
-      "reorderError": "Не удалось добавить в корзину"
+      "reorderError": "Не удалось добавить в корзину",
+      "historyHeading": "История заказа",
+      "requestsHeading": "Отмена и возврат",
+      "requestCancelButton": "Запросить отмену",
+      "requestReturnButton": "Запросить возврат",
+      "requestCancelTitle": "Запрос на отмену заказа",
+      "requestReturnTitle": "Запрос на возврат товара",
+      "requestIntro": "Запрос будет отправлен в магазин. Заказ не изменится автоматически — представитель магазина свяжется с вами, чтобы уточнить детали.",
+      "requestReasonLabel": "Причина (необязательно)",
+      "requestReasonPlaceholder": "Напишите, почему…",
+      "requestSubmit": "Отправить запрос",
+      "requestSending": "Отправка…",
+      "requestClose": "Закрыть",
+      "requestSentToast": "Запрос отправлен",
+      "requestError": "Не удалось отправить запрос",
+      "requestOpenCancel": "Запрос на отмену отправлен ({date}).",
+      "requestOpenReturn": "Запрос на возврат отправлен ({date}).",
+      "requestContactNote": "Магазин скоро свяжется с вами по этому вопросу.",
+      "requestContactNoteWithPhone": "Магазин скоро свяжется с вами по этому вопросу. Можете позвонить и сами:",
+      "requestResolvedCancel": "Запрос на отмену обработан ({date}).",
+      "requestResolvedReturn": "Запрос на возврат обработан ({date}).",
+      "returnWindowNote": "{days, plural, one {Возврат возможен в течение # дня после получения.} other {Возврат возможен в течение # дней после получения.}}"
     },
     "address": {
       "description": "Укажите адреса доставки и контактный телефон — мы используем их при доставке заказов. Можно сохранить несколько адресов.",
@@ -628,6 +743,47 @@
       "subscribeSuccess": "На вашу почту отправлено письмо для подтверждения",
       "unsubscribeSuccess": "Подписка отменена",
       "error": "Не удалось выполнить действие"
+    },
+    "profile": {
+      "detailsHeading": "Личные данные",
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "phone": "Телефон",
+      "dateOfBirth": "Дата рождения",
+      "email": "Эл. почта",
+      "emailNote": "Чтобы изменить эл. почту, свяжитесь с нами.",
+      "save": "Сохранить",
+      "saving": "Сохранение…",
+      "saved": "Данные обновлены",
+      "saveError": "Не удалось сохранить",
+      "nameError": "Имя и фамилия должны содержать минимум 2 символа",
+      "consentHeading": "Согласие",
+      "consentAcceptedAt": "Вы приняли правила и политику конфиденциальности: {date}",
+      "consentMissing": "Согласие ещё не зафиксировано.",
+      "consentPrompt": "Пожалуйста, ознакомьтесь и примите правила и политику конфиденциальности.",
+      "consentOutdated": "Правила или политика конфиденциальности обновлены — пожалуйста, ознакомьтесь и примите новую версию.",
+      "consentAcceptButton": "Принимаю",
+      "consentAccepted": "Согласие зафиксировано",
+      "termsLink": "Правила и условия",
+      "privacyLink": "Политика конфиденциальности",
+      "exportHeading": "Скачать мои данные",
+      "exportDescription": "Скачайте всё, что мы о вас храним: профиль, адреса, гараж и историю обслуживания, заказы, избранное, согласия и историю входов (файл JSON).",
+      "exportButton": "Скачать данные",
+      "deleteHeading": "Удаление аккаунта",
+      "deleteDescription": "Аккаунт и ваши личные данные будут удалены навсегда. Это действие необратимо.",
+      "deleteButton": "Удалить аккаунт",
+      "deleteConfirmTitle": "Удаление аккаунта",
+      "deleteConfirmText": "Вы уверены? Восстановить аккаунт будет невозможно.",
+      "deleteConfirmRemoved": "Удаляются: профиль, адреса, гараж (с фото), избранное, корзина, согласия, история входов и заявки на звонок; также отписка от рассылки.",
+      "deleteConfirmOrders": "Хранятся установленный законом срок, без вашего имени, эл. почты и телефона: записи о заказах (товары, суммы, город доставки) и история обслуживания в мастерской (если ваш мотоцикл у нас обслуживался).",
+      "deleteConfirmActive": "Текущий заказ сначала должен быть завершён или отменён.",
+      "deletePasswordLabel": "Введите пароль для подтверждения",
+      "deleteEmailLabel": "Введите свою эл. почту для подтверждения ({email})",
+      "deleteConfirmButton": "Удалить навсегда",
+      "deleting": "Удаление…",
+      "deleted": "Аккаунт удалён",
+      "deleteError": "Не удалось удалить аккаунт",
+      "cancel": "Отмена"
     }
   },
   "NotFound": {
@@ -694,7 +850,20 @@
     "CURRENT_PASSWORD_REQUIRED": "Укажите текущий пароль",
     "CURRENT_PASSWORD_INCORRECT": "Текущий пароль неверен",
     "VALIDATION_FAILED": "Отправленные данные неверны",
-    "USD_GEL_RATE_UNAVAILABLE": "Товары с ценой в долларах временно недоступны для покупки — курс обновляется, попробуйте позже"
+    "USD_GEL_RATE_UNAVAILABLE": "Товары с ценой в долларах временно недоступны для покупки — курс обновляется, попробуйте позже",
+    "NOT_PURCHASABLE_ONLINE": "Этот товар нельзя купить на сайте — посетите наш шоурум",
+    "NOT_PURCHASABLE_ONLINE_ITEM": "«{itemNameRu}» нельзя купить на сайте — посетите наш шоурум",
+    "ORDER_CANCEL_REQUEST_NOT_ALLOWED": "На этом этапе отменить заказ онлайн нельзя — позвоните нам.",
+    "ORDER_RETURN_REQUEST_NOT_ALLOWED": "Возврат можно запросить только для доставленного заказа.",
+    "ORDER_RETURN_PERIOD_EXPIRED": "{days, plural, one {Срок возврата (# день) истёк — позвоните нам.} few {Срок возврата (# дня) истёк — позвоните нам.} many {Срок возврата (# дней) истёк — позвоните нам.} other {Срок возврата (# дня) истёк — позвоните нам.}}",
+    "ORDER_REQUEST_ALREADY_OPEN": "Такой запрос уже отправлен — магазин скоро свяжется с вами.",
+    "PHONE_ALREADY_IN_USE": "Этот номер телефона уже используется — если он ваш, свяжитесь с нами.",
+    "ACCOUNT_DELETE_WRONG_PASSWORD": "Неверный пароль",
+    "ACCOUNT_DELETE_EMAIL_MISMATCH": "Эл. почта не совпадает",
+    "ACCOUNT_HAS_ACTIVE_ORDERS": "У вас есть текущий заказ — аккаунт можно удалить после его завершения или отмены.",
+    "STAFF_ACCOUNT_DELETE_FORBIDDEN": "Аккаунт сотрудника нельзя удалить здесь.",
+    "CHECKOUT_METHOD_UNAVAILABLE": "Выбранный способ доставки или оплаты сейчас недоступен — обновите страницу и выберите другой.",
+    "EXPRESS_DELIVERY_UNAVAILABLE": "Экспресс-доставка сейчас недоступна — выберите стандартную."
   },
   "Common": {
     "genericError": "Произошла ошибка, попробуйте снова",
@@ -731,7 +900,10 @@
     "imageCarousel": {
       "prevImage": "Предыдущее изображение",
       "nextImage": "Следующее изображение",
-      "imageDot": "Изображение {index}"
+      "imageDot": "Изображение {index}",
+      "pause": "Остановить слайды",
+      "play": "Запустить слайды",
+      "regionLabel": "Галерея изображений"
     },
     "compareButton": {
       "add": "Добавить к сравнению",
@@ -754,8 +926,12 @@
       "discountBadge": "-{percent}% скидка, {startDate} – {endDate}",
       "promoCodeBadge": "-{percent}% скидка по коду {code} ({scope}), {startDate} – {endDate}",
       "promoCodeScopeAllProducts": "все товары",
-      "promoCodeScopeAllVehicles": "вся техника"
-    }
+      "promoCodeScopeAllVehicles": "вся техника",
+      "pause": "Остановить слайдер",
+      "play": "Запустить слайдер",
+      "regionLabel": "Главные слайды"
+    },
+    "skipToContent": "Перейти к основному содержимому"
   },
   "Service": {
     "title": "Мотосервис",
@@ -769,5 +945,34 @@
     "partsHeading": "Запчасти для вашего мотоцикла",
     "partsText": "Добавьте мотоцикл в гараж и смотрите только подходящие к нему запчасти.",
     "partsLink": "Открыть гараж"
+  },
+  "Search": {
+    "placeholder": "Поиск товаров, мототехники или категорий…",
+    "label": "Поиск",
+    "openSearch": "Открыть поиск",
+    "closeSearch": "Закрыть поиск",
+    "clear": "Очистить",
+    "products": "Товары",
+    "vehicles": "Мототехника",
+    "categories": "Категории",
+    "recent": "Недавние запросы",
+    "clearRecent": "Очистить",
+    "searching": "Поиск…",
+    "noResults": "По запросу «{q}» ничего не найдено",
+    "minChars": "{count, plural, one {Введите не менее # символа} other {Введите не менее # символов}}",
+    "viewAllResults": "Все результаты",
+    "error": "Не удалось выполнить поиск, попробуйте ещё раз",
+    "resultsTitle": "Результаты поиска: «{q}»",
+    "metaTitle": "Поиск: {q}",
+    "emptyTitle": "Поиск",
+    "emptyHint": "Введите запрос в поле выше.",
+    "productsHeading": "Товары",
+    "vehiclesHeading": "Мототехника",
+    "categoriesHeading": "Категории"
+  },
+  "ShippingPolicy": {
+    "title": "Доставка и возврат",
+    "empty": "Информация скоро появится.",
+    "loading": "Загрузка..."
   }
 }

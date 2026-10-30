@@ -7,6 +7,11 @@ import type {
   UpdateCategoryInput,
 } from "./categories.schema.js";
 
+export async function itemCounts(_req: Request, res: Response) {
+  const items = await categoriesService.getCategoryItemCounts();
+  res.status(200).json({ items });
+}
+
 export async function list(
   req: Request<unknown, unknown, unknown, CategoryListQuery>,
   res: Response,
@@ -65,5 +70,14 @@ export async function uploadBannerImage(req: Request, res: Response) {
     Number(req.params.id),
     req.file,
   );
+  res.status(200).json({ category });
+}
+
+export async function uploadMenuImage(req: Request, res: Response) {
+  if (!req.file) {
+    throw new ApiError(400, "სურათი არ არის მიბმული");
+  }
+
+  const category = await categoriesService.setCategoryMenuImage(Number(req.params.id), req.file);
   res.status(200).json({ category });
 }

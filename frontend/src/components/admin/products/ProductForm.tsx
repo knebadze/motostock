@@ -8,13 +8,20 @@ import { Tabs } from "@/components/shared/Tabs";
 import type { Product, ProductListItem } from "@/lib/api/products";
 import { siteConfig } from "@/config/site";
 import type { Attribute } from "@/lib/api/attributes";
+import { Select } from "@/components/shared/Select";
+import type { Tag } from "@/lib/api/tags";
 import type { Category } from "@/lib/api/categories";
 import { listProductBrands, type ProductBrand } from "@/lib/api/product-brands";
 import type { LookupItem } from "@/lib/api/lookups";
 import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
-import { flattenTree, isVehicleCategory, slugify } from "@/lib/categories-tree";
-import { generateVariantCombinations } from "@/lib/variant-matrix";
+import {
+  flattenTree,
+  getVehicleFitmentDisabledCategoryIds,
+  isVehicleCategory,
+  slugify,
+} from "@/lib/categories-tree";
+import { generateVariantCombinations, variantSkuFromBase } from "@/lib/variant-matrix";
 import { productFormSchema, buildAttributeValuesSchema, type AttributeFieldValue } from "@/lib/validation/products";
 import { productVariantFormSchema } from "@/lib/validation/product-variants";
 import { productVariantDiscountFormSchema } from "@/lib/validation/product-variant-discounts";
@@ -58,6 +65,8 @@ export function ProductForm({
   vehicleSpecLookups,
   allProducts,
   product,
+  tags,
+  initialTagIds = [],
 }: {
   categories: Category[];
   sizes: LookupItem[];
@@ -68,6 +77,10 @@ export function ProductForm({
   vehicleSpecLookups: VehicleSpecLookupMap;
   allProducts: ProductListItem[];
   product: Product | null;
+  // Every buy-together tag (the multi-select's options) and, when editing,
+  // the product's current ones.
+  tags: Tag[];
+  initialTagIds?: number[];
 }) {
   const router = useRouter();
   const isEditing = product !== null;
@@ -79,6 +92,12 @@ export function ProductForm({
   );
 
   const [categoryId, setCategoryId] = useState(product ? String(product.category.id) : "");
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(() => initialTagIds.map(String));
+  // Vehicle-independent category (Category.vehicleFitmentEnabled off, e.g.
+  // helmets) — no fitment tab, and draft fitments picked under a previously
+  // selected category aren't saved (the backend would refuse them).
+  const fitmentEnabled =
+    !categoryId || !getVehicleFitmentDisabledCategoryIds(categories).has(Number(categoryId));
   const [productBrandId, setProductBrandId] = useState(
     product?.productBrand ? String(product.productBrand.id) : "",
   );
@@ -87,7 +106,9 @@ export function ProductForm({
   const [nameEn, setNameEn] = useState(product?.name.en ?? "");
   const [nameRu, setNameRu] = useState(product?.name.ru ?? "");
   const [slug, setSlug] = useState(product?.slug ?? "");
-  const [slugTouched, setSlugTouched] = useState(false);
+  // On edit the stored slug is the live URL — renaming mustn't silently
+  // regenerate it; only an explicit edit of the slug field changes it.
+  const [slugTouched, setSlugTouched] = useState(isEditing);
   const [metaTitle, setMetaTitle] = useState<LocalizedMeta>(() => ({
     ka: product?.metaTitleKa ?? "",
     en: product?.metaTitleEn ?? "",
@@ -313,7 +334,7 @@ export function ProductForm({
         statusId,
         price: initialBasePrice,
         stockQuantity: initialBaseStockQuantity,
-        sku: initialBaseSku,
+        sku: variantSkuFromBase(initialBaseSku, combo, combinations.length, { sizes, colors }),
         finaId,
         isActive: initialIsActive,
         imageFiles: [],
@@ -433,7 +454,9 @@ export function ProductForm({
         productInput,
         imageFile,
         draftVariants,
-        draftFitments,
+        draftFitments: fitmentEnabled ? draftFitments : [],
+        tagIds: selectedTagIds.map(Number),
+        initialTagIds,
       });
 
       if (result.ok) {
@@ -578,34 +601,66 @@ export function ProductForm({
             ),
           },
         ]),
-    {
-      key: "fitment",
-      label: "თავსებადობა",
-      content: isEditing ? (
-        <ProductFitmentPanel
-          productId={product.id}
-          vehicleCatalog={vehicleCatalog}
-          categories={categories}
-          vehicleSpecLookups={vehicleSpecLookups}
-        />
-      ) : (
-        <DraftFitmentEditor
-          vehicleCatalog={vehicleCatalog}
-          fitments={draftFitments}
-          onAdd={addDraftFitment}
-          onRemove={removeDraftFitment}
-        />
-      ),
-    },
-    ...(isEditing
+    ...(fitmentEnabled
       ? [
           {
-            key: "buy-together",
-            label: "ერთად შეძენა",
-            content: <ProductBuyTogetherPanel productId={product.id} allProducts={allProducts} />,
+            key: "fitment",
+            label: "თავსებადობა",
+            content: isEditing ? (
+              <ProductFitmentPanel
+                productId={product.id}
+                vehicleCatalog={vehicleCatalog}
+                categories={categories}
+                vehicleSpecLookups={vehicleSpecLookups}
+              />
+            ) : (
+              <DraftFitmentEditor
+                vehicleCatalog={vehicleCatalog}
+                fitments={draftFitments}
+                onAdd={addDraftFitment}
+                onRemove={removeDraftFitment}
+              />
+            ),
           },
         ]
       : []),
+    {
+      key: "buy-together",
+      label: "ერთად შეძენა",
+      content: (
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="product-tags" className="text-sm font-medium">
+              ტეგები
+            </label>
+            <Select
+              id="product-tags"
+              multiple
+              searchable
+              options={tags.map((tag) => ({
+                value: String(tag.id),
+                label: tag.isActive ? tag.name : `${tag.name} (გამორთული)`,
+              }))}
+              value={selectedTagIds}
+              onChange={setSelectedTagIds}
+              placeholder={tags.length > 0 ? "აირჩიეთ ტეგები" : "ტეგები ჯერ არ არის შექმნილი"}
+              emptyLabel="ტეგი ვერ მოიძებნა"
+            />
+            <p className="text-xs text-muted-foreground">
+              „ერთად შეძენაში&rdquo; ერთმანეთს შეეთავაზება საერთო ტეგის მქონე, სხვადასხვა კატეგორიის
+              პროდუქტები. ტეგების მართვა — მენიუში „ტეგები&rdquo;. ინახება პროდუქტის შენახვისას.
+            </p>
+          </div>
+          {isEditing ? (
+            <ProductBuyTogetherPanel productId={product.id} allProducts={allProducts} />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              კონკრეტული პროდუქტების ხელით მიბმა ხელმისაწვდომი იქნება პროდუქტის შენახვის შემდეგ.
+            </p>
+          )}
+        </div>
+      ),
+    },
   ];
 
   return (

@@ -380,7 +380,7 @@ export async function syncProductStock(productId: number): Promise<OrderStockSyn
 
 // Web orders are always non-cash from FINA's point of view (bank/card, not
 // someone handing over cash at the register) — confirmed with the user
-// rather than inferred from fulfillmentMethod.
+// rather than inferred from paymentMethod.
 const FINA_PAY_TYPE_NON_CASH = 1;
 
 export type FinaOrderPushItem = {

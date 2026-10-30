@@ -22,6 +22,15 @@ export const vehicleCatalogInclude = {
 
 const include = vehicleCatalogInclude;
 
+// Alphabetical by brand, then model; a model's variants/generations by year.
+const catalogOrderBy: Prisma.VehicleCatalogOrderByWithRelationInput[] = [
+  { brand: { name: "asc" } },
+  { model: { name: "asc" } },
+  { variant: "asc" },
+  { yearFrom: { sort: "asc", nulls: "first" } },
+  { id: "asc" },
+];
+
 type VehicleCatalogWriteData = {
   brandId: number;
   modelId: number;
@@ -36,6 +45,7 @@ type VehicleCatalogWriteData = {
   weightKg?: number | null;
   seatHeightMm?: number | null;
   fuelTankLiters?: number | null;
+  oilCapacityLiters?: number | null;
   topSpeedKmh?: number | null;
   hasAbs?: boolean | null;
   fuelTypeId?: number | null;
@@ -71,8 +81,13 @@ export const vehicleCatalogRepository = {
   // rule on one of its spec values / ALL), restricted to products with at
   // least one active variant (what the storefront counts as listable).
   // Four queries total, instead of three per catalog entry.
-  async findCompatibilityInputs() {
-    const listableProduct = { variants: { some: { isActive: true } } };
+  // fitmentDisabledCategoryIds: products there are vehicle-independent and
+  // never count as fitting a vehicle (see buildVehicleCompatibilityWhere).
+  async findCompatibilityInputs(fitmentDisabledCategoryIds: number[]) {
+    const listableProduct = {
+      variants: { some: { isActive: true } },
+      ...(fitmentDisabledCategoryIds.length > 0 ? { categoryId: { notIn: fitmentDisabledCategoryIds } } : {}),
+    };
     const [fitments, rules, specs, categories] = await Promise.all([
       prisma.productFitment.findMany({
         where: { product: listableProduct },
@@ -111,7 +126,7 @@ export const vehicleCatalogRepository = {
         brand: { select: brandModelRefSelect },
         model: { select: { ...brandModelRefSelect, category: { select: namedRefSelect } } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: catalogOrderBy,
     });
   },
 
@@ -119,7 +134,7 @@ export const vehicleCatalogRepository = {
     return prisma.vehicleCatalog.findMany({
       where,
       include,
-      orderBy: { createdAt: "desc" },
+      orderBy: catalogOrderBy,
       skip,
       take,
     });

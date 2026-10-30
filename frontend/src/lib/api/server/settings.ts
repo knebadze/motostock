@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { fetchFromServer, fetchPublicCacheable } from "./core";
+import { fetchFromServer, fetchPublicCacheable, withPublicFallback } from "./core";
 import type { Settings, VinDecodeProvider } from "../settings";
 
 // Site settings and feature flags read during SSR.
@@ -21,6 +21,12 @@ const SETTINGS_FALLBACK: Settings = {
   deliveryRegionsTime: "",
   deliveryExpressPrice: 0,
   deliveryExpressTime: "",
+  returnPeriodDays: 14,
+  checkoutCourierEnabled: true,
+  checkoutPickupEnabled: true,
+  paymentCardEnabled: true,
+  paymentOnDeliveryEnabled: true,
+  paymentInStoreEnabled: true,
   fraudVelocityOrderCount: 3,
   fraudVelocityWindowMinutes: 30,
   fraudNewAccountWindowHours: 24,
@@ -97,7 +103,7 @@ const getCachedGuestFeatureStatus = unstable_cache(
   ["guest-feature-status"],
   { revalidate: 60, tags: ["guest-feature-status"] },
 );
-export const getGuestFeatureStatusFromServer = cache(getCachedGuestFeatureStatus);
+export const getGuestFeatureStatusFromServer = cache(withPublicFallback(getCachedGuestFeatureStatus));
 
 // The admin Sentry on/off toggle, for SentryFlagMeta's <meta> tag (the
 // browser SDK reads it per event). Public endpoint; cached across requests
@@ -111,4 +117,4 @@ const getCachedMonitoringPublic = unstable_cache(
   ["monitoring-public"],
   { revalidate: 60 },
 );
-export const getSentryEnabledFromServer = cache(getCachedMonitoringPublic);
+export const getSentryEnabledFromServer = cache(withPublicFallback(getCachedMonitoringPublic));

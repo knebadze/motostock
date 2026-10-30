@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { getMyCompareFromServer } from "@/lib/api/server";
 import { CompareManager } from "@/components/account/CompareManager";
+import { noindexMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 // Deliberately NOT under /account, same reasoning as wishlist/page.tsx —
 // comparison must work for guests too, unconditionally (no Settings gate

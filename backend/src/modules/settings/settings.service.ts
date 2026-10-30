@@ -20,6 +20,13 @@ import {
   DELIVERY_REGIONS_TIME_KEY,
   DELIVERY_EXPRESS_PRICE_KEY,
   DELIVERY_EXPRESS_TIME_KEY,
+  RETURN_PERIOD_DAYS_KEY,
+  CHECKOUT_COURIER_ENABLED_KEY,
+  CHECKOUT_PICKUP_ENABLED_KEY,
+  PAYMENT_CARD_ENABLED_KEY,
+  PAYMENT_ON_DELIVERY_ENABLED_KEY,
+  PAYMENT_IN_STORE_ENABLED_KEY,
+  RETURN_PERIOD_DAYS_DEFAULT,
   FRAUD_VELOCITY_ORDER_COUNT_KEY,
   FRAUD_VELOCITY_WINDOW_MINUTES_KEY,
   FRAUD_NEW_ACCOUNT_WINDOW_HOURS_KEY,
@@ -191,6 +198,65 @@ export async function getDeliveryExpressTime(): Promise<string> {
     const setting = await settingsRepository.findByKey(DELIVERY_EXPRESS_TIME_KEY);
     return setting?.value ?? "";
   });
+}
+
+export async function getReturnPeriodDays(): Promise<number> {
+  return cached(RETURN_PERIOD_DAYS_KEY, async () => {
+    const setting = await settingsRepository.findByKey(RETURN_PERIOD_DAYS_KEY);
+    return setting?.value != null ? Number(setting.value) : RETURN_PERIOD_DAYS_DEFAULT;
+  });
+}
+
+// Checkout methods — on unless the admin switched them off.
+async function isEnabledByDefault(key: string): Promise<boolean> {
+  return cached(key, async () => {
+    const setting = await settingsRepository.findByKey(key);
+    return setting?.value !== "false";
+  });
+}
+
+export async function getCheckoutMethods() {
+  const [courier, pickup, card, onDelivery, inStore] = await Promise.all([
+    isEnabledByDefault(CHECKOUT_COURIER_ENABLED_KEY),
+    isEnabledByDefault(CHECKOUT_PICKUP_ENABLED_KEY),
+    isEnabledByDefault(PAYMENT_CARD_ENABLED_KEY),
+    isEnabledByDefault(PAYMENT_ON_DELIVERY_ENABLED_KEY),
+    isEnabledByDefault(PAYMENT_IN_STORE_ENABLED_KEY),
+  ]);
+  return { courier, pickup, card, onDelivery, inStore };
+}
+
+type CheckoutMethods = Awaited<ReturnType<typeof getCheckoutMethods>>;
+
+// At least one delivery method must remain usable with one payment method
+// (paying the courier only exists with courier delivery, paying in store
+// only with pickup; card works with both).
+export function hasUsableCheckoutCombination(methods: CheckoutMethods): boolean {
+  return (
+    (methods.courier && (methods.card || methods.onDelivery)) || (methods.pickup && (methods.card || methods.inStore))
+  );
+}
+
+// Public — the storefront's delivery/returns info block (product page, cart).
+// Only the customer-facing delivery prices/times and the return window.
+export async function getPublicDeliveryInfo() {
+  const [tbilisiPrice, tbilisiTime, regionsPrice, regionsTime, expressPrice, expressTime, returnPeriodDays] =
+    await Promise.all([
+      getDeliveryTbilisiPrice(),
+      getDeliveryTbilisiTime(),
+      getDeliveryRegionsPrice(),
+      getDeliveryRegionsTime(),
+      getDeliveryExpressPrice(),
+      getDeliveryExpressTime(),
+      getReturnPeriodDays(),
+    ]);
+  return {
+    tbilisi: { price: tbilisiPrice, time: tbilisiTime },
+    regions: { price: regionsPrice, time: regionsTime },
+    express: { price: expressPrice, time: expressTime },
+    returnPeriodDays,
+    methods: await getCheckoutMethods(),
+  };
 }
 
 export async function getFraudVelocityOrderCount(): Promise<number> {
@@ -549,6 +615,12 @@ export async function getSettings() {
     deliveryRegionsTime: await getDeliveryRegionsTime(),
     deliveryExpressPrice: await getDeliveryExpressPrice(),
     deliveryExpressTime: await getDeliveryExpressTime(),
+    returnPeriodDays: await getReturnPeriodDays(),
+    checkoutCourierEnabled: await isEnabledByDefault(CHECKOUT_COURIER_ENABLED_KEY),
+    checkoutPickupEnabled: await isEnabledByDefault(CHECKOUT_PICKUP_ENABLED_KEY),
+    paymentCardEnabled: await isEnabledByDefault(PAYMENT_CARD_ENABLED_KEY),
+    paymentOnDeliveryEnabled: await isEnabledByDefault(PAYMENT_ON_DELIVERY_ENABLED_KEY),
+    paymentInStoreEnabled: await isEnabledByDefault(PAYMENT_IN_STORE_ENABLED_KEY),
     fraudVelocityOrderCount: await getFraudVelocityOrderCount(),
     fraudVelocityWindowMinutes: await getFraudVelocityWindowMinutes(),
     fraudNewAccountWindowHours: await getFraudNewAccountWindowHours(),
@@ -621,6 +693,21 @@ async function upsertNullable(key: string, value: number | string | null, tx: Pr
 }
 
 export async function updateSettings(input: UpdateSettingsInput) {
+  if (
+    !hasUsableCheckoutCombination({
+      courier: input.checkoutCourierEnabled,
+      pickup: input.checkoutPickupEnabled,
+      card: input.paymentCardEnabled,
+      onDelivery: input.paymentOnDeliveryEnabled,
+      inStore: input.paymentInStoreEnabled,
+    })
+  ) {
+    throw new ApiError(
+      400,
+      "შეკვეთის გაფორმება შეუძლებელი გახდება — მინიმუმ ერთი მიწოდების ხერხი თავსებადი გადახდის ხერხით ჩართული უნდა დარჩეს (კურიერთან გადახდა მხოლოდ კურიერით მიწოდებისას მუშაობს, მაღაზიაში გადახდა — მხოლოდ გატანისას, ბარათი — ორივესთან)",
+    );
+  }
+
   if (input.useCloudStorage && !isCloudinaryConfigured()) {
     throw new ApiError(
       400,
@@ -683,6 +770,12 @@ export async function updateSettings(input: UpdateSettingsInput) {
       tx,
     );
     await settingsRepository.upsert(DELIVERY_EXPRESS_TIME_KEY, input.deliveryExpressTime, tx);
+    await settingsRepository.upsert(RETURN_PERIOD_DAYS_KEY, String(input.returnPeriodDays), tx);
+    await settingsRepository.upsert(CHECKOUT_COURIER_ENABLED_KEY, String(input.checkoutCourierEnabled), tx);
+    await settingsRepository.upsert(CHECKOUT_PICKUP_ENABLED_KEY, String(input.checkoutPickupEnabled), tx);
+    await settingsRepository.upsert(PAYMENT_CARD_ENABLED_KEY, String(input.paymentCardEnabled), tx);
+    await settingsRepository.upsert(PAYMENT_ON_DELIVERY_ENABLED_KEY, String(input.paymentOnDeliveryEnabled), tx);
+    await settingsRepository.upsert(PAYMENT_IN_STORE_ENABLED_KEY, String(input.paymentInStoreEnabled), tx);
     await settingsRepository.upsert(
       FRAUD_VELOCITY_ORDER_COUNT_KEY,
       String(input.fraudVelocityOrderCount),

@@ -84,7 +84,7 @@ export function AddressManager({
                 <button
                   type="button"
                   onClick={() => setDeletingAddress(address)}
-                  className="text-sm font-medium text-red-600 hover:underline"
+                  className="text-sm font-medium text-destructive hover:underline"
                 >
                   {t("deleteButton")}
                 </button>

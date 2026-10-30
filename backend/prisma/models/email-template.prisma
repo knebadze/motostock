@@ -16,6 +16,11 @@ enum EmailTemplateKey {
   // settings.service.ts's getAdminNotificationEmail. Skipped entirely while
   // that address is unset.
   NEW_ORDER_ADMIN
+  // Sent to the same admin address when a customer asks to cancel or
+  // return an order (see order-requests in orders-requests.service.ts).
+  ORDER_REQUEST_ADMIN
+  // "Call me back" request from a listing page (callback-requests module).
+  CALLBACK_REQUEST_ADMIN
   // Sent once a year to every registered customer whose User.dateOfBirth
   // month+day matches today — see birthday-email.service.ts. Never sent to
   // a walk-in (isWalkIn: true) row, since those only ever have a synthetic

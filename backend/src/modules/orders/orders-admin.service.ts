@@ -13,6 +13,7 @@ import { sendEmailTemplate } from "../email-templates/email-templates.service.js
 import { ordersRepository } from "./orders.repository.js";
 import {
   toOrderResponse,
+  toAdminOrderExtras,
   resolveSoldStatusId,
   resolveAvailableStatusId,
   resolveInitialOrderStatusId,
@@ -46,16 +47,7 @@ function toOrderStatusUpdateResponse(order: OrderRow) {
       detail: flag.detail,
       createdAt: flag.createdAt,
     })),
-    cancellationReason: order.cancellationReason
-      ? {
-          id: order.cancellationReason.id,
-          key: order.cancellationReason.key,
-          nameKa: order.cancellationReason.nameKa,
-          nameEn: order.cancellationReason.nameEn,
-          nameRu: order.cancellationReason.nameRu,
-        }
-      : null,
-    cancellationNote: order.cancellationNote,
+    ...toAdminOrderExtras(order),
     finaSyncStatus: order.finaSyncStatus,
     finaOutOperationId: order.finaOutOperationId,
     finaLastError: order.finaLastError,
@@ -68,6 +60,7 @@ export async function updateOrderStatus(
   statusId: number,
   cancellationReasonId?: number,
   cancellationNote?: string,
+  changedByUserId: number | null = null,
 ) {
   const status = await orderStatusesRepository.findById(statusId);
   if (!status) {
@@ -162,6 +155,7 @@ export async function updateOrderStatus(
     },
     stockAdjustment,
     existing.statusId,
+    changedByUserId,
   );
 
   // Cancelling (the only stock-adjusting transition now that un-cancelling

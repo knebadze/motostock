@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { getMyWishlistFromServer } from "@/lib/api/server";
 import { WishlistManager } from "@/components/account/WishlistManager";
+import { noindexMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 // Deliberately NOT under /account — that whole section hard-redirects
 // guests to /login (see account/layout.tsx), but wishlist viewing must

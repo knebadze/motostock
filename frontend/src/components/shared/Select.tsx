@@ -49,7 +49,16 @@ type MultiSelectProps = BaseProps & {
 
 export type SelectProps = SingleSelectProps | MultiSelectProps;
 
-type PanelPosition = { left: number; width: number; maxHeight: number } & (
+// Horizontal placement: the panel is never narrower than the trigger but
+// grows to fit its longest option (a narrow trigger — e.g. the mobile shop
+// toolbar's sort select — used to force a horizontal scrollbar inside the
+// panel). It grows rightward from the trigger's left edge, or leftward from
+// its right edge when the trigger sits in the right half of the screen, and
+// never past the viewport (8px margin) or MAX_GROW_WIDTH_PX — beyond
+// that, labels wrap.
+type PanelHorizontal = { left: number } | { right: number };
+
+type PanelPosition = { minWidth: number; maxWidth: number; maxHeight: number } & PanelHorizontal & (
   | { direction: "down"; top: number }
   | { direction: "up"; bottom: number }
 );
@@ -60,6 +69,8 @@ type PanelPosition = { left: number; width: number; maxHeight: number } & (
 // leave less than this below the trigger.
 const MIN_DOWNWARD_SPACE_PX = 150;
 const MAX_PANEL_HEIGHT_PX = 288;
+// How wide a panel may grow past a narrower trigger (see PanelPosition).
+const MAX_GROW_WIDTH_PX = 320;
 
 // How long a run of typed characters counts as one typeahead search before
 // resetting — same idea (and roughly the same window) as a native <select>.
@@ -151,7 +162,16 @@ export function Select(props: SelectProps) {
       const gap = 4;
       const spaceBelow = viewportHeight - rect.bottom - gap;
       const spaceAbove = rect.top - gap;
-      const left = Math.min(rect.left, Math.max(8, viewportWidth - rect.width - 8));
+      const margin = 8;
+      const anchorRight = rect.left + rect.width / 2 > viewportWidth / 2;
+      const horizontal: PanelHorizontal = anchorRight
+        ? { right: Math.max(margin, viewportWidth - rect.right) }
+        : { left: Math.max(margin, rect.left) };
+      // Growth is capped at MAX_GROW_WIDTH_PX, so a trigger already that
+      // wide (most admin form fields) keeps exactly its old fixed width.
+      const available = anchorRight ? rect.right - margin : viewportWidth - Math.max(margin, rect.left) - margin;
+      const maxWidth = Math.max(rect.width, Math.min(available, MAX_GROW_WIDTH_PX));
+      const minWidth = Math.min(rect.width, maxWidth);
 
       const openUpward = spaceBelow < MIN_DOWNWARD_SPACE_PX && spaceAbove > spaceBelow;
 
@@ -159,8 +179,9 @@ export function Select(props: SelectProps) {
         setPosition({
           direction: "up",
           bottom: viewportHeight - rect.top + gap,
-          left,
-          width: rect.width,
+          ...horizontal,
+          minWidth,
+          maxWidth,
           // Never exceed the real space left above the trigger — same
           // "let the internal list scroll past this" reasoning as the
           // downward case (see the <ul> below).
@@ -170,8 +191,9 @@ export function Select(props: SelectProps) {
         setPosition({
           direction: "down",
           top: rect.bottom + gap,
-          left,
-          width: rect.width,
+          ...horizontal,
+          minWidth,
+          maxWidth,
           maxHeight: Math.max(24, Math.min(MAX_PANEL_HEIGHT_PX, spaceBelow)),
         });
       }
@@ -314,6 +336,9 @@ export function Select(props: SelectProps) {
         break;
       case "Escape":
         event.preventDefault();
+        // Close just this panel, not a surrounding Modal too (its Escape
+        // listener sits on document).
+        event.stopPropagation();
         closePanel();
         break;
       case "Tab":
@@ -359,10 +384,11 @@ export function Select(props: SelectProps) {
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
         aria-activedescendant={open && !searchable ? activeOptionId : undefined}
+        title={!props.multiple && selectedOptions[0] ? selectedOptions[0].label : undefined}
         className="flex min-h-10 w-full flex-wrap items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-left text-sm outline-none focus:border-primary disabled:opacity-50"
       >
         {selectedOptions.length === 0 && (
-          <span className="text-muted-foreground">{placeholder}</span>
+          <span className="min-w-0 flex-1 truncate text-muted-foreground">{placeholder}</span>
         )}
         {props.multiple
           ? selectedOptions.map((option) => (
@@ -381,7 +407,10 @@ export function Select(props: SelectProps) {
                 </span>
               </span>
             ))
-          : selectedOptions[0] && <span>{selectedOptions[0].label}</span>}
+          : // One line, cut with "…" when the trigger is narrower than the
+            // label (e.g. the mobile shop toolbar's sort select) — the full
+            // text is in the panel and the trigger's title tooltip.
+            selectedOptions[0] && <span className="min-w-0 flex-1 truncate">{selectedOptions[0].label}</span>}
       </button>
 
       {open &&
@@ -399,8 +428,10 @@ export function Select(props: SelectProps) {
             style={{
               position: "fixed",
               ...(position.direction === "up" ? { bottom: position.bottom } : { top: position.top }),
-              left: position.left,
-              width: position.width,
+              ...("right" in position ? { right: position.right } : { left: position.left }),
+              width: "max-content",
+              minWidth: position.minWidth,
+              maxWidth: position.maxWidth,
               maxHeight: position.maxHeight,
             }}
             className="z-200 flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg"
@@ -460,7 +491,7 @@ export function Select(props: SelectProps) {
                 />
               </div>
             )}
-            <ul id={listboxId} role="listbox" className="flex-1 overflow-y-auto py-1">
+            <ul id={listboxId} role="listbox" className="flex-1 overflow-x-hidden overflow-y-auto py-1">
               {filteredOptions.length === 0 && (
                 <li className="px-3 py-2 text-sm text-muted-foreground">
                   {emptyLabel}
@@ -479,7 +510,7 @@ export function Select(props: SelectProps) {
                       onMouseEnter={() => setActiveIndex(index)}
                       role="option"
                       aria-selected={isSelected}
-                      className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-muted hover:text-primary-text ${
+                      className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm break-words transition-colors hover:bg-muted hover:text-primary-text ${
                         isActive ? "bg-muted" : ""
                       } ${isSelected ? "text-primary-text" : "text-foreground"}`}
                     >

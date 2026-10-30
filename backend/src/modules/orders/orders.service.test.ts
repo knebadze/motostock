@@ -10,6 +10,12 @@ vi.mock("../cart/cart.repository.js", () => ({
   cartRepository: { findByOwner: vi.fn() },
 }));
 
+// Category 99 is switched off for online purchase; fixtures default to
+// category 1.
+vi.mock("../categories/categories.service.js", () => ({
+  getOnlinePurchaseBlockedCategoryIds: vi.fn().mockResolvedValue(new Set([99])),
+}));
+
 vi.mock("../fina-sync/fina-sync.service.js", () => ({
   syncVariantStockByIds: vi.fn().mockResolvedValue(false),
 }));
@@ -45,6 +51,7 @@ function productVariantCartRow(params: {
   quantity: number;
   stockQuantity?: number;
   discounts?: { startDate: Date; endDate: Date; discountPrice: number }[];
+  categoryId?: number;
 }): CartRow {
   const id = params.id ?? 1;
   return {
@@ -58,7 +65,13 @@ function productVariantCartRow(params: {
       size: null,
       color: null,
       images: [],
-      product: { nameKa: "პროდუქტი", nameEn: "Product", nameRu: "Продукт", imageUrl: null },
+      product: {
+        nameKa: "პროდუქტი",
+        nameEn: "Product",
+        nameRu: "Продукт",
+        imageUrl: null,
+        category: { id: params.categoryId ?? 1 },
+      },
     },
     vehicleListing: null,
   } as unknown as CartRow;
@@ -85,7 +98,7 @@ function vehicleListingCartRow(params: {
       vehicleCatalog: {
         imageUrl: null,
         brand: { name: "Brand" },
-        model: { name: "Model" },
+        model: { name: "Model", category: { id: 1 } },
       },
     },
   } as unknown as CartRow;
@@ -307,5 +320,14 @@ describe("computeCheckoutTotals", () => {
     // resolves to false without making any real FINA call.
     expect(vi.mocked(syncVariantStockByIds)).toHaveBeenCalledWith([]);
     expect(result.finaConfirmed).toBe(false);
+  });
+
+  it("refuses an item whose category is switched off for online purchase", async () => {
+    vi.mocked(cartRepository.findByOwner).mockResolvedValue([
+      productVariantCartRow({ price: 10, quantity: 1 }),
+      productVariantCartRow({ id: 2, price: 20, quantity: 1, categoryId: 99 }),
+    ]);
+
+    await expect(computeCheckoutTotals(1)).rejects.toMatchObject({ code: "NOT_PURCHASABLE_ONLINE_ITEM" });
   });
 });

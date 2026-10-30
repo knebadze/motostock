@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { SELECTED_VEHICLE_COOKIE } from "@/lib/vehicle-selection";
 import {
   getCategoriesFromServer,
+  getCategoryItemCountsFromServer,
   getMyGarageFromServer,
   getPublicHeroSlidesFromServer,
   getPublicHomepageSectionsFromServer,
@@ -59,6 +60,11 @@ export default async function HomePage({
   const topLevelCategories = allCategories
     .filter((category) => category.parentId === null)
     .sort((a, b) => a.sortOrder - b.sortOrder);
+  // Item count per category (rolled up over subcategories) for the
+  // CATEGORIES section's cards — only fetched when that section is active.
+  const categoryItemCounts = activeSections.some((section) => section.type === "CATEGORIES")
+    ? await getCategoryItemCountsFromServer()
+    : {};
 
   return (
     <>
@@ -82,8 +88,8 @@ export default async function HomePage({
         // Fallback for before any slide is configured (or all disabled) — the
         // original static hero, unchanged, so the homepage is never empty.
         <section className="border-b border-border bg-muted/40">
-          <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-24 sm:px-6 lg:px-8">
-            <h1 className="max-w-2xl text-4xl font-extrabold tracking-tight sm:text-5xl">
+          <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-12 sm:py-24 sm:px-6 lg:px-8">
+            <h1 className="max-w-2xl text-3xl font-extrabold tracking-tight sm:text-5xl">
               {t.rich("heroTitle", {
                 hl: (chunks) => <span className="text-primary-text">{chunks}</span>,
               })}
@@ -117,6 +123,7 @@ export default async function HomePage({
             <HomepageSectionContent
               section={section}
               topLevelCategories={topLevelCategories}
+              categoryItemCounts={categoryItemCounts}
               selectedVehicleCatalogId={selectedVehicleCatalogId}
               localeKey={localeKey}
             />

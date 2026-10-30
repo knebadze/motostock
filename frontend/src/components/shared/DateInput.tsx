@@ -386,6 +386,10 @@ export function DateInput({
 
   function handlePanelKeyDown(event: React.KeyboardEvent) {
     if (event.key !== "Escape") return;
+    // Handled here — don't let it also reach a surrounding Modal's
+    // document-level Escape listener, which closed the whole form (and
+    // dropped what had been typed into it) along with the calendar.
+    event.stopPropagation();
     // Back out of the month/year picker first, matching common date-picker
     // convention — only closes the whole calendar once already on the day
     // grid.
@@ -405,7 +409,10 @@ export function DateInput({
         disabled={disabled}
         onClick={() => (open ? closePanel() : openPanel())}
         onKeyDown={(event) => {
-          if (event.key === "Escape") closePanel();
+          if (event.key === "Escape" && open) {
+            event.stopPropagation();
+            closePanel();
+          }
         }}
         aria-haspopup="dialog"
         aria-expanded={open}

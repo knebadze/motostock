@@ -15,6 +15,8 @@ model VehicleCatalog {
   weightKg               Int?
   seatHeightMm           Int?
   fuelTankLiters         Decimal?          @db.Decimal(4, 1)
+  // Engine oil capacity in litres (how much oil a change takes).
+  oilCapacityLiters      Decimal?          @db.Decimal(4, 2)
   topSpeedKmh            Int?
   hasAbs                 Boolean?
   fuelTypeId             Int?

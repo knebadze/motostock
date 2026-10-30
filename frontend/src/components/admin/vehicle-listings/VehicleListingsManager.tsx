@@ -185,6 +185,7 @@ export function VehicleListingsManager({
         <DataTable
           columns={columns}
           data={data.items}
+          totalCount={data.total}
           getRowKey={(listing) => listing.id}
           emptyMessage="განცხადება არ არსებობს"
           actions={(listing) => (

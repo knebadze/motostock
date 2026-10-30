@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { PUBLIC_STATIC_CACHE_SECONDS, fetchFromServer, fetchPublicCacheable } from "./core";
+import { PUBLIC_STATIC_CACHE_SECONDS, fetchFromServer, fetchPublicCacheable, withPublicFallback, withUnavailableError } from "./core";
 import type { Category } from "../categories";
 import type { HeroSlide } from "../hero-slides";
 import type { TeamMember } from "../team-members";
@@ -10,6 +10,8 @@ import type { HomepageSection } from "../homepage-sections";
 import type { CompanyInfo, WeekDay } from "../company-info";
 import type { Terms } from "../terms";
 import type { PrivacyPolicy } from "../privacy-policy";
+import type { ShippingPolicy } from "../shipping-policy";
+import type { PublicDeliveryInfo } from "../settings";
 import type { Faq } from "../faq";
 import type { Vacancy } from "../vacancies";
 import type { PublicServiceType } from "../service-types";
@@ -31,7 +33,11 @@ const getCachedCategories = unstable_cache(
   ["categories"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["categories"] },
 );
-export const getCategoriesFromServer = cache(getCachedCategories);
+export const getCategoriesFromServer = cache(withPublicFallback(getCachedCategories));
+// Same data, but throws (→ 5xx) when the backend is down and nothing is
+// cached — for public pages that would otherwise 404 on an empty list
+// (category/item pages) and for the sitemap (which would publish empty).
+export const getCategoriesStrictFromServer = cache(withUnavailableError(getCachedCategories));
 
 const WEEK_DAYS: WeekDay[] = [
   "MONDAY",
@@ -50,6 +56,7 @@ const COMPANY_INFO_FALLBACK: CompanyInfo = {
   city: null,
   street: null,
   phone: null,
+  whatsappPhone: null,
   email: null,
   facebookUrl: null,
   instagramUrl: null,
@@ -79,7 +86,7 @@ const getCachedCompanyInfo = unstable_cache(
   ["company-info"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["company-info"] },
 );
-export const getCompanyInfoFromServer = cache(getCachedCompanyInfo);
+export const getCompanyInfoFromServer = cache(withPublicFallback(getCachedCompanyInfo));
 
 // The guest /terms page reads this on every load — cached across requests,
 // same reasoning as getCategoriesFromServer above.
@@ -92,7 +99,7 @@ const getCachedTerms = unstable_cache(
   ["terms"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["terms"] },
 );
-export const getTermsFromServer = cache(getCachedTerms);
+export const getTermsFromServer = cache(withPublicFallback(getCachedTerms));
 
 // The guest /privacy page reads this on every load — cached across requests,
 // same reasoning as getCategoriesFromServer above.
@@ -105,7 +112,7 @@ const getCachedPrivacyPolicy = unstable_cache(
   ["privacy-policy"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["privacy-policy"] },
 );
-export const getPrivacyPolicyFromServer = cache(getCachedPrivacyPolicy);
+export const getPrivacyPolicyFromServer = cache(withPublicFallback(getCachedPrivacyPolicy));
 
 // The guest /faq page reads this on every load — cached across requests,
 // same reasoning as getCategoriesFromServer above.
@@ -118,7 +125,7 @@ const getCachedFaqList = unstable_cache(
   ["faq-public"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["faq-public"] },
 );
-export const getFaqListFromServer = cache(getCachedFaqList);
+export const getFaqListFromServer = cache(withPublicFallback(getCachedFaqList));
 
 // The guest /service page's list of what the workshop does — cached across
 // requests like the other admin-edited public content above.
@@ -131,7 +138,7 @@ const getCachedPublicServiceTypes = unstable_cache(
   ["service-types-public"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["service-types-public"] },
 );
-export const getPublicServiceTypesFromServer = cache(getCachedPublicServiceTypes);
+export const getPublicServiceTypesFromServer = cache(withPublicFallback(getCachedPublicServiceTypes));
 
 // The whole vehicle catalog for the storefront's vehicle pickers (home hero
 // search, checkout compatibility check). Public and identical for every
@@ -155,7 +162,7 @@ const getCachedVehicleSearchOptions = unstable_cache(
   ["vehicle-search-options"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["vehicle-catalog"] },
 );
-export const getVehicleSearchOptionsFromServer = cache(getCachedVehicleSearchOptions);
+export const getVehicleSearchOptionsFromServer = cache(withPublicFallback(getCachedVehicleSearchOptions));
 
 // Admin — every FAQ entry, including inactive ones (see the admin FAQ
 // manager). Distinct from getFaqListFromServer's public/active-only list,
@@ -184,6 +191,7 @@ export const getVacancyListFromServer = cache(async (): Promise<Vacancy[]> => {
 export const getVacancyBySlugFromServer = cache(async (slug: string): Promise<Vacancy | null> => {
   return fetchFromServer<{ item: Vacancy }, Vacancy | null>(`/vacancies/by-slug/${slug}`, {
     fallback: null,
+    throwIfUnavailable: true,
     extract: (data) => data.item,
   });
 });
@@ -259,4 +267,67 @@ export const getPublicHomepageSectionsFromServer = cache(async (): Promise<Homep
     "/homepage-sections/public",
     { fallback: [], extract: (data) => data.items },
   );
+});
+
+// Storefront item counts per category, rolled up over subcategories
+// (products, or vehicle listings for transport) — the homepage categories
+// section's numbers. Same short cross-request cache as the backend's.
+const getCachedCategoryItemCounts = unstable_cache(
+  () =>
+    fetchPublicCacheable<{ items: { categoryId: number; count: number }[] }, Record<number, number>>(
+      "/categories/item-counts",
+      {
+        fallback: {},
+        extract: (data) => Object.fromEntries(data.items.map((item) => [item.categoryId, item.count])),
+      },
+    ),
+  ["category-item-counts"],
+  { revalidate: 300 },
+);
+export const getCategoryItemCountsFromServer = cache(withPublicFallback(getCachedCategoryItemCounts));
+
+// The /shipping ("delivery & returns") page — same cross-request caching as
+// the privacy policy above (revalidated on admin save, tag "shipping-policy").
+const getCachedShippingPolicy = unstable_cache(
+  () =>
+    fetchPublicCacheable<{ shippingPolicy: ShippingPolicy }, ShippingPolicy>("/shipping-policy", {
+      fallback: { id: 0, content: { ka: "", en: "", ru: "" }, updatedAt: new Date(0).toISOString() },
+      extract: (data) => data.shippingPolicy,
+    }),
+  ["shipping-policy"],
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["shipping-policy"] },
+);
+export const getShippingPolicyFromServer = cache(withPublicFallback(getCachedShippingPolicy));
+
+// Delivery prices/times + return window for the product page and cart info
+// block (public, admin-edited in Settings → delivery). null when unavailable
+// — the block then just isn't shown.
+const getCachedDeliveryInfo = unstable_cache(
+  () =>
+    fetchPublicCacheable<PublicDeliveryInfo, PublicDeliveryInfo | null>("/settings/delivery-info", {
+      fallback: null,
+      extract: (data) => data,
+    }),
+  ["delivery-info"],
+  { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["delivery-info"] },
+);
+const getDeliveryInfoWithFallback = withPublicFallback(getCachedDeliveryInfo);
+
+// A cache entry written before a field existed keeps its old shape until it's
+// refreshed — an entry from before the per-method checkout switches had no
+// `methods` at all, and every product page that read `methods.courier`
+// crashed. Missing switches default to enabled, the same fallback
+// CheckoutManager uses when delivery info is unavailable.
+const DEFAULT_DELIVERY_METHODS: PublicDeliveryInfo["methods"] = {
+  courier: true,
+  pickup: true,
+  card: true,
+  onDelivery: true,
+  inStore: true,
+};
+
+export const getDeliveryInfoFromServer = cache(async (): Promise<PublicDeliveryInfo | null> => {
+  const info = await getDeliveryInfoWithFallback();
+  if (!info) return null;
+  return { ...info, methods: { ...DEFAULT_DELIVERY_METHODS, ...info.methods } };
 });

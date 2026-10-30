@@ -112,6 +112,11 @@ const brandIdsQuerySchema = z
 
 export const vehicleListingListQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
+  // An exact-match category set (the shop page's subcategory checkboxes —
+  // the caller sends each picked subcategory together with its
+  // descendants). Ignored when categoryId is sent; same convention as the
+  // products list's categoryIds.
+  categoryIds: brandIdsQuerySchema,
   search: z.string().trim().min(1).max(200).optional(),
   brandIds: brandIdsQuerySchema,
   priceMin: z.coerce.number().nonnegative().optional(),
@@ -215,6 +220,7 @@ export const vehicleListingResponseSchema = registry.register(
       weightKg: z.int().nullable(),
       seatHeightMm: z.int().nullable(),
       fuelTankLiters: z.number().nullable(),
+      oilCapacityLiters: z.number().nullable(),
       topSpeedKmh: z.int().nullable(),
       hasAbs: z.boolean().nullable(),
       fuelType: lookupItemResponseSchema.nullable(),

@@ -34,6 +34,10 @@
      against --muted, itself close to the line, and semantically meant for
      a hover state, not static text). */
   --primary-text: #92400e;
+  /* Status text (errors, "removed", success notes) — red-700/green-700:
+     ~6:1+ on every light surface, unlike red-600's borderline 4.5:1. */
+  --destructive: #b91c1c;
+  --success: #15803d;
 }
 
 .dark {
@@ -54,6 +58,10 @@
   /* No separate value needed — the brand yellow already has strong contrast
      as flat text against dark surfaces. */
   --primary-text: var(--primary);
+  /* red-600/green-600 on the dark card were ~3.4:1 / ~5:1 — failing AA for
+     red. The 400 shades read at ~5.5:1+ on every dark surface. */
+  --destructive: #f87171;
+  --success: #4ade80;
 }
 
 @theme inline {
@@ -68,19 +76,57 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-text: var(--primary-text);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+
+  /* Mobile menu drill-down (Header.tsx): a subcategory panel slides in
+     from the right, going back slides the previous level in from the left. */
+  --animate-slide-in-right: slide-in-from-right 0.25s ease-out;
+  --animate-slide-in-left: slide-in-from-left 0.25s ease-out;
+  /* NavigationProgress.tsx: fills fast, then crawls toward 90% until the
+     new page lands (the bar is removed then). */
+  --animate-nav-progress: nav-progress 8s cubic-bezier(0.1, 0.6, 0.2, 1) forwards;
+}
+
+@keyframes nav-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(0.9);
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 body {
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), var(--font-cyrillic), Arial, Helvetica, sans-serif;
   /* Set by CookieNotice.tsx while its fixed bottom bar is visible, so it
      never overlaps real content (a short page's submit button, checkout
      fields) — 0px the rest of the time, so this is a no-op everywhere the
      banner doesn't render (e.g. the admin panel). */
-  padding-bottom: var(--cookie-notice-height, 0px);
+  /* + MobileActionBar.tsx's sticky bar (0 when not shown). */
+  padding-bottom: calc(var(--cookie-notice-height, 0px) + var(--mobile-action-bar-height, 0px));
   transition: padding-bottom 0.2s ease;
 }

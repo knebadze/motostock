@@ -43,7 +43,7 @@ const columns: DataTableColumn<LowStockItem>[] = [
   {
     header: "მარაგი",
     render: (item) => item.stockQuantity,
-    cellClassName: "font-semibold text-red-600",
+    cellClassName: "font-semibold text-destructive",
   },
 ];
 

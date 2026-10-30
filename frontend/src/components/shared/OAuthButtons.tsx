@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { API_ORIGIN } from "@/lib/api/client";
+import { Link } from "@/i18n/navigation";
 
 export type OAuthStatus = { google: boolean; facebook: boolean };
 
@@ -62,6 +63,22 @@ export function OAuthButtons({ status, redirect }: { status: OAuthStatus; redire
           {t("continueWithFacebook")}
         </a>
       )}
+      {/* Recorded as consent when the OAuth account is first created
+          (backend oauth.service.ts → recordConsents "OAUTH_NOTICE"). */}
+      <p className="text-center text-xs text-muted-foreground">
+        {t.rich("oauthConsentNotice", {
+          terms: (chunks) => (
+            <Link href="/terms" target="_blank" className="font-medium text-primary-text hover:underline">
+              {chunks}
+            </Link>
+          ),
+          privacy: (chunks) => (
+            <Link href="/privacy" target="_blank" className="font-medium text-primary-text hover:underline">
+              {chunks}
+            </Link>
+          ),
+        })}
+      </p>
     </div>
   );
 }

@@ -43,6 +43,7 @@ const campaignIncludes = {
       discountPercent: true,
       startDate: true,
       endDate: true,
+      isActive: true,
       // A promo code's scope is never an active-discount-row filter (unlike
       // discountCategoryId/discountProductBrandId on this same slide, which
       // assume /shop?onSale=true — a promo code creates no discount rows at

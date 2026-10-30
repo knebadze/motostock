@@ -5,8 +5,9 @@ import {
   getShopProductsPageFromServer,
 } from "@/lib/api/server";
 import { ShopAllProductsPage } from "@/components/shop/ShopAllProductsPage";
+import { noindexMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: true });
 
 export default async function ShopRoutePage({
   searchParams,

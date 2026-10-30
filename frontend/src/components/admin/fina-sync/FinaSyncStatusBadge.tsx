@@ -12,7 +12,7 @@ const FINA_SYNC_STATUS_STYLE: Record<FinaSyncRun["status"], string> = {
   RUNNING: "bg-blue-500/15 text-blue-600",
   SUCCESS: "bg-primary/15 text-primary-text",
   PARTIAL: "bg-amber-500/15 text-amber-600",
-  FAILED: "bg-red-500/15 text-red-600",
+  FAILED: "bg-red-500/15 text-destructive",
 };
 
 const FINA_SYNC_STATUS_LABEL: Record<FinaSyncRun["status"], string> = {

@@ -14,6 +14,8 @@ export async function registerUser(input: {
   password: string;
   phone: string;
   dateOfBirth: string;
+  // Recorded server-side as proof of consent (terms + privacy policy).
+  agreedToTerms: true;
 }): Promise<User> {
   const { data } = await apiClient.post<{ user: User }>("/auth/register", input);
   return data.user;

@@ -18,14 +18,14 @@ export function FinaSyncBadge({ status }: { status: FinaOrderSyncStatus }) {
 
   if (status === "SYNCED") {
     return (
-      <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-green-600">
+      <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-semibold text-success">
         FINA ✓
       </span>
     );
   }
 
   return (
-    <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-semibold text-red-600">
+    <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-semibold text-destructive">
       FINA ვერ დასინქრონდა
     </span>
   );

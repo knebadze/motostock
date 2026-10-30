@@ -15,6 +15,7 @@ import {
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import type { LookupItem } from "@/lib/api/lookups";
 import { revalidatePublicCache } from "@/lib/api/revalidate";
+import { uploadFailedMessage } from "@/lib/upload-error";
 
 const WEEK_DAY_LABELS: Record<WeekDay, string> = {
   MONDAY: "ორშაბათი",
@@ -42,6 +43,7 @@ export function CompanyInfoManager({
   );
   const [street, setStreet] = useState(initialCompanyInfo.street ?? "");
   const [phone, setPhone] = useState(initialCompanyInfo.phone ?? "");
+  const [whatsappPhone, setWhatsappPhone] = useState(initialCompanyInfo.whatsappPhone ?? "");
   const [email, setEmail] = useState(initialCompanyInfo.email ?? "");
   const [facebookUrl, setFacebookUrl] = useState(initialCompanyInfo.facebookUrl ?? "");
   const [instagramUrl, setInstagramUrl] = useState(initialCompanyInfo.instagramUrl ?? "");
@@ -83,6 +85,7 @@ export function CompanyInfoManager({
         cityId: cityId ? Number(cityId) : null,
         street: street.trim() || null,
         phone: phone.trim() || null,
+        whatsappPhone: whatsappPhone.trim() || null,
         email: email.trim() || null,
         facebookUrl: facebookUrl.trim() || null,
         instagramUrl: instagramUrl.trim() || null,
@@ -97,8 +100,8 @@ export function CompanyInfoManager({
         try {
           const withLogo = await uploadCompanyLogo(logoFile);
           resetLogoPreview(resolveMediaUrl(withLogo.logoUrl));
-        } catch {
-          toast.error("ინფორმაცია შენახულია, მაგრამ ლოგოს ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("ინფორმაცია შენახულია, მაგრამ ლოგოს ატვირთვა ვერ მოხერხდა", error));
           await revalidatePublicCache("company-info");
           setSaving(false);
           return;
@@ -196,6 +199,23 @@ export function CompanyInfoManager({
                 placeholder="+995555123456"
                 className={inputClassName}
               />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="company-whatsapp" className="text-sm font-medium">
+                WhatsApp ნომერი
+              </label>
+              <input
+                id="company-whatsapp"
+                type="tel"
+                value={whatsappPhone}
+                onChange={(event) => setWhatsappPhone(event.target.value)}
+                placeholder="+995555123456"
+                className={inputClassName}
+              />
+              <span className="text-xs text-muted-foreground">
+                „WhatsApp-ში მოწერის“ ღილაკისთვის. ცარიელი — გამოიყენება ტელეფონის ნომერი.
+              </span>
             </div>
 
             <div className="flex flex-col gap-1.5">

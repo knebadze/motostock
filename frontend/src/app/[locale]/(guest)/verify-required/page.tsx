@@ -4,10 +4,11 @@ import { redirect } from "@/i18n/navigation";
 import { getCurrentUserFromServer } from "@/lib/api/server";
 import { resolveRedirectTarget } from "@/lib/auth-redirect";
 import { VerifyRequiredView } from "@/components/shared/VerifyRequiredView";
+import { noindexMetadata } from "@/lib/seo";
 
 // Auth/transactional flow, not content — keep it out of search results,
 // same as verify-email/reset-password.
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 export default async function VerifyRequiredPage({
   searchParams,
@@ -37,7 +38,7 @@ export default async function VerifyRequiredPage({
   }
 
   return (
-    <div className="flex items-center justify-center px-4 py-24">
+    <div className="flex items-center justify-center px-4 py-10 sm:py-16 lg:py-24">
       <VerifyRequiredView email={user.email} />
     </div>
   );

@@ -2,18 +2,30 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
-import { getMyOrderFromServer } from "@/lib/api/server";
+import { getCompanyInfoFromServer, getDeliveryInfoFromServer, getMyOrderFromServer } from "@/lib/api/server";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { formatDateTime, formatPrice } from "@/lib/format";
-import { getOrderInvoiceUrl, type OrderFulfillmentMethod, type PaymentStatus } from "@/lib/api/orders";
+import {
+  getOrderInvoiceUrl,
+  type OrderDeliveryMethod,
+  type OrderPaymentMethod,
+  type PaymentStatus,
+} from "@/lib/api/orders";
 import { ReorderButton } from "@/components/shared/ReorderButton";
+import { OrderRequestPanel } from "@/components/account/OrderRequestPanel";
+import { noindexMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
-const FULFILLMENT_KEY: Record<OrderFulfillmentMethod, "cardPayment" | "courierPayment" | "pickup"> = {
-  CARD: "cardPayment",
-  COURIER: "courierPayment",
-  PICKUP: "pickup",
+const DELIVERY_METHOD_KEY: Record<OrderDeliveryMethod, "deliveryCourier" | "deliveryPickup"> = {
+  COURIER: "deliveryCourier",
+  PICKUP: "deliveryPickup",
+};
+
+const PAYMENT_METHOD_KEY: Record<OrderPaymentMethod, "paymentCard" | "paymentOnDelivery" | "paymentInStore"> = {
+  CARD: "paymentCard",
+  ON_DELIVERY: "paymentOnDelivery",
+  IN_STORE: "paymentInStore",
 };
 
 // NOT_APPLICABLE has no key — it's rendered as nothing (see below), same as
@@ -34,15 +46,50 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     notFound();
   }
 
-  const order = await getMyOrderFromServer(orderId);
+  const [order, companyInfo, deliveryInfo] = await Promise.all([
+    getMyOrderFromServer(orderId),
+    getCompanyInfoFromServer(),
+    getDeliveryInfoFromServer(),
+  ]);
   if (!order) {
     notFound();
   }
 
-  return <OrderDetailPageView order={order} />;
+  const returnPeriodDays = deliveryInfo?.returnPeriodDays ?? 0;
+  return (
+    <OrderDetailPageView
+      order={order}
+      shopPhone={companyInfo.phone}
+      returnPeriodDays={returnPeriodDays}
+      returnWindowOpen={isReturnWindowOpen(order, returnPeriodDays)}
+    />
+  );
 }
 
-function OrderDetailPageView({ order }: { order: NonNullable<Awaited<ReturnType<typeof getMyOrderFromServer>>> }) {
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+type MyOrder = NonNullable<Awaited<ReturnType<typeof getMyOrderFromServer>>>;
+
+// Mirrors the backend check (order-requests.service.ts): counted from when
+// the order reached DELIVERED; no window configured (0) means always open.
+function isReturnWindowOpen(order: MyOrder, returnPeriodDays: number): boolean {
+  if (returnPeriodDays === 0) return true;
+  const delivered = [...order.statusHistory].reverse().find((entry) => entry.status.key === "DELIVERED");
+  if (!delivered) return false;
+  return Date.now() - new Date(delivered.createdAt).getTime() <= returnPeriodDays * MS_PER_DAY;
+}
+
+function OrderDetailPageView({
+  order,
+  shopPhone,
+  returnPeriodDays,
+  returnWindowOpen,
+}: {
+  order: MyOrder;
+  shopPhone: string | null;
+  returnPeriodDays: number;
+  returnWindowOpen: boolean;
+}) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Checkout");
   const tOrders = useTranslations("Account.orders");
@@ -74,7 +121,7 @@ function OrderDetailPageView({ order }: { order: NonNullable<Awaited<ReturnType<
           <section className="rounded-2xl border border-border bg-card p-5">
             <h2 className="font-semibold text-foreground">{t("fulfillmentHeading")}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {t(FULFILLMENT_KEY[order.fulfillmentMethod])}
+              {t(DELIVERY_METHOD_KEY[order.deliveryMethod])} · {t(PAYMENT_METHOD_KEY[order.paymentMethod])}
             </p>
             {order.bank && (
               <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
@@ -99,6 +146,45 @@ function OrderDetailPageView({ order }: { order: NonNullable<Awaited<ReturnType<
               </p>
             )}
           </section>
+
+          {order.statusHistory.length > 0 && (
+            <section className="rounded-2xl border border-border bg-card p-5">
+              <h2 className="font-semibold text-foreground">{tOrders("historyHeading")}</h2>
+              <ol className="mt-4 flex flex-col">
+                {order.statusHistory.map((entry, index) => {
+                  const isLatest = index === order.statusHistory.length - 1;
+                  return (
+                    <li key={index} className="relative flex gap-3 pb-4 last:pb-0">
+                      {!isLatest && (
+                        <span className="absolute left-[5px] top-4 h-[calc(100%-0.5rem)] w-px bg-border" aria-hidden />
+                      )}
+                      <span
+                        className={`mt-1.5 size-[11px] shrink-0 rounded-full ${
+                          isLatest ? "bg-primary ring-4 ring-primary/20" : "bg-muted-foreground/40"
+                        }`}
+                        aria-hidden
+                      />
+                      <div className="flex flex-col">
+                        <span className={`text-sm ${isLatest ? "font-semibold text-foreground" : "text-foreground"}`}>
+                          {entry.status[nameLocaleKey]}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{formatDateTime(entry.createdAt)}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          )}
+
+          <OrderRequestPanel
+            orderId={order.id}
+            statusKey={order.status.key}
+            returnWindowOpen={returnWindowOpen}
+            returnPeriodDays={returnPeriodDays}
+            initialRequests={order.requests}
+            shopPhone={shopPhone}
+          />
 
           <section className="rounded-2xl border border-border bg-card p-5">
             <h2 className="font-semibold text-foreground">{t("itemsHeading")}</h2>

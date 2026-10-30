@@ -47,7 +47,9 @@ export function ModelFormModal({
   );
   const [name, setName] = useState(model?.name ?? "");
   const [slug, setSlug] = useState(model?.slug ?? "");
-  const [slugTouched, setSlugTouched] = useState(false);
+  // On edit the stored slug is the live URL — renaming mustn't silently
+  // regenerate it; only an explicit edit of the slug field changes it.
+  const [slugTouched, setSlugTouched] = useState(isEditing);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
 

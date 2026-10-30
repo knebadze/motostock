@@ -26,7 +26,7 @@ const heroSlideDiscountBulkEventInclude = {
     select: { id: true, targetType: true, discountPercent: true, startDate: true, endDate: true },
   },
   discountPromoCode: {
-    select: { id: true, code: true, domain: true, discountPercent: true, startDate: true, endDate: true },
+    select: { id: true, code: true, domain: true, discountPercent: true, startDate: true, endDate: true, isActive: true },
   },
 } as const;
 

@@ -4,18 +4,29 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
-  getCategoriesFromServer,
+  getCategoriesStrictFromServer,
   getCategorySlugRedirectFromServer,
+  getCompanyInfoFromServer,
+  getDeliveryInfoFromServer,
   getFrequentlyBoughtTogetherFromServer,
+  getMyGarageFromServer,
   getProductSlugRedirectFromServer,
   getProductDetailFromServer,
   getSimilarProductsFromServer,
   getVehicleListingFromServer,
   getSimilarVehicleListingsFromServer,
+  getVehicleSearchOptionsFromServer,
   getViewedTogetherFromServer,
 } from "@/lib/api/server";
 import { buildVehicleListingSlug, parseVehicleListingIdFromSlug } from "@/lib/api/vehicle-listings";
-import { getAncestorChain, isVehicleCategory } from "@/lib/categories-tree";
+import { buildVehicleCatalogSlug, type VehicleSearchOption } from "@/lib/api/vehicle-catalog";
+import { localizedLookupName } from "@/lib/api/lookups";
+import {
+  getAncestorChain,
+  getOnlinePurchaseBlockedCategoryIds,
+  getVehicleFitmentDisabledCategoryIds,
+  isVehicleCategory,
+} from "@/lib/categories-tree";
 import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
 import { resolveMediaUrl } from "@/lib/api/client";
 import { siteConfig } from "@/config/site";
@@ -27,9 +38,11 @@ import { SimilarVehicleListings } from "@/components/shop/vehicle-listing-detail
 import { SimilarProducts } from "@/components/shop/product-detail/SimilarProducts";
 import { FrequentlyBoughtTogether } from "@/components/shop/product-detail/FrequentlyBoughtTogether";
 import { ViewedTogether } from "@/components/shop/product-detail/ViewedTogether";
+import { DeliveryInfoBlock } from "@/components/shop/product-detail/DeliveryInfoBlock";
+import { VehicleFitBadge, type FitVehicle } from "@/components/shop/product-detail/VehicleFitBadge";
 import { buildSocialMetadata } from "@/lib/share-metadata";
 import { permanentRedirect } from "@/i18n/navigation";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, formatVehicleCatalogLabel } from "@/lib/format";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 
 type Locale = "ka" | "en" | "ru";
@@ -46,9 +59,16 @@ function stripHtml(html: string): string {
 }
 
 async function resolveIsVehicleCategory(categorySlug: string): Promise<boolean> {
-  const categories = await getCategoriesFromServer();
+  const categories = await getCategoriesStrictFromServer();
   const category = categories.find((item) => item.slug === categorySlug);
   return category ? isVehicleCategory(categories, category.id) : false;
+}
+
+// Condition lookup key (NEW / USED) → schema.org itemCondition.
+function schemaItemCondition(key: string | undefined): string | undefined {
+  if (key === "NEW") return "https://schema.org/NewCondition";
+  if (key === "USED") return "https://schema.org/UsedCondition";
+  return undefined;
 }
 
 export async function generateMetadata({
@@ -161,22 +181,29 @@ export async function generateMetadata({
 async function CompanionRecommendations({
   productId,
   vehicleCatalogId,
-  hasCuratedBuyTogether,
+  bundleProductIds,
 }: {
   productId: number;
   vehicleCatalogId: string | undefined;
-  hasCuratedBuyTogether: boolean;
+  // What the "ერთად შეძენა" bundle above already shows (admin-curated +
+  // tag companions) — left out of the algorithmic carousel so nothing
+  // appears twice.
+  bundleProductIds: number[];
 }) {
-  // Algorithmic FBT is only a fallback for when the admin hasn't curated a
-  // buyTogether list (see BuyTogether.tsx vs FrequentlyBoughtTogether.tsx).
   const [frequentlyBoughtTogether, viewedTogether] = await Promise.all([
-    hasCuratedBuyTogether ? Promise.resolve([]) : getFrequentlyBoughtTogetherFromServer(productId, vehicleCatalogId),
+    getFrequentlyBoughtTogetherFromServer(productId, vehicleCatalogId),
     getViewedTogetherFromServer(productId, vehicleCatalogId),
   ]);
+  // Explicit keys: this server component's fragment reaches the client
+  // ProductDetailPage as a slot, where RSC hands it over as an array — keyless
+  // siblings there trigger React's "unique key" warning.
   return (
     <>
-      <FrequentlyBoughtTogether products={frequentlyBoughtTogether} />
-      <ViewedTogether products={viewedTogether} />
+      <FrequentlyBoughtTogether
+        key="frequently-bought-together"
+        products={frequentlyBoughtTogether.filter((item) => !bundleProductIds.includes(item.id))}
+      />
+      <ViewedTogether key="viewed-together" products={viewedTogether} />
     </>
   );
 }
@@ -200,7 +227,7 @@ async function SimilarListingsSection({ categoryId, listingId }: { categoryId: n
 export default async function ItemDetailRoute({ params }: { params: Promise<PageParams> }) {
   const { locale, categorySlug, itemSlug } = await params;
 
-  const categories = await getCategoriesFromServer();
+  const categories = await getCategoriesStrictFromServer();
   const category = categories.find((item) => item.slug === categorySlug);
   if (!category) {
     // A renamed category's old URL — 301 to its current slug (the item
@@ -232,19 +259,32 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
     }
 
     const breadcrumbChain = getAncestorChain(categories, listing.vehicleCatalog.category.id);
+    // Category switched off for online purchase (admin) — "visit the
+    // showroom" instead of add-to-cart.
+    const purchasableOnline = !getOnlinePurchaseBlockedCategoryIds(categories).has(listing.vehicleCatalog.category.id);
 
     const title = [listing.vehicleCatalog.brand.name, listing.vehicleCatalog.model.name]
       .filter(Boolean)
       .join(" ");
     const pathname = `/${listing.vehicleCatalog.category.slug}/${buildVehicleListingSlug(listing)}`;
     const canonicalUrl = getAlternateLanguages(pathname)[locale];
+    const listingCompanyInfo = await getCompanyInfoFromServer();
     const images = listing.images
       .map((image) => resolveMediaUrl(image.imageUrl))
       .filter((url): url is string => Boolean(url));
 
+    const listingCondition = schemaItemCondition(listing.condition?.key);
     const vehicleJsonLd = {
       "@context": "https://schema.org",
-      "@type": "Product",
+      // Vehicle (a Product subtype) unlocks the vehicle properties below.
+      "@type": ["Product", "Vehicle"],
+      model: listing.vehicleCatalog.model.name,
+      vehicleModelDate: String(listing.year),
+      mileageFromOdometer:
+        listing.mileageKm != null
+          ? { "@type": "QuantitativeValue", value: listing.mileageKm, unitCode: "KMT" }
+          : undefined,
+      itemCondition: listingCondition,
       name: title,
       image: images.length > 0 ? images : undefined,
       description: (() => {
@@ -265,8 +305,19 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
         // cost ₾8,000.
         priceCurrency: listing.priceCurrency,
         price: listing.activeDiscount?.discountPrice ?? listing.price,
+        // The listing's own status wins (an admin marks a bike SOLD/RESERVED
+        // without necessarily zeroing its stock).
         availability:
-          listing.stockQuantity > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+          listing.status?.key === "SOLD"
+            ? "https://schema.org/SoldOut"
+            : listing.status?.key === "RESERVED"
+              ? "https://schema.org/LimitedAvailability"
+              : listing.stockQuantity <= 0
+                ? "https://schema.org/OutOfStock"
+                : purchasableOnline
+                  ? "https://schema.org/InStock"
+                  : "https://schema.org/InStoreOnly",
+        itemCondition: listingCondition,
         url: canonicalUrl,
       },
     };
@@ -305,6 +356,7 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
           // serialized to the browser — the current one is passed sanitized.
           listing={{ ...listing, descriptionKa: null, descriptionEn: null, descriptionRu: null }}
           breadcrumbChain={breadcrumbChain}
+          purchasableOnline={purchasableOnline}
           similarListings={
             <Suspense fallback={null}>
               <SimilarListingsSection categoryId={listing.vehicleCatalog.category.id} listingId={listing.id} />
@@ -313,6 +365,9 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
           descriptionHtml={localizedHtml(
             locale === "en" ? listing.descriptionEn : locale === "ru" ? listing.descriptionRu : listing.descriptionKa,
           )}
+          pageUrl={canonicalUrl}
+          whatsappPhone={listingCompanyInfo.whatsappPhone || listingCompanyInfo.phone || null}
+          whatsappChatEnabled={listingCompanyInfo.whatsappChatEnabled}
         />
       </>
     );
@@ -336,6 +391,38 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
 
   const productCategory = categories.find((item) => item.slug === product.category.slug);
   const breadcrumbChain = productCategory ? getAncestorChain(categories, productCategory.id) : [];
+  // Categories switched off for online purchase (admin) — the product's own
+  // (add-to-cart vs "visit the showroom") and its buy-together companions'.
+  const onlinePurchaseBlockedCategoryIds = getOnlinePurchaseBlockedCategoryIds(categories);
+  const purchasableOnline = !productCategory || !onlinePurchaseBlockedCategoryIds.has(productCategory.id);
+  // Vehicle-independent category (e.g. helmets) — no compatibility list.
+  const vehicleFitmentEnabled =
+    !productCategory || !getVehicleFitmentDisabledCategoryIds(categories).has(productCategory.id);
+  // The fit badge only makes sense when the product has fitment data at all
+  // — without any it fits nothing and would always say "doesn't fit".
+  const showFitBadge = vehicleFitmentEnabled && (product.fitments.length > 0 || product.fitmentRules.length > 0);
+
+  const [deliveryInfo, companyInfo, vehicleOptions, garage] = await Promise.all([
+    purchasableOnline ? getDeliveryInfoFromServer() : null,
+    purchasableOnline ? getCompanyInfoFromServer() : null,
+    showFitBadge && selectedVehicleCatalogId ? getVehicleSearchOptionsFromServer() : [],
+    showFitBadge ? getMyGarageFromServer() : [],
+  ]);
+  const pickupAddress = companyInfo
+    ? [companyInfo.city ? localizedLookupName(companyInfo.city, locale) : null, companyInfo.street]
+        .filter(Boolean)
+        .join(", ") || null
+    : null;
+  const toFitVehicle = (entry: VehicleSearchOption): FitVehicle => ({
+    id: entry.id,
+    label: formatVehicleCatalogLabel(entry),
+    slug: buildVehicleCatalogSlug(entry),
+  });
+  // An unknown/deleted vehicle id in the cookie counts as no selection.
+  const selectedVehicleEntry = vehicleOptions.find((entry) => String(entry.id) === selectedVehicleCatalogId);
+  const garageFitVehicles = [
+    ...new Map(garage.map((vehicle) => [vehicle.vehicleCatalog.id, toFitVehicle(vehicle.vehicleCatalog)])).values(),
+  ];
 
 
   const pathname = `/${product.category.slug}/${itemSlug}`;
@@ -344,15 +431,47 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
   const images = product.variants
     .flatMap((variant) => variant.images.map((image) => resolveMediaUrl(image.imageUrl)))
     .filter((url): url is string => Boolean(url));
-  const totalStock = product.variants.reduce((sum, variant) => sum + variant.stockQuantity, 0);
-  const effectivePrices = product.variants.map(
-    (variant) => variant.activeDiscount?.discountPrice ?? variant.price,
-  );
+
+  // Shipping + returns, from the same Settings the page's delivery block
+  // shows — only for products bought online (deliveryInfo is fetched then).
+  const shippingDetails =
+    deliveryInfo && deliveryInfo.methods.courier
+      ? [
+          {
+            "@type": "OfferShippingDetails",
+            shippingRate: { "@type": "MonetaryAmount", value: deliveryInfo.tbilisi.price, currency: "GEL" },
+            shippingDestination: { "@type": "DefinedRegion", addressCountry: "GE", addressRegion: "GE-TB" },
+          },
+          {
+            "@type": "OfferShippingDetails",
+            shippingRate: { "@type": "MonetaryAmount", value: deliveryInfo.regions.price, currency: "GEL" },
+            shippingDestination: { "@type": "DefinedRegion", addressCountry: "GE" },
+          },
+        ]
+      : undefined;
+  const returnPolicy =
+    deliveryInfo && deliveryInfo.returnPeriodDays > 0
+      ? {
+          "@type": "MerchantReturnPolicy",
+          applicableCountry: "GE",
+          returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+          merchantReturnDays: deliveryInfo.returnPeriodDays,
+        }
+      : undefined;
+  const variantAvailability = (stock: number) =>
+    stock <= 0
+      ? "https://schema.org/OutOfStock"
+      : purchasableOnline
+        ? "https://schema.org/InStock"
+        : "https://schema.org/InStoreOnly";
 
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name[locale],
+    // One sku for a single-variant product; per-variant skus go on each
+    // variant's Offer below.
+    sku: product.variants.length === 1 ? (product.variants[0].sku ?? undefined) : undefined,
     image: images.length > 0 ? images : undefined,
     description: (() => {
       const raw =
@@ -360,18 +479,21 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
       return raw ? stripHtml(raw) : undefined;
     })(),
     brand: product.productBrand ? { "@type": "Brand", name: product.productBrand.name } : undefined,
+    // One Offer per variant (its own sku, price, stock, condition), each with
+    // the shop's shipping and return terms.
     offers:
-      effectivePrices.length > 0
-        ? {
-            "@type": effectivePrices.length > 1 ? "AggregateOffer" : "Offer",
+      product.variants.length > 0
+        ? product.variants.map((variant) => ({
+            "@type": "Offer",
+            sku: variant.sku ?? undefined,
             priceCurrency: "GEL",
-            ...(effectivePrices.length > 1
-              ? { lowPrice: Math.min(...effectivePrices), highPrice: Math.max(...effectivePrices) }
-              : { price: effectivePrices[0] }),
-            availability:
-              totalStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            price: variant.activeDiscount?.discountPrice ?? variant.price,
+            availability: variantAvailability(variant.stockQuantity),
+            itemCondition: schemaItemCondition(variant.condition?.key),
             url: canonicalUrl,
-          }
+            shippingDetails,
+            hasMerchantReturnPolicy: returnPolicy,
+          }))
         : undefined,
   };
 
@@ -421,12 +543,24 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
           metaDescriptionRu: null,
         }}
         breadcrumbChain={breadcrumbChain}
+        purchasableOnline={purchasableOnline}
+        vehicleFitmentEnabled={vehicleFitmentEnabled}
+        onlinePurchaseBlockedCategoryIds={[...onlinePurchaseBlockedCategoryIds]}
         companionRecommendations={
           <Suspense fallback={null}>
             <CompanionRecommendations
               productId={product.id}
               vehicleCatalogId={selectedVehicleCatalogId}
-              hasCuratedBuyTogether={product.buyTogether.length > 0}
+              bundleProductIds={
+                // Mirrors ProductDetailPage/BuyTogether: the bundle is hidden
+                // for a non-purchasable product and drops non-purchasable
+                // companions.
+                purchasableOnline
+                  ? product.buyTogether
+                      .filter((item) => !onlinePurchaseBlockedCategoryIds.has(item.category.id))
+                      .map((item) => item.id)
+                  : []
+              }
             />
           </Suspense>
         }
@@ -438,6 +572,16 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
         descriptionHtml={localizedHtml(
           locale === "en" ? product.descriptionEn : locale === "ru" ? product.descriptionRu : product.descriptionKa,
         )}
+        fitBadge={
+          showFitBadge ? (
+            <VehicleFitBadge
+              productId={product.id}
+              selectedVehicle={selectedVehicleEntry ? toFitVehicle(selectedVehicleEntry) : null}
+              garageVehicles={garageFitVehicles}
+            />
+          ) : null
+        }
+        deliveryInfo={deliveryInfo ? <DeliveryInfoBlock info={deliveryInfo} pickupAddress={pickupAddress} /> : null}
       />
     </>
   );

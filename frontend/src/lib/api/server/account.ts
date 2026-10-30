@@ -8,6 +8,7 @@ import type { WishlistItem } from "../wishlist";
 import type { MyNewsletterStatus } from "../newsletter";
 import type { CompareItem } from "../compare";
 import type { Cart } from "../cart";
+import type { Profile } from "../account-data";
 import type { Order, OrderSummary } from "../orders";
 
 // The signed-in customer's own data (profile, addresses, garage, wishlist, compare, cart, orders).
@@ -132,5 +133,14 @@ export const getMyOrderFromServer = cache(async (id: number): Promise<Order | nu
     fallback: null,
     extract: (data) => data.order,
     requireAuth: true,
+  });
+});
+
+// /account/profile — personal details, consent status, login methods.
+export const getMyProfileFromServer = cache(async (): Promise<Profile | null> => {
+  return fetchFromServer<{ profile: Profile }, Profile | null>("/users/me/profile", {
+    fallback: null,
+    extract: (data) => data.profile,
+    requireSession: true,
   });
 });

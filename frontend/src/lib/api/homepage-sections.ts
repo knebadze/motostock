@@ -16,7 +16,8 @@ export type HomepageSectionType =
   | "CATEGORIES"
   | "POPULAR_FOR_VEHICLE"
   | "RECOMMENDED_FOR_YOU"
-  | "RECENTLY_VIEWED";
+  | "RECENTLY_VIEWED"
+  | "SEASONAL_PRODUCTS";
 
 export type HomepageSection = Schemas["HomepageSection"];
 

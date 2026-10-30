@@ -178,3 +178,18 @@ export async function uploadVehicleCatalogImage(
   );
   return data.item;
 }
+
+// Lean brand/model/year picker list (public) — for a picker opened on demand
+// (product page "fits your bike?"), instead of serializing the whole catalog
+// into every page.
+export async function listVehicleSearchOptions(): Promise<VehicleSearchOption[]> {
+  const { data } = await apiClient.get<{ items: VehicleCatalogOption[] }>("/vehicle-catalog/options");
+  return data.items.map(({ id, brand, model, variant, yearFrom, yearTo }) => ({
+    id,
+    brand,
+    model,
+    variant,
+    yearFrom,
+    yearTo,
+  }));
+}

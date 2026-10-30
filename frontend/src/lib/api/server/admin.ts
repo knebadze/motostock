@@ -8,7 +8,8 @@ import type { Bank } from "../banks";
 import type { ServiceType } from "../service-types";
 import type { ServiceRecordsAdminPage } from "../service-records";
 import type { PromoCode, PromoCodeDomain } from "../promo-codes";
-import type { AdminOrdersPage, ListOrdersFilters } from "../orders";
+import type { AdminOrderRequest, AdminOrdersPage, ListOrdersFilters } from "../orders";
+import type { CallbackRequest } from "../callback-requests";
 import type { DashboardStats } from "../dashboard";
 import type { AnalyticsFilters, AnalyticsOverview } from "../analytics";
 import type { CompatibilityPage } from "../compatibility";
@@ -257,6 +258,26 @@ export const getVisitorOverviewFromServer = cache(async (): Promise<VisitorOverv
   return fetchFromServer<VisitorOverview, VisitorOverview>("/visitors/overview", {
     fallback: { activeNow: 0, todayVisitors: 0, weekVisitors: 0, dailySeries: [] },
     extract: (data) => data,
+    requireAuth: true,
+  });
+});
+
+// Customer cancel/return requests inbox (admin/operator).
+export const getOrderRequestsFromServer = cache(async (status?: "OPEN" | "RESOLVED"): Promise<AdminOrderRequest[]> => {
+  return fetchFromServer<{ requests: AdminOrderRequest[] }, AdminOrderRequest[]>("/orders/requests", {
+    params: { status },
+    fallback: [],
+    extract: (data) => data.requests,
+    requireAuth: true,
+  });
+});
+
+// "Call me back" requests — second section of the same inbox.
+export const getCallbackRequestsFromServer = cache(async (status?: "OPEN" | "RESOLVED"): Promise<CallbackRequest[]> => {
+  return fetchFromServer<{ requests: CallbackRequest[] }, CallbackRequest[]>("/callback-requests", {
+    params: { status },
+    fallback: [],
+    extract: (data) => data.requests,
     requireAuth: true,
   });
 });

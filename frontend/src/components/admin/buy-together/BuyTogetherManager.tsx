@@ -149,6 +149,7 @@ export function BuyTogetherManager({
         <DataTable
           columns={columns}
           data={data.items}
+          totalCount={data.total}
           getRowKey={(item) => item.id}
           emptyMessage="კავშირი არ მოიძებნა"
           actions={(item) => (

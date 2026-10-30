@@ -14,6 +14,8 @@ const TYPE_LABELS: Record<EmailTemplate["key"], string> = {
   ORDER_DELIVERED: "ჩაბარება",
   ORDER_CANCELLED: "გაუქმება",
   NEW_ORDER_ADMIN: "ახალი შეკვეთა (ადმინი)",
+  ORDER_REQUEST_ADMIN: "გაუქმების/დაბრუნების მოთხოვნა (ადმინი)",
+  CALLBACK_REQUEST_ADMIN: "დარეკვის თხოვნა (ადმინი)",
   BIRTHDAY: "დაბადების დღე",
 };
 
@@ -30,6 +32,8 @@ const AVAILABLE_PLACEHOLDERS: Record<EmailTemplate["key"], string[]> = {
   ORDER_DELIVERED: ["customerName", "orderCode", "total"],
   ORDER_CANCELLED: ["customerName", "orderCode", "total"],
   NEW_ORDER_ADMIN: ["customerName", "orderCode", "total"],
+  ORDER_REQUEST_ADMIN: ["customerName", "orderCode", "total", "requestType", "reason"],
+  CALLBACK_REQUEST_ADMIN: ["customerName", "phone", "itemTitle", "preferredTime", "note"],
   BIRTHDAY: ["customerName"],
 };
 

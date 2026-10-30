@@ -10,6 +10,7 @@ import { resolveApiErrorMessage } from "@/lib/api-errors";
 import { formatPrice } from "@/lib/format";
 import { getCartItemDisplay, recomputeCart } from "@/lib/cart-item-display";
 import { removeFromCart, updateCartItemQuantity, type Cart, type CartItem } from "@/lib/api/cart";
+import type { PublicDeliveryInfo } from "@/lib/api/settings";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { QuantityStepper } from "@/components/shared/QuantityStepper";
 
@@ -45,6 +46,9 @@ function CartLineRow({
           {title}
         </Link>
         {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
+        {item.purchasableOnline === false && (
+          <p className="text-sm font-medium text-destructive">{t("itemNotPurchasableOnline")}</p>
+        )}
 
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <QuantityStepper
@@ -64,7 +68,7 @@ function CartLineRow({
               type="button"
               onClick={onRemove}
               disabled={pending}
-              className="text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-red-600 hover:underline disabled:opacity-40"
+              className="text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-destructive hover:underline disabled:opacity-40"
             >
               {t("remove")}
             </button>
@@ -75,7 +79,15 @@ function CartLineRow({
   );
 }
 
-export function CartManager({ initialCart }: { initialCart: Cart }) {
+// deliveryInfo: Settings → delivery prices for the "delivery: Tbilisi X ·
+// regions Y · pickup free" hint under the subtotal (null — no hint).
+export function CartManager({
+  initialCart,
+  deliveryInfo = null,
+}: {
+  initialCart: Cart;
+  deliveryInfo?: PublicDeliveryInfo | null;
+}) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Cart");
   const tCommon = useTranslations("Common");
@@ -103,7 +115,13 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
     try {
       const updated = await updateCartItemQuantity(item.id, nextQuantity);
       setCart((current) =>
-        recomputeCart(current.items.map((existing) => (existing.id === item.id ? updated : existing))),
+        // The update response doesn't carry purchasableOnline (only GET
+        // /cart computes it) — kept from the row being replaced.
+        recomputeCart(
+          current.items.map((existing) =>
+            existing.id === item.id ? { ...updated, purchasableOnline: existing.purchasableOnline } : existing,
+          ),
+        ),
       );
       // Keeps the Header's server-rendered cart badge in sync — same fix
       // CartDropdown.tsx's handleQuantityChange already applies.
@@ -171,12 +189,38 @@ export function CartManager({ initialCart }: { initialCart: Cart }) {
           <span>{t("subtotal")}</span>
           <span className="text-primary-text">{formatPrice(cart.subtotal)}</span>
         </div>
-        <Link
-          href="/checkout"
-          className="mt-4 block rounded-full bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
-        >
-          {t("goToCheckout")}
-        </Link>
+        {deliveryInfo && (
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            {/* Follows which delivery methods the admin left on. */}
+            {deliveryInfo.methods.courier
+              ? t(deliveryInfo.methods.pickup ? "deliveryHint" : "deliveryHintNoPickup", {
+                  tbilisi: deliveryInfo.tbilisi.price > 0 ? formatPrice(deliveryInfo.tbilisi.price) : t("deliveryFree"),
+                  regions: deliveryInfo.regions.price > 0 ? formatPrice(deliveryInfo.regions.price) : t("deliveryFree"),
+                })
+              : t("deliveryHintPickupOnly")}{" "}
+            <Link href="/shipping" className="font-medium text-primary-text hover:underline">
+              {t("deliveryHintLink")}
+            </Link>
+          </p>
+        )}
+        {/* Checkout would refuse an item whose category can't be bought
+            online (NOT_PURCHASABLE_ONLINE_ITEM) — blocked here until it's
+            removed (each such row says so). */}
+        {cart.items.some((item) => item.purchasableOnline === false) ? (
+          <span
+            aria-disabled
+            className="mt-4 block cursor-not-allowed rounded-full bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground opacity-50"
+          >
+            {t("goToCheckout")}
+          </span>
+        ) : (
+          <Link
+            href="/checkout"
+            className="mt-4 block rounded-full bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+          >
+            {t("goToCheckout")}
+          </Link>
+        )}
       </div>
 
       <ConfirmDialog

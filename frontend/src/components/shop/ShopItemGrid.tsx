@@ -27,7 +27,7 @@ export function ShopItemGrid<T>({
   return (
     <div
       className={`transition-opacity ${loading ? "pointer-events-none opacity-50" : ""} ${
-        layout === "grid" ? "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" : "flex flex-col gap-4"
+        layout === "grid" ? "grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "flex flex-col gap-4"
       }`}
     >
       {items.map((item) => (

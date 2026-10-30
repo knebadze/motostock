@@ -163,6 +163,10 @@ function SpecsTab({ listing }: { listing: VehicleListingDetailAdmin }) {
           { label: "გადაცემები", value: catalog.gearCount != null ? String(catalog.gearCount) : "—" },
           { label: "საწვავის ტიპი", value: catalog.fuelType?.nameKa ?? "—" },
           { label: "საწვავის ავზი (ლ)", value: catalog.fuelTankLiters != null ? String(catalog.fuelTankLiters) : "—" },
+          {
+            label: "ზეთის მოცულობა (ლ)",
+            value: catalog.oilCapacityLiters != null ? String(catalog.oilCapacityLiters) : "—",
+          },
           { label: "გაშვების სისტემა", value: catalog.startType?.nameKa ?? "—" },
         ]),
     { label: "ადგილები", value: catalog.seatCount != null ? String(catalog.seatCount) : "—" },

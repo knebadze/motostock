@@ -19,7 +19,7 @@ export function ShopHero({
   const imageUrl = resolveMediaUrl(category.bannerImageUrl);
 
   return (
-    <section className="relative flex min-h-55 items-center justify-center overflow-hidden border-b border-border sm:min-h-75 lg:min-h-95">
+    <section className="relative flex min-h-38 items-center justify-center overflow-hidden border-b border-border sm:min-h-75 lg:min-h-95">
       {imageUrl ? (
         <>
           <div
@@ -36,7 +36,7 @@ export function ShopHero({
       )}
       <div className="relative mx-auto max-w-6xl px-4 text-center sm:px-6 lg:px-8">
         <h1
-          className={`text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl ${
+          className={`text-2xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl ${
             imageUrl ? "text-white drop-shadow-md" : "text-foreground"
           }`}
         >

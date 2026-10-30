@@ -219,6 +219,7 @@ export function UsersManager({ initialData }: { initialData: AdminUsersPage }) {
         <DataTable
           columns={columns}
           data={data.items}
+          totalCount={data.total}
           getRowKey={(user) => user.id}
           emptyMessage="მომხმარებელი არ არსებობს"
           actions={(user) => (

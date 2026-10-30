@@ -133,6 +133,13 @@ export const VEHICLE_SPEC_FIELDS: Record<VehicleSpecField, SpecFieldDefinition> 
     nameEn: "Fuel tank (L)",
     nameRu: "Топливный бак (л)",
   },
+  OIL_CAPACITY_LITERS: {
+    kind: "NUMBER",
+    column: "oilCapacityLiters",
+    nameKa: "ზეთის მოცულობა (ლ)",
+    nameEn: "Oil capacity (L)",
+    nameRu: "Объём масла (л)",
+  },
   TOP_SPEED_KMH: {
     kind: "NUMBER",
     column: "topSpeedKmh",

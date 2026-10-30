@@ -13,6 +13,7 @@ import {
   type BulkDiscountEvent,
 } from "@/lib/api/bulk-discount-events";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
+import { uploadFailedMessage } from "@/lib/upload-error";
 
 const DEFAULT_BUTTON_LABEL = { ka: "იხილეთ ფასდაკლება", en: "View discount", ru: "Смотреть скидку" };
 
@@ -95,7 +96,7 @@ export function EventHeroSlideModal({
 
     setLoading(true);
     try {
-      const saved = await setBulkDiscountEventHeroSlide(event.id, {
+      await setBulkDiscountEventHeroSlide(event.id, {
         title: { ka: titleKa.trim(), en: titleEn.trim(), ru: titleRu.trim() },
         subtitle: hasSubtitle
           ? { ka: subtitleKa.trim(), en: subtitleEn.trim(), ru: subtitleRu.trim() }
@@ -109,9 +110,9 @@ export function EventHeroSlideModal({
 
       if (imageFile) {
         try {
-          await uploadBulkDiscountEventHeroSlideImage(saved.id, imageFile);
-        } catch {
-          toast.error("სლაიდი შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა");
+          await uploadBulkDiscountEventHeroSlideImage(event.id, imageFile);
+        } catch (error) {
+          toast.error(uploadFailedMessage("სლაიდი შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა", error));
           onSaved();
           onClose();
           return;

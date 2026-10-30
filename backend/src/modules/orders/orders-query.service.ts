@@ -4,7 +4,7 @@ import type { CartItemType } from "../../generated/prisma/index.js";
 import { cartRepository, type CartOwner } from "../cart/cart.repository.js";
 import { addCartItem } from "../cart/cart.service.js";
 import { ordersRepository } from "./orders.repository.js";
-import { toOrderResponse, computeEstimatedDeliveryDate } from "./orders.service.js";
+import { toOrderResponse, toAdminOrderExtras, computeEstimatedDeliveryDate } from "./orders.service.js";
 import {
   generateOrderInvoicePdf,
   generateOrderPackingSlipPdf,
@@ -203,7 +203,8 @@ export async function listAllOrders(filters: ListOrdersQuery) {
     id: row.id,
     orderCode: row.orderCode,
     status: row.status,
-    fulfillmentMethod: row.fulfillmentMethod,
+    deliveryMethod: row.deliveryMethod,
+    paymentMethod: row.paymentMethod,
     total: Number(row.total),
     itemCount: row.items.reduce((sum, item) => sum + item.quantity, 0),
     createdAt: row.createdAt,
@@ -239,5 +240,6 @@ export async function getAnyOrder(id: number) {
     finaOutOperationId: row.finaOutOperationId,
     finaLastError: row.finaLastError,
     finaPushUncertain: row.finaPushUncertain,
+    ...toAdminOrderExtras(row),
   };
 }

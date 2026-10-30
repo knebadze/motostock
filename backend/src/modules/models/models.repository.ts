@@ -19,7 +19,7 @@ export const modelsRepository = {
     return prisma.model.findMany({
       where: brandId ? { brandId } : undefined,
       include: modelInclude,
-      orderBy: { name: "asc" },
+      orderBy: [{ brand: { name: "asc" } }, { name: "asc" }],
     });
   },
 

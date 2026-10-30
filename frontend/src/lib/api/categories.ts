@@ -20,10 +20,19 @@ export type CategoryInput = Schemas["CreateCategoryInput"];
 // current locale — the guest layout passes this lean shape instead of full
 // Category rows (three languages, banner, timestamps...) for every category
 // on every page's serialized props.
-export type HeaderCategory = Pick<Category, "id" | "parentId" | "slug" | "imageUrl"> & { name: string };
+export type HeaderCategory = Pick<Category, "id" | "parentId" | "slug" | "imageUrl" | "menuImageUrl"> & {
+  name: string;
+};
 
 export function toHeaderCategories(categories: Category[], locale: "ka" | "en" | "ru"): HeaderCategory[] {
-  return categories.map(({ id, parentId, slug, imageUrl, name }) => ({ id, parentId, slug, imageUrl, name: name[locale] }));
+  return categories.map(({ id, parentId, slug, imageUrl, menuImageUrl, name }) => ({
+    id,
+    parentId,
+    slug,
+    imageUrl,
+    menuImageUrl,
+    name: name[locale],
+  }));
 }
 
 export async function listCategories(adminFilters?: AdminFilterEntry[]): Promise<Category[]> {
@@ -73,6 +82,19 @@ export async function uploadCategoryBannerImage(id: number, file: File): Promise
 
   const { data } = await apiClient.post<{ category: Category }>(
     `/categories/${id}/banner-image`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return data.category;
+}
+
+// The header mega menu's promo tile image.
+export async function uploadCategoryMenuImage(id: number, file: File): Promise<Category> {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const { data } = await apiClient.post<{ category: Category }>(
+    `/categories/${id}/menu-image`,
     formData,
     { headers: { "Content-Type": "multipart/form-data" } },
   );

@@ -13,6 +13,7 @@ import {
   createCategory,
   updateCategory,
   uploadCategoryBannerImage,
+  uploadCategoryMenuImage,
   uploadCategoryImage,
   type Category,
 } from "@/lib/api/categories";
@@ -20,6 +21,7 @@ import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { getDescendantIds, slugify } from "@/lib/categories-tree";
 import { categoryFormSchema } from "@/lib/validation/categories";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+import { uploadFailedMessage } from "@/lib/upload-error";
 
 export function CategoryFormModal({
   open,
@@ -39,7 +41,9 @@ export function CategoryFormModal({
   const [nameEn, setNameEn] = useState(category?.name.en ?? "");
   const [nameRu, setNameRu] = useState(category?.name.ru ?? "");
   const [slug, setSlug] = useState(category?.slug ?? "");
-  const [slugTouched, setSlugTouched] = useState(false);
+  // On edit the stored slug is the live URL — renaming mustn't silently
+  // regenerate it; only an explicit edit of the slug field changes it.
+  const [slugTouched, setSlugTouched] = useState(isEditing);
   const [parentId, setParentId] = useState<string>(
     category?.parentId != null ? String(category.parentId) : "",
   );
@@ -63,6 +67,12 @@ export function CategoryFormModal({
   const [lowStockBadgeEnabled, setLowStockBadgeEnabled] = useState(
     category?.lowStockBadgeEnabled ?? true,
   );
+  const [onlinePurchaseEnabled, setOnlinePurchaseEnabled] = useState(
+    category?.onlinePurchaseEnabled ?? true,
+  );
+  const [vehicleFitmentEnabled, setVehicleFitmentEnabled] = useState(
+    category?.vehicleFitmentEnabled ?? true,
+  );
   const { file: imageFile, previewUrl, onChange: handleImageChange } = useFileUploadPreview(
     resolveMediaUrl(category?.imageUrl ?? null),
   );
@@ -71,6 +81,11 @@ export function CategoryFormModal({
     previewUrl: bannerPreviewUrl,
     onChange: handleBannerImageChange,
   } = useFileUploadPreview(resolveMediaUrl(category?.bannerImageUrl ?? null));
+  const {
+    file: menuImageFile,
+    previewUrl: menuPreviewUrl,
+    onChange: handleMenuImageChange,
+  } = useFileUploadPreview(resolveMediaUrl(category?.menuImageUrl ?? null));
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
 
@@ -102,6 +117,8 @@ export function CategoryFormModal({
         parentId: parentId ? Number(parentId) : null,
         sortOrder,
         lowStockBadgeEnabled,
+        onlinePurchaseEnabled,
+        vehicleFitmentEnabled,
       };
 
       const savedCategory = isEditing
@@ -111,8 +128,8 @@ export function CategoryFormModal({
       if (imageFile) {
         try {
           await uploadCategoryImage(savedCategory.id, imageFile);
-        } catch {
-          toast.error("კატეგორია შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("კატეგორია შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა", error));
           onSaved();
           onClose();
           return;
@@ -122,8 +139,21 @@ export function CategoryFormModal({
       if (bannerImageFile) {
         try {
           await uploadCategoryBannerImage(savedCategory.id, bannerImageFile);
-        } catch {
-          toast.error("კატეგორია შენახულია, მაგრამ hero ბანერის ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("კატეგორია შენახულია, მაგრამ hero ბანერის ატვირთვა ვერ მოხერხდა", error));
+          onSaved();
+          onClose();
+          return;
+        }
+      }
+
+      // Only top-level categories open a header mega menu (see the field
+      // below), so a file picked before switching to a parent is ignored.
+      if (menuImageFile && !parentId) {
+        try {
+          await uploadCategoryMenuImage(savedCategory.id, menuImageFile);
+        } catch (error) {
+          toast.error(uploadFailedMessage("კატეგორია შენახულია, მაგრამ მენიუს სურათის ატვირთვა ვერ მოხერხდა", error));
           onSaved();
           onClose();
           return;
@@ -234,6 +264,42 @@ export function CategoryFormModal({
           </div>
         </div>
 
+        <div className="rounded-xl border border-border p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">საიტიდან შეძენა (კალათა)</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                გამორთვის შემთხვევაში ამ კატეგორიის ნივთებს კალათაში დამატების ღილაკის ნაცვლად
+                გამოუჩნდება „შესაძენად ეწვიეთ შოურუმს&rdquo;. ვრცელდება ყველა ქვეკატეგორიაზეც.
+              </p>
+            </div>
+            <Toggle
+              checked={onlinePurchaseEnabled}
+              onChange={setOnlinePurchaseEnabled}
+              label="საიტიდან შეძენა"
+            />
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">ტრანსპორტთან თავსებადობა</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                ჩართეთ კატეგორიებზე, რომელთა პროდუქტები კონკრეტულ ტრანსპორტზეა დამოკიდებული
+                (ნაწილები, ზეთები): პროდუქტის ფორმაში გამოჩნდება „თავსებადობის&rdquo; ჩანართი, საიტზე
+                კი თავსებადობის სია, „ჩემი ტრანსპორტის&rdquo; ფილტრი და შემოწმება checkout-ზე.
+                გამორთეთ, მაგალითად, ჩაფხუტებზე. ვრცელდება ყველა ქვეკატეგორიაზეც.
+              </p>
+            </div>
+            <Toggle
+              checked={vehicleFitmentEnabled}
+              onChange={setVehicleFitmentEnabled}
+              label="ტრანსპორტთან თავსებადობა"
+            />
+          </div>
+        </div>
+
         <div className="flex flex-col gap-1.5">
           <label htmlFor="category-image" className="text-sm font-medium">
             სურათი
@@ -280,6 +346,34 @@ export function CategoryFormModal({
             ზომა 1920×480px (ფართო ბანერი), თორემ სურათი გაჭიმული/დაბლურებული გამოჩნდება
           </p>
         </div>
+
+        {!parentId && (
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="category-menu-image" className="text-sm font-medium">
+              ჰედერის მენიუს სურათი
+            </label>
+            {menuPreviewUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={menuPreviewUrl}
+                alt=""
+                className="size-32 rounded-lg border border-border object-cover"
+              />
+            )}
+            <input
+              id="category-menu-image"
+              type="file"
+              accept="image/*"
+              onChange={handleMenuImageChange}
+              className="text-sm text-muted-foreground file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-border"
+            />
+            <p className="text-xs text-muted-foreground">
+              ჩანს ჰედერის ჩამოსაშლელ მენიუში, ქვეკატეგორიების მარჯვნივ (მხოლოდ მთავარ კატეგორიებზე).
+              რეკომენდებული ზომა 512×512px (კვადრატული). თუ არ ატვირთავთ, გამოჩნდება კატეგორიის
+              ზემოთა სურათი
+            </p>
+          </div>
+        )}
 
         <FormActions onCancel={onClose} loading={loading} />
       </form>

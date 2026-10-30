@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { VehicleCategoryFilter, VehicleSpecField } from "@/lib/api/vehicle-category-filters";
 import type { BrandOption } from "./ProductFilters";
@@ -14,6 +15,7 @@ export type SpecFilterState = {
 export function VehicleFilters({
   search,
   onSearchChange,
+  subcategoryFilter,
   filters,
   brandOptions,
   selectedBrandIds,
@@ -33,6 +35,8 @@ export function VehicleFilters({
 }: {
   search: string;
   onSearchChange: (value: string) => void;
+  // SubcategoryFilter, rendered right under the search box.
+  subcategoryFilter?: ReactNode;
   filters: VehicleCategoryFilter[];
   brandOptions: BrandOption[];
   selectedBrandIds: number[];
@@ -63,6 +67,8 @@ export function VehicleFilters({
           className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
       </div>
+
+      {subcategoryFilter}
 
       {filters.map((filter) => {
         if (filter.filterType === "BRAND") {

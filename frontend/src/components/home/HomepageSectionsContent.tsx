@@ -8,6 +8,7 @@ import {
   getPopularVehicleListingsFromServer,
   getRecentlyViewedFromServer,
   getRecommendedForMeFromServer,
+  getSeasonalProductsFromServer,
 } from "@/lib/api/server";
 import type { Category } from "@/lib/api/categories";
 import type { HomepageSection } from "@/lib/api/homepage-sections";
@@ -26,11 +27,13 @@ type Locale = "ka" | "en" | "ru";
 export async function HomepageSectionContent({
   section,
   topLevelCategories,
+  categoryItemCounts,
   selectedVehicleCatalogId,
   localeKey,
 }: {
   section: HomepageSection;
   topLevelCategories: Category[];
+  categoryItemCounts: Record<number, number>;
   selectedVehicleCatalogId: string | undefined;
   localeKey: Locale;
 }) {
@@ -84,6 +87,7 @@ export async function HomepageSectionContent({
         <CategoriesSection
           title={title}
           categories={topLevelCategories.slice(0, section.itemCount)}
+          itemCounts={categoryItemCounts}
           locale={localeKey}
         />
       );
@@ -101,6 +105,12 @@ export async function HomepageSectionContent({
     case "RECOMMENDED_FOR_YOU":
       return (
         <ProductsCarouselSection title={title} products={await getRecommendedForMeFromServer(section.itemCount)} />
+      );
+    // Automatic by date: summer gear Apr–Sep, winter gear Oct–Mar (the
+    // backend picks the season; empty -> the carousel renders nothing).
+    case "SEASONAL_PRODUCTS":
+      return (
+        <ProductsCarouselSection title={title} products={await getSeasonalProductsFromServer(section.itemCount)} />
       );
     case "RECENTLY_VIEWED":
       return (

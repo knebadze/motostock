@@ -195,6 +195,7 @@ export function RecentServiceRecordsPanel({
         <DataTable
           columns={columns}
           data={data.items}
+          totalCount={data.total}
           getRowKey={(record) => record.id}
           emptyMessage="სერვისის ჩანაწერი ჯერ არ არსებობს"
         />

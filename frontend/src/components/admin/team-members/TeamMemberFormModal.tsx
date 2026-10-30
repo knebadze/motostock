@@ -22,6 +22,7 @@ import {
   teamMemberFormSchema,
 } from "@/lib/validation/team-members";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+import { uploadFailedMessage } from "@/lib/upload-error";
 
 function CharCount({ value, max }: { value: string; max: number }) {
   const isNearLimit = value.length > max * 0.9;
@@ -95,8 +96,8 @@ export function TeamMemberFormModal({
       if (imageFile) {
         try {
           await uploadTeamMemberImage(saved.id, imageFile);
-        } catch {
-          toast.error("წევრი შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("წევრი შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა", error));
           onSaved();
           onClose();
           return;

@@ -12,6 +12,7 @@ import { createBank, updateBank, uploadBankLogo, type Bank } from "@/lib/api/ban
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { bankFormSchema } from "@/lib/validation/banks";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
+import { uploadFailedMessage } from "@/lib/upload-error";
 
 export function BankFormModal({
   open,
@@ -68,8 +69,8 @@ export function BankFormModal({
       if (logoFile) {
         try {
           await uploadBankLogo(saved.id, logoFile);
-        } catch {
-          toast.error("ბანკი შენახულია, მაგრამ ლოგოს ატვირთვა ვერ მოხერხდა");
+        } catch (error) {
+          toast.error(uploadFailedMessage("ბანკი შენახულია, მაგრამ ლოგოს ატვირთვა ვერ მოხერხდა", error));
           onSaved();
           onClose();
           return;

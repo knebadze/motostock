@@ -72,6 +72,7 @@ export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
         <DataTable
           columns={columns}
           data={brands}
+          totalCount={brands.length}
           getRowKey={(brand) => brand.id}
           emptyMessage="მარკა არ არსებობს"
           actions={(brand) => (

@@ -15,7 +15,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
   const t = useTranslations("Error");
 
   return (
-    <main className="flex flex-1 items-center justify-center px-4 py-24">
+    <main className="flex flex-1 items-center justify-center px-4 py-10 sm:py-16 lg:py-24">
       <div className="text-center">
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
           {t("heading")}

@@ -62,7 +62,7 @@ export function ErrorLogsManager({ initialData }: { initialData: ErrorLogsPage }
             type="button"
             onClick={() => setConfirmingClear(true)}
             disabled={data.total === 0}
-            className="rounded-full border border-red-500/30 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full border border-red-500/30 px-4 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
             გასუფთავება
           </button>
@@ -73,6 +73,7 @@ export function ErrorLogsManager({ initialData }: { initialData: ErrorLogsPage }
         <DataTable
           columns={columns}
           data={data.items}
+          totalCount={data.total}
           getRowKey={(log) => log.id}
           emptyMessage="შეცდომები არ დაფიქსირებულა"
           actions={(log) => (

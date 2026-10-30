@@ -71,3 +71,50 @@ export const updateUserRoleSchema = registry.register(
   }),
 );
 export type UpdateUserRoleInput = z.infer<typeof updateUserRoleSchema>;
+
+// Self-service profile (see account-data.service.ts). Email isn't editable
+// here — it's the login identity and would need re-verification.
+export const updateProfileSchema = registry.register(
+  "UpdateProfileInput",
+  z.object({
+    firstName: z.string().trim().min(2).max(50),
+    lastName: z.string().trim().min(2).max(50),
+    // Empty clears it (OAuth accounts may never have had one).
+    phone: z.union([phoneField, z.literal("")]).optional(),
+    dateOfBirth: z.union([dateOfBirthField, z.literal("")]).optional(),
+  }),
+);
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+export const profileResponseSchema = registry.register(
+  "Profile",
+  z.object({
+    email: z.email(),
+    firstName: z.string(),
+    lastName: z.string(),
+    phone: z.string().nullable(),
+    dateOfBirth: z.iso.date().nullable(),
+    hasPassword: z.boolean(),
+    hasGoogle: z.boolean(),
+    hasFacebook: z.boolean(),
+    createdAt: z.iso.datetime(),
+    consent: z.object({
+      termsAcceptedAt: z.iso.datetime().nullable(),
+      privacyAcceptedAt: z.iso.datetime().nullable(),
+      // false — never recorded, or a document changed since.
+      upToDate: z.boolean(),
+    }),
+    canDelete: z.boolean(),
+  }),
+);
+
+// Confirms account deletion: the password, or for a Google/Facebook-only
+// account the email typed back (checked in the service).
+export const deleteAccountSchema = registry.register(
+  "DeleteAccountInput",
+  z.object({
+    password: z.string().max(200).optional(),
+    confirmEmail: z.string().max(254).optional(),
+  }),
+);
+export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;

@@ -292,6 +292,22 @@ export const buyTogetherIcon = (
   </svg>
 );
 
+export const tagsIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-5"
+  >
+    <path d="M12.6 2.6 21 11a2 2 0 0 1 0 2.8L13.8 21a2 2 0 0 1-2.8 0L2.6 12.6A2 2 0 0 1 2 11.2V4a2 2 0 0 1 2-2h7.2a2 2 0 0 1 1.4.6Z" />
+    <circle cx="7.5" cy="7.5" r="1.5" />
+  </svg>
+);
+
 export const compatibilityIcon = (
   <svg
     xmlns="http://www.w3.org/2000/svg"

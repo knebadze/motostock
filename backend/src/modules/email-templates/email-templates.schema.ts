@@ -9,6 +9,8 @@ export const emailTemplateKeySchema = z.enum([
   "ORDER_DELIVERED",
   "ORDER_CANCELLED",
   "NEW_ORDER_ADMIN",
+  "ORDER_REQUEST_ADMIN",
+  "CALLBACK_REQUEST_ADMIN",
   "BIRTHDAY",
 ]);
 export type EmailTemplateKeyInput = z.infer<typeof emailTemplateKeySchema>;

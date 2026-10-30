@@ -11,7 +11,7 @@ import { SENTRY_DSN } from "@/lib/sentry-shared";
 function StatusRow({ ok, label, hint }: { ok: boolean | null; label: string; hint: string }) {
   return (
     <div className="flex items-start gap-2 text-sm">
-      <span className={ok == null ? "text-muted-foreground" : ok ? "text-green-600" : "text-amber-600"}>
+      <span className={ok == null ? "text-muted-foreground" : ok ? "text-success" : "text-amber-600"}>
         {ok == null ? "…" : ok ? "✓" : "✗"}
       </span>
       <div>

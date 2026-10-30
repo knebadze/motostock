@@ -8,7 +8,7 @@ import {
 } from "@/lib/api/server";
 import { buildVehicleCatalogSlug, parseVehicleCatalogIdFromSlug } from "@/lib/api/vehicle-catalog";
 import { permanentRedirect } from "@/i18n/navigation";
-import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
+import { buildCanonicalUrl, getAlternateLanguages, noindexMetadata, parsePageParam } from "@/lib/seo";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 import { siteConfig } from "@/config/site";
 import { CompatibleProductsPage } from "@/components/shop/CompatibleProductsPage";
@@ -18,6 +18,7 @@ import { buildSocialMetadata } from "@/lib/share-metadata";
 // buildVehicleCatalogSlug) — the folder keeps its old [vehicleCatalogId]
 // name; only the trailing id is read from it.
 type PageParams = { locale: "ka" | "en" | "ru"; vehicleCatalogId: string };
+type PageSearchParams = { page?: string };
 
 // Was a blanket noindex — but "parts for <brand> <model>" is exactly the
 // search this shop most wants to rank for, and this page is the answer.
@@ -25,15 +26,22 @@ type PageParams = { locale: "ka" | "en" | "ru"; vehicleCatalogId: string };
 // vehicle with zero compatible products stays noindex: an empty page is
 // thin content that would only dilute the site in Google's eyes. Both
 // fetches are cache()'d, so the page body below reuses them.
-export async function generateMetadata({ params }: { params: Promise<PageParams> }): Promise<Metadata> {
-  const { locale, vehicleCatalogId } = await params;
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<PageParams>;
+  searchParams: Promise<PageSearchParams>;
+}): Promise<Metadata> {
+  const [{ locale, vehicleCatalogId }, { page }] = await Promise.all([params, searchParams]);
+  const pageNum = parsePageParam(page);
   const id = parseVehicleCatalogIdFromSlug(vehicleCatalogId);
   if (id == null) return {};
 
   // Same cached requests as the page body below.
   const [vehicle, firstPage] = await Promise.all([
     getVehicleCatalogEntryFromServer(id),
-    getCompatibleProductsPageFromServer(id),
+    getCompatibleProductsPageFromServer(id, pageNum),
   ]);
   if (!vehicle) return {};
 
@@ -50,21 +58,30 @@ export async function generateMetadata({ params }: { params: Promise<PageParams>
   return {
     title,
     description,
-    robots: firstPage.total === 0 ? { index: false, follow: true } : undefined,
-    alternates: {
-      canonical: buildCanonicalUrl(pathname, locale),
-      languages: getAlternateLanguages(pathname),
-    },
+    // No compatible products yet → thin page, kept out of the index (and
+    // then without a canonical — see noindexMetadata).
+    ...(firstPage.total === 0
+      ? noindexMetadata({ follow: true })
+      : {
+          // Page 2+ self-canonicalize (each lists different products).
+          alternates: {
+            canonical: buildCanonicalUrl(pathname, locale, { page: pageNum }),
+            languages: getAlternateLanguages(pathname, { page: pageNum }),
+          },
+        }),
     ...(await buildSocialMetadata({ locale, title, description, pathname, imageSrc: vehicle.imageUrl })),
   };
 }
 
 export default async function VehicleCompatibleProductsPage({
   params,
+  searchParams,
 }: {
   params: Promise<PageParams>;
+  searchParams: Promise<PageSearchParams>;
 }) {
-  const { locale, vehicleCatalogId } = await params;
+  const [{ locale, vehicleCatalogId }, { page }] = await Promise.all([params, searchParams]);
+  const pageNum = parsePageParam(page);
   const id = parseVehicleCatalogIdFromSlug(vehicleCatalogId);
   if (id == null) {
     notFound();
@@ -75,10 +92,14 @@ export default async function VehicleCompatibleProductsPage({
   // the catalog) plus the category facets, fetched alongside the vehicle.
   const [vehicle, firstPage, categories] = await Promise.all([
     getVehicleCatalogEntryFromServer(id),
-    getCompatibleProductsPageFromServer(id),
+    getCompatibleProductsPageFromServer(id, pageNum),
     getShopCategoryFacetsFromServer({ vehicleCatalogId: id }),
   ]);
   if (!vehicle) {
+    notFound();
+  }
+  // A page past the end (?page=99) — 404, not an empty duplicate.
+  if (pageNum > 1 && firstPage.items.length === 0) {
     notFound();
   }
 
@@ -87,7 +108,13 @@ export default async function VehicleCompatibleProductsPage({
   // slugged form, so search engines consolidate on it.
   const canonicalSlug = buildVehicleCatalogSlug(vehicle);
   if (vehicleCatalogId !== canonicalSlug) {
-    permanentRedirect({ href: `/compatible-products/${canonicalSlug}`, locale });
+    permanentRedirect({
+      href: {
+        pathname: `/compatible-products/${canonicalSlug}`,
+        query: pageNum > 1 ? { page: String(pageNum) } : undefined,
+      },
+      locale,
+    });
   }
 
   return <CompatibleProductsPage vehicle={vehicle} initialData={firstPage} categories={categories} />;

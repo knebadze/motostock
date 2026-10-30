@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatPrice, pickLookupName } from "@/lib/format";
 import { WishlistButton } from "@/components/shared/WishlistButton";
 import { CompareButton } from "@/components/shared/CompareButton";
 import { AddToCartButton } from "@/components/shared/AddToCartButton";
+import { ShowroomPurchaseNotice } from "@/components/shared/ShowroomPurchaseNotice";
+import { MobileActionBar } from "@/components/shared/MobileActionBar";
 import type {
   ProductDetail,
   ProductFitmentRuleSummary,
@@ -77,9 +79,14 @@ function resolvePreferredImage(
 export function ProductDetailPage({
   product,
   breadcrumbChain,
+  purchasableOnline,
+  vehicleFitmentEnabled,
+  onlinePurchaseBlockedCategoryIds,
   companionRecommendations,
   similarRecommendations,
   descriptionHtml,
+  fitBadge,
+  deliveryInfo,
 }: {
   product: ProductDetail;
   // The current locale's description, sanitized on the server — so this
@@ -87,11 +94,24 @@ export function ProductDetailPage({
   // other two languages' descriptions aren't serialized into the page.
   descriptionHtml: string | null;
   breadcrumbChain: Category[];
+  // False when the product's category is switched off for online purchase
+  // (admin) — "visit the showroom" instead of add-to-cart. The id list is
+  // every such category, for the buy-together companions.
+  purchasableOnline: boolean;
+  onlinePurchaseBlockedCategoryIds: number[];
+  // False for a vehicle-independent category (Category.vehicleFitmentEnabled
+  // off, e.g. helmets) — no "compatible vehicles" list.
+  vehicleFitmentEnabled: boolean;
   // Server-rendered, streamed sections (see the route page's
   // <Suspense>-wrapped recommendation components) — the gallery, price and
   // add-to-cart no longer wait for the recommendation queries.
   companionRecommendations: ReactNode;
   similarRecommendations: ReactNode;
+  // "Fits your bike?" badge (fitment categories with fitment data only)
+  // and the delivery/pickup/returns block (purchasable products only) —
+  // null when not applicable.
+  fitBadge: ReactNode;
+  deliveryInfo: ReactNode;
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("ProductDetail");
@@ -107,6 +127,8 @@ export function ProductDetailPage({
     product.variants.find((variant) => variant.id === selectedVariantId) ?? defaultVariant;
 
   const outOfStock = !selectedVariant || selectedVariant.stockQuantity === 0;
+  // The add-to-cart row — the mobile sticky bar shows once it scrolls away.
+  const buyRowRef = useRef<HTMLDivElement>(null);
   const images = collectGalleryImages(product);
   const preferredImage = resolvePreferredImage(product, selectedVariant);
 
@@ -172,8 +194,13 @@ export function ProductDetailPage({
             />
           )}
 
-          <div className="flex flex-wrap items-center gap-3">
-            {selectedVariant && (
+          {fitBadge}
+
+          <div ref={buyRowRef} className="flex flex-wrap items-center gap-3">
+            {selectedVariant && !purchasableOnline && !outOfStock && (
+              <ShowroomPurchaseNotice label={tCart("visitShowroom")} />
+            )}
+            {selectedVariant && purchasableOnline && (
               <AddToCartButton
                 itemType="PRODUCT_VARIANT"
                 id={selectedVariant.id}
@@ -201,9 +228,11 @@ export function ProductDetailPage({
             />
           </div>
 
+          {deliveryInfo}
+
           <ProductSpecs attributeValues={product.attributeValues} />
 
-          {(product.fitments.length > 0 || product.fitmentRules.length > 0) && (
+          {vehicleFitmentEnabled && (product.fitments.length > 0 || product.fitmentRules.length > 0) && (
             <div className="flex flex-col gap-2">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("compatibleVehiclesHeading")}
@@ -228,9 +257,32 @@ export function ProductDetailPage({
         </div>
       </div>
 
-      <BuyTogether product={product} />
-      {companionRecommendations}
+      {selectedVariant && purchasableOnline && (
+        <MobileActionBar targetRef={buyRowRef}>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs text-muted-foreground">{product.name[locale]}</p>
+            <p className="text-base font-bold text-primary-text">
+              {formatPrice(selectedVariant.activeDiscount?.discountPrice ?? selectedVariant.price)}
+            </p>
+          </div>
+          <AddToCartButton
+            itemType="PRODUCT_VARIANT"
+            id={selectedVariant.id}
+            stockQuantity={selectedVariant.stockQuantity}
+            disabled={outOfStock}
+            labelAdd={tCart("addToCart")}
+            labelAdded={tCart("addedToCart")}
+            labelOutOfStock={tCart("outOfStock")}
+            errorMessage={tCart("addError")}
+            className="shrink-0"
+          />
+        </MobileActionBar>
+      )}
 
+      {purchasableOnline && (
+        <BuyTogether product={product} blockedCategoryIds={onlinePurchaseBlockedCategoryIds} />
+      )}
+      {/* Description before the "bought together / also viewed" rows. */}
       {descriptionHtml && (
         <section className="mt-14 border-t border-border pt-8">
           <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
@@ -244,6 +296,8 @@ export function ProductDetailPage({
           />
         </section>
       )}
+
+      {companionRecommendations}
 
       {similarRecommendations}
     </div>

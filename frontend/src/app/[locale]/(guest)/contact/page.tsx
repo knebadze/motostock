@@ -197,7 +197,9 @@ function ContactPageView({ companyInfo }: { companyInfo: CompanyInfo }) {
       </div>
 
       {hasMap && (
-        <div className="mt-8 h-96 overflow-hidden rounded-2xl border border-border">
+        // id="map": the footer's location icon links here (/contact#map);
+        // scroll-mt clears the sticky header.
+        <div id="map" className="mt-8 h-64 scroll-mt-28 overflow-hidden rounded-2xl border border-border sm:h-96 lg:scroll-mt-44">
           <iframe
             title={t("addressLabel")}
             src={`https://www.google.com/maps?q=${companyInfo.latitude},${companyInfo.longitude}&output=embed`}

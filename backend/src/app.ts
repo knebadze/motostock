@@ -36,6 +36,8 @@ import { vehicleCategoryFiltersRouter } from "./modules/vehicle-category-filters
 import { productBrandsRouter } from "./modules/product-brands/product-brands.routes.js";
 import { unitsRouter } from "./modules/units/units.routes.js";
 import { productsRouter } from "./modules/products/products.routes.js";
+import { searchRouter } from "./modules/search/search.routes.js";
+import { productTagsRouter, tagsRouter } from "./modules/tags/tags.routes.js";
 import { productFitmentRouter } from "./modules/product-fitment/product-fitment.routes.js";
 import { productFitmentRulesRouter } from "./modules/product-fitment-rules/product-fitment-rules.routes.js";
 import {
@@ -52,6 +54,8 @@ import { errorLogsRouter } from "./modules/error-logs/error-logs.routes.js";
 import { companyInfoRouter } from "./modules/company-info/company-info.routes.js";
 import { termsRouter } from "./modules/terms/terms.routes.js";
 import { privacyPolicyRouter } from "./modules/privacy-policy/privacy-policy.routes.js";
+import { shippingPolicyRouter } from "./modules/shipping-policy/shipping-policy.routes.js";
+import { callbackRequestsRouter } from "./modules/callback-requests/callback-requests.routes.js";
 import { emailTemplatesRouter } from "./modules/email-templates/email-templates.routes.js";
 import { orderStatusesRouter } from "./modules/order-statuses/order-statuses.routes.js";
 import { vinDecodeRouter } from "./modules/vin-decode/vin-decode.routes.js";
@@ -87,6 +91,7 @@ import { errorMiddleware } from "./middleware/error.middleware.js";
 import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
 import { globalReadRateLimit, globalWriteRateLimit } from "./middleware/rateLimit.middleware.js";
 import { ROLES } from "./lib/roles.js";
+import { rejectNullBytes } from "./middleware/null-byte.middleware.js";
 
 export const app = express();
 
@@ -150,6 +155,8 @@ app.use(
   }),
 );
 app.use(pinoHttp({ logger }));
+// Before any route can hand a NUL byte to Prisma — see null-byte.middleware.ts.
+app.use(rejectNullBytes);
 
 // Dev-only: warns when a JSON response doesn't match its documented OpenAPI
 // schema (the frontend's types are generated from those docs) — see
@@ -230,7 +237,10 @@ app.use("/api/vehicle-category-filters", vehicleCategoryFiltersRouter);
 app.use("/api/product-brands", productBrandsRouter);
 app.use("/api/units", unitsRouter);
 app.use("/api/products", productsRouter);
+app.use("/api/search", searchRouter);
 app.use("/api/products/:productId/fitments", productFitmentRouter);
+app.use("/api/products/:productId/tags", productTagsRouter);
+app.use("/api/tags", tagsRouter);
 app.use("/api/products/:productId/fitment-rules", productFitmentRulesRouter);
 app.use("/api/products/:productId/buy-together", productBuyTogetherRouter);
 app.use("/api/product-buy-together", productBuyTogetherAdminRouter);
@@ -244,6 +254,8 @@ app.use("/api/error-logs", errorLogsRouter);
 app.use("/api/company-info", companyInfoRouter);
 app.use("/api/terms", termsRouter);
 app.use("/api/privacy-policy", privacyPolicyRouter);
+app.use("/api/shipping-policy", shippingPolicyRouter);
+app.use("/api/callback-requests", callbackRequestsRouter);
 app.use("/api/email-templates", emailTemplatesRouter);
 app.use("/api/order-statuses", orderStatusesRouter);
 app.use("/api/vin-decode", vinDecodeRouter);

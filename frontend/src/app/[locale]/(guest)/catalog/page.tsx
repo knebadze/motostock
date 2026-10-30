@@ -139,7 +139,7 @@ function CatalogPageView({ categories }: { categories: Category[] }) {
           const subcategories = childrenOf(categories, category.id);
 
           return (
-            <section key={category.id} id={category.slug} className="scroll-mt-24">
+            <section key={category.id} id={category.slug} className="scroll-mt-24 lg:scroll-mt-40">
               <Link
                 href={`/${category.slug}`}
                 className="group relative flex min-h-32 items-center overflow-hidden rounded-2xl border border-border"

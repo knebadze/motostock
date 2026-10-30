@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
-import { changePasswordRateLimit } from "../../middleware/rateLimit.middleware.js";
+import { changePasswordRateLimit, profileUpdateRateLimit } from "../../middleware/rateLimit.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema, userResponseSchema } from "../../docs/schemas.js";
 import { addressResponseSchema } from "../addresses/addresses.schema.js";
@@ -10,10 +10,26 @@ import { garageVehicleResponseSchema } from "../garage/garage.schema.js";
 import { wishlistItemResponseSchema } from "../wishlist/wishlist.schema.js";
 import { cartItemResponseSchema } from "../cart/cart.schema.js";
 import { ROLES } from "../../lib/roles.js";
-import { changePassword, createWalkIn, getOne, list, me, merge, updateRole } from "./users.controller.js";
+import {
+  acceptMyConsents,
+  changePassword,
+  createWalkIn,
+  deleteMyAccount,
+  exportMyData,
+  getMyProfile,
+  getOne,
+  list,
+  me,
+  merge,
+  updateMyProfile,
+  updateRole,
+} from "./users.controller.js";
 import {
   changePasswordSchema,
   createWalkInUserSchema,
+  deleteAccountSchema,
+  profileResponseSchema,
+  updateProfileSchema,
   listUsersQuerySchema,
   mergeUserParamsSchema,
   updateUserRoleSchema,
@@ -36,6 +52,16 @@ usersRouter.patch(
   validate(changePasswordSchema),
   changePassword,
 );
+// Personal data self-service (personal data protection law) — see
+// account-data.service.ts. Literal /me/* paths, before "/:id".
+usersRouter.get("/me/profile", requireAuth, getMyProfile);
+// Own limiter: a 409 on the phone reveals whether a number is registered.
+usersRouter.patch("/me/profile", requireAuth, profileUpdateRateLimit, validate(updateProfileSchema), updateMyProfile);
+usersRouter.post("/me/consents", requireAuth, acceptMyConsents);
+usersRouter.get("/me/export", requireAuth, exportMyData);
+// Same limiter as change-password — it checks the password too.
+usersRouter.delete("/me", requireAuth, changePasswordRateLimit, validate(deleteAccountSchema), deleteMyAccount);
+
 usersRouter.get(
   "/",
   requireAuth,
@@ -312,5 +338,65 @@ registry.registerPath({
       description: "Not found",
       content: { "application/json": { schema: errorResponseSchema } },
     },
+  },
+});
+
+const profileResponse = z.object({ profile: profileResponseSchema });
+
+registry.registerPath({
+  method: "get",
+  path: "/users/me/profile",
+  tags: ["Users"],
+  summary: "The caller's own profile, login methods and consent status",
+  security: [{ cookieAuth: [] }],
+  responses: { 200: { description: "Profile", content: { "application/json": { schema: profileResponse } } } },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/users/me/profile",
+  tags: ["Users"],
+  summary: "Edit own name, phone and date of birth",
+  security: [{ cookieAuth: [] }],
+  request: { body: { content: { "application/json": { schema: updateProfileSchema } } } },
+  responses: {
+    200: { description: "Updated profile", content: { "application/json": { schema: profileResponse } } },
+    409: { description: "Phone in use", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/users/me/consents",
+  tags: ["Users"],
+  summary: "Accept the current terms and privacy policy (recorded with version, time and IP)",
+  security: [{ cookieAuth: [] }],
+  responses: { 200: { description: "Updated profile", content: { "application/json": { schema: profileResponse } } } },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/users/me/export",
+  tags: ["Users"],
+  summary: "Download everything stored about the caller (JSON file)",
+  security: [{ cookieAuth: [] }],
+  responses: { 200: { description: "JSON attachment" } },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/users/me",
+  tags: ["Users"],
+  summary: "Delete own account (anonymized instead when orders must be kept); logs out",
+  security: [{ cookieAuth: [] }],
+  request: { body: { content: { "application/json": { schema: deleteAccountSchema } } } },
+  responses: {
+    200: {
+      description: "Deleted",
+      content: { "application/json": { schema: z.object({ anonymized: z.boolean() }) } },
+    },
+    400: { description: "Wrong confirmation", content: { "application/json": { schema: errorResponseSchema } } },
+    403: { description: "Staff account", content: { "application/json": { schema: errorResponseSchema } } },
+    409: { description: "Orders in progress", content: { "application/json": { schema: errorResponseSchema } } },
   },
 });

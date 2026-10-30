@@ -13,18 +13,19 @@ import {
   type AdminOrderSummary,
   type AdminOrdersPage,
   type ListOrdersFilters,
-  type OrderFulfillmentMethod,
+  type OrderDeliveryMethod,
+  type OrderPaymentMethod,
 } from "@/lib/api/orders";
 import type { LookupItem } from "@/lib/api/lookups";
 import { OrderDetailModal } from "./OrderDetailModal";
 import { OrderStatusBadge } from "./OrderStatusBadge";
 import { FinaSyncBadge } from "./FinaSyncBadge";
-import { FULFILLMENT_LABELS, FULFILLMENT_OPTIONS } from "./order-labels";
+import { DELIVERY_METHOD_LABELS, PAYMENT_METHOD_LABELS, DELIVERY_METHOD_OPTIONS, PAYMENT_METHOD_OPTIONS } from "./order-labels";
 
 const DELIVERY_URGENCY_CLASSES: Record<"green" | "yellow" | "red", string> = {
-  green: "bg-green-500/15 text-green-600",
+  green: "bg-green-500/15 text-success",
   yellow: "bg-amber-500/15 text-amber-600",
-  red: "bg-red-500/15 text-red-600",
+  red: "bg-red-500/15 text-destructive",
 };
 
 // Terminal statuses stop counting down — a delivered/cancelled order isn't
@@ -101,7 +102,15 @@ const columns: DataTableColumn<AdminOrderSummary>[] = [
   },
   { header: "სტატუსი", render: (order) => <OrderStatusBadge status={order.status} /> },
   { header: "FINA", render: (order) => <FinaSyncBadge status={order.finaSyncStatus} /> },
-  { header: "მიწოდება", render: (order) => FULFILLMENT_LABELS[order.fulfillmentMethod] },
+  {
+    header: "მიწოდება / გადახდა",
+    render: (order) => (
+      <span className="flex flex-col">
+        <span>{DELIVERY_METHOD_LABELS[order.deliveryMethod]}</span>
+        <span className="text-xs text-muted-foreground">{PAYMENT_METHOD_LABELS[order.paymentMethod]}</span>
+      </span>
+    ),
+  },
   {
     header: "თანხა",
     render: (order) => formatPrice(order.total),
@@ -161,7 +170,8 @@ export function OrdersManager({
   });
   const [search, setSearch] = useState("");
   const [statusIds, setStatusIds] = useState<string[]>(() => (initialFilters.statusIds ?? []).map(String));
-  const [fulfillmentMethods, setFulfillmentMethods] = useState<string[]>([]);
+  const [deliveryMethods, setDeliveryMethods] = useState<string[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<string[]>([]);
   const [createdFrom, setCreatedFrom] = useState("");
   const [createdTo, setCreatedTo] = useState("");
   const [flaggedOnly, setFlaggedOnly] = useState(initialFilters.flaggedOnly ?? false);
@@ -177,7 +187,8 @@ export function OrdersManager({
   const hasActiveFilters =
     search.trim() !== "" ||
     statusIds.length > 0 ||
-    fulfillmentMethods.length > 0 ||
+    deliveryMethods.length > 0 ||
+    paymentMethods.length > 0 ||
     createdFrom !== "" ||
     createdTo !== "" ||
     flaggedOnly ||
@@ -188,8 +199,8 @@ export function OrdersManager({
     return {
       search: search.trim() || undefined,
       statusIds: statusIds.length > 0 ? statusIds.map(Number) : undefined,
-      fulfillmentMethods:
-        fulfillmentMethods.length > 0 ? (fulfillmentMethods as OrderFulfillmentMethod[]) : undefined,
+      deliveryMethods: deliveryMethods.length > 0 ? (deliveryMethods as OrderDeliveryMethod[]) : undefined,
+      paymentMethods: paymentMethods.length > 0 ? (paymentMethods as OrderPaymentMethod[]) : undefined,
       createdFrom: createdFrom || undefined,
       createdTo: createdTo || undefined,
       flaggedOnly: flaggedOnly || undefined,
@@ -222,7 +233,8 @@ export function OrdersManager({
   function handleClearFilters() {
     setSearch("");
     setStatusIds([]);
-    setFulfillmentMethods([]);
+    setDeliveryMethods([]);
+    setPaymentMethods([]);
     setCreatedFrom("");
     setCreatedTo("");
     setFlaggedOnly(false);
@@ -302,15 +314,28 @@ export function OrdersManager({
           />
         </div>
         <div className="flex w-48 flex-col gap-1.5">
-          <label htmlFor="orders-filter-fulfillment" className="text-xs font-medium text-muted-foreground">
+          <label htmlFor="orders-filter-delivery" className="text-xs font-medium text-muted-foreground">
             მიწოდება
           </label>
           <Select
-            id="orders-filter-fulfillment"
+            id="orders-filter-delivery"
             multiple
-            options={FULFILLMENT_OPTIONS}
-            value={fulfillmentMethods}
-            onChange={setFulfillmentMethods}
+            options={DELIVERY_METHOD_OPTIONS}
+            value={deliveryMethods}
+            onChange={setDeliveryMethods}
+            placeholder="ყველა"
+          />
+        </div>
+        <div className="flex w-48 flex-col gap-1.5">
+          <label htmlFor="orders-filter-payment" className="text-xs font-medium text-muted-foreground">
+            გადახდა
+          </label>
+          <Select
+            id="orders-filter-payment"
+            multiple
+            options={PAYMENT_METHOD_OPTIONS}
+            value={paymentMethods}
+            onChange={setPaymentMethods}
             placeholder="ყველა"
           />
         </div>
@@ -364,6 +389,7 @@ export function OrdersManager({
         <DataTable
           columns={visibleColumns}
           data={data.items}
+          totalCount={data.total}
           getRowKey={(order) => order.id}
           emptyMessage="შეკვეთა არ მოიძებნა"
           actions={(order) => (

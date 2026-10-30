@@ -20,6 +20,17 @@ import type {
   ListOrdersQuery,
   UpdateOrderStatusInput,
 } from "./orders.schema.js";
+import {
+  countOpenOrderRequests,
+  createOrderRequest,
+  listOrderRequests,
+  resolveOrderRequest,
+} from "./order-requests.service.js";
+import type {
+  CreateOrderRequestInput,
+  ListOrderRequestsQuery,
+  ResolveOrderRequestInput,
+} from "./orders.schema.js";
 
 // requireAuth (see orders.routes.ts) guarantees req.user is set before any
 // handler here runs — this is just the narrow structural read of it.
@@ -115,8 +126,35 @@ export async function updateStatus(
     req.body.statusId,
     req.body.cancellationReasonId,
     req.body.cancellationNote,
+    requireUserId(req),
   );
   res.status(200).json({ order });
+}
+
+export async function createRequest(
+  req: Request<{ id: string }, unknown, CreateOrderRequestInput>,
+  res: Response,
+) {
+  const order = await createOrderRequest(requireUserId(req), Number(req.params.id), req.body);
+  res.status(201).json({ order });
+}
+
+export async function listRequests(req: Request, res: Response) {
+  const requests = await listOrderRequests(req.query as ListOrderRequestsQuery);
+  res.status(200).json({ requests });
+}
+
+export async function countOpenRequests(_req: Request, res: Response) {
+  const count = await countOpenOrderRequests();
+  res.status(200).json({ count });
+}
+
+export async function resolveRequest(
+  req: Request<{ requestId: string }, unknown, ResolveOrderRequestInput>,
+  res: Response,
+) {
+  const request = await resolveOrderRequest(Number(req.params.requestId), requireUserId(req), req.body.adminNote);
+  res.status(200).json({ request });
 }
 
 export async function retryFinaSync(req: Request, res: Response) {

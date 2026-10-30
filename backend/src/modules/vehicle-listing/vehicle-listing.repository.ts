@@ -5,6 +5,7 @@ import { applyVehicleListingAdminFilters } from "../filters/vehicle-listing/vehi
 import type { FilterEntry } from "../filters/filter-request.schema.js";
 import { getSalesSummaryLimit, getSearchResultCap } from "../settings/settings.service.js";
 import type { SpecFilterInput } from "./vehicle-listing.schema.js";
+import { recomputePercentDiscounts } from "../../lib/discounts.js";
 
 const namedRefSelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
 const brandModelRefSelect = { id: true, name: true, slug: true } as const;
@@ -565,6 +566,7 @@ export const vehicleListingRepository = {
             weightKg: true,
             seatHeightMm: true,
             fuelTankLiters: true,
+            oilCapacityLiters: true,
             topSpeedKmh: true,
             motorPowerWatt: true,
             batteryCapacityWh: true,
@@ -640,16 +642,24 @@ export const vehicleListingRepository = {
   // overwrite" reasoning as product-variants.repository.ts's identical
   // `update` — see vehicle-listing.service.ts's updateVehicleListing.
   update(id: number, data: Partial<VehicleListingWriteData>, stockDelta?: number) {
-    if (!stockDelta) {
+    const priceChanged = data.price !== undefined;
+    if (!stockDelta && !priceChanged) {
       return prisma.vehicleListing.update({ where: { id }, data, include });
     }
     return prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`
-        UPDATE "dbo"."VehicleListing"
-        SET "stockQuantity" = GREATEST("stockQuantity" + ${stockDelta}, 0)
-        WHERE "id" = ${id}
-      `;
-      return tx.vehicleListing.update({ where: { id }, data, include });
+      if (stockDelta) {
+        await tx.$executeRaw`
+          UPDATE "dbo"."VehicleListing"
+          SET "stockQuantity" = GREATEST("stockQuantity" + ${stockDelta}, 0)
+          WHERE "id" = ${id}
+        `;
+      }
+      if (!priceChanged) return tx.vehicleListing.update({ where: { id }, data, include });
+      // A new list price re-derives its percent discounts (see
+      // lib/discounts.ts) before the row — with those discounts — is read back.
+      await tx.vehicleListing.update({ where: { id }, data });
+      await recomputePercentDiscounts(tx, "VEHICLE_LISTING", id);
+      return tx.vehicleListing.findUniqueOrThrow({ where: { id }, include });
     });
   },
 

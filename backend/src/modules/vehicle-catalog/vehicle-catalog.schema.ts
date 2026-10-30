@@ -9,6 +9,9 @@ const optionalYear = z.int().min(1900).max(2100).nullable().optional();
 const optionalDescription = z.string().max(5000).nullable().optional();
 const optionalBoolean = z.boolean().nullable().optional();
 const optionalPositiveDecimal = z.coerce.number().positive().nullable().optional();
+// oilCapacityLiters is DECIMAL(4,2) — capped so an out-of-range value is a
+// 400, not a DB numeric-overflow 500.
+const optionalOilCapacity = z.coerce.number().positive().max(99.99).nullable().optional();
 
 const vehicleCatalogShape = z.object({
   brandId: z.int().positive(),
@@ -24,6 +27,7 @@ const vehicleCatalogShape = z.object({
   weightKg: optionalPositiveInt,
   seatHeightMm: optionalPositiveInt,
   fuelTankLiters: optionalPositiveDecimal,
+  oilCapacityLiters: optionalOilCapacity,
   topSpeedKmh: optionalPositiveInt,
   hasAbs: optionalBoolean,
   fuelTypeId: optionalPositiveInt,
@@ -180,6 +184,7 @@ export const vehicleCatalogResponseSchema = registry.register(
     weightKg: z.int().nullable(),
     seatHeightMm: z.int().nullable(),
     fuelTankLiters: z.number().nullable(),
+    oilCapacityLiters: z.number().nullable(),
     topSpeedKmh: z.int().nullable(),
     hasAbs: z.boolean().nullable(),
     fuelType: lookupItemResponseSchema.nullable(),

@@ -63,6 +63,8 @@ export function VehicleCatalogSpecsTab({
   onTopSpeedKmhChange,
   fuelTankLiters,
   onFuelTankLitersChange,
+  oilCapacityLiters,
+  onOilCapacityLitersChange,
   hasAbs,
   onHasAbsChange,
   fuelTypes,
@@ -132,6 +134,8 @@ export function VehicleCatalogSpecsTab({
   onTopSpeedKmhChange: (value: string) => void;
   fuelTankLiters: string;
   onFuelTankLitersChange: (value: string) => void;
+  oilCapacityLiters: string;
+  onOilCapacityLitersChange: (value: string) => void;
   hasAbs: boolean;
   onHasAbsChange: (value: boolean) => void;
   fuelTypes: LookupItem[];
@@ -444,6 +448,24 @@ export function VehicleCatalogSpecsTab({
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
             <FieldError message={errors.fuelTankLiters} />
+          </div>
+        )}
+        {!isElectric && (
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="vc-oil-capacity" className="text-sm font-medium">
+              ზეთის მოცულობა (ლ)
+            </label>
+            <input
+              id="vc-oil-capacity"
+              type="number"
+              step="0.01"
+              min="0"
+              max="99.99"
+              value={oilCapacityLiters}
+              onChange={(event) => onOilCapacityLitersChange(event.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <FieldError message={errors.oilCapacityLiters} />
           </div>
         )}
         <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium">

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { logoutUser } from "@/lib/api/auth";
 import { clearCache } from "@/lib/api/cache";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 import { triggerFinaSync } from "@/lib/api/fina-sync";
 import { ApiRequestError } from "@/lib/api/client";
 import { setKnownAuthState } from "@/lib/api/auth-state";
@@ -79,7 +80,9 @@ export function UserMenu({ userName }: { userName: string }) {
   async function handleClearCache() {
     setClearingCache(true);
     try {
+      // Backend memory cache, then the storefront's own public caches.
       await clearCache();
+      await revalidatePublicCache("all");
       toast.success("ქეში გასუფთავდა");
       setOpen(false);
     } catch (error) {

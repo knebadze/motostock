@@ -2,6 +2,7 @@
 
 import { AdminThemeToggle } from "./AdminThemeToggle";
 import { AdminOrderNotifications } from "./AdminOrderNotifications";
+import { AdminOrderRequestNotifications } from "./AdminOrderRequestNotifications";
 import { UserMenu } from "./UserMenu";
 import { Logo } from "@/components/shared/Logo";
 
@@ -46,6 +47,7 @@ export function AdminHeader({
 
       <div className="flex items-center gap-2">
         <AdminOrderNotifications />
+        <AdminOrderRequestNotifications />
         <AdminThemeToggle />
         <UserMenu userName={userName} />
       </div>

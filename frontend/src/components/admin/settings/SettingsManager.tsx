@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { updateSettings, type Settings } from "@/lib/api/settings";
 import { ApiRequestError } from "@/lib/api/client";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 import { Tabs } from "@/components/shared/Tabs";
 import { GeneralSettingsTab } from "./GeneralSettingsTab";
 import { DeliverySettingsTab } from "./DeliverySettingsTab";
@@ -26,6 +27,8 @@ export function SettingsManager({ initialSettings }: { initialSettings: Settings
     try {
       const updated = await updateSettings(next);
       setSettings(updated);
+      // Delivery prices / return window are cached on the storefront.
+      void revalidatePublicCache("delivery-info");
       toast.success("პარამეტრი განახლდა");
     } catch (error) {
       const message =

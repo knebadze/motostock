@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import { getVehicleFitmentDisabledCategoryIds } from "../categories/categories.service.js";
 import type { Expect, ResponseMatches } from "../../lib/response-contract.js";
 import type { vehicleCatalogOptionResponseSchema } from "./vehicle-catalog.schema.js";
 import { ApiError } from "../../lib/ApiError.js";
@@ -40,6 +41,7 @@ type VehicleCatalogRow = {
   weightKg: number | null;
   seatHeightMm: number | null;
   fuelTankLiters: { toString(): string } | null;
+  oilCapacityLiters: { toString(): string } | null;
   topSpeedKmh: number | null;
   hasAbs: boolean | null;
   fuelType: LookupRow;
@@ -87,6 +89,7 @@ export function toVehicleCatalogResponse(row: VehicleCatalogRow) {
     weightKg: row.weightKg,
     seatHeightMm: row.seatHeightMm,
     fuelTankLiters: row.fuelTankLiters != null ? Number(row.fuelTankLiters) : null,
+    oilCapacityLiters: row.oilCapacityLiters != null ? Number(row.oilCapacityLiters) : null,
     topSpeedKmh: row.topSpeedKmh,
     hasAbs: row.hasAbs,
     fuelType: row.fuelType,
@@ -235,9 +238,10 @@ const SPEC_FIELD_COLUMN = {
 } as const;
 
 async function computeOptionsWithCompatibleProducts(): Promise<CatalogOption[]> {
+  const fitmentDisabledCategoryIds = await getVehicleFitmentDisabledCategoryIds();
   const [options, { fitments, rules, specs, categories }] = await Promise.all([
     listVehicleCatalogOptions(),
-    vehicleCatalogRepository.findCompatibilityInputs(),
+    vehicleCatalogRepository.findCompatibilityInputs([...fitmentDisabledCategoryIds]),
   ]);
   // An ALL rule on any listable product fits every vehicle.
   if (rules.some((rule) => rule.type === "ALL")) return options;

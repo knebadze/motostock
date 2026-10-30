@@ -30,10 +30,10 @@ const STATUS_LABELS: Record<PromoCodeStatus, string> = {
 };
 
 const STATUS_CLASSES: Record<PromoCodeStatus, string> = {
-  ACTIVE: "bg-green-500/10 text-green-600",
+  ACTIVE: "bg-green-500/10 text-success",
   SCHEDULED: "bg-blue-500/10 text-blue-600",
   EXPIRED: "bg-muted text-muted-foreground",
-  DISABLED: "bg-red-500/10 text-red-600",
+  DISABLED: "bg-red-500/10 text-destructive",
 };
 
 function StatusBadge({ status }: { status: PromoCodeStatus }) {
@@ -212,6 +212,7 @@ export function PromoCodesManager({
         <DataTable
           columns={columns}
           data={promoCodes}
+          totalCount={promoCodes.length}
           getRowKey={(item) => item.id}
           emptyMessage="პრომოკოდი არ არსებობს"
           actions={(item) => (

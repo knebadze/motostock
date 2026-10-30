@@ -1,4 +1,5 @@
 import rateLimit from "express-rate-limit";
+import { ROLES } from "../lib/roles.js";
 
 // Baseline DoS/abuse guard applied to every /api request (see app.ts),
 // split into a generous read budget and a tighter write budget instead of
@@ -91,7 +92,7 @@ export const changePasswordRateLimit = createAuthRateLimit();
 // Checkout preview/place both accept a free-typed promoCode — without this,
 // a logged-in account could brute-force short/guessable codes at
 // globalWriteRateLimit's full 300/min. Budgeted for real interactive use
-// (toggling fulfillment method/address/bank/delivery speed each re-fires a
+// (toggling delivery/payment method/address/bank/delivery speed each re-fires a
 // preview) while still meaningfully capping scripted guessing.
 export const checkoutRateLimit = rateLimit({
   windowMs: 5 * 60 * 1000,
@@ -117,6 +118,26 @@ export const resendVerificationRateLimit = rateLimit({
 export const newsletterRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { message: "Too many requests, please try again later" } },
+});
+
+// PATCH /users/me/profile — its phone-conflict 409 would otherwise let an
+// account probe which phone numbers are registered at the global write rate.
+export const profileUpdateRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { message: "Too many requests, please try again later" } },
+});
+
+// Public "call me back" form (callback-requests module) — anonymous and
+// every call emails staff, same reasoning as newsletterRateLimit.
+export const callbackRequestRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: { message: "Too many requests, please try again later" } },
@@ -189,14 +210,23 @@ export const vehicleCatalogSubmitRateLimit = rateLimit({
   message: { error: { message: "Too many requests, please try again later" } },
 });
 
-// Image-upload routes (bank logos, etc.) sit behind requireRole(ADMIN)
-// already, so this is a second line of defense against a compromised admin
-// session being used to flood disk writes — generous enough for a normal
-// admin session setting up/editing several records in a row.
+// Image-upload routes. Almost all sit behind requireRole(ADMIN) already, so
+// for staff this is only a second line of defense against a compromised
+// session flooding disk writes — a real catalog session (several products,
+// each with logo/main image/variant images) easily passes 30 uploads in ten
+// minutes, which used to lock the admin out mid-work. Staff therefore get a
+// much larger budget; customers (garage photos) keep the tight one. Runs
+// after requireAuth on every route that uses it, so req.user is set.
+const STAFF_UPLOAD_LIMIT = 300;
+const CUSTOMER_UPLOAD_LIMIT = 30;
+
 export const uploadRateLimit = rateLimit({
   windowMs: 10 * 60 * 1000,
-  limit: 30,
+  limit: (req) =>
+    req.user?.role === ROLES.ADMIN || req.user?.role === ROLES.OPERATOR
+      ? STAFF_UPLOAD_LIMIT
+      : CUSTOMER_UPLOAD_LIMIT,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: { message: "Too many uploads, please slow down" } },
+  message: { error: { message: "ძალიან ბევრი ატვირთვა მოკლე დროში — სცადეთ რამდენიმე წუთში" } },
 });

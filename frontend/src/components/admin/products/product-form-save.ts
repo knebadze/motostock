@@ -9,6 +9,7 @@ import { createProductVariant } from "@/lib/api/product-variants";
 import { uploadProductVariantImages } from "@/lib/api/product-variant-images";
 import { createProductVariantDiscount } from "@/lib/api/product-variant-discounts";
 import { createProductFitment } from "@/lib/api/product-fitment";
+import { setProductTags } from "@/lib/api/tags";
 import type { DraftVariant } from "./ProductPricingTab";
 import type { DraftFitment } from "./DraftFitmentEditor";
 
@@ -24,6 +25,12 @@ export type ProductFormSaveInput = {
   // with it — no separate "first variant only" fields anymore.
   draftVariants: DraftVariant[];
   draftFitments: DraftFitment[];
+  // Buy-together tags — unlike the drafts above, saved on edit too (they're
+  // part of this form, not a separate panel). Only written when the set
+  // actually changed vs. initialTagIds (the product's tags when the form
+  // opened; [] on create).
+  tagIds: number[];
+  initialTagIds: number[];
 };
 
 export type ProductFormSaveResult =
@@ -34,7 +41,7 @@ export type ProductFormSaveResult =
   // finish up instead of the generic success one. Only the step that failed
   // is reported; later steps (fitments, after variants) are skipped, matching
   // the pre-refactor early-return behavior exactly.
-  | { ok: false; product: Product; warning: "image" | "fitments" }
+  | { ok: false; product: Product; warning: "image" | "fitments" | "tags" }
   // Variants are independent of each other (unlike image/fitments, which are
   // single all-or-nothing steps) — one draft's finaId/sku uniqueness conflict
   // shouldn't silently doom every other draft to being skipped, and the admin
@@ -116,10 +123,22 @@ export async function saveProductForm(input: ProductFormSaveInput): Promise<Prod
     }
   }
 
+  const tagsChanged =
+    input.tagIds.length !== input.initialTagIds.length ||
+    input.tagIds.some((id) => !input.initialTagIds.includes(id));
+  if (tagsChanged) {
+    try {
+      await setProductTags(product.id, input.tagIds);
+    } catch {
+      return { ok: false, product, warning: "tags" };
+    }
+  }
+
   return { ok: true, product };
 }
 
-export const PRODUCT_FORM_SAVE_WARNING_MESSAGES: Record<"image" | "fitments", string> = {
+export const PRODUCT_FORM_SAVE_WARNING_MESSAGES: Record<"image" | "fitments" | "tags", string> = {
+  tags: "პროდუქტი შენახულია, მაგრამ ტეგების შენახვა ვერ მოხერხდა — სცადეთ ხელახლა რედაქტირებიდან",
   image: "პროდუქტი შენახულია, მაგრამ სურათის ატვირთვა ვერ მოხერხდა",
   fitments: "პროდუქტი შენახულია, მაგრამ თავსებადობის დამატება ვერ მოხერხდა — დაამატეთ რედაქტირებიდან",
 };

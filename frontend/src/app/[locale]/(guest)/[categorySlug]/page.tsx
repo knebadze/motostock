@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
-  getCategoriesFromServer,
+  getCategoriesStrictFromServer,
   getCategorySlugRedirectFromServer,
   getCategoryFiltersFromServer,
   getMyGarageFromServer,
@@ -12,8 +12,13 @@ import {
   getVehicleCategoryFiltersFromServer,
   getVehicleListingsPageFromServer,
 } from "@/lib/api/server";
-import { isVehicleCategory, getAncestorChain } from "@/lib/categories-tree";
-import { buildCanonicalUrl, getAlternateLanguages } from "@/lib/seo";
+import {
+  isVehicleCategory,
+  getAncestorChain,
+  getDescendantIds,
+  getVehicleFitmentDisabledCategoryIds,
+} from "@/lib/categories-tree";
+import { buildCanonicalUrl, getAlternateLanguages, parsePageParam } from "@/lib/seo";
 import { siteConfig } from "@/config/site";
 import { JsonLd } from "@/components/shared/JsonLd";
 import { ProductShopPage } from "@/components/shop/ProductShopPage";
@@ -47,11 +52,11 @@ export async function generateMetadata({
   const { locale, categorySlug } = await params;
   const { page } = await searchParams;
 
-  const categories = await getCategoriesFromServer();
+  const categories = await getCategoriesStrictFromServer();
   const category = categories.find((item) => item.slug === categorySlug);
   if (!category) return {};
 
-  const pageNum = Number(page) || 1;
+  const pageNum = parsePageParam(page);
   const t = await getTranslations({ locale, namespace: "Metadata" });
   const title =
     pageNum > 1
@@ -72,7 +77,7 @@ export async function generateMetadata({
     description,
     alternates: {
       canonical: buildCanonicalUrl(pathname, locale, { page: pageNum }),
-      languages: getAlternateLanguages(pathname),
+      languages: getAlternateLanguages(pathname, { page: pageNum }),
     },
     ...(await buildSocialMetadata({
       locale,
@@ -94,7 +99,7 @@ export default async function CategoryShopPage({
   const { locale, categorySlug } = await params;
   const { page, sort, eventId } = await searchParams;
 
-  const categories = await getCategoriesFromServer();
+  const categories = await getCategoriesStrictFromServer();
   const category = categories.find((item) => item.slug === categorySlug);
   if (!category) {
     // A renamed category's old URL — 301 to its current slug, keeping the
@@ -109,7 +114,7 @@ export default async function CategoryShopPage({
     notFound();
   }
 
-  const initialPage = Number(page) || 1;
+  const initialPage = parsePageParam(page);
   const initialSort = sort ?? "newest";
   // Set by the homepage hero-slider's event-scoped DISCOUNT slides (see
   // HeroSlider.tsx's buildDiscountLink) when a BulkDiscountEvent targets
@@ -143,6 +148,10 @@ export default async function CategoryShopPage({
 
   const isVehicle = isVehicleCategory(categories, category.id);
   const subcategories = categories.filter((item) => item.parentId === category.id);
+  // Subcategory filter checkboxes filter by each one's whole subtree.
+  const subcategoryCategoryIds = Object.fromEntries(
+    subcategories.map((subcategory) => [subcategory.id, [subcategory.id, ...getDescendantIds(categories, subcategory.id)]]),
+  );
 
   const breadcrumbScript = <JsonLd data={breadcrumbJsonLd} />;
 
@@ -157,6 +166,9 @@ export default async function CategoryShopPage({
       getVehicleListingsPageFromServer(category.id, initialPage, vehicleSortBy, parsedEventId),
       getVehicleCategoryFiltersFromServer(category.id),
     ]);
+    // A page past the end (?page=999) — 404, not an empty page that would
+    // be indexed as its own self-canonical URL.
+    if (initialPage > 1 && listingsPage.items.length === 0) notFound();
     return (
       <>
         {breadcrumbScript}
@@ -164,6 +176,7 @@ export default async function CategoryShopPage({
           category={category}
           breadcrumbChain={ancestorChain}
           subcategories={subcategories}
+          subcategoryCategoryIds={subcategoryCategoryIds}
           brands={brandFacets}
           initialData={listingsPage}
           filters={vehicleFilters}
@@ -180,12 +193,20 @@ export default async function CategoryShopPage({
   // `brandFacets` feeds the brand-checkbox facet list, same reasoning as the
   // vehicle branch above; `productsPage` feeds the actual grid.
   const productSortBy = parseProductSortBy(initialSort);
-  const [brandFacets, productsPage, filters, garageVehicles] = await Promise.all([
+  // Vehicle-independent category (Category.vehicleFitmentEnabled off, e.g.
+  // helmets): no "my vehicle" filter even if one is configured for it.
+  const vehicleFitmentEnabled = !getVehicleFitmentDisabledCategoryIds(categories).has(category.id);
+  const [brandFacets, productsPage, configuredFilters, garageVehicles] = await Promise.all([
     getProductBrandFacetsFromServer(category.id),
     getProductsPageFromServer(category.id, initialPage, productSortBy),
     getCategoryFiltersFromServer(category.id),
-    getMyGarageFromServer(),
+    vehicleFitmentEnabled ? getMyGarageFromServer() : Promise.resolve([]),
   ]);
+  // Same past-the-end 404 as the vehicle branch above.
+  if (initialPage > 1 && productsPage.items.length === 0) notFound();
+  const filters = vehicleFitmentEnabled
+    ? configuredFilters
+    : configuredFilters.filter((filter) => filter.filterType !== "MY_VEHICLE");
   return (
     <>
       {breadcrumbScript}
@@ -193,6 +214,7 @@ export default async function CategoryShopPage({
         category={category}
         breadcrumbChain={ancestorChain}
         subcategories={subcategories}
+        subcategoryCategoryIds={subcategoryCategoryIds}
         brands={brandFacets}
         initialData={productsPage}
         filters={filters}

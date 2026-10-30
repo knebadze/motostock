@@ -1,3 +1,4 @@
+import { cache } from "../../lib/cache.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
@@ -19,8 +20,11 @@ type CategoryRow = {
   slug: string;
   imageUrl: string | null;
   bannerImageUrl: string | null;
+  menuImageUrl: string | null;
   sortOrder: number;
   lowStockBadgeEnabled: boolean;
+  onlinePurchaseEnabled: boolean;
+  vehicleFitmentEnabled: boolean;
   parentId: number | null;
   createdAt: Date;
   updatedAt: Date;
@@ -34,8 +38,11 @@ function toResponse(category: CategoryRow) {
     slug: category.slug,
     imageUrl: category.imageUrl,
     bannerImageUrl: category.bannerImageUrl,
+    menuImageUrl: category.menuImageUrl,
     sortOrder: category.sortOrder,
     lowStockBadgeEnabled: category.lowStockBadgeEnabled,
+    onlinePurchaseEnabled: category.onlinePurchaseEnabled,
+    vehicleFitmentEnabled: category.vehicleFitmentEnabled,
     parentId: category.parentId,
     parent: category.parent
       ? {
@@ -50,6 +57,87 @@ function toResponse(category: CategoryRow) {
     createdAt: category.createdAt,
     updatedAt: category.updatedAt,
   };
+}
+
+const ITEM_COUNTS_CACHE_KEY = "categories:item-counts";
+const ITEM_COUNTS_CACHE_TTL_MS = 5 * 60 * 1000;
+
+// Per-category storefront item counts, each ROLLED UP over its whole
+// subtree (a parent shows everything under it — products, or vehicle
+// listings for transport categories), for the homepage categories section.
+// Cached briefly: it's a full-table aggregate and a few minutes' lag on a
+// count is harmless.
+export async function getCategoryItemCounts(): Promise<{ categoryId: number; count: number }[]> {
+  const cached = cache.get<{ categoryId: number; count: number }[]>(ITEM_COUNTS_CACHE_KEY);
+  if (cached) return cached;
+
+  const [tree, direct] = await Promise.all([
+    categoriesRepository.findInheritedFlagTree(),
+    categoriesRepository.countItemsPerCategory(),
+  ]);
+  const parentById = new Map(tree.map((row) => [row.id, row.parentId]));
+  const totals = new Map<number, number>(tree.map((row) => [row.id, 0]));
+  for (const { categoryId, count } of direct) {
+    // Add to the category and every ancestor (guarding against a cycle).
+    const seen = new Set<number>();
+    let current: number | null | undefined = categoryId;
+    while (current != null && !seen.has(current) && totals.has(current)) {
+      seen.add(current);
+      totals.set(current, (totals.get(current) ?? 0) + count);
+      current = parentById.get(current);
+    }
+  }
+  const result = [...totals].map(([categoryId, count]) => ({ categoryId, count }));
+  cache.set(ITEM_COUNTS_CACHE_KEY, result, ITEM_COUNTS_CACHE_TTL_MS);
+  return result;
+}
+
+type InheritedFlag = "onlinePurchaseEnabled" | "vehicleFitmentEnabled";
+
+// Ids of every category where `flag` is effectively off: switched off
+// itself, or under a switched-off ancestor (so turning it off on "Transport"
+// covers all its subcategories).
+async function getCategoryIdsWithFlagOff(flag: InheritedFlag): Promise<Set<number>> {
+  const rows = await categoriesRepository.findInheritedFlagTree();
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const off = new Set<number>();
+  for (const row of rows) {
+    // Walk up to the root; `seen` guards against a (should-be-impossible,
+    // see assertNoCycle) parent cycle.
+    const seen = new Set<number>();
+    let current: typeof row | undefined = row;
+    while (current && !seen.has(current.id)) {
+      if (!current[flag]) {
+        off.add(row.id);
+        break;
+      }
+      seen.add(current.id);
+      current = current.parentId != null ? byId.get(current.parentId) : undefined;
+    }
+  }
+  return off;
+}
+
+// Categories whose items can't be bought on the site (cart/checkout).
+export function getOnlinePurchaseBlockedCategoryIds(): Promise<Set<number>> {
+  return getCategoryIdsWithFlagOff("onlinePurchaseEnabled");
+}
+
+// Categories whose products are vehicle-independent (no fitment) — see
+// products.service.ts's buildVehicleCompatibilityWhere.
+export function getVehicleFitmentDisabledCategoryIds(): Promise<Set<number>> {
+  return getCategoryIdsWithFlagOff("vehicleFitmentEnabled");
+}
+
+// Admin fitment/fitment-rule writes on a product in such a category.
+export async function assertCategoryVehicleFitmentEnabled(categoryId: number) {
+  if ((await getVehicleFitmentDisabledCategoryIds()).has(categoryId)) {
+    throw new ApiError(
+      400,
+      "ამ კატეგორიისთვის ტრანსპორტთან თავსებადობა გამორთულია (კატეგორიის პარამეტრებში)",
+      "VEHICLE_FITMENT_DISABLED_FOR_CATEGORY",
+    );
+  }
 }
 
 async function assertNoCycle(categoryId: number, proposedParentId: number) {
@@ -146,6 +234,12 @@ export async function createCategory(input: CreateCategoryInput) {
         ...(input.lowStockBadgeEnabled !== undefined
           ? { lowStockBadgeEnabled: input.lowStockBadgeEnabled }
           : {}),
+        ...(input.onlinePurchaseEnabled !== undefined
+          ? { onlinePurchaseEnabled: input.onlinePurchaseEnabled }
+          : {}),
+        ...(input.vehicleFitmentEnabled !== undefined
+          ? { vehicleFitmentEnabled: input.vehicleFitmentEnabled }
+          : {}),
       }),
     "slug",
     "ეს slug უკვე გამოყენებულია",
@@ -184,6 +278,12 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
         ...(input.lowStockBadgeEnabled !== undefined
           ? { lowStockBadgeEnabled: input.lowStockBadgeEnabled }
           : {}),
+        ...(input.onlinePurchaseEnabled !== undefined
+          ? { onlinePurchaseEnabled: input.onlinePurchaseEnabled }
+          : {}),
+        ...(input.vehicleFitmentEnabled !== undefined
+          ? { vehicleFitmentEnabled: input.vehicleFitmentEnabled }
+          : {}),
       }),
     "slug",
     "ეს slug უკვე გამოყენებულია",
@@ -221,6 +321,7 @@ export async function deleteCategory(id: number) {
   }
   void deleteUploadedImage(existing.imageUrl);
   void deleteUploadedImage(existing.bannerImageUrl);
+  void deleteUploadedImage(existing.menuImageUrl);
 }
 
 export async function setCategoryImage(id: number, file: Express.Multer.File) {
@@ -244,5 +345,18 @@ export async function setCategoryBannerImage(id: number, file: Express.Multer.Fi
   const bannerImageUrl = await saveUploadedImage("categories-banner", file);
   const category = await categoriesRepository.updateBannerImage(id, bannerImageUrl);
   void deleteUploadedImage(existing.bannerImageUrl);
+  return toResponse(category);
+}
+
+// The header mega menu's promo tile image (see Category.menuImageUrl).
+export async function setCategoryMenuImage(id: number, file: Express.Multer.File) {
+  const existing = await categoriesRepository.findById(id);
+  if (!existing) {
+    throw new ApiError(404, "კატეგორია ვერ მოიძებნა");
+  }
+
+  const menuImageUrl = await saveUploadedImage("categories-menu", file);
+  const category = await categoriesRepository.updateMenuImage(id, menuImageUrl);
+  void deleteUploadedImage(existing.menuImageUrl);
   return toResponse(category);
 }

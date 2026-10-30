@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { ChangePasswordForm } from "@/components/account/ChangePasswordForm";
+import { noindexMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = { robots: { index: false, follow: false } };
+export const metadata: Metadata = noindexMetadata({ follow: false });
 
 export default function ChangePasswordPage() {
   const t = useTranslations("Account");

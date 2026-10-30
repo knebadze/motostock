@@ -44,7 +44,8 @@ export function buildVehicleCatalogFilterFields(data: {
       label: "მოდელი",
       section: "ძირითადი",
       kind: "MULTI_SELECT",
-      options: toOptions(data.models, (m) => m.name),
+      options: data.models.map((m) => ({ value: String(m.id), label: m.name, parentValue: String(m.brandId) })),
+      dependsOn: "BRAND",
     },
     {
       key: "CATEGORY",

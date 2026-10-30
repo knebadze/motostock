@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { fetchFromServer } from "./core";
 import type { Brand } from "../brands";
+import type { ProductTagRef, Tag } from "../tags";
 import type { Model } from "../models";
 import type { LookupItem } from "../lookups";
 import type { LookupTypeSlug } from "@/config/lookup-types";
@@ -73,7 +74,7 @@ export const getVehicleCatalogEntryFromServer = cache(async (
   // same fix as getCategoriesFromServer.
   return fetchFromServer<{ item: VehicleCatalogEntry }, VehicleCatalogEntry | null>(
     `/vehicle-catalog/${id}`,
-    { fallback: null, extract: (data) => data.item },
+    { fallback: null, extract: (data) => data.item, throwIfUnavailable: true },
   );
 });
 
@@ -165,6 +166,23 @@ export const getAttributesFromServer = cache(async (): Promise<Attribute[]> => {
 
 export const getProductBrandsFromServer = cache(async (): Promise<ProductBrand[]> => {
   return fetchFromServer<{ items: ProductBrand[] }, ProductBrand[]>("/product-brands", {
+    fallback: [],
+    extract: (data) => data.items,
+    requireAuth: true,
+  });
+});
+
+// Buy-together tags (admin tags page + product form).
+export const getTagsFromServer = cache(async (): Promise<Tag[]> => {
+  return fetchFromServer<{ items: Tag[] }, Tag[]>("/tags", {
+    fallback: [],
+    extract: (data) => data.items,
+    requireAuth: true,
+  });
+});
+
+export const getProductTagsFromServer = cache(async (productId: number): Promise<ProductTagRef[]> => {
+  return fetchFromServer<{ items: ProductTagRef[] }, ProductTagRef[]>(`/products/${productId}/tags`, {
     fallback: [],
     extract: (data) => data.items,
     requireAuth: true,

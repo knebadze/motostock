@@ -34,17 +34,17 @@ export function HomeInfoCardsSection() {
   const activeCard = cards.find((card) => card.key === openCard) ?? null;
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-      <h2 className="mb-8 text-2xl font-bold tracking-tight">{t("heading")}</h2>
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+    <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
+      <h2 className="mb-6 text-2xl font-bold tracking-tight sm:mb-8">{t("heading")}</h2>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
         {cards.map((card) => (
           <div
             key={card.key}
             className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card"
           >
             <ImageCarousel images={cardImages(card.title)} aspectClassName="aspect-4/3" bordered={false} />
-            <div className="flex flex-1 flex-col gap-3 p-6">
-              <h3 className="text-lg font-semibold text-foreground">{card.title}</h3>
+            <div className="flex flex-1 flex-col gap-2 p-4 sm:gap-3 sm:p-6">
+              <h3 className="text-base font-semibold text-foreground sm:text-lg">{card.title}</h3>
               <p className="flex-1 text-sm text-muted-foreground">{card.shortText}</p>
               <button
                 type="button"

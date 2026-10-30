@@ -71,6 +71,7 @@ export const getVehicleListingsPageFromServer = cache(async (
       params: { categoryId, page, pageSize: SHOP_PAGE_SIZE, sortBy, bulkDiscountEventId },
       fallback: { items: [], total: 0, page: 1, pageSize: SHOP_PAGE_SIZE },
       extract: (data) => data,
+      throwIfUnavailable: true,
     },
   );
 });
@@ -97,8 +98,19 @@ export const getVehicleListingFromServer = cache(async (id: number): Promise<Veh
   // because there's no admin session cookie, same fix as getCategoriesFromServer.
   return fetchFromServer<{ item: VehicleListing }, VehicleListing | null>(
     `/vehicle-listings/${id}`,
-    { fallback: null, extract: (data) => data.item },
+    { fallback: null, extract: (data) => data.item, throwIfUnavailable: true },
   );
+});
+
+// /search results page — top vehicle listings matching the query (same
+// ranked search as the shop pages).
+export const SEARCH_VEHICLE_LISTINGS_LIMIT = 8;
+export const searchVehicleListingsFromServer = cache(async (search: string): Promise<VehicleListing[]> => {
+  return fetchFromServer<{ items: VehicleListing[] }, VehicleListing[]>("/vehicle-listings", {
+    params: { search, limit: SEARCH_VEHICLE_LISTINGS_LIMIT },
+    fallback: [],
+    extract: (data) => data.items,
+  });
 });
 
 // Homepage "discounted vehicles" slider.

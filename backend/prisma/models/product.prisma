@@ -47,6 +47,7 @@ model Product {
   fitmentRules    ProductFitmentRule[]
   buyTogether     ProductBuyTogether[]    @relation("BuyTogetherAnchor")
   buyTogetherOf   ProductBuyTogether[]    @relation("BuyTogetherRelated")
+  tags            ProductTag[]
   wishlistItems   WishlistItem[]
   compareItems    CompareItem[]
   views           ProductView[]

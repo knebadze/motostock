@@ -11,6 +11,7 @@ import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { WishlistDropdown } from "@/components/shared/WishlistDropdown";
 import { CompareDropdown } from "@/components/shared/CompareDropdown";
 import { CartDropdown } from "@/components/shared/CartDropdown";
+import { HeaderSearch } from "@/components/shared/HeaderSearch";
 import { Logo } from "@/components/shared/Logo";
 import { usePopoverMenu } from "@/components/shared/usePopoverMenu";
 import { facebookIcon, instagramIcon, tiktokIcon, youtubeIcon } from "@/components/shared/social-icons";
@@ -63,6 +64,39 @@ const mailIcon = (
   </span>
 );
 
+type MegaMenuGroup = {
+  heading: HeaderCategory | null;
+  items: HeaderCategory[];
+};
+
+// A top-level category's mega-menu columns (RevZilla-style): its direct
+// leaf children together in one list (headed by the category itself), then
+// one column per child that has children of its own, listing those.
+function buildMegaMenuGroups(root: HeaderCategory, childrenOf: (id: number) => HeaderCategory[]): MegaMenuGroup[] {
+  const children = childrenOf(root.id);
+  const leaves = children.filter((child) => childrenOf(child.id).length === 0);
+  const groups = children
+    .filter((child) => childrenOf(child.id).length > 0)
+    .map((child) => ({ heading: child, items: childrenOf(child.id) }));
+  return leaves.length > 0 ? [{ heading: null, items: leaves }, ...groups] : groups;
+}
+
+const chevronRightIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-4 shrink-0 text-muted-foreground"
+    aria-hidden
+  >
+    <path d="m9 18 6-6-6-6" />
+  </svg>
+);
+
 export function Header({
   user = null,
   categories = [],
@@ -86,6 +120,9 @@ export function Header({
   const tHeader = useTranslations("Header");
   const tFooter = useTranslations("Footer");
   const [isOpen, setIsOpen] = useState(false);
+  // Mobile search panel (below lg — desktop has the search box inline in the logo row).
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const tSearch = useTranslations("Search");
   const {
     open: accountMenuOpen,
     setOpen: setAccountMenuOpen,
@@ -94,6 +131,13 @@ export function Header({
   } = usePopoverMenu({ arrowNav: true });
   const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Mobile menu drill-down: the stack of category ids the visitor has
+  // tapped into (empty = the main menu). Reset whenever the menu is opened.
+  const [mobileCategoryPath, setMobileCategoryPath] = useState<number[]>([]);
+  // Which way the last drill-down step went — picks the slide direction of
+  // the panel that just mounted ("none" right after opening the menu).
+  const [mobileSlideDirection, setMobileSlideDirection] = useState<"forward" | "back" | "none">("none");
+  const mobileScrollRef = useRef<HTMLDivElement | null>(null);
 
   // Records this page's own SSR-resolved auth state for client.ts's 401
   // interceptor (see auth-state.ts) — every guest page mounts this exactly
@@ -110,19 +154,68 @@ export function Header({
     setKnownCount(COMPARE_COUNT_CHANGED_EVENT, compareCount);
   }, [user, guestFeatureStatus, wishlistCount, compareCount]);
 
-  const topLevelCategories = categories.filter((category) => category.parentId === null);
+  const childrenByParent = new Map<number | null, HeaderCategory[]>();
+  for (const category of categories) {
+    const siblings = childrenByParent.get(category.parentId) ?? [];
+    siblings.push(category);
+    childrenByParent.set(category.parentId, siblings);
+  }
+  const childrenOf = (id: number | null) => childrenByParent.get(id) ?? [];
+  const topLevelCategories = childrenOf(null);
   const socialLinks = [
     { href: companyInfo?.facebookUrl, icon: facebookIcon, label: "Facebook" },
-    { href: companyInfo?.instagramUrl, icon: instagramIcon, label: "Instagram" },
+    {
+      href: companyInfo?.instagramUrl,
+      icon: instagramIcon,
+      label: "Instagram",
+    },
     { href: companyInfo?.youtubeUrl, icon: youtubeIcon, label: "YouTube" },
     { href: companyInfo?.tiktokUrl, icon: tiktokIcon, label: "TikTok" },
-  ].filter((social): social is { href: string; icon: typeof facebookIcon; label: string } =>
-    Boolean(social.href),
-  );
+  ].filter((social): social is { href: string; icon: typeof facebookIcon; label: string } => Boolean(social.href));
   const activeCategory = categories.find((category) => category.id === activeCategoryId) ?? null;
-  const activeChildren = activeCategory
-    ? categories.filter((category) => category.parentId === activeCategory.id)
-    : [];
+  const megaMenuGroups = activeCategory ? buildMegaMenuGroups(activeCategory, childrenOf) : [];
+  const mobileCategory =
+    mobileCategoryPath.length > 0
+      ? (categories.find((category) => category.id === mobileCategoryPath[mobileCategoryPath.length - 1]) ?? null)
+      : null;
+  const mobileParentCategory =
+    mobileCategoryPath.length > 1
+      ? (categories.find((category) => category.id === mobileCategoryPath[mobileCategoryPath.length - 2]) ?? null)
+      : null;
+
+  function drillIntoMobileCategory(categoryId: number) {
+    setMobileCategoryPath((path) => [...path, categoryId]);
+    setMobileSlideDirection("forward");
+    mobileScrollRef.current?.scrollTo({ top: 0 });
+  }
+
+  function drillOutOfMobileCategory() {
+    setMobileCategoryPath((path) => path.slice(0, -1));
+    setMobileSlideDirection("back");
+    mobileScrollRef.current?.scrollTo({ top: 0 });
+  }
+
+  // Keyboard access to the mega menu (it's rendered after the category bar,
+  // so Tab from a category goes to the next category, not into its panel):
+  // ArrowDown on a category opens it and moves focus to its first link;
+  // Escape closes it and returns focus to the category; focus leaving both
+  // the bar and the panel closes it.
+  const megaNavRef = useRef<HTMLElement>(null);
+  const megaPanelRef = useRef<HTMLDivElement>(null);
+  const megaTriggerRefs = useRef(new Map<number, HTMLAnchorElement>());
+  // Set while focus is sent back to a category on Escape, so its onFocus
+  // doesn't immediately reopen the menu.
+  const suppressFocusOpenRef = useRef(false);
+
+  function focusFirstMegaMenuLink() {
+    requestAnimationFrame(() => megaPanelRef.current?.querySelector<HTMLElement>("a")?.focus());
+  }
+
+  function handleMegaMenuBlur(event: React.FocusEvent) {
+    const next = event.relatedTarget as Node | null;
+    if (next && (megaNavRef.current?.contains(next) || megaPanelRef.current?.contains(next))) return;
+    setActiveCategoryId(null);
+  }
 
   function cancelMegaMenuClose() {
     if (closeTimeoutRef.current) {
@@ -144,11 +237,25 @@ export function Header({
   useEffect(() => cancelMegaMenuClose, []);
 
   useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
+    if (activeCategoryId === null) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      if (megaPanelRef.current?.contains(document.activeElement) && activeCategoryId !== null) {
+        suppressFocusOpenRef.current = true;
+        megaTriggerRefs.current.get(activeCategoryId)?.focus();
+      }
+      setActiveCategoryId(null);
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeCategoryId]);
+
+  useEffect(() => {
+    document.body.style.overflow = isOpen || mobileSearchOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isOpen]);
+  }, [isOpen, mobileSearchOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -228,8 +335,8 @@ export function Header({
               <Link href="/vacancies" className="transition-colors hover:text-primary-text">
                 {tFooter("vacanciesTitle")}
               </Link>
-              <Link href="/terms" className="transition-colors hover:text-primary-text">
-                {tFooter("termsTitle")}
+              <Link href="/catalog" className="transition-colors hover:text-primary-text">
+                {tFooter("catalogTitle")}
               </Link>
               {/* <Link href="/privacy" className="transition-colors hover:text-primary-text">
                 {tFooter("privacyTitle")}
@@ -248,29 +355,45 @@ export function Header({
           <Logo className="h-8 w-auto sm:h-9" padding="px-3 py-1 sm:px-4" />
         </Link>
 
-        <nav
-          onMouseLeave={scheduleMegaMenuClose}
-          className="hidden items-center gap-6 text-sm font-medium lg:flex"
-        >
-          {topLevelCategories.map((category) => {
-            const href = `/${category.slug}`;
-            const isActive = pathname === href;
-            return (
-              <div key={category.id} onMouseEnter={() => openMegaMenu(category.id)}>
-                <Link
-                  href={href}
-                  className={`transition-colors hover:text-primary-text ${
-                    isActive ? "text-primary-text" : "text-foreground"
-                  }`}
-                >
-                  {category.name}
-                </Link>
-              </div>
-            );
-          })}
-        </nav>
+        {/* Global search (desktop) — right of the logo. Below lg it's the
+            search button + panel instead (see mobileSearchOpen). */}
+        <div className="mx-6 hidden max-w-xl flex-1 lg:block xl:mx-10">
+          <HeaderSearch />
+        </div>
 
         <div className="flex items-center gap-1.5 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setMobileSearchOpen((open) => !open);
+              setIsOpen(false);
+            }}
+            aria-expanded={mobileSearchOpen}
+            aria-controls="mobile-search"
+            aria-label={mobileSearchOpen ? tSearch("closeSearch") : tSearch("openSearch")}
+            className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary hover:text-primary-text sm:size-10 lg:hidden"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="size-5"
+              aria-hidden
+            >
+              {mobileSearchOpen ? (
+                <path d="M6 6l12 12M18 6L6 18" />
+              ) : (
+                <>
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" />
+                </>
+              )}
+            </svg>
+          </button>
           <WishlistDropdown initialCount={wishlistCount} />
           <CompareDropdown initialCount={compareCount} />
           <CartDropdown initialCount={cartCount} />
@@ -357,7 +480,12 @@ export function Header({
 
           <button
             type="button"
-            onClick={() => setIsOpen((open) => !open)}
+            onClick={() => {
+              setIsOpen((open) => !open);
+              setMobileSearchOpen(false);
+              setMobileCategoryPath([]);
+              setMobileSlideDirection("none");
+            }}
             aria-expanded={isOpen}
             aria-controls="mobile-nav"
             aria-label={isOpen ? tHeader("closeMenu") : tHeader("openMenu")}
@@ -373,149 +501,65 @@ export function Header({
               strokeLinejoin="round"
               className="size-5"
             >
-              {isOpen ? (
-                <path d="M6 6l12 12M18 6L6 18" />
-              ) : (
-                <path d="M4 7h16M4 12h16M4 17h16" />
-              )}
+              {isOpen ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
             </svg>
           </button>
         </div>
       </div>
 
-      {activeCategory && activeChildren.length > 0 && (
-        <div
-          onMouseEnter={cancelMegaMenuClose}
-          onMouseLeave={scheduleMegaMenuClose}
-          className="absolute inset-x-0 top-full hidden border-b border-border bg-background shadow-lg lg:block"
-        >
-          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-3 gap-6 sm:grid-cols-4 lg:grid-cols-6">
-              {activeChildren.map((child) => {
-                const imageUrl = resolveMediaUrl(child.imageUrl);
-                return (
-                  <Link
-                    key={child.id}
-                    href={`/${child.slug}`}
-                    onClick={() => setActiveCategoryId(null)}
-                    className="flex flex-col items-center gap-2 rounded-xl p-3 text-center transition-colors hover:bg-muted"
-                  >
-                    {imageUrl ? (
-                      <div className="relative size-16 overflow-hidden rounded-lg border border-border">
-                        <Image
-                          src={imageUrl}
-                          alt={child.name}
-                          fill
-                          sizes="64px"
-                          className="object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="size-16 rounded-lg border border-dashed border-border" />
-                    )}
-                    <span className="text-sm font-medium text-foreground">
-                      {child.name}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* The panel scrolls on its own, capped at the viewport below the h-16
-          bar (the only header row below lg) — body scroll is locked while
-          it's open (see the overflow effect above), so without this the
-          login/cart links at the bottom were unreachable on short screens.
-          `inert` while closed: the collapsed rows are only 0px tall, not
-          hidden, so their links were still Tab-focusable (and read by
-          screen readers) when the menu was shut. */}
-      <div
-        id="mobile-nav"
-        inert={!isOpen}
-        className={`grid overflow-hidden border-b border-border transition-[grid-template-rows] duration-200 ease-out lg:hidden ${
-          isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
+      {/* Category bar (desktop) — its own full-width row under the logo row
+          (RevZilla-style), opening a full-width mega menu on hover/focus. */}
+      <nav
+        ref={megaNavRef}
+        onMouseLeave={scheduleMegaMenuClose}
+        onBlur={handleMegaMenuBlur}
+        className="hidden border-t border-border lg:block"
       >
-        <div className="max-h-[calc(100dvh-4rem)] min-h-0 overflow-y-auto overscroll-contain">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-6">
-            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-              {companyInfo?.phone && (
-                <a href={`tel:${companyInfo.phone}`} className="flex items-center gap-1.5">
-                  {phoneIcon}
-                  {companyInfo.phone}
-                </a>
-              )}
-              {companyInfo?.email && (
-                <a href={`mailto:${companyInfo.email}`} className="flex items-center gap-1.5">
-                  {mailIcon}
-                  {companyInfo.email}
-                </a>
-              )}
-              {socialLinks.length > 0 && (
-                <div className="mt-1 flex items-center gap-3">
-                  {socialLinks.map((social) => (
-                    <a
-                      key={social.label}
-                      href={social.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={social.label}
-                      className="text-primary-text transition-opacity hover:opacity-70 [&>svg]:size-4"
-                    >
-                      {social.icon}
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <LanguageSwitcher />
-              <ThemeToggle />
-            </div>
-          </div>
-
-          <nav className="flex flex-col gap-1 px-4 py-3 text-sm font-medium sm:px-6">
-            {topLevelCategories.map((category) => {
-              const href = `/${category.slug}`;
-              const isActive = pathname === href;
-              const children = categories.filter((item) => item.parentId === category.id);
-
-              // Leaf category (no children) — same plain link as before.
-              if (children.length === 0) {
-                return (
-                  <Link
-                    key={category.id}
-                    href={href}
-                    onClick={() => setIsOpen(false)}
-                    className={`rounded-lg px-3 py-2.5 transition-colors hover:bg-muted hover:text-primary-text ${
-                      isActive ? "text-primary-text" : "text-foreground"
-                    }`}
-                  >
-                    {category.name}
-                  </Link>
-                );
-              }
-
-              // Has subcategories — the desktop header reveals these via a
-              // hover mega-menu (activeChildren above), which has no mobile
-              // equivalent at all; a mobile visitor previously had no way to
-              // reach a subcategory except landing on the parent category
-              // page first. <details>/<summary> gives a free, keyboard-
-              // operable disclosure widget (Enter/Space toggles natively) —
-              // same pattern this codebase's FAQ accordion already uses —
-              // instead of hand-rolling expand/collapse state.
-              return (
-                <details key={category.id} className="group [&_summary::-webkit-details-marker]:hidden">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted">
-                    <Link
-                      href={href}
-                      onClick={() => setIsOpen(false)}
-                      className={`flex-1 hover:text-primary-text ${isActive ? "text-primary-text" : "text-foreground"}`}
-                    >
-                      {category.name}
-                    </Link>
+        <span id="mega-menu-hint" className="sr-only">
+          {tHeader("megaMenuHint")}
+        </span>
+        <div className="mx-auto flex max-w-7xl items-stretch justify-center gap-1 px-6 lg:px-8">
+          {topLevelCategories.map((category) => {
+            const href = `/${category.slug}`;
+            const hasChildren = childrenOf(category.id).length > 0;
+            const isOpenNow = activeCategoryId === category.id;
+            const isActive = pathname === href;
+            return (
+              <div
+                key={category.id}
+                onMouseEnter={() => (hasChildren ? openMegaMenu(category.id) : scheduleMegaMenuClose())}
+              >
+                <Link
+                  ref={(element) => {
+                    if (element) megaTriggerRefs.current.set(category.id, element);
+                    else megaTriggerRefs.current.delete(category.id);
+                  }}
+                  href={href}
+                  onClick={() => setActiveCategoryId(null)}
+                  onFocus={() => {
+                    if (suppressFocusOpenRef.current) {
+                      suppressFocusOpenRef.current = false;
+                      return;
+                    }
+                    if (hasChildren) openMegaMenu(category.id);
+                  }}
+                  onKeyDown={(event) => {
+                    if (!hasChildren || event.key !== "ArrowDown") return;
+                    event.preventDefault();
+                    openMegaMenu(category.id);
+                    focusFirstMegaMenuLink();
+                  }}
+                  aria-expanded={hasChildren ? isOpenNow : undefined}
+                  aria-controls={hasChildren && isOpenNow ? "mega-menu-panel" : undefined}
+                  aria-describedby={hasChildren ? "mega-menu-hint" : undefined}
+                  className={`flex h-11 items-center gap-1 border-b-2 px-3 text-sm font-semibold transition-colors ${
+                    isOpenNow || isActive
+                      ? "border-primary text-primary-text"
+                      : "border-transparent text-foreground hover:text-primary-text"
+                  }`}
+                >
+                  {category.name}
+                  {hasChildren && (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
@@ -524,70 +568,309 @@ export function Header({
                       strokeWidth={2}
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+                      className={`size-3.5 transition-transform ${isOpenNow ? "rotate-180" : ""}`}
+                      aria-hidden
                     >
                       <path d="m6 9 6 6 6-6" />
                     </svg>
-                  </summary>
-                  <div className="ml-3 flex flex-col gap-1 border-l border-border py-1 pl-3">
-                    {children.map((child) => (
+                  )}
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+      </nav>
+
+      {activeCategory && megaMenuGroups.length > 0 && (
+        <div
+          id="mega-menu-panel"
+          ref={megaPanelRef}
+          onMouseEnter={cancelMegaMenuClose}
+          onMouseLeave={scheduleMegaMenuClose}
+          onBlur={handleMegaMenuBlur}
+          className="absolute inset-x-0 top-full hidden max-h-[calc(100dvh-9.5rem)] overflow-y-auto border-b border-border bg-background shadow-xl lg:block"
+        >
+          <div className="mx-auto flex max-w-7xl gap-10 px-6 py-8 lg:px-8">
+            <div className="min-w-0 flex-1">
+              <div className="mb-6 flex items-baseline justify-between gap-4 border-b border-border pb-3">
+                <p className="text-lg font-bold tracking-tight text-foreground">{activeCategory.name}</p>
+                <Link
+                  href={`/${activeCategory.slug}`}
+                  onClick={() => setActiveCategoryId(null)}
+                  className="text-sm font-semibold text-primary-text hover:underline"
+                >
+                  {tHeader("viewAll")} →
+                </Link>
+              </div>
+
+              {/* Groups flow top-to-bottom through up to 4 columns; a
+                  category with a single list (only leaf children) spreads
+                  that list over 3 columns instead. */}
+              <div
+                className="gap-x-10"
+                style={{
+                  columnCount: megaMenuGroups.length === 1 ? 1 : Math.min(megaMenuGroups.length, 4),
+                }}
+              >
+                {megaMenuGroups.map((group) => {
+                  const heading = group.heading ?? activeCategory;
+                  return (
+                    <div key={heading.id} className="mb-7 break-inside-avoid">
+                      <Link
+                        href={`/${heading.slug}`}
+                        onClick={() => setActiveCategoryId(null)}
+                        className="mb-2.5 block text-xs font-bold uppercase tracking-wider text-foreground transition-colors hover:text-primary-text"
+                      >
+                        {heading.name}
+                      </Link>
+                      <ul
+                        className={`flex flex-col gap-1.5 ${megaMenuGroups.length === 1 ? "columns-3 gap-x-10 [&>li]:mb-1.5 [&>li]:break-inside-avoid" : ""}`}
+                        style={megaMenuGroups.length === 1 ? { display: "block" } : undefined}
+                      >
+                        {group.items.map((item) => {
+                          // The menu stops at this level (category → group →
+                          // item): anything deeper (e.g. the sensor types under
+                          // "სენსორები") is picked on that category's page via
+                          // its subcategory filter, not listed here.
+                          return (
+                            <li key={item.id}>
+                              <Link
+                                href={`/${item.slug}`}
+                                onClick={() => setActiveCategoryId(null)}
+                                className="text-sm text-muted-foreground transition-colors hover:text-primary-text"
+                              >
+                                {item.name}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Promo tile — the category's menu image (Category.menuImageUrl,
+                falling back to its regular image) with a "view all" CTA. */}
+            <Link
+              href={`/${activeCategory.slug}`}
+              onClick={() => setActiveCategoryId(null)}
+              className="group relative hidden min-h-64 w-64 shrink-0 self-start overflow-hidden rounded-2xl bg-muted xl:block"
+            >
+              {resolveMediaUrl(activeCategory.menuImageUrl ?? activeCategory.imageUrl) && (
+                <Image
+                  src={resolveMediaUrl(activeCategory.menuImageUrl ?? activeCategory.imageUrl)!}
+                  alt={activeCategory.name}
+                  fill
+                  sizes="256px"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              )}
+              <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/15 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-5">
+                <p className="text-lg font-bold text-white">{activeCategory.name}</p>
+                <span className="mt-3 inline-flex rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground">
+                  {tHeader("viewAll")}
+                </span>
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile search panel — overlays the page below the h-16 bar like the
+          mobile menu; mounted only while open so the input autofocuses (and
+          the keyboard opens) each time. */}
+      {mobileSearchOpen && (
+        <div
+          id="mobile-search"
+          className="absolute inset-x-0 top-full h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain bg-background px-4 py-4 sm:px-6 lg:hidden"
+        >
+          <HeaderSearch inline autoFocus onNavigate={() => setMobileSearchOpen(false)} />
+        </div>
+      )}
+
+      {/* Overlays the page below the h-16 bar (the only header row below
+          lg) instead of pushing it down: absolute to the sticky header (a
+          `fixed` child wouldn't work — the header's backdrop-blur makes it
+          the containing block anyway), filling the rest of the screen and
+          scrolling on its own; body scroll is locked while it's open (see
+          the overflow effect above). `inert` while closed so its links
+          aren't Tab-focusable or read by screen readers. */}
+      <div
+        id="mobile-nav"
+        inert={!isOpen}
+        className={`absolute inset-x-0 top-full h-[calc(100dvh-4rem)] bg-background transition-[opacity,transform] duration-200 ease-out lg:hidden ${
+          isOpen ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0"
+        }`}
+      >
+        <div ref={mobileScrollRef} className="h-full overflow-x-hidden overflow-y-auto overscroll-contain">
+          {/* Keyed by the drill-down path so every level change remounts it
+              and replays the slide-in. */}
+          <div
+            key={mobileCategoryPath.join("/") || "main"}
+            className={
+              mobileSlideDirection === "forward"
+                ? "motion-safe:animate-slide-in-right"
+                : mobileSlideDirection === "back"
+                  ? "motion-safe:animate-slide-in-left"
+                  : undefined
+            }
+          >
+            {mobileCategory ? (
+              // Drilled into a category (RevZilla-style): back link, "view
+              // all", then its children — tapping one with children of its own
+              // goes a level deeper.
+              <div>
+                <div className="sticky top-0 z-10 border-b border-border bg-background px-2 py-1.5 sm:px-4">
+                  <button
+                    type="button"
+                    onClick={drillOutOfMobileCategory}
+                    className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="size-4"
+                      aria-hidden
+                    >
+                      <path d="m15 18-6-6 6-6" />
+                    </svg>
+                    {mobileParentCategory ? mobileParentCategory.name : tHeader("mainMenu")}
+                  </button>
+                </div>
+                <nav className="flex flex-col px-4 py-3 text-sm font-medium sm:px-6">
+                  <p className="px-3 pb-2 pt-1 text-lg font-bold tracking-tight text-foreground">
+                    {mobileCategory.name}
+                  </p>
+                  <Link
+                    href={`/${mobileCategory.slug}`}
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-between rounded-lg px-3 py-3 font-semibold text-primary-text transition-colors hover:bg-muted"
+                  >
+                    {tHeader("viewAll")}
+                    {chevronRightIcon}
+                  </Link>
+                  <div className="my-1 border-t border-border" />
+                  {childrenOf(mobileCategory.id).map((child) =>
+                    // Same 3-level cap as the desktop mega menu: inside a
+                    // group (path depth 2) items are plain links even if they
+                    // have subcategories — those are a filter on their page.
+                    childrenOf(child.id).length > 0 && mobileCategoryPath.length < 2 ? (
+                      <button
+                        key={child.id}
+                        type="button"
+                        onClick={() => drillIntoMobileCategory(child.id)}
+                        className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                      >
+                        {child.name}
+                        {chevronRightIcon}
+                      </button>
+                    ) : (
                       <Link
                         key={child.id}
                         href={`/${child.slug}`}
                         onClick={() => setIsOpen(false)}
-                        className="rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                        className="rounded-lg px-3 py-3 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                       >
                         {child.name}
                       </Link>
-                    ))}
-                  </div>
-                </details>
-              );
-            })}
+                    ),
+                  )}
+                </nav>
+              </div>
+            ) : (
+              <>
+                {/* Settings only up top (contact details moved to the bottom of
+                    the menu) — the language dropdown opens downward, so it
+                    stays here rather than near the scrollable menu's end. */}
+                <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6">
+                  <LanguageSwitcher align="left" />
+                  <ThemeToggle />
+                </div>
 
-            <div className="my-2 border-t border-border" />
+                <nav className="flex flex-col gap-1 px-4 py-3 text-sm font-medium sm:px-6">
+                  {/* Top-level categories — one with subcategories drills into its
+                own panel (see mobileCategory above) instead of expanding
+                in place. */}
+                  {topLevelCategories.map((category) => {
+                    const href = `/${category.slug}`;
+                    const isActive = pathname === href;
+                    return childrenOf(category.id).length > 0 ? (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => drillIntoMobileCategory(category.id)}
+                        className={`flex items-center justify-between rounded-lg px-3 py-3 text-left transition-colors hover:bg-muted hover:text-primary-text ${
+                          isActive ? "text-primary-text" : "text-foreground"
+                        }`}
+                      >
+                        {category.name}
+                        {chevronRightIcon}
+                      </button>
+                    ) : (
+                      <Link
+                        key={category.id}
+                        href={href}
+                        onClick={() => setIsOpen(false)}
+                        className={`rounded-lg px-3 py-3 transition-colors hover:bg-muted hover:text-primary-text ${
+                          isActive ? "text-primary-text" : "text-foreground"
+                        }`}
+                      >
+                        {category.name}
+                      </Link>
+                    );
+                  })}
 
-            <Link
-              href="/service"
-              onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
-            >
-              {tFooter("serviceTitle")}
-            </Link>
+                  <div className="my-2 border-t border-border" />
 
-            <Link
-              href="/about"
-              onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
-            >
-              {tFooter("aboutUs")}
-            </Link>
+                  <Link
+                    href="/service"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                  >
+                    {tFooter("serviceTitle")}
+                  </Link>
 
-            <Link
-              href="/contact"
-              onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
-            >
-              {tFooter("contactTitle")}
-            </Link>
+                  <Link
+                    href="/about"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                  >
+                    {tFooter("aboutUs")}
+                  </Link>
 
-            <Link
-              href="/vacancies"
-              onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
-            >
-              {tFooter("vacanciesTitle")}
-            </Link>
+                  <Link
+                    href="/contact"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                  >
+                    {tFooter("contactTitle")}
+                  </Link>
 
-            <Link
-              href="/terms"
-              onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
-            >
-              {tFooter("termsTitle")}
-            </Link>
+                  <Link
+                    href="/vacancies"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                  >
+                    {tFooter("vacanciesTitle")}
+                  </Link>
 
-            {/* <Link
+                  <Link
+                    href="/catalog"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                  >
+                    {tFooter("catalogTitle")}
+                  </Link>
+
+                  {/* <Link
               href="/privacy"
               onClick={() => setIsOpen(false)}
               className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
@@ -595,81 +878,126 @@ export function Header({
               {tFooter("privacyTitle")}
             </Link> */}
 
-            <div className="my-2 border-t border-border" />
+                  <div className="my-2 border-t border-border" />
 
-            <Link
-              href="/wishlist"
-              onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
-            >
-              {tHeader("wishlist")}
-              {wishlistCount > 0 && <span className="text-muted-foreground"> ({wishlistCount})</span>}
-            </Link>
-
-            <Link
-              href="/compare"
-              onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
-            >
-              {tHeader("compare")}
-              {compareCount > 0 && <span className="text-muted-foreground"> ({compareCount})</span>}
-            </Link>
-
-            <Link
-              href="/cart"
-              onClick={() => setIsOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
-            >
-              {tHeader("cart")}
-              {cartCount > 0 && <span className="text-muted-foreground"> ({cartCount})</span>}
-            </Link>
-
-            {user ? (
-              <>
-                {user.role === "ADMIN" || user.role === "OPERATOR" ? (
-                  <NextLink
-                    href="/admin"
-                    onClick={() => setIsOpen(false)}
-                    className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
-                  >
-                    {tHeader("adminPanel")}
-                  </NextLink>
-                ) : (
                   <Link
-                    href="/account"
+                    href="/wishlist"
                     onClick={() => setIsOpen(false)}
-                    className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                    className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
                   >
-                    {tHeader("myAccount")}
+                    {tHeader("wishlist")}
+                    {wishlistCount > 0 && <span className="text-muted-foreground"> ({wishlistCount})</span>}
                   </Link>
-                )}
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="rounded-full bg-primary px-4 py-2.5 text-center font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
-                >
-                  {tHeader("logout")}
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/register"
-                  onClick={() => setIsOpen(false)}
-                  className="mt-2 rounded-lg border border-border px-3 py-2.5 text-center font-semibold text-foreground transition-colors hover:bg-muted hover:text-primary-text"
-                >
-                  {tHeader("register")}
-                </Link>
-                <Link
-                  href="/login"
-                  onClick={() => setIsOpen(false)}
-                  className="rounded-full bg-primary px-4 py-2.5 text-center font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
-                >
-                  {tHeader("login")}
-                </Link>
+
+                  <Link
+                    href="/compare"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                  >
+                    {tHeader("compare")}
+                    {compareCount > 0 && <span className="text-muted-foreground"> ({compareCount})</span>}
+                  </Link>
+
+                  <Link
+                    href="/cart"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                  >
+                    {tHeader("cart")}
+                    {cartCount > 0 && <span className="text-muted-foreground"> ({cartCount})</span>}
+                  </Link>
+
+                  {user ? (
+                    <>
+                      {user.role === "ADMIN" || user.role === "OPERATOR" ? (
+                        <NextLink
+                          href="/admin"
+                          onClick={() => setIsOpen(false)}
+                          className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                        >
+                          {tHeader("adminPanel")}
+                        </NextLink>
+                      ) : (
+                        <Link
+                          href="/account"
+                          onClick={() => setIsOpen(false)}
+                          className="mt-2 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                        >
+                          {tHeader("myAccount")}
+                        </Link>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="rounded-full bg-primary px-4 py-2.5 text-center font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+                      >
+                        {tHeader("logout")}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/register"
+                        onClick={() => setIsOpen(false)}
+                        className="mt-2 rounded-lg border border-border px-3 py-2.5 text-center font-semibold text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                      >
+                        {tHeader("register")}
+                      </Link>
+                      <Link
+                        href="/login"
+                        onClick={() => setIsOpen(false)}
+                        className="rounded-full bg-primary px-4 py-2.5 text-center font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+                      >
+                        {tHeader("login")}
+                      </Link>
+                    </>
+                  )}
+
+                  {(companyInfo?.phone || companyInfo?.email || socialLinks.length > 0) && (
+                    <div className="mt-4 flex flex-col gap-1 border-t border-border pt-4">
+                      <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {tFooter("contactTitle")}
+                      </p>
+                      {companyInfo?.phone && (
+                        <a
+                          href={`tel:${companyInfo.phone}`}
+                          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                        >
+                          {phoneIcon}
+                          {companyInfo.phone}
+                        </a>
+                      )}
+                      {companyInfo?.email && (
+                        <a
+                          href={`mailto:${companyInfo.email}`}
+                          className="flex min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-foreground transition-colors hover:bg-muted hover:text-primary-text"
+                        >
+                          {mailIcon}
+                          <span className="truncate">{companyInfo.email}</span>
+                        </a>
+                      )}
+                      {socialLinks.length > 0 && (
+                        <div className="mt-2 flex items-center gap-2 px-3">
+                          {socialLinks.map((social) => (
+                            <a
+                              key={social.label}
+                              href={social.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={social.label}
+                              className="flex size-9 items-center justify-center rounded-full border border-border text-primary-text transition-colors hover:border-primary [&>svg]:size-4"
+                            >
+                              {social.icon}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </nav>
               </>
             )}
-          </nav>
+          </div>
         </div>
       </div>
     </header>

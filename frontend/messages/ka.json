@@ -25,7 +25,9 @@
     "descriptionWithCity": "მოტოციკლები, ნაწილები, ჩაფხუტები და ეკიპირება, მოტოციკლების სერვისი და შეკეთება — {city}. შეარჩიე შენს მოტოზე თავსებადი ნაწილები ონლაინ.",
     "serviceTitle": "მოტოციკლების სერვისი და შეკეთება — {siteName}",
     "serviceDescription": "მოტოციკლების სერვისი {siteName}-ში: {services}. სამუშაო საათები, მისამართი და ჩაწერა.",
-    "serviceDescriptionGeneric": "მოტოციკლების სერვისი და შეკეთება {siteName}-ში — სამუშაო საათები, მისამართი და ჩაწერა."
+    "serviceDescriptionGeneric": "მოტოციკლების სერვისი და შეკეთება {siteName}-ში — სამუშაო საათები, მისამართი და ჩაწერა.",
+    "shippingTitle": "მიწოდება და დაბრუნება — {siteName}",
+    "shippingDescription": "{siteName}: მიწოდების ფასები და ვადები, მაღაზიიდან გატანა და დაბრუნების პირობები."
   },
   "Nav": {
     "home": "მთავარი",
@@ -51,7 +53,9 @@
     "language": "ენა",
     "settings": "პარამეტრები",
     "themeHeading": "თემა",
-    "viewAll": "ყველას ნახვა"
+    "viewAll": "ყველას ნახვა",
+    "mainMenu": "მთავარი მენიუ",
+    "megaMenuHint": "ქვეკატეგორიების სანახავად დააჭირეთ ქვემოთ ისარს"
   },
   "Shop": {
     "filtersHeading": "ფილტრი",
@@ -116,7 +120,31 @@
     "outOfStock": "არ არის მარაგში",
     "lowStock": "დარჩა მხოლოდ {count} ცალი",
     "yes": "კი",
-    "no": "არა"
+    "no": "არა",
+    "buyTogetherThisProduct": "ეს პროდუქტი",
+    "buyTogetherSelectedCount": "არჩეულია {count} ნივთი",
+    "buyTogetherSavings": "დაზოგავთ {amount}",
+    "buyTogetherAddSelected": "{count, plural, =1 {კალათაში დამატება} other {#-ვე კალათაში დამატება}}",
+    "deliveryHeading": "მიწოდება",
+    "deliveryTbilisi": "თბილისი",
+    "deliveryRegions": "რეგიონები",
+    "deliveryExpress": "ექსპრეს მიწოდება",
+    "deliveryFree": "უფასო",
+    "pickupHeading": "მაღაზიიდან გატანა — უფასოდ",
+    "returnsLine": "დაბრუნება {days} დღის განმავლობაში",
+    "deliveryDetailsLink": "მიწოდება და დაბრუნება — დეტალურად",
+    "fitQuestion": "ერგება თუ არა თქვენს მოტოს?",
+    "fitCheckButton": "შეამოწმეთ",
+    "fitChangeVehicle": "სხვა მოტო",
+    "fitChecking": "თავსებადობის შემოწმება…",
+    "fitLoading": "იტვირთება…",
+    "fitYes": "ერგება თქვენს მოტოს: {vehicle}",
+    "fitNo": "არ ერგება თქვენს მოტოს: {vehicle}",
+    "fitNoGarage": "არ ერგება თქვენი გარაჟის მოტოებს",
+    "fitCompatibleLink": "ნახეთ თქვენს მოტოზე თავსებადი ნაწილები",
+    "fitSubmit": "შემოწმება",
+    "fitCancel": "გაუქმება",
+    "fitLoadError": "მოტოების სია ვერ ჩაიტვირთა"
   },
   "Cart": {
     "empty": "კალათა ცარიელია.",
@@ -137,7 +165,14 @@
     "addedToCart": "დამატებულია",
     "outOfStock": "არ არის მარაგში",
     "addError": "კალათაში დამატება ვერ მოხერხდა",
-    "goToCheckout": "გადახდაზე გადასვლა"
+    "goToCheckout": "გადახდაზე გადასვლა",
+    "visitShowroom": "შესაძენად ეწვიეთ შოურუმს",
+    "itemNotPurchasableOnline": "ამ ნივთის საიტიდან შეძენა შეუძლებელია — შესაძენად ეწვიეთ შოურუმს. შეკვეთის გასაფორმებლად წაშალეთ კალათიდან.",
+    "deliveryHint": "მიწოდება: თბილისი {tbilisi} · რეგიონები {regions} · მაღაზიიდან გატანა უფასოდ. ზუსტი ფასი — შეკვეთის გაფორმებისას.",
+    "deliveryFree": "უფასო",
+    "deliveryHintLink": "დეტალურად",
+    "deliveryHintNoPickup": "მიწოდება: თბილისი {tbilisi} · რეგიონები {regions}. ზუსტი ფასი — შეკვეთის გაფორმებისას.",
+    "deliveryHintPickupOnly": "მიწოდება: მხოლოდ მაღაზიიდან გატანა (უფასოდ)."
   },
   "Checkout": {
     "title": "შეკვეთის გაფორმება",
@@ -192,7 +227,35 @@
     "compatibilityChecking": "მოწმდება...",
     "compatibilityError": "თავსებადობის შემოწმება ვერ მოხერხდა",
     "compatibleLabel": "თავსებადია",
-    "incompatibleLabel": "შეუთავსებელია"
+    "incompatibleLabel": "შეუთავსებელია",
+    "thankYouTitle": "გმადლობთ! შეკვეთა მიღებულია",
+    "thankYouOrderCode": "შეკვეთის ნომერი",
+    "thankYouEmailNote": "სტატუსის ყოველი ცვლილებისას შეტყობინებას ელფოსტაზე მიიღებთ.",
+    "thankYouItemCount": "{count} ნივთი",
+    "thankYouNextHeading": "რა ხდება შემდეგ",
+    "thankYouStepReview": "შეკვეთას გადავამოწმებთ და დაგიდასტურებთ.",
+    "thankYouStepDelivery": "კურიერი შეკვეთას მითითებულ მისამართზე მოგიტანთ.",
+    "thankYouDeliveryTime": "სავარაუდო ვადა: {time}",
+    "thankYouStepPickup": "შეკვეთა მაღაზიაში მზად იქნება — გატანა უფასოა.",
+    "thankYouStepTrack": "შეკვეთის სტატუსს ნებისმიერ დროს ნახავთ თქვენს ანგარიშში.",
+    "thankYouQuestions": "კითხვები გაქვთ? დაგვირეკეთ:",
+    "thankYouViewOrder": "შეკვეთის დეტალები",
+    "thankYouContinue": "შოპინგის გაგრძელება",
+    "deliveryMethodHeading": "მიწოდების ხერხი",
+    "paymentMethodHeading": "გადახდის ხერხი",
+    "deliveryCourier": "კურიერით მიწოდება",
+    "deliveryCourierHint": "თბილისი {tbilisi} · რეგიონები {regions}",
+    "deliveryCourierHintPlain": "მითითებულ მისამართზე",
+    "deliveryPickup": "მაღაზიიდან გატანა",
+    "deliveryPickupHint": "უფასოდ, ჩვენს მაღაზიაში",
+    "paymentCard": "ბარათით ონლაინ",
+    "paymentCardHint": "არჩეული ბანკის მეშვეობით",
+    "paymentOnDelivery": "გადახდა კურიერთან",
+    "paymentOnDeliveryHint": "ნაღდით ან ბარათით, ნივთის მიღებისას",
+    "paymentInStore": "გადახდა მაღაზიაში",
+    "paymentInStoreHint": "ნივთის გატანისას",
+    "free": "უფასო",
+    "noCheckoutMethods": "ამჟამად ონლაინ შეკვეთა დროებით მიუწვდომელია — დაგვიკავშირდით ტელეფონით."
   },
   "VehicleListingDetail": {
     "descriptionHeading": "აღწერა",
@@ -231,8 +294,31 @@
     "weightLabel": "წონა",
     "seatHeightLabel": "სავარძლის სიმაღლე",
     "fuelTankLabel": "საწვავის ავზი",
+    "oilCapacityLabel": "ზეთის მოცულობა",
     "topSpeedLabel": "მაქს. სიჩქარე",
-    "absLabel": "ABS"
+    "absLabel": "ABS",
+    "callbackButton": "დარეკვის თხოვნა",
+    "whatsappButton": "WhatsApp-ში მოწერა",
+    "whatsappMessage": "გამარჯობა! მაინტერესებს: {item} — {url}",
+    "callbackTitle": "დარეკვის თხოვნა",
+    "callbackIntro": "დატოვეთ ნომერი და დაგირეკავთ: {item}",
+    "callbackName": "სახელი",
+    "callbackPhone": "ტელეფონი",
+    "callbackPreferredTime": "როდის დაგირეკოთ",
+    "callbackTime": {
+      "any": "ნებისმიერ დროს",
+      "morning": "დილით (10–13)",
+      "afternoon": "შუადღისას (13–17)",
+      "evening": "საღამოს (17–20)"
+    },
+    "callbackNote": "შეკითხვა ან შენიშვნა (არასავალდებულო)",
+    "callbackSubmit": "გაგზავნა",
+    "callbackSending": "იგზავნება…",
+    "callbackSent": "გმადლობთ! თხოვნა მიღებულია — მალე დაგირეკავთ.",
+    "callbackClose": "დახურვა",
+    "callbackValidation": "მიუთითეთ სახელი და ტელეფონის ნომერი",
+    "callbackError": "თხოვნის გაგზავნა ვერ მოხერხდა",
+    "callbackPrivacy": "სახელსა და ნომერს მხოლოდ თქვენთან დასაკავშირებლად გამოვიყენებთ; დამუშავებული თხოვნა 90 დღეში იშლება. <privacy>კონფიდენციალობის პოლიტიკა</privacy>"
   },
   "Auth": {
     "loginTitle": "შესვლა",
@@ -261,7 +347,7 @@
     "confirmPasswordRequiredError": "გაიმეორეთ პაროლი",
     "phoneError": "ტელეფონის ნომერი არასწორია",
     "dateOfBirthError": "დაბადების თარიღი არასწორია, ასაკი უნდა იყოს მინიმუმ 16 წელი",
-    "termsAgreement": "ვეთანხმები <terms>წესებსა და პირობებს</terms>",
+    "termsAgreement": "ვეთანხმები <terms>წესებსა და პირობებს</terms> და <privacy>კონფიდენციალობის პოლიტიკას</privacy>",
     "termsRequiredError": "გასაგრძელებლად საჭიროა წესებსა და პირობებზე დათანხმება",
     "loginError": "შესვლა ვერ მოხერხდა",
     "registerError": "რეგისტრაცია ვერ მოხერხდა",
@@ -305,7 +391,8 @@
     "verifyRequiredLogoutError": "გამოსვლა ვერ მოხერხდა",
     "passwordTooLongError": "პაროლი ძალიან გრძელია — მაქსიმუმ 72 სიმბოლო",
     "passwordInvalidCharsError": "პაროლი უნდა შედგებოდეს მხოლოდ ლათინური ასოების, ციფრებისა და სიმბოლოებისგან",
-    "oauthEmailExists": "ამ ელფოსტით ანგარიში უკვე არსებობს — შედით იმავე გზით, რომლითაც დარეგისტრირდით (მაგ. Google-ით)"
+    "oauthEmailExists": "ამ ელფოსტით ანგარიში უკვე არსებობს — შედით იმავე გზით, რომლითაც დარეგისტრირდით (მაგ. Google-ით)",
+    "oauthConsentNotice": "Google-ით ან Facebook-ით გაგრძელებით ეთანხმებით <terms>წესებსა და პირობებს</terms> და <privacy>კონფიდენციალობის პოლიტიკას</privacy>."
   },
   "Home": {
     "heroTitle": "აღჭურვილობა, რომელსაც <hl>გზაზე</hl> ენდობი",
@@ -325,7 +412,8 @@
     "searchGaragePlaceholder": "აირჩიეთ თქვენი ტექნიკა",
     "searchOrDivider": "ან",
     "searchButton": "ძებნა",
-    "seoHeading": "მოტოციკლები, ნაწილები, ეკიპირება და მოტოსერვისი"
+    "seoHeading": "მოტოციკლები, ნაწილები, ეკიპირება და მოტოსერვისი",
+    "categoryItemCount": "{count} პროდუქტი"
   },
   "HomeInfoCards": {
     "heading": "გაიცანით MotoStock 22",
@@ -360,7 +448,14 @@
     "fridayShort": "პარ",
     "saturdayShort": "შაბ",
     "sundayShort": "კვ",
-    "serviceTitle": "სერვისი"
+    "serviceTitle": "სერვისი",
+    "shippingTitle": "მიწოდება და დაბრუნება",
+    "newsletterHeading": "პირველმა გაიგეთ აქციებისა და სიახლეების შესახებ",
+    "visitTitle": "გვესტუმრეთ",
+    "openNow": "ახლა ღიაა",
+    "closedNow": "ახლა დაკეტილია",
+    "legalNavLabel": "ინფორმაცია და წესები",
+    "locationLabel": "ჩვენი მდებარეობა რუკაზე"
   },
   "Catalog": {
     "title": "კატალოგი",
@@ -368,8 +463,6 @@
     "subcategoryCount": "{count, plural, other {# ქვეკატეგორია}}"
   },
   "Newsletter": {
-    "signupTitle": "გამოიწერეთ სიახლეები",
-    "signupDescription": "ახალი პროდუქტები და აქციები პირველივე პირდაპირ თქვენს ელფოსტაზე.",
     "emailPlaceholder": "თქვენი ელფოსტა",
     "subscribeSubmit": "გამოწერა",
     "subscribeSubmitting": "იგზავნება...",
@@ -478,7 +571,8 @@
       "orders": "შეკვეთების ისტორია",
       "address": "მისამართი",
       "changePassword": "პაროლის შეცვლა",
-      "newsletter": "სიახლეების გამოწერა"
+      "newsletter": "სიახლეების გამოწერა",
+      "profile": "პროფილი და მონაცემები"
     },
     "dashboard": {
       "greeting": "მოგესალმებით, {name}",
@@ -578,7 +672,28 @@
       "reorderAllAdded": "ყველა ერთეული დაემატა კალათაში",
       "reorderNoneAvailable": "ვერცერთი ერთეული ვერ დაემატა — მარაგში აღარ არის",
       "reorderPartialSummary": "{added} ერთეული დაემატა კალათაში, {issues} აღარ არის საკმარისი რაოდენობით ან საერთოდ აღარ არის ხელმისაწვდომი",
-      "reorderError": "კალათაში დამატება ვერ მოხერხდა"
+      "reorderError": "კალათაში დამატება ვერ მოხერხდა",
+      "historyHeading": "შეკვეთის ისტორია",
+      "requestsHeading": "გაუქმება და დაბრუნება",
+      "requestCancelButton": "გაუქმების მოთხოვნა",
+      "requestReturnButton": "დაბრუნების მოთხოვნა",
+      "requestCancelTitle": "შეკვეთის გაუქმების მოთხოვნა",
+      "requestReturnTitle": "ნივთის დაბრუნების მოთხოვნა",
+      "requestIntro": "მოთხოვნა მაღაზიას გაეგზავნება. შეკვეთა ავტომატურად არ შეიცვლება — მაღაზიის წარმომადგენელი დაგიკავშირდებათ დეტალების დასაზუსტებლად.",
+      "requestReasonLabel": "მიზეზი (არასავალდებულო)",
+      "requestReasonPlaceholder": "მოგვწერეთ, რატომ გსურთ…",
+      "requestSubmit": "მოთხოვნის გაგზავნა",
+      "requestSending": "იგზავნება…",
+      "requestClose": "დახურვა",
+      "requestSentToast": "მოთხოვნა გაიგზავნა",
+      "requestError": "მოთხოვნის გაგზავნა ვერ მოხერხდა",
+      "requestOpenCancel": "გაუქმების მოთხოვნა გაგზავნილია ({date}).",
+      "requestOpenReturn": "დაბრუნების მოთხოვნა გაგზავნილია ({date}).",
+      "requestContactNote": "მაღაზია მალე დაგიკავშირდებათ ამ საკითხზე.",
+      "requestContactNoteWithPhone": "მაღაზია მალე დაგიკავშირდებათ ამ საკითხზე. თუ გსურთ, თავად დაგვირეკეთ:",
+      "requestResolvedCancel": "გაუქმების მოთხოვნა დამუშავებულია ({date}).",
+      "requestResolvedReturn": "დაბრუნების მოთხოვნა დამუშავებულია ({date}).",
+      "returnWindowNote": "დაბრუნება შესაძლებელია ჩაბარებიდან {days} დღის განმავლობაში."
     },
     "address": {
       "description": "მიუთითეთ მიწოდების მისამართი და საკონტაქტო ტელეფონი — გამოვიყენებთ შეკვეთების მიწოდებისას. შეგიძლიათ რამდენიმე მისამართი დაამატოთ.",
@@ -628,6 +743,47 @@
       "subscribeSuccess": "დასადასტურებელი წერილი გამოგზავნილია თქვენს ელფოსტაზე",
       "unsubscribeSuccess": "გამოწერა გაუქმებულია",
       "error": "მოქმედება ვერ შესრულდა"
+    },
+    "profile": {
+      "detailsHeading": "პირადი მონაცემები",
+      "firstName": "სახელი",
+      "lastName": "გვარი",
+      "phone": "ტელეფონი",
+      "dateOfBirth": "დაბადების თარიღი",
+      "email": "ელფოსტა",
+      "emailNote": "ელფოსტის შესაცვლელად დაგვიკავშირდით.",
+      "save": "შენახვა",
+      "saving": "ინახება…",
+      "saved": "მონაცემები განახლდა",
+      "saveError": "შენახვა ვერ მოხერხდა",
+      "nameError": "სახელი და გვარი მინიმუმ 2 სიმბოლო უნდა იყოს",
+      "consentHeading": "წესებზე თანხმობა",
+      "consentAcceptedAt": "წესებსა და კონფიდენციალობის პოლიტიკას დაეთანხმეთ: {date}",
+      "consentMissing": "თანხმობა ჯერ არ არის დაფიქსირებული.",
+      "consentPrompt": "გთხოვთ, გაეცნოთ და დაეთანხმოთ წესებსა და კონფიდენციალობის პოლიტიკას.",
+      "consentOutdated": "წესები ან კონფიდენციალობის პოლიტიკა განახლდა — გთხოვთ, გაეცნოთ და დაეთანხმოთ ახალ ვერსიას.",
+      "consentAcceptButton": "ვეთანხმები",
+      "consentAccepted": "თანხმობა დაფიქსირდა",
+      "termsLink": "წესები და პირობები",
+      "privacyLink": "კონფიდენციალობის პოლიტიკა",
+      "exportHeading": "ჩემი მონაცემების ჩამოტვირთვა",
+      "exportDescription": "ჩამოტვირთეთ ყველაფერი, რასაც თქვენზე ვინახავთ: პროფილი, მისამართები, გარაჟი და სერვისის ისტორია, შეკვეთები, სურვილების სია, თანხმობები და შესვლების ისტორია (JSON ფაილი).",
+      "exportButton": "მონაცემების ჩამოტვირთვა",
+      "deleteHeading": "ანგარიშის წაშლა",
+      "deleteDescription": "ანგარიში და თქვენი პირადი მონაცემები სამუდამოდ წაიშლება. ეს მოქმედება შეუქცევადია.",
+      "deleteButton": "ანგარიშის წაშლა",
+      "deleteConfirmTitle": "ანგარიშის წაშლა",
+      "deleteConfirmText": "დარწმუნებული ხართ? ანგარიშის აღდგენა შეუძლებელი იქნება.",
+      "deleteConfirmRemoved": "წაიშლება: პროფილი, მისამართები, გარაჟი (ფოტოებით), სურვილების სია, კალათა, თანხმობები, შესვლების ისტორია და დარეკვის თხოვნები; გამოიწერებით სიახლეებიდანაც.",
+      "deleteConfirmOrders": "კანონით დადგენილი ვადით, თქვენი სახელის, ელფოსტისა და ტელეფონის გარეშე ინახება: შეკვეთების ჩანაწერები (ნივთები, თანხა, მიწოდების ქალაქი) და სახელოსნოს სერვისის ისტორია (თუ თქვენი მოტო ჩვენთან სერვისზე იყო).",
+      "deleteConfirmActive": "თუ შეკვეთა ჯერ მიმდინარეა, ჯერ უნდა დასრულდეს ან გაუქმდეს.",
+      "deletePasswordLabel": "დასადასტურებლად შეიყვანეთ პაროლი",
+      "deleteEmailLabel": "დასადასტურებლად ჩაწერეთ თქვენი ელფოსტა ({email})",
+      "deleteConfirmButton": "სამუდამოდ წაშლა",
+      "deleting": "იშლება…",
+      "deleted": "ანგარიში წაიშალა",
+      "deleteError": "ანგარიშის წაშლა ვერ მოხერხდა",
+      "cancel": "გაუქმება"
     }
   },
   "NotFound": {
@@ -694,7 +850,20 @@
     "CURRENT_PASSWORD_REQUIRED": "მიმდინარე პაროლის მითითება სავალდებულოა",
     "CURRENT_PASSWORD_INCORRECT": "მიმდინარე პაროლი არასწორია",
     "VALIDATION_FAILED": "შეყვანილი მონაცემები არასწორია",
-    "USD_GEL_RATE_UNAVAILABLE": "დოლარში ფასიანი ნივთის შეძენა დროებით შეუძლებელია — ვალუტის კურსი ახლდება, სცადეთ მოგვიანებით"
+    "USD_GEL_RATE_UNAVAILABLE": "დოლარში ფასიანი ნივთის შეძენა დროებით შეუძლებელია — ვალუტის კურსი ახლდება, სცადეთ მოგვიანებით",
+    "NOT_PURCHASABLE_ONLINE": "ამ ნივთის საიტიდან შეძენა შეუძლებელია — შესაძენად ეწვიეთ შოურუმს",
+    "NOT_PURCHASABLE_ONLINE_ITEM": "\"{itemNameKa}\" — საიტიდან შეძენა შეუძლებელია, შესაძენად ეწვიეთ შოურუმს",
+    "ORDER_CANCEL_REQUEST_NOT_ALLOWED": "ამ ეტაპზე შეკვეთის გაუქმების მოთხოვნა შეუძლებელია — დაგვიკავშირდით ტელეფონით.",
+    "ORDER_RETURN_REQUEST_NOT_ALLOWED": "დაბრუნების მოთხოვნა მხოლოდ ჩაბარებულ შეკვეთაზეა შესაძლებელი.",
+    "ORDER_RETURN_PERIOD_EXPIRED": "დაბრუნების ვადა ({days} დღე) ამოიწურა — დაგვიკავშირდით ტელეფონით.",
+    "ORDER_REQUEST_ALREADY_OPEN": "ასეთი მოთხოვნა უკვე გაგზავნილია — მაღაზია მალე დაგიკავშირდებათ.",
+    "PHONE_ALREADY_IN_USE": "ეს ტელეფონის ნომერი უკვე გამოიყენება — თუ ის თქვენია, დაგვიკავშირდით.",
+    "ACCOUNT_DELETE_WRONG_PASSWORD": "პაროლი არასწორია",
+    "ACCOUNT_DELETE_EMAIL_MISMATCH": "ელფოსტა არ ემთხვევა",
+    "ACCOUNT_HAS_ACTIVE_ORDERS": "მიმდინარე შეკვეთა გაქვთ — ანგარიშის წაშლა შესაძლებელია მისი დასრულების ან გაუქმების შემდეგ.",
+    "STAFF_ACCOUNT_DELETE_FORBIDDEN": "თანამშრომლის ანგარიშის წაშლა აქედან შეუძლებელია.",
+    "CHECKOUT_METHOD_UNAVAILABLE": "არჩეული მიწოდების ან გადახდის ხერხი ამჟამად მიუწვდომელია — განაახლეთ გვერდი და აირჩიეთ სხვა.",
+    "EXPRESS_DELIVERY_UNAVAILABLE": "ექსპრეს მიწოდება ამჟამად მიუწვდომელია — აირჩიეთ სტანდარტული."
   },
   "Common": {
     "genericError": "დაფიქსირდა შეცდომა, სცადეთ თავიდან",
@@ -731,7 +900,10 @@
     "imageCarousel": {
       "prevImage": "წინა სურათი",
       "nextImage": "შემდეგი სურათი",
-      "imageDot": "სურათი {index}"
+      "imageDot": "სურათი {index}",
+      "pause": "სლაიდების შეჩერება",
+      "play": "სლაიდების გაშვება",
+      "regionLabel": "სურათების გალერეა"
     },
     "compareButton": {
       "add": "შედარებაში დამატება",
@@ -754,8 +926,12 @@
       "discountBadge": "-{percent}% ფასდაკლება {startDate}-დან {endDate}-მდე",
       "promoCodeBadge": "-{percent}% ფასდაკლება კოდით {code} ({scope}), {startDate}-დან {endDate}-მდე",
       "promoCodeScopeAllProducts": "ყველა პროდუქტი",
-      "promoCodeScopeAllVehicles": "მთელი ტრანსპორტი"
-    }
+      "promoCodeScopeAllVehicles": "მთელი ტრანსპორტი",
+      "pause": "სლაიდერის შეჩერება",
+      "play": "სლაიდერის გაშვება",
+      "regionLabel": "მთავარი სლაიდები"
+    },
+    "skipToContent": "მთავარ შიგთავსზე გადასვლა"
   },
   "Service": {
     "title": "მოტოციკლების სერვისი",
@@ -769,5 +945,34 @@
     "partsHeading": "ნაწილები შენს მოტოზე",
     "partsText": "დაამატე მოტო გარაჟში და ნახე მხოლოდ მასზე თავსებადი ნაწილები.",
     "partsLink": "გარაჟის გახსნა"
+  },
+  "Search": {
+    "placeholder": "მოძებნეთ პროდუქტი, ტექნიკა ან კატეგორია…",
+    "label": "ძიება",
+    "openSearch": "ძიების გახსნა",
+    "closeSearch": "ძიების დახურვა",
+    "clear": "გასუფთავება",
+    "products": "პროდუქტები",
+    "vehicles": "მოტოტექნიკა",
+    "categories": "კატეგორიები",
+    "recent": "ბოლო ძიებები",
+    "clearRecent": "გასუფთავება",
+    "searching": "იძებნება…",
+    "noResults": "„{q}“ — ვერაფერი მოიძებნა",
+    "minChars": "ჩაწერეთ მინიმუმ {count} სიმბოლო",
+    "viewAllResults": "ყველა შედეგის ნახვა",
+    "error": "ძიება ვერ შესრულდა, სცადეთ ხელახლა",
+    "resultsTitle": "ძიების შედეგები: „{q}“",
+    "metaTitle": "ძიება: {q}",
+    "emptyTitle": "ძიება",
+    "emptyHint": "ჩაწერეთ საძიებო სიტყვა ზედა ველში.",
+    "productsHeading": "პროდუქტები",
+    "vehiclesHeading": "მოტოტექნიკა",
+    "categoriesHeading": "კატეგორიები"
+  },
+  "ShippingPolicy": {
+    "title": "მიწოდება და დაბრუნება",
+    "empty": "ინფორმაცია მალე დაემატება.",
+    "loading": "იტვირთება..."
   }
 }

@@ -15,12 +15,17 @@ export function DataTable<T>({
   getRowKey,
   emptyMessage,
   actions,
+  totalCount,
 }: {
   columns: DataTableColumn<T>[];
   data: T[];
   getRowKey: (row: T) => string | number;
   emptyMessage: string;
   actions?: (row: T) => ReactNode;
+  // Shown as "სულ: N" above the table — the whole list's size (the server's
+  // total on a paginated list, not just this page's rows). Top-level admin
+  // lists pass it; small nested tables leave it out.
+  totalCount?: number;
 }) {
   if (data.length === 0) {
     return (
@@ -32,6 +37,11 @@ export function DataTable<T>({
 
   return (
     <>
+      {totalCount !== undefined && (
+        <p className="mb-2 text-sm text-muted-foreground">
+          სულ: <span className="font-medium text-foreground">{totalCount.toLocaleString("ka-GE")}</span>
+        </p>
+      )}
       {/* True table — md and up. Below md this used to just scroll
           horizontally, which made it impossible to see e.g. buyer+status+
           amount together on one screen; hidden entirely in favor of the

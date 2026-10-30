@@ -26,6 +26,9 @@ enum HomepageSectionType {
   // Phase 2 — the shopper's own ProductView history, most-recent first.
   // Works for guests too (shared guest-id cookie), unlike RECOMMENDED_FOR_YOU.
   RECENTLY_VIEWED
+  // Algorithmic by date — products whose season attribute option (key
+  // SUMMER/WINTER) matches the current season, see src/lib/season.ts.
+  SEASONAL_PRODUCTS
 
   @@schema("dbo")
 }

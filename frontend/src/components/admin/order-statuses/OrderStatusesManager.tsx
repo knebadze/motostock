@@ -161,6 +161,7 @@ export function OrderStatusesManager({ initialItems }: { initialItems: OrderStat
         <DataTable
           columns={columns}
           data={items}
+          totalCount={items.length}
           getRowKey={(item) => item.id}
           emptyMessage="სტატუსი არ არსებობს"
           actions={(item) => (
@@ -175,7 +176,7 @@ export function OrderStatusesManager({ initialItems }: { initialItems: OrderStat
               <button
                 type="button"
                 onClick={() => setDeletingItem(item)}
-                className="rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-red-600"
+                className="rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
               >
                 წაშლა
               </button>

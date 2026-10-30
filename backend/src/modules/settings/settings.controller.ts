@@ -31,6 +31,11 @@ export function sendSentryTestEvent(_req: Request, res: Response) {
   res.status(200).json({ sent: true });
 }
 
+export async function getPublicDeliveryInfo(_req: Request, res: Response) {
+  const info = await settingsService.getPublicDeliveryInfo();
+  res.status(200).json(info);
+}
+
 export async function getGuestFeatureStatus(_req: Request, res: Response) {
   const status = await settingsService.getGuestFeatureStatus();
   res.status(200).json(status);

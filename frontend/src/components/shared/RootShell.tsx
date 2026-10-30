@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { Noto_Sans_Georgian, Geist_Mono } from "next/font/google";
+import { Noto_Sans, Noto_Sans_Georgian, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "@/components/shared/Toaster";
 import { SessionLossRedirector } from "@/components/shared/SessionLossRedirector";
@@ -17,6 +17,17 @@ import "@/app/globals.css";
 const notoSans = Noto_Sans_Georgian({
   variable: "--font-sans",
   subsets: ["latin", "georgian"],
+});
+
+// Noto Sans Georgian has no Cyrillic glyphs, so /ru text fell back to Arial
+// (mismatched look, slight layout shift). The same design family's Cyrillic
+// subset sits next in the font stack (globals.css) — its @font-face carries
+// a Cyrillic unicode-range, so the browser only downloads it on pages that
+// actually contain Cyrillic. Not preloaded for the same reason.
+const notoSansCyrillic = Noto_Sans({
+  variable: "--font-cyrillic",
+  subsets: ["cyrillic"],
+  preload: false,
 });
 
 // Monospace is only used for VIN codes (account garage) and admin screens —
@@ -43,7 +54,7 @@ export async function RootShell({
   return (
     <html
       lang={lang}
-      className={`${notoSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${notoSans.variable} ${notoSansCyrillic.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
