@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
+import { adminFiltersQuerySchema } from "../filters/filter-request.schema.js";
 
 const slugField = z
   .string()
@@ -29,6 +30,17 @@ export const brandIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 export type BrandIdParam = z.infer<typeof brandIdParamSchema>;
+
+// page/pageSize are both optional and only trigger true server-side
+// pagination when at least one is present (see brandsService.listBrands) —
+// every other caller (brand/model pickers across the admin panel) keeps
+// reading the full, unbounded list under the old `{ brands: [...] }` shape.
+export const brandListQuerySchema = z.object({
+  adminFilters: adminFiltersQuerySchema,
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
+});
+export type BrandListQuery = z.infer<typeof brandListQuerySchema>;
 
 export const brandResponseSchema = registry.register(
   "Brand",

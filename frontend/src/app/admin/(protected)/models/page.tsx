@@ -1,16 +1,16 @@
 import {
+  getAdminModelsPageFromServer,
   getBrandsFromServer,
   getCategoriesFromServer,
-  getModelsFromServer,
 } from "@/lib/api/server";
 import { ModelsManager } from "@/components/admin/models/ModelsManager";
 
 export default async function ModelsPage() {
-  const [models, brands, categories] = await Promise.all([
-    getModelsFromServer(),
+  const [initialData, brands, categories] = await Promise.all([
+    getAdminModelsPageFromServer(),
     getBrandsFromServer(),
     getCategoriesFromServer(),
   ]);
 
-  return <ModelsManager initialModels={models} brands={brands} categories={categories} />;
+  return <ModelsManager initialData={initialData} brands={brands} categories={categories} />;
 }

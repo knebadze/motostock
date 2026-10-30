@@ -16,7 +16,7 @@ import {
 
 export const modelsRouter = Router();
 
-modelsRouter.get("/", modelsController.list);
+modelsRouter.get("/", validate(modelListQuerySchema, "query"), modelsController.list);
 modelsRouter.get("/:id", validate(modelIdParamSchema, "params"), modelsController.getOne);
 
 modelsRouter.use(requireAuth, requireRole(ROLES.ADMIN));

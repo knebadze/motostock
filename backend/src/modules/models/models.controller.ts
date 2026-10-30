@@ -1,12 +1,20 @@
 import type { Request, Response } from "express";
 import * as modelsService from "./models.service.js";
-import type { CreateModelInput, UpdateModelInput } from "./models.schema.js";
+import type { CreateModelInput, ModelListQuery, UpdateModelInput } from "./models.schema.js";
 
-export async function list(req: Request, res: Response) {
-  const rawBrandId = req.query.brandId ? Number(req.query.brandId) : undefined;
-  const brandId = Number.isFinite(rawBrandId) ? rawBrandId : undefined;
-  const models = await modelsService.listModels(brandId);
-  res.status(200).json({ models });
+export async function list(
+  req: Request<unknown, unknown, unknown, ModelListQuery>,
+  res: Response,
+) {
+  const result = await modelsService.listModels(req.query);
+  // Unpaginated callers (brand/model pickers, PromoCodeFormModal) keep the
+  // long-standing `{ models: [...] }` shape; only the admin models list
+  // screen sends page/pageSize and gets the full pagination envelope.
+  if (req.query.page == null && req.query.pageSize == null) {
+    res.status(200).json({ models: result.items });
+    return;
+  }
+  res.status(200).json(result);
 }
 
 export async function getOne(req: Request, res: Response) {

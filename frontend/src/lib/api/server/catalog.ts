@@ -1,9 +1,9 @@
 import "server-only";
 import { cache } from "react";
-import { fetchFromServer } from "./core";
-import type { Brand } from "../brands";
+import { ADMIN_LIST_INITIAL_PAGE_SIZE, fetchFromServer } from "./core";
+import type { Brand, BrandPage } from "../brands";
 import type { ProductTagRef, Tag } from "../tags";
-import type { Model } from "../models";
+import type { Model, ModelPage } from "../models";
 import type { LookupItem } from "../lookups";
 import type { LookupTypeSlug } from "@/config/lookup-types";
 import type { VehicleCatalogEntry, VehicleCatalogOption, VehicleCatalogPage } from "../vehicle-catalog";
@@ -27,6 +27,30 @@ export const getModelsFromServer = cache(async (): Promise<Model[]> => {
   return fetchFromServer<{ models: Model[] }, Model[]>("/models", {
     fallback: [],
     extract: (data) => data.models,
+    requireAuth: true,
+  });
+});
+
+// Paginated variant for the admin brands list screen's initial load —
+// distinct from getBrandsFromServer above, which every other page (logo
+// pickers, ModelFormModal's brand select, ...) still uses to fetch every row.
+export const getAdminBrandsPageFromServer = cache(async (): Promise<BrandPage> => {
+  return fetchFromServer<BrandPage, BrandPage>("/brands", {
+    params: { page: 1, pageSize: ADMIN_LIST_INITIAL_PAGE_SIZE },
+    fallback: { items: [], total: 0, page: 1, pageSize: ADMIN_LIST_INITIAL_PAGE_SIZE },
+    extract: (data) => data,
+    requireAuth: true,
+  });
+});
+
+// Paginated variant for the admin models list screen's initial load —
+// distinct from getModelsFromServer above, which every other page (brand
+// select pickers, promo code forms, ...) still uses to fetch every row.
+export const getAdminModelsPageFromServer = cache(async (): Promise<ModelPage> => {
+  return fetchFromServer<ModelPage, ModelPage>("/models", {
+    params: { page: 1, pageSize: ADMIN_LIST_INITIAL_PAGE_SIZE },
+    fallback: { items: [], total: 0, page: 1, pageSize: ADMIN_LIST_INITIAL_PAGE_SIZE },
+    extract: (data) => data,
     requireAuth: true,
   });
 });

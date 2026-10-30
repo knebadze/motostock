@@ -10,6 +10,7 @@ import { ROLES } from "../../lib/roles.js";
 import * as brandsController from "./brands.controller.js";
 import {
   brandIdParamSchema,
+  brandListQuerySchema,
   brandResponseSchema,
   createBrandSchema,
   updateBrandSchema,
@@ -17,7 +18,7 @@ import {
 
 export const brandsRouter = Router();
 
-brandsRouter.get("/", brandsController.list);
+brandsRouter.get("/", validate(brandListQuerySchema, "query"), brandsController.list);
 brandsRouter.get("/:id", validate(brandIdParamSchema, "params"), brandsController.getOne);
 
 brandsRouter.use(requireAuth, requireRole(ROLES.ADMIN));
@@ -46,7 +47,8 @@ registry.registerPath({
   method: "get",
   path: "/brands",
   tags: ["Brands"],
-  summary: "List all brands",
+  summary: "List all brands, or a filtered/paginated page when page/pageSize is sent",
+  request: { query: brandListQuerySchema },
   responses: {
     200: { description: "Brands list", content: { "application/json": { schema: brandListResponse } } },
   },

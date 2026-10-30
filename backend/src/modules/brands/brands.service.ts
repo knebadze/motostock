@@ -1,8 +1,10 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation, runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
+import { resolvePage } from "../../lib/pagination.js";
+import { applyBrandAdminFilters } from "../filters/brand/brand-filter-registry.js";
 import { brandsRepository } from "./brands.repository.js";
-import type { CreateBrandInput, UpdateBrandInput } from "./brands.schema.js";
+import type { BrandListQuery, CreateBrandInput, UpdateBrandInput } from "./brands.schema.js";
 
 type BrandRow = {
   id: number;
@@ -24,9 +26,27 @@ function toResponse(brand: BrandRow) {
   };
 }
 
-export async function listBrands() {
-  const brands = await brandsRepository.findMany();
-  return brands.map(toResponse);
+const DEFAULT_PAGE_SIZE = 20;
+
+// page/pageSize only trigger real pagination when the caller sends at least
+// one of them (see brandListQuerySchema) — every brand/model picker across
+// the admin panel calls this with neither and keeps getting the full,
+// unbounded list.
+export async function listBrands(query: BrandListQuery = {}) {
+  const where = applyBrandAdminFilters(query.adminFilters);
+
+  if (query.page == null && query.pageSize == null) {
+    const brands = await brandsRepository.findMany(where);
+    const items = brands.map(toResponse);
+    return { items, total: items.length, page: 1, pageSize: items.length || DEFAULT_PAGE_SIZE };
+  }
+
+  const { page, pageSize, skip, take } = resolvePage(query, DEFAULT_PAGE_SIZE);
+  const [rows, total] = await Promise.all([
+    brandsRepository.findMany(where, skip, take),
+    brandsRepository.count(where),
+  ]);
+  return { items: rows.map(toResponse), total, page, pageSize };
 }
 
 export async function getBrand(id: number) {

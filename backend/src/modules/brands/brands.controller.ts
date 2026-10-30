@@ -1,11 +1,21 @@
 import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
 import * as brandsService from "./brands.service.js";
-import type { CreateBrandInput, UpdateBrandInput } from "./brands.schema.js";
+import type { BrandListQuery, CreateBrandInput, UpdateBrandInput } from "./brands.schema.js";
 
-export async function list(_req: Request, res: Response) {
-  const brands = await brandsService.listBrands();
-  res.status(200).json({ brands });
+export async function list(
+  req: Request<unknown, unknown, unknown, BrandListQuery>,
+  res: Response,
+) {
+  const result = await brandsService.listBrands(req.query);
+  // Unpaginated callers (every brand picker across the admin panel) keep the
+  // long-standing `{ brands: [...] }` shape; only the admin brands list
+  // screen sends page/pageSize and gets the full pagination envelope.
+  if (req.query.page == null && req.query.pageSize == null) {
+    res.status(200).json({ brands: result.items });
+    return;
+  }
+  res.status(200).json(result);
 }
 
 export async function getOne(req: Request, res: Response) {

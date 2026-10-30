@@ -2,14 +2,17 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Select } from "@/components/shared/Select";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import { deleteModel, listModels, type Model } from "@/lib/api/models";
+import { Pagination, useServerPagination } from "@/components/shared/Pagination";
+import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
+import { deleteModel, listModelsPage, type Model, type ModelPage } from "@/lib/api/models";
+import type { AdminFilterEntry } from "@/lib/api/admin-filters";
 import type { Brand } from "@/lib/api/brands";
 import type { Category } from "@/lib/api/categories";
 import { ApiRequestError } from "@/lib/api/client";
+import { buildModelFilterFields } from "@/config/admin-filters/model-filters";
 import { ModelFormModal } from "./ModelFormModal";
 import { revalidatePublicCache } from "@/lib/api/revalidate";
 
@@ -25,44 +28,44 @@ const columns: DataTableColumn<Model>[] = [
 ];
 
 export function ModelsManager({
-  initialModels,
+  initialData,
   brands,
   categories,
 }: {
-  initialModels: Model[];
+  initialData: ModelPage;
   brands: Brand[];
   categories: Category[];
 }) {
-  const [models, setModels] = useState(initialModels);
-  const [brandFilter, setBrandFilter] = useState<string>("");
+  const { data, totalPages, load } = useServerPagination(initialData);
   const [formOpen, setFormOpen] = useState(false);
   const [editingModel, setEditingModel] = useState<Model | null>(null);
   const [deletingModel, setDeletingModel] = useState<Model | null>(null);
+  const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
 
-  const brandFilterOptions = [
-    { value: "", label: "ყველა მარკა" },
-    ...brands.map((brand) => ({ value: String(brand.id), label: brand.name })),
-  ];
+  const filterFields = buildModelFilterFields({ brands, categories });
 
-  async function refresh() {
-    try {
-      setModels(await listModels(brandFilter ? Number(brandFilter) : undefined));
-    } catch (error) {
-      const message =
-        error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
-      toast.error(message);
-    }
+  async function loadPage(page: number, filters: AdminFilterEntry[] = adminFilters) {
+    await load(
+      () => listModelsPage(filters, page, data.pageSize),
+      (error) => {
+        const message =
+          error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
+        toast.error(message);
+      },
+    );
   }
 
-  async function handleFilterChange(value: string) {
-    setBrandFilter(value);
-    try {
-      setModels(await listModels(value ? Number(value) : undefined));
-    } catch (error) {
-      const message =
-        error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
-      toast.error(message);
-    }
+  // refresh() re-fetches the current page under the current filters — used
+  // after create/edit/delete, where the page shouldn't change.
+  async function refresh() {
+    await loadPage(data.page);
+  }
+
+  // AdminFilterPanel only calls this once, on "გაფილტვრა" — a new filter
+  // always resets to page 1.
+  async function handleFilterApply(filters: AdminFilterEntry[]) {
+    setAdminFilters(filters);
+    await loadPage(1, filters);
   }
 
   function openCreateModal() {
@@ -95,22 +98,15 @@ export function ModelsManager({
         </p>
       )}
 
-      <div className="mt-4 w-64">
-        <Select
-          options={brandFilterOptions}
-          value={brandFilter}
-          onChange={handleFilterChange}
-          searchable
-          placeholder="ყველა მარკა"
-          ariaLabel="მარკის ფილტრი"
-        />
+      <div className="mt-4">
+        <AdminFilterPanel fields={filterFields} onChange={handleFilterApply} />
       </div>
 
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={models}
-          totalCount={models.length}
+          data={data.items}
+          totalCount={data.total}
           getRowKey={(model) => model.id}
           emptyMessage="მოდელი არ არსებობს"
           actions={(model) => (
@@ -120,6 +116,7 @@ export function ModelsManager({
             />
           )}
         />
+        <Pagination currentPage={data.page} totalPages={totalPages} onPageChange={loadPage} />
       </div>
 
       <ModelFormModal

@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { deleteBrand, listBrands, type Brand } from "@/lib/api/brands";
+import { deleteBrand, listBrandsPage, type Brand, type BrandPage } from "@/lib/api/brands";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
+import { Pagination, useServerPagination } from "@/components/shared/Pagination";
+import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
+import type { AdminFilterEntry } from "@/lib/api/admin-filters";
+import { buildBrandFilterFields } from "@/config/admin-filters/brand-filters";
 import { BrandFormModal } from "./BrandFormModal";
 import { revalidatePublicCache } from "@/lib/api/revalidate";
 
@@ -29,20 +33,37 @@ const columns: DataTableColumn<Brand>[] = [
   { header: "Slug", render: (brand) => brand.slug, cellClassName: "font-mono text-muted-foreground" },
 ];
 
-export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
-  const [brands, setBrands] = useState(initialBrands);
+export function BrandsManager({ initialData }: { initialData: BrandPage }) {
+  const { data, totalPages, load } = useServerPagination(initialData);
   const [formOpen, setFormOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
   const [deletingBrand, setDeletingBrand] = useState<Brand | null>(null);
+  const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
 
+  const filterFields = buildBrandFilterFields();
+
+  async function loadPage(page: number, filters: AdminFilterEntry[] = adminFilters) {
+    await load(
+      () => listBrandsPage(filters, page, data.pageSize),
+      (error) => {
+        const message =
+          error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
+        toast.error(message);
+      },
+    );
+  }
+
+  // refresh() re-fetches the current page under the current filters — used
+  // after create/edit/delete, where the page shouldn't change.
   async function refresh() {
-    try {
-      setBrands(await listBrands());
-    } catch (error) {
-      const message =
-        error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
-      toast.error(message);
-    }
+    await loadPage(data.page);
+  }
+
+  // AdminFilterPanel only calls this once, on "გაფილტვრა" — a new filter
+  // always resets to page 1.
+  async function handleFilterApply(filters: AdminFilterEntry[]) {
+    setAdminFilters(filters);
+    await loadPage(1, filters);
   }
 
   function openCreateModal() {
@@ -68,11 +89,15 @@ export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
         </button>
       </div>
 
+      <div className="mt-4">
+        <AdminFilterPanel fields={filterFields} onChange={handleFilterApply} />
+      </div>
+
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={brands}
-          totalCount={brands.length}
+          data={data.items}
+          totalCount={data.total}
           getRowKey={(brand) => brand.id}
           emptyMessage="მარკა არ არსებობს"
           actions={(brand) => (
@@ -82,6 +107,7 @@ export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
             />
           )}
         />
+        <Pagination currentPage={data.page} totalPages={totalPages} onPageChange={loadPage} />
       </div>
 
       <BrandFormModal

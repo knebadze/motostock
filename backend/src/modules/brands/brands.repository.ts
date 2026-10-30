@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma.js";
+import type { Prisma } from "../../generated/prisma/index.js";
 
 type BrandWriteData = {
   name: string;
@@ -6,8 +7,12 @@ type BrandWriteData = {
 };
 
 export const brandsRepository = {
-  findMany() {
-    return prisma.brand.findMany({ orderBy: { name: "asc" } });
+  findMany(where?: Prisma.BrandWhereInput, skip?: number, take?: number) {
+    return prisma.brand.findMany({ where, orderBy: { name: "asc" }, skip, take });
+  },
+
+  count(where?: Prisma.BrandWhereInput) {
+    return prisma.brand.count({ where });
   },
 
   findById(id: number) {

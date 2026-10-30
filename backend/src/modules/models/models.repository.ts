@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma.js";
+import type { Prisma } from "../../generated/prisma/index.js";
 
 const brandSelect = { id: true, name: true, slug: true } as const;
 const categorySelect = { id: true, nameKa: true, nameEn: true, nameRu: true, slug: true } as const;
@@ -15,12 +16,18 @@ type ModelWriteData = {
 };
 
 export const modelsRepository = {
-  findMany(brandId?: number) {
+  findMany(where?: Prisma.ModelWhereInput, skip?: number, take?: number) {
     return prisma.model.findMany({
-      where: brandId ? { brandId } : undefined,
+      where,
       include: modelInclude,
       orderBy: [{ brand: { name: "asc" } }, { name: "asc" }],
+      skip,
+      take,
     });
+  },
+
+  count(where?: Prisma.ModelWhereInput) {
+    return prisma.model.count({ where });
   },
 
   findById(id: number) {

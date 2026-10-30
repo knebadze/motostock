@@ -1,9 +1,12 @@
+import type { Prisma } from "../../generated/prisma/index.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation, runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
+import { resolvePage } from "../../lib/pagination.js";
+import { applyModelAdminFilters } from "../filters/model/model-filter-registry.js";
 import { brandsRepository } from "../brands/brands.repository.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { modelsRepository } from "./models.repository.js";
-import type { CreateModelInput, UpdateModelInput } from "./models.schema.js";
+import type { CreateModelInput, ModelListQuery, UpdateModelInput } from "./models.schema.js";
 
 type BrandRefRow = { id: number; name: string; slug: string };
 type CategoryRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
@@ -52,9 +55,31 @@ async function assertCategoryExists(categoryId: number) {
   }
 }
 
-export async function listModels(brandId?: number) {
-  const models = await modelsRepository.findMany(brandId);
-  return models.map(toResponse);
+const DEFAULT_PAGE_SIZE = 20;
+
+// page/pageSize only trigger real pagination when the caller sends at least
+// one of them (see modelListQuerySchema) — every other caller (brand/model
+// pickers, PromoCodeFormModal's brandId-only lookup) keeps getting the full,
+// unbounded list under the old `{ models: [...] }` shape.
+export async function listModels(query: ModelListQuery = {}) {
+  const adminWhere = applyModelAdminFilters(query.adminFilters);
+  const where: Prisma.ModelWhereInput | undefined =
+    query.brandId != null
+      ? { AND: [{ brandId: query.brandId }, ...(adminWhere ? [adminWhere] : [])] }
+      : adminWhere;
+
+  if (query.page == null && query.pageSize == null) {
+    const models = await modelsRepository.findMany(where);
+    const items = models.map(toResponse);
+    return { items, total: items.length, page: 1, pageSize: items.length || DEFAULT_PAGE_SIZE };
+  }
+
+  const { page, pageSize, skip, take } = resolvePage(query, DEFAULT_PAGE_SIZE);
+  const [rows, total] = await Promise.all([
+    modelsRepository.findMany(where, skip, take),
+    modelsRepository.count(where),
+  ]);
+  return { items: rows.map(toResponse), total, page, pageSize };
 }
 
 export async function getModel(id: number) {
