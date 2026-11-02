@@ -25,6 +25,8 @@ const CATEGORY_SLUGS: Record<string, string> = {
   მოტოციკლი: "motorcycles",
   მოპედი: "mopeds",
   კვადროციკლი: "atvs",
+  // Electric stand-up scooters (Xiaomi, Segway-Ninebot, ...).
+  სკუტერი: "scooters",
 };
 
 function slugify(value: string): string {
