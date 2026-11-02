@@ -1731,11 +1731,26 @@ const VEHICLE_CATEGORY_FILTER_SEEDS: VehicleCategoryFilterSeed[] = [
   { categorySlug: "atvs", filterType: "BRAND", sortOrder: 2 },
   { categorySlug: "atvs", filterType: "SPEC", specField: "DRIVE_TYPE", sortOrder: 3 },
   { categorySlug: "atvs", filterType: "SPEC", specField: "ENGINE_POWER_HP", sortOrder: 4 },
+  // Electric stand-up scooters — battery/motor specs, no engine or fuel.
   { categorySlug: "scooters", filterType: "PRICE", sortOrder: 0 },
   { categorySlug: "scooters", filterType: "YEAR", sortOrder: 1 },
   { categorySlug: "scooters", filterType: "BRAND", sortOrder: 2 },
-  { categorySlug: "scooters", filterType: "SPEC", specField: "FUEL_TYPE", sortOrder: 3 },
-  { categorySlug: "scooters", filterType: "SPEC", specField: "TOP_SPEED_KMH", sortOrder: 4 },
+  { categorySlug: "scooters", filterType: "SPEC", specField: "MOTOR_POWER_WATT", sortOrder: 3 },
+  { categorySlug: "scooters", filterType: "SPEC", specField: "RANGE_KM", sortOrder: 4 },
+  { categorySlug: "scooters", filterType: "SPEC", specField: "TOP_SPEED_KMH", sortOrder: 5 },
+  { categorySlug: "scooters", filterType: "SPEC", specField: "BATTERY_CAPACITY_WH", sortOrder: 6 },
+  { categorySlug: "scooters", filterType: "SPEC", specField: "WEIGHT_KG", sortOrder: 7 },
+  { categorySlug: "mopeds", filterType: "PRICE", sortOrder: 0 },
+  { categorySlug: "mopeds", filterType: "YEAR", sortOrder: 1 },
+  { categorySlug: "mopeds", filterType: "BRAND", sortOrder: 2 },
+  { categorySlug: "mopeds", filterType: "SPEC", specField: "FUEL_TYPE", sortOrder: 3 },
+  { categorySlug: "mopeds", filterType: "SPEC", specField: "ENGINE_VOLUME_CC", sortOrder: 4 },
+  { categorySlug: "mopeds", filterType: "SPEC", specField: "TOP_SPEED_KMH", sortOrder: 5 },
+  { categorySlug: "trikes", filterType: "PRICE", sortOrder: 0 },
+  { categorySlug: "trikes", filterType: "YEAR", sortOrder: 1 },
+  { categorySlug: "trikes", filterType: "BRAND", sortOrder: 2 },
+  { categorySlug: "trikes", filterType: "SPEC", specField: "FUEL_TYPE", sortOrder: 3 },
+  { categorySlug: "trikes", filterType: "SPEC", specField: "ENGINE_VOLUME_CC", sortOrder: 4 },
 ];
 
 async function seedVehicleCategoryFilters(categoryIdBySlug: Map<string, number>) {

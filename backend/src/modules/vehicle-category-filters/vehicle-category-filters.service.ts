@@ -90,6 +90,11 @@ const AUTOMATIC_SPEC_FIELDS: VehicleSpecField[] = [
   "IS_CUSTOMS_CLEARED",
   "WEIGHT_KG",
   "SEAT_HEIGHT_MM",
+  // Electric vehicles only — the others leave these empty, so they never
+  // show there.
+  "MOTOR_POWER_WATT",
+  "BATTERY_CAPACITY_WH",
+  "RANGE_KM",
 ];
 
 type FacetRow = Awaited<ReturnType<typeof vehicleListingRepository.findSpecFacetRows>>[number];
