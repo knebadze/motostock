@@ -8,6 +8,7 @@ import { sendBirthdayEmails } from "../users/birthday-email.service.js";
 import { pruneOldErrorLogs } from "../error-logs/error-logs.service.js";
 import { pruneOldAuthEvents } from "../fraud/fraud.service.js";
 import { pruneStaleGuestCollections } from "./guest-collections-prune.js";
+import { pruneSuccessfulJobRuns } from "./job-runs-prune.js";
 import {
   RESOLVED_CALLBACK_RETENTION_DAYS,
   pruneResolvedCallbackRequests,
@@ -39,13 +40,13 @@ export type JobDefinition = {
 // Derives the admin-facing "ყოველდღე HH:MM (თბილისის დრო)" label straight
 // from a job's own `cron` field instead of a second, separately-maintained
 // label string — the two drifting apart (schedule changed, label forgotten)
-// is exactly the bug this replaces. Every job here uses the simple daily
-// "M H * * *" shape; a job with a genuinely different cadence would need a
-// richer formatter, but none exists yet.
+// is exactly the bug this replaces. Handles the two shapes used here: daily
+// "M H * * *" and monthly "M H D * *".
 export function formatCronScheduleLabel(cronExpression: string): string {
-  const [minute, hour] = cronExpression.split(" ");
+  const [minute, hour, dayOfMonth] = cronExpression.split(" ");
   const pad = (value: string) => value.padStart(2, "0");
-  return `ყოველდღე ${pad(hour)}:${pad(minute)} (თბილისის დრო)`;
+  const when = dayOfMonth && dayOfMonth !== "*" ? `ყოველი თვის ${dayOfMonth}-ში` : "ყოველდღე";
+  return `${when} ${pad(hour)}:${pad(minute)} (თბილისის დრო)`;
 }
 
 // Wires each existing prune function (none of them changed — see
@@ -141,6 +142,13 @@ export const JOB_DEFINITIONS: JobDefinition[] = [
     labelKa: `დამუშავებული დარეკვის თხოვნების წაშლა (${RESOLVED_CALLBACK_RETENTION_DAYS} დღეზე ძველი)`,
     cron: "18 3 * * *",
     run: async () => ({ itemsAffected: await pruneResolvedCallbackRequests() }),
+  },
+  {
+    key: "MONTHLY_PRUNE_SUCCESSFUL_JOB_RUNS",
+    labelKa: "წარმატებული გაშვებების ისტორიის გასუფთავება (წინა თვეები)",
+    // The 1st, just after midnight — i.e. as soon as the month has ended.
+    cron: "5 0 1 * *",
+    run: async () => ({ itemsAffected: await pruneSuccessfulJobRuns() }),
   },
   {
     key: "BIRTHDAY_EMAIL",

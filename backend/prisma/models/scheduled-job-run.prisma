@@ -25,6 +25,9 @@ enum ScheduledJobKey {
   // Handled "call me back" requests past their retention window
   // (callback-requests-prune.ts).
   DAILY_PRUNE_CALLBACK_REQUESTS
+  // SUCCESS runs of past months (job-runs-prune.ts) — on the 1st, right
+  // after a month ends.
+  MONTHLY_PRUNE_SUCCESSFUL_JOB_RUNS
 
   @@schema("dbo")
 }

@@ -12,7 +12,8 @@ export type ScheduledJobKey =
   | "DAILY_PRUNE_ERROR_LOGS"
   | "DAILY_PRUNE_GUEST_COLLECTIONS"
   | "DAILY_PRUNE_AUTH_EVENTS"
-  | "DAILY_PRUNE_CALLBACK_REQUESTS";
+  | "DAILY_PRUNE_CALLBACK_REQUESTS"
+  | "MONTHLY_PRUNE_SUCCESSFUL_JOB_RUNS";
 
 export type ScheduledJobRun = ScheduledJobRunsPage["runs"][number];
 
