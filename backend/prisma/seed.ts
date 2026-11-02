@@ -1294,7 +1294,6 @@ const CATALOG_ATTRIBUTE_SEEDS: AttributeSeed[] = [
   selectAttr("scale-models", ["მასშტაბი", "Scale", "Масштаб"], codeOptions("1:6", "1:12", "1:18", "1:24", "1:32")),
 
   // ── Oils & care products ──
-  numberAttr("fluids", ["მოცულობა", "Volume", "Объём"], "ლიტრი"),
   selectAttr("engine-oil", ["სიბლანტე", "Viscosity", "Вязкость"],
     codeOptions("5W-30", "5W-40", "10W-30", "10W-40", "10W-50", "10W-60", "15W-50", "20W-50")),
   selectAttr("engine-oil", ["ბაზა", "Base", "Основа"], [

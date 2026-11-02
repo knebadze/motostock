@@ -199,3 +199,31 @@ export async function checkProductsCompatibility(
   );
   return data.compatibleProductIds;
 }
+
+export type ProductBulkImportResult = Schemas["ProductBulkImportResult"];
+
+// One category's Excel template (its attributes are columns), saved under
+// `fileName`.
+export async function downloadProductImportTemplate(categoryId: number, fileName: string): Promise<void> {
+  const { data } = await apiClient.get<Blob>("/products/bulk-import/template", {
+    params: { categoryId },
+    responseType: "blob",
+  });
+  const url = URL.createObjectURL(data);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export async function bulkImportProducts(file: File): Promise<ProductBulkImportResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const { data } = await apiClient.post<ProductBulkImportResult>("/products/bulk-import", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}

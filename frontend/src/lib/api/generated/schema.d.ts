@@ -6649,6 +6649,87 @@ export interface paths {
         };
         trace?: never;
     };
+    "/products/bulk-import/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download one category's product bulk-import Excel template (its attributes as columns, dropdowns of names) */
+        get: {
+            parameters: {
+                query: {
+                    categoryId: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Excel template */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/products/bulk-import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bulk-create products (rows grouped into products by number, one variant per row) from a filled template */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "multipart/form-data": {
+                        /** Format: binary */
+                        file: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Per-row results */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProductBulkImportResult"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/products/sitemap": {
         parameters: {
             query?: never;
@@ -16661,6 +16742,21 @@ export interface components {
                 optionId?: number | null;
             }[];
             isFeaturedOnHomepage?: boolean;
+        };
+        ProductBulkImportResult: {
+            categoryName: string;
+            totalRows: number;
+            createdProducts: number;
+            createdVariants: number;
+            skippedCount: number;
+            errorCount: number;
+            results: {
+                row: number;
+                /** @enum {string} */
+                status: "created" | "skipped" | "error";
+                message: string | null;
+                productId: number | null;
+            }[];
         };
         CheckCompatibilityInput: {
             productIds: number[];

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware.js";
 import { validate } from "../../middleware/validate.middleware.js";
 import { uploadRateLimit } from "../../middleware/rateLimit.middleware.js";
-import { imageUpload } from "../../middleware/upload.middleware.js";
+import { imageUpload, spreadsheetUpload } from "../../middleware/upload.middleware.js";
 import { registry } from "../../docs/registry.js";
 import { errorResponseSchema } from "../../docs/schemas.js";
 import { ROLES } from "../../lib/roles.js";
@@ -20,7 +20,9 @@ import {
   productDetailAdminResponseSchema,
   productDetailQuerySchema,
   productDetailResponseSchema,
+  productBulkImportResponseSchema,
   productIdParamSchema,
+  productImportTemplateQuerySchema,
   productListQuerySchema,
   productCardResponseSchema,
   productResponseSchema,
@@ -92,6 +94,22 @@ productsRouter.post(
   validate(createProductSchema),
   productsController.create,
 );
+// Excel bulk import — per-category template, then the filled file.
+productsRouter.get(
+  "/bulk-import/template",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  validate(productImportTemplateQuerySchema, "query"),
+  productsController.downloadImportTemplate,
+);
+productsRouter.post(
+  "/bulk-import",
+  requireAuth,
+  requireRole(ROLES.ADMIN),
+  uploadRateLimit,
+  spreadsheetUpload().single("file"),
+  productsController.bulkImport,
+);
 productsRouter.patch(
   "/:id",
   requireAuth,
@@ -118,6 +136,35 @@ productsRouter.post(
 );
 
 const security = [{ cookieAuth: [] }];
+
+registry.registerPath({
+  method: "get",
+  path: "/products/bulk-import/template",
+  tags: ["Products"],
+  summary: "Download one category's product bulk-import Excel template (its attributes as columns, dropdowns of names)",
+  security: [{ cookieAuth: [] }],
+  request: { query: productImportTemplateQuerySchema },
+  responses: {
+    200: {
+      description: "Excel template",
+      content: { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": { schema: z.string() } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/products/bulk-import",
+  tags: ["Products"],
+  summary: "Bulk-create products (rows grouped into products by number, one variant per row) from a filled template",
+  security: [{ cookieAuth: [] }],
+  request: {
+    body: { content: { "multipart/form-data": { schema: z.object({ file: z.string().openapi({ format: "binary" }) }) } } },
+  },
+  responses: {
+    200: { description: "Per-row results", content: { "application/json": { schema: productBulkImportResponseSchema } } },
+  },
+});
 // total/page/pageSize are only populated for the admin-list path (adminFilters
 // present) — the storefront/popular paths never send page/pageSize and their
 // responses omit these three fields, so they stay optional here.

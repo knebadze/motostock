@@ -121,6 +121,31 @@ export const productBrandFacetsQuerySchema = z.object({
 });
 export type ProductBrandFacetsQuery = z.infer<typeof productBrandFacetsQuerySchema>;
 
+export const productImportTemplateQuerySchema = z.object({
+  categoryId: z.coerce.number().int().positive(),
+});
+export type ProductImportTemplateQuery = z.infer<typeof productImportTemplateQuerySchema>;
+
+export const productBulkImportResponseSchema = registry.register(
+  "ProductBulkImportResult",
+  z.object({
+    categoryName: z.string(),
+    totalRows: z.int(),
+    createdProducts: z.int(),
+    createdVariants: z.int(),
+    skippedCount: z.int(),
+    errorCount: z.int(),
+    results: z.array(
+      z.object({
+        row: z.int(),
+        status: z.enum(["created", "skipped", "error"]),
+        message: z.string().nullable(),
+        productId: z.int().nullable(),
+      }),
+    ),
+  }),
+);
+
 export const productListQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
   // Cross-category "browse everything" page's category-checkbox facet

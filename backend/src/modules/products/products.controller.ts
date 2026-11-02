@@ -1,3 +1,5 @@
+import { generateProductImportTemplate } from "./products-import-template.service.js";
+import { bulkImportProducts } from "./products-bulk-import.service.js";
 import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
 import { resolveProductViewOwner } from "../product-views/product-views.middleware.js";
@@ -8,6 +10,7 @@ import type {
   CreateProductInput,
   PopularProductsQuery,
   ProductBrandFacetsQuery,
+  ProductImportTemplateQuery,
   ProductCategoryFacetsQuery,
   ProductDetailQuery,
   ProductListQuery,
@@ -114,4 +117,22 @@ export async function uploadImage(req: Request, res: Response) {
   }
   const item = await productsService.setProductImage(Number(req.params.id), req.file);
   res.status(200).json({ item });
+}
+
+export async function downloadImportTemplate(
+  req: Request<unknown, unknown, unknown, Partial<ProductImportTemplateQuery>>,
+  res: Response,
+) {
+  const buffer = await generateProductImportTemplate(Number(req.query.categoryId));
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  res.setHeader("Content-Disposition", 'attachment; filename="products-template.xlsx"');
+  res.send(buffer);
+}
+
+export async function bulkImport(req: Request, res: Response) {
+  if (!req.file) {
+    throw new ApiError(400, "ფაილი არ არის მიბმული");
+  }
+  const result = await bulkImportProducts(req.file.buffer);
+  res.status(200).json(result);
 }

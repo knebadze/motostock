@@ -20,6 +20,7 @@ import { buildProductFilterFields } from "@/config/admin-filters/product-filters
 import { formatPrice } from "@/lib/format";
 import { useAdminRole } from "@/components/admin/AdminRoleContext";
 import { ProductDetailModal } from "./ProductDetailModal";
+import { ProductBulkImportModal } from "./ProductBulkImportModal";
 import { ProductTagBulkBar } from "./ProductTagBulkBar";
 import type { Tag } from "@/lib/api/tags";
 
@@ -110,6 +111,7 @@ export function ProductsManager({
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
   const canCreate = categories.length > 0;
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
   const filterFields = buildProductFilterFields({
     categories,
@@ -200,14 +202,24 @@ export function ProductsManager({
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">პროდუქტები</h1>
         {!isOperator && (
-          <button
-            type="button"
-            onClick={() => router.push("/admin/products/new")}
-            disabled={!canCreate}
-            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
-          >
-            + პროდუქტის დამატება
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setBulkImportOpen(true)}
+              disabled={!canCreate}
+              className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            >
+              Excel-ით ატვირთვა
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/admin/products/new")}
+              disabled={!canCreate}
+              className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
+            >
+              + პროდუქტის დამატება
+            </button>
+          </div>
         )}
       </div>
 
@@ -319,6 +331,12 @@ export function ProductsManager({
           await deleteProduct(deletingProduct.id);
           await loadPage(data.page);
         }}
+      />
+      <ProductBulkImportModal
+        open={bulkImportOpen}
+        onClose={() => setBulkImportOpen(false)}
+        onImported={() => void loadPage(1)}
+        categories={categories}
       />
     </div>
   );
