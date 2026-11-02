@@ -55,6 +55,9 @@ model VehicleCategoryFilterConfig {
   filterType VehicleCategoryFilterType
   specField  VehicleSpecField?
   sortOrder  Int                       @default(0)
+  // Off = kept but not shown in the shop; also hides the automatic version
+  // of the same filter — same as CategoryFilterConfig.isActive.
+  isActive   Boolean                   @default(true)
   createdAt  DateTime                  @default(now())
   updatedAt  DateTime                  @updatedAt
 

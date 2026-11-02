@@ -6057,6 +6057,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicle-category-filters/storefront": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A vehicle category page's complete shop filter sidebar: configured filters plus automatic price/year/brand and key specs that differ among its listings, with counts (public) */
+        get: {
+            parameters: {
+                query: {
+                    categoryId: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Filters */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["VehicleCategoryFilterConfig"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicle-category-filters/{id}": {
         parameters: {
             query?: never;
@@ -16861,7 +16901,8 @@ export interface components {
             specField?: "FUEL_TYPE" | "TRANSMISSION_TYPE" | "COOLING_TYPE" | "FINAL_DRIVE_TYPE" | "DRIVE_TYPE" | "START_TYPE" | "POWERTRAIN_TYPE" | "ENGINE_VOLUME_CC" | "ENGINE_POWER_HP" | "CYLINDER_COUNT" | "GEAR_COUNT" | "SEAT_COUNT" | "WEIGHT_KG" | "SEAT_HEIGHT_MM" | "FUEL_TANK_LITERS" | "OIL_CAPACITY_LITERS" | "TOP_SPEED_KMH" | "MOTOR_POWER_WATT" | "BATTERY_CAPACITY_WH" | "RANGE_KM" | "CHARGING_TIME_MINUTES" | "HAS_ABS" | "HAS_LOCKING_DIFFERENTIAL" | "IS_CUSTOMS_CLEARED" | null;
         };
         UpdateVehicleCategoryFilterInput: {
-            sortOrder: number;
+            sortOrder?: number;
+            isActive?: boolean;
         };
         VehicleCategoryFilterConfig: {
             /** @example 1 */
@@ -16879,6 +16920,7 @@ export interface components {
             /** @enum {string} */
             filterType: "PRICE" | "YEAR" | "BRAND" | "SPEC";
             sortOrder: number;
+            isActive: boolean;
             /** @enum {string|null} */
             specField: "FUEL_TYPE" | "TRANSMISSION_TYPE" | "COOLING_TYPE" | "FINAL_DRIVE_TYPE" | "DRIVE_TYPE" | "START_TYPE" | "POWERTRAIN_TYPE" | "ENGINE_VOLUME_CC" | "ENGINE_POWER_HP" | "CYLINDER_COUNT" | "GEAR_COUNT" | "SEAT_COUNT" | "WEIGHT_KG" | "SEAT_HEIGHT_MM" | "FUEL_TANK_LITERS" | "OIL_CAPACITY_LITERS" | "TOP_SPEED_KMH" | "MOTOR_POWER_WATT" | "BATTERY_CAPACITY_WH" | "RANGE_KM" | "CHARGING_TIME_MINUTES" | "HAS_ABS" | "HAS_LOCKING_DIFFERENTIAL" | "IS_CUSTOMS_CLEARED" | null;
             specFieldLabel: {
@@ -16896,7 +16938,13 @@ export interface components {
                     en: string;
                     ru: string;
                 };
+                count?: number;
             }[] | null;
+            range?: {
+                min: number;
+                max: number;
+            } | null;
+            trueCount?: number;
         };
         CreateVehicleListingInput: {
             vehicleCatalogId: number;

@@ -470,6 +470,19 @@ export const vehicleListingRepository = {
       });
   },
 
+  // The shop-visible listings under `categoryIds` with their year, customs
+  // status and catalog specs — what the vehicle filter sidebar's automatic
+  // filters, option counts and ranges are computed from (see
+  // vehicle-category-filters.service.ts). A showroom's stock is small, so
+  // reading the rows beats one aggregate query per spec column.
+  findSpecFacetRows(categoryIds: number[]) {
+    const structuredWhere = buildWhere({ categoryIds });
+    return prisma.vehicleListing.findMany({
+      where: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] },
+      select: { year: true, isCustomsCleared: true, vehicleCatalog: true },
+    });
+  },
+
   // Typo-tolerant, relevance-ranked search across brand/model name — see
   // products.repository.ts's findSearchRankedIds for the full pg_trgm
   // word_similarity rationale (identical reasoning, applied here to the

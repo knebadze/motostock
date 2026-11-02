@@ -24,6 +24,12 @@ vehicleCategoryFiltersRouter.get(
   vehicleCategoryFiltersController.list,
 );
 
+vehicleCategoryFiltersRouter.get(
+  "/storefront",
+  validate(vehicleCategoryFilterListQuerySchema, "query"),
+  vehicleCategoryFiltersController.listStorefront,
+);
+
 vehicleCategoryFiltersRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
 vehicleCategoryFiltersRouter.post(
@@ -53,6 +59,18 @@ registry.registerPath({
   tags: ["VehicleCategoryFilters"],
   summary:
     "List a transport category's configured shop filters, in display order (public — guest shop filter sidebar)",
+  request: { query: vehicleCategoryFilterListQuerySchema },
+  responses: {
+    200: { description: "Filters", content: { "application/json": { schema: listResponse } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-category-filters/storefront",
+  tags: ["VehicleCategoryFilters"],
+  summary:
+    "A vehicle category page's complete shop filter sidebar: configured filters plus automatic price/year/brand and key specs that differ among its listings, with counts (public)",
   request: { query: vehicleCategoryFilterListQuerySchema },
   responses: {
     200: { description: "Filters", content: { "application/json": { schema: listResponse } } },

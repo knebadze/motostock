@@ -171,11 +171,11 @@ export const getCategoryFiltersFromServer = cache(async (categoryId: number): Pr
 export const getVehicleCategoryFiltersFromServer = cache(async (
   categoryId: number,
 ): Promise<VehicleCategoryFilter[]> => {
-  // Public endpoint (guest shop filter sidebar reads this too) — must not
-  // bail out just because there's no admin session cookie, same fix as
-  // getCategoriesFromServer.
+  // The complete storefront sidebar (configured + automatic filters, with
+  // counts/ranges) — public, so it must not bail out just because there's
+  // no admin session cookie, same fix as getCategoriesFromServer.
   return fetchFromServer<{ items: VehicleCategoryFilter[] }, VehicleCategoryFilter[]>(
-    "/vehicle-category-filters",
+    "/vehicle-category-filters/storefront",
     { params: { categoryId }, fallback: [], extract: (data) => data.items },
   );
 });

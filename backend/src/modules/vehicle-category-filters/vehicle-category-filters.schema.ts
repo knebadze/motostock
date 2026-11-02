@@ -52,7 +52,12 @@ export type CreateVehicleCategoryFilterInput = z.infer<typeof createVehicleCateg
 
 export const updateVehicleCategoryFilterSchema = registry.register(
   "UpdateVehicleCategoryFilterInput",
-  z.object({ sortOrder: z.int() }),
+  // Either or both: reorder, and/or switch the filter on/off in the shop.
+  z
+    .object({ sortOrder: z.int().optional(), isActive: z.boolean().optional() })
+    .refine((input) => input.sortOrder !== undefined || input.isActive !== undefined, {
+      message: "მიუთითეთ sortOrder ან isActive",
+    }),
 );
 export type UpdateVehicleCategoryFilterInput = z.infer<typeof updateVehicleCategoryFilterSchema>;
 
@@ -71,6 +76,8 @@ const lookupOptionRefSchema = z.object({
   id: z.int(),
   key: z.string(),
   label: localizedStringSchema,
+  // Storefront list only: how many listings on the page have this option.
+  count: z.int().optional(),
 });
 
 export const vehicleCategoryFilterResponseSchema = registry.register(
@@ -83,11 +90,18 @@ export const vehicleCategoryFilterResponseSchema = registry.register(
     category: namedRefSchema,
     filterType: vehicleCategoryFilterTypeSchema,
     sortOrder: z.int(),
+    // Off = not shown in the shop (see VehicleCategoryFilterConfig.isActive).
+    isActive: z.boolean(),
     // Only present for filterType = SPEC.
     specField: vehicleSpecFieldSchema.nullable(),
     specFieldLabel: localizedStringSchema.nullable(),
     specFieldKind: specFieldKindSchema.nullable(),
     // Only present for filterType = SPEC and specFieldKind = LOOKUP.
     lookupOptions: z.array(lookupOptionRefSchema).nullable(),
+    // Storefront list only (GET /vehicle-category-filters/storefront):
+    // YEAR / NUMBER spec — smallest/largest value the page's listings have.
+    range: z.object({ min: z.number(), max: z.number() }).nullable().optional(),
+    // BOOLEAN spec — how many listings have it.
+    trueCount: z.int().optional(),
   }),
 );

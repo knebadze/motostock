@@ -5,10 +5,12 @@ import { toast } from "sonner";
 import { Select } from "@/components/shared/Select";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
+import { Toggle } from "@/components/shared/Toggle";
 import {
   createVehicleCategoryFilter,
   deleteVehicleCategoryFilter,
   listVehicleCategoryFilters,
+  updateVehicleCategoryFilterActive,
   updateVehicleCategoryFilterSortOrder,
   type VehicleCategoryFilter,
   type VehicleCategoryFilterType,
@@ -136,8 +138,26 @@ export function VehicleCategoryFiltersManager({ categories }: { categories: Cate
     }
   }
 
+  // Optimistic: the switch flips at once, reverted if the save fails.
+  async function handleActiveToggle(filter: VehicleCategoryFilter, isActive: boolean) {
+    setFilters((current) => current.map((item) => (item.id === filter.id ? { ...item, isActive } : item)));
+    try {
+      await updateVehicleCategoryFilterActive(filter.id, isActive);
+      toast.success(isActive ? "ფილტრი ჩაირთო" : "ფილტრი გამოირთო");
+    } catch (error) {
+      const message = error instanceof ApiRequestError ? error.message : "სტატუსი ვერ განახლდა";
+      toast.error(message);
+      await loadForCategory(categoryId);
+    }
+  }
+
   const columns: DataTableColumn<VehicleCategoryFilter>[] = [
-    { header: "ფილტრი", render: (filter) => filterLabel(filter) },
+    {
+      header: "ფილტრი",
+      render: (filter) => (
+        <span className={filter.isActive ? undefined : "text-muted-foreground line-through"}>{filterLabel(filter)}</span>
+      ),
+    },
     {
       header: "ტიპი",
       render: (filter) => (filter.filterType === "SPEC" ? filter.specFieldKind ?? "" : filter.filterType),
@@ -167,14 +187,28 @@ export function VehicleCategoryFiltersManager({ categories }: { categories: Cate
         />
       ),
     },
+    {
+      header: "აქტიური",
+      render: (filter) => (
+        <Toggle
+          checked={filter.isActive}
+          onChange={(isActive) => handleActiveToggle(filter, isActive)}
+          label={`${filterLabel(filter)} — აქტიური`}
+        />
+      ),
+    },
   ];
 
   return (
     <div>
       <h1 className="text-2xl font-bold tracking-tight">ტრანსპორტის ფილტრები</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        აირჩიეთ ტრანსპორტის კატეგორია და აწყვეთ, რომელი ფილტრები გამოჩნდეს შოპში ამ კატეგორიისთვის
-        და რა თანმიმდევრობით.
+        შოპი ავტომატურად აჩვენებს ფასს, წელს, ბრენდს და ძირითად სპეციფიკაციებს (საწვავი, ძრავის
+        ტიპი, გადაცემათა კოლოფი, წამყვანი თვლები, მოცულობა, სიმძლავრე, ABS, განბაჟება, წონა,
+        სავარძლის სიმაღლე) — მხოლოდ მაშინ, როცა ამ კატეგორიის ტექნიკა მათში განსხვავდება. აქ ხელით
+        დამატებული ფილტრები ზემოთ, თქვენი თანმიმდევრობით გამოჩნდება; დანარჩენი სპეციფიკაციებიც აქ
+        ემატება. გამორთული ფილტრი შოპში აღარ ჩანს, მაგრამ არ იშლება — ავტომატური ფილტრის
+        დასამალად დაამატეთ იგი აქ და გამორთეთ.
       </p>
 
       <div className="mt-4 w-72">

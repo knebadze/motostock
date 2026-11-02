@@ -102,7 +102,7 @@ export function VehicleFilters({
                   type="number"
                   value={yearMin}
                   onChange={(event) => onYearMinChange(event.target.value)}
-                  placeholder={t("yearMinPlaceholder")}
+                  placeholder={filter.range ? String(filter.range.min) : t("yearMinPlaceholder")}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
                 <span className="text-muted-foreground">—</span>
@@ -110,7 +110,7 @@ export function VehicleFilters({
                   type="number"
                   value={yearMax}
                   onChange={(event) => onYearMaxChange(event.target.value)}
-                  placeholder={t("yearMaxPlaceholder")}
+                  placeholder={filter.range ? String(filter.range.max) : t("yearMaxPlaceholder")}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
               </div>
@@ -163,7 +163,8 @@ export function VehicleFilters({
                       onChange={() => onToggleSpecOption(field, option.id)}
                       className="size-4 rounded border-border accent-primary"
                     />
-                    {option.label[locale]}
+                    <span className="flex-1">{option.label[locale]}</span>
+                    {option.count != null && <span className="text-xs text-muted-foreground">{option.count}</span>}
                   </label>
                 ))}
               </div>
@@ -180,7 +181,10 @@ export function VehicleFilters({
                 onChange={() => onToggleSpecBoolean(field)}
                 className="size-4 rounded border-border accent-primary"
               />
-              {label}
+              <span className="flex-1">{label}</span>
+              {filter.trueCount != null && (
+                <span className="text-xs font-normal text-muted-foreground">{filter.trueCount}</span>
+              )}
             </label>
           );
         }
@@ -194,7 +198,7 @@ export function VehicleFilters({
                   type="number"
                   value={state?.numberMin ?? ""}
                   onChange={(event) => onSpecNumberRangeChange(field, "min", event.target.value)}
-                  placeholder={t("priceMinPlaceholder")}
+                  placeholder={filter.range ? String(filter.range.min) : t("priceMinPlaceholder")}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
                 <span className="text-muted-foreground">—</span>
@@ -202,7 +206,7 @@ export function VehicleFilters({
                   type="number"
                   value={state?.numberMax ?? ""}
                   onChange={(event) => onSpecNumberRangeChange(field, "max", event.target.value)}
-                  placeholder={t("priceMaxPlaceholder")}
+                  placeholder={filter.range ? String(filter.range.max) : t("priceMaxPlaceholder")}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
               </div>

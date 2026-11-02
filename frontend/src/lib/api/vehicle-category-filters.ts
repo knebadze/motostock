@@ -62,6 +62,17 @@ export async function createVehicleCategoryFilter(
   return data.item;
 }
 
+// Shop on/off switch — off keeps the filter but hides it from the shop.
+export async function updateVehicleCategoryFilterActive(
+  id: number,
+  isActive: boolean,
+): Promise<VehicleCategoryFilter> {
+  const { data } = await apiClient.patch<{ item: VehicleCategoryFilter }>(`/vehicle-category-filters/${id}`, {
+    isActive,
+  });
+  return data.item;
+}
+
 export async function updateVehicleCategoryFilterSortOrder(
   id: number,
   sortOrder: number,

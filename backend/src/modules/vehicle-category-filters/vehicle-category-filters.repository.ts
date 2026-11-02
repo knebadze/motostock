@@ -68,8 +68,8 @@ export const vehicleCategoryFiltersRepository = {
     });
   },
 
-  updateSortOrder(id: number, sortOrder: number) {
-    return prisma.vehicleCategoryFilterConfig.update({ where: { id }, data: { sortOrder }, include });
+  update(id: number, data: { sortOrder?: number; isActive?: boolean }) {
+    return prisma.vehicleCategoryFilterConfig.update({ where: { id }, data, include });
   },
 
   delete(id: number) {
