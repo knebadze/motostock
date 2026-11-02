@@ -18,7 +18,12 @@ export type CreateCategoryFilterInput = z.infer<typeof createCategoryFilterSchem
 
 export const updateCategoryFilterSchema = registry.register(
   "UpdateCategoryFilterInput",
-  z.object({ sortOrder: z.int() }),
+  // Either or both: reorder, and/or switch the filter on/off in the shop.
+  z
+    .object({ sortOrder: z.int().optional(), isActive: z.boolean().optional() })
+    .refine((input) => input.sortOrder !== undefined || input.isActive !== undefined, {
+      message: "მიუთითეთ sortOrder ან isActive",
+    }),
 );
 export type UpdateCategoryFilterInput = z.infer<typeof updateCategoryFilterSchema>;
 
@@ -37,6 +42,8 @@ const attributeOptionRefSchema = z.object({
   id: z.int(),
   key: z.string(),
   label: localizedStringSchema,
+  // Storefront list only: how many products on the page hold this option.
+  count: z.int().optional(),
 });
 
 const attributeRefSchema = z.object({
@@ -44,6 +51,12 @@ const attributeRefSchema = z.object({
   name: localizedStringSchema,
   valueType: attributeValueTypeSchema,
   options: z.array(attributeOptionRefSchema),
+  // The rest are storefront-list only (GET /category-filters/storefront).
+  unit: localizedStringSchema.nullable().optional(),
+  // NUMBER: smallest/largest value the page's products hold.
+  range: z.object({ min: z.number(), max: z.number() }).nullable().optional(),
+  // BOOLEAN: how many products have it.
+  trueCount: z.int().optional(),
 });
 
 export const categoryFilterResponseSchema = registry.register(
@@ -56,6 +69,8 @@ export const categoryFilterResponseSchema = registry.register(
     category: namedRefSchema,
     filterType: categoryFilterTypeSchema,
     sortOrder: z.int(),
+    // Off = not shown in the shop (see CategoryFilterConfig.isActive).
+    isActive: z.boolean(),
     // Only present for filterType = ATTRIBUTE.
     attribute: attributeRefSchema.nullable(),
   }),

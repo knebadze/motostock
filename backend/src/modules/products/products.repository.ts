@@ -606,6 +606,26 @@ export const productsRepository = {
       .filter((brand): brand is NonNullable<typeof brand> => brand != null);
   },
 
+  // Backs the shop filter sidebar's automatic attribute filters (see
+  // category-filters.service.ts's listStorefrontCategoryFilters): every
+  // attribute value the visible products under `categoryIds` actually hold,
+  // grouped per attribute + option/boolean, with how many products hold it
+  // and the min/max of number values.
+  async findAttributeValueFacets(categoryIds: number[]) {
+    const structuredWhere = await buildWhere({ categoryIds, requireActiveVariant: true });
+    return prisma.productAttributeValue.groupBy({
+      by: ["attributeId", "optionId", "valueBoolean"],
+      where: {
+        product: {
+          AND: [...(structuredWhere ? [structuredWhere] : []), { variants: { some: { isActive: true } } }],
+        },
+      },
+      _count: { _all: true },
+      _min: { valueNumber: true },
+      _max: { valueNumber: true },
+    });
+  },
+
   // See adminListInclude above for why this is a separate method rather
   // than just findMany with a different include — no `searchIds` param,
   // since the admin panel never sends one (it always fetches the filtered

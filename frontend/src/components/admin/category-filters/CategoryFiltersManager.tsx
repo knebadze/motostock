@@ -5,10 +5,12 @@ import { toast } from "sonner";
 import { Select } from "@/components/shared/Select";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
+import { Toggle } from "@/components/shared/Toggle";
 import {
   createCategoryFilter,
   deleteCategoryFilter,
   listCategoryFilters,
+  updateCategoryFilterActive,
   updateCategoryFilterSortOrder,
   type CategoryFilter,
   type CategoryFilterType,
@@ -57,7 +59,7 @@ export function CategoryFiltersManager({ categories }: { categories: Category[] 
     try {
       const [filterItems, attributeItems] = await Promise.all([
         listCategoryFilters(Number(id)),
-        listAttributes(Number(id)),
+        listAttributes(Number(id), true),
       ]);
       setFilters(filterItems);
       setAttributes(attributeItems);
@@ -92,9 +94,15 @@ export function CategoryFiltersManager({ categories }: { categories: Category[] 
     return availableAttributes.length > 0;
   });
 
+  // Subcategory attributes are offered too (shown on this page only where
+  // products under it use them) — labelled with their category so e.g. two
+  // different "ტიპი" can be told apart.
   const attributeOptions = availableAttributes.map((attribute) => ({
     value: String(attribute.id),
-    label: attribute.name.ka,
+    label:
+      String(attribute.category.id) === categoryId
+        ? attribute.name.ka
+        : `${attribute.name.ka} (${attribute.category.name.ka})`,
   }));
 
   async function handleAddFilter() {
@@ -142,8 +150,26 @@ export function CategoryFiltersManager({ categories }: { categories: Category[] 
     }
   }
 
+  // Optimistic: the switch flips at once, reverted if the save fails.
+  async function handleActiveToggle(filter: CategoryFilter, isActive: boolean) {
+    setFilters((current) => current.map((item) => (item.id === filter.id ? { ...item, isActive } : item)));
+    try {
+      await updateCategoryFilterActive(filter.id, isActive);
+      toast.success(isActive ? "ფილტრი ჩაირთო" : "ფილტრი გამოირთო");
+    } catch (error) {
+      const message = error instanceof ApiRequestError ? error.message : "სტატუსი ვერ განახლდა";
+      toast.error(message);
+      await loadForCategory(categoryId);
+    }
+  }
+
   const columns: DataTableColumn<CategoryFilter>[] = [
-    { header: "ფილტრი", render: (filter) => filterLabel(filter) },
+    {
+      header: "ფილტრი",
+      render: (filter) => (
+        <span className={filter.isActive ? undefined : "text-muted-foreground line-through"}>{filterLabel(filter)}</span>
+      ),
+    },
     {
       header: "ტიპი",
       render: (filter) =>
@@ -174,14 +200,29 @@ export function CategoryFiltersManager({ categories }: { categories: Category[] 
         />
       ),
     },
+    {
+      header: "აქტიური",
+      render: (filter) => (
+        <Toggle
+          checked={filter.isActive}
+          onChange={(isActive) => handleActiveToggle(filter, isActive)}
+          label={`${filterLabel(filter)} — აქტიური`}
+        />
+      ),
+    },
   ];
 
   return (
     <div>
       <h1 className="text-2xl font-bold tracking-tight">კატეგორიის ფილტრები</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        აირჩიეთ კატეგორია და აწყვეთ, რომელი ფილტრები გამოჩნდეს შოპში ამ კატეგორიისთვის და რა
-        თანმიმდევრობით.
+        შოპი ფილტრებს ავტომატურად აჩვენებს: ფასს, ბრენდს, „ჩემ ტრანსპორტს&rdquo; (სადაც თავსებადობა
+        ჩართულია) და ამ კატეგორიის ყველა მახასიათებელს, რომელიც მის პროდუქტებს აქვს — მხოლოდ
+        არსებული მნიშვნელობებით. აქ ხელით დამატებული ფილტრები ზემოთ, თქვენი თანმიმდევრობით
+        გამოჩნდება. ქვეკატეგორიის მახასიათებელიც შეგიძლიათ დაამატოთ (მაგ. „სიბლანტე&rdquo; მთავარ
+        „სათადარიგო ნაწილების&rdquo; გვერდზე) — ავტომატურად ის მხოლოდ ქვეკატეგორიაში ჩანს.
+        გამორთული ფილტრი შოპში აღარ ჩანს, მაგრამ არ იშლება. ავტომატური ფილტრის დასამალად
+        დაამატეთ იგი აქ და გამორთეთ.
       </p>
 
       <div className="mt-4 w-72">

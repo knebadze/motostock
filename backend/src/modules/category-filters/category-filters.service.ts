@@ -7,8 +7,13 @@ import {
   resolveCategoryAndAncestorIds,
   sortByAncestorPriority,
 } from "../attributes/attributes.service.js";
+import {
+  getVehicleFitmentDisabledCategoryIds,
+  resolveCategoryAndDescendantIds,
+} from "../categories/categories.service.js";
+import { productsRepository } from "../products/products.repository.js";
 import { categoryFiltersRepository } from "./category-filters.repository.js";
-import type { CreateCategoryFilterInput } from "./category-filters.schema.js";
+import type { CreateCategoryFilterInput, UpdateCategoryFilterInput } from "./category-filters.schema.js";
 
 type OptionRow = { id: number; key: string; labelKa: string; labelEn: string; labelRu: string };
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
@@ -28,6 +33,7 @@ type CategoryFilterRow = {
   category: NamedRefRow;
   filterType: "PRICE" | "BRAND" | "ATTRIBUTE" | "MY_VEHICLE";
   sortOrder: number;
+  isActive: boolean;
   attribute: AttributeRefRow;
 };
 
@@ -44,6 +50,7 @@ function toResponse(row: CategoryFilterRow) {
     category: toNamedRef(row.category),
     filterType: row.filterType,
     sortOrder: row.sortOrder,
+    isActive: row.isActive,
     attribute: row.attribute
       ? {
           id: row.attribute.id,
@@ -71,6 +78,154 @@ export async function listCategoryFilters(categoryId: number) {
     (row) => row.filterType !== "ATTRIBUTE" || attributeCategoryIds.includes(row.categoryId),
   );
   return sortByAncestorPriority(rows, categoryIds).map(toResponse);
+}
+
+type UnitAbbreviationRow = { abbreviationKa: string; abbreviationEn: string; abbreviationRu: string } | null;
+
+function toUnitAbbreviation(unit: UnitAbbreviationRow) {
+  return unit ? { ka: unit.abbreviationKa, en: unit.abbreviationEn, ru: unit.abbreviationRu } : null;
+}
+
+// The shop filter sidebar for one category page: the admin-configured
+// filters (listCategoryFilters) completed from the data itself —
+// - price and brand always, "my vehicle" wherever vehicle fitment applies
+//   (added up front when not configured; dropped where fitment is off);
+// - every SELECT/NUMBER/BOOLEAN attribute that applies to this category AND
+//   is actually used by a visible product under it, after the configured
+//   ones (most specific category first). A subcategory's own attributes
+//   appear once the shopper is on that subcategory, so a root page doesn't
+//   list every attribute of the whole branch;
+// - options no product here holds are dropped (an attribute left with none
+//   disappears), each remaining option carries its product count, and
+//   number attributes carry the min/max actually present.
+// Built-in/automatic entries get negative ids (they have no config row).
+// An inactive config row hides its filter — including the automatic one.
+export async function listStorefrontCategoryFilters(categoryId: number) {
+  const category = await categoriesRepository.findById(categoryId);
+  if (!category) return [];
+
+  const [configured, attributeCategoryIds, subtreeIds, fitmentOff] = await Promise.all([
+    listCategoryFilters(categoryId),
+    resolveAttributeCategoryIds(categoryId),
+    resolveCategoryAndDescendantIds(categoryId),
+    getVehicleFitmentDisabledCategoryIds(),
+  ]);
+  const facetRows = await productsRepository.findAttributeValueFacets(subtreeIds);
+
+  type Facet = { optionCounts: Map<number, number>; trueCount: number; min: number | null; max: number | null };
+  const facets = new Map<number, Facet>();
+  for (const row of facetRows) {
+    const facet = facets.get(row.attributeId) ?? { optionCounts: new Map(), trueCount: 0, min: null, max: null };
+    if (row.optionId != null) {
+      facet.optionCounts.set(row.optionId, (facet.optionCounts.get(row.optionId) ?? 0) + row._count._all);
+    }
+    if (row.valueBoolean === true) facet.trueCount += row._count._all;
+    const min = row._min.valueNumber != null ? Number(row._min.valueNumber) : null;
+    const max = row._max.valueNumber != null ? Number(row._max.valueNumber) : null;
+    if (min != null) facet.min = facet.min == null ? min : Math.min(facet.min, min);
+    if (max != null) facet.max = facet.max == null ? max : Math.max(facet.max, max);
+    facets.set(row.attributeId, facet);
+  }
+
+  type StorefrontAttribute = NonNullable<ReturnType<typeof toResponse>["attribute"]>;
+  // The attribute as the sidebar should show it, or null when no product
+  // here gives it a usable value.
+  function withFacet(
+    attribute: StorefrontAttribute,
+    unit: UnitAbbreviationRow,
+  ) {
+    const facet = facets.get(attribute.id);
+    if (!facet) return null;
+    if (attribute.valueType === "SELECT") {
+      const options = attribute.options
+        .filter((option) => facet.optionCounts.has(option.id))
+        .map((option) => ({ ...option, count: facet.optionCounts.get(option.id) ?? 0 }));
+      return options.length > 0 ? { ...attribute, options, unit: null, range: null } : null;
+    }
+    if (attribute.valueType === "BOOLEAN") {
+      return facet.trueCount > 0 ? { ...attribute, unit: null, range: null, trueCount: facet.trueCount } : null;
+    }
+    if (attribute.valueType === "NUMBER") {
+      return facet.min != null && facet.max != null
+        ? { ...attribute, unit: toUnitAbbreviation(unit), range: { min: facet.min, max: facet.max } }
+        : null;
+    }
+    return null;
+  }
+
+  const fitmentEnabled = !fitmentOff.has(categoryId);
+  const categoryRef = {
+    id: category.id,
+    name: { ka: category.nameKa, en: category.nameEn, ru: category.nameRu },
+    slug: category.slug,
+  };
+  function builtIn(id: number, filterType: "PRICE" | "BRAND" | "MY_VEHICLE") {
+    return { id, categoryId, category: categoryRef, filterType, sortOrder: 0, isActive: true, attribute: null };
+  }
+
+  const configuredTypes = new Set(configured.map((filter) => filter.filterType));
+  const leading = [
+    ...(fitmentEnabled && !configuredTypes.has("MY_VEHICLE") ? [builtIn(-1, "MY_VEHICLE")] : []),
+    ...(!configuredTypes.has("PRICE") ? [builtIn(-2, "PRICE")] : []),
+    ...(!configuredTypes.has("BRAND") ? [builtIn(-3, "BRAND")] : []),
+  ];
+
+  const configuredAttributeIds = configured
+    .map((filter) => filter.attribute?.id)
+    .filter((id): id is number => id != null);
+  const configuredUnits = new Map(
+    (await categoryFiltersRepository.findUnitsByAttributeIds(configuredAttributeIds)).map((row) => [row.id, row.unit]),
+  );
+  // Inactive rows count as "configured" above (so their automatic version
+  // stays hidden) but aren't shown themselves.
+  const shownConfigured = configured.flatMap((filter) => {
+    if (!filter.isActive) return [];
+    if (filter.filterType === "MY_VEHICLE" && !fitmentEnabled) return [];
+    if (!filter.attribute) return [filter];
+    const attribute = withFacet(filter.attribute, configuredUnits.get(filter.attribute.id) ?? null);
+    return attribute ? [{ ...filter, attribute }] : [];
+  });
+
+  // Automatic: applicable, used, not already configured. Most specific
+  // category first (the browsed one, then up the tree), then seed order.
+  const depthByCategoryId = new Map(attributeCategoryIds.map((id, index) => [id, index]));
+  const autoCandidates = (
+    await categoryFiltersRepository.findFilterableAttributes(
+      [...facets.keys()].filter((id) => !configuredAttributeIds.includes(id)),
+    )
+  )
+    .filter((row) => depthByCategoryId.has(row.categoryId))
+    .sort((a, b) => depthByCategoryId.get(a.categoryId)! - depthByCategoryId.get(b.categoryId)! || a.id - b.id);
+  const automatic = autoCandidates.flatMap((row) => {
+    const attribute = withFacet(
+      {
+        id: row.id,
+        name: { ka: row.nameKa, en: row.nameEn, ru: row.nameRu },
+        valueType: row.valueType,
+        options: row.options.map((option) => ({
+          id: option.id,
+          key: option.key,
+          label: { ka: option.labelKa, en: option.labelEn, ru: option.labelRu },
+        })),
+      },
+      row.unit,
+    );
+    return attribute
+      ? [
+          {
+            id: -1000 - row.id,
+            categoryId,
+            category: categoryRef,
+            filterType: "ATTRIBUTE" as const,
+            sortOrder: 0,
+            isActive: true,
+            attribute,
+          },
+        ]
+      : [];
+  });
+
+  return [...leading, ...shownConfigured, ...automatic].map((filter, index) => ({ ...filter, sortOrder: index }));
 }
 
 export async function createCategoryFilter(input: CreateCategoryFilterInput) {
@@ -142,13 +297,16 @@ export async function createCategoryFilter(input: CreateCategoryFilterInput) {
   return toResponse(row);
 }
 
-export async function updateCategoryFilterSortOrder(id: number, sortOrder: number) {
+export async function updateCategoryFilter(id: number, input: UpdateCategoryFilterInput) {
   const existing = await categoryFiltersRepository.findById(id);
   if (!existing) {
     throw new ApiError(404, "ფილტრი ვერ მოიძებნა");
   }
 
-  const row = await categoryFiltersRepository.updateSortOrder(id, sortOrder);
+  const row = await categoryFiltersRepository.update(id, {
+    ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+    ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+  });
   return toResponse(row);
 }
 

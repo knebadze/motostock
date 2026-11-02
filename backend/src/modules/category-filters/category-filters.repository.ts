@@ -27,7 +27,32 @@ type CategoryFilterWriteData = {
   attributeId?: number | null;
 };
 
+const unitSelect = { abbreviationKa: true, abbreviationEn: true, abbreviationRu: true } as const;
+
 export const categoryFiltersRepository = {
+  // Filterable (non-TEXT) attributes by id, for the storefront's automatic
+  // attribute filters — with the unit (number ranges show it) and options
+  // in a stable order.
+  findFilterableAttributes(ids: number[]) {
+    return prisma.attribute.findMany({
+      where: { id: { in: ids }, valueType: { not: "TEXT" } },
+      select: {
+        ...attributeSelect,
+        categoryId: true,
+        unit: { select: unitSelect },
+        options: { select: attributeSelect.options.select, orderBy: { id: "asc" } },
+      },
+      orderBy: { id: "asc" },
+    });
+  },
+
+  findUnitsByAttributeIds(ids: number[]) {
+    return prisma.attribute.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, unit: { select: unitSelect } },
+    });
+  },
+
   // Accepts [categoryId, ...ancestorIds] — a filter configured on a parent
   // category (e.g. "Material" on "Gear") applies to every descendant
   // category page too, same inheritance convention as Attribute itself.
@@ -86,8 +111,8 @@ export const categoryFiltersRepository = {
     });
   },
 
-  updateSortOrder(id: number, sortOrder: number) {
-    return prisma.categoryFilterConfig.update({ where: { id }, data: { sortOrder }, include });
+  update(id: number, data: { sortOrder?: number; isActive?: boolean }) {
+    return prisma.categoryFilterConfig.update({ where: { id }, data, include });
   },
 
   delete(id: number) {

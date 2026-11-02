@@ -18,6 +18,14 @@ export async function list(
   res.status(200).json({ items });
 }
 
+export async function listStorefront(
+  req: Request<unknown, unknown, unknown, Partial<CategoryFilterListQuery>>,
+  res: Response,
+) {
+  const items = await categoryFiltersService.listStorefrontCategoryFilters(Number(req.query.categoryId));
+  res.status(200).json({ items });
+}
+
 export async function create(
   req: Request<unknown, unknown, CreateCategoryFilterInput>,
   res: Response,
@@ -30,10 +38,7 @@ export async function update(
   req: Request<{ id: string }, unknown, UpdateCategoryFilterInput>,
   res: Response,
 ) {
-  const item = await categoryFiltersService.updateCategoryFilterSortOrder(
-    Number(req.params.id),
-    req.body.sortOrder,
-  );
+  const item = await categoryFiltersService.updateCategoryFilter(Number(req.params.id), req.body);
   res.status(200).json({ item });
 }
 

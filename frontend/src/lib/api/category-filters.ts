@@ -27,6 +27,12 @@ export async function createCategoryFilter(input: CategoryFilterInput): Promise<
   return data.item;
 }
 
+// Shop on/off switch — off keeps the filter but hides it from the shop.
+export async function updateCategoryFilterActive(id: number, isActive: boolean): Promise<CategoryFilter> {
+  const { data } = await apiClient.patch<{ item: CategoryFilter }>(`/category-filters/${id}`, { isActive });
+  return data.item;
+}
+
 export async function updateCategoryFilterSortOrder(
   id: number,
   sortOrder: number,

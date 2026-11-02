@@ -31,6 +31,10 @@ export const attributeIdParamSchema = z.object({
 
 export const attributeListQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
+  // With categoryId: also the attributes of its subcategories — the admin
+  // shop-filter picker, so a subcategory's attribute can be shown as a
+  // filter on the parent page. Send only when true.
+  includeDescendants: z.coerce.boolean().optional(),
 });
 export type AttributeListQuery = z.infer<typeof attributeListQuerySchema>;
 

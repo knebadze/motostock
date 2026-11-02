@@ -22,6 +22,11 @@ model CategoryFilterConfig {
   attributeId Int?
   attribute   Attribute?         @relation(fields: [attributeId], references: [id], onDelete: Cascade)
   sortOrder   Int                @default(0)
+  // Off = kept but not shown in the shop (instead of deleting it). An
+  // inactive row also suppresses the automatic filter it stands for (see
+  // category-filters.service.ts's listStorefrontCategoryFilters), so this is
+  // how an admin hides an automatic price/brand/attribute filter too.
+  isActive    Boolean            @default(true)
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
 

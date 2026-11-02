@@ -186,7 +186,8 @@ export function ProductFilters({
                       onChange={() => onToggleOption(attribute.id, option.id)}
                       className="size-4 rounded border-border accent-primary"
                     />
-                    {option.label[locale]}
+                    <span className="flex-1">{option.label[locale]}</span>
+                    {option.count != null && <span className="text-xs text-muted-foreground">{option.count}</span>}
                   </label>
                 ))}
               </div>
@@ -203,21 +204,29 @@ export function ProductFilters({
                 onChange={() => onToggleBoolean(attribute.id)}
                 className="size-4 rounded border-border accent-primary"
               />
-              {attribute.name[locale]}
+              <span className="flex-1">{attribute.name[locale]}</span>
+              {attribute.trueCount != null && (
+                <span className="text-xs font-normal text-muted-foreground">{attribute.trueCount}</span>
+              )}
             </label>
           );
         }
 
         if (attribute.valueType === "NUMBER") {
+          // The real range present on this page as placeholders, e.g. "8"–"45".
+          const unit = attribute.unit?.[locale];
           return (
             <div key={filter.id} className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{attribute.name[locale]}</span>
+              <span className="text-sm font-medium">
+                {attribute.name[locale]}
+                {unit ? ` (${unit})` : ""}
+              </span>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
                   value={state?.numberMin ?? ""}
                   onChange={(event) => onNumberRangeChange(attribute.id, "min", event.target.value)}
-                  placeholder={t("priceMinPlaceholder")}
+                  placeholder={attribute.range ? String(attribute.range.min) : t("priceMinPlaceholder")}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
                 <span className="text-muted-foreground">—</span>
@@ -225,7 +234,7 @@ export function ProductFilters({
                   type="number"
                   value={state?.numberMax ?? ""}
                   onChange={(event) => onNumberRangeChange(attribute.id, "max", event.target.value)}
-                  placeholder={t("priceMaxPlaceholder")}
+                  placeholder={attribute.range ? String(attribute.range.max) : t("priceMaxPlaceholder")}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
               </div>

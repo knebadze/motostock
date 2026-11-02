@@ -133,8 +133,27 @@ async function assertUnitExists(unitId: number) {
   }
 }
 
-export async function listAttributes(categoryId?: number) {
-  const categoryIds = categoryId != null ? await resolveAttributeCategoryIds(categoryId) : undefined;
+// Every category below `categoryId` (not itself).
+async function resolveDescendantIds(categoryId: number): Promise<number[]> {
+  const allCategories = await categoriesRepository.findMany();
+  const ids: number[] = [];
+  let frontier = [categoryId];
+  while (frontier.length > 0) {
+    const children = allCategories.filter((category) => category.parentId != null && frontier.includes(category.parentId));
+    frontier = children.map((category) => category.id).filter((id) => !ids.includes(id));
+    ids.push(...frontier);
+  }
+  return ids;
+}
+
+export async function listAttributes(categoryId?: number, includeDescendants = false) {
+  const categoryIds =
+    categoryId != null
+      ? [
+          ...(await resolveAttributeCategoryIds(categoryId)),
+          ...(includeDescendants ? await resolveDescendantIds(categoryId) : []),
+        ]
+      : undefined;
   const rows = await attributesRepository.findMany(categoryIds);
   return rows.map(toResponse);
 }

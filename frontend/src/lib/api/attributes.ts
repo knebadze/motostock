@@ -11,9 +11,11 @@ export type Attribute = Schemas["Attribute"];
 
 export type AttributeInput = Schemas["CreateAttributeInput"];
 
-export async function listAttributes(categoryId?: number): Promise<Attribute[]> {
+// includeDescendants: also the subcategories' attributes (admin shop-filter
+// picker only).
+export async function listAttributes(categoryId?: number, includeDescendants = false): Promise<Attribute[]> {
   const { data } = await apiClient.get<{ items: Attribute[] }>("/attributes", {
-    params: categoryId ? { categoryId } : undefined,
+    params: categoryId ? { categoryId, ...(includeDescendants ? { includeDescendants: true } : {}) } : undefined,
   });
   return data.items;
 }

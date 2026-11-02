@@ -7,7 +7,7 @@ import type {
 } from "./attributes.schema.js";
 
 export async function list(req: Request<unknown, unknown, unknown, AttributeListQuery>, res: Response) {
-  const items = await attributesService.listAttributes(req.query.categoryId);
+  const items = await attributesService.listAttributes(req.query.categoryId, req.query.includeDescendants);
   res.status(200).json({ items });
 }
 

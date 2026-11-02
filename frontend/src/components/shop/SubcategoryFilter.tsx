@@ -10,10 +10,13 @@ import type { Category } from "@/lib/api/categories";
 // subcategoryCategoryIds on ProductShopPage/VehicleShopPage).
 export function SubcategoryFilter({
   subcategories,
+  counts,
   selectedIds,
   onToggle,
 }: {
   subcategories: Category[];
+  // Items under each subcategory (whole subtree), shown next to its name.
+  counts?: Record<number, number>;
   selectedIds: number[];
   onToggle: (subcategoryId: number) => void;
 }) {
@@ -34,7 +37,10 @@ export function SubcategoryFilter({
               onChange={() => onToggle(subcategory.id)}
               className="size-4 rounded border-border accent-primary"
             />
-            {subcategory.name[locale]}
+            <span className="flex-1">{subcategory.name[locale]}</span>
+            {counts?.[subcategory.id] != null && (
+              <span className="text-xs text-muted-foreground">{counts[subcategory.id]}</span>
+            )}
           </label>
         ))}
       </div>

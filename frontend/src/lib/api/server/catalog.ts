@@ -158,10 +158,10 @@ export const getCategorySlugRedirectFromServer = cache(async (slug: string): Pro
 });
 
 export const getCategoryFiltersFromServer = cache(async (categoryId: number): Promise<CategoryFilter[]> => {
-  // Public endpoint (guest shop filter sidebar reads this too) — must not
-  // bail out just because there's no admin session cookie, same fix as
-  // getCategoriesFromServer.
-  return fetchFromServer<{ items: CategoryFilter[] }, CategoryFilter[]>("/category-filters", {
+  // The complete storefront sidebar (configured + automatic filters, with
+  // option counts) — public, so it must not bail out just because there's
+  // no admin session cookie, same fix as getCategoriesFromServer.
+  return fetchFromServer<{ items: CategoryFilter[] }, CategoryFilter[]>("/category-filters/storefront", {
     params: { categoryId },
     fallback: [],
     extract: (data) => data.items,

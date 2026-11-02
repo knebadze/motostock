@@ -50,6 +50,7 @@ export function VehicleShopPage({
   breadcrumbChain,
   subcategories,
   subcategoryCategoryIds,
+  subcategoryCounts,
   brands,
   initialData,
   filters,
@@ -63,6 +64,8 @@ export function VehicleShopPage({
   // Each subcategory's id -> itself + all its descendants: picking one
   // filters by that whole subtree (categoryIds is an exact-match set).
   subcategoryCategoryIds: Record<number, number[]>;
+  // Items under each subcategory — shown in the subcategory filter.
+  subcategoryCounts?: Record<number, number>;
   // The distinct brands present among matching listings — feeds the
   // brand-checkbox facet list. Computed server-side by a lean, dedicated
   // query (getVehicleBrandFacetsFromServer) instead of shipping every
@@ -388,6 +391,7 @@ export function VehicleShopPage({
         subcategoryFilter={
           <SubcategoryFilter
             subcategories={subcategories}
+            counts={subcategoryCounts}
             selectedIds={selectedSubcategoryIds}
             onToggle={(subcategoryId) =>
               setSelectedSubcategoryIds((current) =>

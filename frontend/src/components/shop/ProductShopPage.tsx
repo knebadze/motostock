@@ -47,6 +47,7 @@ export function ProductShopPage({
   breadcrumbChain,
   subcategories,
   subcategoryCategoryIds,
+  subcategoryCounts,
   brands,
   initialData,
   filters,
@@ -60,6 +61,8 @@ export function ProductShopPage({
   // Each subcategory's id -> itself + all its descendants: picking one
   // filters by that whole subtree (categoryIds is an exact-match set).
   subcategoryCategoryIds: Record<number, number[]>;
+  // Items under each subcategory — shown in the subcategory filter.
+  subcategoryCounts?: Record<number, number>;
   // The distinct brands present among matching products — feeds the
   // brand-checkbox facet list. Computed server-side by a lean, dedicated
   // query (getProductBrandFacetsFromServer) instead of shipping every
@@ -380,6 +383,7 @@ export function ProductShopPage({
         subcategoryFilter={
           <SubcategoryFilter
             subcategories={subcategories}
+            counts={subcategoryCounts}
             selectedIds={selectedSubcategoryIds}
             onToggle={(subcategoryId) =>
               setSelectedSubcategoryIds((current) =>

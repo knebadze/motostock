@@ -5,6 +5,7 @@ import {
   getCategoriesStrictFromServer,
   getCategorySlugRedirectFromServer,
   getCategoryFiltersFromServer,
+  getCategoryItemCountsFromServer,
   getMyGarageFromServer,
   getProductBrandFacetsFromServer,
   getProductsPageFromServer,
@@ -147,7 +148,17 @@ export default async function CategoryShopPage({
   };
 
   const isVehicle = isVehicleCategory(categories, category.id);
-  const subcategories = categories.filter((item) => item.parentId === category.id);
+  // Rolled up over each subtree. Empty subcategories are left out of the
+  // subcategory filter — unless the counts couldn't be loaded at all
+  // (fallback {}), then every subcategory stays.
+  const itemCounts = await getCategoryItemCountsFromServer();
+  const countsKnown = Object.keys(itemCounts).length > 0;
+  const subcategories = categories.filter(
+    (item) => item.parentId === category.id && (!countsKnown || (itemCounts[item.id] ?? 0) > 0),
+  );
+  const subcategoryCounts = countsKnown
+    ? Object.fromEntries(subcategories.map((subcategory) => [subcategory.id, itemCounts[subcategory.id] ?? 0]))
+    : undefined;
   // Subcategory filter checkboxes filter by each one's whole subtree.
   const subcategoryCategoryIds = Object.fromEntries(
     subcategories.map((subcategory) => [subcategory.id, [subcategory.id, ...getDescendantIds(categories, subcategory.id)]]),
@@ -177,6 +188,7 @@ export default async function CategoryShopPage({
           breadcrumbChain={ancestorChain}
           subcategories={subcategories}
           subcategoryCategoryIds={subcategoryCategoryIds}
+          subcategoryCounts={subcategoryCounts}
           brands={brandFacets}
           initialData={listingsPage}
           filters={vehicleFilters}
@@ -215,6 +227,7 @@ export default async function CategoryShopPage({
         breadcrumbChain={ancestorChain}
         subcategories={subcategories}
         subcategoryCategoryIds={subcategoryCategoryIds}
+        subcategoryCounts={subcategoryCounts}
         brands={brandFacets}
         initialData={productsPage}
         filters={filters}

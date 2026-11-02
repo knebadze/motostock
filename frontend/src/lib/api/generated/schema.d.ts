@@ -5382,6 +5382,7 @@ export interface paths {
             parameters: {
                 query?: {
                     categoryId?: number;
+                    includeDescendants?: boolean | null;
                 };
                 header?: never;
                 path?: never;
@@ -5850,6 +5851,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/category-filters/storefront": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A category page's complete shop filter sidebar: configured filters plus automatic price/brand/my-vehicle and every attribute its products use, with option counts (public) */
+        get: {
+            parameters: {
+                query: {
+                    categoryId: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Filters */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["CategoryFilterConfig"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/category-filters/{id}": {
         parameters: {
             query?: never;
@@ -5892,7 +5933,7 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        /** Reorder a category filter */
+        /** Reorder a category filter and/or switch it on/off in the shop */
         patch: {
             parameters: {
                 query?: never;
@@ -17744,7 +17785,8 @@ export interface components {
             attributeId?: number | null;
         };
         UpdateCategoryFilterInput: {
-            sortOrder: number;
+            sortOrder?: number;
+            isActive?: boolean;
         };
         CategoryFilterConfig: {
             /** @example 1 */
@@ -17762,6 +17804,7 @@ export interface components {
             /** @enum {string} */
             filterType: "PRICE" | "BRAND" | "ATTRIBUTE" | "MY_VEHICLE";
             sortOrder: number;
+            isActive: boolean;
             attribute: {
                 id: number;
                 name: {
@@ -17779,7 +17822,18 @@ export interface components {
                         en: string;
                         ru: string;
                     };
+                    count?: number;
                 }[];
+                unit?: {
+                    ka: string;
+                    en: string;
+                    ru: string;
+                } | null;
+                range?: {
+                    min: number;
+                    max: number;
+                } | null;
+                trueCount?: number;
             } | null;
         };
         CreateProductBrandInput: {

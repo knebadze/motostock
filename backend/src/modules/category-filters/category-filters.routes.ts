@@ -24,6 +24,12 @@ categoryFiltersRouter.get(
   categoryFiltersController.list,
 );
 
+categoryFiltersRouter.get(
+  "/storefront",
+  validate(categoryFilterListQuerySchema, "query"),
+  categoryFiltersController.listStorefront,
+);
+
 categoryFiltersRouter.use(requireAuth, requireRole(ROLES.ADMIN));
 
 categoryFiltersRouter.post(
@@ -59,6 +65,18 @@ registry.registerPath({
 });
 
 registry.registerPath({
+  method: "get",
+  path: "/category-filters/storefront",
+  tags: ["CategoryFilters"],
+  summary:
+    "A category page's complete shop filter sidebar: configured filters plus automatic price/brand/my-vehicle and every attribute its products use, with option counts (public)",
+  request: { query: categoryFilterListQuerySchema },
+  responses: {
+    200: { description: "Filters", content: { "application/json": { schema: listResponse } } },
+  },
+});
+
+registry.registerPath({
   method: "post",
   path: "/category-filters",
   tags: ["CategoryFilters"],
@@ -82,7 +100,7 @@ registry.registerPath({
   method: "patch",
   path: "/category-filters/{id}",
   tags: ["CategoryFilters"],
-  summary: "Reorder a category filter",
+  summary: "Reorder a category filter and/or switch it on/off in the shop",
   security,
   request: {
     params: categoryFilterIdParamSchema,
