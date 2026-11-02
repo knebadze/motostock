@@ -14,6 +14,7 @@ import {
   getVehicleListingDetailAdmin,
   type VehicleListingDetailAdmin,
 } from "@/lib/api/vehicle-listings";
+import { boolLabel, vehicleCatalogSpecRows } from "@/components/admin/vehicle-catalog/vehicle-catalog-spec-rows";
 
 function Thumbnail({ url, alt }: { url: string | null; alt: string }) {
   const resolved = resolveMediaUrl(url);
@@ -26,10 +27,6 @@ function Thumbnail({ url, alt }: { url: string | null; alt: string }) {
       )}
     </div>
   );
-}
-
-function boolLabel(value: boolean | null): string {
-  return value == null ? "—" : value ? "კი" : "არა";
 }
 
 function warrantyLabel(listing: VehicleListingDetailAdmin): string {
@@ -143,45 +140,9 @@ function StatsTab({ listing }: { listing: VehicleListingDetailAdmin }) {
 }
 
 function SpecsTab({ listing }: { listing: VehicleListingDetailAdmin }) {
-  const catalog = listing.vehicleCatalog;
-  const isElectric = catalog.powertrainType?.key === "ELECTRIC";
-
-  const rows = [
-    { label: "მოდელის წლები", value: catalog.yearFrom || catalog.yearTo ? `${catalog.yearFrom ?? "?"}–${catalog.yearTo ?? "?"}` : "—" },
-    { label: "ძრავის ტიპი", value: catalog.powertrainType?.nameKa ?? "—" },
-    ...(isElectric
-      ? [
-          { label: "ძრავის სიმძლავრე (ვტ)", value: catalog.motorPowerWatt != null ? String(catalog.motorPowerWatt) : "—" },
-          { label: "აკუმულატორი (Wh)", value: catalog.batteryCapacityWh != null ? String(catalog.batteryCapacityWh) : "—" },
-          { label: "სავალი მანძილი (კმ)", value: catalog.rangeKm != null ? String(catalog.rangeKm) : "—" },
-          { label: "დამუხტვის დრო (წთ)", value: catalog.chargingTimeMinutes != null ? String(catalog.chargingTimeMinutes) : "—" },
-        ]
-      : [
-          { label: "მოცულობა (cc)", value: catalog.engineVolumeCc != null ? String(catalog.engineVolumeCc) : "—" },
-          { label: "სიმძლავრე (ც.ძ)", value: catalog.enginePowerHp != null ? String(catalog.enginePowerHp) : "—" },
-          { label: "ცილინდრები", value: catalog.cylinderCount != null ? String(catalog.cylinderCount) : "—" },
-          { label: "გადაცემები", value: catalog.gearCount != null ? String(catalog.gearCount) : "—" },
-          { label: "საწვავის ტიპი", value: catalog.fuelType?.nameKa ?? "—" },
-          { label: "საწვავის ავზი (ლ)", value: catalog.fuelTankLiters != null ? String(catalog.fuelTankLiters) : "—" },
-          {
-            label: "ზეთის მოცულობა (ლ)",
-            value: catalog.oilCapacityLiters != null ? String(catalog.oilCapacityLiters) : "—",
-          },
-          { label: "გაშვების სისტემა", value: catalog.startType?.nameKa ?? "—" },
-        ]),
-    { label: "ადგილები", value: catalog.seatCount != null ? String(catalog.seatCount) : "—" },
-    { label: "წონა (კგ)", value: catalog.weightKg != null ? String(catalog.weightKg) : "—" },
-    { label: "სავარძლის სიმაღლე (მმ)", value: catalog.seatHeightMm != null ? String(catalog.seatHeightMm) : "—" },
-    { label: "მაქს. სიჩქარე (კმ/სთ)", value: catalog.topSpeedKmh != null ? String(catalog.topSpeedKmh) : "—" },
-    { label: "ABS", value: boolLabel(catalog.hasAbs) },
-    { label: "გადაცემათა კოლოფი", value: catalog.transmissionType?.nameKa ?? "—" },
-    { label: "გაგრილება", value: catalog.coolingType?.nameKa ?? "—" },
-    { label: "საბოლოო გადაცემა", value: catalog.finalDriveType?.nameKa ?? "—" },
-    { label: "წამყვანი თვლები", value: catalog.driveType?.nameKa ?? "—" },
-    { label: "დიფერენციალის ბლოკირება", value: boolLabel(catalog.hasLockingDifferential) },
-  ];
-
-  return <SpecsList rows={rows} showAllLabel="ყველას ნახვა" collapseLabel="აკეცვა" />;
+  return (
+    <SpecsList rows={vehicleCatalogSpecRows(listing.vehicleCatalog)} showAllLabel="ყველას ნახვა" collapseLabel="აკეცვა" />
+  );
 }
 
 function DescriptionTab({ listing }: { listing: VehicleListingDetailAdmin }) {

@@ -22,6 +22,7 @@ import type { LookupItem } from "@/lib/api/lookups";
 import { buildVehicleCatalogFilterFields } from "@/config/admin-filters/vehicle-catalog-filters";
 import { VehicleCatalogFormModal } from "./VehicleCatalogFormModal";
 import { VehicleCatalogBulkImportModal } from "./VehicleCatalogBulkImportModal";
+import { VehicleCatalogDetailModal } from "./VehicleCatalogDetailModal";
 import { revalidatePublicCache } from "@/lib/api/revalidate";
 
 const columns: DataTableColumn<VehicleCatalogEntry>[] = [
@@ -111,6 +112,7 @@ export function VehicleCatalogManager({
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<VehicleCatalogEntry | null>(null);
   const [deletingEntry, setDeletingEntry] = useState<VehicleCatalogEntry | null>(null);
+  const [viewingEntry, setViewingEntry] = useState<VehicleCatalogEntry | null>(null);
   const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
 
   const canCreate = categories.length > 0 && brands.length > 0 && models.length > 0;
@@ -205,6 +207,7 @@ export function VehicleCatalogManager({
           emptyMessage="ტექნიკა არ არსებობს"
           actions={(entry) => (
             <RowActions
+              onView={() => setViewingEntry(entry)}
               onEdit={() => openEditModal(entry)}
               onDelete={() => setDeletingEntry(entry)}
             />
@@ -230,6 +233,8 @@ export function VehicleCatalogManager({
         powertrainTypes={powertrainTypes}
         entry={editingEntry}
       />
+
+      {viewingEntry && <VehicleCatalogDetailModal entry={viewingEntry} onClose={() => setViewingEntry(null)} />}
 
       <VehicleCatalogBulkImportModal
         open={bulkImportOpen}
