@@ -13,6 +13,7 @@ type CategoryWriteData = {
   lowStockBadgeEnabled?: boolean;
   onlinePurchaseEnabled?: boolean;
   vehicleFitmentEnabled?: boolean;
+  inheritsAttributes?: boolean;
 };
 
 export const categoriesRepository = {

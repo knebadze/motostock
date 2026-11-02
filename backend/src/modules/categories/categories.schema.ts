@@ -33,6 +33,9 @@ export const createCategorySchema = registry.register(
     // vehicle-independent (e.g. helmets); applies to every subcategory too.
     // See Category.vehicleFitmentEnabled.
     vehicleFitmentEnabled: z.boolean().optional().openapi({ example: true }),
+    // Does this category inherit its parents' attributes? Off = only
+    // attributes defined on it or below apply. See Category.inheritsAttributes.
+    inheritsAttributes: z.boolean().optional().openapi({ example: true }),
   }),
 );
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
@@ -80,6 +83,7 @@ export const categoryResponseSchema = registry.register(
     lowStockBadgeEnabled: z.boolean().openapi({ example: true }),
     onlinePurchaseEnabled: z.boolean().openapi({ example: true }),
     vehicleFitmentEnabled: z.boolean().openapi({ example: true }),
+    inheritsAttributes: z.boolean().openapi({ example: true }),
     parentId: z.int().nullable(),
     parent: z
       .object({ id: z.int(), name: localizedStringSchema })

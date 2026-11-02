@@ -221,6 +221,9 @@ type CategorySeed = {
   // switches are admin-controlled (Categories page), like the image.
   onlinePurchaseEnabled?: false;
   vehicleFitmentEnabled?: false;
+  // Off = the category stops inheriting its ancestors' attributes (see
+  // Category.inheritsAttributes). Also create-only.
+  inheritsAttributes?: false;
   children?: CategorySeed[];
 };
 
@@ -248,6 +251,7 @@ const PRODUCT_CATEGORY_TREE: CategorySeed[] = [
         nameKa: "ჩაფხუტის აქსესუარები",
         nameEn: "Helmet Accessories",
         nameRu: "Аксессуары для шлемов",
+        inheritsAttributes: false,
         children: [
           { slug: "intercoms", nameKa: "ინტერკომი", nameEn: "Intercoms", nameRu: "Мотогарнитуры" },
           { slug: "helmet-visor", nameKa: "ვიზორი", nameEn: "Visors", nameRu: "Визоры" },
@@ -276,7 +280,7 @@ const PRODUCT_CATEGORY_TREE: CategorySeed[] = [
       { slug: "boots", nameKa: "მოტოჩექმები და ფეხსაცმელი", nameEn: "Boots & Shoes", nameRu: "Мотоботы и обувь" },
       { slug: "shoe-protectors", nameKa: "ფეხსაცმლის დამცავები", nameEn: "Shoe Protectors", nameRu: "Защита обуви" },
       { slug: "apparel", nameKa: "ტანსაცმელი", nameEn: "Apparel", nameRu: "Одежда" },
-      { slug: "luggage", nameKa: "ჩანთა და საბარგული", nameEn: "Bags & Luggage", nameRu: "Сумки и багаж" },
+      { slug: "luggage", nameKa: "ჩანთა და საბარგული", nameEn: "Bags & Luggage", nameRu: "Сумки и багаж", inheritsAttributes: false },
     ],
   },
   {
@@ -361,6 +365,7 @@ const PRODUCT_CATEGORY_TREE: CategorySeed[] = [
         nameKa: "ზეთები და მოვლის საშუალებები",
         nameEn: "Oils & Care Products",
         nameRu: "Масла и средства ухода",
+        inheritsAttributes: false,
         children: [
           { slug: "engine-oil", nameKa: "ძრავის ზეთი", nameEn: "Engine Oil", nameRu: "Моторное масло" },
           { slug: "fork-oil", nameKa: "ამორტიზატორის ზეთი", nameEn: "Fork & Shock Oil", nameRu: "Масло для амортизаторов" },
@@ -597,6 +602,7 @@ async function seedCategoryTree(
         ...structure,
         ...(node.onlinePurchaseEnabled === false ? { onlinePurchaseEnabled: false } : {}),
         ...(node.vehicleFitmentEnabled === false ? { vehicleFitmentEnabled: false } : {}),
+        ...(node.inheritsAttributes === false ? { inheritsAttributes: false } : {}),
         ...(imageUrl ? { imageUrl } : {}),
       },
     });
@@ -631,6 +637,12 @@ const UNIT_SEEDS: UnitSeed[] = [
   { nameKa: "ლიტრი", nameEn: "Liter", nameRu: "Литр", abbreviationKa: "ლ", abbreviationEn: "L", abbreviationRu: "л" },
   { nameKa: "ამპერ-საათი", nameEn: "Ampere-hour", nameRu: "Ампер-час", abbreviationKa: "Ah", abbreviationEn: "Ah", abbreviationRu: "Ач" },
   { nameKa: "პროცენტი", nameEn: "Percent", nameRu: "Процент", abbreviationKa: "%", abbreviationEn: "%", abbreviationRu: "%" },
+  { nameKa: "ვოლტი", nameEn: "Volt", nameRu: "Вольт", abbreviationKa: "V", abbreviationEn: "V", abbreviationRu: "В" },
+  { nameKa: "ვატი", nameEn: "Watt", nameRu: "Ватт", abbreviationKa: "W", abbreviationEn: "W", abbreviationRu: "Вт" },
+  { nameKa: "ამპერი", nameEn: "Ampere", nameRu: "Ампер", abbreviationKa: "A", abbreviationEn: "A", abbreviationRu: "А" },
+  { nameKa: "ბარი", nameEn: "Bar", nameRu: "Бар", abbreviationKa: "bar", abbreviationEn: "bar", abbreviationRu: "бар" },
+  { nameKa: "დიუმი", nameEn: "Inch", nameRu: "Дюйм", abbreviationKa: "″", abbreviationEn: "in", abbreviationRu: "″" },
+  { nameKa: "საათი", nameEn: "Hour", nameRu: "Час", abbreviationKa: "სთ", abbreviationEn: "h", abbreviationRu: "ч" },
 ];
 
 async function seedUnits(): Promise<Map<string, number>> {
@@ -666,6 +678,27 @@ type AttributeSeed = {
   unitNameKa?: string;
   options?: AttributeOptionSeed[];
 };
+
+const ARMOR_LEVEL_OPTIONS: AttributeOptionSeed[] = [
+  { key: "NONE", labelKa: "არცერთი", labelEn: "None", labelRu: "Нет" },
+  { key: "CE1", labelKa: "დონე 1", labelEn: "Level 1", labelRu: "Уровень 1" },
+  { key: "CE2", labelKa: "დონე 2", labelEn: "Level 2", labelRu: "Уровень 2" },
+];
+
+const BACK_PROTECTOR_OPTIONS: AttributeOptionSeed[] = [
+  { key: "NONE", labelKa: "არ აქვს", labelEn: "None", labelRu: "Нет" },
+  { key: "POCKET", labelKa: "ჯიბე (დამცავის გარეშე)", labelEn: "Pocket only", labelRu: "Только карман" },
+  { key: "LEVEL_1", labelKa: "დონე 1", labelEn: "Level 1", labelRu: "Уровень 1" },
+  { key: "LEVEL_2", labelKa: "დონე 2", labelEn: "Level 2", labelRu: "Уровень 2" },
+];
+
+const GARMENT_CLASS_OPTIONS: AttributeOptionSeed[] = [
+  { key: "AAA", labelKa: "AAA", labelEn: "AAA", labelRu: "AAA" },
+  { key: "AA", labelKa: "AA", labelEn: "AA", labelRu: "AA" },
+  { key: "A", labelKa: "A", labelEn: "A", labelRu: "A" },
+  { key: "B", labelKa: "B", labelEn: "B", labelRu: "B" },
+  { key: "C", labelKa: "C", labelEn: "C", labelRu: "C" },
+];
 
 // A practical starting set grounded in how RevZilla/Cycle Gear/MotoSport
 // structure these attributes — not exhaustive. More can be added later
@@ -725,7 +758,8 @@ const ATTRIBUTE_SEEDS: AttributeSeed[] = [
     required: true,
     options: [
       { key: "DOT", labelKa: "DOT", labelEn: "DOT", labelRu: "DOT" },
-      { key: "ECE", labelKa: "ECE 22.05/22.06", labelEn: "ECE 22.05/22.06", labelRu: "ECE 22.05/22.06" },
+      { key: "ECE", labelKa: "ECE 22.05", labelEn: "ECE 22.05", labelRu: "ECE 22.05" },
+      { key: "ECE_2206", labelKa: "ECE 22.06", labelEn: "ECE 22.06", labelRu: "ECE 22.06" },
       { key: "SNELL", labelKa: "SNELL", labelEn: "SNELL", labelRu: "SNELL" },
     ],
   },
@@ -737,17 +771,72 @@ const ATTRIBUTE_SEEDS: AttributeSeed[] = [
     valueType: "NUMBER",
     unitNameKa: "გრამი",
   },
+  // European protective-gear standards: EN 1621-1 limb armor, EN 1621-2
+  // back protector, EN 17092 whole-garment class (jackets/pants/suits),
+  // EN 13594 gloves, EN 13634 boots.
   {
     categorySlug: "jackets",
-    nameKa: "დამცავის CE დონე",
-    nameEn: "Armor CE Level",
-    nameRu: "Уровень защиты CE",
+    nameKa: "დამცავის დონე (EN 1621-1)",
+    nameEn: "Armor Level (EN 1621-1)",
+    nameRu: "Уровень защиты (EN 1621-1)",
     valueType: "SELECT",
-    options: [
-      { key: "NONE", labelKa: "არცერთი", labelEn: "None", labelRu: "Нет" },
-      { key: "CE1", labelKa: "CE Level 1", labelEn: "CE Level 1", labelRu: "CE Level 1" },
-      { key: "CE2", labelKa: "CE Level 2", labelEn: "CE Level 2", labelRu: "CE Level 2" },
-    ],
+    options: ARMOR_LEVEL_OPTIONS,
+  },
+  {
+    categorySlug: "jackets",
+    nameKa: "ზურგის დამცავი (EN 1621-2)",
+    nameEn: "Back Protector (EN 1621-2)",
+    nameRu: "Защита спины (EN 1621-2)",
+    valueType: "SELECT",
+    options: BACK_PROTECTOR_OPTIONS,
+  },
+  {
+    categorySlug: "jackets",
+    nameKa: "დაცვის კლასი (EN 17092)",
+    nameEn: "Protection Class (EN 17092)",
+    nameRu: "Класс защиты (EN 17092)",
+    valueType: "SELECT",
+    options: GARMENT_CLASS_OPTIONS,
+  },
+  {
+    categorySlug: "pants",
+    nameKa: "დამცავის დონე (EN 1621-1)",
+    nameEn: "Armor Level (EN 1621-1)",
+    nameRu: "Уровень защиты (EN 1621-1)",
+    valueType: "SELECT",
+    options: ARMOR_LEVEL_OPTIONS,
+  },
+  {
+    categorySlug: "pants",
+    nameKa: "დაცვის კლასი (EN 17092)",
+    nameEn: "Protection Class (EN 17092)",
+    nameRu: "Класс защиты (EN 17092)",
+    valueType: "SELECT",
+    options: GARMENT_CLASS_OPTIONS,
+  },
+  {
+    categorySlug: "riding-suits",
+    nameKa: "დამცავის დონე (EN 1621-1)",
+    nameEn: "Armor Level (EN 1621-1)",
+    nameRu: "Уровень защиты (EN 1621-1)",
+    valueType: "SELECT",
+    options: ARMOR_LEVEL_OPTIONS,
+  },
+  {
+    categorySlug: "riding-suits",
+    nameKa: "ზურგის დამცავი (EN 1621-2)",
+    nameEn: "Back Protector (EN 1621-2)",
+    nameRu: "Защита спины (EN 1621-2)",
+    valueType: "SELECT",
+    options: BACK_PROTECTOR_OPTIONS,
+  },
+  {
+    categorySlug: "riding-suits",
+    nameKa: "დაცვის კლასი (EN 17092)",
+    nameEn: "Protection Class (EN 17092)",
+    nameRu: "Класс защиты (EN 17092)",
+    valueType: "SELECT",
+    options: GARMENT_CLASS_OPTIONS,
   },
   {
     categorySlug: "gloves",
@@ -769,6 +858,32 @@ const ATTRIBUTE_SEEDS: AttributeSeed[] = [
     valueType: "BOOLEAN",
   },
   {
+    categorySlug: "gloves",
+    nameKa: "სერტიფიკატი (EN 13594)",
+    nameEn: "Certification (EN 13594)",
+    nameRu: "Сертификат (EN 13594)",
+    valueType: "SELECT",
+    options: [
+      { key: "NONE", labelKa: "არ აქვს", labelEn: "None", labelRu: "Нет" },
+      { key: "LEVEL_1", labelKa: "დონე 1", labelEn: "Level 1", labelRu: "Уровень 1" },
+      { key: "LEVEL_1KP", labelKa: "დონე 1 KP", labelEn: "Level 1 KP", labelRu: "Уровень 1 KP" },
+      { key: "LEVEL_2", labelKa: "დონე 2", labelEn: "Level 2", labelRu: "Уровень 2" },
+      { key: "LEVEL_2KP", labelKa: "დონე 2 KP", labelEn: "Level 2 KP", labelRu: "Уровень 2 KP" },
+    ],
+  },
+  {
+    categorySlug: "boots",
+    nameKa: "სერტიფიკატი (EN 13634)",
+    nameEn: "Certification (EN 13634)",
+    nameRu: "Сертификат (EN 13634)",
+    valueType: "SELECT",
+    options: [
+      { key: "NONE", labelKa: "არ აქვს", labelEn: "None", labelRu: "Нет" },
+      { key: "LEVEL_1", labelKa: "დონე 1", labelEn: "Level 1", labelRu: "Уровень 1" },
+      { key: "LEVEL_2", labelKa: "დონე 2", labelEn: "Level 2", labelRu: "Уровень 2" },
+    ],
+  },
+  {
     categorySlug: "boots",
     nameKa: "სიმაღლე",
     nameEn: "Height",
@@ -779,6 +894,28 @@ const ATTRIBUTE_SEEDS: AttributeSeed[] = [
       { key: "MEDIUM", labelKa: "საშუალო", labelEn: "Medium", labelRu: "Средний" },
       { key: "TALL", labelKa: "მაღალი", labelEn: "Tall", labelRu: "Высокий" },
     ],
+  },
+  // Luggage doesn't inherit riding-gear attributes (Category.inheritsAttributes
+  // off — "season" makes no sense for a bag), so it has its own.
+  {
+    categorySlug: "luggage",
+    nameKa: "მასალა",
+    nameEn: "Material",
+    nameRu: "Материал",
+    valueType: "SELECT",
+    options: [
+      { key: "TEXTILE", labelKa: "ტექსტილი", labelEn: "Textile", labelRu: "Текстиль" },
+      { key: "LEATHER", labelKa: "ტყავი", labelEn: "Leather", labelRu: "Кожа" },
+      { key: "PLASTIC", labelKa: "პლასტიკი", labelEn: "Plastic", labelRu: "Пластик" },
+      { key: "ALUMINUM", labelKa: "ალუმინი", labelEn: "Aluminum", labelRu: "Алюминий" },
+    ],
+  },
+  {
+    categorySlug: "luggage",
+    nameKa: "წყალგამძლეობა",
+    nameEn: "Waterproof",
+    nameRu: "Водонепроницаемость",
+    valueType: "BOOLEAN",
   },
   {
     categorySlug: "luggage",
@@ -798,18 +935,6 @@ const ATTRIBUTE_SEEDS: AttributeSeed[] = [
     options: [
       { key: "OEM", labelKa: "OEM", labelEn: "OEM", labelRu: "OEM" },
       { key: "AFTERMARKET", labelKa: "Aftermarket", labelEn: "Aftermarket", labelRu: "Неоригинал" },
-    ],
-  },
-  {
-    categorySlug: "brakes",
-    nameKa: "მასალა/კომპაუნდი",
-    nameEn: "Material/Compound",
-    nameRu: "Материал/Компаунд",
-    valueType: "SELECT",
-    options: [
-      { key: "SINTERED", labelKa: "სინტერული", labelEn: "Sintered", labelRu: "Спечённый" },
-      { key: "ORGANIC", labelKa: "ორგანული", labelEn: "Organic", labelRu: "Органический" },
-      { key: "CERAMIC", labelKa: "კერამიკული", labelEn: "Ceramic", labelRu: "Керамический" },
     ],
   },
   {
@@ -865,18 +990,6 @@ const ATTRIBUTE_SEEDS: AttributeSeed[] = [
   },
   {
     categorySlug: "exhaust",
-    nameKa: "ტიპი",
-    nameEn: "Type",
-    nameRu: "Тип",
-    valueType: "SELECT",
-    options: [
-      { key: "SLIP_ON", labelKa: "Slip-on", labelEn: "Slip-on", labelRu: "Слип-он" },
-      { key: "FULL_SYSTEM", labelKa: "Full System", labelEn: "Full System", labelRu: "Полная система" },
-      { key: "HEADER", labelKa: "Header", labelEn: "Header", labelRu: "Header" },
-    ],
-  },
-  {
-    categorySlug: "exhaust",
     nameKa: "მასალა",
     nameEn: "Material",
     nameRu: "Материал",
@@ -890,8 +1003,455 @@ const ATTRIBUTE_SEEDS: AttributeSeed[] = [
   },
 ];
 
+// Attributes for the categories that had none of their own (2026-11 catalog
+// review) — the specs shoppers actually filter/compare by in each one.
+// Compact tuple helpers instead of the long-hand objects above, since there
+// are ~90 of them. Vehicle compatibility is NOT here: that's fitment.
+type Label = [ka: string, en: string, ru: string];
+
+function option(key: string, ka: string, en: string, ru: string): AttributeOptionSeed {
+  return { key, labelKa: ka, labelEn: en, labelRu: ru };
+}
+
+// Options whose label is the same in every language (sizes, codes, grades).
+function codeOptions(...codes: string[]): AttributeOptionSeed[] {
+  return codes.map((code) => option(code.replace(/[^A-Za-z0-9]+/g, "_").toUpperCase(), code, code, code));
+}
+
+function selectAttr(categorySlug: string, [ka, en, ru]: Label, options: AttributeOptionSeed[]): AttributeSeed {
+  return { categorySlug, nameKa: ka, nameEn: en, nameRu: ru, valueType: "SELECT", options };
+}
+
+function numberAttr(categorySlug: string, [ka, en, ru]: Label, unitNameKa?: string): AttributeSeed {
+  return { categorySlug, nameKa: ka, nameEn: en, nameRu: ru, valueType: "NUMBER", unitNameKa };
+}
+
+function booleanAttr(categorySlug: string, [ka, en, ru]: Label): AttributeSeed {
+  return { categorySlug, nameKa: ka, nameEn: en, nameRu: ru, valueType: "BOOLEAN" };
+}
+
+function textAttr(categorySlug: string, [ka, en, ru]: Label): AttributeSeed {
+  return { categorySlug, nameKa: ka, nameEn: en, nameRu: ru, valueType: "TEXT" };
+}
+
+const POSITION: Label = ["პოზიცია", "Position", "Позиция"];
+const POSITION_OPTIONS = [
+  option("FRONT", "წინა", "Front", "Передний"),
+  option("REAR", "უკანა", "Rear", "Задний"),
+  option("FRONT_REAR", "წინა და უკანა", "Front & Rear", "Передний и задний"),
+];
+
+const SIDE: Label = ["მხარე", "Side", "Сторона"];
+const SIDE_OPTIONS = [
+  option("LEFT", "მარცხენა", "Left", "Левый"),
+  option("RIGHT", "მარჯვენა", "Right", "Правый"),
+  option("PAIR", "წყვილი", "Pair", "Пара"),
+];
+
+const HANDLEBAR_DIAMETER: Label = ["საჭის დიამეტრი", "Handlebar Diameter", "Диаметр руля"];
+const HANDLEBAR_DIAMETER_OPTIONS = [
+  option("D22", '22 მმ (7/8")', '22 mm (7/8")', '22 мм (7/8")'),
+  option("D25", '25.4 მმ (1")', '25.4 mm (1")', '25.4 мм (1")'),
+  option("D28", '28.6 მმ (1 1/8")', '28.6 mm (1 1/8")', '28.6 мм (1 1/8")'),
+];
+
+const TINT: Label = ["ტონირება", "Tint", "Тонировка"];
+const TINT_OPTIONS = [
+  option("CLEAR", "გამჭვირვალე", "Clear", "Прозрачный"),
+  option("LIGHT_SMOKE", "ღია მუქი", "Light Smoke", "Светло-тонированный"),
+  option("DARK_SMOKE", "მუქი", "Dark Smoke", "Тёмный"),
+  option("IRIDIUM", "ირიდიუმი (სარკისებრი)", "Iridium (Mirrored)", "Иридиум (зеркальный)"),
+  option("YELLOW", "ყვითელი", "Yellow", "Жёлтый"),
+  option("PHOTOCHROMIC", "ფოტოქრომული", "Photochromic", "Фотохромный"),
+];
+
+const INNER_DIAMETER: Label = ["შიგა დიამეტრი", "Inner Diameter", "Внутренний диаметр"];
+const OUTER_DIAMETER: Label = ["გარე დიამეტრი", "Outer Diameter", "Внешний диаметр"];
+const WIDTH: Label = ["სიგანე/სისქე", "Width/Thickness", "Ширина/толщина"];
+// Bearings, seals, bushings — identified by their three dimensions.
+function dimensionAttrs(categorySlug: string): AttributeSeed[] {
+  return [
+    numberAttr(categorySlug, INNER_DIAMETER, "მილიმეტრი"),
+    numberAttr(categorySlug, OUTER_DIAMETER, "მილიმეტრი"),
+    numberAttr(categorySlug, WIDTH, "მილიმეტრი"),
+  ];
+}
+
+const VOLTAGE: Label = ["ძაბვა", "Voltage", "Напряжение"];
+const LENGTH_MM: Label = ["სიგრძე", "Length", "Длина"];
+const DIAMETER_MM: Label = ["დიამეტრი", "Diameter", "Диаметр"];
+const ADJUSTABLE: Label = ["რეგულირებადი", "Adjustable", "Регулируемый"];
+const HEATED: Label = ["გათბობით", "Heated", "С подогревом"];
+const WATERPROOF: Label = ["წყალგამძლეობა", "Waterproof", "Водонепроницаемость"];
+const VENTILATION: Label = ["ვენტილაცია", "Ventilation", "Вентиляция"];
+const THERMAL_LINER: Label = ["მოსახსნელი თბილი სარჩული", "Removable Thermal Liner", "Съёмная утепляющая подкладка"];
+const REFLECTIVE: Label = ["არეკვლადი ელემენტები", "Reflective Elements", "Светоотражающие элементы"];
+
+const CATALOG_ATTRIBUTE_SEEDS: AttributeSeed[] = [
+  // ── Helmets & helmet accessories ──
+  booleanAttr("helmets", ["შიდა მზის ვიზორი", "Internal Sun Visor", "Внутренний солнцезащитный визор"]),
+  booleanAttr("helmets", ["Pinlock-ის მზადყოფნა", "Pinlock Ready", "Подготовка под Pinlock"]),
+  booleanAttr("helmets", ["ინტერკომის მზადყოფნა", "Intercom Ready", "Подготовка под гарнитуру"]),
+  numberAttr("intercoms", ["მოქმედების რადიუსი", "Range", "Дальность"], "მეტრი"),
+  numberAttr("intercoms", ["მონაწილეების მაქს. რაოდენობა", "Max. Riders", "Макс. участников"]),
+  numberAttr("intercoms", ["საუბრის დრო", "Talk Time", "Время разговора"], "საათი"),
+  booleanAttr("intercoms", ["Mesh კავშირი", "Mesh Intercom", "Mesh-связь"]),
+  selectAttr("helmet-visor", TINT, TINT_OPTIONS),
+  booleanAttr("helmet-visor", ["Pinlock-თან თავსებადი", "Pinlock Compatible", "Совместим с Pinlock"]),
+  selectAttr("pinlock", TINT, TINT_OPTIONS),
+  selectAttr("pinlock", ["Pinlock-ის ტიპი", "Pinlock Type", "Тип Pinlock"], codeOptions("Pinlock 30", "Pinlock 70", "Pinlock 120")),
+  selectAttr("balaclavas", ["მასალა", "Material", "Материал"], [
+    option("COTTON", "ბამბა", "Cotton", "Хлопок"),
+    option("SILK", "აბრეშუმი", "Silk", "Шёлк"),
+    option("MERINO", "მერინოს მატყლი", "Merino Wool", "Шерсть мериноса"),
+    option("SYNTHETIC", "სინთეტიკა", "Synthetic", "Синтетика"),
+    option("FLEECE", "ფლისი", "Fleece", "Флис"),
+  ]),
+  selectAttr("goggles", TINT, TINT_OPTIONS),
+  booleanAttr("goggles", ["Tear-off-ის მზადყოფნა", "Tear-off Ready", "Подготовка под срывки"]),
+  numberAttr("helmet-care", ["მოცულობა", "Volume", "Объём"], "მილილიტრი"),
+
+  // ── Riding gear ──
+  selectAttr("gear", ["სქესი", "Gender", "Пол"], [
+    option("MEN", "კაცის", "Men's", "Мужской"),
+    option("WOMEN", "ქალის", "Women's", "Женский"),
+    option("UNISEX", "უნისექსი", "Unisex", "Унисекс"),
+    option("KIDS", "ბავშვის", "Kids'", "Детский"),
+  ]),
+  selectAttr("gear", ["სტილი", "Style", "Стиль"], [
+    option("SPORT", "სპორტი", "Sport", "Спорт"),
+    option("TOURING", "ტური", "Touring", "Туризм"),
+    option("URBAN", "ქალაქი", "Urban", "Город"),
+    option("ADVENTURE", "ადვენჩერი", "Adventure", "Эндуро-туризм"),
+    option("OFFROAD", "ოფროუდი / კროსი", "Off-road / MX", "Off-road / Кросс"),
+    option("CRUISER", "კრუიზერი", "Cruiser", "Круизер"),
+  ]),
+  ...["jackets", "pants", "riding-suits"].flatMap((slug) => [
+    booleanAttr(slug, VENTILATION),
+    booleanAttr(slug, THERMAL_LINER),
+    booleanAttr(slug, REFLECTIVE),
+  ]),
+  booleanAttr("gloves", ["სენსორული ეკრანის თითი", "Touchscreen Fingertip", "Сенсорный палец"]),
+  booleanAttr("gloves", HEATED),
+  selectAttr("protection", ["ტიპი", "Type", "Тип"], [
+    option("BACK", "ზურგის", "Back", "Спина"),
+    option("CHEST", "მკერდის", "Chest", "Грудь"),
+    option("SHOULDER", "მხრის", "Shoulder", "Плечи"),
+    option("ELBOW", "იდაყვის", "Elbow", "Локти"),
+    option("KNEE", "მუხლის", "Knee", "Колени"),
+    option("HIP", "თეძოს", "Hip", "Бёдра"),
+    option("NECK_BRACE", "კისრის", "Neck Brace", "Шея"),
+    option("BODY_ARMOR", "სრული (ჯავშან-ჟილეტი)", "Body Armor", "Моточерепаха"),
+  ]),
+  selectAttr("protection", ["სერტიფიკატი (EN 1621)", "Certification (EN 1621)", "Сертификат (EN 1621)"], [
+    option("NONE", "არ აქვს", "None", "Нет"),
+    option("LEVEL_1", "დონე 1", "Level 1", "Уровень 1"),
+    option("LEVEL_2", "დონე 2", "Level 2", "Уровень 2"),
+  ]),
+  selectAttr("rain-gear", ["ტიპი", "Type", "Тип"], [
+    option("JACKET", "ქურთუკი", "Jacket", "Куртка"),
+    option("PANTS", "შარვალი", "Pants", "Брюки"),
+    option("SUIT", "კომბინიზონი", "One-piece Suit", "Комбинезон"),
+    option("OVERBOOTS", "ფეხსაცმლის ჩასაცმელი", "Overboots", "Бахилы"),
+    option("OVERGLOVES", "ხელთათმანის ჩასაცმელი", "Overgloves", "Дождевые перчатки"),
+  ]),
+  selectAttr("boots", ["ტიპი", "Type", "Тип"], [
+    option("SPORT", "სპორტული", "Sport", "Спортивные"),
+    option("TOURING", "ტურისტული", "Touring", "Туристические"),
+    option("ADVENTURE", "ადვენჩერი", "Adventure", "Эндуро-туризм"),
+    option("MX", "კროსის", "MX / Off-road", "Кроссовые"),
+    option("URBAN", "საქალაქო", "Urban", "Городские"),
+  ]),
+  selectAttr("apparel", ["ტიპი", "Type", "Тип"], [
+    option("TSHIRT", "მაისური", "T-shirt", "Футболка"),
+    option("HOODIE", "ჰუდი / სვიტერი", "Hoodie / Sweatshirt", "Худи / свитшот"),
+    option("CASUAL_JACKET", "ქურთუკი (ყოველდღიური)", "Casual Jacket", "Куртка (повседневная)"),
+    option("CAP", "ქუდი / კეპი", "Cap / Beanie", "Кепка / шапка"),
+    option("OTHER", "სხვა", "Other", "Другое"),
+  ]),
+  selectAttr("luggage", ["ტიპი", "Type", "Тип"], [
+    option("TOP_CASE", "კოფრი (უკანა)", "Top Case", "Кофр центральный"),
+    option("SIDE_CASES", "გვერდითი კოფრები", "Side Cases", "Боковые кофры"),
+    option("SADDLEBAGS", "გვერდითი ჩანთები", "Saddlebags", "Боковые сумки"),
+    option("TANK_BAG", "ავზის ჩანთა", "Tank Bag", "Сумка на бак"),
+    option("TAIL_BAG", "უკანა ჩანთა", "Tail Bag", "Сумка на хвост"),
+    option("BACKPACK", "ზურგჩანთა", "Backpack", "Рюкзак"),
+    option("MOUNTING", "სამონტაჟო ჩარჩო / ფირფიტა", "Mounting Rack / Plate", "Крепёжная рама / площадка"),
+  ]),
+  booleanAttr("luggage", ["საკეტით", "Lockable", "С замком"]),
+
+  // ── Accessories ──
+  selectAttr("phone-mounts", ["დამაგრების ადგილი", "Mounting Point", "Место крепления"], [
+    option("HANDLEBAR", "საჭე", "Handlebar", "Руль"),
+    option("MIRROR", "სარკის ღერო", "Mirror Stem", "Крепление зеркала"),
+    option("STEM", "საჭის ცენტრი (ტრავერსი)", "Fork Stem", "Траверса"),
+    option("TANK", "ავზი", "Tank", "Бак"),
+  ]),
+  booleanAttr("phone-mounts", ["უსადენო დამუხტვა", "Wireless Charging", "Беспроводная зарядка"]),
+  booleanAttr("phone-mounts", ["ვიბრაციის დემპფერი", "Vibration Dampener", "Демпфер вибраций"]),
+  selectAttr("phone-chargers", ["კონექტორი", "Connector", "Разъём"], codeOptions("USB-A", "USB-C", "USB-A + USB-C", "SAE")),
+  numberAttr("phone-chargers", ["სიმძლავრე", "Power", "Мощность"], "ვატი"),
+  booleanAttr("phone-chargers", WATERPROOF),
+  numberAttr("gps-navigators", ["ეკრანის ზომა", "Screen Size", "Размер экрана"], "დიუმი"),
+  booleanAttr("gps-navigators", WATERPROOF),
+  selectAttr("security", ["უსაფრთხოების სერტიფიკატი", "Security Rating", "Сертификат безопасности"], [
+    option("NONE", "არ აქვს", "None", "Нет"),
+    ...codeOptions("Sold Secure Bronze", "Sold Secure Silver", "Sold Secure Gold", "Sold Secure Diamond", "SRA", "Thatcham"),
+  ]),
+  selectAttr("locks", ["ტიპი", "Type", "Тип"], [
+    option("CHAIN", "ჯაჭვი", "Chain", "Цепь"),
+    option("U_LOCK", "U-საკეტი", "U-Lock", "U-образный"),
+    option("CABLE", "ტროსი", "Cable", "Трос"),
+    option("PADLOCK", "ბოქლომი", "Padlock", "Навесной замок"),
+  ]),
+  numberAttr("locks", LENGTH_MM, "სანტიმეტრი"),
+  numberAttr("locks", ["რგოლის/ღეროს სისქე", "Link/Shackle Thickness", "Толщина звена/дужки"], "მილიმეტრი"),
+  numberAttr("disc-locks", ["ღეროს დიამეტრი", "Pin Diameter", "Диаметр штифта"], "მილიმეტრი"),
+  booleanAttr("disc-locks", ["სიგნალიზაციით", "With Alarm", "С сигнализацией"]),
+  booleanAttr("alarms", ["GPS ტრეკერი", "GPS Tracker", "GPS-трекер"]),
+  booleanAttr("alarms", ["მობილური აპლიკაცია", "Mobile App", "Мобильное приложение"]),
+  booleanAttr("alarms", ["დისტანციური პულტი", "Remote Control", "Брелок управления"]),
+  selectAttr("bike-covers", ["გამოყენება", "Use", "Использование"], [
+    option("INDOOR", "შიდა", "Indoor", "Для помещения"),
+    option("OUTDOOR", "გარე", "Outdoor", "Уличный"),
+  ]),
+  booleanAttr("bike-covers", WATERPROOF),
+  numberAttr("wrenches", ["ზომა", "Size", "Размер"], "მილიმეტრი"),
+  numberAttr("tools", ["ნაწილების რაოდენობა კომპლექტში", "Pieces in Set", "Предметов в наборе"]),
+  numberAttr("puzzles", ["ნაწილების რაოდენობა", "Pieces", "Количество элементов"]),
+  selectAttr("scale-models", ["მასშტაბი", "Scale", "Масштаб"], codeOptions("1:6", "1:12", "1:18", "1:24", "1:32")),
+
+  // ── Oils & care products ──
+  numberAttr("fluids", ["მოცულობა", "Volume", "Объём"], "ლიტრი"),
+  selectAttr("engine-oil", ["სიბლანტე", "Viscosity", "Вязкость"],
+    codeOptions("5W-30", "5W-40", "10W-30", "10W-40", "10W-50", "10W-60", "15W-50", "20W-50")),
+  selectAttr("engine-oil", ["ბაზა", "Base", "Основа"], [
+    option("SYNTHETIC", "სინთეტიკური", "Synthetic", "Синтетическое"),
+    option("SEMI_SYNTHETIC", "ნახევრად სინთეტიკური", "Semi-synthetic", "Полусинтетическое"),
+    option("MINERAL", "მინერალური", "Mineral", "Минеральное"),
+  ]),
+  selectAttr("engine-oil", ["ძრავის ტიპი", "Engine Type", "Тип двигателя"], [
+    option("FOUR_STROKE", "4-ტაქტიანი", "4-stroke", "4-тактный"),
+    option("TWO_STROKE", "2-ტაქტიანი", "2-stroke", "2-тактный"),
+  ]),
+  selectAttr("engine-oil", ["სტანდარტი (JASO)", "Standard (JASO)", "Стандарт (JASO)"],
+    codeOptions("JASO MA", "JASO MA2", "JASO MB", "JASO FC", "JASO FD")),
+  selectAttr("fork-oil", ["სიბლანტე", "Viscosity", "Вязкость"], codeOptions("2.5W", "5W", "7.5W", "10W", "15W", "20W")),
+  ...["chain-cleaners", "chain-lubes"].map((slug) =>
+    selectAttr(slug, ["ფორმა", "Form", "Форма"], [
+      option("SPRAY", "სპრეი", "Spray", "Спрей"),
+      option("LIQUID", "სითხე", "Liquid", "Жидкость"),
+      option("PASTE", "პასტა / გელი", "Paste / Gel", "Паста / гель"),
+    ]),
+  ),
+  selectAttr("chain-lubes", ["დანიშნულება", "Use", "Назначение"], [
+    option("ROAD", "გზა", "Road", "Дорога"),
+    option("OFFROAD", "ოფროუდი", "Off-road", "Бездорожье"),
+    option("RACING", "რბოლა", "Racing", "Гонки"),
+  ]),
+  selectAttr("antifreeze", ["ტიპი", "Type", "Тип"], [
+    option("READY", "მზა", "Ready-to-use", "Готовый"),
+    option("CONCENTRATE", "კონცენტრატი", "Concentrate", "Концентрат"),
+  ]),
+
+  // ── Spare parts (whole branch) ──
+  textAttr("parts", ["ნაწილის კოდი (Part number)", "Part Number", "Артикул (Part number)"]),
+  selectAttr("air-filters", ["ფილტრის მასალა", "Filter Media", "Материал фильтра"], [
+    option("PAPER", "ქაღალდი", "Paper", "Бумага"),
+    option("COTTON_GAUZE", "ბამბის ქსოვილი", "Cotton Gauze", "Хлопковая марля"),
+    option("FOAM", "ღრუბელი", "Foam", "Поролон"),
+  ]),
+  booleanAttr("air-filters", ["რეცხვადი (მრავალჯერადი)", "Washable (Reusable)", "Моющийся (многоразовый)"]),
+  selectAttr("brake-pads", POSITION, POSITION_OPTIONS),
+  selectAttr("spark-plugs", ["ელექტროდი", "Electrode", "Электрод"], [
+    option("STANDARD", "სტანდარტული (ნიკელი)", "Standard (Nickel)", "Стандартный (никель)"),
+    option("IRIDIUM", "ირიდიუმი", "Iridium", "Иридий"),
+    option("PLATINUM", "პლატინა", "Platinum", "Платина"),
+  ]),
+  numberAttr("spark-plugs", ["სითბური რიცხვი", "Heat Range", "Калильное число"]),
+  selectAttr("spark-plugs", ["ხრახნის ზომა", "Thread Size", "Размер резьбы"], codeOptions("M10", "M12", "M14")),
+  numberAttr("batteries", VOLTAGE, "ვოლტი"),
+  numberAttr("batteries", ["გაშვების დენი (CCA)", "Cold Cranking Amps (CCA)", "Пусковой ток (CCA)"], "ამპერი"),
+  selectAttr("batteries", ["პოლარობა", "Polarity", "Полярность"], [
+    option("LEFT_PLUS", "+ მარცხნივ", "+ Left", "+ слева"),
+    option("RIGHT_PLUS", "+ მარჯვნივ", "+ Right", "+ справа"),
+  ]),
+  textAttr("batteries", ["ზომები (ს×ს×ს მმ)", "Dimensions (L×W×H mm)", "Размеры (Д×Ш×В мм)"]),
+  booleanAttr("batteries", ["მოვლას არ საჭიროებს", "Maintenance-free", "Необслуживаемый"]),
+  numberAttr("battery-chargers", ["გამომავალი დენი", "Output Current", "Выходной ток"], "ამპერი"),
+  selectAttr("battery-chargers", VOLTAGE, codeOptions("6V", "12V", "6V / 12V")),
+  booleanAttr("battery-chargers", ["ლითიუმის აკუმულატორის რეჟიმი", "Lithium Battery Mode", "Режим для литиевых АКБ"]),
+  selectAttr("chains-sprockets", ["ტიპი", "Type", "Тип"], [
+    option("CHAIN", "ჯაჭვი", "Chain", "Цепь"),
+    option("FRONT_SPROCKET", "წინა კბილანა", "Front Sprocket", "Ведущая звезда"),
+    option("REAR_SPROCKET", "უკანა კბილანა", "Rear Sprocket", "Ведомая звезда"),
+    option("KIT", "კომპლექტი (ჯაჭვი + კბილანები)", "Kit (Chain + Sprockets)", "Комплект (цепь + звёзды)"),
+  ]),
+  selectAttr("chains-sprockets", ["ბიჯი", "Pitch", "Шаг"], codeOptions("415", "420", "428", "520", "525", "530", "532")),
+  numberAttr("chains-sprockets", ["რგოლების რაოდენობა", "Links", "Количество звеньев"]),
+  numberAttr("chains-sprockets", ["კბილების რაოდენობა", "Teeth", "Количество зубьев"]),
+  selectAttr("chains-sprockets", ["ჯაჭვის დალუქვა", "Chain Seal", "Уплотнение цепи"], [
+    option("STANDARD", "სტანდარტული (დალუქვის გარეშე)", "Standard (Non-sealed)", "Стандартная (без сальников)"),
+    ...codeOptions("O-ring", "X-ring", "Z-ring"),
+  ]),
+  selectAttr("chains-sprockets", ["კბილანის მასალა", "Sprocket Material", "Материал звезды"], [
+    option("STEEL", "ფოლადი", "Steel", "Сталь"),
+    option("ALUMINUM", "ალუმინი", "Aluminum", "Алюминий"),
+  ]),
+  ...dimensionAttrs("fork-seals"),
+  selectAttr("clutch-plates", ["ტიპი", "Type", "Тип"], [
+    option("FRICTION", "ფრიქციული", "Friction", "Фрикционные"),
+    option("STEEL", "ფოლადის", "Steel", "Стальные"),
+    option("KIT", "კომპლექტი", "Kit", "Комплект"),
+  ]),
+  numberAttr("clutch-plates", ["ფირფიტების რაოდენობა", "Number of Plates", "Количество дисков"]),
+  numberAttr("electrical", VOLTAGE, "ვოლტი"),
+  numberAttr("relays", ["კონტაქტების რაოდენობა", "Number of Pins", "Количество контактов"]),
+  selectAttr("radiators", ["მასალა", "Material", "Материал"], [
+    option("ALUMINUM", "ალუმინი", "Aluminum", "Алюминий"),
+    option("COPPER", "სპილენძი", "Copper", "Медь"),
+  ]),
+  numberAttr("radiator-caps", ["გახსნის წნევა", "Opening Pressure", "Давление открытия"], "ბარი"),
+  selectAttr("coolant-hoses", ["მასალა", "Material", "Материал"], [
+    option("SILICONE", "სილიკონი", "Silicone", "Силикон"),
+    option("RUBBER", "რეზინი", "Rubber", "Резина"),
+  ]),
+  numberAttr("coolant-hoses", INNER_DIAMETER, "მილიმეტრი"),
+  numberAttr("cooling-fans", VOLTAGE, "ვოლტი"),
+  numberAttr("cooling-fans", DIAMETER_MM, "მილიმეტრი"),
+  selectAttr("exhaust", ["ჰომოლოგაცია", "Homologation", "Омологация"], [
+    option("E_MARK", "E-ნიშანი (ქუჩისთვის)", "E-marked (Road Legal)", "E-маркировка (для дорог)"),
+    option("RACE", "მხოლოდ ტრეკისთვის", "Race Only", "Только для трека"),
+  ]),
+  numberAttr("exhaust", ["მილის დიამეტრი", "Pipe Diameter", "Диаметр трубы"], "მილიმეტრი"),
+  numberAttr("exhaust-wrap", ["რულონის სიგრძე", "Roll Length", "Длина рулона"], "მეტრი"),
+  numberAttr("exhaust-wrap", ["ლენტის სიგანე", "Tape Width", "Ширина ленты"], "მილიმეტრი"),
+  ...["front-forks", "rear-shocks"].flatMap((slug) => [
+    numberAttr(slug, LENGTH_MM, "მილიმეტრი"),
+    selectAttr(slug, ["რეგულირება", "Adjustment", "Регулировка"], [
+      option("NONE", "არარეგულირებადი", "Non-adjustable", "Нерегулируемый"),
+      option("PRELOAD", "წინასწარი დაჭიმულობა", "Preload", "Преднатяг"),
+      option("PRELOAD_REBOUND", "დაჭიმულობა + უკუსვლა", "Preload + Rebound", "Преднатяг + отбой"),
+      option("FULL", "სრული", "Fully Adjustable", "Полная"),
+    ]),
+  ]),
+  selectAttr("rear-shocks", ["ტიპი", "Type", "Тип"], [
+    option("MONO", "მონოამორტიზატორი", "Monoshock", "Моноамортизатор"),
+    option("TWIN", "წყვილი", "Twin Shocks", "Парные"),
+  ]),
+  ...dimensionAttrs("bearings"),
+  ...dimensionAttrs("bushings"),
+  ...dimensionAttrs("seals"),
+  selectAttr("triple-clamps", ["მასალა", "Material", "Материал"], [
+    option("ALUMINUM", "ალუმინი", "Aluminum", "Алюминий"),
+    option("STEEL", "ფოლადი", "Steel", "Сталь"),
+  ]),
+  selectAttr("handlebars", HANDLEBAR_DIAMETER, HANDLEBAR_DIAMETER_OPTIONS),
+  selectAttr("handlebars", ["ტიპი", "Type", "Тип"], [
+    option("HANDLEBAR", "საჭე", "Handlebar", "Руль"),
+    option("CLIP_ON", "კლიპონი", "Clip-on", "Клипон"),
+  ]),
+  selectAttr("handlebars", ["მასალა", "Material", "Материал"], [
+    option("STEEL", "ფოლადი", "Steel", "Сталь"),
+    option("ALUMINUM", "ალუმინი", "Aluminum", "Алюминий"),
+  ]),
+  selectAttr("grips", HANDLEBAR_DIAMETER, HANDLEBAR_DIAMETER_OPTIONS),
+  booleanAttr("grips", HEATED),
+  selectAttr("levers", ["ბერკეტი", "Lever", "Рычаг"], [
+    option("CLUTCH", "გადაბმულობის (მარცხენა)", "Clutch (Left)", "Сцепления (левый)"),
+    option("BRAKE", "მუხრუჭის (მარჯვენა)", "Brake (Right)", "Тормоза (правый)"),
+    option("PAIR", "წყვილი", "Pair", "Пара"),
+  ]),
+  booleanAttr("levers", ADJUSTABLE),
+  booleanAttr("levers", ["დასაკეცი", "Folding", "Складной"]),
+  selectAttr("mirrors", SIDE, SIDE_OPTIONS),
+  selectAttr("mirrors", ["ხრახნის ზომა", "Thread Size", "Размер резьбы"], [...codeOptions("M8", "M10"), option("M10_LEFT", "M10 (უკუხრახნი)", "M10 (Left-hand Thread)", "M10 (левая резьба)")]),
+  booleanAttr("mirrors", ["საჭის ბოლოზე (bar-end)", "Bar-end", "Торцевое (bar-end)"]),
+  selectAttr("hand-guards", ["ტიპი", "Type", "Тип"], [
+    option("OPEN", "ღია (ქარისგან)", "Open (Wind Deflector)", "Открытые (от ветра)"),
+    option("WRAP_AROUND", "დახურული (ალუმინის ჩარჩოთი)", "Wrap-around (Aluminum Backbone)", "Закрытые (с алюминиевой основой)"),
+  ]),
+  booleanAttr("steering-dampers", ADJUSTABLE),
+  selectAttr("brakes", POSITION, POSITION_OPTIONS),
+  numberAttr("brake-discs", DIAMETER_MM, "მილიმეტრი"),
+  selectAttr("brake-discs", ["ტიპი", "Type", "Тип"], [
+    option("FIXED", "ფიქსირებული", "Fixed", "Неплавающий"),
+    option("FLOATING", "მცურავი", "Floating", "Плавающий"),
+  ]),
+  booleanAttr("brake-discs", ["ტალღოვანი (Wave)", "Wave", "Волновой (Wave)"]),
+  selectAttr("brake-lines", ["ტიპი", "Type", "Тип"], [
+    option("BRAIDED", "არმირებული (ფოლადის წნული)", "Braided Steel", "Армированный (стальная оплётка)"),
+    option("RUBBER", "რეზინის", "Rubber", "Резиновый"),
+    option("CABLE", "ტროსი", "Cable", "Трос"),
+  ]),
+  numberAttr("brake-calipers", ["დგუშების რაოდენობა", "Number of Pistons", "Количество поршней"]),
+  selectAttr("brake-calipers", ["მონტაჟი", "Mounting", "Крепление"], [
+    option("AXIAL", "აქსიალური", "Axial", "Аксиальное"),
+    option("RADIAL", "რადიალური", "Radial", "Радиальное"),
+  ]),
+  selectAttr("master-cylinders", ["ტიპი", "Type", "Тип"], [
+    option("AXIAL", "აქსიალური", "Axial", "Аксиальный"),
+    option("RADIAL", "რადიალური", "Radial", "Радиальный"),
+  ]),
+  numberAttr("master-cylinders", ["დგუშის დიამეტრი", "Piston Diameter", "Диаметр поршня"], "მილიმეტრი"),
+  textAttr("bolts", ["ხრახნი", "Thread", "Резьба"]),
+  numberAttr("bolts", LENGTH_MM, "მილიმეტრი"),
+  selectAttr("bolts", ["მასალა", "Material", "Материал"], [
+    option("STEEL", "ფოლადი", "Steel", "Сталь"),
+    option("STAINLESS", "უჟანგავი ფოლადი", "Stainless Steel", "Нержавеющая сталь"),
+    option("TITANIUM", "ტიტანი", "Titanium", "Титан"),
+    option("ALUMINUM", "ალუმინი", "Aluminum", "Алюминий"),
+  ]),
+  selectAttr("body-parts", ["მასალა", "Material", "Материал"], [
+    option("ABS", "ABS პლასტიკი", "ABS Plastic", "ABS-пластик"),
+    option("POLYCARBONATE", "პოლიკარბონატი", "Polycarbonate", "Поликарбонат"),
+    option("ACRYLIC", "აკრილი", "Acrylic", "Акрил"),
+    option("CARBON", "კარბონი", "Carbon", "Карбон"),
+    option("ALUMINUM", "ალუმინი", "Aluminum", "Алюминий"),
+    option("STEEL", "ფოლადი", "Steel", "Сталь"),
+  ]),
+  numberAttr("windscreens", ["სიმაღლე", "Height", "Высота"], "მილიმეტრი"),
+  selectAttr("windscreens", TINT, TINT_OPTIONS.filter((tint) => ["CLEAR", "LIGHT_SMOKE", "DARK_SMOKE"].includes(tint.key))),
+  booleanAttr("body-kits", ["შეღებილი", "Painted", "Окрашенный"]),
+  selectAttr("motorcycle-seats", ["ტიპი", "Type", "Тип"], [
+    option("COMFORT", "კომფორტული", "Comfort", "Комфортное"),
+    option("LOW", "დაბალი", "Low", "Заниженное"),
+    option("SPORT", "სპორტული", "Sport", "Спортивное"),
+    option("SOLO", "ერთადგილიანი", "Solo", "Одноместное"),
+  ]),
+  booleanAttr("motorcycle-seats", HEATED),
+  selectAttr("seat-covers", ["მასალა", "Material", "Материал"], [
+    option("LEATHER", "ტყავი", "Leather", "Кожа"),
+    option("ECO_LEATHER", "ეკო-ტყავი", "Faux Leather", "Экокожа"),
+    option("MESH", "3D ბადე", "3D Mesh", "3D-сетка"),
+    option("GEL", "გელი", "Gel", "Гель"),
+  ]),
+
+  // ── Tires ── ("ზომა" stays the full printed size, e.g. 120/70 ZR17;
+  // these split it out so it can be filtered.)
+  numberAttr("tires", ["სიგანე", "Width", "Ширина"], "მილიმეტრი"),
+  numberAttr("tires", ["პროფილი", "Aspect Ratio", "Профиль"], "პროცენტი"),
+  numberAttr("tires", ["დისკის დიამეტრი", "Rim Diameter", "Диаметр диска"], "დიუმი"),
+  selectAttr("tires", POSITION, POSITION_OPTIONS),
+  numberAttr("tires", ["დატვირთვის ინდექსი", "Load Index", "Индекс нагрузки"]),
+  selectAttr("tires", ["სიჩქარის ინდექსი", "Speed Rating", "Индекс скорости"],
+    codeOptions("J", "L", "M", "N", "P", "Q", "R", "S", "T", "H", "V", "W", "ZR")),
+  selectAttr("tires", ["კამერა", "Tube Type", "Камера"], [
+    option("TL", "უკამერო (TL)", "Tubeless (TL)", "Бескамерная (TL)"),
+    option("TT", "კამერიანი (TT)", "Tube Type (TT)", "Камерная (TT)"),
+  ]),
+  selectAttr("tires", ["დანიშნულება", "Use", "Назначение"], [
+    option("SPORT", "სპორტი", "Sport", "Спорт"),
+    option("ROAD", "გზა", "Road", "Дорога"),
+    option("TOURING", "ტური", "Touring", "Туризм"),
+    option("ADVENTURE", "ადვენჩერი", "Adventure", "Эндуро-туризм"),
+    option("OFFROAD", "ოფროუდი / კროსი", "Off-road / MX", "Бездорожье / кросс"),
+    option("SCOOTER", "სკუტერი", "Scooter", "Скутер"),
+  ]),
+];
+
 async function seedAttributes(categoryIdBySlug: Map<string, number>, unitIdByNameKa: Map<string, number>) {
-  for (const attributeSeed of ATTRIBUTE_SEEDS) {
+  for (const attributeSeed of [...ATTRIBUTE_SEEDS, ...CATALOG_ATTRIBUTE_SEEDS]) {
     const categoryId = categoryIdBySlug.get(attributeSeed.categorySlug);
     if (!categoryId) {
       throw new Error(`Unknown category slug in attribute seed: ${attributeSeed.categorySlug}`);
@@ -937,7 +1497,7 @@ async function seedAttributes(categoryIdBySlug: Map<string, number>, unitIdByNam
       });
     }
   }
-  console.log(`Attributes ready: ${ATTRIBUTE_SEEDS.length}`);
+  console.log(`Attributes ready: ${ATTRIBUTE_SEEDS.length + CATALOG_ATTRIBUTE_SEEDS.length}`);
 }
 
 type ProductBrandSeed = {
@@ -1052,6 +1612,34 @@ const CATEGORY_FILTER_SEEDS: CategoryFilterSeed[] = [
     attributeNameKa: "კონსტრუქცია",
     sortOrder: 2,
   },
+  ...(
+    [
+      ["tires", "tires", "დანიშნულება", 3],
+      ["tires", "tires", "პოზიცია", 4],
+      ["tires", "tires", "დისკის დიამეტრი", 5],
+      ["tires", "tires", "სიგანე", 6],
+      ["engine-oil", "engine-oil", "სიბლანტე", 2],
+      ["engine-oil", "engine-oil", "ბაზა", 3],
+      ["engine-oil", "engine-oil", "ძრავის ტიპი", 4],
+      ["chains-sprockets", "chains-sprockets", "ტიპი", 2],
+      ["chains-sprockets", "chains-sprockets", "ბიჯი", 3],
+      ["batteries", "batteries", "ტიპი", 2],
+      ["batteries", "batteries", "ძაბვა", 3],
+      ["luggage", "luggage", "ტიპი", 2],
+    ] as const
+  ).map(
+    ([categorySlug, definingCategorySlug, attributeNameKa, sortOrder]): CategoryFilterSeed => ({
+      categorySlug,
+      filterType: "ATTRIBUTE",
+      definingCategorySlug,
+      attributeNameKa,
+      sortOrder,
+    }),
+  ),
+  // Spare parts and oils had no filter panel at all — price and brand on the
+  // root, inherited by every subcategory.
+  { categorySlug: "parts", filterType: "PRICE", sortOrder: 0 },
+  { categorySlug: "parts", filterType: "BRAND", sortOrder: 1 },
 ];
 
 async function seedCategoryFilters(categoryIdBySlug: Map<string, number>) {

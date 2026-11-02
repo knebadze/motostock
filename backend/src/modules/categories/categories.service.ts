@@ -25,6 +25,7 @@ type CategoryRow = {
   lowStockBadgeEnabled: boolean;
   onlinePurchaseEnabled: boolean;
   vehicleFitmentEnabled: boolean;
+  inheritsAttributes: boolean;
   parentId: number | null;
   createdAt: Date;
   updatedAt: Date;
@@ -43,6 +44,7 @@ function toResponse(category: CategoryRow) {
     lowStockBadgeEnabled: category.lowStockBadgeEnabled,
     onlinePurchaseEnabled: category.onlinePurchaseEnabled,
     vehicleFitmentEnabled: category.vehicleFitmentEnabled,
+    inheritsAttributes: category.inheritsAttributes,
     parentId: category.parentId,
     parent: category.parent
       ? {
@@ -240,6 +242,7 @@ export async function createCategory(input: CreateCategoryInput) {
         ...(input.vehicleFitmentEnabled !== undefined
           ? { vehicleFitmentEnabled: input.vehicleFitmentEnabled }
           : {}),
+        ...(input.inheritsAttributes !== undefined ? { inheritsAttributes: input.inheritsAttributes } : {}),
       }),
     "slug",
     "ეს slug უკვე გამოყენებულია",
@@ -284,6 +287,7 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
         ...(input.vehicleFitmentEnabled !== undefined
           ? { vehicleFitmentEnabled: input.vehicleFitmentEnabled }
           : {}),
+        ...(input.inheritsAttributes !== undefined ? { inheritsAttributes: input.inheritsAttributes } : {}),
       }),
     "slug",
     "ეს slug უკვე გამოყენებულია",

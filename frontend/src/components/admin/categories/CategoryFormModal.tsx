@@ -73,6 +73,7 @@ export function CategoryFormModal({
   const [vehicleFitmentEnabled, setVehicleFitmentEnabled] = useState(
     category?.vehicleFitmentEnabled ?? true,
   );
+  const [inheritsAttributes, setInheritsAttributes] = useState(category?.inheritsAttributes ?? true);
   const { file: imageFile, previewUrl, onChange: handleImageChange } = useFileUploadPreview(
     resolveMediaUrl(category?.imageUrl ?? null),
   );
@@ -119,6 +120,7 @@ export function CategoryFormModal({
         lowStockBadgeEnabled,
         onlinePurchaseEnabled,
         vehicleFitmentEnabled,
+        inheritsAttributes,
       };
 
       const savedCategory = isEditing
@@ -296,6 +298,25 @@ export function CategoryFormModal({
               checked={vehicleFitmentEnabled}
               onChange={setVehicleFitmentEnabled}
               label="ტრანსპორტთან თავსებადობა"
+            />
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">მშობლის მახასიათებლების მემკვიდრეობა</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                ჩართულისას ამ კატეგორიას მშობელი კატეგორიების მახასიათებლებიც ეხება. გამორთეთ, როცა
+                ისინი აქ არ შეესაბამება (მაგ. ჩაფხუტის აქსესუარებს ჩაფხუტის სერტიფიკატი): მაშინ
+                მოქმედებს მხოლოდ ამ კატეგორიაზე და მის ქვეკატეგორიებზე დამატებული მახასიათებლები.
+                ბრენდები და ფასის ფილტრი კვლავ მემკვიდრეობით გადადის.
+              </p>
+            </div>
+            <Toggle
+              checked={inheritsAttributes}
+              onChange={setInheritsAttributes}
+              label="მშობლის მახასიათებლების მემკვიდრეობა"
             />
           </div>
         </div>

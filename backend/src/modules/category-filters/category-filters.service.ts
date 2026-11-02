@@ -2,7 +2,11 @@ import { ApiError } from "../../lib/ApiError.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { attributesRepository } from "../attributes/attributes.repository.js";
-import { resolveCategoryAndAncestorIds, sortByAncestorPriority } from "../attributes/attributes.service.js";
+import {
+  resolveAttributeCategoryIds,
+  resolveCategoryAndAncestorIds,
+  sortByAncestorPriority,
+} from "../attributes/attributes.service.js";
 import { categoryFiltersRepository } from "./category-filters.repository.js";
 import type { CreateCategoryFilterInput } from "./category-filters.schema.js";
 
@@ -56,8 +60,16 @@ function toResponse(row: CategoryFilterRow) {
 }
 
 export async function listCategoryFilters(categoryId: number) {
-  const categoryIds = await resolveCategoryAndAncestorIds(categoryId);
-  const rows = await categoryFiltersRepository.findMany(categoryIds);
+  const [categoryIds, attributeCategoryIds] = await Promise.all([
+    resolveCategoryAndAncestorIds(categoryId),
+    resolveAttributeCategoryIds(categoryId),
+  ]);
+  // PRICE/BRAND/MY_VEHICLE filters inherit through the whole chain;
+  // attribute filters only from categories whose attributes still apply
+  // here (see Category.inheritsAttributes).
+  const rows = (await categoryFiltersRepository.findMany(categoryIds)).filter(
+    (row) => row.filterType !== "ATTRIBUTE" || attributeCategoryIds.includes(row.categoryId),
+  );
   return sortByAncestorPriority(rows, categoryIds).map(toResponse);
 }
 

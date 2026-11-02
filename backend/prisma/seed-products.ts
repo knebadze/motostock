@@ -95,7 +95,7 @@ const PRODUCTS: ProductSeed[] = [
       { kind: "select", definingCategorySlug: "gear", nameKa: "მასალა", optionKey: "LEATHER" },
       { kind: "select", definingCategorySlug: "gear", nameKa: "სეზონი", optionKey: "ALL_SEASON" },
       { kind: "boolean", definingCategorySlug: "gear", nameKa: "წყალგამძლეობა", value: true },
-      { kind: "select", definingCategorySlug: "jackets", nameKa: "დამცავის CE დონე", optionKey: "CE2" },
+      { kind: "select", definingCategorySlug: "jackets", nameKa: "დამცავის დონე (EN 1621-1)", optionKey: "CE2" },
     ],
     variants: [
       { sizeKey: "M", colorKey: "BLACK", price: 450, stockQuantity: 5, sku: "JAC-ALP-M-BLK" },
@@ -200,7 +200,7 @@ const PRODUCTS: ProductSeed[] = [
       { kind: "select", definingCategorySlug: "gear", nameKa: "მასალა", optionKey: "TEXTILE" },
       { kind: "select", definingCategorySlug: "gear", nameKa: "სეზონი", optionKey: "WINTER" },
       { kind: "boolean", definingCategorySlug: "gear", nameKa: "წყალგამძლეობა", value: true },
-      { kind: "select", definingCategorySlug: "jackets", nameKa: "დამცავის CE დონე", optionKey: "CE1" },
+      { kind: "select", definingCategorySlug: "jackets", nameKa: "დამცავის დონე (EN 1621-1)", optionKey: "CE1" },
     ],
     variants: [
       { sizeKey: "S", colorKey: "BLACK", price: 320, stockQuantity: 4, sku: "JAC-REV-S-BLK" },
@@ -222,7 +222,7 @@ const PRODUCTS: ProductSeed[] = [
       { kind: "select", definingCategorySlug: "gear", nameKa: "მასალა", optionKey: "MESH" },
       { kind: "select", definingCategorySlug: "gear", nameKa: "სეზონი", optionKey: "SUMMER" },
       { kind: "boolean", definingCategorySlug: "gear", nameKa: "წყალგამძლეობა", value: false },
-      { kind: "select", definingCategorySlug: "jackets", nameKa: "დამცავის CE დონე", optionKey: "CE1" },
+      { kind: "select", definingCategorySlug: "jackets", nameKa: "დამცავის დონე (EN 1621-1)", optionKey: "CE1" },
     ],
     variants: [
       { sizeKey: "M", colorKey: "BLACK", price: 210, stockQuantity: 5, sku: "JAC-MESH-M-BLK" },
@@ -505,9 +505,6 @@ const PRODUCTS: ProductSeed[] = [
     descriptionEn: "<p>Replacement visor, compatible with standard helmets.</p>",
     descriptionRu: "<p>Сменный визор, совместим со стандартными шлемами.</p>",
     attributes: [
-      { kind: "select", definingCategorySlug: "helmets", nameKa: "გარსის მასალა", optionKey: "POLYCARBONATE" },
-      { kind: "select", definingCategorySlug: "helmets", nameKa: "უსაფრთხოების სერტიფიკატი", optionKey: "ECE" },
-      { kind: "number", definingCategorySlug: "helmets", nameKa: "წონა", value: 150 },
     ],
     variants: [{ colorKey: "SILVER", price: 45, stockQuantity: 10, sku: "VISOR-SHOEI-SLV" }],
   },
@@ -641,9 +638,6 @@ const PRODUCTS: ProductSeed[] = [
     descriptionEn: "<p>Tinted replacement visor, compatible with standard helmets.</p>",
     descriptionRu: "<p>Тонированный сменный визор, совместим со стандартными шлемами.</p>",
     attributes: [
-      { kind: "select", definingCategorySlug: "helmets", nameKa: "გარსის მასალა", optionKey: "POLYCARBONATE" },
-      { kind: "select", definingCategorySlug: "helmets", nameKa: "უსაფრთხოების სერტიფიკატი", optionKey: "ECE" },
-      { kind: "number", definingCategorySlug: "helmets", nameKa: "წონა", value: 140 },
     ],
     variants: [{ colorKey: "BLACK", price: 50, stockQuantity: 9, sku: "VISOR-AGV-BLK" }],
   },
@@ -658,9 +652,6 @@ const PRODUCTS: ProductSeed[] = [
     descriptionEn: "<p>Clear replacement visor, compatible with standard helmets.</p>",
     descriptionRu: "<p>Прозрачный сменный визор, совместим со стандартными шлемами.</p>",
     attributes: [
-      { kind: "select", definingCategorySlug: "helmets", nameKa: "გარსის მასალა", optionKey: "POLYCARBONATE" },
-      { kind: "select", definingCategorySlug: "helmets", nameKa: "უსაფრთხოების სერტიფიკატი", optionKey: "ECE" },
-      { kind: "number", definingCategorySlug: "helmets", nameKa: "წონა", value: 130 },
     ],
     variants: [{ colorKey: "SILVER", price: 42, stockQuantity: 11, sku: "VISOR-ARAI-SLV" }],
   },
@@ -678,7 +669,7 @@ const PRODUCTS: ProductSeed[] = [
     descriptionRu: "<p>Водонепроницаемая боковая сумка с быстрым креплением.</p>",
     attributes: [
       { kind: "number", definingCategorySlug: "luggage", nameKa: "მოცულობა (ლ)", value: 35 },
-      { kind: "boolean", definingCategorySlug: "gear", nameKa: "წყალგამძლეობა", value: true },
+      { kind: "boolean", definingCategorySlug: "luggage", nameKa: "წყალგამძლეობა", value: true },
     ],
     variants: [{ colorKey: "BLACK", price: 210, stockQuantity: 5, sku: "BAG-GIVI-BLK" }],
   },
@@ -719,7 +710,7 @@ const PRODUCTS: ProductSeed[] = [
     descriptionRu: "<p>Кофр большого объёма, вмещает один закрытый шлем.</p>",
     attributes: [
       { kind: "number", definingCategorySlug: "luggage", nameKa: "მოცულობა (ლ)", value: 45 },
-      { kind: "boolean", definingCategorySlug: "gear", nameKa: "წყალგამძლეობა", value: true },
+      { kind: "boolean", definingCategorySlug: "luggage", nameKa: "წყალგამძლეობა", value: true },
     ],
     variants: [{ colorKey: "BLACK", price: 260, stockQuantity: 4, sku: "TOPCASE-GIVI-BLK" }],
   },
@@ -735,7 +726,7 @@ const PRODUCTS: ProductSeed[] = [
     descriptionRu: "<p>Магнитная сумка на бак для повседневных вещей.</p>",
     attributes: [
       { kind: "number", definingCategorySlug: "luggage", nameKa: "მოცულობა (ლ)", value: 8 },
-      { kind: "boolean", definingCategorySlug: "gear", nameKa: "წყალგამძლეობა", value: false },
+      { kind: "boolean", definingCategorySlug: "luggage", nameKa: "წყალგამძლეობა", value: false },
     ],
     variants: [{ colorKey: "BLACK", price: 95, stockQuantity: 6, sku: "TANKBAG-SWM-BLK" }],
   },
@@ -803,7 +794,6 @@ const PRODUCTS: ProductSeed[] = [
     descriptionRu: "<p>Спечённые тормозные диски, оригинальная замена.</p>",
     attributes: [
       { kind: "select", definingCategorySlug: "parts", nameKa: "წარმოშობა", optionKey: "OEM" },
-      { kind: "select", definingCategorySlug: "brakes", nameKa: "მასალა/კომპაუნდი", optionKey: "SINTERED" },
     ],
     variants: [{ price: 180, stockQuantity: 6, sku: "BRK-BREMBO-001" }],
     fitmentVehicleSlug: "yamaha-mt-07",
@@ -863,7 +853,7 @@ const PRODUCTS: ProductSeed[] = [
     descriptionKa: "<p>სრულად სინთეზური ძრავის ზეთი მოტოციკლებისთვის.</p>",
     descriptionEn: "<p>Fully synthetic engine oil for motorcycles.</p>",
     descriptionRu: "<p>Полностью синтетическое моторное масло для мотоциклов.</p>",
-    attributes: [{ kind: "select", definingCategorySlug: "parts", nameKa: "წარმოშობა", optionKey: "OEM" }],
+    attributes: [],
     variants: [{ price: 55, stockQuantity: 15, sku: "OIL-MOTUL-001" }],
   },
   {
@@ -877,7 +867,6 @@ const PRODUCTS: ProductSeed[] = [
     descriptionRu: "<p>Титановая полная выхлопная система, лёгкая и громкая.</p>",
     attributes: [
       { kind: "select", definingCategorySlug: "parts", nameKa: "წარმოშობა", optionKey: "AFTERMARKET" },
-      { kind: "select", definingCategorySlug: "exhaust", nameKa: "ტიპი", optionKey: "FULL_SYSTEM" },
       { kind: "select", definingCategorySlug: "exhaust", nameKa: "მასალა", optionKey: "TITANIUM" },
     ],
     variants: [{ price: 890, stockQuantity: 2, sku: "EXH-FULL-001" }],
@@ -911,7 +900,6 @@ const PRODUCTS: ProductSeed[] = [
     descriptionRu: "<p>Плетёные тормозные шланги из нержавеющей стали.</p>",
     attributes: [
       { kind: "select", definingCategorySlug: "parts", nameKa: "წარმოშობა", optionKey: "AFTERMARKET" },
-      { kind: "select", definingCategorySlug: "brakes", nameKa: "მასალა/კომპაუნდი", optionKey: "SINTERED" },
     ],
     variants: [{ price: 95, stockQuantity: 8, sku: "BRK-LINES-BREMBO-001" }],
   },
@@ -1003,7 +991,7 @@ const PRODUCTS: ProductSeed[] = [
     descriptionKa: "<p>წყალგამძლე ჯაჭვის საპოხი, ამცირებს ცვეთას.</p>",
     descriptionEn: "<p>Waterproof chain lube that reduces wear.</p>",
     descriptionRu: "<p>Водостойкая смазка для цепи, снижает износ.</p>",
-    attributes: [{ kind: "select", definingCategorySlug: "parts", nameKa: "წარმოშობა", optionKey: "OEM" }],
+    attributes: [],
     variants: [{ price: 25, stockQuantity: 20, sku: "FLUID-CHAINLUBE-001" }],
   },
   {
@@ -1016,7 +1004,7 @@ const PRODUCTS: ProductSeed[] = [
     descriptionKa: "<p>წინასწარ განზავებული გამაგრილებელი სითხე, კოროზიის საწინააღმდეგო.</p>",
     descriptionEn: "<p>Pre-mixed coolant with corrosion protection.</p>",
     descriptionRu: "<p>Готовая охлаждающая жидкость с защитой от коррозии.</p>",
-    attributes: [{ kind: "select", definingCategorySlug: "parts", nameKa: "წარმოშობა", optionKey: "OEM" }],
+    attributes: [],
     variants: [{ price: 30, stockQuantity: 18, sku: "FLUID-COOLANT-001" }],
   },
   {
@@ -1030,7 +1018,6 @@ const PRODUCTS: ProductSeed[] = [
     descriptionRu: "<p>Лёгкий слип-он глушитель из нержавеющей стали.</p>",
     attributes: [
       { kind: "select", definingCategorySlug: "parts", nameKa: "წარმოშობა", optionKey: "AFTERMARKET" },
-      { kind: "select", definingCategorySlug: "exhaust", nameKa: "ტიპი", optionKey: "SLIP_ON" },
       { kind: "select", definingCategorySlug: "exhaust", nameKa: "მასალა", optionKey: "STAINLESS_STEEL" },
     ],
     variants: [{ price: 420, stockQuantity: 4, sku: "EXH-SLIPON-001" }],
@@ -1046,7 +1033,6 @@ const PRODUCTS: ProductSeed[] = [
     descriptionRu: "<p>Алюминиевый выпускной коллектор для лучшего потока.</p>",
     attributes: [
       { kind: "select", definingCategorySlug: "parts", nameKa: "წარმოშობა", optionKey: "AFTERMARKET" },
-      { kind: "select", definingCategorySlug: "exhaust", nameKa: "ტიპი", optionKey: "HEADER" },
       { kind: "select", definingCategorySlug: "exhaust", nameKa: "მასალა", optionKey: "ALUMINUM" },
     ],
     variants: [{ price: 310, stockQuantity: 3, sku: "EXH-HEADER-001" }],

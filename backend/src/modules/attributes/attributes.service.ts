@@ -82,6 +82,24 @@ export async function resolveCategoryAndAncestorIds(categoryId: number): Promise
   return ids;
 }
 
+// The categories whose attributes apply to `categoryId` — like
+// resolveCategoryAndAncestorIds, but the walk stops at the first category
+// (itself included) with inheritsAttributes off, so that category's
+// ancestors' attributes don't reach its subtree.
+export async function resolveAttributeCategoryIds(categoryId: number): Promise<number[]> {
+  const allCategories = await categoriesRepository.findMany();
+  const byId = new Map(allCategories.map((category) => [category.id, category]));
+
+  const ids: number[] = [];
+  let current = byId.get(categoryId);
+  while (current) {
+    ids.push(current.id);
+    if (!current.inheritsAttributes || current.parentId === null) break;
+    current = byId.get(current.parentId);
+  }
+  return ids;
+}
+
 // Shared by category-filters and vehicle-category-filters — both list
 // filters across [categoryId, ...ancestorIds] (as returned by
 // resolveCategoryAndAncestorIds, ordered leaf-first/root-last) and want
@@ -116,7 +134,7 @@ async function assertUnitExists(unitId: number) {
 }
 
 export async function listAttributes(categoryId?: number) {
-  const categoryIds = categoryId != null ? await resolveCategoryAndAncestorIds(categoryId) : undefined;
+  const categoryIds = categoryId != null ? await resolveAttributeCategoryIds(categoryId) : undefined;
   const rows = await attributesRepository.findMany(categoryIds);
   return rows.map(toResponse);
 }

@@ -27,6 +27,13 @@ model Category {
   // vehicle-independent. Inherited the same way as onlinePurchaseEnabled
   // (see categories.service.ts's getVehicleFitmentDisabledCategoryIds).
   vehicleFitmentEnabled Boolean                      @default(true)
+  // Whether this category inherits its ancestors' attributes. Off = the
+  // walk up the tree stops here: the category and its subtree only get
+  // attributes defined on this category or below (e.g. helmet accessories
+  // don't take helmets' required certification). Brands and PRICE/BRAND
+  // filters still inherit. See attributes.service.ts's
+  // resolveAttributeCategoryIds.
+  inheritsAttributes    Boolean                      @default(true)
   parentId             Int?
   parent               Category?                     @relation("CategoryChildren", fields: [parentId], references: [id])
   children             Category[]                    @relation("CategoryChildren")

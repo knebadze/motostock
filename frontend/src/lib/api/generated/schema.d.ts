@@ -17258,6 +17258,8 @@ export interface components {
             onlinePurchaseEnabled?: boolean;
             /** @example true */
             vehicleFitmentEnabled?: boolean;
+            /** @example true */
+            inheritsAttributes?: boolean;
         };
         UpdateCategoryInput: {
             /**
@@ -17284,6 +17286,8 @@ export interface components {
             onlinePurchaseEnabled?: boolean;
             /** @example true */
             vehicleFitmentEnabled?: boolean;
+            /** @example true */
+            inheritsAttributes?: boolean;
         };
         CategoryItemCounts: {
             items: {
@@ -17322,6 +17326,8 @@ export interface components {
             onlinePurchaseEnabled: boolean;
             /** @example true */
             vehicleFitmentEnabled: boolean;
+            /** @example true */
+            inheritsAttributes: boolean;
             parentId: number | null;
             parent?: {
                 id: number;

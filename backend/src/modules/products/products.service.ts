@@ -20,7 +20,7 @@ import { productBrandsRepository } from "../product-brands/product-brands.reposi
 import { attributesRepository } from "../attributes/attributes.repository.js";
 import { productVariantImagesRepository } from "../product-variant-images/product-variant-images.repository.js";
 import { attributeOptionsRepository } from "../attribute-options/attribute-options.repository.js";
-import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
+import { resolveAttributeCategoryIds, resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
@@ -363,7 +363,7 @@ async function assertSlugAvailable(slug: string, excludeId?: number) {
 }
 
 // Validates the submitted attribute values against the attributes that
-// actually apply to this category (itself + ancestors), checks the
+// actually apply to this category (itself + inherited ancestors), checks the
 // populated value column matches the attribute's valueType, verifies
 // SELECT options belong to their attribute, and confirms every
 // attribute marked `required` in that set has a value.
@@ -371,7 +371,7 @@ async function buildAttributeValueWriteData(
   categoryId: number,
   values: ProductAttributeValueInput[],
 ) {
-  const applicableCategoryIds = await resolveCategoryAndAncestorIds(categoryId);
+  const applicableCategoryIds = await resolveAttributeCategoryIds(categoryId);
   const applicableAttributes = await attributesRepository.findMany(applicableCategoryIds);
   const applicableById = new Map(applicableAttributes.map((attribute) => [attribute.id, attribute]));
 

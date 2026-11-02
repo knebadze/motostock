@@ -10,7 +10,7 @@ import { attributesRepository } from "../attributes/attributes.repository.js";
 import { attributeOptionsRepository } from "../attribute-options/attribute-options.repository.js";
 import { brandsRepository } from "../brands/brands.repository.js";
 import { modelsRepository } from "../models/models.repository.js";
-import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
+import { resolveAttributeCategoryIds, resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
 import { startOfDayTbilisi, endOfDayTbilisi } from "../../lib/tbilisi-dates.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
@@ -151,7 +151,7 @@ async function assertProductBrandExists(productBrandId: number) {
 }
 
 async function assertAttributeOptionValid(categoryId: number, attributeId: number, attributeOptionId: number) {
-  const applicableCategoryIds = await resolveCategoryAndAncestorIds(categoryId);
+  const applicableCategoryIds = await resolveAttributeCategoryIds(categoryId);
   const attribute = await attributesRepository.findById(attributeId);
   if (!attribute || !applicableCategoryIds.includes(attribute.category.id)) {
     throw new ApiError(400, "მითითებული მახასიათებელი ამ კატეგორიას არ ეკუთვნის");
