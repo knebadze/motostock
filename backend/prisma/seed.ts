@@ -1746,11 +1746,20 @@ const VEHICLE_CATEGORY_FILTER_SEEDS: VehicleCategoryFilterSeed[] = [
   { categorySlug: "mopeds", filterType: "SPEC", specField: "FUEL_TYPE", sortOrder: 3 },
   { categorySlug: "mopeds", filterType: "SPEC", specField: "ENGINE_VOLUME_CC", sortOrder: 4 },
   { categorySlug: "mopeds", filterType: "SPEC", specField: "TOP_SPEED_KMH", sortOrder: 5 },
+  // Mopeds and trikes come both petrol and electric: "fuel type" includes
+  // ELECTRIC, and the electric specs below only show once such listings
+  // exist (an empty or uniform spec is hidden in the shop).
+  { categorySlug: "mopeds", filterType: "SPEC", specField: "MOTOR_POWER_WATT", sortOrder: 6 },
+  { categorySlug: "mopeds", filterType: "SPEC", specField: "RANGE_KM", sortOrder: 7 },
+  { categorySlug: "mopeds", filterType: "SPEC", specField: "BATTERY_CAPACITY_WH", sortOrder: 8 },
   { categorySlug: "trikes", filterType: "PRICE", sortOrder: 0 },
   { categorySlug: "trikes", filterType: "YEAR", sortOrder: 1 },
   { categorySlug: "trikes", filterType: "BRAND", sortOrder: 2 },
   { categorySlug: "trikes", filterType: "SPEC", specField: "FUEL_TYPE", sortOrder: 3 },
   { categorySlug: "trikes", filterType: "SPEC", specField: "ENGINE_VOLUME_CC", sortOrder: 4 },
+  { categorySlug: "trikes", filterType: "SPEC", specField: "MOTOR_POWER_WATT", sortOrder: 5 },
+  { categorySlug: "trikes", filterType: "SPEC", specField: "RANGE_KM", sortOrder: 6 },
+  { categorySlug: "trikes", filterType: "SPEC", specField: "BATTERY_CAPACITY_WH", sortOrder: 7 },
 ];
 
 async function seedVehicleCategoryFilters(categoryIdBySlug: Map<string, number>) {
