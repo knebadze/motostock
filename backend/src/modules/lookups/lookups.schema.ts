@@ -25,6 +25,8 @@ export const createLookupItemSchema = registry.register(
     nameKa: z.string().min(1).openapi({ example: "ბენზინი" }),
     nameEn: z.string().min(1).openapi({ example: "Petrol" }),
     nameRu: z.string().min(1).openapi({ example: "Бензин" }),
+    // Sizes only: the SizeScale this size belongs to (ignored for other types).
+    scaleId: z.int().positive().nullable().optional(),
   }),
 );
 export type CreateLookupItemInput = z.infer<typeof createLookupItemSchema>;
@@ -43,5 +45,7 @@ export const lookupItemResponseSchema = registry.register(
     nameKa: z.string(),
     nameEn: z.string(),
     nameRu: z.string(),
+    // Sizes only (see Size.scaleId).
+    scaleId: z.int().nullable().optional(),
   }),
 );

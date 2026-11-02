@@ -1,0 +1,18 @@
+// What a product variant's "size" axis measures in a category — clothing
+// sizes, EU shoe sizes, oil volume, chain pitch... Each Size belongs to one
+// scale; a category picks its scale (inherited by subcategories, see
+// Category.sizeScaleId), and the admin variant form / storefront variant
+// picker then offer only that scale's sizes, under the scale's name as the
+// label ("ზომა", "მოცულობა", "ბიჯი"). Managed as a generic lookup
+// ("size-scales").
+model SizeScale {
+  id         Int        @id @default(autoincrement())
+  key        String     @unique
+  nameKa     String
+  nameEn     String
+  nameRu     String
+  sizes      Size[]
+  categories Category[]
+
+  @@schema("cla")
+}

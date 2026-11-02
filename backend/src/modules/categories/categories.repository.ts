@@ -14,6 +14,7 @@ type CategoryWriteData = {
   onlinePurchaseEnabled?: boolean;
   vehicleFitmentEnabled?: boolean;
   inheritsAttributes?: boolean;
+  sizeScaleId?: number | null;
 };
 
 export const categoriesRepository = {

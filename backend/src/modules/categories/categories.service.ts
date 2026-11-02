@@ -1,3 +1,4 @@
+import { prisma } from "../../config/prisma.js";
 import { cache } from "../../lib/cache.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
@@ -26,6 +27,7 @@ type CategoryRow = {
   onlinePurchaseEnabled: boolean;
   vehicleFitmentEnabled: boolean;
   inheritsAttributes: boolean;
+  sizeScaleId: number | null;
   parentId: number | null;
   createdAt: Date;
   updatedAt: Date;
@@ -45,6 +47,7 @@ function toResponse(category: CategoryRow) {
     onlinePurchaseEnabled: category.onlinePurchaseEnabled,
     vehicleFitmentEnabled: category.vehicleFitmentEnabled,
     inheritsAttributes: category.inheritsAttributes,
+    sizeScaleId: category.sizeScaleId,
     parentId: category.parentId,
     parent: category.parent
       ? {
@@ -92,6 +95,23 @@ export async function getCategoryItemCounts(): Promise<{ categoryId: number; cou
   const result = [...totals].map(([categoryId, count]) => ({ categoryId, count }));
   cache.set(ITEM_COUNTS_CACHE_KEY, result, ITEM_COUNTS_CACHE_TTL_MS);
   return result;
+}
+
+// The size scale a category's products use: its own, else the nearest
+// ancestor's (see Category.sizeScaleId) — null when none is set anywhere.
+export async function resolveSizeScale(categoryId: number) {
+  const all = await categoriesRepository.findMany();
+  const byId = new Map(all.map((category) => [category.id, category]));
+  const seen = new Set<number>();
+  let current = byId.get(categoryId);
+  while (current && !seen.has(current.id)) {
+    if (current.sizeScaleId != null) {
+      return prisma.sizeScale.findUnique({ where: { id: current.sizeScaleId } });
+    }
+    seen.add(current.id);
+    current = current.parentId != null ? byId.get(current.parentId) : undefined;
+  }
+  return null;
 }
 
 type InheritedFlag = "onlinePurchaseEnabled" | "vehicleFitmentEnabled";
@@ -243,6 +263,7 @@ export async function createCategory(input: CreateCategoryInput) {
           ? { vehicleFitmentEnabled: input.vehicleFitmentEnabled }
           : {}),
         ...(input.inheritsAttributes !== undefined ? { inheritsAttributes: input.inheritsAttributes } : {}),
+        ...(input.sizeScaleId !== undefined ? { sizeScaleId: input.sizeScaleId } : {}),
       }),
     "slug",
     "ეს slug უკვე გამოყენებულია",
@@ -288,6 +309,7 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
           ? { vehicleFitmentEnabled: input.vehicleFitmentEnabled }
           : {}),
         ...(input.inheritsAttributes !== undefined ? { inheritsAttributes: input.inheritsAttributes } : {}),
+        ...(input.sizeScaleId !== undefined ? { sizeScaleId: input.sizeScaleId } : {}),
       }),
     "slug",
     "ეს slug უკვე გამოყენებულია",

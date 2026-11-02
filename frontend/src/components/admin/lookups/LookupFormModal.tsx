@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
+import { Select } from "@/components/shared/Select";
 import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
-import { createLookupItem, updateLookupItem, type LookupItem } from "@/lib/api/lookups";
+import { createLookupItem, listLookupItems, updateLookupItem, type LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError } from "@/lib/api/client";
 import type { LookupTypeSlug } from "@/config/lookup-types";
 import { lookupFormSchema } from "@/lib/validation/lookups";
@@ -30,8 +31,19 @@ export function LookupFormModal({
   const [nameKa, setNameKa] = useState(item?.nameKa ?? "");
   const [nameEn, setNameEn] = useState(item?.nameEn ?? "");
   const [nameRu, setNameRu] = useState(item?.nameRu ?? "");
+  const [scaleId, setScaleId] = useState(item?.scaleId != null ? String(item.scaleId) : "");
+  const [scales, setScales] = useState<LookupItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const isSize = type === "sizes";
+
+  // Sizes belong to a size scale (clothing, EU shoe, volume, ...).
+  useEffect(() => {
+    if (!isSize) return;
+    listLookupItems("size-scales")
+      .then(setScales)
+      .catch(() => toast.error("ზომის სკალების ჩატვირთვა ვერ მოხერხდა"));
+  }, [isSize]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -55,6 +67,7 @@ export function LookupFormModal({
         nameKa: nameKa.trim(),
         nameEn: nameEn.trim(),
         nameRu: nameRu.trim(),
+        ...(isSize ? { scaleId: scaleId ? Number(scaleId) : null } : {}),
       };
 
       if (isEditing) {
@@ -106,6 +119,26 @@ export function LookupFormModal({
           }}
           errors={{ ka: errors["name.ka"], en: errors["name.en"], ru: errors["name.ru"] }}
         />
+
+        {isSize && (
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="lookup-scale" className="text-sm font-medium">
+              ზომის სკალა
+            </label>
+            <Select
+              id="lookup-scale"
+              options={[
+                { value: "", label: "— ყველა კატეგორიაში —" },
+                ...scales.map((scale) => ({ value: String(scale.id), label: scale.nameKa })),
+              ]}
+              value={scaleId}
+              onChange={setScaleId}
+            />
+            <p className="text-xs text-muted-foreground">
+              პროდუქტის ვარიანტში ეს ზომა მხოლოდ იმ კატეგორიებში გამოჩნდება, რომლებსაც ეს სკალა აქვს.
+            </p>
+          </div>
+        )}
 
         <FormActions onCancel={onClose} loading={loading} />
       </form>

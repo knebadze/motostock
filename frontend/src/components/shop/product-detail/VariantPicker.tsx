@@ -6,10 +6,14 @@ import type { ProductVariantDetail } from "@/lib/api/products";
 
 export function VariantPicker({
   variants,
+  sizeLabel,
   selectedVariant,
   onSelect,
 }: {
   variants: ProductVariantDetail[];
+  // The category's size-scale name ("Volume", "Size (EU)", ...) — falls back
+  // to the generic "Size" label.
+  sizeLabel?: string | null;
   selectedVariant: ProductVariantDetail;
   onSelect: (variantId: number) => void;
 }) {
@@ -74,7 +78,7 @@ export function VariantPicker({
     <div className="flex flex-col gap-4">
       {sizes.length > 0 && (
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-foreground">{t("selectSizeLabel")}</span>
+          <span className="text-sm font-medium text-foreground">{sizeLabel ?? t("selectSizeLabel")}</span>
           <div className="flex flex-wrap gap-2">
             {sizes.map((size) => {
               const soldOut = sizeSoldOut(size.id);

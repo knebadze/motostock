@@ -15,6 +15,7 @@ export const LOOKUP_TYPES = [
   "listing-statuses",
   "colors",
   "sizes",
+  "size-scales",
   "cities",
   "cancellation-reasons",
   "positions",
@@ -35,6 +36,8 @@ export type LookupWriteInput = {
   nameKa: string;
   nameEn: string;
   nameRu: string;
+  // "sizes" only — see Size.scaleId.
+  scaleId?: number | null;
 };
 
 export type LookupDelegate = {
@@ -70,6 +73,7 @@ const registry: Record<LookupType, LookupDelegate> = {
   "listing-statuses": asLookupDelegate(prisma.listingStatus),
   colors: asLookupDelegate(prisma.color),
   sizes: asLookupDelegate(prisma.size),
+  "size-scales": asLookupDelegate(prisma.sizeScale),
   cities: asLookupDelegate(prisma.city),
   "cancellation-reasons": asLookupDelegate(prisma.cancellationReason),
   positions: asLookupDelegate(prisma.position),

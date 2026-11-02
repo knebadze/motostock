@@ -1,3 +1,4 @@
+import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation, isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { cache } from "../../lib/cache.js";
@@ -30,7 +31,21 @@ export async function listLookupItems(type: LookupType) {
   return items;
 }
 
-export async function createLookupItem(type: LookupType, input: CreateLookupItemInput) {
+// scaleId belongs to sizes only — dropped for every other type, and checked
+// to point at a real scale.
+async function normalizeScale<T extends { scaleId?: number | null }>(type: LookupType, input: T): Promise<T> {
+  if (type !== "sizes") {
+    const { scaleId: _ignored, ...rest } = input;
+    return rest as T;
+  }
+  if (input.scaleId != null && !(await prisma.sizeScale.findUnique({ where: { id: input.scaleId } }))) {
+    throw new ApiError(400, "მითითებული ზომის სკალა არ არსებობს");
+  }
+  return input;
+}
+
+export async function createLookupItem(type: LookupType, rawInput: CreateLookupItemInput) {
+  const input = await normalizeScale(type, rawInput);
   const delegate = getLookupDelegate(type);
   const existing = await lookupsRepository.findByKey(delegate, input.key);
   if (existing) {
@@ -59,8 +74,9 @@ export async function createLookupItem(type: LookupType, input: CreateLookupItem
 export async function updateLookupItem(
   type: LookupType,
   id: number,
-  input: UpdateLookupItemInput,
+  rawInput: UpdateLookupItemInput,
 ) {
+  const input = await normalizeScale(type, rawInput);
   const delegate = getLookupDelegate(type);
   const existing = await lookupsRepository.findById(delegate, id);
   if (!existing) {

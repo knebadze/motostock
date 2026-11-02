@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import {
+import { resolveSizeScale,
   getOnlinePurchaseBlockedCategoryIds,
   getVehicleFitmentDisabledCategoryIds,
 } from "../categories/categories.service.js";
@@ -324,8 +324,11 @@ async function toFitmentRuleResponse(rule: FitmentRuleRow) {
 
 // Exported for reuse by getProductDetailAdmin below.
 export async function toDetailResponse(row: ProductDetailRow) {
+  const sizeScale = await resolveSizeScale(row.category.id);
   return {
     ...(await toResponse(row)),
+    // Label for the variant picker's size axis ("ზომა", "მოცულობა", ...).
+    sizeLabel: sizeScale ? { ka: sizeScale.nameKa, en: sizeScale.nameEn, ru: sizeScale.nameRu } : null,
     variants: await Promise.all(
       row.variants.map((variant) =>
         toVariantDetailResponse(variant, row.category.lowStockBadgeEnabled),

@@ -376,6 +376,8 @@ export const productDetailResponseSchema = registry.register(
   "ProductDetail",
   productResponseSchema.extend({
     variants: z.array(productVariantDetailResponseSchema),
+    // The variant size axis label from the category's size scale, or null.
+    sizeLabel: localizedStringSchema.nullable(),
     fitments: z.array(compatibleVehicleSchema),
     fitmentRules: z.array(fitmentRuleSchema),
     buyTogether: z.array(productCardResponseSchema),

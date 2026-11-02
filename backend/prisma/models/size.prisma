@@ -4,6 +4,9 @@ model Size {
   nameKa   String
   nameEn   String
   nameRu   String
+  // See SizeScale. Null = not on any scale (offered everywhere).
+  scaleId  Int?
+  scale    SizeScale?       @relation(fields: [scaleId], references: [id], onDelete: SetNull)
   variants ProductVariant[]
 
   @@schema("cla")

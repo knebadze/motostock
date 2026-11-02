@@ -3851,7 +3851,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    type: "fuel-types" | "transmission-types" | "cooling-types" | "final-drive-types" | "drive-types" | "start-types" | "powertrain-types" | "conditions" | "listing-statuses" | "colors" | "sizes" | "cities" | "cancellation-reasons" | "positions";
+                    type: "fuel-types" | "transmission-types" | "cooling-types" | "final-drive-types" | "drive-types" | "start-types" | "powertrain-types" | "conditions" | "listing-statuses" | "colors" | "sizes" | "size-scales" | "cities" | "cancellation-reasons" | "positions";
                 };
                 cookie?: never;
             };
@@ -3877,7 +3877,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    type: "fuel-types" | "transmission-types" | "cooling-types" | "final-drive-types" | "drive-types" | "start-types" | "powertrain-types" | "conditions" | "listing-statuses" | "colors" | "sizes" | "cities" | "cancellation-reasons" | "positions";
+                    type: "fuel-types" | "transmission-types" | "cooling-types" | "final-drive-types" | "drive-types" | "start-types" | "powertrain-types" | "conditions" | "listing-statuses" | "colors" | "sizes" | "size-scales" | "cities" | "cancellation-reasons" | "positions";
                 };
                 cookie?: never;
             };
@@ -3931,7 +3931,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    type: "fuel-types" | "transmission-types" | "cooling-types" | "final-drive-types" | "drive-types" | "start-types" | "powertrain-types" | "conditions" | "listing-statuses" | "colors" | "sizes" | "cities" | "cancellation-reasons" | "positions";
+                    type: "fuel-types" | "transmission-types" | "cooling-types" | "final-drive-types" | "drive-types" | "start-types" | "powertrain-types" | "conditions" | "listing-statuses" | "colors" | "sizes" | "size-scales" | "cities" | "cancellation-reasons" | "positions";
                     id: number;
                 };
                 cookie?: never;
@@ -3973,7 +3973,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    type: "fuel-types" | "transmission-types" | "cooling-types" | "final-drive-types" | "drive-types" | "start-types" | "powertrain-types" | "conditions" | "listing-statuses" | "colors" | "sizes" | "cities" | "cancellation-reasons" | "positions";
+                    type: "fuel-types" | "transmission-types" | "cooling-types" | "final-drive-types" | "drive-types" | "start-types" | "powertrain-types" | "conditions" | "listing-statuses" | "colors" | "sizes" | "size-scales" | "cities" | "cancellation-reasons" | "positions";
                     id: number;
                 };
                 cookie?: never;
@@ -16225,6 +16225,7 @@ export interface components {
             nameEn: string;
             /** @example Бензин */
             nameRu: string;
+            scaleId?: number | null;
         };
         UpdateLookupItemInput: {
             /** @example PETROL */
@@ -16235,6 +16236,7 @@ export interface components {
             nameEn?: string;
             /** @example Бензин */
             nameRu?: string;
+            scaleId?: number | null;
         };
         LookupItem: {
             /** @example 1 */
@@ -16243,6 +16245,7 @@ export interface components {
             nameKa: string;
             nameEn: string;
             nameRu: string;
+            scaleId?: number | null;
         };
         CreateAddressInput: {
             /** @example +995555123456 */
@@ -16780,6 +16783,11 @@ export interface components {
                     discountPrice: number;
                 } | null;
             }[];
+            sizeLabel: {
+                ka: string;
+                en: string;
+                ru: string;
+            } | null;
             fitments: {
                 id: number;
                 brand: {
@@ -17349,6 +17357,7 @@ export interface components {
             vehicleFitmentEnabled?: boolean;
             /** @example true */
             inheritsAttributes?: boolean;
+            sizeScaleId?: number | null;
         };
         UpdateCategoryInput: {
             /**
@@ -17377,6 +17386,7 @@ export interface components {
             vehicleFitmentEnabled?: boolean;
             /** @example true */
             inheritsAttributes?: boolean;
+            sizeScaleId?: number | null;
         };
         CategoryItemCounts: {
             items: {
@@ -17417,6 +17427,7 @@ export interface components {
             vehicleFitmentEnabled: boolean;
             /** @example true */
             inheritsAttributes: boolean;
+            sizeScaleId: number | null;
             parentId: number | null;
             parent?: {
                 id: number;

@@ -12,11 +12,12 @@ import { Select } from "@/components/shared/Select";
 import type { Tag } from "@/lib/api/tags";
 import type { Category } from "@/lib/api/categories";
 import { listProductBrands, type ProductBrand } from "@/lib/api/product-brands";
-import type { LookupItem } from "@/lib/api/lookups";
+import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
 import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import {
   flattenTree,
+  getEffectiveSizeScaleId,
   getVehicleFitmentDisabledCategoryIds,
   isVehicleCategory,
   slugify,
@@ -98,6 +99,18 @@ export function ProductForm({
   // selected category aren't saved (the backend would refuse them).
   const fitmentEnabled =
     !categoryId || !getVehicleFitmentDisabledCategoryIds(categories).has(Number(categoryId));
+  // The category's size scale (Category.sizeScaleId, inherited): variants
+  // are offered only that scale's sizes, under its name ("მოცულობა", ...).
+  // No scale anywhere = every size, labelled "ზომა".
+  const [sizeScales, setSizeScales] = useState<LookupItem[]>([]);
+  useEffect(() => {
+    listLookupItems("size-scales")
+      .then(setSizeScales)
+      .catch(() => setSizeScales([]));
+  }, []);
+  const sizeScaleId = categoryId ? getEffectiveSizeScaleId(categories, Number(categoryId)) : null;
+  const scopedSizes = sizeScaleId != null ? sizes.filter((size) => size.scaleId === sizeScaleId) : sizes;
+  const sizeLabel = sizeScales.find((scale) => scale.id === sizeScaleId)?.nameKa ?? "ზომა";
   const [productBrandId, setProductBrandId] = useState(
     product?.productBrand ? String(product.productBrand.id) : "",
   );
@@ -554,7 +567,8 @@ export function ProductForm({
             content: (
               <ProductVariantsPanel
                 productId={product.id}
-                sizes={sizes}
+                sizes={scopedSizes}
+                sizeLabel={sizeLabel}
                 colors={colors}
                 conditions={conditions}
                 statuses={statuses}
@@ -568,7 +582,8 @@ export function ProductForm({
             label: "ფასი",
             content: (
               <ProductPricingTab
-                sizes={sizes}
+                sizes={scopedSizes}
+                sizeLabel={sizeLabel}
                 colors={colors}
                 conditions={conditions}
                 statuses={statuses}

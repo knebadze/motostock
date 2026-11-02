@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
@@ -28,6 +28,24 @@ export function LookupManager({
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<LookupItem | null>(null);
   const [deletingItem, setDeletingItem] = useState<LookupItem | null>(null);
+  const [scales, setScales] = useState<LookupItem[]>([]);
+
+  useEffect(() => {
+    if (type !== "sizes") return;
+    listLookupItems("size-scales").then(setScales).catch(() => setScales([]));
+  }, [type]);
+
+  const visibleColumns: DataTableColumn<LookupItem>[] =
+    type === "sizes"
+      ? [
+          ...columns,
+          {
+            header: "სკალა",
+            render: (item) => scales.find((scale) => scale.id === item.scaleId)?.nameKa ?? "—",
+            cellClassName: "text-muted-foreground",
+          },
+        ]
+      : columns;
 
   async function refresh() {
     try {
@@ -63,7 +81,7 @@ export function LookupManager({
 
       <div className="mt-6">
         <DataTable
-          columns={columns}
+          columns={visibleColumns}
           data={items}
           totalCount={items.length}
           getRowKey={(item) => item.id}

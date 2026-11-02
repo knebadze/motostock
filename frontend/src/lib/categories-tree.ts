@@ -56,6 +56,20 @@ export function getAncestorChain(categories: Category[], categoryId: number): Ca
   return chain;
 }
 
+// The size scale a category's products use: its own, else the nearest
+// ancestor's (Category.sizeScaleId) — null when none is set anywhere.
+export function getEffectiveSizeScaleId(categories: Category[], categoryId: number): number | null {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const seen = new Set<number>();
+  let current = byId.get(categoryId);
+  while (current && !seen.has(current.id)) {
+    if (current.sizeScaleId != null) return current.sizeScaleId;
+    seen.add(current.id);
+    current = current.parentId != null ? byId.get(current.parentId) : undefined;
+  }
+  return null;
+}
+
 type InheritedCategoryFlag = "onlinePurchaseEnabled" | "vehicleFitmentEnabled";
 
 // Mirrors the backend's categories.service.ts helpers (which are what

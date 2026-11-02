@@ -189,6 +189,78 @@ const SIZES: LookupEntry[] = [
   { key: "XXXL", nameKa: "XXXL", nameEn: "XXXL", nameRu: "XXXL" },
 ];
 
+// What the variant "size" axis measures per category (see SizeScale) — the
+// name is the label shown for that axis in the admin form and on the site.
+const SIZE_SCALES: LookupEntry[] = [
+  { key: "CLOTHING", nameKa: "ზომა", nameEn: "Size", nameRu: "Размер" },
+  { key: "SHOE_EU", nameKa: "ზომა (EU)", nameEn: "Size (EU)", nameRu: "Размер (EU)" },
+  { key: "VOLUME", nameKa: "მოცულობა", nameEn: "Volume", nameRu: "Объём" },
+  { key: "CHAIN_PITCH", nameKa: "ბიჯი", nameEn: "Pitch", nameRu: "Шаг" },
+];
+
+// Sizes per scale, beyond the clothing ones in SIZES above.
+const SCALED_SIZES: { scaleKey: string; entries: LookupEntry[] }[] = [
+  { scaleKey: "CLOTHING", entries: [{ key: "XXS", nameKa: "XXS", nameEn: "XXS", nameRu: "XXS" }, ...SIZES] },
+  {
+    scaleKey: "SHOE_EU",
+    entries: Array.from({ length: 14 }, (_, index) => {
+      const size = String(35 + index);
+      return { key: `EU_${size}`, nameKa: size, nameEn: size, nameRu: size };
+    }),
+  },
+  {
+    scaleKey: "VOLUME",
+    entries: [
+      { key: "VOL_400ML", nameKa: "400 მლ", nameEn: "400 ml", nameRu: "400 мл" },
+      { key: "VOL_500ML", nameKa: "0.5 ლ", nameEn: "0.5 L", nameRu: "0.5 л" },
+      { key: "VOL_1L", nameKa: "1 ლ", nameEn: "1 L", nameRu: "1 л" },
+      { key: "VOL_2L", nameKa: "2 ლ", nameEn: "2 L", nameRu: "2 л" },
+      { key: "VOL_4L", nameKa: "4 ლ", nameEn: "4 L", nameRu: "4 л" },
+      { key: "VOL_5L", nameKa: "5 ლ", nameEn: "5 L", nameRu: "5 л" },
+    ],
+  },
+  {
+    scaleKey: "CHAIN_PITCH",
+    entries: ["415", "420", "428", "520", "525", "530", "532"].map((pitch) => ({
+      key: `PITCH_${pitch}`,
+      nameKa: pitch,
+      nameEn: pitch,
+      nameRu: pitch,
+    })),
+  },
+];
+
+// Category -> scale. Only fills an unset sizeScaleId (an admin's choice is
+// never overwritten); subcategories inherit, so roots are enough.
+const CATEGORY_SIZE_SCALES: Record<string, string> = {
+  helmets: "CLOTHING",
+  gear: "CLOTHING",
+  boots: "SHOE_EU",
+  fluids: "VOLUME",
+  "chains-sprockets": "CHAIN_PITCH",
+};
+
+async function seedSizeScales(categoryIdBySlug: Map<string, number>) {
+  await seedLookup("Size scales", prisma.sizeScale, SIZE_SCALES);
+  const scaleIdByKey = new Map((await prisma.sizeScale.findMany()).map((scale) => [scale.key, scale.id]));
+  for (const { scaleKey, entries } of SCALED_SIZES) {
+    const scaleId = scaleIdByKey.get(scaleKey)!;
+    for (const entry of entries) {
+      await prisma.size.upsert({ where: { key: entry.key }, update: {}, create: { ...entry, scaleId } });
+      await prisma.size.updateMany({ where: { key: entry.key, scaleId: null }, data: { scaleId } });
+    }
+  }
+  for (const [slug, scaleKey] of Object.entries(CATEGORY_SIZE_SCALES)) {
+    const categoryId = categoryIdBySlug.get(slug);
+    if (!categoryId) throw new Error(`Unknown category slug in size scale seed: ${slug}`);
+    await prisma.category.updateMany({
+      where: { id: categoryId, sizeScaleId: null },
+      data: { sizeScaleId: scaleIdByKey.get(scaleKey)! },
+    });
+  }
+  console.log(`Size scales ready: ${SIZE_SCALES.length}`);
+}
+
 const CITIES: LookupEntry[] = [
   { key: "TBILISI", nameKa: "თბილისი", nameEn: "Tbilisi", nameRu: "Тбилиси" },
   { key: "BATUMI", nameKa: "ბათუმი", nameEn: "Batumi", nameRu: "Батуми" },
@@ -1914,6 +1986,7 @@ async function main() {
   const unitIdByNameKa = await seedUnits();
 
   const categoryIdBySlug = await seedCategoryTree(PRODUCT_CATEGORY_TREE, null);
+  await seedSizeScales(categoryIdBySlug);
   console.log(`Category tree ready: ${categoryIdBySlug.size} categories`);
 
   await seedAttributes(categoryIdBySlug, unitIdByNameKa);

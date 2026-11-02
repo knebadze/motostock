@@ -189,6 +189,7 @@ export function ProductDetailPage({
           {product.variants.length > 1 && selectedVariant && (
             <VariantPicker
               variants={product.variants}
+              sizeLabel={product.sizeLabel?.[locale]}
               selectedVariant={selectedVariant}
               onSelect={setSelectedVariantId}
             />

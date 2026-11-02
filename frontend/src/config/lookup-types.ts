@@ -14,6 +14,7 @@ export const LOOKUP_TYPES = [
   { slug: "listing-statuses", label: "განცხადების სტატუსები" },
   { slug: "colors", label: "ფერები" },
   { slug: "sizes", label: "ზომები" },
+  { slug: "size-scales", label: "ზომის სკალები" },
   { slug: "cities", label: "ქალაქები" },
   { slug: "cancellation-reasons", label: "გაუქმების მიზეზები" },
   { slug: "positions", label: "თანამდებობები" },

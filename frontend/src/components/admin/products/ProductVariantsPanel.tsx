@@ -69,12 +69,15 @@ const EMPTY_EDIT_FORM = {
 export function ProductVariantsPanel({
   productId,
   sizes,
+  sizeLabel,
   colors,
   conditions,
   statuses,
 }: {
   productId: number;
   sizes: LookupItem[];
+  // The category's size-scale name ("ზომა", "მოცულობა", ...).
+  sizeLabel: string;
   colors: LookupItem[];
   conditions: LookupItem[];
   statuses: LookupItem[];
@@ -255,7 +258,7 @@ export function ProductVariantsPanel({
 
   const columns: DataTableColumn<ProductVariant>[] = [
     { header: "SKU", render: (variant) => variant.sku ?? "—", cellClassName: "font-mono text-muted-foreground" },
-    { header: "ზომა", render: (variant) => variant.size?.nameKa ?? "—" },
+    { header: sizeLabel, render: (variant) => variant.size?.nameKa ?? "—" },
     { header: "ფერი", render: (variant) => variant.color?.nameKa ?? "—" },
     {
       header: "ფასი",
@@ -350,7 +353,7 @@ export function ProductVariantsPanel({
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="variant-size" className="text-xs text-muted-foreground">
-                ზომა
+                {sizeLabel}
               </label>
               <Select
                 id="variant-size"
@@ -425,7 +428,7 @@ export function ProductVariantsPanel({
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="variant-add-sizes" className="text-xs text-muted-foreground">
-                ზომები
+                {sizeLabel}
               </label>
               <Select
                 id="variant-add-sizes"

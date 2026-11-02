@@ -36,6 +36,9 @@ export const createCategorySchema = registry.register(
     // Does this category inherit its parents' attributes? Off = only
     // attributes defined on it or below apply. See Category.inheritsAttributes.
     inheritsAttributes: z.boolean().optional().openapi({ example: true }),
+    // Size scale of its products' variants (null = inherit from parent).
+    // See Category.sizeScaleId.
+    sizeScaleId: z.int().positive().nullable().optional(),
   }),
 );
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
@@ -84,6 +87,7 @@ export const categoryResponseSchema = registry.register(
     onlinePurchaseEnabled: z.boolean().openapi({ example: true }),
     vehicleFitmentEnabled: z.boolean().openapi({ example: true }),
     inheritsAttributes: z.boolean().openapi({ example: true }),
+    sizeScaleId: z.int().nullable(),
     parentId: z.int().nullable(),
     parent: z
       .object({ id: z.int(), name: localizedStringSchema })

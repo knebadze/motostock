@@ -44,6 +44,7 @@ export type DraftVariant = {
 function DraftVariantRow({
   variant,
   sizes,
+  sizeLabel,
   colors,
   expanded,
   onToggleExpanded,
@@ -53,6 +54,8 @@ function DraftVariantRow({
 }: {
   variant: DraftVariant;
   sizes: LookupItem[];
+  // The category's size-scale name ("ზომა", "მოცულობა", ...).
+  sizeLabel: string;
   colors: LookupItem[];
   expanded: boolean;
   onToggleExpanded: () => void;
@@ -72,7 +75,7 @@ function DraftVariantRow({
             onChange={(value) => onChange(variant.draftId, { sizeId: value ? Number(value) : null })}
             searchable
             placeholder="—"
-            ariaLabel="ზომა"
+            ariaLabel={sizeLabel}
           />
         </td>
         <td className="px-4 py-2">
@@ -230,6 +233,7 @@ function DraftVariantRow({
 function DraftVariantsTable({
   variants,
   sizes,
+  sizeLabel,
   colors,
   expandedDraftId,
   onToggleExpanded,
@@ -239,6 +243,8 @@ function DraftVariantsTable({
 }: {
   variants: DraftVariant[];
   sizes: LookupItem[];
+  // The category's size-scale name ("ზომა", "მოცულობა", ...).
+  sizeLabel: string;
   colors: LookupItem[];
   expandedDraftId: number | null;
   onToggleExpanded: (draftId: number) => void;
@@ -253,7 +259,7 @@ function DraftVariantsTable({
       <table className="w-full text-left text-sm">
         <thead className="border-b border-border bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
-            <th className="px-4 py-3 font-medium">ზომა</th>
+            <th className="px-4 py-3 font-medium">{sizeLabel}</th>
             <th className="px-4 py-3 font-medium">ფერი</th>
             <th className="px-4 py-3 font-medium">SKU</th>
             <th className="px-4 py-3 font-medium">FINA ID</th>
@@ -269,6 +275,7 @@ function DraftVariantsTable({
               key={variant.draftId}
               variant={variant}
               sizes={sizes}
+              sizeLabel={sizeLabel}
               colors={colors}
               expanded={expandedDraftId === variant.draftId}
               onToggleExpanded={() => onToggleExpanded(variant.draftId)}
@@ -291,6 +298,7 @@ function DraftVariantsTable({
 // ProductVariantsPanel (edit mode) instead of being shown alongside it.
 export function ProductPricingTab({
   sizes,
+  sizeLabel,
   colors,
   conditions,
   statuses,
@@ -321,6 +329,8 @@ export function ProductPricingTab({
   errors,
 }: {
   sizes: LookupItem[];
+  // The category's size-scale name ("ზომა", "მოცულობა", ...).
+  sizeLabel: string;
   colors: LookupItem[];
   conditions: LookupItem[];
   statuses: LookupItem[];
@@ -370,7 +380,7 @@ export function ProductPricingTab({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="product-pricing-sizes" className="text-xs text-muted-foreground">
-            ზომები
+            {sizeLabel}
           </label>
           <Select
             id="product-pricing-sizes"
@@ -484,6 +494,7 @@ export function ProductPricingTab({
       <DraftVariantsTable
         variants={draftVariants}
         sizes={sizes}
+        sizeLabel={sizeLabel}
         colors={colors}
         expandedDraftId={expandedDraftId}
         onToggleExpanded={onToggleDraftVariantExpanded}

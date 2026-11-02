@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
 import { Select } from "@/components/shared/Select";
@@ -18,6 +18,7 @@ import {
   type Category,
 } from "@/lib/api/categories";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
+import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
 import { getDescendantIds, slugify } from "@/lib/categories-tree";
 import { categoryFormSchema } from "@/lib/validation/categories";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
@@ -74,6 +75,14 @@ export function CategoryFormModal({
     category?.vehicleFitmentEnabled ?? true,
   );
   const [inheritsAttributes, setInheritsAttributes] = useState(category?.inheritsAttributes ?? true);
+  const [sizeScaleId, setSizeScaleId] = useState(category?.sizeScaleId != null ? String(category.sizeScaleId) : "");
+  const [sizeScales, setSizeScales] = useState<LookupItem[]>([]);
+
+  useEffect(() => {
+    listLookupItems("size-scales")
+      .then(setSizeScales)
+      .catch(() => setSizeScales([]));
+  }, []);
   const { file: imageFile, previewUrl, onChange: handleImageChange } = useFileUploadPreview(
     resolveMediaUrl(category?.imageUrl ?? null),
   );
@@ -121,6 +130,7 @@ export function CategoryFormModal({
         onlinePurchaseEnabled,
         vehicleFitmentEnabled,
         inheritsAttributes,
+        sizeScaleId: sizeScaleId ? Number(sizeScaleId) : null,
       };
 
       const savedCategory = isEditing
@@ -319,6 +329,26 @@ export function CategoryFormModal({
               label="მშობლის მახასიათებლების მემკვიდრეობა"
             />
           </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="category-size-scale" className="text-sm font-medium">
+            ვარიანტის ზომის სკალა
+          </label>
+          <Select
+            id="category-size-scale"
+            options={[
+              { value: "", label: "— მშობლისგან —" },
+              ...sizeScales.map((scale) => ({ value: String(scale.id), label: scale.nameKa })),
+            ]}
+            value={sizeScaleId}
+            onChange={setSizeScaleId}
+          />
+          <p className="text-xs text-muted-foreground">
+            რას ზომავს პროდუქტის ვარიანტის „ზომა&rdquo; ამ კატეგორიაში (ტანსაცმლის ზომა, ფეხსაცმლის EU
+            ზომა, მოცულობა, ბიჯი…). ვარიანტის ფორმა მხოლოდ ამ სკალის ზომებს შემოგთავაზებთ, საიტზე კი
+            სკალის სახელი გამოჩნდება. ცარიელი = მშობელი კატეგორიისგან; ქვეკატეგორიებზეც ვრცელდება.
+          </p>
         </div>
 
         <div className="flex flex-col gap-1.5">

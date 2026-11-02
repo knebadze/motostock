@@ -34,6 +34,10 @@ model Category {
   // filters still inherit. See attributes.service.ts's
   // resolveAttributeCategoryIds.
   inheritsAttributes    Boolean                      @default(true)
+  // Which SizeScale its products' variant "size" uses. Null = inherit the
+  // nearest ancestor's; none anywhere = every size is offered.
+  sizeScaleId           Int?
+  sizeScale             SizeScale?                   @relation(fields: [sizeScaleId], references: [id], onDelete: SetNull)
   parentId             Int?
   parent               Category?                     @relation("CategoryChildren", fields: [parentId], references: [id])
   children             Category[]                    @relation("CategoryChildren")
