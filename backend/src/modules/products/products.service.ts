@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import { resolveSizeScale,
+import { invalidateCategoryItemCounts, resolveSizeScale,
   getOnlinePurchaseBlockedCategoryIds,
   getVehicleFitmentDisabledCategoryIds,
 } from "../categories/categories.service.js";
@@ -964,6 +964,7 @@ export async function createProduct(input: CreateProductInput) {
     await productsRepository.replaceAttributeValues(row.id, attributeWriteData);
   }
 
+  invalidateCategoryItemCounts();
   return getProduct(row.id);
 }
 
@@ -1037,6 +1038,7 @@ export async function updateProduct(id: number, input: UpdateProductInput) {
     await recordSlugRename("PRODUCT", id, existing.slug, input.slug);
   }
 
+  invalidateCategoryItemCounts();
   return getProduct(id);
 }
 
@@ -1067,6 +1069,7 @@ export async function deleteProduct(id: number) {
 
   try {
     await productsRepository.delete(id);
+    invalidateCategoryItemCounts();
   } catch (error) {
     if (isForeignKeyViolation(error)) {
       throw new ApiError(

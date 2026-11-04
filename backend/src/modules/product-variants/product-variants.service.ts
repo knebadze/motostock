@@ -1,5 +1,6 @@
 import { ApiError } from "../../lib/ApiError.js";
 import { findActiveDiscount, findDiscountAtOrAbovePrice } from "../../lib/discounts.js";
+import { invalidateCategoryItemCounts } from "../categories/categories.service.js";
 import { isForeignKeyViolation, isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { deleteUploadedImage } from "../../lib/storage.js";
 import { productsRepository } from "../products/products.repository.js";
@@ -131,6 +132,7 @@ export async function createProductVariant(input: CreateProductVariantInput) {
 
   try {
     const row = await productVariantsRepository.create(input);
+    invalidateCategoryItemCounts();
     return toResponse(row);
   } catch (err) {
     // A concurrent request can pass either pre-check above before either
@@ -214,6 +216,7 @@ export async function updateProductVariant(id: number, input: UpdateProductVaria
 
   try {
     const row = await productVariantsRepository.update(id, rest, stockDelta);
+    invalidateCategoryItemCounts();
     return { ...toResponse(row), stockConflict };
   } catch (err) {
     // See createProductVariant's catch above — same two-field race.
@@ -235,6 +238,7 @@ export async function deleteProductVariant(id: number) {
 
   try {
     await productVariantsRepository.delete(id);
+    invalidateCategoryItemCounts();
   } catch (error) {
     if (isForeignKeyViolation(error)) {
       throw new ApiError(400, "ეს ჩანაწერი გამოიყენება სხვა ჩანაწერებში, ვერ წაიშლება");

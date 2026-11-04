@@ -65,6 +65,14 @@ function toResponse(category: CategoryRow) {
 }
 
 const ITEM_COUNTS_CACHE_KEY = "categories:item-counts";
+
+// Drops the cached counts — called after every write that can change them
+// (category tree, products, variants, vehicle listings), so the storefront
+// (category menu, subcategory filter, homepage section) sees new items at
+// once instead of after the TTL.
+export function invalidateCategoryItemCounts() {
+  cache.del(ITEM_COUNTS_CACHE_KEY);
+}
 const ITEM_COUNTS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 // Per-category storefront item counts, each ROLLED UP over its whole
@@ -269,6 +277,7 @@ export async function createCategory(input: CreateCategoryInput) {
     "ეს slug უკვე გამოყენებულია",
   );
 
+  invalidateCategoryItemCounts();
   return toResponse(category);
 }
 
@@ -320,6 +329,7 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
     await recordSlugRename("CATEGORY", id, existing.slug, input.slug);
   }
 
+  invalidateCategoryItemCounts();
   return toResponse(category);
 }
 
@@ -336,6 +346,7 @@ export async function deleteCategory(id: number) {
 
   try {
     await categoriesRepository.delete(id);
+    invalidateCategoryItemCounts();
   } catch (error) {
     if (isForeignKeyViolation(error)) {
       throw new ApiError(

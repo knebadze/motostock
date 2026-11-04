@@ -2,6 +2,7 @@ import { ApiError } from "../../lib/ApiError.js";
 import { UNPAGINATED_LIST_MAX } from "../products/products.service.js";
 import { cache } from "../../lib/cache.js";
 import { findActiveDiscount, findDiscountAtOrAbovePrice } from "../../lib/discounts.js";
+import { invalidateCategoryItemCounts } from "../categories/categories.service.js";
 import { isForeignKeyViolation } from "../../lib/prismaErrors.js";
 import { resolvePage } from "../../lib/pagination.js";
 import { deleteUploadedImage } from "../../lib/storage.js";
@@ -532,6 +533,7 @@ export async function createVehicleListing(input: CreateVehicleListingInput) {
   await assertRefsExist(input);
 
   const row = await vehicleListingRepository.create(input);
+  invalidateCategoryItemCounts();
   return toVehicleListingResponse(row);
 }
 
@@ -599,6 +601,7 @@ export async function updateVehicleListing(id: number, input: UpdateVehicleListi
   }
 
   const row = await vehicleListingRepository.update(id, rest, stockDelta);
+  invalidateCategoryItemCounts();
   return { ...toVehicleListingResponse(row), stockConflict };
 }
 
@@ -610,6 +613,7 @@ export async function deleteVehicleListing(id: number) {
 
   try {
     await vehicleListingRepository.delete(id);
+    invalidateCategoryItemCounts();
   } catch (error) {
     if (isForeignKeyViolation(error)) {
       throw new ApiError(400, "ეს ჩანაწერი გამოიყენება სხვა ჩანაწერებში, ვერ წაიშლება");
