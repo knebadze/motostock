@@ -18,15 +18,22 @@ FROM "catalog_dupes" d WHERE t."vehicleCatalogId" = d."id";
 UPDATE "dbo"."GarageVehicle" t SET "vehicleCatalogId" = d."keepId"
 FROM "catalog_dupes" d WHERE t."vehicleCatalogId" = d."id";
 
--- A product already fitted to the kept row would collide on
--- (productId, vehicleCatalogId): drop that redundant fitment instead.
+-- Repointing must not collide on (productId, vehicleCatalogId): a product
+-- may already be fitted to the kept row, or to two or more copies of it
+-- (3+ copies when the seed ran 3+ times). Keep one fitment per product per
+-- target row — the one already on the kept row if any, else the oldest —
+-- and drop the rest.
 DELETE FROM "dbo"."ProductFitment" f
-USING "catalog_dupes" d
-WHERE f."vehicleCatalogId" = d."id"
-  AND EXISTS (
-    SELECT 1 FROM "dbo"."ProductFitment" k
-    WHERE k."productId" = f."productId" AND k."vehicleCatalogId" = d."keepId"
-  );
+USING (
+  SELECT pf."id",
+    ROW_NUMBER() OVER (
+      PARTITION BY pf."productId", COALESCE(d."keepId", pf."vehicleCatalogId")
+      ORDER BY (d."id" IS NOT NULL), pf."id"
+    ) AS "rn"
+  FROM "dbo"."ProductFitment" pf
+  LEFT JOIN "catalog_dupes" d ON d."id" = pf."vehicleCatalogId"
+) ranked
+WHERE f."id" = ranked."id" AND ranked."rn" > 1;
 UPDATE "dbo"."ProductFitment" t SET "vehicleCatalogId" = d."keepId"
 FROM "catalog_dupes" d WHERE t."vehicleCatalogId" = d."id";
 
