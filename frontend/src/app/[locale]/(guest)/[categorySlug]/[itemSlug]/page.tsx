@@ -19,7 +19,12 @@ import {
   getViewedTogetherFromServer,
 } from "@/lib/api/server";
 import { buildVehicleListingSlug, parseVehicleListingIdFromSlug } from "@/lib/api/vehicle-listings";
-import { buildVehicleCatalogSlug, type VehicleSearchOption } from "@/lib/api/vehicle-catalog";
+import {
+  EMPTY_VEHICLE_SEARCH_DATA,
+  buildVehicleCatalogSlug,
+  expandVehicleSearchOptions,
+  type VehicleSearchOption,
+} from "@/lib/api/vehicle-catalog";
 import { localizedLookupName } from "@/lib/api/lookups";
 import {
   getAncestorChain,
@@ -405,7 +410,7 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
   const [deliveryInfo, companyInfo, vehicleOptions, garage] = await Promise.all([
     purchasableOnline ? getDeliveryInfoFromServer() : null,
     purchasableOnline ? getCompanyInfoFromServer() : null,
-    showFitBadge && selectedVehicleCatalogId ? getVehicleSearchOptionsFromServer() : [],
+    showFitBadge && selectedVehicleCatalogId ? getVehicleSearchOptionsFromServer() : EMPTY_VEHICLE_SEARCH_DATA,
     showFitBadge ? getMyGarageFromServer() : [],
   ]);
   const pickupAddress = companyInfo
@@ -419,7 +424,9 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
     slug: buildVehicleCatalogSlug(entry),
   });
   // An unknown/deleted vehicle id in the cookie counts as no selection.
-  const selectedVehicleEntry = vehicleOptions.find((entry) => String(entry.id) === selectedVehicleCatalogId);
+  const selectedVehicleEntry = expandVehicleSearchOptions(vehicleOptions).find(
+    (entry) => String(entry.id) === selectedVehicleCatalogId,
+  );
   const garageFitVehicles = [
     ...new Map(garage.map((vehicle) => [vehicle.vehicleCatalog.id, toFitVehicle(vehicle.vehicleCatalog)])).values(),
   ];

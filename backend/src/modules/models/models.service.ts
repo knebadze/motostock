@@ -7,6 +7,7 @@ import { brandsRepository } from "../brands/brands.repository.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { modelsRepository } from "./models.repository.js";
 import type { CreateModelInput, ModelListQuery, UpdateModelInput } from "./models.schema.js";
+import { invalidateVehicleCatalogOptions } from "../vehicle-catalog/vehicle-catalog-options-cache.js";
 
 type BrandRefRow = { id: number; name: string; slug: string };
 type CategoryRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
@@ -110,6 +111,7 @@ export async function createModel(input: CreateModelInput) {
     "slug",
     "ამ მარკაზე ეს slug უკვე გამოყენებულია",
   );
+  invalidateVehicleCatalogOptions();
   return toResponse(model);
 }
 
@@ -145,6 +147,7 @@ export async function updateModel(id: number, input: UpdateModelInput) {
     "slug",
     "ამ მარკაზე ეს slug უკვე გამოყენებულია",
   );
+  invalidateVehicleCatalogOptions();
   return toResponse(model);
 }
 
@@ -156,6 +159,7 @@ export async function deleteModel(id: number) {
 
   try {
     await modelsRepository.delete(id);
+    invalidateVehicleCatalogOptions();
   } catch (error) {
     if (isForeignKeyViolation(error)) {
       throw new ApiError(

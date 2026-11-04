@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import {
   getLookupItemsFromServer,
-  getModelsFromServer,
   getMyGarageFromServer,
-  getVehicleCatalogFromServer,
   getVinDecodeStatusFromServer,
 } from "@/lib/api/server";
 import { GarageManager } from "@/components/account/GarageManager";
@@ -13,11 +11,11 @@ import { noindexMetadata } from "@/lib/seo";
 export const metadata: Metadata = noindexMetadata({ follow: false });
 
 export default async function GaragePage() {
-  const [garage, vehicleCatalog, models, fuelTypes, transmissionTypes, vinDecodeStatus] =
+  // The catalog/models the "add vehicle" form picks from aren't fetched
+  // here — GarageManager loads them when the form is first opened.
+  const [garage, fuelTypes, transmissionTypes, vinDecodeStatus] =
     await Promise.all([
       getMyGarageFromServer(),
-      getVehicleCatalogFromServer(),
-      getModelsFromServer(),
       getLookupItemsFromServer("fuel-types"),
       getLookupItemsFromServer("transmission-types"),
       getVinDecodeStatusFromServer(),
@@ -26,8 +24,6 @@ export default async function GaragePage() {
   return (
     <GaragePageView
       garage={garage}
-      vehicleCatalog={vehicleCatalog}
-      models={models}
       fuelTypes={fuelTypes}
       transmissionTypes={transmissionTypes}
       vinDecodeEnabled={vinDecodeStatus.enabled}
@@ -37,15 +33,11 @@ export default async function GaragePage() {
 
 function GaragePageView({
   garage,
-  vehicleCatalog,
-  models,
   fuelTypes,
   transmissionTypes,
   vinDecodeEnabled,
 }: {
   garage: Awaited<ReturnType<typeof getMyGarageFromServer>>;
-  vehicleCatalog: Awaited<ReturnType<typeof getVehicleCatalogFromServer>>;
-  models: Awaited<ReturnType<typeof getModelsFromServer>>;
   fuelTypes: Awaited<ReturnType<typeof getLookupItemsFromServer>>;
   transmissionTypes: Awaited<ReturnType<typeof getLookupItemsFromServer>>;
   vinDecodeEnabled: boolean;
@@ -58,8 +50,6 @@ function GaragePageView({
       <div className="mt-6">
         <GarageManager
           initialGarage={garage}
-          vehicleCatalog={vehicleCatalog}
-          models={models}
           fuelTypes={fuelTypes}
           transmissionTypes={transmissionTypes}
           vinDecodeEnabled={vinDecodeEnabled}

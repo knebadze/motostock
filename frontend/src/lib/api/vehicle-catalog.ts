@@ -35,6 +35,43 @@ export type VehicleCatalogInput = Schemas["CreateVehicleCatalogInput"];
 // roughly half of each row's weight in the page payload.
 export type VehicleSearchOption = Omit<VehicleCatalogOption, "category">;
 
+// VehicleSearchOption[] in a compact, serializable form for pages that
+// embed the whole catalog (home hero search, checkout compatibility check):
+// each brand and model is written once and entries carry only ids, instead
+// of repeating brand/model objects on ~3,500 rows. Expanded back on the
+// client with expandVehicleSearchOptions.
+export type VehicleSearchData = {
+  brands: BrandModelRef[];
+  models: (BrandModelRef & { brandId: number })[];
+  // [catalog id, model id, variant, yearFrom, yearTo]
+  entries: [number, number, string, number | null, number | null][];
+};
+
+export const EMPTY_VEHICLE_SEARCH_DATA: VehicleSearchData = { brands: [], models: [], entries: [] };
+
+export function compactVehicleSearchOptions(options: VehicleSearchOption[]): VehicleSearchData {
+  const brands = new Map<number, BrandModelRef>();
+  const models = new Map<number, BrandModelRef & { brandId: number }>();
+  const entries: VehicleSearchData["entries"] = [];
+  for (const option of options) {
+    brands.set(option.brand.id, option.brand);
+    models.set(option.model.id, { ...option.model, brandId: option.brand.id });
+    entries.push([option.id, option.model.id, option.variant, option.yearFrom, option.yearTo]);
+  }
+  return { brands: [...brands.values()], models: [...models.values()], entries };
+}
+
+export function expandVehicleSearchOptions(data: VehicleSearchData): VehicleSearchOption[] {
+  const brandById = new Map(data.brands.map((brand) => [brand.id, brand]));
+  const modelById = new Map(data.models.map((model) => [model.id, model]));
+  return data.entries.flatMap(([id, modelId, variant, yearFrom, yearTo]) => {
+    const model = modelById.get(modelId);
+    const brand = model ? brandById.get(model.brandId) : undefined;
+    if (!model || !brand) return [];
+    return [{ id, brand, model: { id: model.id, name: model.name, slug: model.slug }, variant, yearFrom, yearTo }];
+  });
+}
+
 // URL slug for a vehicle's "parts that fit" page (/compatible-products/…):
 // "honda-cbr600rr-2007-2012-123" — brand, model, variant, years, then the
 // catalog id, which is all parseVehicleCatalogIdFromSlug reads back (same
@@ -177,6 +214,13 @@ export async function uploadVehicleCatalogImage(
     { headers: { "Content-Type": "multipart/form-data" } },
   );
   return data.item;
+}
+
+// Full picker list incl. category (public) — the garage "add vehicle" form
+// loads it when first opened instead of every garage view embedding it.
+export async function listVehicleCatalogOptions(): Promise<VehicleCatalogOption[]> {
+  const { data } = await apiClient.get<{ items: VehicleCatalogOption[] }>("/vehicle-catalog/options");
+  return data.items;
 }
 
 // Lean brand/model/year picker list (public) — for a picker opened on demand

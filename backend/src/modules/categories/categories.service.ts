@@ -12,6 +12,7 @@ import type {
   CreateCategoryInput,
   UpdateCategoryInput,
 } from "./categories.schema.js";
+import { invalidateVehicleCatalogOptions } from "../vehicle-catalog/vehicle-catalog-options-cache.js";
 
 type CategoryRow = {
   id: number;
@@ -329,6 +330,7 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
     await recordSlugRename("CATEGORY", id, existing.slug, input.slug);
   }
 
+  invalidateVehicleCatalogOptions();
   invalidateCategoryItemCounts();
   return toResponse(category);
 }

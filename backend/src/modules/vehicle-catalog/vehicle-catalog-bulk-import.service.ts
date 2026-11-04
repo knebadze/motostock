@@ -9,6 +9,7 @@ import {
 import { vehicleCatalogRepository } from "./vehicle-catalog.repository.js";
 import { createVehicleCatalogSchema } from "./vehicle-catalog.schema.js";
 import { DATA_COLUMNS } from "./vehicle-catalog-template.service.js";
+import { invalidateVehicleCatalogOptions } from "./vehicle-catalog-options-cache.js";
 
 const DATA_SHEET_NAME = "მონაცემები";
 
@@ -189,6 +190,7 @@ export async function bulkImportVehicleCatalog(fileBuffer: Buffer) {
   }
 
   const createdCount = results.filter((r) => r.status === "created").length;
+  if (createdCount > 0) invalidateVehicleCatalogOptions();
   return {
     totalRows: results.length,
     createdCount,

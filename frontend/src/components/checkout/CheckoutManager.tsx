@@ -24,7 +24,11 @@ import type { PublicDeliveryInfo } from "@/lib/api/settings";
 import type { Address } from "@/lib/api/addresses";
 import type { LookupItem } from "@/lib/api/lookups";
 import type { Cart } from "@/lib/api/cart";
-import type { GarageVehicle, VehicleSearchOption } from "@/lib/api/vehicle-catalog";
+import {
+  expandVehicleSearchOptions,
+  type GarageVehicle,
+  type VehicleSearchData,
+} from "@/lib/api/vehicle-catalog";
 import type { LocalizedString } from "@/lib/api/categories";
 import type { PublicBank } from "@/lib/api/banks";
 import { AddressFormModal } from "@/components/account/AddressFormModal";
@@ -44,7 +48,8 @@ export function CheckoutManager({
   addresses: Address[];
   cities: LookupItem[];
   cart: Cart;
-  vehicleCatalog: VehicleSearchOption[];
+  // Compact (see VehicleSearchData) — expanded once here.
+  vehicleCatalog: VehicleSearchData;
   garageVehicles: GarageVehicle[];
   // Vehicle-independent categories (Category.vehicleFitmentEnabled off) —
   // their products are left out of the compatibility check.
@@ -64,6 +69,7 @@ export function CheckoutManager({
   // Deduped by product id — a cart can hold several variants of the same
   // product (different size/color), but compatibility is a per-product
   // concept (ProductFitment/ProductFitmentRule), not per-variant.
+  const vehicleSearchOptions = useMemo(() => expandVehicleSearchOptions(vehicleCatalog), [vehicleCatalog]);
   const cartProducts = useMemo(() => {
     const byId = new Map<number, { id: number; name: LocalizedString }>();
     for (const item of cart.items) {
@@ -628,7 +634,7 @@ export function CheckoutManager({
         </section>
 
         <CompatibilityChecker
-          vehicleCatalog={vehicleCatalog}
+          vehicleCatalog={vehicleSearchOptions}
           garageVehicles={garageVehicles}
           products={cartProducts}
         />

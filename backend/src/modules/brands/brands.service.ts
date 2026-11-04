@@ -5,6 +5,7 @@ import { resolvePage } from "../../lib/pagination.js";
 import { applyBrandAdminFilters } from "../filters/brand/brand-filter-registry.js";
 import { brandsRepository } from "./brands.repository.js";
 import type { BrandListQuery, CreateBrandInput, UpdateBrandInput } from "./brands.schema.js";
+import { invalidateVehicleCatalogOptions } from "../vehicle-catalog/vehicle-catalog-options-cache.js";
 
 type BrandRow = {
   id: number;
@@ -68,6 +69,7 @@ export async function createBrand(input: CreateBrandInput) {
     "slug",
     "ეს slug უკვე გამოყენებულია",
   );
+  invalidateVehicleCatalogOptions();
   return toResponse(brand);
 }
 
@@ -93,6 +95,7 @@ export async function updateBrand(id: number, input: UpdateBrandInput) {
     "slug",
     "ეს slug უკვე გამოყენებულია",
   );
+  invalidateVehicleCatalogOptions();
   return toResponse(brand);
 }
 
@@ -116,6 +119,7 @@ export async function deleteBrand(id: number) {
 
   try {
     await brandsRepository.delete(id);
+    invalidateVehicleCatalogOptions();
   } catch (error) {
     if (isForeignKeyViolation(error)) {
       throw new ApiError(

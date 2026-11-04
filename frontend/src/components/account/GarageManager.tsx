@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { buildVehicleCatalogSlug } from "@/lib/api/vehicle-catalog";
+import { buildVehicleCatalogSlug, listVehicleCatalogOptions } from "@/lib/api/vehicle-catalog";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -14,7 +14,7 @@ import { deleteGarageVehicle, uploadGarageVehicleImage } from "@/lib/api/garage"
 import { resolveMediaUrl } from "@/lib/api/client";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
 import type { GarageVehicle, VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
-import type { Model } from "@/lib/api/models";
+import { listModels, type Model } from "@/lib/api/models";
 import type { LookupItem } from "@/lib/api/lookups";
 import { formatVehicleCatalogLabel } from "@/lib/format";
 
@@ -111,15 +111,11 @@ const trashIcon = (
 
 export function GarageManager({
   initialGarage,
-  vehicleCatalog,
-  models,
   fuelTypes,
   transmissionTypes,
   vinDecodeEnabled,
 }: {
   initialGarage: GarageVehicle[];
-  vehicleCatalog: VehicleCatalogOption[];
-  models: Model[];
   fuelTypes: LookupItem[];
   transmissionTypes: LookupItem[];
   vinDecodeEnabled: boolean;
@@ -128,11 +124,34 @@ export function GarageManager({
   const tCommon = useTranslations("Common");
   const tErrors = useTranslations("ApiErrors");
   const [garage, setGarage] = useState(initialGarage);
-  const [catalog, setCatalog] = useState(vehicleCatalog);
+  // The catalog (~3,500 entries) and models the add form picks from are
+  // loaded the first time the form is opened, not embedded in every garage
+  // page view.
+  const [catalog, setCatalog] = useState<VehicleCatalogOption[] | null>(null);
+  const [models, setModels] = useState<Model[] | null>(null);
+  const [loadingPickers, setLoadingPickers] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<GarageVehicle | null>(null);
   const [historyTarget, setHistoryTarget] = useState<GarageVehicle | null>(null);
   const [uploadingId, setUploadingId] = useState<number | null>(null);
+
+  async function openAddModal() {
+    if (catalog && models) {
+      setModalOpen(true);
+      return;
+    }
+    setLoadingPickers(true);
+    try {
+      const [catalogItems, modelItems] = await Promise.all([listVehicleCatalogOptions(), listModels()]);
+      setCatalog(catalogItems);
+      setModels(modelItems);
+      setModalOpen(true);
+    } catch (error) {
+      toast.error(resolveApiErrorMessage(error, tErrors, tCommon("genericError")));
+    } finally {
+      setLoadingPickers(false);
+    }
+  }
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -162,10 +181,11 @@ export function GarageManager({
         <p className="text-muted-foreground">{t("description")}</p>
         <button
           type="button"
-          onClick={() => setModalOpen(true)}
-          className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+          onClick={openAddModal}
+          disabled={loadingPickers}
+          className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
-          {t("addButton")}
+          {loadingPickers ? `${tCommon("loader.loading")}...` : t("addButton")}
         </button>
       </div>
 
@@ -269,15 +289,15 @@ export function GarageManager({
         key={String(modalOpen)}
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        vehicleCatalog={catalog}
-        models={models}
+        vehicleCatalog={catalog ?? []}
+        models={models ?? []}
         fuelTypes={fuelTypes}
         transmissionTypes={transmissionTypes}
         vinDecodeEnabled={vinDecodeEnabled}
         onSaved={(vehicle) => {
           setGarage((current) => [vehicle, ...current]);
           setCatalog((current) =>
-            current.some((entry) => entry.id === vehicle.vehicleCatalog.id)
+            !current || current.some((entry) => entry.id === vehicle.vehicleCatalog.id)
               ? current
               : [vehicle.vehicleCatalog, ...current],
           );

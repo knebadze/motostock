@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { EMPTY_VEHICLE_SEARCH_DATA } from "@/lib/api/vehicle-catalog";
 import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import {
@@ -63,7 +64,7 @@ export default async function CheckoutPage() {
   );
   const [vehicleCatalog, garageVehicles] = hasFitmentItems
     ? await Promise.all([getVehicleSearchOptionsFromServer(), getMyGarageFromServer()])
-    : [[], []];
+    : [EMPTY_VEHICLE_SEARCH_DATA, []];
 
   const [t, deliveryInfo] = await Promise.all([getTranslations("Checkout"), getDeliveryInfoFromServer()]);
 

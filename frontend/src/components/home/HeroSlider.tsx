@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { resolveMediaUrl } from "@/lib/api/client";
 import type { HeroSlide, HeroSlideTextPosition, HeroSlideVerticalPosition } from "@/lib/api/hero-slides";
-import type { GarageVehicle, VehicleSearchOption } from "@/lib/api/vehicle-catalog";
+import {
+  expandVehicleSearchOptions,
+  type GarageVehicle,
+  type VehicleSearchData,
+} from "@/lib/api/vehicle-catalog";
 import type { Category } from "@/lib/api/categories";
 import { VEHICLE_ROOT_CATEGORY_SLUG } from "@/lib/categories-tree";
 import { formatDate } from "@/lib/format";
@@ -91,13 +95,15 @@ export function HeroSlider({
   categories,
 }: {
   slides: HeroSlide[];
-  vehicleCatalog: VehicleSearchOption[];
+  // Compact (see VehicleSearchData) — expanded once here.
+  vehicleCatalog: VehicleSearchData;
   garageVehicles: GarageVehicle[];
   categories: Category[];
 }) {
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Common.heroSlider");
   const [index, setIndex] = useState(0);
+  const vehicleSearchOptions = useMemo(() => expandVehicleSearchOptions(vehicleCatalog), [vehicleCatalog]);
   const [paused, setPaused] = useState(false);
   // Pause/play (WCAG 2.2.2): the shopper's explicit choice; until they make
   // one, autoplay is off for anyone with the OS "reduce motion" setting.
@@ -268,7 +274,7 @@ export function HeroSlider({
               )}
 
               {slide.type === "VEHICLE_SEARCH" && (
-                <VehicleSearchForm vehicleCatalog={vehicleCatalog} garageVehicles={garageVehicles} />
+                <VehicleSearchForm vehicleCatalog={vehicleSearchOptions} garageVehicles={garageVehicles} />
               )}
               {slide.type === "CATEGORY_FILTER" && <CategorySearchForm categories={categories} />}
             </div>

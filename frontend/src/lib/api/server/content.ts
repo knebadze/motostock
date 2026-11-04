@@ -15,7 +15,12 @@ import type { PublicDeliveryInfo } from "../settings";
 import type { Faq } from "../faq";
 import type { Vacancy } from "../vacancies";
 import type { PublicServiceType } from "../service-types";
-import type { VehicleCatalogOption, VehicleSearchOption } from "../vehicle-catalog";
+import {
+  EMPTY_VEHICLE_SEARCH_DATA,
+  compactVehicleSearchOptions,
+  type VehicleCatalogOption,
+  type VehicleSearchData,
+} from "../vehicle-catalog";
 
 // Admin-edited site content (categories, company info, legal pages, FAQ, vacancies, hero slides, team, homepage sections).
 
@@ -142,22 +147,14 @@ export const getPublicServiceTypesFromServer = cache(withPublicFallback(getCache
 
 // The whole vehicle catalog for the storefront's vehicle pickers (home hero
 // search, checkout compatibility check). Public and identical for every
-// visitor, so cached ACROSS requests (it used to be re-fetched — the full
-// catalog — on every home-page view), and slimmed to VehicleSearchOption
-// before it's serialized into the page.
+// visitor, so cached ACROSS requests, and compacted (VehicleSearchData —
+// brands/models once, entries as ids) before it's serialized into the page;
+// the client expands it back (expandVehicleSearchOptions).
 const getCachedVehicleSearchOptions = unstable_cache(
   () =>
-    fetchPublicCacheable<{ items: VehicleCatalogOption[] }, VehicleSearchOption[]>("/vehicle-catalog/options", {
-      fallback: [],
-      extract: (data) =>
-        data.items.map(({ id, brand, model, variant, yearFrom, yearTo }) => ({
-          id,
-          brand,
-          model,
-          variant,
-          yearFrom,
-          yearTo,
-        })),
+    fetchPublicCacheable<{ items: VehicleCatalogOption[] }, VehicleSearchData>("/vehicle-catalog/options", {
+      fallback: EMPTY_VEHICLE_SEARCH_DATA,
+      extract: (data) => compactVehicleSearchOptions(data.items),
     }),
   ["vehicle-search-options"],
   { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["vehicle-catalog"] },

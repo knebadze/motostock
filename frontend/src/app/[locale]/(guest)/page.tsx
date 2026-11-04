@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { EMPTY_VEHICLE_SEARCH_DATA } from "@/lib/api/vehicle-catalog";
 import { SELECTED_VEHICLE_COOKIE } from "@/lib/vehicle-selection";
 import {
   getCategoriesFromServer,
@@ -37,7 +38,7 @@ export default async function HomePage({
   const hasVehicleSearchSlide = slides.some((slide) => slide.type === "VEHICLE_SEARCH");
   const [vehicleCatalog, garageVehicles] = hasVehicleSearchSlide
     ? await Promise.all([getVehicleSearchOptionsFromServer(), getMyGarageFromServer()])
-    : [[], []];
+    : [EMPTY_VEHICLE_SEARCH_DATA, []];
 
   const activeSections = [...sections]
     .filter((section) => section.isActive)

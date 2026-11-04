@@ -13,6 +13,10 @@ import { applyVehicleCatalogAdminFilters } from "../filters/vehicle-catalog/vehi
 import { resolvePage } from "../../lib/pagination.js";
 import { vehicleCatalogRepository } from "./vehicle-catalog.repository.js";
 import { cache } from "../../lib/cache.js";
+import {
+  VEHICLE_CATALOG_OPTIONS_CACHE_KEY,
+  invalidateVehicleCatalogOptions,
+} from "./vehicle-catalog-options-cache.js";
 import type {
   CreateVehicleCatalogInput,
   SubmitVehicleCatalogInput,
@@ -189,9 +193,18 @@ export async function listVehicleCatalog(query: VehicleCatalogListQuery = {}) {
   return { items: rows.map(toVehicleCatalogResponse), total, page, pageSize };
 }
 
+// Cached until a catalog/brand/model/category write — see
+// vehicle-catalog-options-cache.ts.
 export async function listVehicleCatalogOptions() {
-  const rows = await vehicleCatalogRepository.findOptions();
-  return rows.map((row) => ({
+  const cached = cache.get<ReturnType<typeof toCatalogOption>[]>(VEHICLE_CATALOG_OPTIONS_CACHE_KEY);
+  if (cached) return cached;
+  const items = (await vehicleCatalogRepository.findOptions()).map(toCatalogOption);
+  cache.set(VEHICLE_CATALOG_OPTIONS_CACHE_KEY, items);
+  return items;
+}
+
+function toCatalogOption(row: Awaited<ReturnType<typeof vehicleCatalogRepository.findOptions>>[number]) {
+  return {
     id: row.id,
     category: toNamedRef(row.model.category),
     brand: row.brand,
@@ -199,7 +212,7 @@ export async function listVehicleCatalogOptions() {
     variant: row.variant,
     yearFrom: row.yearFrom,
     yearTo: row.yearTo,
-  }));
+  };
 }
 
 // Sitemap feed for the "parts for <vehicle>" pages (/compatible-products/…):
@@ -332,6 +345,7 @@ export async function createVehicleCatalogEntry(input: CreateVehicleCatalogInput
     "yearFrom",
     DUPLICATE_VEHICLE_CATALOG_MESSAGE,
   );
+  invalidateVehicleCatalogOptions();
   return toVehicleCatalogResponse(row);
 }
 
@@ -404,6 +418,7 @@ export async function submitVehicleCatalogEntry(userId: number, input: SubmitVeh
     "yearFrom",
     DUPLICATE_VEHICLE_CATALOG_MESSAGE,
   );
+  invalidateVehicleCatalogOptions();
 
   return {
     id: garageVehicle.id,
@@ -456,6 +471,7 @@ export async function updateVehicleCatalogEntry(id: number, input: UpdateVehicle
     "yearFrom",
     DUPLICATE_VEHICLE_CATALOG_MESSAGE,
   );
+  invalidateVehicleCatalogOptions();
   return toVehicleCatalogResponse(row);
 }
 
@@ -479,6 +495,7 @@ export async function deleteVehicleCatalogEntry(id: number) {
 
   try {
     await vehicleCatalogRepository.delete(id);
+    invalidateVehicleCatalogOptions();
   } catch (error) {
     if (isForeignKeyViolation(error)) {
       throw new ApiError(
