@@ -24,12 +24,32 @@ const ruleInclude = {
   category: { select: namedRefSelect },
 } as const;
 
+// Newest first, id as tie-break — the order compatibility.service.ts merges
+// the two tables in. `take` = how many of the newest rows a page needs.
 export const compatibilityRepository = {
-  findAllFitments(where?: Prisma.ProductFitmentWhereInput) {
-    return prisma.productFitment.findMany({ where, include: fitmentInclude, orderBy: { createdAt: "desc" } });
+  findNewestFitments(where: Prisma.ProductFitmentWhereInput | undefined, take: number) {
+    return prisma.productFitment.findMany({
+      where,
+      include: fitmentInclude,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take,
+    });
   },
 
-  findAllRules(where?: Prisma.ProductFitmentRuleWhereInput) {
-    return prisma.productFitmentRule.findMany({ where, include: ruleInclude, orderBy: { createdAt: "desc" } });
+  countFitments(where?: Prisma.ProductFitmentWhereInput) {
+    return prisma.productFitment.count({ where });
+  },
+
+  findNewestRules(where: Prisma.ProductFitmentRuleWhereInput | undefined, take: number) {
+    return prisma.productFitmentRule.findMany({
+      where,
+      include: ruleInclude,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take,
+    });
+  },
+
+  countRules(where?: Prisma.ProductFitmentRuleWhereInput) {
+    return prisma.productFitmentRule.count({ where });
   },
 };

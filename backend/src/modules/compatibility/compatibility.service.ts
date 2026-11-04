@@ -5,8 +5,7 @@ import { productFitmentRulesRepository } from "../product-fitment-rules/product-
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
 import { getSpecFieldDefinition } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
-import { getLookupDelegate } from "../lookups/lookups.registry.js";
-import { lookupsRepository } from "../lookups/lookups.repository.js";
+import { listLookupItems } from "../lookups/lookups.service.js";
 import { resolvePage } from "../../lib/pagination.js";
 import { compatibilityRepository } from "./compatibility.repository.js";
 import type { ListCompatibilityQuery } from "./compatibility.schema.js";
@@ -72,8 +71,8 @@ function buildProductWhere(filters: { search?: string; categoryId?: number }): P
   return and.length > 0 ? { AND: and } : undefined;
 }
 
-type FitmentRow = Awaited<ReturnType<typeof compatibilityRepository.findAllFitments>>[number];
-type RuleRow = Awaited<ReturnType<typeof compatibilityRepository.findAllRules>>[number];
+type FitmentRow = Awaited<ReturnType<typeof compatibilityRepository.findNewestFitments>>[number];
+type RuleRow = Awaited<ReturnType<typeof compatibilityRepository.findNewestRules>>[number];
 type RawEntry =
   | { source: "fitment"; createdAt: Date; row: FitmentRow }
   | { source: "rule"; createdAt: Date; row: RuleRow };
@@ -82,38 +81,43 @@ const DEFAULT_PAGE_SIZE = 20;
 
 // Merges ProductFitment (explicit product<->vehicle pairs) and
 // ProductFitmentRule (CATEGORY/SPEC/ALL declarative rules) into one flat,
-// filterable, sorted, PAGINATED list.
-//
-// Pagination note: the two source tables are queried in parallel in full
-// (and one is skipped entirely when `kind` narrows to the other) — there's
-// no single query/UNION that cheaply spans both underlying Prisma models
-// (different columns, different includes, and the rule side needs an extra
-// per-row lookup fetch for its spec value). Both source sets are expected to
-// stay small relative to e.g. orders/users, so fetching each in full from
-// the DB is acceptable; what this fixes is the unbounded HTTP response. The
-// raw rows are merged and sorted BEFORE the expensive async per-rule spec
-// lookup, and only the current page's slice is then mapped to its response
-// shape — so lookup queries are only issued for rows actually being
-// returned, not the whole filtered set.
+// filterable, newest-first, PAGINATED list. There's no cheap single query
+// spanning both models, so it's a sorted merge: page N needs only the newest
+// skip+take rows of the combined list, which can only come from the newest
+// skip+take rows of each table — so that's all that's read (plus two counts),
+// instead of both tables in full. Spec-rule values come from the cached
+// lookup lists, not one query per row.
 export async function listAllCompatibility(filters: ListCompatibilityQuery) {
   const { page, pageSize, skip, take } = resolvePage(filters, DEFAULT_PAGE_SIZE);
 
   const productWhere = buildProductWhere(filters);
   const fitmentWhere = productWhere ? { product: productWhere } : undefined;
   const ruleWhere = productWhere ? { product: productWhere } : undefined;
+  const needed = skip + take;
 
-  const [fitmentRows, ruleRows] = await Promise.all([
-    filters.kind === "RULE" ? [] : compatibilityRepository.findAllFitments(fitmentWhere),
-    filters.kind === "FITMENT" ? [] : compatibilityRepository.findAllRules(ruleWhere),
+  const [fitmentRows, ruleRows, fitmentTotal, ruleTotal] = await Promise.all([
+    filters.kind === "RULE" ? [] : compatibilityRepository.findNewestFitments(fitmentWhere, needed),
+    filters.kind === "FITMENT" ? [] : compatibilityRepository.findNewestRules(ruleWhere, needed),
+    filters.kind === "RULE" ? 0 : compatibilityRepository.countFitments(fitmentWhere),
+    filters.kind === "FITMENT" ? 0 : compatibilityRepository.countRules(ruleWhere),
   ]);
 
   const raw: RawEntry[] = [
     ...fitmentRows.map((row): RawEntry => ({ source: "fitment", createdAt: row.createdAt, row })),
     ...ruleRows.map((row): RawEntry => ({ source: "rule", createdAt: row.createdAt, row })),
   ];
-  raw.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  // Total order (newest, then fitments before rules, then higher id) so a
+  // row can't repeat or go missing at a page boundary on equal timestamps.
+  // Consistent with each table's own orderBy, so the per-table "newest
+  // skip+take" reads above always contain the page.
+  raw.sort(
+    (a, b) =>
+      b.createdAt.getTime() - a.createdAt.getTime() ||
+      (a.source === b.source ? 0 : a.source === "fitment" ? -1 : 1) ||
+      b.row.id - a.row.id,
+  );
 
-  const total = raw.length;
+  const total = fitmentTotal + ruleTotal;
   const pageRaw = raw.slice(skip, skip + take);
 
   const items = await Promise.all(
@@ -139,10 +143,8 @@ export async function listAllCompatibility(filters: ListCompatibilityQuery) {
         const definition = getSpecFieldDefinition(row.specField);
         specFieldLabel = { ka: definition.nameKa, en: definition.nameEn, ru: definition.nameRu };
         if (definition.lookupType) {
-          specValue = await lookupsRepository.findById(
-            getLookupDelegate(definition.lookupType),
-            row.specLookupItemId,
-          );
+          const lookupItemId = row.specLookupItemId;
+          specValue = (await listLookupItems(definition.lookupType)).find((item) => item.id === lookupItemId) ?? null;
         }
       }
 
