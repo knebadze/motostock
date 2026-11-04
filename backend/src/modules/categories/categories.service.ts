@@ -13,6 +13,7 @@ import type {
   UpdateCategoryInput,
 } from "./categories.schema.js";
 import { invalidateVehicleCatalogOptions } from "../vehicle-catalog/vehicle-catalog-options-cache.js";
+import { getCategoryTree, invalidateCategoryTree } from "./category-tree-cache.js";
 
 type CategoryRow = {
   id: number;
@@ -86,7 +87,7 @@ export async function getCategoryItemCounts(): Promise<{ categoryId: number; cou
   if (cached) return cached;
 
   const [tree, direct] = await Promise.all([
-    categoriesRepository.findInheritedFlagTree(),
+    getCategoryTree(),
     categoriesRepository.countItemsPerCategory(),
   ]);
   const parentById = new Map(tree.map((row) => [row.id, row.parentId]));
@@ -109,7 +110,7 @@ export async function getCategoryItemCounts(): Promise<{ categoryId: number; cou
 // The size scale a category's products use: its own, else the nearest
 // ancestor's (see Category.sizeScaleId) — null when none is set anywhere.
 export async function resolveSizeScale(categoryId: number) {
-  const all = await categoriesRepository.findMany();
+  const all = await getCategoryTree();
   const byId = new Map(all.map((category) => [category.id, category]));
   const seen = new Set<number>();
   let current = byId.get(categoryId);
@@ -129,7 +130,7 @@ type InheritedFlag = "onlinePurchaseEnabled" | "vehicleFitmentEnabled";
 // itself, or under a switched-off ancestor (so turning it off on "Transport"
 // covers all its subcategories).
 async function getCategoryIdsWithFlagOff(flag: InheritedFlag): Promise<Set<number>> {
-  const rows = await categoriesRepository.findInheritedFlagTree();
+  const rows = await getCategoryTree();
   const byId = new Map(rows.map((row) => [row.id, row]));
   const off = new Set<number>();
   for (const row of rows) {
@@ -216,7 +217,7 @@ export async function resolveCategoryAndDescendantIds(
   categoryId: number,
   preloadedCategories?: { id: number; parentId: number | null }[],
 ): Promise<number[]> {
-  const allCategories = preloadedCategories ?? (await categoriesRepository.findMany());
+  const allCategories = preloadedCategories ?? (await getCategoryTree());
   const childrenByParentId = new Map<number, number[]>();
   for (const category of allCategories) {
     if (category.parentId == null) continue;
@@ -278,6 +279,7 @@ export async function createCategory(input: CreateCategoryInput) {
     "ეს slug უკვე გამოყენებულია",
   );
 
+  invalidateCategoryTree();
   invalidateCategoryItemCounts();
   return toResponse(category);
 }
@@ -331,6 +333,7 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
   }
 
   invalidateVehicleCatalogOptions();
+  invalidateCategoryTree();
   invalidateCategoryItemCounts();
   return toResponse(category);
 }
@@ -348,6 +351,7 @@ export async function deleteCategory(id: number) {
 
   try {
     await categoriesRepository.delete(id);
+    invalidateCategoryTree();
     invalidateCategoryItemCounts();
   } catch (error) {
     if (isForeignKeyViolation(error)) {

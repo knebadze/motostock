@@ -8,6 +8,7 @@ import type {
   CreateAttributeInput,
   UpdateAttributeInput,
 } from "./attributes.schema.js";
+import { getCategoryTree } from "../categories/category-tree-cache.js";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
 type UnitRefRow = {
@@ -70,7 +71,7 @@ function toResponse(row: AttributeRow) {
 // vehicle-category-filters, recommendations' per-garage-vehicle fan-out)
 // was paying one query per category-tree depth on every call.
 export async function resolveCategoryAndAncestorIds(categoryId: number): Promise<number[]> {
-  const allCategories = await categoriesRepository.findMany();
+  const allCategories = await getCategoryTree();
   const parentIdById = new Map(allCategories.map((category) => [category.id, category.parentId]));
 
   const ids: number[] = [];
@@ -87,7 +88,7 @@ export async function resolveCategoryAndAncestorIds(categoryId: number): Promise
 // (itself included) with inheritsAttributes off, so that category's
 // ancestors' attributes don't reach its subtree.
 export async function resolveAttributeCategoryIds(categoryId: number): Promise<number[]> {
-  const allCategories = await categoriesRepository.findMany();
+  const allCategories = await getCategoryTree();
   const byId = new Map(allCategories.map((category) => [category.id, category]));
 
   const ids: number[] = [];
@@ -135,7 +136,7 @@ async function assertUnitExists(unitId: number) {
 
 // Every category below `categoryId` (not itself).
 async function resolveDescendantIds(categoryId: number): Promise<number[]> {
-  const allCategories = await categoriesRepository.findMany();
+  const allCategories = await getCategoryTree();
   const ids: number[] = [];
   let frontier = [categoryId];
   while (frontier.length > 0) {

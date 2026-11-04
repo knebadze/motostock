@@ -34,14 +34,6 @@ export const categoriesRepository = {
     return prisma.category.findUnique({ where: { slug } });
   },
 
-  // The whole tree's inherited switches — tiny (one row per category), read
-  // fresh on every use so an admin change applies at once.
-  findInheritedFlagTree() {
-    return prisma.category.findMany({
-      select: { id: true, parentId: true, onlinePurchaseEnabled: true, vehicleFitmentEnabled: true },
-    });
-  },
-
   // Storefront-visible items directly in each category (not rolled up):
   // products with an active variant, and active vehicle listings (counted
   // under their catalog model's category). Same visibility rules as the

@@ -3,7 +3,6 @@ import { productsRepository } from "../products/products.repository.js";
 import { productFitmentRepository } from "../product-fitment/product-fitment.repository.js";
 import { productFitmentRulesRepository } from "../product-fitment-rules/product-fitment-rules.repository.js";
 import { vehicleCatalogRepository } from "../vehicle-catalog/vehicle-catalog.repository.js";
-import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
 import { getSpecFieldDefinition } from "../vehicle-category-filters/vehicle-spec-fields.registry.js";
 import { getLookupDelegate } from "../lookups/lookups.registry.js";
@@ -12,6 +11,7 @@ import { resolvePage } from "../../lib/pagination.js";
 import { compatibilityRepository } from "./compatibility.repository.js";
 import type { ListCompatibilityQuery } from "./compatibility.schema.js";
 import type { Prisma } from "../../generated/prisma/index.js";
+import { getCategoryTree } from "../categories/category-tree-cache.js";
 
 type NamedRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
 type BrandModelRefRow = { id: number; name: string; slug: string };
@@ -201,7 +201,7 @@ export async function getCompatibleVehiclesForProduct(productId: number) {
   // scooters" and "fits mopeds" as two separate rules), so this loop is a
   // real, if bounded, N+1 without the preload.
   const hasCategoryRule = rules.some((rule) => rule.type === "CATEGORY" && rule.categoryId != null);
-  const allCategories = hasCategoryRule ? await categoriesRepository.findMany() : undefined;
+  const allCategories = hasCategoryRule ? await getCategoryTree() : undefined;
 
   for (const rule of rules) {
     if (rule.type === "CATEGORY" && rule.categoryId != null) {
