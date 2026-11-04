@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 export type SelectOption = { value: string; label: string };
@@ -75,6 +75,13 @@ const MAX_GROW_WIDTH_PX = 320;
 // How long a run of typed characters counts as one typeahead search before
 // resetting — same idea (and roughly the same window) as a native <select>.
 const TYPEAHEAD_RESET_MS = 500;
+
+// A searchable list renders at most this many matches (e.g. ~3,500 vehicle
+// models): rendering them all made opening, typing and even hovering slow,
+// since every hover re-rendered every row. The rest are reachable by
+// narrowing the search; a "… +N" row says how many are hidden. Lists
+// without a search box aren't capped — there'd be no way to reach the rest.
+const MAX_RENDERED_OPTIONS = 100;
 
 function filterOptions(allOptions: SelectOption[], query: string): SelectOption[] {
   return query
@@ -208,12 +215,17 @@ export function Select(props: SelectProps) {
     };
   }, [open]);
 
-  const filteredOptions = filterOptions(options, query);
+  const matchingOptions = useMemo(() => filterOptions(options, query), [options, query]);
+  // What's actually rendered — keyboard navigation/activeIndex index into this.
+  const filteredOptions = useMemo(
+    () => (searchable ? matchingOptions.slice(0, MAX_RENDERED_OPTIONS) : matchingOptions),
+    [matchingOptions, searchable],
+  );
+  const hiddenOptionCount = matchingOptions.length - filteredOptions.length;
 
   const selectedValues = props.multiple ? props.value : props.value ? [props.value] : [];
-  const selectedOptions = options.filter((option) =>
-    selectedValues.includes(option.value),
-  );
+  const selectedValueSet = new Set(selectedValues);
+  const selectedOptions = options.filter((option) => selectedValueSet.has(option.value));
 
   useEffect(() => {
     if (!open || activeIndex < 0) return;
@@ -253,8 +265,11 @@ export function Select(props: SelectProps) {
   // extra render pass just to synchronize state React already knows.
   function openPanel() {
     setOpen(true);
-    const selectedIndex = options.findIndex((option) => selectedValues.includes(option.value));
-    setActiveIndex(selectedIndex >= 0 ? selectedIndex : options.length > 0 ? 0 : -1);
+    // Position in the rendered list (capped when searchable; the query is
+    // always empty on open, so that's the first MAX_RENDERED_OPTIONS options).
+    const rendered = searchable ? options.slice(0, MAX_RENDERED_OPTIONS) : options;
+    const selectedIndex = rendered.findIndex((option) => selectedValueSet.has(option.value));
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : rendered.length > 0 ? 0 : -1);
   }
 
   function togglePanel() {
@@ -498,7 +513,7 @@ export function Select(props: SelectProps) {
                 </li>
               )}
               {filteredOptions.map((option, index) => {
-                const isSelected = selectedValues.includes(option.value);
+                const isSelected = selectedValueSet.has(option.value);
                 const isActive = index === activeIndex;
                 return (
                   <li key={option.value} ref={(el) => { optionRefs.current[index] = el; }}>
@@ -520,6 +535,11 @@ export function Select(props: SelectProps) {
                   </li>
                 );
               })}
+              {hiddenOptionCount > 0 && (
+                <li aria-hidden="true" className="px-3 py-2 text-xs text-muted-foreground">
+                  … +{hiddenOptionCount}
+                </li>
+              )}
             </ul>
           </div>,
           document.body,

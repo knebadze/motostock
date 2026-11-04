@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ProductDetailModal } from "../products/ProductDetailModal";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
@@ -220,14 +220,14 @@ function CompatibilityCheckTab({
   const [matchedProducts, setMatchedProducts] = useState<ProductListItem[] | null>(null);
   const [matchedVehicles, setMatchedVehicles] = useState<CompatibleVehicle[] | null>(null);
 
-  const vehicleOptions = vehicleCatalog.map((entry) => ({
-    value: String(entry.id),
-    label: formatVehicleCatalogLabel(entry),
-  }));
-  const productOptions = products.map((product) => ({
-    value: String(product.id),
-    label: productLabel(product),
-  }));
+  const vehicleOptions = useMemo(
+    () => vehicleCatalog.map((entry) => ({ value: String(entry.id), label: formatVehicleCatalogLabel(entry) })),
+    [vehicleCatalog],
+  );
+  const productOptions = useMemo(
+    () => products.map((product) => ({ value: String(product.id), label: productLabel(product) })),
+    [products],
+  );
 
   async function handleVehicleChange(value: string) {
     setVehicleCatalogId(value);

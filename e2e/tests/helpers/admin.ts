@@ -89,6 +89,12 @@ export async function pickSelectByLabel(
 ): Promise<void> {
   await scope.getByRole("button", { name: ariaLabel, exact: true }).click();
   const listbox = page.locator('[role="listbox"]:visible').last();
+  // Searchable selects only render their first 100 matches (Select.tsx's
+  // MAX_RENDERED_OPTIONS) — narrow by label first, same as pickSelect.
+  if (typeof option === "string") {
+    const searchBox = page.locator('[role="combobox"]:visible').last();
+    if (await searchBox.count()) await searchBox.fill(option);
+  }
   const target =
     typeof option === "number"
       ? listbox.getByRole("option").nth(option)
