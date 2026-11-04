@@ -19,13 +19,19 @@ export function findActiveDiscount<T extends { startDate: Date; endDate: Date }>
 // that hasn't started yet — the discount then activates on schedule priced
 // *above* the item's real current price, an overcharge with nothing left to
 // catch it. This checks every discount that hasn't ended yet (active or
-// scheduled), not just the currently-active one.
+// scheduled), not just the currently-active one. FIXED discounts only: a
+// PERCENT one is re-derived from the new price in the same update
+// (recomputePercentDiscounts), so it always ends up below it — checking its
+// stale stored price would wrongly block lowering the price.
 export function findDiscountAtOrAbovePrice<
-  T extends { endDate: Date; discountPrice: { toString(): string } },
+  T extends { endDate: Date; discountPrice: { toString(): string }; discountPercent: unknown },
 >(discounts: T[], price: number): T | null {
   const now = new Date();
   return (
-    discounts.find((discount) => discount.endDate >= now && Number(discount.discountPrice) >= price) ?? null
+    discounts.find(
+      (discount) =>
+        discount.discountPercent == null && discount.endDate >= now && Number(discount.discountPrice) >= price,
+    ) ?? null
   );
 }
 
