@@ -73,15 +73,18 @@ export function CategoriesManager({
   const filterFields = buildCategoryFilterFields({ categories: allCategories });
 
   async function refresh() {
+    // Covers both create/edit (CategoryFormModal's onSaved below) and
+    // delete (ConfirmDialog's onConfirm below) in one place — both call
+    // this. The public getCategoriesFromServer() cache (storefront nav,
+    // shop filters, ...) never expires on its own, so it must drop here —
+    // first, and regardless of whether the admin list refetch below works.
+    if (!(await revalidatePublicCache("categories"))) {
+      toast.warning("საიტზე კატეგორიები ვერ განახლდა — დააჭირეთ „ქეშის გასუფთავებას“");
+    }
     try {
       const fresh = await listCategories();
       setAllCategories(fresh);
       setDisplayedCategories(adminFilters.length > 0 ? await listCategories(adminFilters) : fresh);
-      // Covers both create/edit (CategoryFormModal's onSaved below) and
-      // delete (ConfirmDialog's onConfirm below) in one place — both call
-      // this. The public getCategoriesFromServer() cache (storefront nav,
-      // shop filters, ...) needs to drop immediately, not wait out its TTL.
-      await revalidatePublicCache("categories");
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";

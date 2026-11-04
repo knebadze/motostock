@@ -69,17 +69,17 @@ const ITEM_COUNTS_CACHE_KEY = "categories:item-counts";
 // Drops the cached counts — called after every write that can change them
 // (category tree, products, variants, vehicle listings), so the storefront
 // (category menu, subcategory filter, homepage section) sees new items at
-// once instead of after the TTL.
+// once. The admin "clear cache" button (cache.clear()) drops it too.
 export function invalidateCategoryItemCounts() {
   cache.del(ITEM_COUNTS_CACHE_KEY);
 }
-const ITEM_COUNTS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 // Per-category storefront item counts, each ROLLED UP over its whole
 // subtree (a parent shows everything under it — products, or vehicle
 // listings for transport categories), for the homepage categories section.
-// Cached briefly: it's a full-table aggregate and a few minutes' lag on a
-// count is harmless.
+// Cached with no expiry (a full-table aggregate): dropped by
+// invalidateCategoryItemCounts on every write that changes a count, and by
+// the admin "clear cache" button.
 export async function getCategoryItemCounts(): Promise<{ categoryId: number; count: number }[]> {
   const cached = cache.get<{ categoryId: number; count: number }[]>(ITEM_COUNTS_CACHE_KEY);
   if (cached) return cached;
@@ -101,7 +101,7 @@ export async function getCategoryItemCounts(): Promise<{ categoryId: number; cou
     }
   }
   const result = [...totals].map(([categoryId, count]) => ({ categoryId, count }));
-  cache.set(ITEM_COUNTS_CACHE_KEY, result, ITEM_COUNTS_CACHE_TTL_MS);
+  cache.set(ITEM_COUNTS_CACHE_KEY, result);
   return result;
 }
 

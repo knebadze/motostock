@@ -20,10 +20,10 @@ import type { VehicleCatalogOption, VehicleSearchOption } from "../vehicle-catal
 // Admin-edited site content (categories, company info, legal pages, FAQ, vacancies, hero slides, team, homepage sections).
 
 // Guest storefront navigation reads this on literally every page — cached
-// across requests (see PUBLIC_STATIC_CACHE_SECONDS/fetchPublicCacheable's
-// comments above), unlike the admin-only getXFromServer helpers below, which
-// still must not bail out just because there's no admin session cookie
-// (this one never even looks for one).
+// across requests with no expiry: it only changes through the admin
+// categories page, which revalidates the "categories" tag after every
+// create/edit/delete (CategoriesManager.tsx), and the admin "clear cache"
+// button revalidates it too (after seeds or direct DB edits).
 const getCachedCategories = unstable_cache(
   () =>
     fetchPublicCacheable<{ categories: Category[] }, Category[]>("/categories", {
@@ -31,7 +31,7 @@ const getCachedCategories = unstable_cache(
       extract: (data) => data.categories,
     }),
   ["categories"],
-  { revalidate: PUBLIC_STATIC_CACHE_SECONDS, tags: ["categories"] },
+  { revalidate: false, tags: ["categories"] },
 );
 export const getCategoriesFromServer = cache(withPublicFallback(getCachedCategories));
 // Same data, but throws (→ 5xx) when the backend is down and nothing is

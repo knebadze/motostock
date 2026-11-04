@@ -15,16 +15,19 @@ export type RevalidatableTag =
   // Every public cache at once — the admin "clear cache" action.
   | "all";
 
-export async function revalidatePublicCache(tag: RevalidatableTag): Promise<void> {
+// Resolves to whether the revalidation went through. Never throws: the
+// admin's own save already succeeded by the time this runs. Most tags have
+// a short TTL that catches up on its own; "categories" doesn't expire, so
+// its caller warns the admin when this returns false.
+export async function revalidatePublicCache(tag: RevalidatableTag): Promise<boolean> {
   try {
-    await fetch("/api/revalidate", {
+    const response = await fetch("/api/revalidate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tag }),
     });
+    return response.ok;
   } catch {
-    // Best-effort — a failed call just means the 5-minute TTL catches up on
-    // its own; never block or surface an error for the admin's own save,
-    // which already succeeded by the time this runs.
+    return false;
   }
 }
