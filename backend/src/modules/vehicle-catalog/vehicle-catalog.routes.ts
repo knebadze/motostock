@@ -22,8 +22,13 @@ import { garageVehicleResponseSchema } from "../garage/garage.schema.js";
 
 export const vehicleCatalogRouter = Router();
 
+// Staff only (the admin catalog screen) and always paginated — the full
+// ~3,500-entry catalog with every spec column was an unbounded public
+// response. Pickers use the lean, public GET /options instead.
 vehicleCatalogRouter.get(
   "/",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
   validate(vehicleCatalogListQuerySchema, "query"),
   vehicleCatalogController.list,
 );
@@ -97,7 +102,8 @@ registry.registerPath({
   method: "get",
   path: "/vehicle-catalog",
   tags: ["VehicleCatalog"],
-  summary: "List all vehicle catalog entries (paginated when page/pageSize are given)",
+  summary: "List vehicle catalog entries, paginated (admin/operator)",
+  security: [{ cookieAuth: [] }],
   request: { query: vehicleCatalogListQuerySchema },
   responses: {
     200: { description: "Vehicle catalog list", content: { "application/json": { schema: listResponse } } },

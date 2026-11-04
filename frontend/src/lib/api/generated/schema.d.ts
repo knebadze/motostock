@@ -4024,7 +4024,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List all vehicle catalog entries (paginated when page/pageSize are given) */
+        /** List vehicle catalog entries, paginated (admin/operator) */
         get: {
             parameters: {
                 query?: {
@@ -7016,7 +7016,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a product by id (public) */
+        /** Get a product by id, unpublished included (admin/operator) */
         get: {
             parameters: {
                 query?: never;

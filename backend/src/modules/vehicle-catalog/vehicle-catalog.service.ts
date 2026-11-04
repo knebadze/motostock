@@ -175,23 +175,12 @@ export async function assertRefsExist(input: {
 
 const DEFAULT_PAGE_SIZE = 20;
 
-// GET /vehicle-catalog is shared by two very different kinds of caller: the
-// admin catalog list screen (which now paginates), and a long list of
-// full-list consumers — fitment pickers, the garage "add vehicle" flow, the
-// homepage, the compatibility admin page, vehicle-listings/product admin
-// forms — that need every matching row in one response with no limit.
-// Pagination only activates when the caller explicitly sends page and/or
-// pageSize; every other caller is unaffected and keeps getting the full,
-// unbounded array.
+// GET /vehicle-catalog — the admin catalog list screen. Always paginated
+// (page 1 / DEFAULT_PAGE_SIZE when not given): full-list consumers (fitment
+// pickers, garage, homepage search, ...) all read the lean listVehicleCatalogOptions
+// instead.
 export async function listVehicleCatalog(query: VehicleCatalogListQuery = {}) {
   const where = applyVehicleCatalogAdminFilters(query.adminFilters);
-
-  if (query.page == null && query.pageSize == null) {
-    const rows = await vehicleCatalogRepository.findMany(where);
-    const items = rows.map(toVehicleCatalogResponse);
-    return { items, total: items.length, page: 1, pageSize: items.length || DEFAULT_PAGE_SIZE };
-  }
-
   const { page, pageSize, skip, take } = resolvePage(query, DEFAULT_PAGE_SIZE);
   const [rows, total] = await Promise.all([
     vehicleCatalogRepository.findMany(where, skip, take),

@@ -69,7 +69,16 @@ productsRouter.post(
   validate(checkCompatibilitySchema),
   productsController.checkCompatibility,
 );
-productsRouter.get("/:id", validate(productIdParamSchema, "params"), productsController.getOne);
+// Staff only: returns any product by id, unpublished ones (no active
+// variant) included, with every variant's price/stock and all discounts —
+// the storefront reads products by slug (/by-slug/:slug), which hides those.
+productsRouter.get(
+  "/:id",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(productIdParamSchema, "params"),
+  productsController.getOne,
+);
 
 // requireAuth/requireRole are applied per-route below (not as a blanket
 // `productsRouter.use(...)`) — a path-less `.use()` intercepts every request
@@ -251,7 +260,8 @@ registry.registerPath({
   method: "get",
   path: "/products/{id}",
   tags: ["Products"],
-  summary: "Get a product by id (public)",
+  summary: "Get a product by id, unpublished included (admin/operator)",
+  security,
   request: { params: productIdParamSchema },
   responses: {
     200: { description: "Product", content: { "application/json": { schema: itemResponse } } },
