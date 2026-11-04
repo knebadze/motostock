@@ -72,11 +72,30 @@ export const categoriesRepository = {
     });
   },
 
-  update(id: number, data: Partial<CategoryWriteData>) {
-    return prisma.category.update({
-      where: { id },
-      data,
-      include: { parent: { select: parentSelect } },
+  // `cleanup`: per category of the edited subtree, the attribute-defining
+  // categories whose attributes still apply there — every product value for
+  // any other attribute is deleted, in the same transaction as the update
+  // (see categories.service.ts's planAttributeScope).
+  update(
+    id: number,
+    data: Partial<CategoryWriteData>,
+    cleanup: { categoryId: number; allowedAttributeCategoryIds: number[] }[] = [],
+  ) {
+    return prisma.$transaction(async (tx) => {
+      const row = await tx.category.update({
+        where: { id },
+        data,
+        include: { parent: { select: parentSelect } },
+      });
+      for (const scope of cleanup) {
+        await tx.productAttributeValue.deleteMany({
+          where: {
+            product: { categoryId: scope.categoryId },
+            attribute: { categoryId: { notIn: scope.allowedAttributeCategoryIds } },
+          },
+        });
+      }
+      return row;
     });
   },
 

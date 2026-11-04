@@ -49,6 +49,19 @@ export async function createCategory(input: CategoryInput): Promise<Category> {
   return data.category;
 }
 
+export type CategoryAttributeImpact = components["schemas"]["CategoryAttributeImpact"];
+
+// Dry run of a parent / "inherit parent attributes" change: which product
+// attribute values it would delete and which required attributes it would
+// newly impose — shown to the admin for confirmation before saving.
+export async function previewCategoryAttributeImpact(
+  id: number,
+  change: { parentId?: number | null; inheritsAttributes?: boolean },
+): Promise<CategoryAttributeImpact> {
+  const { data } = await apiClient.post<CategoryAttributeImpact>(`/categories/${id}/attribute-impact`, change);
+  return data;
+}
+
 export async function updateCategory(
   id: number,
   input: Partial<CategoryInput>,

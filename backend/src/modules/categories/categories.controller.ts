@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { ApiError } from "../../lib/ApiError.js";
 import * as categoriesService from "./categories.service.js";
 import type {
+  CategoryAttributeImpactInput,
   CategoryListQuery,
   CreateCategoryInput,
   UpdateCategoryInput,
@@ -80,4 +81,12 @@ export async function uploadMenuImage(req: Request, res: Response) {
 
   const category = await categoriesService.setCategoryMenuImage(Number(req.params.id), req.file);
   res.status(200).json({ category });
+}
+
+export async function attributeImpact(
+  req: Request<{ id: string }, unknown, CategoryAttributeImpactInput>,
+  res: Response,
+) {
+  const impact = await categoriesService.previewCategoryAttributeImpact(Number(req.params.id), req.body);
+  res.status(200).json(impact);
 }

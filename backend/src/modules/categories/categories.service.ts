@@ -13,7 +13,7 @@ import type {
   UpdateCategoryInput,
 } from "./categories.schema.js";
 import { invalidateVehicleCatalogOptions } from "../vehicle-catalog/vehicle-catalog-options-cache.js";
-import { getCategoryTree, invalidateCategoryTree } from "./category-tree-cache.js";
+import { getCategoryTree, invalidateCategoryTree, type CategoryTreeNode } from "./category-tree-cache.js";
 
 type CategoryRow = {
   id: number;
@@ -302,6 +302,14 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
     await assertNoCycle(id, input.parentId);
   }
 
+  // A parent / inheritsAttributes change: product values for attributes
+  // that no longer apply in the subtree are deleted with the update (the
+  // admin confirmed this after previewCategoryAttributeImpact).
+  const attributeScope = await planAttributeScope(id, {
+    parentId: input.parentId,
+    inheritsAttributes: input.inheritsAttributes,
+  });
+
   const category = await runUniqueCheckedWrite(
     () =>
       categoriesRepository.update(id, {
@@ -322,7 +330,7 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
           : {}),
         ...(input.inheritsAttributes !== undefined ? { inheritsAttributes: input.inheritsAttributes } : {}),
         ...(input.sizeScaleId !== undefined ? { sizeScaleId: input.sizeScaleId } : {}),
-      }),
+      }, attributeScope ?? []),
     "slug",
     "ეს slug უკვე გამოყენებულია",
   );
@@ -336,6 +344,109 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
   invalidateCategoryTree();
   invalidateCategoryItemCounts();
   return toResponse(category);
+}
+
+type AttributeScopeChange = { parentId?: number | null; inheritsAttributes?: boolean };
+
+// Which attribute-defining categories apply to `categoryId` in `byId` —
+// same walk as attributes.service.ts's resolveAttributeCategoryIds, on a
+// tree that may carry a not-yet-saved change.
+function attributeCategoryIdsIn(byId: Map<number, CategoryTreeNode>, categoryId: number): number[] {
+  const ids: number[] = [];
+  const seen = new Set<number>();
+  let current = byId.get(categoryId);
+  while (current && !seen.has(current.id)) {
+    ids.push(current.id);
+    seen.add(current.id);
+    if (!current.inheritsAttributes || current.parentId === null) break;
+    current = byId.get(current.parentId);
+  }
+  return ids;
+}
+
+// What a parent / inheritsAttributes change on category `id` does to its
+// subtree's product attribute values: per subtree category, the attribute
+// categories that apply before and after. Null when neither field changes.
+async function planAttributeScope(id: number, change: AttributeScopeChange) {
+  let tree = await getCategoryTree();
+  if (!tree.some((node) => node.id === id)) {
+    // A category the cached tree doesn't know yet (created outside this
+    // service, e.g. by a seed) — reload rather than silently skip the cleanup.
+    invalidateCategoryTree();
+    tree = await getCategoryTree();
+  }
+  const before = new Map(tree.map((node) => [node.id, node]));
+  const node = before.get(id);
+  if (!node) return null;
+  const parentChanges = change.parentId !== undefined && change.parentId !== node.parentId;
+  const inheritChanges = change.inheritsAttributes !== undefined && change.inheritsAttributes !== node.inheritsAttributes;
+  if (!parentChanges && !inheritChanges) return null;
+
+  const after = new Map(before);
+  after.set(id, {
+    ...node,
+    ...(parentChanges ? { parentId: change.parentId ?? null } : {}),
+    ...(inheritChanges ? { inheritsAttributes: change.inheritsAttributes! } : {}),
+  });
+  const subtree = await resolveCategoryAndDescendantIds(id, tree);
+  return subtree.map((categoryId) => ({
+    categoryId,
+    before: attributeCategoryIdsIn(before, categoryId),
+    allowedAttributeCategoryIds: attributeCategoryIdsIn(after, categoryId),
+  }));
+}
+
+// Dry run of the same change, for the admin's confirmation: the product
+// values that would be deleted (attributes that no longer apply), and the
+// newly applying REQUIRED attributes existing products don't have yet
+// (they'd have to fill those in on their next save).
+export async function previewCategoryAttributeImpact(id: number, change: AttributeScopeChange) {
+  const existing = await categoriesRepository.findById(id);
+  if (!existing) throw new ApiError(404, "კატეგორია ვერ მოიძებნა");
+
+  const plan = await planAttributeScope(id, change);
+  const empty = { removedValueCount: 0, affectedProductCount: 0, removedAttributes: [], newlyRequired: [] };
+  if (!plan) return empty;
+
+  const removed = (
+    await Promise.all(
+      plan.map((scope) =>
+        prisma.productAttributeValue.findMany({
+          where: {
+            product: { categoryId: scope.categoryId },
+            attribute: { categoryId: { notIn: scope.allowedAttributeCategoryIds } },
+          },
+          select: { productId: true, attribute: { select: { id: true, nameKa: true } } },
+        }),
+      ),
+    )
+  ).flat();
+
+  const missingByAttribute = new Map<number, { id: number; name: string; missingProductCount: number }>();
+  for (const scope of plan) {
+    const gained = scope.allowedAttributeCategoryIds.filter((categoryId) => !scope.before.includes(categoryId));
+    if (gained.length === 0) continue;
+    const required = await prisma.attribute.findMany({
+      where: { categoryId: { in: gained }, required: true },
+      select: { id: true, nameKa: true },
+    });
+    for (const attribute of required) {
+      const missing = await prisma.product.count({
+        where: { categoryId: scope.categoryId, attributeValues: { none: { attributeId: attribute.id } } },
+      });
+      if (missing === 0) continue;
+      const entry = missingByAttribute.get(attribute.id) ?? { id: attribute.id, name: attribute.nameKa, missingProductCount: 0 };
+      entry.missingProductCount += missing;
+      missingByAttribute.set(attribute.id, entry);
+    }
+  }
+
+  return {
+    removedValueCount: removed.length,
+    affectedProductCount: new Set(removed.map((row) => row.productId)).size,
+    removedAttributes: [...new Map(removed.map((row) => [row.attribute.id, { id: row.attribute.id, name: row.attribute.nameKa }])).values()],
+    newlyRequired: [...missingByAttribute.values()],
+  };
 }
 
 export async function deleteCategory(id: number) {

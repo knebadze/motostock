@@ -49,6 +49,25 @@ export const updateCategorySchema = registry.register(
 );
 export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
 
+export const categoryAttributeImpactSchema = registry.register(
+  "CategoryAttributeImpactInput",
+  z.object({
+    parentId: z.int().positive().nullable().optional(),
+    inheritsAttributes: z.boolean().optional(),
+  }),
+);
+export type CategoryAttributeImpactInput = z.infer<typeof categoryAttributeImpactSchema>;
+
+export const categoryAttributeImpactResponseSchema = registry.register(
+  "CategoryAttributeImpact",
+  z.object({
+    removedValueCount: z.int(),
+    affectedProductCount: z.int(),
+    removedAttributes: z.array(z.object({ id: z.int(), name: z.string() })),
+    newlyRequired: z.array(z.object({ id: z.int(), name: z.string(), missingProductCount: z.int() })),
+  }),
+);
+
 export const categoryIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });

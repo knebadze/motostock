@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Select } from "@/components/shared/Select";
 import { Toggle } from "@/components/shared/Toggle";
 import { LocalizedNameFields } from "@/components/shared/LocalizedNameFields";
@@ -11,11 +12,13 @@ import { FormActions } from "@/components/shared/FormActions";
 import { useFileUploadPreview } from "@/components/shared/useFileUploadPreview";
 import {
   createCategory,
+  previewCategoryAttributeImpact,
   updateCategory,
   uploadCategoryBannerImage,
   uploadCategoryMenuImage,
   uploadCategoryImage,
   type Category,
+  type CategoryAttributeImpact,
 } from "@/lib/api/categories";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
@@ -98,6 +101,9 @@ export function CategoryFormModal({
   } = useFileUploadPreview(resolveMediaUrl(category?.menuImageUrl ?? null));
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
+  // Set while the admin is asked to confirm a parent / inheritance change
+  // that deletes product attribute values (or imposes new required ones).
+  const [pendingImpact, setPendingImpact] = useState<CategoryAttributeImpact | null>(null);
 
   const excludedIds = category ? getDescendantIds(categories, category.id) : new Set<number>();
   const parentOptions = categories
@@ -118,6 +124,36 @@ export function CategoryFormModal({
     }
     setErrors({});
 
+    // Changing the parent or "inherit parent attributes" can make attributes
+    // stop applying to this category's products — their values are then
+    // deleted on save, so the admin confirms first.
+    const nextParentId = parentId ? Number(parentId) : null;
+    if (
+      isEditing &&
+      (nextParentId !== category.parentId || inheritsAttributes !== category.inheritsAttributes)
+    ) {
+      setLoading(true);
+      try {
+        const impact = await previewCategoryAttributeImpact(category.id, {
+          parentId: nextParentId,
+          inheritsAttributes,
+        });
+        if (impact.removedValueCount > 0 || impact.newlyRequired.length > 0) {
+          setPendingImpact(impact);
+          return;
+        }
+      } catch (error) {
+        toast.error(error instanceof ApiRequestError ? error.message : "ცვლილების შემოწმება ვერ მოხერხდა");
+        return;
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    await save();
+  }
+
+  async function save() {
     setLoading(true);
 
     try {
@@ -320,7 +356,9 @@ export function CategoryFormModal({
                 ჩართულისას ამ კატეგორიას მშობელი კატეგორიების მახასიათებლებიც ეხება. გამორთეთ, როცა
                 ისინი აქ არ შეესაბამება (მაგ. ჩაფხუტის აქსესუარებს ჩაფხუტის სერტიფიკატი): მაშინ
                 მოქმედებს მხოლოდ ამ კატეგორიაზე და მის ქვეკატეგორიებზე დამატებული მახასიათებლები.
-                ბრენდები და ფასის ფილტრი კვლავ მემკვიდრეობით გადადის.
+                ბრენდები და ფასის ფილტრი კვლავ მემკვიდრეობით გადადის. გამორთვისას (ან კატეგორიის სხვა
+                მშობელზე გადატანისას) პროდუქტებს წაეშლებათ იმ მახასიათებლების მნიშვნელობები, რომლებიც
+                აღარ ეკუთვნის — შენახვამდე ნახავთ, რა წაიშლება.
               </p>
             </div>
             <Toggle
@@ -428,6 +466,48 @@ export function CategoryFormModal({
 
         <FormActions onCancel={onClose} loading={loading} />
       </form>
+
+      <ConfirmDialog
+        open={pendingImpact !== null}
+        onClose={() => setPendingImpact(null)}
+        title="მახასიათებლების ცვლილება"
+        confirmLabel="შენახვა"
+        message={
+          pendingImpact && (
+            <div className="flex flex-col gap-3 text-left">
+              {pendingImpact.removedValueCount > 0 && (
+                <p>
+                  ამ ცვლილების შემდეგ მახასიათებლები{" "}
+                  <span className="font-semibold text-foreground">
+                    {pendingImpact.removedAttributes.map((attribute) => attribute.name).join(", ")}
+                  </span>{" "}
+                  ამ კატეგორიას აღარ ეკუთვნის — წაიშლება მათი{" "}
+                  <span className="font-semibold text-foreground">{pendingImpact.removedValueCount}</span> მნიშვნელობა{" "}
+                  <span className="font-semibold text-foreground">{pendingImpact.affectedProductCount}</span> პროდუქტიდან.
+                  ამის გაუქმება შეუძლებელია.
+                </p>
+              )}
+              {pendingImpact.newlyRequired.length > 0 && (
+                <p>
+                  ახალი სავალდებულო მახასიათებელი:{" "}
+                  {pendingImpact.newlyRequired.map((attribute, index) => (
+                    <span key={attribute.id}>
+                      {index > 0 && ", "}
+                      <span className="font-semibold text-foreground">{attribute.name}</span> — აკლია{" "}
+                      {attribute.missingProductCount} პროდუქტს
+                    </span>
+                  ))}
+                  . ამ პროდუქტების რედაქტირებისას მისი შევსება გახდება საჭირო.
+                </p>
+              )}
+            </div>
+          )
+        }
+        onConfirm={async () => {
+          setPendingImpact(null);
+          await save();
+        }}
+      />
     </Modal>
   );
 }

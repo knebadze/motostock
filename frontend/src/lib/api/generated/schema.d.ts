@@ -2998,6 +2998,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/categories/{id}/attribute-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview what a parent / inheritsAttributes change would delete (product attribute values) and newly require */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CategoryAttributeImpactInput"];
+                };
+            };
+            responses: {
+                /** @description Impact */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CategoryAttributeImpact"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/vin-decode-status": {
         parameters: {
             query?: never;
@@ -17483,6 +17525,23 @@ export interface components {
             /** @example true */
             inheritsAttributes?: boolean;
             sizeScaleId?: number | null;
+        };
+        CategoryAttributeImpactInput: {
+            parentId?: number | null;
+            inheritsAttributes?: boolean;
+        };
+        CategoryAttributeImpact: {
+            removedValueCount: number;
+            affectedProductCount: number;
+            removedAttributes: {
+                id: number;
+                name: string;
+            }[];
+            newlyRequired: {
+                id: number;
+                name: string;
+                missingProductCount: number;
+            }[];
         };
         CategoryItemCounts: {
             items: {

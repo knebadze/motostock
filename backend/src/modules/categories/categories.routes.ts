@@ -9,6 +9,8 @@ import { errorResponseSchema } from "../../docs/schemas.js";
 import { ROLES } from "../../lib/roles.js";
 import * as categoriesController from "./categories.controller.js";
 import {
+  categoryAttributeImpactResponseSchema,
+  categoryAttributeImpactSchema,
   categoryItemCountsResponseSchema,
   categoryIdParamSchema,
   categoryListQuerySchema,
@@ -49,6 +51,13 @@ categoriesRouter.patch(
   validate(categoryIdParamSchema, "params"),
   validate(updateCategorySchema),
   categoriesController.update,
+);
+// Dry run of a parent / inheritsAttributes change — what it would delete.
+categoriesRouter.post(
+  "/:id/attribute-impact",
+  validate(categoryIdParamSchema, "params"),
+  validate(categoryAttributeImpactSchema),
+  categoriesController.attributeImpact,
 );
 categoriesRouter.delete(
   "/:id",
@@ -238,5 +247,20 @@ registry.registerPath({
     200: { description: "Uploaded", content: { "application/json": { schema: categoryListResponse } } },
     400: { description: "Invalid file", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/categories/{id}/attribute-impact",
+  tags: ["Categories"],
+  summary: "Preview what a parent / inheritsAttributes change would delete (product attribute values) and newly require",
+  security: [{ cookieAuth: [] }],
+  request: {
+    params: categoryIdParamSchema,
+    body: { content: { "application/json": { schema: categoryAttributeImpactSchema } } },
+  },
+  responses: {
+    200: { description: "Impact", content: { "application/json": { schema: categoryAttributeImpactResponseSchema } } },
   },
 });
