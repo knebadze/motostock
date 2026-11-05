@@ -1,11 +1,11 @@
-import { getCategoriesFromServer, getProductBrandsFromServer } from "@/lib/api/server";
+import { getAdminProductBrandsPageFromServer, getCategoriesFromServer } from "@/lib/api/server";
 import { ProductBrandsManager } from "@/components/admin/product-brands/ProductBrandsManager";
 
 export default async function ProductBrandsPage() {
-  const [productBrands, categories] = await Promise.all([
-    getProductBrandsFromServer(),
+  const [initialData, categories] = await Promise.all([
+    getAdminProductBrandsPageFromServer(),
     getCategoriesFromServer(),
   ]);
 
-  return <ProductBrandsManager initialProductBrands={productBrands} categories={categories} />;
+  return <ProductBrandsManager initialData={initialData} categories={categories} />;
 }

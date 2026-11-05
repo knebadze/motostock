@@ -1572,49 +1572,150 @@ async function seedAttributes(categoryIdBySlug: Map<string, number>, unitIdByNam
 }
 
 type ProductBrandSeed = {
-  categorySlug: string;
+  categorySlugs: string[];
   name: string;
   slug: string;
 };
 
-// Brands are attached at whichever category level actually matches how the
-// brand sells — a few (Alpinestars, Givi) make gear/accessories broadly and
-// are attached at the parent so every subcategory inherits them, while
-// single-purpose brands (AGV for helmets, Motul for fluids) are attached
-// directly to their leaf category.
+// Client-supplied "moto_brands_by_category.csv" (2026-11) — one row per
+// (category, subcategory, product type, brand), so a brand selling several
+// unrelated product types (e.g. Alpinestars: gloves, jackets, helmets AND
+// boots) lists every leaf category it actually appears under, not one
+// parent category to inherit from (a brand attached to a leaf is NOT
+// automatically available for sibling leaves — see
+// product-brands.service.ts's listProductBrands, which still inherits
+// upward from a product's own category to its ancestors, just now checking
+// "any of this brand's categories" instead of one). A few brands outside
+// the CSV's scope (tires, security, the broader brake-system category —
+// distinct from wear-parts' brake pads) are kept as they were; everything
+// the CSV does cover replaces the old single-category seed list below it.
 const PRODUCT_BRAND_SEEDS: ProductBrandSeed[] = [
-  { categorySlug: "gear", name: "Alpinestars", slug: "alpinestars" },
-  { categorySlug: "gear", name: "Dainese", slug: "dainese" },
-  { categorySlug: "gear", name: "REV'IT!", slug: "revit" },
-  { categorySlug: "helmets", name: "AGV", slug: "agv" },
-  { categorySlug: "helmets", name: "Shoei", slug: "shoei" },
-  { categorySlug: "helmets", name: "Arai", slug: "arai" },
-  { categorySlug: "luggage", name: "Givi", slug: "givi" },
-  { categorySlug: "luggage", name: "SW-Motech", slug: "sw-motech" },
-  { categorySlug: "security", name: "Xena", slug: "xena" },
-  { categorySlug: "tires", name: "Michelin", slug: "michelin" },
-  { categorySlug: "tires", name: "Pirelli", slug: "pirelli" },
-  { categorySlug: "tires", name: "Dunlop", slug: "dunlop" },
-  { categorySlug: "fluids", name: "Motul", slug: "motul" },
-  { categorySlug: "fluids", name: "Castrol", slug: "castrol" },
-  { categorySlug: "brakes", name: "Brembo", slug: "brembo" },
-  { categorySlug: "batteries", name: "Yuasa", slug: "yuasa" },
-];
+  // Helmets — general brands (helmet shells, visors, pinlock inserts).
+  ...[
+    "Premier",
+    "LS2",
+    "HJC",
+    "MT Helmets",
+    "Shark",
+    "AGV",
+    "Nolan",
+    "Speeds",
+    "NZI",
+    "GSB",
+    "Bottari",
+    "Virtue",
+    "Cool Seven",
+  ].map((name) => ({ name, categorySlugs: ["helmets", "helmet-visor", "pinlock"] })),
+  { name: "Sena", categorySlugs: ["intercoms"] },
+  { name: "Cardo", categorySlugs: ["intercoms"] },
+  { name: "Motul", categorySlugs: ["helmet-care", "engine-oil", "chain-lubes"] },
+
+  // Riding gear.
+  {
+    name: "Atrox",
+    categorySlugs: [
+      "balaclavas",
+      "jackets",
+      "gloves",
+      "pants",
+      "riding-suits",
+      "protection",
+      "rain-gear",
+      "boots",
+      "luggage",
+    ],
+  },
+  {
+    name: "Alpinestars",
+    categorySlugs: ["balaclavas", "jackets", "gloves", "pants", "riding-suits", "boots"],
+  },
+  { name: "Modeka", categorySlugs: ["jackets", "gloves", "pants", "boots"] },
+  // Also sells helmets/visors/pinlock (part of the helmet-brand list above) —
+  // one entry, not two, since both slugify to "icon" and a second upsert
+  // would wipe the first's category links (deleteMany on update).
+  { name: "Icon", categorySlugs: ["helmets", "helmet-visor", "pinlock", "gloves"] },
+  ...["Suomy", "Pro-Biker", "Prosev", "Dainese", "Crivit"].map((name) => ({
+    name,
+    categorySlugs: ["gloves"],
+  })),
+
+  // Oils & care products.
+  ...["BMW", "Shell", "Amsoil"].map((name) => ({ name, categorySlugs: ["engine-oil"] })),
+  {
+    name: "Bardahl",
+    categorySlugs: [
+      "engine-oil",
+      "fork-oil",
+      "engine-cleaners",
+      "fuel-system-cleaners",
+      "cooling-system-cleaners",
+      "antifreeze",
+    ],
+  },
+  { name: "Eni", categorySlugs: ["engine-oil", "fork-oil"] },
+  { name: "Mannol", categorySlugs: ["chain-cleaners", "antifreeze"] },
+  { name: "Würth", slug: "wurth", categorySlugs: ["chain-cleaners"] },
+  { name: "Wunsher", categorySlugs: ["chain-cleaners"] },
+  { name: "Bardahl Professional", categorySlugs: ["chain-lubes"] },
+
+  // Filters.
+  ...["K&N", "HiFlo"].map((name) => ({ name, categorySlugs: ["air-filters", "oil-filters"] })),
+  { name: "Mann", categorySlugs: ["oil-filters"] },
+
+  // Wear parts.
+  ...["Newfren", "EBC"].map((name) => ({ name, categorySlugs: ["brake-pads", "clutch-plates"] })),
+  { name: "WRP", categorySlugs: ["brake-pads"] },
+  ...["NGK", "Brisk"].map((name) => ({ name, categorySlugs: ["spark-plugs"] })),
+  ...["Delta", "Kage", "Zubr"].map((name) => ({ name, categorySlugs: ["batteries"] })),
+  ...["JT", "RK"].map((name) => ({ name, categorySlugs: ["chains-sprockets"] })),
+
+  // Outside the CSV's scope (tires, security, the broader brake-system
+  // category) — unchanged from before.
+  { name: "Xena", categorySlugs: ["security"] },
+  { name: "Michelin", categorySlugs: ["tires"] },
+  { name: "Pirelli", categorySlugs: ["tires"] },
+  { name: "Dunlop", categorySlugs: ["tires"] },
+  { name: "Brembo", categorySlugs: ["brakes"] },
+].map((seed) => ({
+  ...seed,
+  slug: "slug" in seed && seed.slug ? seed.slug : slugify(seed.name),
+}));
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 
 async function seedProductBrands(categoryIdBySlug: Map<string, number>) {
   for (const brandSeed of PRODUCT_BRAND_SEEDS) {
-    const categoryId = categoryIdBySlug.get(brandSeed.categorySlug);
-    if (!categoryId) {
-      throw new Error(`Unknown category slug in product brand seed: ${brandSeed.categorySlug}`);
-    }
+    const categoryIds = brandSeed.categorySlugs.map((slug) => {
+      const categoryId = categoryIdBySlug.get(slug);
+      if (!categoryId) {
+        throw new Error(`Unknown category slug in product brand seed: ${slug}`);
+      }
+      return categoryId;
+    });
 
+    // Re-running always syncs this brand's category set to the seed's
+    // definition (the catalog CSV is the source of truth for which
+    // categories a known brand sells into) — but never touches name/slug/
+    // logoUrl once created, so admin edits to those survive a reseed.
     await prisma.productBrand.upsert({
       where: { slug: brandSeed.slug },
-      update: {},
+      update: {
+        categories: {
+          deleteMany: {},
+          create: categoryIds.map((categoryId) => ({ categoryId })),
+        },
+      },
       create: {
-        categoryId,
         name: brandSeed.name,
         slug: brandSeed.slug,
+        categories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
       },
     });
   }

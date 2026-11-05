@@ -73,9 +73,9 @@ export async function loadCategoryImportContext(categoryId: number) {
     throw new ApiError(400, "ტექნიკა პროდუქტად არ იტვირთება — გამოიყენეთ ტექნიკის კატალოგი/განცხადებები");
   }
 
-  const [attributeCategoryIds, brands, sizeScale, colors, conditions] = await Promise.all([
+  const [attributeCategoryIds, brandsPage, sizeScale, colors, conditions] = await Promise.all([
     resolveAttributeCategoryIds(categoryId),
-    listProductBrands(categoryId),
+    listProductBrands({ categoryId }),
     resolveSizeScale(categoryId),
     prisma.color.findMany({ orderBy: { nameKa: "asc" } }),
     prisma.condition.findMany({ orderBy: { id: "asc" } }),
@@ -92,7 +92,7 @@ export async function loadCategoryImportContext(categoryId: number) {
     prisma.size.findMany({ where: sizeScale ? { scaleId: sizeScale.id } : undefined, orderBy: { id: "asc" } }),
   ]);
 
-  return { category, brands, sizeScale, sizes, colors, conditions, attributes };
+  return { category, brands: brandsPage.items, sizeScale, sizes, colors, conditions, attributes };
 }
 
 function attributeHeader(attribute: { nameKa: string; required: boolean; unit: { abbreviationKa: string } | null }) {

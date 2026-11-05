@@ -1,8 +1,10 @@
 import { z } from "zod";
-import { nameSchema, requiredSelectString, slugSchema } from "./common";
+import { nameSchema, slugSchema } from "./common";
 
 export const productBrandFormSchema = z.object({
-  categoryId: requiredSelectString("აირჩიეთ კატეგორია"),
+  // A brand can sell into several unrelated categories at once (e.g.
+  // Alpinestars: gloves, jackets, helmets) — see prisma/models/product-brand.prisma.
+  categoryIds: z.array(z.string()).min(1, "აირჩიეთ მინიმუმ ერთი კატეგორია"),
   name: nameSchema,
   slug: slugSchema,
 });

@@ -6228,11 +6228,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List product brands, optionally scoped to a category (including inherited from ancestors) */
+        /** List product brands, optionally scoped to a category (including inherited from ancestors) and/or paginated+filtered */
         get: {
             parameters: {
                 query?: {
                     categoryId?: number;
+                    adminFilters?: string;
+                    page?: number;
+                    pageSize?: number;
                 };
                 header?: never;
                 path?: never;
@@ -6248,6 +6251,9 @@ export interface paths {
                     content: {
                         "application/json": {
                             items: components["schemas"]["ProductBrand"][];
+                            total: number;
+                            page: number;
+                            pageSize: number;
                         };
                     };
                 };
@@ -18051,14 +18057,14 @@ export interface components {
             } | null;
         };
         CreateProductBrandInput: {
-            categoryId: number;
+            categoryIds: number[];
             /** @example AGV */
             name: string;
             /** @example agv */
             slug: string;
         };
         UpdateProductBrandInput: {
-            categoryId?: number;
+            categoryIds?: number[];
             /** @example AGV */
             name?: string;
             /** @example agv */
@@ -18067,7 +18073,7 @@ export interface components {
         ProductBrand: {
             /** @example 1 */
             id: number;
-            category: {
+            categories: {
                 id: number;
                 name: {
                     ka: string;
@@ -18075,7 +18081,7 @@ export interface components {
                     ru: string;
                 };
                 slug: string;
-            };
+            }[];
             /** @example AGV */
             name: string;
             /** @example agv */

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { registry } from "../../docs/registry.js";
 import { localizedStringSchema } from "../../lib/localized.js";
+import { adminFiltersQuerySchema } from "../filters/filter-request.schema.js";
 
 const slugField = z
   .string()
@@ -14,7 +15,10 @@ const nameField = z.string().min(1).max(120).openapi({ example: "AGV" });
 export const createProductBrandSchema = registry.register(
   "CreateProductBrandInput",
   z.object({
-    categoryId: z.int().positive(),
+    // A brand can sell into several unrelated category branches at once
+    // (e.g. Alpinestars: gloves, jackets, helmets) — see
+    // prisma/models/product-brand.prisma.
+    categoryIds: z.array(z.int().positive()).min(1),
     name: nameField,
     slug: slugField,
   }),
@@ -31,8 +35,16 @@ export const productBrandIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
+// `categoryId` is the long-standing ad hoc single-category scope (ancestor-
+// inclusive — see listProductBrands), used by ProductForm/PromoCodeFormModal
+// to narrow "which brands apply here". `adminFilters`/`page`/`pageSize` are
+// additive, for the admin product-brands list screen; sending page/pageSize
+// is what triggers real pagination.
 export const productBrandListQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
+  adminFilters: adminFiltersQuerySchema,
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
 export type ProductBrandListQuery = z.infer<typeof productBrandListQuerySchema>;
 
@@ -46,7 +58,7 @@ export const productBrandResponseSchema = registry.register(
   "ProductBrand",
   z.object({
     id: z.int().openapi({ example: 1 }),
-    category: categoryRefSchema,
+    categories: z.array(categoryRefSchema),
     name: nameField,
     slug: z.string().openapi({ example: "agv" }),
     logoUrl: z.string().nullable(),

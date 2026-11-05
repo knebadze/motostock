@@ -1,16 +1,37 @@
 model ProductBrand {
-  id                 Int         @id @default(autoincrement())
-  categoryId         Int
-  category           Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  id                 Int                    @id @default(autoincrement())
+  // A brand can sell into several unrelated category branches at once (e.g.
+  // Alpinestars makes gloves, jackets AND helmets) — many-to-many, not the
+  // single categoryId this used to be. "Available for category X" still
+  // means "linked to X or any of X's ancestors" (see
+  // product-brands.service.ts's listProductBrands), same inheritance
+  // semantics as before, just resolved across this join table instead of
+  // one column.
+  categories         ProductBrandCategory[]
   name               String
-  slug               String      @unique
+  slug               String                 @unique
   logoUrl            String?
   products           Product[]
   discountHeroSlides HeroSlide[]
   promoCodes         PromoCode[]
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
 
+  @@schema("cla")
+}
+
+// ProductBrand <-> Category link. Deleting a brand drops its own links
+// (CASCADE); deleting a category while a brand still points at it is
+// blocked (RESTRICT) — same as every other category-dependent delete guard
+// (categories.service.ts's deleteCategory catches the FK violation).
+model ProductBrandCategory {
+  productBrandId Int
+  productBrand   ProductBrand @relation(fields: [productBrandId], references: [id], onDelete: Cascade)
+  categoryId     Int
+  category       Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdAt      DateTime     @default(now())
+
+  @@id([productBrandId, categoryId])
   @@index([categoryId])
   @@schema("cla")
 }

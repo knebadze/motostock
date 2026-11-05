@@ -110,7 +110,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "gloves",
-    brandSlug: "revit",
     slug: "leather-gloves-revit",
     nameKa: "ტყავის ხელთათმანები",
     nameEn: "Leather Gloves",
@@ -133,7 +132,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "boots",
-    brandSlug: "dainese",
     slug: "motorcycle-boots-dainese",
     nameKa: "მოტო ჩექმები",
     nameEn: "Motorcycle Boots",
@@ -151,7 +149,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "protection",
-    brandSlug: "dainese",
     slug: "back-protector-dainese",
     nameKa: "ზურგის დამცავი",
     nameEn: "Back Protector",
@@ -168,7 +165,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "rain-gear",
-    brandSlug: "revit",
     slug: "rain-suit-revit",
     nameKa: "წვიმის კოსტიუმი",
     nameEn: "Rain Suit",
@@ -188,7 +184,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "jackets",
-    brandSlug: "revit",
     slug: "textile-jacket-revit",
     nameKa: "ტექსტილის სამოტოციკლო ქურთუკი",
     nameEn: "Textile Motorcycle Jacket",
@@ -254,7 +249,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "gloves",
-    brandSlug: "revit",
     slug: "fingerless-gloves-revit",
     nameKa: "საზაფხულო უთითო ხელთათმანები",
     nameEn: "Summer Fingerless Gloves",
@@ -297,7 +291,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "boots",
-    brandSlug: "revit",
     slug: "touring-boots-revit",
     nameKa: "საგზაო ტურისტული ჩექმები",
     nameEn: "Touring Boots",
@@ -318,7 +311,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "protection",
-    brandSlug: "alpinestars",
     slug: "knee-guards-alpinestars",
     nameKa: "მუხლის დამცავები",
     nameEn: "Knee Guards",
@@ -335,7 +327,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "protection",
-    brandSlug: "dainese",
     slug: "chest-protector-dainese",
     nameKa: "გულმკერდის დამცავი",
     nameEn: "Chest Protector",
@@ -352,7 +343,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "rain-gear",
-    brandSlug: "revit",
     slug: "rain-jacket-revit",
     nameKa: "წვიმის ქურთუკი",
     nameEn: "Rain Jacket",
@@ -413,7 +403,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "helmet-full-face",
-    brandSlug: "shoei",
     slug: "full-face-helmet-shoei",
     nameKa: "დახურული ჩაფხუტი",
     nameEn: "Full-Face Helmet",
@@ -459,7 +448,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "helmet-open-face",
-    brandSlug: "arai",
     slug: "open-face-helmet-arai",
     nameKa: "ღია ჩაფხუტი",
     nameEn: "Open-Face Helmet",
@@ -496,7 +484,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "helmet-visor",
-    brandSlug: "shoei",
     slug: "helmet-visor-shoei",
     nameKa: "ჩაფხუტის ვიზორი",
     nameEn: "Helmet Visor",
@@ -510,7 +497,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "helmet-enduro",
-    brandSlug: "shoei",
     slug: "enduro-helmet-shoei",
     nameKa: "პრემიუმ ენდურო ჩაფხუტი",
     nameEn: "Premium Enduro Helmet",
@@ -527,7 +513,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "helmet-enduro",
-    brandSlug: "arai",
     slug: "enduro-helmet-arai",
     nameKa: "მსუბუქი ენდურო ჩაფხუტი",
     nameEn: "Lightweight Enduro Helmet",
@@ -544,7 +529,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "helmet-full-face",
-    brandSlug: "arai",
     slug: "full-face-helmet-arai",
     nameKa: "სპორტ-ტურინგ დახურული ჩაფხუტი",
     nameEn: "Sport-Touring Full-Face Helmet",
@@ -578,7 +562,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "helmet-open-face",
-    brandSlug: "shoei",
     slug: "open-face-helmet-shoei",
     nameKa: "პრემიუმ ღია ჩაფხუტი",
     nameEn: "Premium Open-Face Helmet",
@@ -595,7 +578,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "helmet-modular",
-    brandSlug: "shoei",
     slug: "modular-helmet-shoei",
     nameKa: "პრემიუმ მოდულარული ჩაფხუტი",
     nameEn: "Premium Modular Helmet",
@@ -612,7 +594,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "helmet-modular",
-    brandSlug: "arai",
     slug: "modular-helmet-arai",
     nameKa: "მსუბუქი მოდულარული ჩაფხუტი",
     nameEn: "Lightweight Modular Helmet",
@@ -643,7 +624,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "helmet-visor",
-    brandSlug: "arai",
     slug: "helmet-visor-arai",
     nameKa: "სათადარიგო ვიზორი (გამჭვირვალე)",
     nameEn: "Replacement Visor (Clear)",
@@ -659,7 +639,6 @@ const PRODUCTS: ProductSeed[] = [
   // --- accessories ---
   {
     categorySlug: "luggage",
-    brandSlug: "givi",
     slug: "saddlebag-givi",
     nameKa: "საბარგო ჩანთა",
     nameEn: "Saddlebag",
@@ -700,7 +679,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "luggage",
-    brandSlug: "givi",
     slug: "top-case-givi",
     nameKa: "საბარგო ყუთი (ტოპ-ქეისი)",
     nameEn: "Top Case",
@@ -716,7 +694,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "luggage",
-    brandSlug: "sw-motech",
     slug: "tank-bag-sw-motech",
     nameKa: "ავზის ჩანთა",
     nameEn: "Tank Bag",
@@ -800,7 +777,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "batteries",
-    brandSlug: "yuasa",
     slug: "motorcycle-battery-yuasa",
     nameKa: "მოტო აკუმულატორი",
     nameEn: "Motorcycle Battery",
@@ -905,7 +881,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "batteries",
-    brandSlug: "yuasa",
     slug: "battery-lead-acid-yuasa",
     nameKa: "ტყვია-მჟავა აკუმულატორი",
     nameEn: "Lead-Acid Battery",
@@ -922,7 +897,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "batteries",
-    brandSlug: "yuasa",
     slug: "battery-agm-yuasa",
     nameKa: "AGM აკუმულატორი",
     nameEn: "AGM Battery",
@@ -996,7 +970,6 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     categorySlug: "antifreeze",
-    brandSlug: "castrol",
     slug: "coolant-castrol",
     nameKa: "გამაგრილებელი სითხე",
     nameEn: "Coolant",

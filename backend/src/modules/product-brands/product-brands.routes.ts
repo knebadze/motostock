@@ -66,14 +66,23 @@ productBrandsRouter.post(
 );
 
 const security = [{ cookieAuth: [] }];
-const listResponse = z.object({ items: z.array(productBrandResponseSchema) });
+// Always includes total/page/pageSize now — full-list callers (categoryId
+// scope or no params at all) get page:1/pageSize:items.length, same as
+// vehicle-catalog's list response; only the admin screen's page/pageSize
+// query params actually change what's returned.
+const listResponse = z.object({
+  items: z.array(productBrandResponseSchema),
+  total: z.int(),
+  page: z.int(),
+  pageSize: z.int(),
+});
 const itemResponse = z.object({ item: productBrandResponseSchema });
 
 registry.registerPath({
   method: "get",
   path: "/product-brands",
   tags: ["ProductBrands"],
-  summary: "List product brands, optionally scoped to a category (including inherited from ancestors)",
+  summary: "List product brands, optionally scoped to a category (including inherited from ancestors) and/or paginated+filtered",
   security,
   request: { query: productBrandListQuerySchema },
   responses: {

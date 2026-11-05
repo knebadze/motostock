@@ -47,7 +47,7 @@ model PromoCode {
   specField        VehicleSpecField?
   specLookupItemId Int?
 
-  discountPercent Decimal  @db.Decimal(5, 2)
+  discountPercent Decimal    @db.Decimal(5, 2)
   // Total redemptions allowed across every customer — null means unlimited.
   // Usage isn't tracked in a separate counter/join row: it's derived at
   // resolve time from Order.promoCodeId (see promo-codes.service.ts's
@@ -58,11 +58,11 @@ model PromoCode {
   usageLimit      Int?
   startDate       DateTime
   endDate         DateTime
-  isActive        Boolean  @default(true)
+  isActive        Boolean    @default(true)
   orders          Order[]
   heroSlide       HeroSlide?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   @@index([domain])
   @@index([categoryId])

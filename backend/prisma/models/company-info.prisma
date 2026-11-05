@@ -15,28 +15,28 @@ enum WeekDay {
 // rather than a Setting key-value row, matching this codebase's convention
 // of no JSON blobs and no other "singleton config" beyond Setting itself.
 model CompanyInfo {
-  id           Int      @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   // Fixed-value unique column enforcing "at most one row" at the DB level —
   // without it, two concurrent first-ever requests both seeing no existing
   // row (see getOrCreateCompanyInfo) would both succeed at creating one,
   // leaving a permanent duplicate with no way to tell which is "the" row.
-  singleton    Boolean  @unique @default(true)
-  name         String
-  logoUrl      String?
-  cityId       Int?
-  city         City?    @relation(fields: [cityId], references: [id])
-  street       String?
-  phone        String?
+  singleton     Boolean  @unique @default(true)
+  name          String
+  logoUrl       String?
+  cityId        Int?
+  city          City?    @relation(fields: [cityId], references: [id])
+  street        String?
+  phone         String?
   // The shop's WhatsApp number for "write on WhatsApp" links (wa.me) —
   // empty means the main phone is used.
   whatsappPhone String?
-  email        String?
-  facebookUrl  String?
-  instagramUrl String?
-  youtubeUrl   String?
-  tiktokUrl    String?
-  latitude     Decimal? @db.Decimal(10, 7)
-  longitude    Decimal? @db.Decimal(10, 7)
+  email         String?
+  facebookUrl   String?
+  instagramUrl  String?
+  youtubeUrl    String?
+  tiktokUrl     String?
+  latitude      Decimal? @db.Decimal(10, 7)
+  longitude     Decimal? @db.Decimal(10, 7)
 
   workingHours CompanyWorkingHour[]
 

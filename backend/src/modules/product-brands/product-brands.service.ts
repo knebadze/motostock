@@ -1,16 +1,23 @@
+import type { Prisma } from "../../generated/prisma/index.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation, runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
+import { resolvePage } from "../../lib/pagination.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
+import { applyProductBrandAdminFilters } from "../filters/product-brand/product-brand-filter-registry.js";
 import { productBrandsRepository } from "./product-brands.repository.js";
-import type { CreateProductBrandInput, UpdateProductBrandInput } from "./product-brands.schema.js";
+import type {
+  CreateProductBrandInput,
+  ProductBrandListQuery,
+  UpdateProductBrandInput,
+} from "./product-brands.schema.js";
 
 type CategoryRefRow = { id: number; nameKa: string; nameEn: string; nameRu: string; slug: string };
 
 type ProductBrandRow = {
   id: number;
-  category: CategoryRefRow;
+  categories: { category: CategoryRefRow }[];
   name: string;
   slug: string;
   logoUrl: string | null;
@@ -25,7 +32,7 @@ function toCategoryRef(row: CategoryRefRow) {
 function toResponse(row: ProductBrandRow) {
   return {
     id: row.id,
-    category: toCategoryRef(row.category),
+    categories: row.categories.map((link) => toCategoryRef(link.category)),
     name: row.name,
     slug: row.slug,
     logoUrl: row.logoUrl,
@@ -34,17 +41,48 @@ function toResponse(row: ProductBrandRow) {
   };
 }
 
-async function assertCategoryExists(categoryId: number) {
-  const category = await categoriesRepository.findById(categoryId);
-  if (!category) {
+async function assertCategoriesExist(categoryIds: number[]) {
+  if (categoryIds.length === 0) {
+    throw new ApiError(400, "მინიმუმ ერთი კატეგორია უნდა იყოს მითითებული");
+  }
+  const uniqueIds = [...new Set(categoryIds)];
+  const found = await categoriesRepository.findMany({ id: { in: uniqueIds } });
+  if (found.length !== uniqueIds.length) {
     throw new ApiError(400, "მითითებული კატეგორია არ არსებობს");
   }
 }
 
-export async function listProductBrands(categoryId?: number) {
-  const categoryIds = categoryId != null ? await resolveCategoryAndAncestorIds(categoryId) : undefined;
-  const rows = await productBrandsRepository.findMany(categoryIds);
-  return rows.map(toResponse);
+const DEFAULT_PAGE_SIZE = 20;
+
+// `categoryId` (ancestor-inclusive scope) and `adminFilters` combine with
+// AND when both are sent — in practice only the admin list screen sends
+// adminFilters, and only ProductForm/PromoCodeFormModal send categoryId, so
+// this never actually happens, but it's the correct behavior either way.
+// page/pageSize only trigger real pagination when the caller sends at least
+// one of them — every other caller keeps getting the full, unbounded list.
+export async function listProductBrands(query: ProductBrandListQuery = {}) {
+  const [scopeCategoryIds, adminWhere] = await Promise.all([
+    query.categoryId != null ? resolveCategoryAndAncestorIds(query.categoryId) : null,
+    Promise.resolve(applyProductBrandAdminFilters(query.adminFilters)),
+  ]);
+  const scopeWhere: Prisma.ProductBrandWhereInput | undefined = scopeCategoryIds
+    ? { categories: { some: { categoryId: { in: scopeCategoryIds } } } }
+    : undefined;
+  const where: Prisma.ProductBrandWhereInput | undefined =
+    scopeWhere && adminWhere ? { AND: [scopeWhere, adminWhere] } : scopeWhere ?? adminWhere;
+
+  if (query.page == null && query.pageSize == null) {
+    const rows = await productBrandsRepository.findMany(where);
+    const items = rows.map(toResponse);
+    return { items, total: items.length, page: 1, pageSize: items.length || DEFAULT_PAGE_SIZE };
+  }
+
+  const { page, pageSize, skip, take } = resolvePage(query, DEFAULT_PAGE_SIZE);
+  const [rows, total] = await Promise.all([
+    productBrandsRepository.findMany(where, skip, take),
+    productBrandsRepository.count(where),
+  ]);
+  return { items: rows.map(toResponse), total, page, pageSize };
 }
 
 export async function getProductBrand(id: number) {
@@ -56,7 +94,7 @@ export async function getProductBrand(id: number) {
 }
 
 export async function createProductBrand(input: CreateProductBrandInput) {
-  await assertCategoryExists(input.categoryId);
+  await assertCategoriesExist(input.categoryIds);
 
   const existing = await productBrandsRepository.findBySlug(input.slug);
   if (existing) {
@@ -66,7 +104,7 @@ export async function createProductBrand(input: CreateProductBrandInput) {
   const row = await runUniqueCheckedWrite(
     () =>
       productBrandsRepository.create({
-        categoryId: input.categoryId,
+        categoryIds: input.categoryIds,
         name: input.name,
         slug: input.slug,
       }),
@@ -82,8 +120,8 @@ export async function updateProductBrand(id: number, input: UpdateProductBrandIn
     throw new ApiError(404, "ბრენდი ვერ მოიძებნა");
   }
 
-  if (input.categoryId !== undefined) {
-    await assertCategoryExists(input.categoryId);
+  if (input.categoryIds !== undefined) {
+    await assertCategoriesExist(input.categoryIds);
   }
 
   if (input.slug && input.slug !== existing.slug) {
@@ -96,7 +134,7 @@ export async function updateProductBrand(id: number, input: UpdateProductBrandIn
   const row = await runUniqueCheckedWrite(
     () =>
       productBrandsRepository.update(id, {
-        ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
+        ...(input.categoryIds !== undefined ? { categoryIds: input.categoryIds } : {}),
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.slug !== undefined ? { slug: input.slug } : {}),
       }),

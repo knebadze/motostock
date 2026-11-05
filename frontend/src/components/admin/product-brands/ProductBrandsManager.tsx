@@ -2,14 +2,21 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Select } from "@/components/shared/Select";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import { deleteProductBrand, listProductBrands, type ProductBrand } from "@/lib/api/product-brands";
+import { Pagination, useServerPagination } from "@/components/shared/Pagination";
+import { AdminFilterPanel } from "@/components/admin/shared/AdminFilterPanel";
+import {
+  deleteProductBrand,
+  listProductBrandsPage,
+  type ProductBrand,
+  type ProductBrandPage,
+} from "@/lib/api/product-brands";
+import type { AdminFilterEntry } from "@/lib/api/admin-filters";
 import type { Category } from "@/lib/api/categories";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
-import { flattenTree } from "@/lib/categories-tree";
+import { buildProductBrandFilterFields } from "@/config/admin-filters/product-brand-filters";
 import { ProductBrandFormModal } from "./ProductBrandFormModal";
 
 const columns: DataTableColumn<ProductBrand>[] = [
@@ -29,8 +36,8 @@ const columns: DataTableColumn<ProductBrand>[] = [
   },
   { header: "სახელი", render: (productBrand) => productBrand.name },
   {
-    header: "კატეგორია",
-    render: (productBrand) => productBrand.category.name.ka,
+    header: "კატეგორიები",
+    render: (productBrand) => productBrand.categories.map((category) => category.name.ka).join(", "),
     cellClassName: "text-muted-foreground",
   },
   {
@@ -41,40 +48,42 @@ const columns: DataTableColumn<ProductBrand>[] = [
 ];
 
 export function ProductBrandsManager({
-  initialProductBrands,
+  initialData,
   categories,
 }: {
-  initialProductBrands: ProductBrand[];
+  initialData: ProductBrandPage;
   categories: Category[];
 }) {
-  const [productBrands, setProductBrands] = useState(initialProductBrands);
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const { data, totalPages, load } = useServerPagination(initialData);
   const [formOpen, setFormOpen] = useState(false);
   const [editingProductBrand, setEditingProductBrand] = useState<ProductBrand | null>(null);
   const [deletingProductBrand, setDeletingProductBrand] = useState<ProductBrand | null>(null);
+  const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
 
-  const categoryFilterOptions = [
-    { value: "", label: "ყველა კატეგორია" },
-    ...flattenTree(categories).map((category) => ({
-      value: String(category.id),
-      label: `${"— ".repeat(category.depth)}${category.name.ka}`,
-    })),
-  ];
+  const filterFields = buildProductBrandFilterFields({ categories });
 
-  async function refresh(nextFilter?: string) {
-    const filter = nextFilter ?? categoryFilter;
-    try {
-      setProductBrands(await listProductBrands(filter ? Number(filter) : undefined));
-    } catch (error) {
-      const message =
-        error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
-      toast.error(message);
-    }
+  async function loadPage(page: number, filters: AdminFilterEntry[] = adminFilters) {
+    await load(
+      () => listProductBrandsPage(filters, page, data.pageSize),
+      (error) => {
+        const message =
+          error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
+        toast.error(message);
+      },
+    );
   }
 
-  async function handleFilterChange(value: string) {
-    setCategoryFilter(value);
-    await refresh(value);
+  // refresh() re-fetches the current page under the current filters — used
+  // after create/edit/delete, where the page shouldn't change.
+  async function refresh() {
+    await loadPage(data.page);
+  }
+
+  // AdminFilterPanel only calls this once, on "გაფილტვრა" — a new filter
+  // always resets to page 1.
+  async function handleFilterApply(filters: AdminFilterEntry[]) {
+    setAdminFilters(filters);
+    await loadPage(1, filters);
   }
 
   function openCreateModal() {
@@ -107,22 +116,15 @@ export function ProductBrandsManager({
         </p>
       )}
 
-      <div className="mt-4 w-72">
-        <Select
-          options={categoryFilterOptions}
-          value={categoryFilter}
-          onChange={handleFilterChange}
-          searchable
-          placeholder="ყველა კატეგორია"
-          ariaLabel="კატეგორიის ფილტრი"
-        />
+      <div className="mt-4">
+        <AdminFilterPanel fields={filterFields} onChange={handleFilterApply} />
       </div>
 
       <div className="mt-6">
         <DataTable
           columns={columns}
-          data={productBrands}
-          totalCount={productBrands.length}
+          data={data.items}
+          totalCount={data.total}
           getRowKey={(productBrand) => productBrand.id}
           emptyMessage="ბრენდი არ არსებობს"
           actions={(productBrand) => (
@@ -132,6 +134,7 @@ export function ProductBrandsManager({
             />
           )}
         />
+        <Pagination currentPage={data.page} totalPages={totalPages} onPageChange={loadPage} />
       </div>
 
       <ProductBrandFormModal

@@ -101,12 +101,12 @@ model Order {
   // the live row; there's no such snapshot for the buyer or the status
   // itself, so losing either must stay blocked instead of silently
   // orphaning order history.
-  userId            Int
-  user              User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
-  deliveryMethod    OrderDeliveryMethod
-  paymentMethod     OrderPaymentMethod
-  statusId          Int
-  status            OrderStatus            @relation(fields: [statusId], references: [id], onDelete: Restrict)
+  userId         Int
+  user           User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  deliveryMethod OrderDeliveryMethod
+  paymentMethod  OrderPaymentMethod
+  statusId       Int
+  status         OrderStatus         @relation(fields: [statusId], references: [id], onDelete: Restrict)
 
   // SetNull (not Restrict/Cascade): losing the live Address row shouldn't
   // block its deletion or cascade-delete order history — the snapshot below
@@ -157,7 +157,7 @@ model Order {
   // separate order.update, and @updatedAt bumps on *any* update — so a
   // manual FINA-retry click days after the actual cancellation was silently
   // rewriting what analytics thought was the cancellation date.
-  cancelledAt DateTime?
+  cancelledAt          DateTime?
 
   subtotal      Decimal @db.Decimal(10, 2)
   discountTotal Decimal @default(0) @db.Decimal(10, 2)
@@ -167,8 +167,8 @@ model Order {
   // one piece of fraud-relevant signal this codebase didn't track before.
   // Used by fraud.service.ts's evaluateOrderRisk to detect promo-code abuse
   // and multi-accounting; never shown to the customer.
-  ipAddress String?
-  riskFlags OrderRiskFlag[]
+  ipAddress     String?
+  riskFlags     OrderRiskFlag[]
   statusHistory OrderStatusHistory[]
   requests      OrderRequest[]
 
@@ -204,25 +204,25 @@ model Order {
   // fina-sync.service.ts's resolveOrderFinaPush). While set on a pending
   // RETURN, stock sync assumes FINA already has it (errs low, never
   // oversells — see fina-sync.repository.ts's applyFinaAvailability).
-  finaPushUncertain   Boolean   @default(false)
+  finaPushUncertain   Boolean             @default(false)
 
   // Foundation for the real bank-gateway integration (see PaymentStatus's
   // own comment) — set at placeOrder time to AWAITING_PAYMENT for a CARD
   // order, NOT_APPLICABLE otherwise. Nothing reads or enforces this yet;
   // it's purely additive labeling until a real gateway client exists.
-  paymentStatus PaymentStatus @default(NOT_APPLICABLE)
+  paymentStatus        PaymentStatus @default(NOT_APPLICABLE)
   // The gateway's own reference for this payment, once one exists — needed
   // later to call that gateway's refund endpoint on cancellation, same role
   // finaOutOperationId plays for FINA's return document.
   paymentTransactionId String?
   // Set exactly once, atomically, when paymentStatus first becomes PAID —
   // same "don't reuse updatedAt" reasoning as cancelledAt above.
-  paidAt DateTime?
+  paidAt               DateTime?
   // Free-form (e.g. "6 თვე, 0%") rather than a structured plan schema,
   // since installment/split-payment is chosen on the bank's own hosted
   // page and the real shape a bank reports back isn't known yet — see
   // Bank.supportsInstallment/supportsSplitPayment.
-  paymentPlanLabel String?
+  paymentPlanLabel     String?
 
   items     OrderItem[]
   createdAt DateTime    @default(now())

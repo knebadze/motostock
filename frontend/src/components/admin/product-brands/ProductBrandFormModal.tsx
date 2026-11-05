@@ -36,8 +36,8 @@ export function ProductBrandFormModal({
   const isEditing = productBrand !== null;
   const flatCategories = flattenTree(categories);
 
-  const [categoryId, setCategoryId] = useState(
-    productBrand ? String(productBrand.category.id) : "",
+  const [categoryIds, setCategoryIds] = useState<string[]>(
+    productBrand ? productBrand.categories.map((category) => String(category.id)) : [],
   );
   const [name, setName] = useState(productBrand?.name ?? "");
   const [slug, setSlug] = useState(productBrand?.slug ?? "");
@@ -59,7 +59,7 @@ export function ProductBrandFormModal({
     event.preventDefault();
 
     const result = productBrandFormSchema.safeParse({
-      categoryId,
+      categoryIds,
       name,
       slug,
     });
@@ -74,7 +74,7 @@ export function ProductBrandFormModal({
 
     try {
       const input = {
-        categoryId: Number(categoryId),
+        categoryIds: categoryIds.map(Number),
         name: name.trim(),
         slug: slug.trim(),
       };
@@ -115,19 +115,20 @@ export function ProductBrandFormModal({
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="product-brand-category" className="text-sm font-medium">
-            კატეგორია *
+            კატეგორიები *
           </label>
           <Select
             id="product-brand-category"
+            multiple
             options={categoryOptions}
-            value={categoryId}
-            onChange={setCategoryId}
+            value={categoryIds}
+            onChange={setCategoryIds}
             searchable
-            placeholder="აირჩიეთ კატეგორია"
+            placeholder="აირჩიეთ კატეგორია(ები)"
           />
-          <FieldError message={errors.categoryId} />
+          <FieldError message={errors.categoryIds} />
           <p className="text-xs text-muted-foreground">
-            ბრენდი მემკვიდრეობით გადაეცემა ყველა შვილობილ კატეგორიასაც.
+            ბრენდი მემკვიდრეობით გადაეცემა არჩეული კატეგორიების ყველა შვილობილ კატეგორიასაც.
           </p>
         </div>
 

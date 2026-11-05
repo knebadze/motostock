@@ -7,12 +7,12 @@
 // alternate terminal state — sortOrder is what actually enforces that
 // order in admin dropdowns now, not just a comment.
 model OrderStatus {
-  id        Int     @id @default(autoincrement())
-  key       String  @unique
+  id        Int                  @id @default(autoincrement())
+  key       String               @unique
   nameKa    String
   nameEn    String
   nameRu    String
-  sortOrder Int     @default(0)
+  sortOrder Int                  @default(0)
   orders    Order[]
   history   OrderStatusHistory[]
 

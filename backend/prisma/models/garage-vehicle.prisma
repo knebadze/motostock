@@ -4,11 +4,11 @@
 // physical vehicle they own, distinct from the catalog row's yearFrom/yearTo
 // range (which describes a whole model generation, not one instance).
 model GarageVehicle {
-  id               Int            @id @default(autoincrement())
+  id               Int             @id @default(autoincrement())
   userId           Int
-  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicleCatalogId Int
-  vehicleCatalog   VehicleCatalog @relation(fields: [vehicleCatalogId], references: [id], onDelete: Restrict)
+  vehicleCatalog   VehicleCatalog  @relation(fields: [vehicleCatalogId], references: [id], onDelete: Restrict)
   year             Int
   // Optional — identifies this one physical vehicle (not stored on
   // VehicleCatalog, which describes a shared model/generation, not an
@@ -20,8 +20,8 @@ model GarageVehicle {
   // whole model. Self-uploaded via POST /users/me/garage/:id/image.
   imageUrl         String?
   serviceRecords   ServiceRecord[]
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   @@index([userId])
   @@index([vehicleCatalogId])

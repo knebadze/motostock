@@ -39,11 +39,11 @@ model WhatsAppChatSession {
 }
 
 model WhatsAppChatMessage {
-  id        Int                   @id @default(autoincrement())
-  sessionId Int
-  session   WhatsAppChatSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  sender    WhatsAppMessageSender
-  body      String
+  id                     Int                   @id @default(autoincrement())
+  sessionId              Int
+  session                WhatsAppChatSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender                 WhatsAppMessageSender
+  body                   String
   // The WhatsApp message id Meta returns when WE relay a CUSTOMER message
   // to the rep's phone — the rep's WhatsApp "Reply" (quote) on that message
   // comes back through the webhook carrying this same id as
@@ -52,8 +52,8 @@ model WhatsAppChatMessage {
   // several concurrent site visitors' conversations at once. NULL for
   // CUSTOMER rows that were never successfully relayed (offline/send
   // failure) and for SYSTEM rows (never relayed anywhere).
-  relayWhatsAppMessageId String? @unique
-  createdAt              DateTime @default(now())
+  relayWhatsAppMessageId String?               @unique
+  createdAt              DateTime              @default(now())
 
   @@index([sessionId, createdAt])
   @@schema("dbo")

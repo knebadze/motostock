@@ -16,28 +16,28 @@ enum VehicleListingCurrency {
 }
 
 model VehicleListing {
-  id               Int                      @id @default(autoincrement())
-  vehicleCatalogId Int
-  vehicleCatalog   VehicleCatalog           @relation(fields: [vehicleCatalogId], references: [id], onDelete: Restrict)
-  conditionId      Int
-  condition        Condition                @relation(fields: [conditionId], references: [id], onDelete: Restrict)
-  statusId         Int
-  status           ListingStatus            @relation(fields: [statusId], references: [id], onDelete: Restrict)
-  colorId          Int
-  color            Color                    @relation(fields: [colorId], references: [id], onDelete: Restrict)
-  year             Int
+  id                   Int                      @id @default(autoincrement())
+  vehicleCatalogId     Int
+  vehicleCatalog       VehicleCatalog           @relation(fields: [vehicleCatalogId], references: [id], onDelete: Restrict)
+  conditionId          Int
+  condition            Condition                @relation(fields: [conditionId], references: [id], onDelete: Restrict)
+  statusId             Int
+  status               ListingStatus            @relation(fields: [statusId], references: [id], onDelete: Restrict)
+  colorId              Int
+  color                Color                    @relation(fields: [colorId], references: [id], onDelete: Restrict)
+  year                 Int
   // Odometer reading in km — relevant for used units (secondhand vehicles),
   // null for new stock.
-  mileageKm        Int?
+  mileageKm            Int?
   // Remaining warranty on this specific unit, e.g. "3 YEAR" or "6 MONTH" —
   // both null together mean no warranty is advertised for this listing.
-  warrantyValue    Int?
-  warrantyUnit     WarrantyUnit?
-  isActive         Boolean                  @default(true)
+  warrantyValue        Int?
+  warrantyUnit         WarrantyUnit?
+  isActive             Boolean                  @default(true)
   // Admin-curated (a checkbox on this listing's own edit form) — see
   // Product.isFeaturedOnHomepage's identical comment; same purely-manual
   // membership signal for the homepage's FEATURED_MIXED slider.
-  isFeaturedOnHomepage Boolean              @default(false)
+  isFeaturedOnHomepage Boolean                  @default(false)
   // Admin-set customs-clearance status for this specific imported unit —
   // shown to shoppers on the storefront (card badge + detail page row) and
   // filterable on the shop grid, same plain-boolean-column shape as
@@ -45,34 +45,34 @@ model VehicleListing {
   // listing has this regardless of category, so it doesn't belong in the
   // vehicle-category-filters system, which is for VehicleCatalog's
   // heterogeneous per-category engineering specs).
-  isCustomsCleared Boolean                  @default(false)
+  isCustomsCleared     Boolean                  @default(false)
   // The currency `price` (and any VehicleListingDiscount.discountPrice on
   // this listing — always same-currency as its own listing, never mixed)
   // is denominated in. Defaults GEL so every pre-existing row is unaffected.
   // Checkout always converts a USD listing to GEL at the current NBG rate
   // before freezing it into an OrderItem — see orders.service.ts's
   // computeCheckoutTotals.
-  priceCurrency    VehicleListingCurrency   @default(GEL)
-  price            Decimal                  @db.Decimal(10, 2)
-  stockQuantity    Int                      @default(1)
-  descriptionKa    String?
-  descriptionEn    String?
-  descriptionRu    String?
+  priceCurrency        VehicleListingCurrency   @default(GEL)
+  price                Decimal                  @db.Decimal(10, 2)
+  stockQuantity        Int                      @default(1)
+  descriptionKa        String?
+  descriptionEn        String?
+  descriptionRu        String?
   // Single global counter, bumped on every detail-page view — see
   // vehicle-listing.service.ts's getVehicleListing. Distinct from
   // VehicleListingView below, which is per-visitor (see that model's
   // comment for why both exist — same split as Product.viewCount/ProductView).
-  viewCount        Int                      @default(0)
-  images           VehicleListingImage[]
-  discounts        VehicleListingDiscount[]
-  wishlistItems    WishlistItem[]
-  compareItems     CompareItem[]
-  cartItems        CartItem[]
-  orderItems       OrderItem[]
-  views            VehicleListingView[]
-  callbackRequests CallbackRequest[]
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
+  viewCount            Int                      @default(0)
+  images               VehicleListingImage[]
+  discounts            VehicleListingDiscount[]
+  wishlistItems        WishlistItem[]
+  compareItems         CompareItem[]
+  cartItems            CartItem[]
+  orderItems           OrderItem[]
+  views                VehicleListingView[]
+  callbackRequests     CallbackRequest[]
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
 
   @@index([vehicleCatalogId])
   @@index([conditionId])

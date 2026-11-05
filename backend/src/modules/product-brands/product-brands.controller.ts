@@ -11,8 +11,8 @@ export async function list(
   req: Request<unknown, unknown, unknown, ProductBrandListQuery>,
   res: Response,
 ) {
-  const items = await productBrandsService.listProductBrands(req.query.categoryId);
-  res.status(200).json({ items });
+  const result = await productBrandsService.listProductBrands(req.query);
+  res.status(200).json(result);
 }
 
 export async function getOne(req: Request, res: Response) {

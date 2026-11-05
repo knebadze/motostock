@@ -5,26 +5,26 @@
 // titles stay consistent across members and are managed in one place
 // (/admin/general-classifiers).
 model TeamMember {
-  id         Int      @id @default(autoincrement())
-  nameKa     String
-  nameEn     String
-  nameRu     String
-  positionId Int
-  position   Position @relation(fields: [positionId], references: [id], onDelete: Restrict)
+  id                       Int             @id @default(autoincrement())
+  nameKa                   String
+  nameEn                   String
+  nameRu                   String
+  positionId               Int
+  position                 Position        @relation(fields: [positionId], references: [id], onDelete: Restrict)
   // Optional short bio shown as body text on the public /about page's team
   // card — each locale independently optional (a member's bio doesn't need
   // translating into all three at once).
-  descriptionKa String?
-  descriptionEn String?
-  descriptionRu String?
-  imageUrl   String?
-  isActive   Boolean  @default(true)
-  sortOrder  Int      @default(0)
+  descriptionKa            String?
+  descriptionEn            String?
+  descriptionRu            String?
+  imageUrl                 String?
+  isActive                 Boolean         @default(true)
+  sortOrder                Int             @default(0)
   // Service history rows where this member is recorded as the mechanic who
   // performed the work — see ServiceRecord.mechanicId.
   serviceRecordsAsMechanic ServiceRecord[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
 
   @@schema("dbo")
 }

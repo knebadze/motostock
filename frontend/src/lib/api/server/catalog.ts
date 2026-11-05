@@ -10,7 +10,7 @@ import type { VehicleCatalogEntry, VehicleCatalogOption, VehicleCatalogPage } fr
 import type { Attribute } from "../attributes";
 import type { CategoryFilter } from "../category-filters";
 import type { VehicleCategoryFilter } from "../vehicle-category-filters";
-import type { ProductBrand } from "../product-brands";
+import type { ProductBrand, ProductBrandPage } from "../product-brands";
 import type { Unit } from "../units";
 
 // Catalog reference data: vehicle brands/models/catalog, lookups, attributes, product brands, units, category filters.
@@ -192,6 +192,19 @@ export const getProductBrandsFromServer = cache(async (): Promise<ProductBrand[]
   return fetchFromServer<{ items: ProductBrand[] }, ProductBrand[]>("/product-brands", {
     fallback: [],
     extract: (data) => data.items,
+    requireAuth: true,
+  });
+});
+
+// Paginated variant for the admin product-brands list screen's initial
+// load — distinct from getProductBrandsFromServer above, which every other
+// page (product form's brand dropdown, promo code forms, ...) still uses to
+// fetch every row.
+export const getAdminProductBrandsPageFromServer = cache(async (): Promise<ProductBrandPage> => {
+  return fetchFromServer<ProductBrandPage, ProductBrandPage>("/product-brands", {
+    params: { page: 1, pageSize: ADMIN_LIST_INITIAL_PAGE_SIZE },
+    fallback: { items: [], total: 0, page: 1, pageSize: ADMIN_LIST_INITIAL_PAGE_SIZE },
+    extract: (data) => data,
     requireAuth: true,
   });
 });
