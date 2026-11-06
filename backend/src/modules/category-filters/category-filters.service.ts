@@ -1,4 +1,5 @@
 import { ApiError } from "../../lib/ApiError.js";
+import { cache } from "../../lib/cache.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { attributesRepository } from "../attributes/attributes.repository.js";
@@ -100,7 +101,23 @@ function toUnitAbbreviation(unit: UnitAbbreviationRow) {
 //   number attributes carry the min/max actually present.
 // Built-in/automatic entries get negative ids (they have no config row).
 // An inactive config row hides its filter — including the automatic one.
-export async function listStorefrontCategoryFilters(categoryId: number) {
+const STOREFRONT_FILTERS_TTL_MS = 5 * 60_000;
+
+// Cached per category for STOREFRONT_FILTERS_TTL_MS: the sidebar's option
+// counts and ranges follow every product/listing write across several
+// modules, so a short expiry keeps them close enough without wiring
+// invalidation into each — while a filter-config change (create / update /
+// delete below) drops the cache at once, so an admin sees it immediately.
+// The admin "clear cache" button drops it too.
+export function listStorefrontCategoryFilters(categoryId: number) {
+  return cache.getOrLoad(`categoryFilters:storefront:${categoryId}`, () => computeStorefrontCategoryFilters(categoryId), STOREFRONT_FILTERS_TTL_MS);
+}
+
+function invalidateStorefrontFilters() {
+  cache.delPrefix("categoryFilters:storefront:");
+}
+
+async function computeStorefrontCategoryFilters(categoryId: number) {
   const category = await categoriesRepository.findById(categoryId);
   if (!category) return [];
 
@@ -294,6 +311,7 @@ export async function createCategoryFilter(input: CreateCategoryFilterInput) {
       ? "ეს მახასიათებელი უკვე დამატებულია ამ კატეგორიის ფილტრებში"
       : `${input.filterType} ფილტრი უკვე დამატებულია ამ კატეგორიისთვის`,
   );
+  invalidateStorefrontFilters();
   return toResponse(row);
 }
 
@@ -307,6 +325,7 @@ export async function updateCategoryFilter(id: number, input: UpdateCategoryFilt
     ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
     ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
   });
+  invalidateStorefrontFilters();
   return toResponse(row);
 }
 
@@ -317,4 +336,5 @@ export async function deleteCategoryFilter(id: number) {
   }
 
   await categoryFiltersRepository.delete(id);
+  invalidateStorefrontFilters();
 }

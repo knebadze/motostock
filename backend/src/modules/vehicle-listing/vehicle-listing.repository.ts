@@ -457,17 +457,19 @@ export const vehicleListingRepository = {
   // findDistinctCategoryFacets in products.repository.ts).
   findDistinctBrandFacets(filters: { categoryIds?: number[]; bulkDiscountEventId?: number }) {
     const structuredWhere = buildWhere(filters);
-    return prisma.vehicleListing
-      .findMany({
-        where: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] },
-        select: { vehicleCatalog: { select: { brand: { select: brandModelRefSelect } } } },
-        distinct: ["vehicleCatalogId"],
-      })
-      .then((rows) => {
-        const byId = new Map<number, (typeof rows)[number]["vehicleCatalog"]["brand"]>();
-        for (const row of rows) byId.set(row.vehicleCatalog.brand.id, row.vehicleCatalog.brand);
-        return Array.from(byId.values());
-      });
+    // Brands with a matching listing (EXISTS in SQL) — not one row per
+    // catalog entry deduplicated in memory (Prisma's `distinct`).
+    return prisma.brand.findMany({
+      where: {
+        vehicles: {
+          some: {
+            listings: { some: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] } },
+          },
+        },
+      },
+      select: brandModelRefSelect,
+      orderBy: { name: "asc" },
+    });
   },
 
   // The shop-visible listings under `categoryIds` with their year, customs

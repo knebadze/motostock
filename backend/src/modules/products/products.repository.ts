@@ -571,17 +571,22 @@ export const productsRepository = {
     featured?: boolean;
   }) {
     const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
-    const rows = await prisma.product.findMany({
+    // Categories that HAVE a matching product (an EXISTS in SQL), not every
+    // matching product deduplicated by category — Prisma's `distinct`
+    // does that dedupe in memory, after loading one row per product.
+    return prisma.category.findMany({
       where: {
-        AND: [
-          ...(structuredWhere ? [structuredWhere] : []),
-          { variants: { some: { isActive: true } } },
-        ],
+        products: {
+          some: {
+            AND: [
+              ...(structuredWhere ? [structuredWhere] : []),
+              { variants: { some: { isActive: true } } },
+            ],
+          },
+        },
       },
-      select: { category: { select: namedRefSelect } },
-      distinct: ["categoryId"],
+      select: namedRefSelect,
     });
-    return rows.map((row) => row.category);
   },
 
   // Backs ProductShopPage.tsx's brand-checkbox facet list — same reasoning
@@ -590,20 +595,22 @@ export const productsRepository = {
   // ProductShopPage's own facet derivation already skipped those too.
   async findDistinctBrandFacets(filters: { categoryIds?: number[] }) {
     const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
-    const rows = await prisma.product.findMany({
+    // Brands that have a matching product (EXISTS) — see
+    // findDistinctCategoryFacets for why not `distinct`.
+    return prisma.productBrand.findMany({
       where: {
-        AND: [
-          ...(structuredWhere ? [structuredWhere] : []),
-          { variants: { some: { isActive: true } } },
-          { productBrandId: { not: null } },
-        ],
+        products: {
+          some: {
+            AND: [
+              ...(structuredWhere ? [structuredWhere] : []),
+              { variants: { some: { isActive: true } } },
+            ],
+          },
+        },
       },
-      select: { productBrand: { select: brandModelRefSelect } },
-      distinct: ["productBrandId"],
+      select: brandModelRefSelect,
+      orderBy: { name: "asc" },
     });
-    return rows
-      .map((row) => row.productBrand)
-      .filter((brand): brand is NonNullable<typeof brand> => brand != null);
   },
 
   // Backs the shop filter sidebar's automatic attribute filters (see

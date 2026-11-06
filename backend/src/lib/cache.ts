@@ -92,6 +92,17 @@ export const cache = {
     inFlightLoads.delete(key);
   },
 
+  // Every key starting with `prefix` — for a family of per-parameter
+  // entries (e.g. one per category) that one write makes stale together.
+  delPrefix(prefix: string): void {
+    for (const [key, entry] of store) {
+      if (key.startsWith(prefix)) removeEntry(key, entry);
+    }
+    for (const key of [...inFlightLoads.keys()]) {
+      if (key.startsWith(prefix)) inFlightLoads.delete(key);
+    }
+  },
+
   clear(): void {
     store.clear();
     ttlEntryCount = 0;
