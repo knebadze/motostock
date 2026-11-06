@@ -1,7 +1,6 @@
 import {
   getCategoriesFromServer,
   getLookupItemsFromServer,
-  getVehicleCatalogFromServer,
   getTagsFromServer,
 } from "@/lib/api/server";
 import { ProductForm } from "@/components/admin/products/ProductForm";
@@ -14,7 +13,6 @@ export default async function NewProductPage() {
     colors,
     conditions,
     statuses,
-    vehicleCatalog,
     fuelTypes,
     transmissionTypes,
     coolingTypes,
@@ -29,7 +27,6 @@ export default async function NewProductPage() {
     getLookupItemsFromServer("colors"),
     getLookupItemsFromServer("conditions"),
     getLookupItemsFromServer("listing-statuses"),
-    getVehicleCatalogFromServer(),
     getLookupItemsFromServer("fuel-types"),
     getLookupItemsFromServer("transmission-types"),
     getLookupItemsFromServer("cooling-types"),
@@ -57,9 +54,7 @@ export default async function NewProductPage() {
       colors={colors}
       conditions={conditions}
       statuses={statuses}
-      vehicleCatalog={vehicleCatalog}
       vehicleSpecLookups={vehicleSpecLookups}
-      allProducts={[]}
       product={null}
       tags={tags}
     />

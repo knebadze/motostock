@@ -203,6 +203,49 @@ export function listVehicleCatalogOptions() {
   );
 }
 
+// The admin picker's search over the cached option list (no extra DB
+// work): every whitespace-separated word must appear in the entry's
+// brand / model / variant / years / category text, case-insensitively —
+// "yamaha mt 2019" finds "Yamaha MT-07 (2018–2020)" style entries by year
+// too. `ids` instead returns exactly those entries.
+export async function searchVehicleCatalogOptions(query: { q?: string; ids?: number[]; limit: number }) {
+  const options = await listVehicleCatalogOptions();
+  if (query.ids) {
+    const wanted = new Set(query.ids);
+    return options.filter((option) => wanted.has(option.id));
+  }
+  const words = (query.q ?? "").toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return options.slice(0, query.limit);
+
+  const matches: typeof options = [];
+  for (const option of options) {
+    const yearFrom = option.yearFrom ?? null;
+    const yearTo = option.yearTo ?? yearFrom;
+    const text = [
+      option.brand.name,
+      option.model.name,
+      option.variant ?? "",
+      yearFrom ?? "",
+      yearTo ?? "",
+      option.category.name.ka,
+      option.category.name.en,
+    ]
+      .join(" ")
+      .toLowerCase();
+    const fits = words.every((word) => {
+      if (text.includes(word)) return true;
+      // A year inside the entry's range ("2019" for 2018–2020).
+      const year = /^\d{4}$/.test(word) ? Number(word) : null;
+      return year != null && yearFrom != null && yearTo != null && year >= yearFrom && year <= yearTo;
+    });
+    if (fits) {
+      matches.push(option);
+      if (matches.length >= query.limit) break;
+    }
+  }
+  return matches;
+}
+
 function toCatalogOption(row: Awaited<ReturnType<typeof vehicleCatalogRepository.findOptions>>[number]) {
   return {
     id: row.id,

@@ -16,6 +16,7 @@ import {
   vehicleCatalogIdParamSchema,
   vehicleCatalogListQuerySchema,
   vehicleCatalogOptionResponseSchema,
+  vehicleCatalogOptionSearchQuerySchema,
   vehicleCatalogResponseSchema,
 } from "./vehicle-catalog.schema.js";
 import { garageVehicleResponseSchema } from "../garage/garage.schema.js";
@@ -35,6 +36,15 @@ vehicleCatalogRouter.get(
 // Public, like GET / — registered before /:id so the literal "options"
 // segment isn't swallowed by the :id param route.
 vehicleCatalogRouter.get("/options", vehicleCatalogController.listOptions);
+// Staff only: the admin fitment picker's server-side search (see
+// vehicleCatalogOptionSearchQuerySchema).
+vehicleCatalogRouter.get(
+  "/options/search",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(vehicleCatalogOptionSearchQuerySchema, "query"),
+  vehicleCatalogController.searchOptions,
+);
 // Public sitemap feed — see listVehicleCatalogOptionsWithCompatibleProducts.
 vehicleCatalogRouter.get(
   "/options/with-compatible-products",
@@ -266,5 +276,20 @@ registry.registerPath({
     200: { description: "Uploaded", content: { "application/json": { schema: itemResponse } } },
     400: { description: "Invalid file", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-catalog/options/search",
+  tags: ["VehicleCatalog"],
+  summary: "Admin catalog picker — word search over the option list (or the given ids), a page of matches",
+  security: [{ cookieAuth: [] }],
+  request: { query: vehicleCatalogOptionSearchQuerySchema },
+  responses: {
+    200: {
+      description: "Matching catalog options",
+      content: { "application/json": { schema: z.object({ items: z.array(vehicleCatalogOptionResponseSchema) }) } },
+    },
   },
 });

@@ -227,3 +227,14 @@ export async function bulkImportProducts(file: File): Promise<ProductBulkImportR
   });
   return data;
 }
+
+// The admin product picker ("buy together"): a ranked search over the whole
+// catalog on the server — newest products when `q` is empty.
+export type ProductPickerItem = { id: number; name: string; categoryName: string };
+
+export async function searchProductsForPicker(q: string, excludeId?: number): Promise<ProductPickerItem[]> {
+  const { data } = await apiClient.get<{ items: ProductPickerItem[] }>("/products/picker", {
+    params: { q: q || undefined, excludeId },
+  });
+  return data.items;
+}

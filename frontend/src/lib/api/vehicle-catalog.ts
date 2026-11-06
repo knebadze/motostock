@@ -237,3 +237,22 @@ export async function listVehicleSearchOptions(): Promise<VehicleSearchOption[]>
     yearTo,
   }));
 }
+
+// The admin fitment picker: a word search over the catalog on the server
+// (brand / model / variant / year / category), a page of matches — instead
+// of loading all ~3,500 options into the page.
+export async function searchVehicleCatalogOptions(q: string): Promise<VehicleCatalogOption[]> {
+  const { data } = await apiClient.get<{ items: VehicleCatalogOption[] }>("/vehicle-catalog/options/search", {
+    params: { q: q || undefined },
+  });
+  return data.items;
+}
+
+// The options with these ids (labels for entries already chosen).
+export async function getVehicleCatalogOptionsByIds(ids: number[]): Promise<VehicleCatalogOption[]> {
+  if (ids.length === 0) return [];
+  const { data } = await apiClient.get<{ items: VehicleCatalogOption[] }>("/vehicle-catalog/options/search", {
+    params: { ids: ids.join(",") },
+  });
+  return data.items;
+}

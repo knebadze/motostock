@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Select, LONG_LIST_RENDER_CAP } from "@/components/shared/Select";
+import { RemoteSearchSelect } from "@/components/shared/RemoteSearchSelect";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
-import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
+import { getVehicleCatalogOptionsByIds, searchVehicleCatalogOptions } from "@/lib/api/vehicle-catalog";
 import { vehicleCatalogLabel } from "./ProductFitmentPanel";
 
 export type DraftFitment = { vehicleCatalogId: number };
+
+type DraftRow = { id: number; label: string };
 
 // Used while creating a brand-new product: fitment links are held locally
 // and created right after the product is saved (no productId to attach to
@@ -16,43 +18,71 @@ export type DraftFitment = { vehicleCatalogId: number };
 // they need a productId, so they're only addable once the product exists
 // (right after saving, in the edit view).
 export function DraftFitmentEditor({
-  vehicleCatalog,
   fitments,
   onAdd,
   onRemove,
 }: {
-  vehicleCatalog: VehicleCatalogOption[];
   fitments: DraftFitment[];
   onAdd: (vehicleCatalogId: number) => void;
   onRemove: (vehicleCatalogId: number) => void;
 }) {
   const [vehicleCatalogId, setVehicleCatalogId] = useState("");
+  const [pickedLabel, setPickedLabel] = useState("");
+  // Labels of the drafted entries — the catalog isn't loaded into the page,
+  // so a label is remembered when picked, and fetched by id for drafts this
+  // component didn't pick itself (e.g. after switching tabs and back).
+  const [labels, setLabels] = useState<Map<number, string>>(new Map());
 
-  const attachedIds = new Set(fitments.map((fitment) => fitment.vehicleCatalogId));
-  const options = useMemo(
-    () =>
-      vehicleCatalog
+  const missingKey = fitments
+    .map((fitment) => fitment.vehicleCatalogId)
+    .filter((id) => !labels.has(id))
+    .join(",");
+  useEffect(() => {
+    if (!missingKey) return;
+    let cancelled = false;
+    getVehicleCatalogOptionsByIds(missingKey.split(",").map(Number))
+      .then((entries) => {
+        if (cancelled) return;
+        setLabels((previous) => {
+          const next = new Map(previous);
+          for (const entry of entries) next.set(entry.id, vehicleCatalogLabel(entry));
+          return next;
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [missingKey]);
+
+  // Searched on the server; already-drafted entries are left out.
+  const searchOptions = useCallback(
+    async (query: string) => {
+      const attachedIds = new Set(fitments.map((fitment) => fitment.vehicleCatalogId));
+      return (await searchVehicleCatalogOptions(query))
         .filter((entry) => !attachedIds.has(entry.id))
-        .map((entry) => ({ value: String(entry.id), label: vehicleCatalogLabel(entry) })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [vehicleCatalog, fitments],
+        .map((entry) => ({ value: String(entry.id), label: vehicleCatalogLabel(entry) }));
+    },
+    [fitments],
   );
 
-  const rows = fitments
-    .map((fitment) => vehicleCatalog.find((entry) => entry.id === fitment.vehicleCatalogId))
-    .filter((entry): entry is VehicleCatalogOption => entry !== undefined);
+  const rows: DraftRow[] = fitments.map((fitment) => ({
+    id: fitment.vehicleCatalogId,
+    label: labels.get(fitment.vehicleCatalogId) ?? "…",
+  }));
 
-  const draftColumns: DataTableColumn<VehicleCatalogOption>[] = [
-    { header: "ტექნიკა", render: (entry) => vehicleCatalogLabel(entry) },
-  ];
+  const draftColumns: DataTableColumn<DraftRow>[] = [{ header: "ტექნიკა", render: (row) => row.label }];
 
   function handleAdd() {
     if (!vehicleCatalogId) {
       toast.error("აირჩიეთ ტექნიკა");
       return;
     }
-    onAdd(Number(vehicleCatalogId));
+    const id = Number(vehicleCatalogId);
+    if (pickedLabel) setLabels((previous) => new Map(previous).set(id, pickedLabel));
+    onAdd(id);
     setVehicleCatalogId("");
+    setPickedLabel("");
   }
 
   return (
@@ -66,12 +96,12 @@ export function DraftFitmentEditor({
       <DataTable
         columns={draftColumns}
         data={rows}
-        getRowKey={(entry) => entry.id}
+        getRowKey={(row) => row.id}
         emptyMessage="თავსებადობა ჯერ არ დამატებულა"
-        actions={(entry) => (
+        actions={(row) => (
           <button
             type="button"
-            onClick={() => onRemove(entry.id)}
+            onClick={() => onRemove(row.id)}
             className="rounded-full px-3 py-1 text-xs font-semibold text-destructive transition-colors hover:bg-red-500/10"
           >
             წაშლა
@@ -81,13 +111,14 @@ export function DraftFitmentEditor({
 
       <div className="flex gap-3">
         <div className="flex-1">
-          <Select
-            options={options}
+          <RemoteSearchSelect
+            search={searchOptions}
             value={vehicleCatalogId}
-            onChange={setVehicleCatalogId}
-            searchable
-            maxRenderedOptions={LONG_LIST_RENDER_CAP}
-            placeholder="აირჩიეთ ტექნიკა კატალოგიდან"
+            onChange={(value, option) => {
+              setVehicleCatalogId(value);
+              setPickedLabel(option?.label ?? "");
+            }}
+            placeholder="მოძებნეთ ტექნიკა კატალოგიდან"
             ariaLabel="ტექნიკა კატალოგიდან"
           />
         </div>

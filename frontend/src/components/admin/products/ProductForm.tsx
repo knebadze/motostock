@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FormActions } from "@/components/shared/FormActions";
 import { Tabs } from "@/components/shared/Tabs";
-import type { Product, ProductListItem } from "@/lib/api/products";
+import type { Product } from "@/lib/api/products";
 import { siteConfig } from "@/config/site";
 import type { Attribute } from "@/lib/api/attributes";
 import { Select } from "@/components/shared/Select";
@@ -13,7 +13,6 @@ import type { Tag } from "@/lib/api/tags";
 import type { Category } from "@/lib/api/categories";
 import { listProductBrands, type ProductBrand } from "@/lib/api/product-brands";
 import { listLookupItems, type LookupItem } from "@/lib/api/lookups";
-import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import {
   flattenTree,
@@ -62,9 +61,7 @@ export function ProductForm({
   colors,
   conditions,
   statuses,
-  vehicleCatalog,
   vehicleSpecLookups,
-  allProducts,
   product,
   tags,
   initialTagIds = [],
@@ -74,9 +71,10 @@ export function ProductForm({
   colors: LookupItem[];
   conditions: LookupItem[];
   statuses: LookupItem[];
-  vehicleCatalog: VehicleCatalogOption[];
+  // The vehicle catalog and the product list are NOT passed in: their
+  // pickers (fitment, buy together) search the server instead — embedding
+  // them made this page ~1.6 MB.
   vehicleSpecLookups: VehicleSpecLookupMap;
-  allProducts: ProductListItem[];
   product: Product | null;
   // Every buy-together tag (the multi-select's options) and, when editing,
   // the product's current ones.
@@ -639,13 +637,11 @@ export function ProductForm({
             content: isEditing ? (
               <ProductFitmentPanel
                 productId={product.id}
-                vehicleCatalog={vehicleCatalog}
                 categories={categories}
                 vehicleSpecLookups={vehicleSpecLookups}
               />
             ) : (
               <DraftFitmentEditor
-                vehicleCatalog={vehicleCatalog}
                 fitments={draftFitments}
                 onAdd={addDraftFitment}
                 onRemove={removeDraftFitment}
@@ -682,7 +678,7 @@ export function ProductForm({
             </p>
           </div>
           {isEditing ? (
-            <ProductBuyTogetherPanel productId={product.id} allProducts={allProducts} />
+            <ProductBuyTogetherPanel productId={product.id} />
           ) : (
             <p className="text-sm text-muted-foreground">
               კონკრეტული პროდუქტების ხელით მიბმა ხელმისაწვდომი იქნება პროდუქტის შენახვის შემდეგ.

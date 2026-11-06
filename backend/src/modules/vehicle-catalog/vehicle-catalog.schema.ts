@@ -207,3 +207,18 @@ export const vehicleCatalogResponseSchema = registry.register(
     updatedAt: z.iso.datetime(),
   }),
 );
+
+// Admin catalog picker (product fitment): a server-side search over the
+// cached option list, a page of matches at a time — instead of embedding
+// all ~3,500 options (~1 MB) in the product page. `ids` (comma-separated)
+// instead returns those entries, for labeling ones already chosen.
+export const vehicleCatalogOptionSearchQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  ids: z
+    .string()
+    .regex(/^\d+(,\d+)*$/)
+    .transform((value) => value.split(",").map(Number))
+    .optional(),
+  limit: z.coerce.number().int().positive().max(100).default(50),
+});
+export type VehicleCatalogOptionSearchQuery = z.infer<typeof vehicleCatalogOptionSearchQuerySchema>;

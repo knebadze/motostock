@@ -8,6 +8,7 @@ import type {
   SubmitVehicleCatalogInput,
   UpdateVehicleCatalogInput,
   VehicleCatalogListQuery,
+  VehicleCatalogOptionSearchQuery,
 } from "./vehicle-catalog.schema.js";
 
 export async function listOptions(_req: Request, res: Response) {
@@ -101,4 +102,11 @@ export async function bulkImport(req: Request, res: Response) {
 
   const result = await bulkImportVehicleCatalog(req.file.buffer);
   res.status(200).json(result);
+}
+
+export async function searchOptions(req: Request, res: Response) {
+  const items = await vehicleCatalogService.searchVehicleCatalogOptions(
+    req.query as unknown as VehicleCatalogOptionSearchQuery,
+  );
+  res.status(200).json({ items });
 }

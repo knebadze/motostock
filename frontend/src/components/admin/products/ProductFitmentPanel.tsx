@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Select, LONG_LIST_RENDER_CAP } from "@/components/shared/Select";
+import { RemoteSearchSelect } from "@/components/shared/RemoteSearchSelect";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
@@ -11,7 +11,7 @@ import {
   listProductFitments,
   type ProductFitment,
 } from "@/lib/api/product-fitment";
-import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
+import { searchVehicleCatalogOptions, type VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import type { Category } from "@/lib/api/categories";
 import { ApiRequestError } from "@/lib/api/client";
 import { FitmentRulesEditor, type VehicleSpecLookupMap } from "./FitmentRulesEditor";
@@ -46,12 +46,10 @@ const columns: DataTableColumn<ProductFitment>[] = [
 
 export function ProductFitmentPanel({
   productId,
-  vehicleCatalog,
   categories,
   vehicleSpecLookups,
 }: {
   productId: number;
-  vehicleCatalog: VehicleCatalogOption[];
   categories: Category[];
   vehicleSpecLookups: VehicleSpecLookupMap;
 }) {
@@ -80,14 +78,16 @@ export function ProductFitmentPanel({
     };
   }, [productId]);
 
-  const attachedIds = new Set(fitments.map((fitment) => fitment.vehicleCatalog.id));
-  const options = useMemo(
-    () =>
-      vehicleCatalog
+  // Searched on the server (the catalog is ~3,500 entries — too much to
+  // embed in the page); already-attached entries are left out.
+  const searchOptions = useCallback(
+    async (query: string) => {
+      const attachedIds = new Set(fitments.map((fitment) => fitment.vehicleCatalog.id));
+      return (await searchVehicleCatalogOptions(query))
         .filter((entry) => !attachedIds.has(entry.id))
-        .map((entry) => ({ value: String(entry.id), label: vehicleCatalogLabel(entry) })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [vehicleCatalog, fitments],
+        .map((entry) => ({ value: String(entry.id), label: vehicleCatalogLabel(entry) }));
+    },
+    [fitments],
   );
 
   async function refresh() {
@@ -173,13 +173,11 @@ export function ProductFitmentPanel({
 
         <div className="flex gap-3">
           <div className="flex-1">
-            <Select
-              options={options}
+            <RemoteSearchSelect
+              search={searchOptions}
               value={vehicleCatalogId}
               onChange={setVehicleCatalogId}
-              searchable
-              maxRenderedOptions={LONG_LIST_RENDER_CAP}
-              placeholder="აირჩიეთ ტექნიკა კატალოგიდან"
+              placeholder="მოძებნეთ ტექნიკა კატალოგიდან"
               ariaLabel="ტექნიკა კატალოგიდან"
             />
           </div>

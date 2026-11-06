@@ -726,6 +726,21 @@ export const productsRepository = {
   // variants, same reasoning as findMany above (a ranked/recommended id
   // whose product has since gone fully inactive shouldn't surface as an
   // empty card).
+  // Lean rows for the admin product picker — any product (published or
+  // not), just what its label needs. `ids` given: those (order not kept);
+  // otherwise the newest `take`.
+  findPickerRows(options: { ids?: number[]; excludeId?: number; take: number }) {
+    return prisma.product.findMany({
+      where: {
+        ...(options.ids ? { id: { in: options.ids } } : {}),
+        ...(options.excludeId != null ? { NOT: { id: options.excludeId } } : {}),
+      },
+      select: { id: true, nameKa: true, category: { select: { nameKa: true } } },
+      orderBy: { createdAt: "desc" },
+      take: options.ids ? undefined : options.take,
+    });
+  },
+
   findByIds(ids: number[]) {
     return prisma.product.findMany({
       where: { id: { in: ids }, variants: { some: { isActive: true } } },

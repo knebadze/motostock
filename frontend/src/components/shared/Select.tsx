@@ -44,6 +44,10 @@ type BaseProps = {
   // Translated text for the "+N hidden" row (storefront callers);
   // receives the hidden count.
   moreResultsLabel?: (hiddenCount: number) => string;
+  // Server-side search (see RemoteSearchSelect): called with the search
+  // box's text as it changes (and "" when the panel closes); `options` are
+  // then taken as already matching — not filtered again here.
+  onSearchChange?: (query: string) => void;
 };
 
 type SingleSelectProps = BaseProps & {
@@ -122,6 +126,7 @@ export function Select(props: SelectProps) {
   // Only a searchable list is capped — without a search box there'd be no
   // way to reach the rest.
   const renderCap = searchable ? props.maxRenderedOptions : undefined;
+  const { onSearchChange } = props;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [position, setPosition] = useState<PanelPosition | null>(null);
@@ -141,6 +146,11 @@ export function Select(props: SelectProps) {
   });
   const baseId = useId();
 
+  function resetQuery() {
+    setQuery("");
+    if (query) onSearchChange?.("");
+  }
+
   useEffect(() => {
     if (!open) return;
 
@@ -151,11 +161,14 @@ export function Select(props: SelectProps) {
       }
       setOpen(false);
       setQuery("");
+      // Unconditional here: this listener is set up when the panel opens,
+      // so it can't see the query typed since.
+      onSearchChange?.("");
     }
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
+  }, [open, onSearchChange]);
 
   // Render the dropdown in a portal positioned by viewport coordinates
   // instead of nesting it inside the trigger — otherwise it gets clipped by
@@ -241,7 +254,10 @@ export function Select(props: SelectProps) {
   const selectedValueSet = useMemo(() => new Set(selectedKey ? selectedKey.split("\u0000") : []), [selectedKey]);
   const selectedOptions = options.filter((option) => selectedValueSet.has(option.value));
 
-  const matchingOptions = useMemo(() => filterOptions(options, query), [options, query]);
+  const matchingOptions = useMemo(
+    () => (onSearchChange ? options : filterOptions(options, query)),
+    [options, query, onSearchChange],
+  );
   // What's actually rendered — keyboard navigation/activeIndex index into this.
   const filteredOptions = useMemo(
     () => capOptions(matchingOptions, renderCap, selectedValueSet),
@@ -263,7 +279,7 @@ export function Select(props: SelectProps) {
     } else {
       props.onChange(optionValue);
       setOpen(false);
-      setQuery("");
+      resetQuery();
     }
   }
 
@@ -276,7 +292,7 @@ export function Select(props: SelectProps) {
 
   function closePanel() {
     setOpen(false);
-    setQuery("");
+    resetQuery();
     triggerRef.current?.focus();
   }
 
@@ -296,7 +312,7 @@ export function Select(props: SelectProps) {
   function togglePanel() {
     if (open) {
       setOpen(false);
-      setQuery("");
+      resetQuery();
     } else {
       openPanel();
     }
@@ -381,7 +397,7 @@ export function Select(props: SelectProps) {
         // No preventDefault — Tab should still move focus onward normally,
         // just without leaving the panel open behind it.
         setOpen(false);
-        setQuery("");
+        resetQuery();
         break;
       default:
         // Typing into the search input already filters via its own
@@ -510,10 +526,11 @@ export function Select(props: SelectProps) {
                   onChange={(event) => {
                     const nextQuery = event.target.value;
                     setQuery(nextQuery);
+                    onSearchChange?.(nextQuery);
                     // Jump the highlight to the top match, same reasoning
                     // as openPanel() above — computed at the event that
                     // changes the filtered set, not via a reactive effect.
-                    const nextFiltered = filterOptions(options, nextQuery);
+                    const nextFiltered = onSearchChange ? options : filterOptions(options, nextQuery);
                     setActiveIndex(nextFiltered.length > 0 ? 0 : -1);
                   }}
                   onKeyDown={handleOpenPanelKeyDown}

@@ -61,6 +61,21 @@ export const updateProductSchema = registry.register(
 );
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 
+// Admin product picker (the "buy together" panel): a server-side search
+// over the WHOLE catalog, returning a few lean rows — instead of the page
+// embedding every product (capped at 1,000) for a client-side filter.
+export const productPickerQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  limit: z.coerce.number().int().positive().max(50).default(20),
+  excludeId: z.coerce.number().int().positive().optional(),
+});
+export type ProductPickerQuery = z.infer<typeof productPickerQuerySchema>;
+
+export const productPickerItemSchema = registry.register(
+  "ProductPickerItem",
+  z.object({ id: z.int(), name: z.string(), categoryName: z.string() }),
+);
+
 export const productIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });

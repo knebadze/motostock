@@ -11,6 +11,7 @@ import type {
   PopularProductsQuery,
   ProductBrandFacetsQuery,
   ProductImportTemplateQuery,
+  ProductPickerQuery,
   ProductCategoryFacetsQuery,
   ProductDetailQuery,
   ProductListQuery,
@@ -135,4 +136,9 @@ export async function bulkImport(req: Request, res: Response) {
   }
   const result = await bulkImportProducts(req.file.buffer);
   res.status(200).json(result);
+}
+
+export async function picker(req: Request, res: Response) {
+  const items = await productsService.searchProductsForPicker(req.query as unknown as ProductPickerQuery);
+  res.status(200).json({ items });
 }

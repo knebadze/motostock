@@ -24,6 +24,8 @@ import {
   productIdParamSchema,
   productImportTemplateQuerySchema,
   productListQuerySchema,
+  productPickerItemSchema,
+  productPickerQuerySchema,
   productCardResponseSchema,
   productResponseSchema,
   productSlugParamSchema,
@@ -68,6 +70,15 @@ productsRouter.post(
   "/check-compatibility",
   validate(checkCompatibilitySchema),
   productsController.checkCompatibility,
+);
+// Staff only: the admin product picker's server-side search (see
+// productPickerQuerySchema). Declared before /:id so "picker" isn't read as an id.
+productsRouter.get(
+  "/picker",
+  requireAuth,
+  requireRole(ROLES.ADMIN, ROLES.OPERATOR),
+  validate(productPickerQuerySchema, "query"),
+  productsController.picker,
 );
 // Staff only: returns any product by id, unpublished ones (no active
 // variant) included, with every variant's price/stock and all discounts —
@@ -380,5 +391,20 @@ registry.registerPath({
   responses: {
     200: { description: "Uploaded", content: { "application/json": { schema: itemResponse } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/products/picker",
+  tags: ["Products"],
+  summary: "Admin product picker — ranked search over the whole catalog (newest first without q), lean rows",
+  security: [{ cookieAuth: [] }],
+  request: { query: productPickerQuerySchema },
+  responses: {
+    200: {
+      description: "Matching products",
+      content: { "application/json": { schema: z.object({ items: z.array(productPickerItemSchema) }) } },
+    },
   },
 });

@@ -378,7 +378,15 @@ test.describe("პროდუქტი", () => {
     await openTab(form, "თავსებადობა");
     await page.getByRole("button", { name: "ტექნიკა კატალოგიდან" }).click();
     await page.locator('[role="combobox"]:visible').last().fill(catalog.names.model);
-    await page.locator('[role="listbox"]:visible').last().getByRole("option").first().click();
+    // Server-side search (debounced) — wait for a matching result rather
+    // than clicking whatever the first page showed.
+    await page
+      .locator('[role="listbox"]:visible')
+      .last()
+      .getByRole("option")
+      .filter({ hasText: catalog.names.model })
+      .first()
+      .click();
     await form.getByRole("button", { name: "+ დამატება", exact: true }).click();
     await expect(form.getByText("თავსებადობა ჯერ არ დამატებულა")).toHaveCount(0);
 

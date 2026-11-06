@@ -3,8 +3,6 @@ import {
   getCategoriesFromServer,
   getLookupItemsFromServer,
   getProductFromServer,
-  getProductsFromServer,
-  getVehicleCatalogFromServer,
   getTagsFromServer,
   getProductTagsFromServer,
 } from "@/lib/api/server";
@@ -24,7 +22,6 @@ export default async function EditProductPage({
     colors,
     conditions,
     statuses,
-    vehicleCatalog,
     fuelTypes,
     transmissionTypes,
     coolingTypes,
@@ -32,7 +29,6 @@ export default async function EditProductPage({
     driveTypes,
     startTypes,
     powertrainTypes,
-    allProducts,
     tags,
     productTags,
   ] = await Promise.all([
@@ -42,7 +38,6 @@ export default async function EditProductPage({
     getLookupItemsFromServer("colors"),
     getLookupItemsFromServer("conditions"),
     getLookupItemsFromServer("listing-statuses"),
-    getVehicleCatalogFromServer(),
     getLookupItemsFromServer("fuel-types"),
     getLookupItemsFromServer("transmission-types"),
     getLookupItemsFromServer("cooling-types"),
@@ -50,7 +45,6 @@ export default async function EditProductPage({
     getLookupItemsFromServer("drive-types"),
     getLookupItemsFromServer("start-types"),
     getLookupItemsFromServer("powertrain-types"),
-    getProductsFromServer(),
     getTagsFromServer(),
     getProductTagsFromServer(Number(id)),
   ]);
@@ -76,9 +70,7 @@ export default async function EditProductPage({
       colors={colors}
       conditions={conditions}
       statuses={statuses}
-      vehicleCatalog={vehicleCatalog}
       vehicleSpecLookups={vehicleSpecLookups}
-      allProducts={allProducts}
       product={product}
       tags={tags}
       initialTagIds={productTags.map((tag) => tag.id)}

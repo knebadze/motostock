@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Select, LONG_LIST_RENDER_CAP } from "@/components/shared/Select";
+import { RemoteSearchSelect } from "@/components/shared/RemoteSearchSelect";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import {
   createProductBuyTogether,
@@ -10,12 +10,8 @@ import {
   listProductBuyTogether,
   type ProductBuyTogether,
 } from "@/lib/api/product-buy-together";
-import type { ProductListItem } from "@/lib/api/products";
+import { searchProductsForPicker } from "@/lib/api/products";
 import { ApiRequestError } from "@/lib/api/client";
-
-function productLabel(product: ProductListItem): string {
-  return `${product.name.ka} — ${product.category.name.ka}`;
-}
 
 const columns: DataTableColumn<ProductBuyTogether>[] = [
   { header: "პროდუქტი", render: (link) => link.relatedProduct.name.ka },
@@ -28,10 +24,8 @@ const columns: DataTableColumn<ProductBuyTogether>[] = [
 
 export function ProductBuyTogetherPanel({
   productId,
-  allProducts,
 }: {
   productId: number;
-  allProducts: ProductListItem[];
 }) {
   const [links, setLinks] = useState<ProductBuyTogether[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -57,14 +51,16 @@ export function ProductBuyTogetherPanel({
     };
   }, [productId]);
 
-  const attachedIds = new Set(links.map((link) => link.relatedProduct.id));
-  const options = useMemo(
-    () =>
-      allProducts
-        .filter((product) => product.id !== productId && !attachedIds.has(product.id))
-        .map((product) => ({ value: String(product.id), label: productLabel(product) })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [allProducts, links, productId],
+  // Searched on the server over the whole catalog — the page used to embed
+  // every product, silently capped at 1,000, so the rest couldn't be picked.
+  const searchOptions = useCallback(
+    async (query: string) => {
+      const attachedIds = new Set(links.map((link) => link.relatedProduct.id));
+      return (await searchProductsForPicker(query, productId))
+        .filter((product) => !attachedIds.has(product.id))
+        .map((product) => ({ value: String(product.id), label: `${product.name} — ${product.categoryName}` }));
+    },
+    [links, productId],
   );
 
   async function refresh() {
@@ -129,13 +125,11 @@ export function ProductBuyTogetherPanel({
 
       <div className="flex gap-3">
         <div className="flex-1">
-          <Select
-            options={options}
+          <RemoteSearchSelect
+            search={searchOptions}
             value={relatedProductId}
             onChange={setRelatedProductId}
-            searchable
-            maxRenderedOptions={LONG_LIST_RENDER_CAP}
-            placeholder="აირჩიეთ პროდუქტი"
+            placeholder="მოძებნეთ პროდუქტი"
             ariaLabel="ერთად შესაძენი პროდუქტი"
           />
         </div>

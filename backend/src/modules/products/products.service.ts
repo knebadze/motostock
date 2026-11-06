@@ -607,6 +607,24 @@ export async function listProductBrandFacets(query: { categoryId?: number }) {
   return productsRepository.findDistinctBrandFacets({ categoryIds });
 }
 
+// The admin product picker: with `q`, the best matches by the same ranked,
+// typo-tolerant search as the shop (findSearchRankedIds); without, the
+// newest products — so an empty search box still shows something.
+export async function searchProductsForPicker(query: { q?: string; limit: number; excludeId?: number }) {
+  const q = query.q?.trim();
+  let rows;
+  if (q) {
+    const rankedIds = await productsRepository.findSearchRankedIds(q, query.limit + 1);
+    const rank = new Map(rankedIds.map((id, index) => [id, index]));
+    rows = (await productsRepository.findPickerRows({ ids: rankedIds, excludeId: query.excludeId, take: query.limit }))
+      .sort((a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0))
+      .slice(0, query.limit);
+  } else {
+    rows = await productsRepository.findPickerRows({ excludeId: query.excludeId, take: query.limit });
+  }
+  return rows.map((row) => ({ id: row.id, name: row.nameKa, categoryName: row.category.nameKa }));
+}
+
 export async function listProducts(query: ProductListQuery) {
   const cacheKey = isCacheableOnSaleQuery(query) ? `products:onSale:${query.limit ?? "all"}` : null;
   if (cacheKey) {
