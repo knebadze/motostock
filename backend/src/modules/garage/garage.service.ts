@@ -36,6 +36,13 @@ async function assertCatalogEntryFitsYear(vehicleCatalogId: number, year: number
   }
 }
 
+// Staff view (admin user detail) — also says who submitted the catalog entry.
+export function toStaffResponse(row: Parameters<typeof toResponse>[0]) {
+  return { ...toResponse(row), vehicleCatalog: toVehicleCatalogResponse(row.vehicleCatalog) };
+}
+
+// Customer view: the catalog entry may have been submitted by another
+// customer, whose name is not theirs to see.
 export function toResponse(row: {
   id: number;
   year: number;
@@ -50,7 +57,7 @@ export function toResponse(row: {
     year: row.year,
     vin: row.vin,
     imageUrl: row.imageUrl,
-    vehicleCatalog: toVehicleCatalogResponse(row.vehicleCatalog),
+    vehicleCatalog: { ...toVehicleCatalogResponse(row.vehicleCatalog), submittedBy: null },
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

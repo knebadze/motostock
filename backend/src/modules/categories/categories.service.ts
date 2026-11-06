@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma.js";
+import type { Prisma } from "../../generated/prisma/index.js";
 import { cache } from "../../lib/cache.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
@@ -13,7 +14,7 @@ import type {
   UpdateCategoryInput,
 } from "./categories.schema.js";
 import { invalidateVehicleCatalogOptions } from "../vehicle-catalog/vehicle-catalog-options-cache.js";
-import { getCategoryTree, invalidateCategoryTree, type CategoryTreeNode } from "./category-tree-cache.js";
+import { getCategoryTree, invalidateCategoryTree, loadCategoryTree, type CategoryTreeNode } from "./category-tree-cache.js";
 
 type CategoryRow = {
   id: number;
@@ -304,11 +305,10 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
 
   // A parent / inheritsAttributes change: product values for attributes
   // that no longer apply in the subtree are deleted with the update (the
-  // admin confirmed this after previewCategoryAttributeImpact).
-  const attributeScope = await planAttributeScope(id, {
-    parentId: input.parentId,
-    inheritsAttributes: input.inheritsAttributes,
-  });
+  // admin confirmed this after previewCategoryAttributeImpact) — planned
+  // inside the update's transaction from the tree as it is in the DB.
+  const planAttributeCleanup = (tx: Prisma.TransactionClient) =>
+    planAttributeScope(id, { parentId: input.parentId, inheritsAttributes: input.inheritsAttributes }, tx);
 
   const category = await runUniqueCheckedWrite(
     () =>
@@ -330,7 +330,7 @@ export async function updateCategory(id: number, input: UpdateCategoryInput) {
           : {}),
         ...(input.inheritsAttributes !== undefined ? { inheritsAttributes: input.inheritsAttributes } : {}),
         ...(input.sizeScaleId !== undefined ? { sizeScaleId: input.sizeScaleId } : {}),
-      }, attributeScope ?? []),
+      }, planAttributeCleanup),
     "slug",
     "ეს slug უკვე გამოყენებულია",
   );
@@ -367,14 +367,15 @@ function attributeCategoryIdsIn(byId: Map<number, CategoryTreeNode>, categoryId:
 // What a parent / inheritsAttributes change on category `id` does to its
 // subtree's product attribute values: per subtree category, the attribute
 // categories that apply before and after. Null when neither field changes.
-async function planAttributeScope(id: number, change: AttributeScopeChange) {
-  let tree = await getCategoryTree();
-  if (!tree.some((node) => node.id === id)) {
-    // A category the cached tree doesn't know yet (created outside this
-    // service, e.g. by a seed) — reload rather than silently skip the cleanup.
-    invalidateCategoryTree();
-    tree = await getCategoryTree();
-  }
+// Reads the tree straight from the DB (never the permanent cache): it
+// decides which product data gets deleted, so a cache left stale by a seed
+// or direct SQL edit must not steer it.
+async function planAttributeScope(
+  id: number,
+  change: AttributeScopeChange,
+  db: typeof prisma | Prisma.TransactionClient = prisma,
+) {
+  const tree = await loadCategoryTree(db);
   const before = new Map(tree.map((node) => [node.id, node]));
   const node = before.get(id);
   if (!node) return null;

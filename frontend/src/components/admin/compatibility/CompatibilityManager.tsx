@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { ProductDetailModal } from "../products/ProductDetailModal";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, useServerPagination } from "@/components/shared/Pagination";
-import { Select } from "@/components/shared/Select";
+import { Select, LONG_LIST_RENDER_CAP } from "@/components/shared/Select";
 import { Tabs } from "@/components/shared/Tabs";
 import { formatPrice, formatVehicleCatalogLabel } from "@/lib/format";
 import { ApiRequestError } from "@/lib/api/client";
@@ -301,6 +301,7 @@ function CompatibilityCheckTab({
             value={vehicleCatalogId}
             onChange={handleVehicleChange}
             searchable
+            maxRenderedOptions={LONG_LIST_RENDER_CAP}
             placeholder="აირჩიეთ ტრანსპორტი"
             ariaLabel="ტრანსპორტი"
           />
@@ -310,6 +311,7 @@ function CompatibilityCheckTab({
             value={productId}
             onChange={handleProductChange}
             searchable
+            maxRenderedOptions={LONG_LIST_RENDER_CAP}
             placeholder="აირჩიეთ პროდუქტი"
             ariaLabel="პროდუქტი"
           />

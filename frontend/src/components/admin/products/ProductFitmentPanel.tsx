@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Select } from "@/components/shared/Select";
+import { Select, LONG_LIST_RENDER_CAP } from "@/components/shared/Select";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
@@ -178,6 +178,7 @@ export function ProductFitmentPanel({
               value={vehicleCatalogId}
               onChange={setVehicleCatalogId}
               searchable
+              maxRenderedOptions={LONG_LIST_RENDER_CAP}
               placeholder="აირჩიეთ ტექნიკა კატალოგიდან"
               ariaLabel="ტექნიკა კატალოგიდან"
             />

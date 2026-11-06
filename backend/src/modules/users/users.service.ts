@@ -5,7 +5,7 @@ import { signJwt } from "../../lib/jwt.js";
 import { isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { ROLES, type RoleName } from "../../lib/roles.js";
 import { toAddressResponse } from "../addresses/addresses.service.js";
-import { toResponse as toGarageVehicleResponse } from "../garage/garage.service.js";
+import { toStaffResponse as toGarageVehicleResponse } from "../garage/garage.service.js";
 import { toResponse as toWishlistItemResponse } from "../wishlist/wishlist.service.js";
 import { toResponse as toCartItemResponse } from "../cart/cart.service.js";
 import { sessionRepository } from "../auth/session.repository.js";

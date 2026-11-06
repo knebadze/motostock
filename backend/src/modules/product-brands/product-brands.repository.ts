@@ -64,6 +64,24 @@ export const productBrandsRepository = {
     return prisma.productBrand.update({ where: { id }, data: { logoUrl }, include });
   },
 
+  // Deletes the brand unless a promo code or hero slide is scoped to it —
+  // then nothing is deleted and the counts are returned (see
+  // product-brands.service.ts's deleteProductBrand).
+  deleteUnlessReferenced(id: number) {
+    return prisma.$transaction(async (tx) => {
+      // Row lock: a concurrent promo/slide save pointing at this brand
+      // waits for (then fails on) the delete instead of racing past the count.
+      await tx.$queryRaw`SELECT "id" FROM "cla"."ProductBrand" WHERE "id" = ${id} FOR UPDATE`;
+      const [promoCodes, heroSlides] = await Promise.all([
+        tx.promoCode.count({ where: { productBrandId: id } }),
+        tx.heroSlide.count({ where: { discountProductBrandId: id } }),
+      ]);
+      if (promoCodes > 0 || heroSlides > 0) return { promoCodes, heroSlides };
+      await tx.productBrand.delete({ where: { id } });
+      return null;
+    });
+  },
+
   delete(id: number) {
     return prisma.productBrand.delete({ where: { id } });
   },

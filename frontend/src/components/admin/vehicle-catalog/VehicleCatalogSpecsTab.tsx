@@ -1,6 +1,6 @@
 "use client";
 
-import { Select, type SelectOption } from "@/components/shared/Select";
+import { Select, type SelectOption, LONG_LIST_RENDER_CAP } from "@/components/shared/Select";
 import { FieldError } from "@/components/shared/FieldError";
 import type { LookupItem } from "@/lib/api/lookups";
 import type { FieldErrors } from "@/lib/validation/common";
@@ -200,6 +200,7 @@ export function VehicleCatalogSpecsTab({
             value={modelId}
             onChange={onModelChange}
             searchable
+            maxRenderedOptions={LONG_LIST_RENDER_CAP}
             disabled={!brandId}
             placeholder={brandId ? "აირჩიეთ მოდელი" : "ჯერ აირჩიეთ მარკა"}
           />

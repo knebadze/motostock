@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Select } from "@/components/shared/Select";
+import { Select, LONG_LIST_RENDER_CAP } from "@/components/shared/Select";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import { vehicleCatalogLabel } from "./ProductFitmentPanel";
@@ -86,6 +86,7 @@ export function DraftFitmentEditor({
             value={vehicleCatalogId}
             onChange={setVehicleCatalogId}
             searchable
+            maxRenderedOptions={LONG_LIST_RENDER_CAP}
             placeholder="აირჩიეთ ტექნიკა კატალოგიდან"
             ariaLabel="ტექნიკა კატალოგიდან"
           />

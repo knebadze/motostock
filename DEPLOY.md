@@ -57,23 +57,40 @@ HTTP-ით მუშაობს, domain-ის გარეშე.
 ## 4. აწყობა და გაშვება
 
 ```bash
-docker compose build
+docker compose --profile tools build        # backend, frontend და migrate ერთად
 docker compose up -d db
 docker compose run --rm migrate
 docker compose run --rm migrate npx prisma db seed
+docker compose run --rm migrate npx tsx prisma/seed-brands.ts
+docker compose run --rm migrate npx tsx prisma/seed-catalog.ts   # seed-brands-ის შემდეგ
 docker compose up -d
 ```
 
 `migrate` სერვისი ერთჯერადია — უშვებს `prisma migrate deploy`-ს ბაზაზე, სანამ backend/frontend
-ამუშავდება. ყოველ ახალ deploy-ზე, თუ ახალი მიგრაცია დაემატა, იგივე ბრძანება ხელახლა გაუშვით.
+ამუშავდება. ყოველ ახალ deploy-ზე, თუ ახალი მიგრაცია დაემატა, იგივე ბრძანება ხელახლა გაუშვით
+(იხ. „განახლება").
+
+**seed-ების რიგი მნიშვნელოვანია:** `db seed` → `seed-brands` → `seed-catalog` → (მხოლოდ სატესტოდ)
+`seed-products` → `seed-vehicles` → `seed-tags`.
 
 `prisma db seed` (იგივე `migrate` კონტეინერით, command override-ით) ავსებს საბაზისო მონაცემებს —
 როლები, ადმინის ანგარიში, კლასიფიკატორები (საწვავის ტიპები, ფერები, ზომები, ქალაქები,
-თანამდებობები და ა.შ.), კატეგორიების ხე, მახასიათებლები, ერთეულები, homepage სექციები. Idempotent
-არის (`upsert`-ზეა აწყობილი) — ხელახლა გაშვება უსაფრთხოა. **დემო პროდუქტები/ტრანსპორტი ცალკეა და
-ამ ბრძანებაში არ შედის** — თუ საჭიროა სატესტოდ, ცალკე გაუშვით. ორივე ქვემოთ აღწერილ ტექნიკის
-კატალოგს იყენებს (საკუთარ მარკას/მოდელს/კატალოგის ჩანაწერს აღარ ქმნის), ამიტომ ჯერ
-`seed-brands.ts` და `seed-catalog.ts` უნდა გაეშვას:
+თანამდებობები და ა.შ.), კატეგორიების ხე, მახასიათებლები, ერთეულები, პროდუქტის ბრენდები, homepage
+სექციები. `upsert`-ზეა აწყობილი — ჩანაწერებს არ აორმაგებს, **მაგრამ ხელახლა გაშვებისას seed-ის
+მნიშვნელობებს თავიდან წერს**: კატეგორიების სახელს, მშობელს და რიგს, ასევე ბრენდების
+კატეგორიებთან კავშირებს. თუ ეს ადმინიდან შეცვალეთ, `db seed`-ის ხელახლა გაშვება ცვლილებას
+დააბრუნებს — გაუშვით მხოლოდ მაშინ, როცა `prisma/seed.ts` შეიცვალა.
+
+**ტექნიკის მარკები და მოდელები** (საქართველოში გავრცელებული 50 მარკა და მათი 3 320 მოდელი,
+მოტოტექნიკის ქვეკატეგორიებზე — მოტოციკლები / მოპედები / კვადროციკლები; მონაცემები
+`prisma/data/brands_models.csv`-შია) ცალკე seed-ია და არც დემოა — რეალური
+საცნობარო მონაცემია. მის შემდეგ **ტექნიკის კატალოგი** (თითო მოდელზე ერთი ჩანაწერი: წლები,
+სპეციფიკაციები, აღწერები სამ ენაზე; მონაცემები `prisma/data/vehicle_catalog.csv`-შია) ეშვება.
+ორივე ზემოთ, საბაზისო ბრძანებებშია.
+
+**დემო მონაცემები — მხოლოდ სატესტო სერვერზე, რეალურ საიტზე არასდროს.** დემო პროდუქტები და
+ტრანსპორტის განცხადებები ტექნიკის კატალოგს იყენებს, ამიტომ `seed-brands`/`seed-catalog`-ის შემდეგ
+უნდა გაეშვას:
 
 ```bash
 docker compose run --rm migrate npx tsx prisma/seed-products.ts  # თავსებადობის დემოსთვის Yamaha MT-07
@@ -81,16 +98,11 @@ docker compose run --rm migrate npx tsx prisma/seed-vehicles.ts  # 16 დემ�
 docker compose run --rm migrate npx tsx prisma/seed-tags.ts      # დემო ტეგები „ერთად შეძენისთვის" (seed-products-ის შემდეგ)
 ```
 
-**ტექნიკის მარკები და მოდელები** (საქართველოში გავრცელებული 50 მარკა და მათი 3 320 მოდელი,
-მოტოტექნიკის ქვეკატეგორიებზე — მოტოციკლები / მოპედები / კვადროციკლები; მონაცემები
-`prisma/data/brands_models.csv`-შია) ცალკე seed-ია და არც დემოა — რეალური
-საცნობარო მონაცემია. მის შემდეგ **ტექნიკის კატალოგი** (თითო მოდელზე ერთი ჩანაწერი: წლები,
-სპეციფიკაციები, აღწერები სამ ენაზე; მონაცემები `prisma/data/vehicle_catalog.csv`-შია) ეშვება:
-
-```bash
-docker compose run --rm migrate npx tsx prisma/seed-brands.ts
-docker compose run --rm migrate npx tsx prisma/seed-catalog.ts   # seed-brands-ის შემდეგ
-```
+⚠️ **seed-ის ან ბაზის ხელით ცვლილების შემდეგ ქეში გაასუფთავეთ.** კატეგორიების ხე, მათი
+რაოდენობები და ტექნიკის კატალოგის ფილტრები მუდმივად ქეშირდება და მხოლოდ ადმინიდან ცვლილებისას
+ახლდება. seed (ან SQL) ადმინს გვერდს უვლის, ამიტომ: ადმინი → ზედა მარჯვენა კუთხის მენიუ →
+**„ქეშის გასუფთავება“**. (`docker compose restart backend` საკმარისი არ არის — frontend-ის ქეშს
+არ ასუფთავებს.)
 
 ID-ებს ბაზა ავტოინკრემენტით ანიჭებს. თუ მარკების და მოდელების ცხრილები ცარიელია, მთვლელი 1-დან
 იწყება და ჩანაწერები ფაილის რიგით ემატება. ხელახლა გაშვება უსაფრთხოა: უკვე არსებულ მარკას (იგივე
@@ -117,20 +129,60 @@ docker compose logs -f backend
 
 ## განახლება (ახალი კოდის deploy)
 
+ძველი კონტეინერები მუშაობას აგრძელებს build-ის დროს — საიტი მხოლოდ ბოლო `up -d`-ზე
+გადაირთვება. რიგი: **build → სარეზერვო ასლი → მიგრაცია → seed → up**.
+
 ```bash
 git pull
-docker compose build migrate
-docker compose run --rm migrate                          # თუ ახალი მიგრაცია დაემატა
-docker compose build
+docker compose --profile tools build                      # 1. backend, frontend და migrate
+
+# 2. სარეზერვო ასლი — ყოველთვის მიგრაციამდე (იხ. „სარეზერვო ასლი“)
+mkdir -p ~/backups
+docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > ~/backups/db-$(date +%F_%H%M).dump
+
+# 3. მიგრაცია
+docker compose run --rm migrate npx prisma migrate status # რომელი მიგრაციებია ახალი
+docker compose run --rm migrate                           # migrate deploy
+
+# 4. seed — მხოლოდ ის, რომლის ფაილიც შეიცვალა, ამ რიგით
 docker compose run --rm migrate npx prisma db seed        # თუ prisma/seed.ts შეიცვალა
+docker compose run --rm migrate npx tsx prisma/seed-brands.ts   # თუ brands_models.csv შეიცვალა
+docker compose run --rm migrate npx tsx prisma/seed-catalog.ts  # თუ vehicle_catalog.csv შეიცვალა
+
+# 5. გაშვება და შემოწმება
 docker compose up -d
+docker compose ps
+docker compose logs --tail=100 backend
 ```
 
-⚠️ **`migrate` ცალკე უნდა აშენდეს (`docker compose build migrate`), არა უბრალო `docker compose
-build`-ით** — `migrate`-ს `docker-compose.yml`-ში აქვს `profiles: ["tools"]`, ამიტომ სახელის
-გარეშე გაშვებული `build` მას საერთოდ გამოტოვებს (მხოლოდ `backend`/`frontend` აშენდება) და
-`docker compose run --rm migrate` მაშინ ძველ, ქეშირებულ image-ს გამოიყენებს ახალი მიგრაციების
-დანახვის მაგივრად — build სწრაფად (წამებში) დასრულდება, ეს ნიშანია, რომ ეს რეალურად მოხდა.
+seed-ის გაშვების შემდეგ ადმინში დააჭირეთ **„ქეშის გასუფთავებას“** (იხ. ზემოთ).
+
+⚠️ **`--profile tools` აუცილებელია.** `migrate`-ს `docker-compose.yml`-ში აქვს
+`profiles: ["tools"]`, ამიტომ უბრალო `docker compose build` მას გამოტოვებს (მხოლოდ
+`backend`/`frontend` აშენდება) და `docker compose run --rm migrate` ძველ, ქეშირებულ image-ს
+გამოიყენებს — ახალ მიგრაციებს ვერ დაინახავს.
+
+### თუ მიგრაცია ჩავარდა
+
+Prisma ჩავარდნილ მიგრაციას „failed“-ად ინიშნავს და შემდეგ deploy-ებს ბლოკავს, სანამ ეს ნიშნული
+არ მოიხსნება. შეცდომის მიზეზი `docker compose run --rm migrate`-ის გამოტანაშივე ჩანს.
+**ძველი კონტეინერები ამ დროს ისევ მუშაობს — `up -d` არ გაუშვათ.**
+
+```bash
+docker compose run --rm migrate npx prisma migrate status   # ჩავარდნილი მიგრაციის სახელი
+```
+
+- თუ მიზეზი გასწორდა (მაგ. კოდში შესწორდა და ახლიდან `git pull` + build) და მიგრაციას ბაზაში
+  არაფერი დაუტოვებია — ნიშნული მოხსენით და თავიდან გაუშვით:
+  ```bash
+  docker compose run --rm migrate npx prisma migrate resolve --rolled-back <მიგრაციის_სახელი>
+  docker compose run --rm migrate
+  ```
+- თუ ბაზა მაინც არეულია, ან არ ხართ დარწმუნებული — აღადგინეთ ნაბიჯი 2-ის ასლიდან
+  (იხ. „აღდგენა“) და კოდი დააბრუნეთ წინა ვერსიაზე (`git checkout <წინა_commit>` + build).
+
+**არასდროს** გაუშვათ `prisma migrate reset` ან `prisma migrate dev` სერვერზე — ორივე ბაზას შლის
+ან ცვლის.
 
 ### ერთჯერადი ნაბიჯი: კონტეინერები root-ის გარეშე (2026-10-05)
 
@@ -171,12 +223,51 @@ docker compose run --rm --user root --entrypoint "" backend chown -R node:node /
 ## სარეზერვო ასლი
 
 მონაცემები (`pgdata` volume) და ატვირთული სურათები (`backend_uploads` volume) გადარჩება
-`docker compose down`-ის შემდეგაც — მხოლოდ `docker compose down -v` შლის მათ. მაინც რეკომენდებულია
-პერიოდული ბაზის dump:
+`docker compose down`-ის შემდეგაც — მხოლოდ `docker compose down -v` შლის მათ (**არასდროს** გაუშვათ
+`-v`). volume კი დისკთან ერთად იკარგება, ამიტომ საჭიროა ასლი — ყოველი განახლების წინ და
+პერიოდულად (მაგ. ყოველდღე cron-ით). ასლი სხვა მანქანაზეც გადაიტანეთ (`scp`), VPS-ზე
+შენახული ასლი VPS-თან ერთად დაიკარგება.
 
 ```bash
-docker compose exec db pg_dump -U $POSTGRES_USER $POSTGRES_DB > backup-$(date +%F).sql
+mkdir -p ~/backups
+cd ~/motostock   # repo-ს საქაღალდე
+
+# ბაზა (custom ფორმატი, pg_restore-ისთვის)
+docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > ~/backups/db-$(date +%F_%H%M).dump
+
+# ატვირთული სურათები
+docker run --rm -v motostock_backend_uploads:/data:ro -v ~/backups:/b alpine \
+  tar czf /b/uploads-$(date +%F_%H%M).tgz -C /data .
 ```
+
+`-T` აუცილებელია — მის გარეშე Docker TTY-ს ამატებს და dump ფაილი ზიანდება. `$POSTGRES_USER`
+ერთმაგ ბრჭყალებშია, რომ კონტეინერის შიგნით გაიშალოს (host-ის shell-ში ეს ცვლადი არ არსებობს).
+volume-ის სახელი (`motostock_backend_uploads`) repo-ს საქაღალდის სახელზეა დამოკიდებული —
+შეამოწმეთ `docker volume ls`-ით.
+
+ასლის შემოწმება (ცარიელი ან დაზიანებული არ უნდა იყოს):
+
+```bash
+ls -lh ~/backups
+docker compose exec -T db pg_restore --list < ~/backups/db-<თარიღი>.dump | head
+```
+
+### აღდგენა
+
+```bash
+docker compose stop backend frontend    # რომ აღდგენის დროს ბაზაში არავინ წეროს
+
+docker compose exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner' \
+  < ~/backups/db-<თარიღი>.dump
+
+# სურათები (საჭიროების შემთხვევაში)
+docker run --rm -v motostock_backend_uploads:/data -v ~/backups:/b alpine \
+  sh -c 'tar xzf /b/uploads-<თარიღი>.tgz -C /data && chown -R 1000:1000 /data'
+
+docker compose up -d
+```
+
+აღდგენის შემდეგ ადმინში დააჭირეთ **„ქეშის გასუფთავებას“**.
 
 ## რეალურ დომენზე გადასვლა (HTTPS)
 

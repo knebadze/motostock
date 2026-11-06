@@ -2,7 +2,7 @@
 
 import { useId, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Select } from "@/components/shared/Select";
+import { Select, LONG_LIST_RENDER_CAP } from "@/components/shared/Select";
 import type { VehicleSearchOption } from "@/lib/api/vehicle-catalog";
 
 // Pure presentational brand→model→year cascade — all state lives in the
@@ -106,6 +106,8 @@ export function ManualVehicleSelect({
           value={modelId}
           onChange={onModelChange}
           searchable
+          maxRenderedOptions={LONG_LIST_RENDER_CAP}
+          moreResultsLabel={(count) => tSelect("more", { count })}
           disabled={disabled || !brandId}
           placeholder={brandId ? t("searchModelPlaceholder") : t("searchSelectBrandFirst")}
           searchPlaceholder={tSelect("search")}

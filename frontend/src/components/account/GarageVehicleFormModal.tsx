@@ -4,7 +4,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
-import { Select } from "@/components/shared/Select";
+import { Select, LONG_LIST_RENDER_CAP } from "@/components/shared/Select";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { Loader } from "@/components/shared/Loader";
@@ -354,6 +354,8 @@ export function GarageVehicleFormModal({
                 value={vehicleCatalogId}
                 onChange={setVehicleCatalogId}
                 searchable
+                maxRenderedOptions={LONG_LIST_RENDER_CAP}
+                moreResultsLabel={(count) => tCommon("select.more", { count })}
                 disabled={!categoryId}
                 placeholder={categoryId ? t("catalogPlaceholder") : t("selectCategoryFirst")}
                 searchPlaceholder={tCommon("select.search")}
@@ -414,6 +416,8 @@ export function GarageVehicleFormModal({
                   value={modelId}
                   onChange={setModelId}
                   searchable
+                  maxRenderedOptions={LONG_LIST_RENDER_CAP}
+                  moreResultsLabel={(count) => tCommon("select.more", { count })}
                   disabled={!brandId}
                   placeholder={brandId ? t("modelPlaceholder") : t("modelSelectBrandFirst")}
                   searchPlaceholder={tCommon("select.search")}

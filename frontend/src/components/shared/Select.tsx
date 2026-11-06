@@ -33,6 +33,17 @@ type BaseProps = {
   clearLabel?: string;
   searchPlaceholder?: string;
   emptyLabel?: string;
+  // Opt-in cap on how many matches a searchable list renders, for the few
+  // very long lists (vehicle catalog / models, ~3,500; products, ~1,000)
+  // where rendering every row made opening, typing and hovering slow. The
+  // rest are reachable by narrowing the search; a "+N" row says how many
+  // are hidden, and the current selection is always rendered. Off by
+  // default — a capped tree picker (e.g. ~150 categories) silently hid
+  // options nobody could find without knowing their name.
+  maxRenderedOptions?: number;
+  // Translated text for the "+N hidden" row (storefront callers);
+  // receives the hidden count.
+  moreResultsLabel?: (hiddenCount: number) => string;
 };
 
 type SingleSelectProps = BaseProps & {
@@ -76,17 +87,23 @@ const MAX_GROW_WIDTH_PX = 320;
 // resetting — same idea (and roughly the same window) as a native <select>.
 const TYPEAHEAD_RESET_MS = 500;
 
-// A searchable list renders at most this many matches (e.g. ~3,500 vehicle
-// models): rendering them all made opening, typing and even hovering slow,
-// since every hover re-rendered every row. The rest are reachable by
-// narrowing the search; a "… +N" row says how many are hidden. Lists
-// without a search box aren't capped — there'd be no way to reach the rest.
-const MAX_RENDERED_OPTIONS = 100;
+// The cap that very long searchable lists opt into (see maxRenderedOptions).
+export const LONG_LIST_RENDER_CAP = 100;
 
 function filterOptions(allOptions: SelectOption[], query: string): SelectOption[] {
   return query
     ? allOptions.filter((option) => option.label.toLowerCase().includes(query.toLowerCase()))
     : allOptions;
+}
+
+// The first `cap` matches, plus any selected match beyond them (appended in
+// list order) so the current choice is never invisible in the panel.
+// `cap` undefined = everything.
+function capOptions(matches: SelectOption[], cap: number | undefined, selected: Set<string>): SelectOption[] {
+  if (cap === undefined || matches.length <= cap) return matches;
+  const head = matches.slice(0, cap);
+  const pinned = selected.size > 0 ? matches.slice(cap).filter((option) => selected.has(option.value)) : [];
+  return pinned.length > 0 ? [...head, ...pinned] : head;
 }
 
 export function Select(props: SelectProps) {
@@ -100,7 +117,11 @@ export function Select(props: SelectProps) {
     clearLabel = "გაწმენდა",
     searchPlaceholder = "ძებნა...",
     emptyLabel = "არაფერი მოიძებნა",
+    moreResultsLabel = (hiddenCount: number) => `+${hiddenCount} — დააზუსტეთ ძებნა`,
   } = props;
+  // Only a searchable list is capped — without a search box there'd be no
+  // way to reach the rest.
+  const renderCap = searchable ? props.maxRenderedOptions : undefined;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [position, setPosition] = useState<PanelPosition | null>(null);
@@ -215,17 +236,18 @@ export function Select(props: SelectProps) {
     };
   }, [open]);
 
+  const selectedValues = props.multiple ? props.value : props.value ? [props.value] : [];
+  const selectedKey = selectedValues.join("\u0000");
+  const selectedValueSet = useMemo(() => new Set(selectedKey ? selectedKey.split("\u0000") : []), [selectedKey]);
+  const selectedOptions = options.filter((option) => selectedValueSet.has(option.value));
+
   const matchingOptions = useMemo(() => filterOptions(options, query), [options, query]);
   // What's actually rendered — keyboard navigation/activeIndex index into this.
   const filteredOptions = useMemo(
-    () => (searchable ? matchingOptions.slice(0, MAX_RENDERED_OPTIONS) : matchingOptions),
-    [matchingOptions, searchable],
+    () => capOptions(matchingOptions, renderCap, selectedValueSet),
+    [matchingOptions, renderCap, selectedValueSet],
   );
   const hiddenOptionCount = matchingOptions.length - filteredOptions.length;
-
-  const selectedValues = props.multiple ? props.value : props.value ? [props.value] : [];
-  const selectedValueSet = new Set(selectedValues);
-  const selectedOptions = options.filter((option) => selectedValueSet.has(option.value));
 
   useEffect(() => {
     if (!open || activeIndex < 0) return;
@@ -265,9 +287,8 @@ export function Select(props: SelectProps) {
   // extra render pass just to synchronize state React already knows.
   function openPanel() {
     setOpen(true);
-    // Position in the rendered list (capped when searchable; the query is
-    // always empty on open, so that's the first MAX_RENDERED_OPTIONS options).
-    const rendered = searchable ? options.slice(0, MAX_RENDERED_OPTIONS) : options;
+    // Position in the rendered list (the query is always empty on open).
+    const rendered = capOptions(options, renderCap, selectedValueSet);
     const selectedIndex = rendered.findIndex((option) => selectedValueSet.has(option.value));
     setActiveIndex(selectedIndex >= 0 ? selectedIndex : rendered.length > 0 ? 0 : -1);
   }
@@ -535,12 +556,14 @@ export function Select(props: SelectProps) {
                   </li>
                 );
               })}
-              {hiddenOptionCount > 0 && (
-                <li aria-hidden="true" className="px-3 py-2 text-xs text-muted-foreground">
-                  … +{hiddenOptionCount}
-                </li>
-              )}
             </ul>
+            {hiddenOptionCount > 0 && (
+              // Outside the listbox (only options belong in it) and announced,
+              // so a screen-reader user also learns the list is truncated.
+              <p aria-live="polite" className="shrink-0 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+                {moreResultsLabel(hiddenOptionCount)}
+              </p>
+            )}
           </div>,
           document.body,
         )}

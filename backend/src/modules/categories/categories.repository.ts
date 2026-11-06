@@ -72,16 +72,20 @@ export const categoriesRepository = {
     });
   },
 
-  // `cleanup`: per category of the edited subtree, the attribute-defining
-  // categories whose attributes still apply there — every product value for
-  // any other attribute is deleted, in the same transaction as the update
-  // (see categories.service.ts's planAttributeScope).
+  // `planCleanup` runs first inside the transaction and returns, per
+  // category of the edited subtree, the attribute-defining categories whose
+  // attributes still apply there — every product value for any other
+  // attribute is then deleted, in the same transaction as the update (see
+  // categories.service.ts's planAttributeScope).
   update(
     id: number,
     data: Partial<CategoryWriteData>,
-    cleanup: { categoryId: number; allowedAttributeCategoryIds: number[] }[] = [],
+    planCleanup?: (
+      tx: Prisma.TransactionClient,
+    ) => Promise<{ categoryId: number; allowedAttributeCategoryIds: number[] }[] | null>,
   ) {
     return prisma.$transaction(async (tx) => {
+      const cleanup = (await planCleanup?.(tx)) ?? [];
       const row = await tx.category.update({
         where: { id },
         data,

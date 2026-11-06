@@ -30,7 +30,9 @@ export async function list(
 
 export async function getOne(req: Request, res: Response) {
   const item = await vehicleCatalogService.getVehicleCatalogEntry(Number(req.params.id));
-  res.status(200).json({ item });
+  // Public route — who submitted the entry (a customer's full name) is
+  // staff-only information; the admin screens read it from the staff list.
+  res.status(200).json({ item: { ...item, submittedBy: null } });
 }
 
 export async function create(

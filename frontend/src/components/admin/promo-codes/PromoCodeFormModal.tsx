@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
-import { Select } from "@/components/shared/Select";
+import { Select, LONG_LIST_RENDER_CAP } from "@/components/shared/Select";
 import { DateInput } from "@/components/shared/DateInput";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
@@ -406,6 +406,7 @@ export function PromoCodeFormModal({
                   value={modelId}
                   onChange={setModelId}
                   searchable
+                  maxRenderedOptions={LONG_LIST_RENDER_CAP}
                   disabled={!brandId}
                   placeholder={brandId ? "— ყველა მოდელი —" : "ჯერ აირჩიეთ მარკა"}
                 />

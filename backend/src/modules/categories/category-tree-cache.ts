@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma.js";
+import type { Prisma } from "../../generated/prisma/index.js";
 import { cache } from "../../lib/cache.js";
 
 // The category tree's structure — just what the tree walks need (parent
@@ -26,21 +27,27 @@ const CATEGORY_TREE_CACHE_KEY = "categories:tree";
 // cold cache.
 let inFlight: Promise<CategoryTreeNode[]> | null = null;
 
+// Straight from the DB, bypassing the cache — for a write that must plan
+// against the tree as it really is (inside its own transaction), not a
+// possibly stale cached copy (e.g. after a seed or a direct SQL edit).
+export function loadCategoryTree(db: typeof prisma | Prisma.TransactionClient = prisma): Promise<CategoryTreeNode[]> {
+  return db.category.findMany({
+    select: {
+      id: true,
+      parentId: true,
+      inheritsAttributes: true,
+      sizeScaleId: true,
+      onlinePurchaseEnabled: true,
+      vehicleFitmentEnabled: true,
+    },
+  });
+}
+
 export async function getCategoryTree(): Promise<CategoryTreeNode[]> {
   const cached = cache.get<CategoryTreeNode[]>(CATEGORY_TREE_CACHE_KEY);
   if (cached) return cached;
   if (inFlight) return inFlight;
-  const load = prisma.category
-    .findMany({
-      select: {
-        id: true,
-        parentId: true,
-        inheritsAttributes: true,
-        sizeScaleId: true,
-        onlinePurchaseEnabled: true,
-        vehicleFitmentEnabled: true,
-      },
-    })
+  const load = loadCategoryTree()
     .then((tree) => {
       // Not stored if a write invalidated the tree while this read ran.
       if (inFlight === load) cache.set(CATEGORY_TREE_CACHE_KEY, tree);

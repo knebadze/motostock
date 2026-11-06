@@ -1,6 +1,6 @@
 import type { Prisma } from "../../generated/prisma/index.js";
 import { ApiError } from "../../lib/ApiError.js";
-import { isForeignKeyViolation, runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
+import { runUniqueCheckedWrite } from "../../lib/prismaErrors.js";
 import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { resolvePage } from "../../lib/pagination.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
@@ -162,16 +162,24 @@ export async function deleteProductBrand(id: number) {
     throw new ApiError(404, "ბრენდი ვერ მოიძებნა");
   }
 
-  try {
-    await productBrandsRepository.delete(id);
-  } catch (error) {
-    if (isForeignKeyViolation(error)) {
-      throw new ApiError(
-        400,
-        "ბრენდი გამოიყენება პროდუქტებში, ჯერ წაშალეთ დამოკიდებული ჩანაწერები",
-      );
-    }
-    throw error;
+  // A promo code or hero slide scoped to this brand would NOT be removed
+  // with it: their brand column is ON DELETE SET NULL, and a null brand
+  // there means "every brand" — a code meant for one brand would start
+  // discounting the whole category (or store). So deleting is blocked
+  // while anything is scoped to the brand; the admin re-scopes or removes
+  // those first. Its products just lose the brand (SET NULL), and its
+  // category links go with it (CASCADE). Checked in the same transaction
+  // as the delete, so a code saved in between can't slip through.
+  const blockers = await productBrandsRepository.deleteUnlessReferenced(id);
+  if (blockers) {
+    const parts = [
+      blockers.promoCodes > 0 ? `${blockers.promoCodes} პრომოკოდი` : null,
+      blockers.heroSlides > 0 ? `${blockers.heroSlides} სლაიდი` : null,
+    ].filter(Boolean);
+    throw new ApiError(
+      409,
+      `ბრენდი გამოიყენება: ${parts.join(", ")}. ჯერ შეცვალეთ ან წაშალეთ ისინი — ბრენდის წაშლის შემდეგ ფასდაკლება ყველა ბრენდზე გავრცელდებოდა.`,
+    );
   }
   void deleteUploadedImage(existing.logoUrl);
 }
