@@ -10,9 +10,17 @@ export type ProductBrand = Schemas["ProductBrand"];
 
 export type ProductBrandInput = Schemas["CreateProductBrandInput"];
 
-export async function listProductBrands(categoryId?: number): Promise<ProductBrand[]> {
+// `includeDescendants`: also brands linked only to the category's
+// subcategories — for a promo code on a parent category (a product picks
+// from its own category upward, so ProductForm leaves it off).
+export async function listProductBrands(
+  categoryId?: number,
+  options: { includeDescendants?: boolean } = {},
+): Promise<ProductBrand[]> {
   const { data } = await apiClient.get<{ items: ProductBrand[] }>("/product-brands", {
-    params: categoryId ? { categoryId } : undefined,
+    params: categoryId
+      ? { categoryId, ...(options.includeDescendants ? { includeDescendants: "true" } : {}) }
+      : undefined,
   });
   return data.items;
 }

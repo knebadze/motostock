@@ -5,6 +5,7 @@ import { deleteUploadedImage, saveUploadedImage } from "../../lib/storage.js";
 import { resolvePage } from "../../lib/pagination.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
 import { resolveCategoryAndAncestorIds } from "../attributes/attributes.service.js";
+import { resolveCategoryAndDescendantIds } from "../categories/categories.service.js";
 import { applyProductBrandAdminFilters } from "../filters/product-brand/product-brand-filter-registry.js";
 import { productBrandsRepository } from "./product-brands.repository.js";
 import type {
@@ -60,9 +61,19 @@ const DEFAULT_PAGE_SIZE = 20;
 // this never actually happens, but it's the correct behavior either way.
 // page/pageSize only trigger real pagination when the caller sends at least
 // one of them — every other caller keeps getting the full, unbounded list.
+// The category plus its ancestors (a brand linked to "ეკიპირება" sells
+// into every gear leaf) — and, when asked, its descendants too.
+export async function resolveBrandScopeCategoryIds(categoryId: number, includeDescendants: boolean) {
+  const [ancestors, descendants] = await Promise.all([
+    resolveCategoryAndAncestorIds(categoryId),
+    includeDescendants ? resolveCategoryAndDescendantIds(categoryId) : [],
+  ]);
+  return [...new Set([...ancestors, ...descendants])];
+}
+
 export async function listProductBrands(query: ProductBrandListQuery = {}) {
   const [scopeCategoryIds, adminWhere] = await Promise.all([
-    query.categoryId != null ? resolveCategoryAndAncestorIds(query.categoryId) : null,
+    query.categoryId != null ? resolveBrandScopeCategoryIds(query.categoryId, query.includeDescendants === "true") : null,
     Promise.resolve(applyProductBrandAdminFilters(query.adminFilters)),
   ]);
   const scopeWhere: Prisma.ProductBrandWhereInput | undefined = scopeCategoryIds

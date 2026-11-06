@@ -5,6 +5,7 @@ import { saveUploadedImage } from "../../lib/storage.js";
 import { withNextSortOrderLock } from "../../lib/sortOrder.js";
 import { toResponse as toHeroSlideResponse, type HeroSlideRow } from "../hero-slides/hero-slides.service.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
+import { resolveBrandScopeCategoryIds } from "../product-brands/product-brands.service.js";
 import { productBrandsRepository } from "../product-brands/product-brands.repository.js";
 import { attributesRepository } from "../attributes/attributes.repository.js";
 import { attributeOptionsRepository } from "../attribute-options/attribute-options.repository.js";
@@ -143,10 +144,28 @@ async function assertIsVehicleCategory(categoryId: number) {
   }
 }
 
-async function assertProductBrandExists(productBrandId: number) {
-  const brand = await productBrandsRepository.findById(productBrandId);
+// The brand must exist and, when the code is category-scoped, be linked
+// somewhere in that category's line — the category itself, an ancestor, or
+// a descendant (a code on "ეკიპირება" for Alpinestars, which is linked
+// only to the gear leaves). Same scope as the form's brand picker
+// (GET /product-brands?categoryId=…&includeDescendants=true).
+async function assertProductBrandFitsCategory(productBrandId: number, categoryId: number | null) {
+  const [brand, scopeCategoryIds] = await Promise.all([
+    productBrandsRepository.findById(productBrandId),
+    categoryId != null ? resolveBrandScopeCategoryIds(categoryId, true) : null,
+  ]);
   if (!brand) {
     throw new ApiError(400, "მითითებული ბრენდი არ არსებობს");
+  }
+  if (scopeCategoryIds) {
+    const scope = new Set(scopeCategoryIds);
+    if (!brand.categories.some((link) => scope.has(link.category.id))) {
+      throw new ApiError(
+        400,
+        `ბრენდი „${brand.name}“ არჩეულ კატეგორიაში არ იყიდება — აირჩიეთ სხვა ბრენდი ან კატეგორია`,
+        "PROMO_BRAND_CATEGORY_MISMATCH",
+      );
+    }
   }
 }
 
@@ -236,7 +255,7 @@ export async function createPromoCode(input: CreatePromoCodeInput) {
   }
   if (input.domain === "PRODUCT") {
     if (input.productBrandId != null) {
-      await assertProductBrandExists(input.productBrandId);
+      await assertProductBrandFitsCategory(input.productBrandId, input.categoryId ?? null);
     }
     if (input.attributeId != null && input.attributeOptionId != null) {
       await assertAttributeOptionValid(input.categoryId!, input.attributeId, input.attributeOptionId);
@@ -299,8 +318,15 @@ export async function updatePromoCode(id: number, input: UpdatePromoCodeInput) {
   }
 
   if (existing.domain === "PRODUCT") {
-    if (input.productBrandId) {
-      await assertProductBrandExists(input.productBrandId);
+    // Re-checked when either side changes; an untouched old pairing stays
+    // editable (same leniency as products.service's brand check).
+    const effectiveProductBrandId =
+      input.productBrandId !== undefined ? input.productBrandId : existing.productBrand?.id ?? null;
+    const brandOrCategoryChanged =
+      (input.productBrandId !== undefined && input.productBrandId !== (existing.productBrand?.id ?? null)) ||
+      (input.categoryId !== undefined && input.categoryId !== (existing.category?.id ?? null));
+    if (effectiveProductBrandId != null && brandOrCategoryChanged) {
+      await assertProductBrandFitsCategory(effectiveProductBrandId, effectiveCategoryId);
     }
     const effectiveAttributeId = input.attributeId !== undefined ? input.attributeId : existing.attribute?.id ?? null;
     const effectiveAttributeOptionId =

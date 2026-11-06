@@ -42,6 +42,12 @@ export const productBrandIdParamSchema = z.object({
 // is what triggers real pagination.
 export const productBrandListQuerySchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
+  // With categoryId: also brands linked only to the category's
+  // descendants — a promo code scoped to a parent category ("ეკიპირება")
+  // can target a brand that's linked just to its leaves (Alpinestars →
+  // gloves, jackets, ...). A product picks from its own category upward,
+  // so ProductForm doesn't send it.
+  includeDescendants: z.enum(["true", "false"]).optional(),
   adminFilters: adminFiltersQuerySchema,
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(100).optional(),

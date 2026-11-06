@@ -104,7 +104,12 @@ export function PromoCodeFormModal({
     if (domain !== "PRODUCT" || !categoryId) return;
 
     let cancelled = false;
-    Promise.all([listProductBrands(Number(categoryId)), listAttributes(Number(categoryId))]).then(
+    // Brands of the whole subtree too: a code on "ეკიპირება" may target
+    // Alpinestars, which is linked only to the gear subcategories.
+    Promise.all([
+      listProductBrands(Number(categoryId), { includeDescendants: true }),
+      listAttributes(Number(categoryId)),
+    ]).then(
       ([brandItems, attributeItems]) => {
         if (cancelled) return;
         setCategoryBrands(brandItems);
