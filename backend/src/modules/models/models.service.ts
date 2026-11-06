@@ -5,6 +5,7 @@ import { resolvePage } from "../../lib/pagination.js";
 import { applyModelAdminFilters } from "../filters/model/model-filter-registry.js";
 import { brandsRepository } from "../brands/brands.repository.js";
 import { categoriesRepository } from "../categories/categories.repository.js";
+import { invalidateCategoryItemCounts } from "../categories/categories.service.js";
 import { modelsRepository } from "./models.repository.js";
 import type { CreateModelInput, ModelListQuery, UpdateModelInput } from "./models.schema.js";
 import { invalidateVehicleCatalogOptions } from "../vehicle-catalog/vehicle-catalog-options-cache.js";
@@ -148,6 +149,11 @@ export async function updateModel(id: number, input: UpdateModelInput) {
     "ამ მარკაზე ეს slug უკვე გამოყენებულია",
   );
   invalidateVehicleCatalogOptions();
+  // A vehicle listing's category is its model's — moving the model moves
+  // its listings' counts to another category.
+  if (input.categoryId !== undefined && input.categoryId !== existing.categoryId) {
+    invalidateCategoryItemCounts();
+  }
   return toResponse(model);
 }
 

@@ -83,10 +83,13 @@ export function invalidateCategoryItemCounts() {
 // Cached with no expiry (a full-table aggregate): dropped by
 // invalidateCategoryItemCounts on every write that changes a count, and by
 // the admin "clear cache" button.
-export async function getCategoryItemCounts(): Promise<{ categoryId: number; count: number }[]> {
-  const cached = cache.get<{ categoryId: number; count: number }[]>(ITEM_COUNTS_CACHE_KEY);
-  if (cached) return cached;
+// Via cache.getOrLoad, so a count computed while a write invalidated it
+// (e.g. a product added mid-read) is returned but not stored.
+export function getCategoryItemCounts(): Promise<{ categoryId: number; count: number }[]> {
+  return cache.getOrLoad(ITEM_COUNTS_CACHE_KEY, computeCategoryItemCounts);
+}
 
+async function computeCategoryItemCounts(): Promise<{ categoryId: number; count: number }[]> {
   const [tree, direct] = await Promise.all([
     getCategoryTree(),
     categoriesRepository.countItemsPerCategory(),
@@ -103,9 +106,7 @@ export async function getCategoryItemCounts(): Promise<{ categoryId: number; cou
       current = parentById.get(current);
     }
   }
-  const result = [...totals].map(([categoryId, count]) => ({ categoryId, count }));
-  cache.set(ITEM_COUNTS_CACHE_KEY, result);
-  return result;
+  return [...totals].map(([categoryId, count]) => ({ categoryId, count }));
 }
 
 // The size scale a category's products use: its own, else the nearest

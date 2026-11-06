@@ -22,11 +22,6 @@ export type CategoryTreeNode = {
 
 const CATEGORY_TREE_CACHE_KEY = "categories:tree";
 
-// One shared read while the cache is empty — a category page calls several
-// tree walks in parallel, which would otherwise each load the table on a
-// cold cache.
-let inFlight: Promise<CategoryTreeNode[]> | null = null;
-
 // Straight from the DB, bypassing the cache — for a write that must plan
 // against the tree as it really is (inside its own transaction), not a
 // possibly stale cached copy (e.g. after a seed or a direct SQL edit).
@@ -43,24 +38,13 @@ export function loadCategoryTree(db: typeof prisma | Prisma.TransactionClient = 
   });
 }
 
-export async function getCategoryTree(): Promise<CategoryTreeNode[]> {
-  const cached = cache.get<CategoryTreeNode[]>(CATEGORY_TREE_CACHE_KEY);
-  if (cached) return cached;
-  if (inFlight) return inFlight;
-  const load = loadCategoryTree()
-    .then((tree) => {
-      // Not stored if a write invalidated the tree while this read ran.
-      if (inFlight === load) cache.set(CATEGORY_TREE_CACHE_KEY, tree);
-      return tree;
-    })
-    .finally(() => {
-      if (inFlight === load) inFlight = null;
-    });
-  inFlight = load;
-  return load;
+// cache.getOrLoad shares one read between concurrent misses (a category
+// page runs several tree walks in parallel) and never stores a read that a
+// write — or the "clear cache" button — invalidated while it ran.
+export function getCategoryTree(): Promise<CategoryTreeNode[]> {
+  return cache.getOrLoad(CATEGORY_TREE_CACHE_KEY, () => loadCategoryTree());
 }
 
 export function invalidateCategoryTree() {
   cache.del(CATEGORY_TREE_CACHE_KEY);
-  inFlight = null;
 }

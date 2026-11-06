@@ -2,6 +2,7 @@ import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation, isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { cache } from "../../lib/cache.js";
+import { invalidateCategoryTree } from "../categories/category-tree-cache.js";
 import { getLookupDelegate, type LookupRecord, type LookupType } from "./lookups.registry.js";
 import { lookupsRepository } from "./lookups.repository.js";
 import type { CreateLookupItemInput, UpdateLookupItemInput } from "./lookups.schema.js";
@@ -21,14 +22,8 @@ const RESERVED_KEYS: Partial<Record<LookupType, readonly string[]>> = {
   "listing-statuses": ["SOLD", "AVAILABLE"],
 };
 
-export async function listLookupItems(type: LookupType) {
-  const key = cacheKey(type);
-  const cached = cache.get<LookupRecord[]>(key);
-  if (cached) return cached;
-
-  const items = await lookupsRepository.findMany(getLookupDelegate(type));
-  cache.set(key, items);
-  return items;
+export function listLookupItems(type: LookupType): Promise<LookupRecord[]> {
+  return cache.getOrLoad(cacheKey(type), () => lookupsRepository.findMany(getLookupDelegate(type)));
 }
 
 // scaleId belongs to sizes only — dropped for every other type, and checked
@@ -121,6 +116,9 @@ export async function deleteLookupItem(type: LookupType, id: number) {
   try {
     await lookupsRepository.delete(delegate, id);
     cache.del(cacheKey(type));
+    // Category.sizeScaleId is ON DELETE SET NULL — the categories that used
+    // this scale changed, so the cached tree (which carries sizeScaleId) is stale.
+    if (type === "size-scales") invalidateCategoryTree();
   } catch (error) {
     if (isForeignKeyViolation(error)) {
       throw new ApiError(400, "ეს მნიშვნელობა გამოიყენება არსებულ ჩანაწერებში, ვერ წაიშლება");

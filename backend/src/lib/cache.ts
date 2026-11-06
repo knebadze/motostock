@@ -47,6 +47,11 @@ function evictOldestTtlEntries() {
 
 setInterval(sweepExpired, SWEEP_INTERVAL_MS).unref();
 
+// For getOrLoad: the load currently running per key. del(key) / clear()
+// drop it, which is how a load that started before an invalidation knows
+// (on finishing) that its result may be stale and must not be stored.
+const inFlightLoads = new Map<string, Promise<unknown>>();
+
 const PREVIEW_LENGTH = 150;
 
 function previewValue(value: unknown): string {
@@ -84,11 +89,43 @@ export const cache = {
   del(key: string): void {
     const existing = store.get(key);
     if (existing) removeEntry(key, existing);
+    inFlightLoads.delete(key);
   },
 
   clear(): void {
     store.clear();
     ttlEntryCount = 0;
+    inFlightLoads.clear();
+  },
+
+  // Read-through for an explicitly invalidated (no-TTL by default) entry:
+  // returns the cached value, or runs `load` and stores its result. Two
+  // guards a plain get-then-set lacks:
+  //   - concurrent misses share one `load` (a cold category page fires
+  //     several reads of the same key at once);
+  //   - a `load` that was running when the key was invalidated (`del`) or
+  //     everything was cleared is NOT stored — it may have read the DB
+  //     before the write that triggered the invalidation, and storing it
+  //     would keep that stale value until the next write (forever, for a
+  //     permanent entry). Its caller still gets the value; the next read
+  //     loads fresh.
+  getOrLoad<T>(key: string, load: () => Promise<T>, ttlMs?: number): Promise<T> {
+    const cached = cache.get<T>(key);
+    if (cached !== undefined) return Promise.resolve(cached);
+    const running = inFlightLoads.get(key);
+    if (running) return running as Promise<T>;
+
+    const promise: Promise<T> = load()
+      .then((value) => {
+        // Still the registered load = no del/clear happened meanwhile.
+        if (inFlightLoads.get(key) === promise) cache.set(key, value, ttlMs);
+        return value;
+      })
+      .finally(() => {
+        if (inFlightLoads.get(key) === promise) inFlightLoads.delete(key);
+      });
+    inFlightLoads.set(key, promise);
+    return promise;
   },
 
   // Admin-only introspection (see cache.controller.ts's list handler) — not

@@ -195,12 +195,12 @@ export async function listVehicleCatalog(query: VehicleCatalogListQuery = {}) {
 
 // Cached until a catalog/brand/model/category write — see
 // vehicle-catalog-options-cache.ts.
-export async function listVehicleCatalogOptions() {
-  const cached = cache.get<ReturnType<typeof toCatalogOption>[]>(VEHICLE_CATALOG_OPTIONS_CACHE_KEY);
-  if (cached) return cached;
-  const items = (await vehicleCatalogRepository.findOptions()).map(toCatalogOption);
-  cache.set(VEHICLE_CATALOG_OPTIONS_CACHE_KEY, items);
-  return items;
+// (cache.getOrLoad: one shared read on a miss, and a read that a write
+// invalidated mid-flight isn't stored.)
+export function listVehicleCatalogOptions() {
+  return cache.getOrLoad(VEHICLE_CATALOG_OPTIONS_CACHE_KEY, async () =>
+    (await vehicleCatalogRepository.findOptions()).map(toCatalogOption),
+  );
 }
 
 function toCatalogOption(row: Awaited<ReturnType<typeof vehicleCatalogRepository.findOptions>>[number]) {
