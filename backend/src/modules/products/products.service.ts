@@ -351,10 +351,26 @@ async function assertCategoryExists(categoryId: number) {
   }
 }
 
-async function assertProductBrandExists(productBrandId: number) {
-  const productBrand = await productBrandsRepository.findById(productBrandId);
+// The brand must exist AND sell into the product's category — linked to
+// it or to one of its ancestors, the same rule the admin brand picker and
+// the Excel import use (product-brands.service.ts's listProductBrands with
+// categoryId). Without this, an API call (or a stale form) could attach
+// any brand to any product.
+async function assertProductBrandFitsCategory(productBrandId: number, categoryId: number) {
+  const [productBrand, scopeCategoryIds] = await Promise.all([
+    productBrandsRepository.findById(productBrandId),
+    resolveCategoryAndAncestorIds(categoryId),
+  ]);
   if (!productBrand) {
     throw new ApiError(400, "მითითებული ბრენდი არ არსებობს");
+  }
+  const scope = new Set(scopeCategoryIds);
+  if (!productBrand.categories.some((link) => scope.has(link.category.id))) {
+    throw new ApiError(
+      400,
+      `ბრენდი „${productBrand.name}“ ამ კატეგორიას არ ეკუთვნის — აირჩიეთ სხვა ბრენდი ან ბრენდს დაუმატეთ ეს კატეგორია`,
+      "PRODUCT_BRAND_CATEGORY_MISMATCH",
+    );
   }
 }
 
@@ -927,7 +943,7 @@ export async function getProductDetailAdmin(id: number) {
 export async function createProduct(input: CreateProductInput) {
   await assertCategoryExists(input.categoryId);
   if (input.productBrandId != null) {
-    await assertProductBrandExists(input.productBrandId);
+    await assertProductBrandFitsCategory(input.productBrandId, input.categoryId);
   }
   await assertSlugAvailable(input.slug);
 
@@ -990,8 +1006,11 @@ export async function updateProduct(id: number, input: UpdateProductInput) {
       "PRODUCT_CATEGORY_CHANGE_NOT_ALLOWED",
     );
   }
-  if (input.productBrandId) {
-    await assertProductBrandExists(input.productBrandId);
+  // Only when the brand changes: a product saved before this rule (or whose
+  // brand later lost the category link) can still be edited without first
+  // being forced onto another brand.
+  if (input.productBrandId && input.productBrandId !== existing.productBrand?.id) {
+    await assertProductBrandFitsCategory(input.productBrandId, existing.category.id);
   }
   if (input.slug !== undefined && input.slug !== existing.slug) {
     await assertSlugAvailable(input.slug, id);

@@ -296,6 +296,21 @@ export function ProductForm({
     value: String(productBrand.id),
     label: productBrand.name,
   }));
+  // A product saved with a brand that isn't (or is no longer) linked to its
+  // category: keep showing that brand instead of a blank picker — the
+  // backend accepts it as long as it stays unchanged, but switching to
+  // another brand must pick one from the category's list.
+  const savedProductBrand = product?.productBrand;
+  if (
+    savedProductBrand &&
+    productBrandId === String(savedProductBrand.id) &&
+    !productBrandOptions.some((option) => option.value === productBrandId)
+  ) {
+    productBrandOptions.unshift({
+      value: String(savedProductBrand.id),
+      label: `${savedProductBrand.name} (ამ კატეგორიას არ ეკუთვნის)`,
+    });
+  }
 
   function handleCategoryChange(nextCategoryId: string) {
     setCategoryId(nextCategoryId);
