@@ -435,7 +435,9 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
 
   // Legacy, non-paginated customer path (homepage sliders, any caller that
   // only ever sent `limit`) — unchanged behavior.
-  const rows = await vehicleListingRepository.findMany({
+  // Capped like products.service.ts's legacy path (UNPAGINATED_LIST_MAX).
+  const legacyLimit = query.limit ?? UNPAGINATED_LIST_MAX;
+  const legacyFilters = {
     categoryIds,
     searchIds,
     brandIds: query.brandIds,
@@ -448,21 +450,27 @@ export async function listVehicleListings(query: VehicleListingListQuery) {
     featured: query.featured,
     usdToGelRate,
     specFilters: query.specFilters,
-    // Capped like products.service.ts's legacy path (UNPAGINATED_LIST_MAX).
-    limit: query.limit ?? UNPAGINATED_LIST_MAX,
-  });
+  };
 
   let result: ReturnType<typeof toVehicleListingResponse>[];
   if (searchIds == null) {
+    const rows = await vehicleListingRepository.findMany({ ...legacyFilters, limit: legacyLimit });
     result = rows.map(nullFillVehicleCatalogSpecs).map(toVehicleListingResponse);
   } else {
-    // See products.service.ts's listProducts for why this re-sort/slice
-    // step is needed (findMany's `id: {in: [...]}` doesn't preserve rank
-    // order).
+    // Same as products.service.ts's listProducts: narrow the ranked
+    // candidate pool by the other filters as ids only, keep the best
+    // `limit` in relevance order, and load card rows just for those (the
+    // header suggestions show 4) — `id: {in}` doesn't preserve order.
     const rankById = new Map(searchIds.map((id, index) => [id, index]));
-    const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
-    result = ranked
-      .slice(0, query.limit ?? UNPAGINATED_LIST_MAX)
+    const matchingIds = await vehicleListingRepository.findIds(legacyFilters);
+    const topIds = matchingIds
+      .sort((a, b) => (rankById.get(a) ?? 0) - (rankById.get(b) ?? 0))
+      .slice(0, legacyLimit);
+    const rows = await vehicleListingRepository.findByIds(topIds);
+    const rowById = new Map(rows.map((row) => [row.id, row]));
+    result = topIds
+      .map((id) => rowById.get(id))
+      .filter((row): row is NonNullable<typeof row> => row != null)
       .map(nullFillVehicleCatalogSpecs)
       .map(toVehicleListingResponse);
   }

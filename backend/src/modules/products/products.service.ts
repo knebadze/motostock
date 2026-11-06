@@ -741,7 +741,7 @@ export async function listProducts(query: ProductListQuery) {
   // return the WHOLE catalog as full card rows to any anonymous caller —
   // capped now; the sitemap has its own lean endpoint (listProductSitemapEntries).
   const legacyLimit = query.limit ?? UNPAGINATED_LIST_MAX;
-  const rows = await productsRepository.findMany({
+  const legacyFilters = {
     categoryIds,
     vehicleCompatibilityWhere,
     searchIds,
@@ -752,21 +752,29 @@ export async function listProducts(query: ProductListQuery) {
     bulkDiscountEventId: query.bulkDiscountEventId,
     featured: query.featured,
     attributeFilters: query.attributeFilters,
-    limit: legacyLimit,
-  });
+  };
 
   let result: Awaited<ReturnType<typeof toCardResponse>>[];
   if (searchIds == null) {
+    const rows = await productsRepository.findMany({ ...legacyFilters, limit: legacyLimit });
     result = await Promise.all(rows.map(toCardResponse));
   } else {
-    // findMany's `id: {in: searchIds}` doesn't preserve searchIds' relevance
-    // order — restore it, then apply the limit here (findMany skipped `take`
-    // for this case; see its comment).
+    // Search with a limit (e.g. the header suggestions, 5 rows): narrow the
+    // ranked candidate pool (up to ~200 ids) by the other filters as ids
+    // only, keep the best `limit` in relevance order, and load card rows
+    // just for those — not a full card row for every candidate. (`id: {in}`
+    // doesn't preserve order, hence the re-sort.)
     const rankById = new Map(searchIds.map((id, index) => [id, index]));
-    const ranked = [...rows].sort((a, b) => (rankById.get(a.id) ?? 0) - (rankById.get(b.id) ?? 0));
-    result = await Promise.all(
-      ranked.slice(0, legacyLimit).map(toCardResponse),
-    );
+    const matchingIds = await productsRepository.findIds(legacyFilters);
+    const topIds = matchingIds
+      .sort((a, b) => (rankById.get(a) ?? 0) - (rankById.get(b) ?? 0))
+      .slice(0, legacyLimit);
+    const rows = await productsRepository.findByIds(topIds);
+    const rowById = new Map(rows.map((row) => [row.id, row]));
+    const ranked = topIds
+      .map((id) => rowById.get(id))
+      .filter((row): row is NonNullable<typeof row> => row != null);
+    result = await Promise.all(ranked.map(toCardResponse));
   }
 
   if (cacheKey) cache.set(cacheKey, result, (await getHomepageCacheTtlMinutes()) * 60_000);
