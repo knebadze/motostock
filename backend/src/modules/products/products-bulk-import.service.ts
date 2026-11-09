@@ -304,10 +304,25 @@ export async function bulkImportProducts(buffer: Buffer) {
   }
   // Already in the category (same Georgian name) — skipped, not an error, so
   // re-uploading a file only adds what's new.
-  const existingNames = new Set(
-    (await prisma.product.findMany({ where: { categoryId }, select: { nameKa: true } })).map((row) => norm(row.nameKa)),
-  );
+  // A same-named product WITHOUT variants is left over from an interrupted
+  // earlier import (or an unfinished admin entry) — it's invisible on the
+  // site, so silently skipping it would lose the product; reported as an
+  // error instead, for the admin to finish or delete it, then re-upload.
+  const existingRows = await prisma.product.findMany({
+    where: { categoryId },
+    select: { nameKa: true, _count: { select: { variants: true } } },
+  });
+  const existingNames = new Set(existingRows.filter((row) => row._count.variants > 0).map((row) => norm(row.nameKa)));
+  const emptyNames = new Set(existingRows.filter((row) => row._count.variants === 0).map((row) => norm(row.nameKa)));
   const isExisting = (product: ParsedProduct) => product.nameKa !== "" && existingNames.has(norm(product.nameKa));
+  for (const group of order) {
+    const product = products.get(group)!;
+    if (product.nameKa === "" || !emptyNames.has(norm(product.nameKa))) continue;
+    product.errors.set(product.rows[0], [
+      ...(product.errors.get(product.rows[0]) ?? []),
+      "ამ სახელით პროდუქტი უკვე არსებობს, მაგრამ ვარიანტების გარეშე (შეწყვეტილი ატვირთვა?) — დაასრულეთ ან წაშალეთ ის ადმინიდან და ატვირთეთ თავიდან",
+    ]);
+  }
 
   const [takenSkus, takenFinaIds] = await Promise.all([
     skuRows.size > 0

@@ -48,7 +48,17 @@ export function spreadsheetUpload() {
       storage: multer.memoryStorage(),
       limits: { fileSize: 10 * 1024 * 1024 },
       fileFilter: (_req, file, callback) => {
-        if (file.mimetype !== SPREADSHEET_MIME_TYPE) {
+        // The browser takes the type from the OS: a computer without Excel
+        // (or with an odd file association) sends a .xlsx as a generic
+        // binary/zip — accepted by its extension then. The content itself
+        // is still checked when exceljs parses it (a non-xlsx fails there
+        // with a clear 400).
+        const genericType = ["", "application/octet-stream", "application/zip", "application/x-zip-compressed"].includes(
+          file.mimetype,
+        );
+        const isXlsx =
+          file.mimetype === SPREADSHEET_MIME_TYPE || (genericType && /\.xlsx$/i.test(file.originalname));
+        if (!isXlsx) {
           callback(new ApiError(400, "დაშვებულია მხოლოდ Excel (.xlsx) ფაილები"));
           return;
         }
