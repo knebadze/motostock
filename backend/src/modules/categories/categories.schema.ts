@@ -65,6 +65,20 @@ export const categoryAttributeImpactResponseSchema = registry.register(
     affectedProductCount: z.int(),
     removedAttributes: z.array(z.object({ id: z.int(), name: z.string() })),
     newlyRequired: z.array(z.object({ id: z.int(), name: z.string(), missingProductCount: z.int() })),
+    // Parent changes only: inherited size scale changes, and products whose
+    // brand would no longer belong to their category.
+    sizeScaleChanges: z.array(
+      z.object({
+        from: z.string().nullable(),
+        to: z.string().nullable(),
+        categoryCount: z.int(),
+        variantsOutsideScale: z.int(),
+      }),
+    ),
+    brandMismatch: z.object({
+      productCount: z.int(),
+      brands: z.array(z.object({ id: z.int(), name: z.string() })),
+    }),
   }),
 );
 

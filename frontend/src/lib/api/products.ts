@@ -141,6 +141,38 @@ export async function listProductsPage(
   return fetchProductsList(filters);
 }
 
+// Live shop filter-sidebar counts under the current filters — each facet
+// counted without its own filter (see the backend's getProductFacetCounts).
+export type ProductFacetCounts = {
+  brands: { id: number; count: number }[];
+  options: { attributeId: number; optionId: number; count: number }[];
+  booleans: { attributeId: number; count: number }[];
+};
+
+export async function getProductFacetCounts(
+  filters: Pick<
+    ProductListFilters,
+    "categoryId" | "categoryIds" | "vehicleCatalogId" | "search" | "brandIds" | "priceMin" | "priceMax" | "attributeFilters"
+  >,
+): Promise<ProductFacetCounts> {
+  const { data } = await apiClient.get<ProductFacetCounts>("/products/facet-counts", {
+    params: {
+      categoryId: filters.categoryId,
+      categoryIds: filters.categoryIds?.length ? filters.categoryIds : undefined,
+      vehicleCatalogId: filters.vehicleCatalogId,
+      search: filters.search || undefined,
+      brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
+      priceMin: filters.priceMin,
+      priceMax: filters.priceMax,
+      attributeFilters:
+        filters.attributeFilters && !isEmptyAttributeFilters(filters.attributeFilters)
+          ? JSON.stringify(filters.attributeFilters)
+          : undefined,
+    },
+  });
+  return data;
+}
+
 // Homepage "popular products" slider — ranked by total sold quantity
 // (Order/OrderItem), not a filter on the regular /products list.
 export async function listPopularProducts(limit?: number): Promise<ProductListItem[]> {

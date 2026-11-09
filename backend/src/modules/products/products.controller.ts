@@ -142,3 +142,8 @@ export async function picker(req: Request, res: Response) {
   const items = await productsService.searchProductsForPicker(req.query as unknown as ProductPickerQuery);
   res.status(200).json({ items });
 }
+
+export async function facetCounts(req: Request, res: Response) {
+  const counts = await productsService.getProductFacetCounts(req.query as unknown as ProductListQuery);
+  res.status(200).json(counts);
+}

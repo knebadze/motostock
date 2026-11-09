@@ -625,6 +625,65 @@ export async function searchProductsForPicker(query: { q?: string; limit: number
   return rows.map((row) => ({ id: row.id, name: row.nameKa, categoryName: row.category.nameKa }));
 }
 
+// Live counts for the shop filter sidebar under the shopper's current
+// filters (ProductShopPage refetches them as filters change) — "faceted"
+// the usual way: each facet is counted with every OTHER filter applied but
+// not its own, so picking one brand still shows how many products every
+// other brand would add, and an attribute's options keep their counts
+// while one of them is ticked. Queries: one for brands, one for all
+// attributes, plus one per attribute that currently has a filter.
+export async function getProductFacetCounts(query: ProductListQuery) {
+  const categoryIds =
+    query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : query.categoryIds;
+  const vehicleCompatibilityWhere =
+    query.vehicleCatalogId != null ? await buildVehicleCompatibilityWhere(query.vehicleCatalogId) : undefined;
+  const searchIds = query.search != null ? await productsRepository.findSearchRankedIds(query.search) : undefined;
+  const base = { categoryIds, vehicleCompatibilityWhere, searchIds, priceMin: query.priceMin, priceMax: query.priceMax };
+  const attributeFilters = query.attributeFilters ?? {};
+  const filteredAttributeIds = [
+    ...new Set([
+      ...(attributeFilters.selectFilters ?? []).map((filter) => filter.attributeId),
+      ...(attributeFilters.booleanAttributeIds ?? []),
+    ]),
+  ];
+  const withoutAttribute = (attributeId: number) => ({
+    selectFilters: attributeFilters.selectFilters?.filter((filter) => filter.attributeId !== attributeId),
+    booleanAttributeIds: attributeFilters.booleanAttributeIds?.filter((id) => id !== attributeId),
+    numberRanges: attributeFilters.numberRanges,
+  });
+
+  const [brandRows, allAttributeRows, ownFilterRows] = await Promise.all([
+    productsRepository.countBrandFacets({ ...base, attributeFilters }),
+    productsRepository.countAttributeFacets({ ...base, brandIds: query.brandIds, attributeFilters }),
+    Promise.all(
+      filteredAttributeIds.map((attributeId) =>
+        productsRepository.countAttributeFacets(
+          { ...base, brandIds: query.brandIds, attributeFilters: withoutAttribute(attributeId) },
+          [attributeId],
+        ),
+      ),
+    ),
+  ]);
+
+  // A filtered attribute's own counts come from its "without me" query.
+  const filtered = new Set(filteredAttributeIds);
+  const attributeRows = [
+    ...allAttributeRows.filter((row) => !filtered.has(row.attributeId)),
+    ...ownFilterRows.flat(),
+  ];
+  return {
+    brands: brandRows
+      .filter((row) => row.productBrandId != null)
+      .map((row) => ({ id: row.productBrandId!, count: row._count._all })),
+    options: attributeRows
+      .filter((row) => row.optionId != null)
+      .map((row) => ({ attributeId: row.attributeId, optionId: row.optionId!, count: row._count._all })),
+    booleans: attributeRows
+      .filter((row) => row.optionId == null && row.valueBoolean === true)
+      .map((row) => ({ attributeId: row.attributeId, count: row._count._all })),
+  };
+}
+
 export async function listProducts(query: ProductListQuery) {
   const cacheKey = isCacheableOnSaleQuery(query) ? `products:onSale:${query.limit ?? "all"}` : null;
   if (cacheKey) {

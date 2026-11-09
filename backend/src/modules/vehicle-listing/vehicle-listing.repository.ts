@@ -231,7 +231,7 @@ function buildWhere(filters: {
 }
 
 // Customer browse/search filter shape shared by count/findIds below.
-type CustomerListingFilters = {
+export type CustomerListingFilters = {
   categoryIds?: number[];
   searchIds?: number[];
   brandIds?: number[];
@@ -477,8 +477,11 @@ export const vehicleListingRepository = {
   // filters, option counts and ranges are computed from (see
   // vehicle-category-filters.service.ts). A showroom's stock is small, so
   // reading the rows beats one aggregate query per spec column.
-  findSpecFacetRows(categoryIds: number[]) {
-    const structuredWhere = buildWhere({ categoryIds });
+  // `filters`: every shop filter EXCEPT brand and spec ones (those are the
+  // facets — see vehicle-category-filters.service.ts's
+  // getVehicleFacetCounts, which applies them itself per facet).
+  findSpecFacetRows(categoryIds: number[], filters: Omit<CustomerListingFilters, "categoryIds" | "brandIds" | "specFilters"> = {}) {
+    const structuredWhere = buildWhere({ ...filters, categoryIds });
     return prisma.vehicleListing.findMany({
       where: { AND: [...(structuredWhere ? [structuredWhere] : []), { isActive: true }] },
       select: { year: true, isCustomsCleared: true, vehicleCatalog: true },

@@ -38,6 +38,13 @@ vehicleListingRouter.get("/exchange-rate/usd-gel", vehicleListingController.getE
 vehicleListingRouter.get("/sitemap", vehicleListingController.sitemap);
 // Registered before /:id for the same reason as /popular above (a literal
 // path segment ahead of the :id param route).
+// Public: live filter-sidebar counts under the current shop filters (same
+// query shape as GET /) — see getVehicleFacetCounts. Before /:id.
+vehicleListingRouter.get(
+  "/facet-counts",
+  validate(vehicleListingListQuerySchema, "query"),
+  vehicleListingController.getFacetCounts,
+);
 vehicleListingRouter.get(
   "/brand-facets",
   validate(vehicleListingBrandFacetsQuerySchema, "query"),
@@ -252,5 +259,27 @@ registry.registerPath({
     204: { description: "Deleted" },
     400: { description: "In use, cannot delete", content: { "application/json": { schema: errorResponseSchema } } },
     404: { description: "Not found", content: { "application/json": { schema: errorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/vehicle-listings/facet-counts",
+  tags: ["VehicleListings"],
+  summary: "Vehicle shop filter-sidebar counts per brand / spec option / yes-no spec under the given filters (each facet without its own filter)",
+  request: { query: vehicleListingListQuerySchema },
+  responses: {
+    200: {
+      description: "Counts",
+      content: {
+        "application/json": {
+          schema: z.object({
+            brands: z.array(z.object({ id: z.int(), count: z.int() })),
+            options: z.array(z.object({ field: z.string(), optionId: z.int(), count: z.int() })),
+            booleans: z.array(z.object({ field: z.string(), count: z.int() })),
+          }),
+        },
+      },
+    },
   },
 });

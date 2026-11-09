@@ -138,7 +138,12 @@ export function CategoryFormModal({
           parentId: nextParentId,
           inheritsAttributes,
         });
-        if (impact.removedValueCount > 0 || impact.newlyRequired.length > 0) {
+        if (
+          impact.removedValueCount > 0 ||
+          impact.newlyRequired.length > 0 ||
+          impact.sizeScaleChanges.length > 0 ||
+          impact.brandMismatch.productCount > 0
+        ) {
           setPendingImpact(impact);
           return;
         }
@@ -498,6 +503,34 @@ export function CategoryFormModal({
                     </span>
                   ))}
                   . ამ პროდუქტების რედაქტირებისას მისი შევსება გახდება საჭირო.
+                </p>
+              )}
+              {pendingImpact.sizeScaleChanges.map((change, index) => (
+                <p key={`scale-${index}`}>
+                  ზომის სკალა იცვლება
+                  {change.categoryCount > 1 ? ` (${change.categoryCount} კატეგორიაში)` : ""}:{" "}
+                  <span className="font-semibold text-foreground">{change.from ?? "სკალის გარეშე"}</span> →{" "}
+                  <span className="font-semibold text-foreground">{change.to ?? "სკალის გარეშე"}</span>.
+                  {change.variantsOutsideScale > 0 && (
+                    <>
+                      {" "}
+                      <span className="font-semibold text-foreground">{change.variantsOutsideScale}</span> ვარიანტის
+                      ზომა ახალ სკალაში არ არის — ზომა შენარჩუნდება, მაგრამ რედაქტირებისას ახალი სკალიდან მოგიწევთ
+                      არჩევა.
+                    </>
+                  )}
+                </p>
+              ))}
+              {pendingImpact.brandMismatch.productCount > 0 && (
+                <p>
+                  ბრენდი{" "}
+                  <span className="font-semibold text-foreground">
+                    {pendingImpact.brandMismatch.brands.map((brand) => brand.name).join(", ")}
+                  </span>{" "}
+                  ახალ ადგილას ამ კატეგორიას აღარ ეკუთვნის —{" "}
+                  <span className="font-semibold text-foreground">{pendingImpact.brandMismatch.productCount}</span>{" "}
+                  პროდუქტი ბრენდს შეინარჩუნებს, მაგრამ მისი შეცვლისას მხოლოდ კატეგორიის ბრენდებიდან აირჩევა. საჭიროების
+                  შემთხვევაში ბრენდს დაუმატეთ ეს კატეგორია.
                 </p>
               )}
             </div>

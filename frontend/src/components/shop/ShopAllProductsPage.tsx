@@ -280,7 +280,7 @@ export function ShopAllProductsPage({
           )}
 
           <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr]">
-            <aside className="hidden h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:block md:sticky md:top-24 lg:top-40">
+            <aside className="hidden h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:block md:sticky md:top-24 md:max-h-[calc(100dvh-7rem)] md:overflow-y-auto md:overscroll-contain lg:top-40 lg:max-h-[calc(100dvh-11rem)]">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("filtersHeading")}
               </h2>

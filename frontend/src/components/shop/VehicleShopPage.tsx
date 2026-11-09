@@ -11,7 +11,9 @@ import { resolveApiErrorMessage } from "@/lib/api-errors";
 import type { Category } from "@/lib/api/categories";
 import type { BrandModelRef } from "@/lib/api/vehicle-catalog";
 import {
+  getVehicleFacetCounts,
   listVehicleListingsPage,
+  type VehicleFacetCounts,
   type VehicleListing,
   type VehicleSpecFilters,
 } from "@/lib/api/vehicle-listings";
@@ -167,34 +169,62 @@ export function VehicleShopPage({
     return { lookupFilters, numberRanges, booleanFields };
   }, [specFilterState]);
 
+  // The current filters, as both the listing grid and the live sidebar
+  // counts take them.
+  function currentFilterParams() {
+    return {
+      // Picked subcategories narrow the list to their subtrees;
+      // otherwise the whole category (+ descendants).
+      ...(selectedSubcategoryIds.length > 0
+        ? {
+            categoryIds: [...new Set(selectedSubcategoryIds.flatMap((id) => subcategoryCategoryIds[id] ?? [id]))],
+          }
+        : { categoryId: category.id }),
+      search: search.trim() || undefined,
+      brandIds: selectedBrandIds.length > 0 ? selectedBrandIds : undefined,
+      yearMin: yearMin.trim() ? Number(yearMin) : undefined,
+      yearMax: yearMax.trim() ? Number(yearMax) : undefined,
+      priceMin: priceMin.trim() ? Number(priceMin) : undefined,
+      priceMax: priceMax.trim() ? Number(priceMax) : undefined,
+      bulkDiscountEventId: initialEventId,
+      specFilters,
+    };
+  }
+
   function fetchPage(page: number) {
     return load(
-      () =>
-        listVehicleListingsPage({
-          // Picked subcategories narrow the list to their subtrees;
-          // otherwise the whole category (+ descendants).
-          ...(selectedSubcategoryIds.length > 0
-            ? {
-                categoryIds: [
-                  ...new Set(selectedSubcategoryIds.flatMap((id) => subcategoryCategoryIds[id] ?? [id])),
-                ],
-              }
-            : { categoryId: category.id }),
-          search: search.trim() || undefined,
-          brandIds: selectedBrandIds.length > 0 ? selectedBrandIds : undefined,
-          yearMin: yearMin.trim() ? Number(yearMin) : undefined,
-          yearMax: yearMax.trim() ? Number(yearMax) : undefined,
-          priceMin: priceMin.trim() ? Number(priceMin) : undefined,
-          priceMax: priceMax.trim() ? Number(priceMax) : undefined,
-          bulkDiscountEventId: initialEventId,
-          specFilters,
-          page,
-          pageSize: data.pageSize,
-          sortBy,
-        }),
+      () => listVehicleListingsPage({ ...currentFilterParams(), page, pageSize: data.pageSize, sortBy }),
       (error) => toast.error(resolveApiErrorMessage(error, tErrors, t("loadVehiclesError"))),
     );
   }
+
+  // Live sidebar counts under the current filters — same as
+  // ProductShopPage: on mount (brands have none until then) and after each
+  // filter change, debounced; only the latest response is applied.
+  const [facetCounts, setFacetCounts] = useState<VehicleFacetCounts | null>(null);
+  const facetRequestRef = useRef(0);
+  useEffect(() => {
+    const request = ++facetRequestRef.current;
+    const timeoutId = setTimeout(() => {
+      getVehicleFacetCounts(currentFilterParams())
+        .then((counts) => {
+          if (request === facetRequestRef.current) setFacetCounts(counts);
+        })
+        .catch(() => {});
+    }, FILTER_DEBOUNCE_MS);
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    category.id,
+    selectedSubcategoryIds,
+    search,
+    selectedBrandIds,
+    yearMin,
+    yearMax,
+    priceMin,
+    priceMax,
+    specFilters,
+  ]);
 
   // Search/brand/year/price/spec/sort filters all move server-side together
   // (page/sort/pagination too — see listVehicleListingsPage) — any change
@@ -406,6 +436,7 @@ export function VehicleShopPage({
           setSearch(value);
         }}
         filters={filters}
+        facetCounts={facetCounts}
         brandOptions={brandOptions}
         selectedBrandIds={selectedBrandIds}
         onToggleBrand={(brandId) => {
@@ -443,7 +474,7 @@ export function VehicleShopPage({
       <div className="border-t border-border bg-muted/40">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr]">
-            <aside className="hidden h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:block md:sticky md:top-24 lg:top-40">
+            <aside className="hidden h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:block md:sticky md:top-24 md:max-h-[calc(100dvh-7rem)] md:overflow-y-auto md:overscroll-contain lg:top-40 lg:max-h-[calc(100dvh-11rem)]">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("filtersHeading")}
               </h2>

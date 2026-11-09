@@ -8,7 +8,13 @@ import type { SelectOption } from "@/components/shared/Select";
 import { Pagination, usePageHref, useServerPagination, type PagedResult } from "@/components/shared/Pagination";
 import { FilterDrawer } from "@/components/shared/FilterDrawer";
 import { resolveApiErrorMessage } from "@/lib/api-errors";
-import { listProductsPage, type ProductListItem, type ProductAttributeFilters } from "@/lib/api/products";
+import {
+  getProductFacetCounts,
+  listProductsPage,
+  type ProductAttributeFilters,
+  type ProductFacetCounts,
+  type ProductListItem,
+} from "@/lib/api/products";
 import type { Category } from "@/lib/api/categories";
 import type { CategoryFilter, CategoryFilterAttribute } from "@/lib/api/category-filters";
 import type { BrandModelRef, GarageVehicle } from "@/lib/api/vehicle-catalog";
@@ -160,32 +166,60 @@ export function ProductShopPage({
     return { selectFilters, booleanAttributeIds, numberRanges };
   }, [attributeFilterState]);
 
+  // The current filters, as both the product list and the live sidebar
+  // counts take them.
+  function currentFilterParams() {
+    return {
+      // Picked subcategories narrow the list to their subtrees;
+      // otherwise the whole category (+ descendants).
+      ...(selectedSubcategoryIds.length > 0
+        ? {
+            categoryIds: [...new Set(selectedSubcategoryIds.flatMap((id) => subcategoryCategoryIds[id] ?? [id]))],
+          }
+        : { categoryId: category.id }),
+      vehicleCatalogId: selectedVehicleCatalogId ? Number(selectedVehicleCatalogId) : undefined,
+      search: search.trim() || undefined,
+      brandIds: selectedBrandIds.length > 0 ? selectedBrandIds : undefined,
+      priceMin: priceMin.trim() ? Number(priceMin) : undefined,
+      priceMax: priceMax.trim() ? Number(priceMax) : undefined,
+      attributeFilters,
+    };
+  }
+
   function fetchPage(page: number) {
     return load(
-      () =>
-        listProductsPage({
-          // Picked subcategories narrow the list to their subtrees;
-          // otherwise the whole category (+ descendants).
-          ...(selectedSubcategoryIds.length > 0
-            ? {
-                categoryIds: [
-                  ...new Set(selectedSubcategoryIds.flatMap((id) => subcategoryCategoryIds[id] ?? [id])),
-                ],
-              }
-            : { categoryId: category.id }),
-          vehicleCatalogId: selectedVehicleCatalogId ? Number(selectedVehicleCatalogId) : undefined,
-          search: search.trim() || undefined,
-          brandIds: selectedBrandIds.length > 0 ? selectedBrandIds : undefined,
-          priceMin: priceMin.trim() ? Number(priceMin) : undefined,
-          priceMax: priceMax.trim() ? Number(priceMax) : undefined,
-          attributeFilters,
-          page,
-          pageSize: data.pageSize,
-          sortBy,
-        }),
+      () => listProductsPage({ ...currentFilterParams(), page, pageSize: data.pageSize, sortBy }),
       (error) => toast.error(resolveApiErrorMessage(error, tErrors, t("loadProductsError"))),
     );
   }
+
+  // Live sidebar counts (per brand / option / yes-no) under the current
+  // filters — on mount too (brands have no count until then) and after
+  // each filter change, debounced like the list. Only the latest response
+  // is applied; on failure the sidebar keeps the counts it had.
+  const [facetCounts, setFacetCounts] = useState<ProductFacetCounts | null>(null);
+  const facetRequestRef = useRef(0);
+  useEffect(() => {
+    const request = ++facetRequestRef.current;
+    const timeoutId = setTimeout(() => {
+      getProductFacetCounts(currentFilterParams())
+        .then((counts) => {
+          if (request === facetRequestRef.current) setFacetCounts(counts);
+        })
+        .catch(() => {});
+    }, FILTER_DEBOUNCE_MS);
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    category.id,
+    selectedSubcategoryIds,
+    search,
+    selectedBrandIds,
+    priceMin,
+    priceMax,
+    attributeFilters,
+    selectedVehicleCatalogId,
+  ]);
 
   // Search/brand/price/attribute/sort filters all move server-side together
   // (page/sort/pagination too — see listProductsPage) — any change here
@@ -398,6 +432,7 @@ export function ProductShopPage({
           setSearch(value);
         }}
         filters={filters}
+        facetCounts={facetCounts}
         brandOptions={brandOptions}
         selectedBrandIds={selectedBrandIds}
         onToggleBrand={(brandId) => {
@@ -433,7 +468,7 @@ export function ProductShopPage({
       <div className="border-t border-border bg-muted/40">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-[280px_1fr]">
-            <aside className="hidden h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:block md:sticky md:top-24 lg:top-40">
+            <aside className="hidden h-fit rounded-2xl border border-border bg-card p-5 shadow-sm md:block md:sticky md:top-24 md:max-h-[calc(100dvh-7rem)] md:overflow-y-auto md:overscroll-contain lg:top-40 lg:max-h-[calc(100dvh-11rem)]">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("filtersHeading")}
               </h2>

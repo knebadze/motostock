@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { VehicleCategoryFilter, VehicleSpecField } from "@/lib/api/vehicle-category-filters";
 import type { BrandOption } from "./ProductFilters";
+import type { VehicleFacetCounts } from "@/lib/api/vehicle-listings";
 
 export type SpecFilterState = {
   optionIds: number[];
@@ -17,6 +18,7 @@ export function VehicleFilters({
   onSearchChange,
   subcategoryFilter,
   filters,
+  facetCounts,
   brandOptions,
   selectedBrandIds,
   onToggleBrand,
@@ -38,6 +40,9 @@ export function VehicleFilters({
   // SubcategoryFilter, rendered right under the search box.
   subcategoryFilter?: ReactNode;
   filters: VehicleCategoryFilter[];
+  // Live counts under the current filters (VehicleShopPage); until loaded,
+  // options show the category's static counts and brands none.
+  facetCounts?: VehicleFacetCounts | null;
   brandOptions: BrandOption[];
   selectedBrandIds: number[];
   onToggleBrand: (brandId: number) => void;
@@ -57,6 +62,15 @@ export function VehicleFilters({
   const locale = useLocale() as "ka" | "en" | "ru";
   const t = useTranslations("Shop");
 
+  const brandCounts = facetCounts ? new Map(facetCounts.brands.map((row) => [row.id, row.count])) : null;
+  const optionCounts = facetCounts
+    ? new Map(facetCounts.options.map((row) => [`${row.field}:${row.optionId}`, row.count]))
+    : null;
+  const booleanCounts = facetCounts ? new Map(facetCounts.booleans.map((row) => [row.field, row.count])) : null;
+  // A value that would leave no results is dimmed, not hidden — a ticked one
+  // must stay where it is so it can be unticked.
+  const dimmed = (count: number | null | undefined, checked: boolean) => (count === 0 && !checked ? " opacity-50" : "");
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1.5">
@@ -64,6 +78,7 @@ export function VehicleFilters({
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder={t("searchPlaceholder")}
+          aria-label={t("searchPlaceholder")}
           className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
       </div>
@@ -77,17 +92,22 @@ export function VehicleFilters({
             <div key={filter.id} className="flex flex-col gap-2">
               <span className="text-sm font-medium">{t("brandFilterLabel")}</span>
               <div className="flex flex-col gap-1.5">
-                {brandOptions.map((brand) => (
-                  <label key={brand.id} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={selectedBrandIds.includes(brand.id)}
-                      onChange={() => onToggleBrand(brand.id)}
-                      className="size-4 rounded border-border accent-primary"
-                    />
-                    {brand.label}
-                  </label>
-                ))}
+                {brandOptions.map((brand) => {
+                  const checked = selectedBrandIds.includes(brand.id);
+                  const count = brandCounts ? (brandCounts.get(brand.id) ?? 0) : null;
+                  return (
+                    <label key={brand.id} className={`flex items-center gap-2 text-sm${dimmed(count, checked)}`}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => onToggleBrand(brand.id)}
+                        className="size-4 rounded border-border accent-primary"
+                      />
+                      <span className="flex-1">{brand.label}</span>
+                      {count != null && <span className="text-xs text-muted-foreground">{count}</span>}
+                    </label>
+                  );
+                })}
               </div>
             </div>
           );
@@ -103,6 +123,7 @@ export function VehicleFilters({
                   value={yearMin}
                   onChange={(event) => onYearMinChange(event.target.value)}
                   placeholder={filter.range ? String(filter.range.min) : t("yearMinPlaceholder")}
+                  aria-label={`${t("yearFilterLabel")} — ${t("yearMinPlaceholder")}`}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
                 <span className="text-muted-foreground">—</span>
@@ -111,6 +132,7 @@ export function VehicleFilters({
                   value={yearMax}
                   onChange={(event) => onYearMaxChange(event.target.value)}
                   placeholder={filter.range ? String(filter.range.max) : t("yearMaxPlaceholder")}
+                  aria-label={`${t("yearFilterLabel")} — ${t("yearMaxPlaceholder")}`}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
               </div>
@@ -128,6 +150,7 @@ export function VehicleFilters({
                   value={priceMin}
                   onChange={(event) => onPriceMinChange(event.target.value)}
                   placeholder={t("priceMinPlaceholder")}
+                  aria-label={`${t("priceFilterLabel")} — ${t("priceMinPlaceholder")}`}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
                 <span className="text-muted-foreground">—</span>
@@ -136,6 +159,7 @@ export function VehicleFilters({
                   value={priceMax}
                   onChange={(event) => onPriceMaxChange(event.target.value)}
                   placeholder={t("priceMaxPlaceholder")}
+                  aria-label={`${t("priceFilterLabel")} — ${t("priceMaxPlaceholder")}`}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
               </div>
@@ -155,36 +179,40 @@ export function VehicleFilters({
             <div key={filter.id} className="flex flex-col gap-2">
               <span className="text-sm font-medium">{label}</span>
               <div className="flex flex-col gap-1.5">
-                {options.map((option) => (
-                  <label key={option.id} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={state?.optionIds.includes(option.id) ?? false}
-                      onChange={() => onToggleSpecOption(field, option.id)}
-                      className="size-4 rounded border-border accent-primary"
-                    />
-                    <span className="flex-1">{option.label[locale]}</span>
-                    {option.count != null && <span className="text-xs text-muted-foreground">{option.count}</span>}
-                  </label>
-                ))}
+                {options.map((option) => {
+                  const checked = state?.optionIds.includes(option.id) ?? false;
+                  const count = optionCounts ? (optionCounts.get(`${field}:${option.id}`) ?? 0) : option.count;
+                  return (
+                    <label key={option.id} className={`flex items-center gap-2 text-sm${dimmed(count, checked)}`}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => onToggleSpecOption(field, option.id)}
+                        className="size-4 rounded border-border accent-primary"
+                      />
+                      <span className="flex-1">{option.label[locale]}</span>
+                      {count != null && <span className="text-xs text-muted-foreground">{count}</span>}
+                    </label>
+                  );
+                })}
               </div>
             </div>
           );
         }
 
         if (filter.specFieldKind === "BOOLEAN") {
+          const checked = state?.booleanEnabled ?? false;
+          const count = booleanCounts ? (booleanCounts.get(field) ?? 0) : filter.trueCount;
           return (
-            <label key={filter.id} className="flex items-center gap-2 text-sm font-medium">
+            <label key={filter.id} className={`flex items-center gap-2 text-sm font-medium${dimmed(count, checked)}`}>
               <input
                 type="checkbox"
-                checked={state?.booleanEnabled ?? false}
+                checked={checked}
                 onChange={() => onToggleSpecBoolean(field)}
                 className="size-4 rounded border-border accent-primary"
               />
               <span className="flex-1">{label}</span>
-              {filter.trueCount != null && (
-                <span className="text-xs font-normal text-muted-foreground">{filter.trueCount}</span>
-              )}
+              {count != null && <span className="text-xs font-normal text-muted-foreground">{count}</span>}
             </label>
           );
         }
@@ -199,6 +227,7 @@ export function VehicleFilters({
                   value={state?.numberMin ?? ""}
                   onChange={(event) => onSpecNumberRangeChange(field, "min", event.target.value)}
                   placeholder={filter.range ? String(filter.range.min) : t("priceMinPlaceholder")}
+                  aria-label={`${label} — ${t("priceMinPlaceholder")}`}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
                 <span className="text-muted-foreground">—</span>
@@ -207,6 +236,7 @@ export function VehicleFilters({
                   value={state?.numberMax ?? ""}
                   onChange={(event) => onSpecNumberRangeChange(field, "max", event.target.value)}
                   placeholder={filter.range ? String(filter.range.max) : t("priceMaxPlaceholder")}
+                  aria-label={`${label} — ${t("priceMaxPlaceholder")}`}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 />
               </div>

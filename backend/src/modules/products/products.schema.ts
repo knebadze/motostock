@@ -76,6 +76,15 @@ export const productPickerItemSchema = registry.register(
   z.object({ id: z.int(), name: z.string(), categoryName: z.string() }),
 );
 
+export const productFacetCountsResponseSchema = registry.register(
+  "ProductFacetCounts",
+  z.object({
+    brands: z.array(z.object({ id: z.int(), count: z.int() })),
+    options: z.array(z.object({ attributeId: z.int(), optionId: z.int(), count: z.int() })),
+    booleans: z.array(z.object({ attributeId: z.int(), count: z.int() })),
+  }),
+);
+
 export const productIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });

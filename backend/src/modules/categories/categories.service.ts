@@ -406,8 +406,14 @@ export async function previewCategoryAttributeImpact(id: number, change: Attribu
   const existing = await categoriesRepository.findById(id);
   if (!existing) throw new ApiError(404, "კატეგორია ვერ მოიძებნა");
 
-  const plan = await planAttributeScope(id, change);
-  const empty = { removedValueCount: 0, affectedProductCount: 0, removedAttributes: [], newlyRequired: [] };
+  const [plan, move] = await Promise.all([
+    planAttributeScope(id, change),
+    change.parentId !== undefined && change.parentId !== existing.parentId
+      ? previewCategoryMoveImpact(id, change.parentId)
+      : null,
+  ]);
+  const moveImpact = move ?? { sizeScaleChanges: [], brandMismatch: { productCount: 0, brands: [] } };
+  const empty = { removedValueCount: 0, affectedProductCount: 0, removedAttributes: [], newlyRequired: [], ...moveImpact };
   if (!plan) return empty;
 
   const removed = (
@@ -448,6 +454,111 @@ export async function previewCategoryAttributeImpact(id: number, change: Attribu
     affectedProductCount: new Set(removed.map((row) => row.productId)).size,
     removedAttributes: [...new Map(removed.map((row) => [row.attribute.id, { id: row.attribute.id, name: row.attribute.nameKa }])).values()],
     newlyRequired: [...missingByAttribute.values()],
+    ...moveImpact,
+  };
+}
+
+// The rest of what moving category `id` under `parentId` changes for its
+// subtree, besides attributes (shown in the same confirmation):
+// - the size scale, where a category has none of its own and inherits it —
+//   with how many variants then have a size outside the new scale (their
+//   size stays, but the product form only offers the new scale's sizes);
+// - brands: products whose brand is linked only through the OLD ancestors,
+//   so it no longer belongs to the product's category (the product keeps it
+//   until the brand is changed — products.service.ts's brand check).
+async function previewCategoryMoveImpact(id: number, parentId: number | null) {
+  const tree = await loadCategoryTree();
+  const before = new Map(tree.map((node) => [node.id, node]));
+  const node = before.get(id);
+  if (!node) return null;
+  const after = new Map(before);
+  after.set(id, { ...node, parentId });
+
+  const chain = (byId: Map<number, CategoryTreeNode>, categoryId: number) => {
+    const ids: number[] = [];
+    const seen = new Set<number>();
+    let current = byId.get(categoryId);
+    while (current && !seen.has(current.id)) {
+      ids.push(current.id);
+      seen.add(current.id);
+      current = current.parentId != null ? byId.get(current.parentId) : undefined;
+    }
+    return ids;
+  };
+  const effectiveScale = (byId: Map<number, CategoryTreeNode>, categoryId: number) => {
+    for (const ancestorId of chain(byId, categoryId)) {
+      const scaleId = byId.get(ancestorId)?.sizeScaleId;
+      if (scaleId != null) return scaleId;
+    }
+    return null;
+  };
+
+  const subtree = await resolveCategoryAndDescendantIds(id, tree);
+
+  // Size scale: group the subtree's categories by (old scale → new scale).
+  const scaleMoves = new Map<string, { from: number | null; to: number | null; categoryIds: number[] }>();
+  for (const categoryId of subtree) {
+    const from = effectiveScale(before, categoryId);
+    const to = effectiveScale(after, categoryId);
+    if (from === to) continue;
+    const key = `${from}:${to}`;
+    const entry = scaleMoves.get(key) ?? { from, to, categoryIds: [] };
+    entry.categoryIds.push(categoryId);
+    scaleMoves.set(key, entry);
+  }
+  const scaleIds = [...new Set([...scaleMoves.values()].flatMap((move) => [move.from, move.to]))].filter(
+    (scaleId): scaleId is number => scaleId != null,
+  );
+  const scaleNames = new Map(
+    (await prisma.sizeScale.findMany({ where: { id: { in: scaleIds } }, select: { id: true, nameKa: true } })).map(
+      (scale) => [scale.id, scale.nameKa],
+    ),
+  );
+  const sizeScaleChanges = await Promise.all(
+    [...scaleMoves.values()].map(async (move) => ({
+      from: move.from != null ? (scaleNames.get(move.from) ?? null) : null,
+      to: move.to != null ? (scaleNames.get(move.to) ?? null) : null,
+      categoryCount: move.categoryIds.length,
+      // Variants with a size the new scale doesn't contain (any size, when
+      // the new place has no scale at all).
+      variantsOutsideScale: await prisma.productVariant.count({
+        where: {
+          product: { categoryId: { in: move.categoryIds } },
+          sizeId: { not: null },
+          ...(move.to != null ? { NOT: { size: { scaleId: move.to } } } : {}),
+        },
+      }),
+    })),
+  );
+
+  // Brands: products whose brand fits the category before the move but not after.
+  const products = await prisma.product.findMany({
+    where: { categoryId: { in: subtree }, productBrandId: { not: null } },
+    select: {
+      categoryId: true,
+      productBrand: { select: { id: true, name: true, categories: { select: { categoryId: true } } } },
+    },
+  });
+  const lostBrands = new Map<number, string>();
+  let productCount = 0;
+  for (const product of products) {
+    const brand = product.productBrand;
+    if (!brand) continue;
+    const linked = new Set(brand.categories.map((link) => link.categoryId));
+    const fitsBefore = chain(before, product.categoryId).some((categoryId) => linked.has(categoryId));
+    const fitsAfter = chain(after, product.categoryId).some((categoryId) => linked.has(categoryId));
+    if (fitsBefore && !fitsAfter) {
+      productCount += 1;
+      lostBrands.set(brand.id, brand.name);
+    }
+  }
+
+  return {
+    sizeScaleChanges,
+    brandMismatch: {
+      productCount,
+      brands: [...lostBrands].map(([brandId, name]) => ({ id: brandId, name })),
+    },
   };
 }
 

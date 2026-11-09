@@ -38,6 +38,17 @@ function candidatePoolSize(limit: number): number {
 
 export type ProductSortBy = "newest" | "price-asc" | "price-desc";
 
+// The shop filters the live sidebar counts are computed under.
+export type FacetCountFilters = {
+  categoryIds?: number[];
+  vehicleCompatibilityWhere?: Prisma.ProductWhereInput;
+  searchIds?: number[];
+  brandIds?: number[];
+  priceMin?: number;
+  priceMax?: number;
+  attributeFilters?: AttributeFilterInput;
+};
+
 const unitRefSelect = {
   id: true,
   nameKa: true,
@@ -618,6 +629,40 @@ export const productsRepository = {
   // attribute value the visible products under `categoryIds` actually hold,
   // grouped per attribute + option/boolean, with how many products hold it
   // and the min/max of number values.
+  // Live filter-sidebar counts (products.service.ts's getProductFacetCounts):
+  // matching products per brand, under the given filters.
+  async countBrandFacets(filters: FacetCountFilters) {
+    const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
+    return prisma.product.groupBy({
+      by: ["productBrandId"],
+      where: {
+        AND: [
+          ...(structuredWhere ? [structuredWhere] : []),
+          { variants: { some: { isActive: true } } },
+          { productBrandId: { not: null } },
+        ],
+      },
+      _count: { _all: true },
+    });
+  },
+
+  // Same, per attribute value (SELECT option / BOOLEAN true) — optionally
+  // only for `attributeIds`.
+  async countAttributeFacets(filters: FacetCountFilters, attributeIds?: number[]) {
+    const structuredWhere = await buildWhere({ ...filters, requireActiveVariant: true });
+    return prisma.productAttributeValue.groupBy({
+      by: ["attributeId", "optionId", "valueBoolean"],
+      where: {
+        ...(attributeIds ? { attributeId: { in: attributeIds } } : {}),
+        OR: [{ optionId: { not: null } }, { valueBoolean: true }],
+        product: {
+          AND: [...(structuredWhere ? [structuredWhere] : []), { variants: { some: { isActive: true } } }],
+        },
+      },
+      _count: { _all: true },
+    });
+  },
+
   async findAttributeValueFacets(categoryIds: number[]) {
     const structuredWhere = await buildWhere({ categoryIds, requireActiveVariant: true });
     return prisma.productAttributeValue.groupBy({

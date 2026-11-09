@@ -4561,6 +4561,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicle-catalog/options/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin catalog picker — word search over the option list (or the given ids), a page of matches */
+        get: {
+            parameters: {
+                query?: {
+                    q?: string;
+                    ids?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Matching catalog options */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["VehicleCatalogOption"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicle-listings/sitemap": {
         parameters: {
             query?: never;
@@ -5007,6 +5049,74 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-listings/facet-counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vehicle shop filter-sidebar counts per brand / spec option / yes-no spec under the given filters (each facet without its own filter) */
+        get: {
+            parameters: {
+                query?: {
+                    categoryId?: number;
+                    categoryIds?: number[];
+                    search?: string;
+                    brandIds?: number[];
+                    priceMin?: number | null;
+                    priceMax?: number | null;
+                    yearMin?: number | null;
+                    yearMax?: number | null;
+                    onSale?: boolean | null;
+                    bulkDiscountEventId?: number;
+                    featured?: boolean | null;
+                    limit?: number;
+                    specFilters?: string;
+                    adminFilters?: string;
+                    page?: number;
+                    pageSize?: number;
+                    sortBy?: "newest" | "year-desc" | "price-asc" | "price-desc";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Counts */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            brands: {
+                                id: number;
+                                count: number;
+                            }[];
+                            options: {
+                                field: string;
+                                optionId: number;
+                                count: number;
+                            }[];
+                            booleans: {
+                                field: string;
+                                count: number;
+                            }[];
+                        };
                     };
                 };
             };
@@ -6233,6 +6343,7 @@ export interface paths {
             parameters: {
                 query?: {
                     categoryId?: number;
+                    includeDescendants?: "true" | "false";
                     adminFilters?: string;
                     page?: number;
                     pageSize?: number;
@@ -7378,6 +7489,102 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/products/picker": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin product picker — ranked search over the whole catalog (newest first without q), lean rows */
+        get: {
+            parameters: {
+                query?: {
+                    q?: string;
+                    limit?: number;
+                    excludeId?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Matching products */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["ProductPickerItem"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/products/facet-counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Shop filter-sidebar counts per brand / attribute value under the given filters (each facet without its own filter) */
+        get: {
+            parameters: {
+                query?: {
+                    categoryId?: number;
+                    categoryIds?: number[];
+                    vehicleCatalogId?: number;
+                    search?: string;
+                    brandIds?: number[];
+                    priceMin?: number | null;
+                    priceMax?: number | null;
+                    onSale?: boolean | null;
+                    bulkDiscountEventId?: number;
+                    featured?: boolean | null;
+                    seasonal?: boolean | null;
+                    limit?: number;
+                    attributeFilters?: string;
+                    adminFilters?: string;
+                    page?: number;
+                    pageSize?: number;
+                    sortBy?: "newest" | "price-asc" | "price-desc";
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Counts */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProductFacetCounts"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -16791,6 +16998,26 @@ export interface components {
             }[];
             isFeaturedOnHomepage?: boolean;
         };
+        ProductPickerItem: {
+            id: number;
+            name: string;
+            categoryName: string;
+        };
+        ProductFacetCounts: {
+            brands: {
+                id: number;
+                count: number;
+            }[];
+            options: {
+                attributeId: number;
+                optionId: number;
+                count: number;
+            }[];
+            booleans: {
+                attributeId: number;
+                count: number;
+            }[];
+        };
         ProductBulkImportResult: {
             categoryName: string;
             totalRows: number;
@@ -17548,6 +17775,19 @@ export interface components {
                 name: string;
                 missingProductCount: number;
             }[];
+            sizeScaleChanges: {
+                from: string | null;
+                to: string | null;
+                categoryCount: number;
+                variantsOutsideScale: number;
+            }[];
+            brandMismatch: {
+                productCount: number;
+                brands: {
+                    id: number;
+                    name: string;
+                }[];
+            };
         };
         CategoryItemCounts: {
             items: {

@@ -24,6 +24,7 @@ import {
   productIdParamSchema,
   productImportTemplateQuerySchema,
   productListQuerySchema,
+  productFacetCountsResponseSchema,
   productPickerItemSchema,
   productPickerQuerySchema,
   productCardResponseSchema,
@@ -71,6 +72,9 @@ productsRouter.post(
   validate(checkCompatibilitySchema),
   productsController.checkCompatibility,
 );
+// Public: live filter-sidebar counts under the current shop filters (same
+// query shape as GET /) — see getProductFacetCounts. Before /:id.
+productsRouter.get("/facet-counts", validate(productListQuerySchema, "query"), productsController.facetCounts);
 // Staff only: the admin product picker's server-side search (see
 // productPickerQuerySchema). Declared before /:id so "picker" isn't read as an id.
 productsRouter.get(
@@ -406,5 +410,16 @@ registry.registerPath({
       description: "Matching products",
       content: { "application/json": { schema: z.object({ items: z.array(productPickerItemSchema) }) } },
     },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/products/facet-counts",
+  tags: ["Products"],
+  summary: "Shop filter-sidebar counts per brand / attribute value under the given filters (each facet without its own filter)",
+  request: { query: productListQuerySchema },
+  responses: {
+    200: { description: "Counts", content: { "application/json": { schema: productFacetCountsResponseSchema } } },
   },
 });

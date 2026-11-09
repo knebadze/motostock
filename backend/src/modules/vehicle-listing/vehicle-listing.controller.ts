@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { resolveProductViewOwner } from "../product-views/product-views.middleware.js";
 import { recordVehicleListingView } from "../vehicle-listing-views/vehicle-listing-views.service.js";
 import * as vehicleListingService from "./vehicle-listing.service.js";
+import { getVehicleFacetCounts } from "../vehicle-category-filters/vehicle-category-filters.service.js";
 import type {
   CreateVehicleListingInput,
   PopularVehicleListingsQuery,
@@ -96,4 +97,9 @@ export async function update(
 export async function remove(req: Request, res: Response) {
   await vehicleListingService.deleteVehicleListing(Number(req.params.id));
   res.status(204).send();
+}
+
+export async function getFacetCounts(req: Request, res: Response) {
+  const counts = await getVehicleFacetCounts(req.query as unknown as VehicleListingListQuery);
+  res.status(200).json(counts);
 }

@@ -141,6 +141,49 @@ export async function listVehicleListings(
 // of a bare array. Used by VehicleListingsManager.tsx (admin, via
 // adminFilters) and by the storefront shop page (via page/pageSize) — every
 // OTHER caller keeps using listVehicleListings above, unaffected.
+// Live vehicle shop sidebar counts under the current filters — each facet
+// counted without its own filter (see the backend's getVehicleFacetCounts).
+export type VehicleFacetCounts = {
+  brands: { id: number; count: number }[];
+  options: { field: string; optionId: number; count: number }[];
+  booleans: { field: string; count: number }[];
+};
+
+export async function getVehicleFacetCounts(
+  filters: Pick<
+    VehicleListingFilters,
+    | "categoryId"
+    | "categoryIds"
+    | "search"
+    | "brandIds"
+    | "priceMin"
+    | "priceMax"
+    | "yearMin"
+    | "yearMax"
+    | "bulkDiscountEventId"
+    | "specFilters"
+  >,
+): Promise<VehicleFacetCounts> {
+  const { data } = await apiClient.get<VehicleFacetCounts>("/vehicle-listings/facet-counts", {
+    params: {
+      categoryId: filters.categoryId,
+      categoryIds: filters.categoryIds?.length ? filters.categoryIds : undefined,
+      search: filters.search || undefined,
+      brandIds: filters.brandIds?.length ? filters.brandIds : undefined,
+      priceMin: filters.priceMin,
+      priceMax: filters.priceMax,
+      yearMin: filters.yearMin,
+      yearMax: filters.yearMax,
+      bulkDiscountEventId: filters.bulkDiscountEventId,
+      specFilters:
+        filters.specFilters && !isEmptySpecFilters(filters.specFilters)
+          ? JSON.stringify(filters.specFilters)
+          : undefined,
+    },
+  });
+  return data;
+}
+
 export async function listVehicleListingsPage(
   filters: VehicleListingFilters = {},
 ): Promise<VehicleListingListResponse> {

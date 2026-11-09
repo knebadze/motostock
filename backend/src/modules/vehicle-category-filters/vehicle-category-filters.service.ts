@@ -9,6 +9,8 @@ import { vehicleListingRepository } from "../vehicle-listing/vehicle-listing.rep
 import { VEHICLE_SPEC_FIELDS, getSpecFieldDefinition } from "./vehicle-spec-fields.registry.js";
 import { vehicleCategoryFiltersRepository } from "./vehicle-category-filters.repository.js";
 import type { VehicleSpecField } from "../../generated/prisma/index.js";
+import { getUsdToGelRate } from "../settings/settings.service.js";
+import type { VehicleListingListQuery } from "../vehicle-listing/vehicle-listing.schema.js";
 import type {
   CreateVehicleCategoryFilterInput,
   UpdateVehicleCategoryFilterInput,
@@ -304,4 +306,82 @@ export async function deleteVehicleCategoryFilter(id: number) {
 
   await vehicleCategoryFiltersRepository.delete(id);
   invalidateStorefrontFilters();
+}
+
+// Live counts for the vehicle shop sidebar under the shopper's current
+// filters (VehicleShopPage refetches them as filters change) — each facet
+// counted with every OTHER filter applied but not its own (picking a brand
+// still shows what the other brands would add). The listings matching the
+// non-facet filters (category, search, price, year) are read once; brand
+// and spec filters are then applied in memory per facet — a showroom's
+// stock is small, same reasoning as the sidebar itself.
+export async function getVehicleFacetCounts(query: VehicleListingListQuery) {
+  const categoryIds =
+    query.categoryId != null ? await resolveCategoryAndDescendantIds(query.categoryId) : (query.categoryIds ?? []);
+  const searchIds = query.search != null ? await vehicleListingRepository.findSearchRankedIds(query.search) : undefined;
+  const usdToGelRate = (await getUsdToGelRate()) ?? undefined;
+  const rows = await vehicleListingRepository.findSpecFacetRows(categoryIds, {
+    searchIds,
+    priceMin: query.priceMin,
+    priceMax: query.priceMax,
+    yearMin: query.yearMin,
+    yearMax: query.yearMax,
+    bulkDiscountEventId: query.bulkDiscountEventId,
+    usdToGelRate,
+  });
+
+  const brandIds = query.brandIds ?? [];
+  const spec = query.specFilters ?? {};
+  type Facet = { kind: "BRAND" } | { kind: "SPEC"; field: VehicleSpecField };
+  // Does `row` pass every filter except the one `skip` names?
+  function passes(row: FacetRow, skip: Facet) {
+    if (skip.kind !== "BRAND" && brandIds.length > 0 && !brandIds.includes(row.vehicleCatalog.brandId)) return false;
+    const skipField = skip.kind === "SPEC" ? skip.field : null;
+    for (const filter of spec.lookupFilters ?? []) {
+      if (filter.field === skipField) continue;
+      if (!filter.ids.includes(specValue(row, filter.field) as number)) return false;
+    }
+    for (const range of spec.numberRanges ?? []) {
+      if (range.field === skipField) continue;
+      const value = specValue(row, range.field);
+      if (value == null) return false;
+      const number = Number(value);
+      if ((range.min != null && number < range.min) || (range.max != null && number > range.max)) return false;
+    }
+    for (const field of spec.booleanFields ?? []) {
+      if (field === skipField) continue;
+      if (specValue(row, field) !== true) return false;
+    }
+    return true;
+  }
+
+  const brandCounts = new Map<number, number>();
+  for (const row of rows) {
+    if (!passes(row, { kind: "BRAND" })) continue;
+    brandCounts.set(row.vehicleCatalog.brandId, (brandCounts.get(row.vehicleCatalog.brandId) ?? 0) + 1);
+  }
+
+  const options: { field: VehicleSpecField; optionId: number; count: number }[] = [];
+  const booleans: { field: VehicleSpecField; count: number }[] = [];
+  for (const field of Object.keys(VEHICLE_SPEC_FIELDS) as VehicleSpecField[]) {
+    const kind = getSpecFieldDefinition(field).kind;
+    if (kind !== "LOOKUP" && kind !== "BOOLEAN") continue;
+    const matching = rows.filter((row) => passes(row, { kind: "SPEC", field }));
+    if (kind === "LOOKUP") {
+      const counts = new Map<number, number>();
+      for (const row of matching) {
+        const value = specValue(row, field);
+        if (typeof value === "number") counts.set(value, (counts.get(value) ?? 0) + 1);
+      }
+      for (const [optionId, count] of counts) options.push({ field, optionId, count });
+    } else {
+      booleans.push({ field, count: matching.filter((row) => specValue(row, field) === true).length });
+    }
+  }
+
+  return {
+    brands: [...brandCounts].map(([id, count]) => ({ id, count })),
+    options,
+    booleans,
+  };
 }
