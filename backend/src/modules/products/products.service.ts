@@ -972,13 +972,16 @@ export async function getProductDetail(slug: string, vehicleCatalogId?: number) 
     throw new ApiError(404, "პროდუქტი ვერ მოიძებნა", "PRODUCT_NOT_FOUND");
   }
 
-  await productsRepository.incrementViewCount(row.id);
+  // Not awaited: the page shouldn't wait on (or fail because of) a counter.
+  productsRepository.incrementViewCount(row.id).catch(() => {});
 
-  const response = await toDetailResponse(row);
-  const compatWhere =
+  // Independent — built side by side, not one after the other.
+  const [response, compatWhere] = await Promise.all([
+    toDetailResponse(row),
     vehicleCatalogId != null
-      ? await includeVehicleIndependent(await buildVehicleCompatibilityWhere(vehicleCatalogId))
-      : undefined;
+      ? buildVehicleCompatibilityWhere(vehicleCatalogId).then(includeVehicleIndependent)
+      : Promise.resolve(undefined),
+  ]);
 
   // Narrow the curated buyTogether companions down to ones actually
   // compatible with the shopper's selected vehicle — a companion attached

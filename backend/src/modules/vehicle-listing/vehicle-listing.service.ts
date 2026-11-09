@@ -521,7 +521,8 @@ export async function getVehicleListing(id: number) {
   if (!row || !row.isActive) {
     throw new ApiError(404, "განცხადება ვერ მოიძებნა", "VEHICLE_LISTING_NOT_FOUND");
   }
-  await vehicleListingRepository.incrementViewCount(id);
+  // Not awaited: the page shouldn't wait on (or fail because of) a counter.
+  vehicleListingRepository.incrementViewCount(id).catch(() => {});
   return toVehicleListingResponse(row);
 }
 

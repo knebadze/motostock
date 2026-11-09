@@ -8,6 +8,8 @@ model ProductFitment {
 
   @@unique([productId, vehicleCatalogId])
   @@index([vehicleCatalogId])
+  // Admin compatibility page: newest-first merge (compatibility.repository.ts).
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
   @@schema("dbo")
 }
 
@@ -57,5 +59,6 @@ model ProductFitmentRule {
 
   @@index([productId])
   @@index([categoryId])
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
   @@schema("dbo")
 }

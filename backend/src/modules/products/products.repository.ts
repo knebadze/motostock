@@ -191,10 +191,13 @@ const detailIncludeBase = {
   category: { select: namedRefSelect },
   productBrand: { select: brandModelRefSelect },
   attributeValues: attributeValuesInclude,
+  // Only what the fitment list shows (id + brand/model) — not every catalog
+  // column (specs, three-language descriptions) for each fitted vehicle.
   fitments: {
-    include: {
+    select: {
       vehicleCatalog: {
-        include: {
+        select: {
+          id: true,
           brand: { select: brandModelRefSelect },
           model: { select: brandModelRefSelect },
         },

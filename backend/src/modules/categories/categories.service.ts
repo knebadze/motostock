@@ -416,44 +416,64 @@ export async function previewCategoryAttributeImpact(id: number, change: Attribu
   const empty = { removedValueCount: 0, affectedProductCount: 0, removedAttributes: [], newlyRequired: [], ...moveImpact };
   if (!plan) return empty;
 
-  const removed = (
-    await Promise.all(
-      plan.map((scope) =>
-        prisma.productAttributeValue.findMany({
-          where: {
-            product: { categoryId: scope.categoryId },
-            attribute: { categoryId: { notIn: scope.allowedAttributeCategoryIds } },
-          },
-          select: { productId: true, attribute: { select: { id: true, nameKa: true } } },
-        }),
-      ),
-    )
-  ).flat();
+  // Values to delete — one grouped query over every subtree category
+  // (OR of per-category scopes), not one query per category.
+  const scopes = plan.map((scope) => ({
+    product: { categoryId: scope.categoryId },
+    attribute: { categoryId: { notIn: scope.allowedAttributeCategoryIds } },
+  }));
+  const [removedByAttribute, affectedProducts] = await Promise.all([
+    prisma.productAttributeValue.groupBy({ by: ["attributeId"], where: { OR: scopes }, _count: { _all: true } }),
+    prisma.productAttributeValue.groupBy({ by: ["productId"], where: { OR: scopes } }),
+  ]);
+  const removedAttributeNames = new Map(
+    (
+      await prisma.attribute.findMany({
+        where: { id: { in: removedByAttribute.map((row) => row.attributeId) } },
+        select: { id: true, nameKa: true },
+      })
+    ).map((attribute) => [attribute.id, attribute.nameKa]),
+  );
 
-  const missingByAttribute = new Map<number, { id: number; name: string; missingProductCount: number }>();
-  for (const scope of plan) {
-    const gained = scope.allowedAttributeCategoryIds.filter((categoryId) => !scope.before.includes(categoryId));
-    if (gained.length === 0) continue;
-    const required = await prisma.attribute.findMany({
-      where: { categoryId: { in: gained }, required: true },
-      select: { id: true, nameKa: true },
-    });
-    for (const attribute of required) {
-      const missing = await prisma.product.count({
-        where: { categoryId: scope.categoryId, attributeValues: { none: { attributeId: attribute.id } } },
-      });
-      if (missing === 0) continue;
-      const entry = missingByAttribute.get(attribute.id) ?? { id: attribute.id, name: attribute.nameKa, missingProductCount: 0 };
-      entry.missingProductCount += missing;
-      missingByAttribute.set(attribute.id, entry);
-    }
-  }
+  // Newly applying required attributes: per attribute, the subtree
+  // categories that gain it — one attribute lookup for all of them, then one
+  // count per attribute (over all its categories at once), not per
+  // (category × attribute).
+  const gainedByCategory = plan
+    .map((scope) => ({
+      categoryId: scope.categoryId,
+      gained: scope.allowedAttributeCategoryIds.filter((categoryId) => !scope.before.includes(categoryId)),
+    }))
+    .filter((scope) => scope.gained.length > 0);
+  const requiredAttributes =
+    gainedByCategory.length > 0
+      ? await prisma.attribute.findMany({
+          where: { categoryId: { in: [...new Set(gainedByCategory.flatMap((scope) => scope.gained))] }, required: true },
+          select: { id: true, nameKa: true, categoryId: true },
+        })
+      : [];
+  const newlyRequired = (
+    await Promise.all(
+      requiredAttributes.map(async (attribute) => {
+        const categoryIds = gainedByCategory
+          .filter((scope) => scope.gained.includes(attribute.categoryId))
+          .map((scope) => scope.categoryId);
+        const missingProductCount = await prisma.product.count({
+          where: { categoryId: { in: categoryIds }, attributeValues: { none: { attributeId: attribute.id } } },
+        });
+        return { id: attribute.id, name: attribute.nameKa, missingProductCount };
+      }),
+    )
+  ).filter((attribute) => attribute.missingProductCount > 0);
 
   return {
-    removedValueCount: removed.length,
-    affectedProductCount: new Set(removed.map((row) => row.productId)).size,
-    removedAttributes: [...new Map(removed.map((row) => [row.attribute.id, { id: row.attribute.id, name: row.attribute.nameKa }])).values()],
-    newlyRequired: [...missingByAttribute.values()],
+    removedValueCount: removedByAttribute.reduce((sum, row) => sum + row._count._all, 0),
+    affectedProductCount: affectedProducts.length,
+    removedAttributes: removedByAttribute.map((row) => ({
+      id: row.attributeId,
+      name: removedAttributeNames.get(row.attributeId) ?? "",
+    })),
+    newlyRequired,
     ...moveImpact,
   };
 }

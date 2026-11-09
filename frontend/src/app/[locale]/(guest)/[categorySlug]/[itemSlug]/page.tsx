@@ -244,11 +244,15 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
     notFound();
   }
 
-  const tNav = await getTranslations({ locale, namespace: "Nav" });
-
   if (isVehicleCategory(categories, category.id)) {
     const id = parseVehicleListingIdFromSlug(itemSlug);
-    const listing = id != null ? await getVehicleListingFromServer(id) : null;
+    // Together, not one after the other (company info and translations
+    // don't depend on the listing; both are cached).
+    const [tNav, listing, listingCompanyInfo] = await Promise.all([
+      getTranslations({ locale, namespace: "Nav" }),
+      id != null ? getVehicleListingFromServer(id) : Promise.resolve(null),
+      getCompanyInfoFromServer(),
+    ]);
     if (!listing) {
       notFound();
     }
@@ -273,7 +277,6 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
       .join(" ");
     const pathname = `/${listing.vehicleCatalog.category.slug}/${buildVehicleListingSlug(listing)}`;
     const canonicalUrl = getAlternateLanguages(pathname)[locale];
-    const listingCompanyInfo = await getCompanyInfoFromServer();
     const images = listing.images
       .map((image) => resolveMediaUrl(image.imageUrl))
       .filter((url): url is string => Boolean(url));
@@ -379,7 +382,15 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
   }
 
   const selectedVehicleCatalogId = (await cookies()).get(SELECTED_VEHICLE_COOKIE)?.value;
-  const product = await getProductDetailFromServer(itemSlug, selectedVehicleCatalogId);
+  // Fetched alongside the product rather than after it: translations, and
+  // the (cached) delivery / company info the purchase block may need —
+  // whether it does is only known once the product's category is.
+  const [tNav, product, cachedDeliveryInfo, cachedCompanyInfo] = await Promise.all([
+    getTranslations({ locale, namespace: "Nav" }),
+    getProductDetailFromServer(itemSlug, selectedVehicleCatalogId),
+    getDeliveryInfoFromServer(),
+    getCompanyInfoFromServer(),
+  ]);
   if (!product) {
     // A renamed product's old slug — 301 to its current URL.
     const moved = await getProductSlugRedirectFromServer(itemSlug);
@@ -407,9 +418,9 @@ export default async function ItemDetailRoute({ params }: { params: Promise<Page
   // — without any it fits nothing and would always say "doesn't fit".
   const showFitBadge = vehicleFitmentEnabled && (product.fitments.length > 0 || product.fitmentRules.length > 0);
 
-  const [deliveryInfo, companyInfo, vehicleOptions, garage] = await Promise.all([
-    purchasableOnline ? getDeliveryInfoFromServer() : null,
-    purchasableOnline ? getCompanyInfoFromServer() : null,
+  const deliveryInfo = purchasableOnline ? cachedDeliveryInfo : null;
+  const companyInfo = purchasableOnline ? cachedCompanyInfo : null;
+  const [vehicleOptions, garage] = await Promise.all([
     showFitBadge && selectedVehicleCatalogId ? getVehicleSearchOptionsFromServer() : EMPTY_VEHICLE_SEARCH_DATA,
     showFitBadge ? getMyGarageFromServer() : [],
   ]);

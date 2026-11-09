@@ -78,6 +78,8 @@ type RawEntry =
   | { source: "rule"; createdAt: Date; row: RuleRow };
 
 const DEFAULT_PAGE_SIZE = 20;
+// Most rows a page may need from each table (skip + take) — 250 pages of 20.
+const MAX_MERGE_WINDOW = 5000;
 
 // Merges ProductFitment (explicit product<->vehicle pairs) and
 // ProductFitmentRule (CATEGORY/SPEC/ALL declarative rules) into one flat,
@@ -94,6 +96,12 @@ export async function listAllCompatibility(filters: ListCompatibilityQuery) {
   const fitmentWhere = productWhere ? { product: productWhere } : undefined;
   const ruleWhere = productWhere ? { product: productWhere } : undefined;
   const needed = skip + take;
+  // Page N reads the newest skip+take rows of BOTH tables, so a far page
+  // (?page=100000) would read whole tables — capped; past it, narrowing by
+  // a filter (product, category, kind) is the way in.
+  if (needed > MAX_MERGE_WINDOW) {
+    throw new ApiError(400, "ძალიან შორეული გვერდი — დააზუსტეთ ძებნა ფილტრით");
+  }
 
   const [fitmentRows, ruleRows, fitmentTotal, ruleTotal] = await Promise.all([
     filters.kind === "RULE" ? [] : compatibilityRepository.findNewestFitments(fitmentWhere, needed),

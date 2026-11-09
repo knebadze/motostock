@@ -57,14 +57,15 @@ export async function sitemap(_req: Request, res: Response) {
 }
 
 export async function getOne(req: Request, res: Response) {
-  const item = await vehicleListingService.getVehicleListing(Number(req.params.id));
-
-  // Owner resolution mutates cookies on `res`, so it must run before the
-  // response is sent below. The actual write is fire-and-forget (not
-  // awaited) — a view-tracking failure must never turn a successful listing
-  // page load into an error response. Same pattern as products.controller.ts's
-  // getBySlug.
-  const owner = await resolveProductViewOwner(req, res);
+  // Owner resolution mutates cookies on `res`, so it must finish before the
+  // response is sent below — run alongside the listing read, not after it.
+  // The view write itself is fire-and-forget (not awaited) — a
+  // view-tracking failure must never turn a successful listing page load
+  // into an error response. Same pattern as products.controller.ts's getBySlug.
+  const [item, owner] = await Promise.all([
+    vehicleListingService.getVehicleListing(Number(req.params.id)),
+    resolveProductViewOwner(req, res),
+  ]);
   recordVehicleListingView(owner, item.id).catch(() => {});
 
   res.status(200).json({ item });

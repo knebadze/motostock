@@ -126,7 +126,50 @@ export default async function CategoryShopPage({
   // /shop page instead.
   const parsedEventId = eventId ? Number(eventId) : undefined;
 
-  const tNav = await getTranslations({ locale, namespace: "Nav" });
+  const isVehicle = isVehicleCategory(categories, category.id);
+  const vehicleSortBy = parseVehicleSortBy(initialSort);
+  const productSortBy = parseProductSortBy(initialSort);
+  // Vehicle-independent category (Category.vehicleFitmentEnabled off, e.g.
+  // helmets): no "my vehicle" filter even if one is configured for it.
+  const vehicleFitmentEnabled = !getVehicleFitmentDisabledCategoryIds(categories).has(category.id);
+
+  // Everything this page needs once the category is known, fetched in one
+  // go rather than translations → item counts → page data one after the
+  // other. The vehicle branch: `brandFacets` (the distinct brands present —
+  // a lean dedicated endpoint, not an unbounded full-listing fetch) feeds
+  // the brand checkboxes, `listingsPage` (real server pagination) the grid.
+  // The product branch: same, plus the configured filters and — the
+  // garage/session vehicle is deliberately never used to pre-filter the
+  // list; it only takes effect once picked from the MY_VEHICLE filter — the
+  // shopper's garage for that filter.
+  const [tNav, itemCounts, data] = await Promise.all([
+    getTranslations({ locale, namespace: "Nav" }),
+    getCategoryItemCountsFromServer(),
+    isVehicle
+      ? Promise.all([
+          getVehicleBrandFacetsFromServer(category.id, parsedEventId),
+          getVehicleListingsPageFromServer(category.id, initialPage, vehicleSortBy, parsedEventId),
+          getVehicleCategoryFiltersFromServer(category.id),
+        ]).then(([brandFacets, listingsPage, vehicleFilters]) => ({
+          kind: "vehicle" as const,
+          brandFacets,
+          listingsPage,
+          vehicleFilters,
+        }))
+      : Promise.all([
+          getProductBrandFacetsFromServer(category.id),
+          getProductsPageFromServer(category.id, initialPage, productSortBy),
+          getCategoryFiltersFromServer(category.id),
+          vehicleFitmentEnabled ? getMyGarageFromServer() : Promise.resolve([]),
+        ]).then(([brandFacets, productsPage, configuredFilters, garageVehicles]) => ({
+          kind: "product" as const,
+          brandFacets,
+          productsPage,
+          configuredFilters,
+          garageVehicles,
+        })),
+  ]);
+
   const ancestorChain = getAncestorChain(categories, category.id);
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
@@ -147,11 +190,9 @@ export default async function CategoryShopPage({
     ],
   };
 
-  const isVehicle = isVehicleCategory(categories, category.id);
   // Rolled up over each subtree. Empty subcategories are left out of the
   // subcategory filter — unless the counts couldn't be loaded at all
   // (fallback {}), then every subcategory stays.
-  const itemCounts = await getCategoryItemCountsFromServer();
   const countsKnown = Object.keys(itemCounts).length > 0;
   const subcategories = categories.filter(
     (item) => item.parentId === category.id && (!countsKnown || (itemCounts[item.id] ?? 0) > 0),
@@ -166,17 +207,8 @@ export default async function CategoryShopPage({
 
   const breadcrumbScript = <JsonLd data={breadcrumbJsonLd} />;
 
-  if (isVehicle) {
-    const vehicleSortBy = parseVehicleSortBy(initialSort);
-    // `brandFacets` — the distinct brands present in this category — feeds
-    // the brand-checkbox facet list, via a lean dedicated endpoint rather
-    // than an unbounded full-listing fetch just to re-derive it client-side.
-    // `listingsPage` (real server pagination) feeds the actual grid.
-    const [brandFacets, listingsPage, vehicleFilters] = await Promise.all([
-      getVehicleBrandFacetsFromServer(category.id, parsedEventId),
-      getVehicleListingsPageFromServer(category.id, initialPage, vehicleSortBy, parsedEventId),
-      getVehicleCategoryFiltersFromServer(category.id),
-    ]);
+  if (data.kind === "vehicle") {
+    const { brandFacets, listingsPage, vehicleFilters } = data;
     // A page past the end (?page=999) — 404, not an empty page that would
     // be indexed as its own self-canonical URL.
     if (initialPage > 1 && listingsPage.items.length === 0) notFound();
@@ -199,21 +231,7 @@ export default async function CategoryShopPage({
     );
   }
 
-  // The garage/session vehicle is deliberately never used to pre-filter this
-  // list — it only takes effect once the shopper explicitly picks it from
-  // the MY_VEHICLE filter on this page (see ProductFilters/ProductShopPage).
-  // `brandFacets` feeds the brand-checkbox facet list, same reasoning as the
-  // vehicle branch above; `productsPage` feeds the actual grid.
-  const productSortBy = parseProductSortBy(initialSort);
-  // Vehicle-independent category (Category.vehicleFitmentEnabled off, e.g.
-  // helmets): no "my vehicle" filter even if one is configured for it.
-  const vehicleFitmentEnabled = !getVehicleFitmentDisabledCategoryIds(categories).has(category.id);
-  const [brandFacets, productsPage, configuredFilters, garageVehicles] = await Promise.all([
-    getProductBrandFacetsFromServer(category.id),
-    getProductsPageFromServer(category.id, initialPage, productSortBy),
-    getCategoryFiltersFromServer(category.id),
-    vehicleFitmentEnabled ? getMyGarageFromServer() : Promise.resolve([]),
-  ]);
+  const { brandFacets, productsPage, configuredFilters, garageVehicles } = data;
   // Same past-the-end 404 as the vehicle branch above.
   if (initialPage > 1 && productsPage.items.length === 0) notFound();
   const filters = vehicleFitmentEnabled

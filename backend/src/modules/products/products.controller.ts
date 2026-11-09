@@ -73,14 +73,16 @@ export async function getBySlug(
   req: Request<ProductSlugParam, unknown, unknown, ProductDetailQuery>,
   res: Response,
 ) {
-  const item = await productsService.getProductDetail(req.params.slug, req.query.vehicleCatalogId);
-
-  // Owner resolution mutates cookies on `res`, so it must run before the
-  // response is sent below. The actual write is fire-and-forget (not
-  // awaited) — a view-tracking failure must never turn a successful product
-  // page load into an error response.
+  // Owner resolution mutates cookies on `res`, so it must finish before the
+  // response is sent below — run alongside the product read, not after it
+  // (its auth/session lookups don't depend on the product). The view write
+  // itself is fire-and-forget (not awaited) — a view-tracking failure must
+  // never turn a successful product page load into an error response.
   // Same cast reasoning as product-views.controller.ts's getRecentlyViewed.
-  const owner = await resolveProductViewOwner(req as unknown as Request, res);
+  const [item, owner] = await Promise.all([
+    productsService.getProductDetail(req.params.slug, req.query.vehicleCatalogId),
+    resolveProductViewOwner(req as unknown as Request, res),
+  ]);
   recordProductView(owner, item.id).catch(() => {});
 
   res.status(200).json({ item });
