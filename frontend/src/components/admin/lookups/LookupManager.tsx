@@ -7,6 +7,7 @@ import { RowActions } from "@/components/shared/RowActions";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { deleteLookupItem, listLookupItems, type LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError } from "@/lib/api/client";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 import type { LookupTypeSlug } from "@/config/lookup-types";
 import { LookupFormModal } from "./LookupFormModal";
 
@@ -50,6 +51,9 @@ export function LookupManager({
   async function refresh() {
     try {
       setItems(await listLookupItems(type));
+      // Company info (header/footer/contact, cached on the storefront) shows
+      // its city by name — refresh it after a city save or delete.
+      if (type === "cities") void revalidatePublicCache("company-info");
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";

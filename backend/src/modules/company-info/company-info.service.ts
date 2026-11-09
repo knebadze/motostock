@@ -102,12 +102,15 @@ async function getOrCreateCompanyInfo(): Promise<CompanyInfoRow> {
   }
 }
 
+// Dropped by this module's own writes, and by a city rename/delete (the
+// cached row embeds the city's names) — see lookups.service.ts.
+export function invalidateCompanyInfoCache() {
+  cache.del(COMPANY_INFO_CACHE_KEY);
+}
+
 export async function getCompanyInfo() {
-  let base = cache.get<ReturnType<typeof toResponse>>(COMPANY_INFO_CACHE_KEY);
-  if (!base) {
-    base = toResponse(await getOrCreateCompanyInfo());
-    cache.set(COMPANY_INFO_CACHE_KEY, base);
-  }
+  // getOrLoad: a read that a save invalidated mid-flight isn't stored.
+  const base = await cache.getOrLoad(COMPANY_INFO_CACHE_KEY, async () => toResponse(await getOrCreateCompanyInfo()));
 
   const byDay = new Map(base.workingHours.map((hour) => [hour.dayOfWeek, hour]));
   const whatsappSupportPhoneNumber = await getWhatsAppSupportPhoneNumber();

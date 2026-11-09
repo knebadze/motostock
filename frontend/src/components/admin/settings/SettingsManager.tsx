@@ -27,8 +27,10 @@ export function SettingsManager({ initialSettings }: { initialSettings: Settings
     try {
       const updated = await updateSettings(next);
       setSettings(updated);
-      // Delivery prices / return window are cached on the storefront.
+      // Delivery prices / return window, and which guest features are on,
+      // are cached on the storefront.
       void revalidatePublicCache("delivery-info");
+      void revalidatePublicCache("guest-feature-status");
       toast.success("პარამეტრი განახლდა");
     } catch (error) {
       const message =

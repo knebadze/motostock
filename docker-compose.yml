@@ -8,7 +8,10 @@ x-logging: &default-logging
 
 services:
   db:
-    image: postgres:16-alpine
+    # Exact versions, not floating tags (16-alpine / 2-alpine): a rebuild or
+    # `pull` months later must not silently bring a different server version.
+    # Upgrade deliberately by editing these.
+    image: postgres:16.9-alpine
     restart: unless-stopped
     logging: *default-logging
     environment:
@@ -41,6 +44,11 @@ services:
       # backend outside Docker (e.g. local dev) without editing it back and
       # forth.
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # Always production in the container. env_file wins over the image's
+      # own ENV, so a backend/.env copied from .env.example (which says
+      # development, for local runs) used to switch the server into dev mode:
+      # debug logging, pretty logs, response validation on every request.
+      NODE_ENV: production
     depends_on:
       db:
         condition: service_healthy
@@ -142,7 +150,7 @@ services:
       start_period: 10s
 
   caddy:
-    image: caddy:2-alpine
+    image: caddy:2.10.0-alpine
     restart: unless-stopped
     logging: *default-logging
     ports:

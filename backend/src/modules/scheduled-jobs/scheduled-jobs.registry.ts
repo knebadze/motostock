@@ -42,6 +42,31 @@ export type JobDefinition = {
 // label string — the two drifting apart (schedule changed, label forgotten)
 // is exactly the bug this replaces. Handles the two shapes used here: daily
 // "M H * * *" and monthly "M H D * *".
+// The most recent moment (at or before `now`) a job's cron should have
+// fired, Tbilisi time (UTC+4 all year — Georgia has no DST). Handles the
+// shapes these jobs use: daily "m h * * *" and monthly "m h d * *"; anything
+// else returns null (the caller then treats the job as not missed).
+const TBILISI_OFFSET_MS = 4 * 60 * 60 * 1000;
+export function previousCronRun(cronExpression: string, now: Date = new Date()): Date | null {
+  const [minute, hour, dayOfMonth, month, dayOfWeek] = cronExpression.trim().split(/\s+/);
+  const m = Number(minute);
+  const h = Number(hour);
+  if (!Number.isInteger(m) || !Number.isInteger(h) || month !== "*" || dayOfWeek !== "*") return null;
+  // Work in "Tbilisi wall-clock as UTC" and shift back at the end.
+  const local = new Date(now.getTime() + TBILISI_OFFSET_MS);
+  const toUtc = (date: Date) => new Date(date.getTime() - TBILISI_OFFSET_MS);
+  if (dayOfMonth === "*") {
+    const candidate = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate(), h, m));
+    if (candidate > local) candidate.setUTCDate(candidate.getUTCDate() - 1);
+    return toUtc(candidate);
+  }
+  const d = Number(dayOfMonth);
+  if (!Number.isInteger(d) || d < 1 || d > 28) return null;
+  const candidate = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), d, h, m));
+  if (candidate > local) candidate.setUTCMonth(candidate.getUTCMonth() - 1);
+  return toUtc(candidate);
+}
+
 export function formatCronScheduleLabel(cronExpression: string): string {
   const [minute, hour, dayOfMonth] = cronExpression.split(" ");
   const pad = (value: string) => value.padStart(2, "0");

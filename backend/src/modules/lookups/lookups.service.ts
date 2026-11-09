@@ -3,6 +3,13 @@ import { ApiError } from "../../lib/ApiError.js";
 import { isForeignKeyViolation, isUniqueConstraintViolation } from "../../lib/prismaErrors.js";
 import { cache } from "../../lib/cache.js";
 import { invalidateCategoryTree } from "../categories/category-tree-cache.js";
+import { invalidateCompanyInfoCache } from "../company-info/company-info.service.js";
+
+// Lookup types other caches embed by name — dropped with the lookup's own.
+function invalidateDependentCaches(type: LookupType) {
+  // Company info embeds its city (names in three languages).
+  if (type === "cities") invalidateCompanyInfoCache();
+}
 import { getLookupDelegate, type LookupRecord, type LookupType } from "./lookups.registry.js";
 import { lookupsRepository } from "./lookups.repository.js";
 import type { CreateLookupItemInput, UpdateLookupItemInput } from "./lookups.schema.js";
@@ -99,6 +106,7 @@ export async function updateLookupItem(
     throw error;
   }
   cache.del(cacheKey(type));
+  invalidateDependentCaches(type);
   return item;
 }
 
@@ -116,6 +124,7 @@ export async function deleteLookupItem(type: LookupType, id: number) {
   try {
     await lookupsRepository.delete(delegate, id);
     cache.del(cacheKey(type));
+    invalidateDependentCaches(type);
     // Category.sizeScaleId is ON DELETE SET NULL — the categories that used
     // this scale changed, so the cached tree (which carries sizeScaleId) is stale.
     if (type === "size-scales") invalidateCategoryTree();

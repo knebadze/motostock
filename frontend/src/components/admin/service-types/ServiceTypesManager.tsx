@@ -13,6 +13,7 @@ import {
   type ServiceType,
 } from "@/lib/api/service-types";
 import { ApiRequestError } from "@/lib/api/client";
+import { revalidatePublicCache } from "@/lib/api/revalidate";
 import { formatPrice } from "@/lib/format";
 import { ServiceTypeFormModal } from "./ServiceTypeFormModal";
 
@@ -26,6 +27,8 @@ export function ServiceTypesManager({ initialServiceTypes }: { initialServiceTyp
   async function refresh() {
     try {
       setServiceTypes(await listServiceTypes());
+      // The /service page caches them (after a save or delete — this runs then).
+      void revalidatePublicCache("service-types-public");
     } catch (error) {
       const message =
         error instanceof ApiRequestError ? error.message : "სიის განახლება ვერ მოხერხდა";
@@ -43,7 +46,9 @@ export function ServiceTypesManager({ initialServiceTypes }: { initialServiceTyp
     setFormOpen(true);
   }
 
-  const handleToggleActive = useOptimisticToggle(serviceTypes, setServiceTypes, updateServiceType);
+  const handleToggleActive = useOptimisticToggle(serviceTypes, setServiceTypes, updateServiceType, () =>
+    revalidatePublicCache("service-types-public"),
+  );
 
   async function handleDrop(targetId: number) {
     const currentDraggedId = draggedId;
@@ -62,6 +67,7 @@ export function ServiceTypesManager({ initialServiceTypes }: { initialServiceTyp
 
     try {
       setServiceTypes(await reorderServiceTypes(nextOrder));
+      void revalidatePublicCache("service-types-public");
     } catch (error) {
       setServiceTypes(previous);
       const message =

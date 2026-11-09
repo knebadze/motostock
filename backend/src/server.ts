@@ -16,7 +16,12 @@ import {
   getFinaSyncIntervalMinutes,
 } from "./modules/settings/settings.service.js";
 import { FINA_SYNC_DEFAULTS } from "./modules/settings/constants/index.js";
-import { DEFAULT_JOB_CRON, JOB_DEFINITIONS } from "./modules/scheduled-jobs/scheduled-jobs.registry.js";
+import {
+  DEFAULT_JOB_CRON,
+  JOB_DEFINITIONS,
+  previousCronRun,
+} from "./modules/scheduled-jobs/scheduled-jobs.registry.js";
+import { scheduledJobsRepository } from "./modules/scheduled-jobs/scheduled-jobs.repository.js";
 import {
   runScheduledJob,
   SCHEDULED_JOB_ALREADY_RUNNING,
@@ -131,12 +136,23 @@ function runDailyScheduledJob(key: (typeof JOB_DEFINITIONS)[number]["key"]) {
     logger.error({ err, jobKey: key }, "Scheduled job failed");
   });
 }
-// Also run once immediately on boot, not just on the cron schedule — this
-// app still deploys far more often than once a day, so relying on the cron
-// trigger alone would often mean these jobs never actually fire in
-// practice (same rationale the old setInterval version's boot-time call
-// had; node-cron's TaskOptions has no "run immediately" flag of its own).
-JOB_DEFINITIONS.forEach((job) => runDailyScheduledJob(job.key));
+// Catch-up on boot: a job whose latest scheduled time passed while the
+// server was down (or whose run then failed) — i.e. no successful run since
+// that time — runs once now. Every boot used to run ALL jobs, so each
+// deploy/restart repeated them: extra pruning load, a repeated exchange-rate
+// fetch, and the monthly job every time instead of monthly. A job that did
+// run on schedule now just waits for its next cron tick.
+async function runMissedScheduledJobs() {
+  const lastSuccess = await scheduledJobsRepository.findLastSuccessPerJob();
+  for (const job of JOB_DEFINITIONS) {
+    const due = previousCronRun(job.cron ?? DEFAULT_JOB_CRON);
+    const last = lastSuccess.get(job.key);
+    if (due && (!last || last < due)) runDailyScheduledJob(job.key);
+  }
+}
+runMissedScheduledJobs().catch((err: unknown) => {
+  logger.error({ err }, "Boot-time scheduled job catch-up failed");
+});
 const dailyScheduledJobCronTasks: ScheduledTask[] = JOB_DEFINITIONS.map((job) =>
   cron.schedule(job.cron ?? DEFAULT_JOB_CRON, () => runDailyScheduledJob(job.key), {
     timezone: "Asia/Tbilisi",

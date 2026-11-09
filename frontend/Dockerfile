@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 
-FROM node:22-slim AS deps
+# Exact Node version (not the floating 22-slim) — see docker-compose.yml.
+FROM node:22.16.0-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -34,7 +35,7 @@ ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
 ENV NEXT_PUBLIC_SENTRY_ENVIRONMENT=$NEXT_PUBLIC_SENTRY_ENVIRONMENT
 RUN npm run build
 
-FROM node:22-slim AS runner
+FROM node:22.16.0-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 # Owned by the unprivileged `node` user the server runs as — Next writes its

@@ -24,16 +24,19 @@ const REVALIDATABLE_TAGS = [
   // The vehicle search options (home hero search, checkout compatibility
   // check) — refreshed after vehicle catalog/brand/model saves.
   "vehicle-catalog",
+  // The /service page's service types — refreshed after their admin saves.
+  "service-types-public",
+  // Which guest features (cart / wishlist / ...) are on — after a settings save.
+  "guest-feature-status",
 ] as const;
 type RevalidatableTag = (typeof REVALIDATABLE_TAGS)[number];
 
 // "all" — the admin's "clear cache" action (UserMenu.tsx): every public
-// cross-request cache the storefront keeps, including the two that have no
-// admin save hook of their own. The backend's in-memory cache is cleared
+// cross-request cache the storefront keeps. The backend's in-memory cache is cleared
 // separately by that same action; without this, the storefront kept
 // serving its own copy (e.g. company info changed straight in the DB) for
 // up to PUBLIC_STATIC_CACHE_SECONDS after the "clear".
-const ALL_PUBLIC_TAGS = [...REVALIDATABLE_TAGS, "service-types-public", "guest-feature-status"];
+const ALL_PUBLIC_TAGS = [...REVALIDATABLE_TAGS];
 
 function isRevalidatableTag(value: unknown): value is RevalidatableTag | "all" {
   return value === "all" || (typeof value === "string" && (REVALIDATABLE_TAGS as readonly string[]).includes(value));

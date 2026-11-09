@@ -45,7 +45,7 @@ NEXT_PUBLIC_SITE_URL=http://<VPS_IP>
 docker compose up -d`) — მეტი ცვლილება არ სჭირდება, კოდი უკვე მზადაა.
 
 **`backend/.env`** — შეავსეთ `JWT_SECRET` (32+ სიმბოლო, შემთხვევითი),
-`FRONTEND_ORIGIN=http://<VPS_IP>`, `BACKEND_PUBLIC_URL=http://<VPS_IP>`, `NODE_ENV=production`,
+`FRONTEND_ORIGIN=http://<VPS_IP>`, `BACKEND_PUBLIC_URL=http://<VPS_IP>` (`NODE_ENV`-ს docker-compose.yml თავად აყენებს `production`-ზე),
 და დანარჩენი (SMTP, FINA, OAuth credentials და ა.შ.) რაც გაქტიურებული გინდათ ტესტირებისთვის —
 დანარჩენი ცარიელი დატოვება უსაფრთხოა, შესაბამისი ფუნქცია უბრალოდ გამორთული დარჩება.
 `DATABASE_URL`-ის დატოვება შეგიძლიათ default-ზე — docker-compose.yml ავტომატურად გადააწერს Docker

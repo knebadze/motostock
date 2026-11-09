@@ -91,6 +91,21 @@ export const scheduledJobsRepository = {
     });
   },
 
+  // When each job last finished successfully — for the boot-time catch-up
+  // (server.ts): one grouped query.
+  async findLastSuccessPerJob(): Promise<Map<ScheduledJobKey, Date>> {
+    const rows = await prisma.scheduledJobRun.groupBy({
+      by: ["jobKey"],
+      where: { status: "SUCCESS" },
+      _max: { startedAt: true },
+    });
+    return new Map(
+      rows
+        .filter((row) => row._max.startedAt != null)
+        .map((row) => [row.jobKey as ScheduledJobKey, row._max.startedAt!]),
+    );
+  },
+
   // One findFirst per key rather than a raw DISTINCT ON query — only 5 keys,
   // so the extra round trips are negligible and this stays plain Prisma.
   async findLatestRunPerJob(keys: ScheduledJobKey[]) {

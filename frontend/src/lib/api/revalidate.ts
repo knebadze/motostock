@@ -12,6 +12,8 @@ export type RevalidatableTag =
   | "shipping-policy"
   | "delivery-info"
   | "vehicle-catalog"
+  | "service-types-public"
+  | "guest-feature-status"
   // Every public cache at once — the admin "clear cache" action.
   | "all";
 

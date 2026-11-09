@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 
-FROM node:22-slim AS base
+# Exact Node version (not the floating 22-slim) — see docker-compose.yml.
+FROM node:22.16.0-slim AS base
 WORKDIR /app
 # Prisma's query engine (still fetched as a fallback even in driver-adapter
 # mode) needs libssl at runtime — installed once here, reused by every
