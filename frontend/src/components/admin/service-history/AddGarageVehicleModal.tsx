@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
-import { Select, LONG_LIST_RENDER_CAP } from "@/components/shared/Select";
+import { RemoteSearchSelect } from "@/components/shared/RemoteSearchSelect";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { createGarageVehicleForUser } from "@/lib/api/garage";
-import type { VehicleCatalogOption, GarageVehicle } from "@/lib/api/vehicle-catalog";
+import { searchVehicleCatalogOptions, type VehicleCatalogOption, type GarageVehicle } from "@/lib/api/vehicle-catalog";
 import { ApiRequestError } from "@/lib/api/client";
 import { workshopGarageVehicleFormSchema } from "@/lib/validation/workshop";
 import { getFieldErrors, type FieldErrors } from "@/lib/validation/common";
@@ -18,29 +18,30 @@ function vehicleCatalogLabel(entry: VehicleCatalogOption): string {
   return `${entry.brand.name} ${entry.model.name}${year}`;
 }
 
+// Searched on the server — the page no longer embeds the whole catalog.
+async function searchCatalogOptions(query: string) {
+  return (await searchVehicleCatalogOptions(query)).map((entry) => ({
+    value: String(entry.id),
+    label: vehicleCatalogLabel(entry),
+  }));
+}
+
 export function AddGarageVehicleModal({
   open,
   onClose,
   onCreated,
   userId,
-  vehicleCatalog,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: (vehicle: GarageVehicle) => void;
   userId: number;
-  vehicleCatalog: VehicleCatalogOption[];
 }) {
   const [vehicleCatalogId, setVehicleCatalogId] = useState("");
   const [year, setYear] = useState("");
   const [vin, setVin] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
-
-  const vehicleCatalogOptions = useMemo(
-    () => vehicleCatalog.map((entry) => ({ value: String(entry.id), label: vehicleCatalogLabel(entry) })),
-    [vehicleCatalog],
-  );
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -77,14 +78,12 @@ export function AddGarageVehicleModal({
           <label htmlFor="workshop-vehicle-catalog" className="text-sm font-medium">
             ტექნიკა *
           </label>
-          <Select
+          <RemoteSearchSelect
             id="workshop-vehicle-catalog"
-            options={vehicleCatalogOptions}
+            search={searchCatalogOptions}
             value={vehicleCatalogId}
             onChange={setVehicleCatalogId}
-            searchable
-            maxRenderedOptions={LONG_LIST_RENDER_CAP}
-            placeholder="აირჩიეთ ტექნიკა კატალოგიდან"
+            placeholder="მოძებნეთ ტექნიკა კატალოგიდან"
           />
           <FieldError message={errors.vehicleCatalogId} />
         </div>

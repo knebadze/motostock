@@ -4,6 +4,7 @@ import {
   getVehicleCatalogFromServer,
 } from "@/lib/api/server";
 import { VehicleListingsManager } from "@/components/admin/vehicle-listings/VehicleListingsManager";
+import { buildVehicleListingFilterRefs } from "@/config/admin-filters/vehicle-listing-filters";
 
 export default async function VehicleListingsPage() {
   const [listings, vehicleCatalog, conditions, statuses, colors] = await Promise.all([
@@ -17,7 +18,10 @@ export default async function VehicleListingsPage() {
   return (
     <VehicleListingsManager
       initialData={listings}
-      vehicleCatalog={vehicleCatalog}
+      // Only the filters' brand/model/category lists reach the browser; the
+      // form's catalog picker searches the server.
+      filterRefs={buildVehicleListingFilterRefs(vehicleCatalog)}
+      canCreate={vehicleCatalog.length > 0}
       conditions={conditions}
       statuses={statuses}
       colors={colors}

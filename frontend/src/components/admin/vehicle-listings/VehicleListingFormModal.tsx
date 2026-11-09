@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/shared/Modal";
-import { Select, LONG_LIST_RENDER_CAP } from "@/components/shared/Select";
+import { Select } from "@/components/shared/Select";
+import { RemoteSearchSelect } from "@/components/shared/RemoteSearchSelect";
 import { FieldError } from "@/components/shared/FieldError";
 import { FormActions } from "@/components/shared/FormActions";
 import { RichTextEditor } from "@/components/shared/RichTextEditor";
@@ -18,7 +19,7 @@ import {
 } from "@/lib/api/vehicle-listings";
 import { useUsdToGelRate } from "@/lib/useUsdToGelRate";
 import { uploadVehicleListingImages } from "@/lib/api/vehicle-listing-images";
-import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
+import { searchVehicleCatalogOptions } from "@/lib/api/vehicle-catalog";
 import type { LookupItem } from "@/lib/api/lookups";
 import { ApiRequestError } from "@/lib/api/client";
 import { VehicleListingDiscountsPanel } from "./VehicleListingDiscountsPanel";
@@ -27,10 +28,24 @@ import { vehicleListingFormSchema } from "@/lib/validation/vehicle-listing";
 import { MAX_DECIMAL_10_2, getFieldErrors, type FieldErrors } from "@/lib/validation/common";
 import { uploadFailedMessage } from "@/lib/upload-error";
 
-function vehicleCatalogLabel(entry: VehicleCatalogOption): string {
+function vehicleCatalogLabel(entry: {
+  brand: { name: string };
+  model: { name: string };
+  yearFrom: number | null;
+  yearTo: number | null;
+}): string {
   const year =
     entry.yearFrom || entry.yearTo ? ` (${entry.yearFrom ?? "?"}–${entry.yearTo ?? "?"})` : "";
   return `${entry.brand.name} ${entry.model.name}${year}`;
+}
+
+// The catalog picker searches the server — the page no longer embeds all
+// ~3,500 catalog entries.
+async function searchCatalogOptions(query: string) {
+  return (await searchVehicleCatalogOptions(query)).map((entry) => ({
+    value: String(entry.id),
+    label: vehicleCatalogLabel(entry),
+  }));
 }
 
 function toNullableHtml(html: string): string | null {
@@ -42,7 +57,6 @@ export function VehicleListingFormModal({
   open,
   onClose,
   onSaved,
-  vehicleCatalog,
   conditions,
   statuses,
   colors,
@@ -51,7 +65,6 @@ export function VehicleListingFormModal({
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
-  vehicleCatalog: VehicleCatalogOption[];
   conditions: LookupItem[];
   statuses: LookupItem[];
   colors: LookupItem[];
@@ -105,10 +118,6 @@ export function VehicleListingFormModal({
   const [errors, setErrors] = useState<FieldErrors>({});
   const pendingImageFilesRef = useRef<File[]>([]);
 
-  const vehicleCatalogOptions = useMemo(
-    () => vehicleCatalog.map((entry) => ({ value: String(entry.id), label: vehicleCatalogLabel(entry) })),
-    [vehicleCatalog],
-  );
   const conditionOptions = conditions.map((item) => ({ value: String(item.id), label: item.nameKa }));
   const statusOptions = statuses.map((item) => ({ value: String(item.id), label: item.nameKa }));
   const colorOptions = colors.map((item) => ({ value: String(item.id), label: item.nameKa }));
@@ -218,14 +227,17 @@ export function VehicleListingFormModal({
         <label htmlFor="vl-vehicle-catalog" className="text-sm font-medium">
           ტექნიკა *
         </label>
-        <Select
+        <RemoteSearchSelect
           id="vl-vehicle-catalog"
-          options={vehicleCatalogOptions}
+          search={searchCatalogOptions}
           value={vehicleCatalogId}
           onChange={setVehicleCatalogId}
-          searchable
-          maxRenderedOptions={LONG_LIST_RENDER_CAP}
-          placeholder="აირჩიეთ ტექნიკა კატალოგიდან"
+          initialOption={
+            listing
+              ? { value: String(listing.vehicleCatalog.id), label: vehicleCatalogLabel(listing.vehicleCatalog) }
+              : null
+          }
+          placeholder="მოძებნეთ ტექნიკა კატალოგიდან"
         />
         <FieldError message={errors.vehicleCatalogId} />
       </div>

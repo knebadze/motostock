@@ -1,25 +1,19 @@
 import {
   getCategoriesFromServer,
   getCompatibilityFromServer,
-  getProductsFromServer,
-  getVehicleCatalogFromServer,
 } from "@/lib/api/server";
 import { CompatibilityManager } from "@/components/admin/compatibility/CompatibilityManager";
 
 export default async function CompatibilityPage() {
-  const [initialData, categories, products, vehicleCatalog] = await Promise.all([
+  const [initialData, categories] = await Promise.all([
     getCompatibilityFromServer(),
     getCategoriesFromServer(),
-    getProductsFromServer(),
-    getVehicleCatalogFromServer(),
   ]);
 
   return (
     <CompatibilityManager
       initialData={initialData}
       categories={categories}
-      products={products}
-      vehicleCatalog={vehicleCatalog}
     />
   );
 }

@@ -8,7 +8,6 @@ import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Loader } from "@/components/shared/Loader";
 import { getUser, listUsers, mergeUserInto, type AdminUser } from "@/lib/api/users";
 import type { GarageVehicle } from "@/lib/api/garage";
-import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import {
   deleteServiceRecord,
   listServiceRecordsForVehicle,
@@ -62,12 +61,10 @@ function serviceRecordDetail(record: ServiceRecord): string | null {
 export function ServiceHistoryManager({
   initialServiceTypes,
   teamMembers,
-  vehicleCatalog,
   initialRecentServiceRecords,
 }: {
   initialServiceTypes: ServiceType[];
   teamMembers: TeamMember[];
-  vehicleCatalog: VehicleCatalogOption[];
   initialRecentServiceRecords: ServiceRecordsAdminPage;
 }) {
   const [serviceTypes] = useState(initialServiceTypes);
@@ -513,7 +510,6 @@ export function ServiceHistoryManager({
           onClose={() => setAddVehicleOpen(false)}
           onCreated={handleVehicleCreated}
           userId={selectedUser.id}
-          vehicleCatalog={vehicleCatalog}
         />
       )}
 

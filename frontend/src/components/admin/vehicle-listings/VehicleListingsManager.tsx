@@ -15,10 +15,12 @@ import {
 import type { AdminListPage } from "@/lib/api/server";
 import { ApiRequestError, resolveMediaUrl } from "@/lib/api/client";
 import type { AdminFilterEntry } from "@/lib/api/admin-filters";
-import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
 import type { LookupItem } from "@/lib/api/lookups";
 import { formatPrice } from "@/lib/format";
-import { buildVehicleListingFilterFields } from "@/config/admin-filters/vehicle-listing-filters";
+import {
+  buildVehicleListingFilterFields,
+  type VehicleListingFilterRefs,
+} from "@/config/admin-filters/vehicle-listing-filters";
 import { useAdminRole } from "@/components/admin/AdminRoleContext";
 import { VehicleListingFormModal } from "./VehicleListingFormModal";
 import { VehicleListingDetailModal } from "./VehicleListingDetailModal";
@@ -97,13 +99,18 @@ const columns: DataTableColumn<VehicleListing>[] = [
 
 export function VehicleListingsManager({
   initialData,
-  vehicleCatalog,
+  filterRefs,
+  canCreate,
   conditions,
   statuses,
   colors,
 }: {
   initialData: AdminListPage<VehicleListing>;
-  vehicleCatalog: VehicleCatalogOption[];
+  // Brand / model / category lists for the filters, and whether the catalog
+  // has any entry to list — computed on the server from the catalog, which
+  // itself isn't sent to the browser (~1 MB).
+  filterRefs: VehicleListingFilterRefs;
+  canCreate: boolean;
   conditions: LookupItem[];
   statuses: LookupItem[];
   colors: LookupItem[];
@@ -118,9 +125,7 @@ export function VehicleListingsManager({
   const [adminFilters, setAdminFilters] = useState<AdminFilterEntry[]>([]);
   const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
 
-  const canCreate = vehicleCatalog.length > 0;
-
-  const filterFields = buildVehicleListingFilterFields({ vehicleCatalog, conditions, statuses, colors });
+  const filterFields = buildVehicleListingFilterFields({ filterRefs, conditions, statuses, colors });
 
   async function loadPage(page: number, filters: AdminFilterEntry[] = adminFilters) {
     try {
@@ -204,7 +209,6 @@ export function VehicleListingsManager({
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSaved={refresh}
-        vehicleCatalog={vehicleCatalog}
         conditions={conditions}
         statuses={statuses}
         colors={colors}

@@ -61,9 +61,14 @@ export async function pickSelect(
       await searchBox.fill(search ?? (option as string));
     }
   }
+  // A server-searched Select (RemoteSearchSelect) updates its options after
+  // a debounce — so with a search, index among the options that actually
+  // match it, which also waits for the results to arrive.
+  const options =
+    search !== undefined ? listbox.getByRole("option").filter({ hasText: search }) : listbox.getByRole("option");
   const target =
     typeof option === "number"
-      ? listbox.getByRole("option").nth(option)
+      ? options.nth(option)
       : listbox.getByRole("option", { name: optionName(option) }).first();
   const label = ((await target.textContent()) ?? "").replace("✓", "").trim();
   await target.click();

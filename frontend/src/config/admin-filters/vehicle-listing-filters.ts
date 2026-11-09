@@ -23,16 +23,35 @@ function toLookupOptions(items: LookupItem[]) {
 // this manager doesn't currently load (see vehicle-catalog's admin filter for
 // full spec coverage) — NUMBER/BOOLEAN spec fields need no options at all, so
 // those stay fully available here.
+// What the brand / model / category filters need from the vehicle catalog —
+// computed on the server (the admin vehicle-listings page) so the browser
+// gets one row per brand / model / category, not all ~3,500 catalog entries.
+export type VehicleListingFilterRefs = {
+  brands: { id: number; name: string }[];
+  models: { id: number; name: string; brandId: number }[];
+  categories: { id: number; name: { ka: string } }[];
+};
+
+export function buildVehicleListingFilterRefs(vehicleCatalog: VehicleCatalogOption[]): VehicleListingFilterRefs {
+  const brandIdByModelId = new Map(vehicleCatalog.map((entry) => [entry.model.id, entry.brand.id]));
+  return {
+    brands: dedupeBrandModelRefs(vehicleCatalog.map((entry) => ({ id: entry.brand.id, name: entry.brand.name }))),
+    models: dedupeBrandModelRefs(vehicleCatalog.map((entry) => ({ id: entry.model.id, name: entry.model.name }))).map(
+      (model) => ({ ...model, brandId: brandIdByModelId.get(model.id)! }),
+    ),
+    categories: dedupeNamedRefs(
+      vehicleCatalog.map((entry) => ({ id: entry.category.id, name: { ka: entry.category.name.ka } })),
+    ),
+  };
+}
+
 export function buildVehicleListingFilterFields(data: {
-  vehicleCatalog: VehicleCatalogOption[];
+  filterRefs: VehicleListingFilterRefs;
   conditions: LookupItem[];
   statuses: LookupItem[];
   colors: LookupItem[];
 }): AdminFilterField[] {
-  const brands = dedupeBrandModelRefs(data.vehicleCatalog.map((entry) => entry.brand));
-  const models = dedupeBrandModelRefs(data.vehicleCatalog.map((entry) => entry.model));
-  const brandIdByModelId = new Map(data.vehicleCatalog.map((entry) => [entry.model.id, entry.brand.id]));
-  const categories = dedupeNamedRefs(data.vehicleCatalog.map((entry) => entry.category));
+  const { brands, models, categories } = data.filterRefs;
 
   const basicFields: AdminFilterField[] = [
     { key: "SEARCH", label: "ძებნა (მარკა/მოდელი)", section: "ძირითადი", kind: "TEXT" },
@@ -58,7 +77,7 @@ export function buildVehicleListingFilterFields(data: {
       options: models.map((m) => ({
         value: String(m.id),
         label: m.name,
-        parentValue: String(brandIdByModelId.get(m.id)),
+        parentValue: String(m.brandId),
       })),
       dependsOn: "BRAND",
     },

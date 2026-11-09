@@ -16,18 +16,24 @@ export function RemoteSearchSelect({
   onChange,
   search,
   placeholder,
+  id,
   ariaLabel,
   disabled,
+  initialOption,
 }: {
   value: string;
   onChange: (value: string, option: SelectOption | null) => void;
   search: (query: string) => Promise<SelectOption[]>;
   placeholder?: string;
+  id?: string;
   ariaLabel?: string;
   disabled?: boolean;
+  // The already-chosen option when editing (its label isn't in any search
+  // result yet), so the trigger shows it from the start.
+  initialOption?: SelectOption | null;
 }) {
   const [options, setOptions] = useState<SelectOption[]>([]);
-  const [selected, setSelected] = useState<SelectOption | null>(null);
+  const [selected, setSelected] = useState<SelectOption | null>(initialOption ?? null);
   const [loading, setLoading] = useState(false);
   // Only the latest request may set the options (an earlier, slower
   // response must not overwrite a newer one).
@@ -88,6 +94,7 @@ export function RemoteSearchSelect({
       searchable
       onSearchChange={handleSearchChange}
       placeholder={placeholder}
+      id={id}
       ariaLabel={ariaLabel}
       disabled={disabled}
       emptyLabel={loading ? "იძებნება..." : "არაფერი მოიძებნა"}

@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { ProductDetailModal } from "../products/ProductDetailModal";
 import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Pagination, useServerPagination } from "@/components/shared/Pagination";
-import { Select, LONG_LIST_RENDER_CAP } from "@/components/shared/Select";
+import { Select } from "@/components/shared/Select";
+import { RemoteSearchSelect } from "@/components/shared/RemoteSearchSelect";
 import { Tabs } from "@/components/shared/Tabs";
 import { formatPrice, formatVehicleCatalogLabel } from "@/lib/format";
 import { ApiRequestError } from "@/lib/api/client";
@@ -17,9 +18,9 @@ import {
   type CompatibleVehicle,
   type ListCompatibilityFilters,
 } from "@/lib/api/compatibility";
-import { listProducts, type ProductListItem } from "@/lib/api/products";
+import { listProducts, searchProductsForPicker, type ProductListItem } from "@/lib/api/products";
 import type { Category } from "@/lib/api/categories";
-import type { VehicleCatalogOption } from "@/lib/api/vehicle-catalog";
+import { searchVehicleCatalogOptions } from "@/lib/api/vehicle-catalog";
 
 const KIND_LABELS: Record<CompatibilityItem["kind"], string> = {
   FITMENT: "ცალკეული ტრანსპორტი",
@@ -35,8 +36,20 @@ const KIND_BADGE_CLASSES: Record<CompatibilityItem["kind"], string> = {
   RULE_SPEC: "bg-amber-500/15 text-amber-600",
 };
 
-function productLabel(product: ProductListItem): string {
-  return `${product.name.ka} — ${product.category.name.ka}`;
+// The check tab's pickers search the server (the whole catalog / every
+// product) instead of the page embedding both lists (~1.5 MB).
+async function searchVehicleOptions(query: string) {
+  return (await searchVehicleCatalogOptions(query)).map((entry) => ({
+    value: String(entry.id),
+    label: formatVehicleCatalogLabel(entry),
+  }));
+}
+
+async function searchProductOptions(query: string) {
+  return (await searchProductsForPicker(query)).map((product) => ({
+    value: String(product.id),
+    label: `${product.name} — ${product.categoryName}`,
+  }));
 }
 
 function targetLabel(item: CompatibilityItem): string {
@@ -206,28 +219,13 @@ function AllCompatibilityTab({
   );
 }
 
-function CompatibilityCheckTab({
-  products,
-  vehicleCatalog,
-}: {
-  products: ProductListItem[];
-  vehicleCatalog: VehicleCatalogOption[];
-}) {
+function CompatibilityCheckTab() {
   const [mode, setMode] = useState<"vehicle" | "product">("vehicle");
   const [vehicleCatalogId, setVehicleCatalogId] = useState("");
   const [productId, setProductId] = useState("");
   const [loading, setLoading] = useState(false);
   const [matchedProducts, setMatchedProducts] = useState<ProductListItem[] | null>(null);
   const [matchedVehicles, setMatchedVehicles] = useState<CompatibleVehicle[] | null>(null);
-
-  const vehicleOptions = useMemo(
-    () => vehicleCatalog.map((entry) => ({ value: String(entry.id), label: formatVehicleCatalogLabel(entry) })),
-    [vehicleCatalog],
-  );
-  const productOptions = useMemo(
-    () => products.map((product) => ({ value: String(product.id), label: productLabel(product) })),
-    [products],
-  );
 
   async function handleVehicleChange(value: string) {
     setVehicleCatalogId(value);
@@ -296,23 +294,21 @@ function CompatibilityCheckTab({
 
       <div className="mt-4 max-w-md">
         {mode === "vehicle" ? (
-          <Select
-            options={vehicleOptions}
+          <RemoteSearchSelect
+            key="vehicle"
+            search={searchVehicleOptions}
             value={vehicleCatalogId}
             onChange={handleVehicleChange}
-            searchable
-            maxRenderedOptions={LONG_LIST_RENDER_CAP}
-            placeholder="აირჩიეთ ტრანსპორტი"
+            placeholder="მოძებნეთ ტრანსპორტი"
             ariaLabel="ტრანსპორტი"
           />
         ) : (
-          <Select
-            options={productOptions}
+          <RemoteSearchSelect
+            key="product"
+            search={searchProductOptions}
             value={productId}
             onChange={handleProductChange}
-            searchable
-            maxRenderedOptions={LONG_LIST_RENDER_CAP}
-            placeholder="აირჩიეთ პროდუქტი"
+            placeholder="მოძებნეთ პროდუქტი"
             ariaLabel="პროდუქტი"
           />
         )}
@@ -362,13 +358,9 @@ function CompatibilityCheckTab({
 export function CompatibilityManager({
   initialData,
   categories,
-  products,
-  vehicleCatalog,
 }: {
   initialData: CompatibilityPage;
   categories: Category[];
-  products: ProductListItem[];
-  vehicleCatalog: VehicleCatalogOption[];
 }) {
   return (
     <div>
@@ -388,7 +380,7 @@ export function CompatibilityManager({
             {
               key: "check",
               label: "თავსებადობის შემოწმება",
-              content: <CompatibilityCheckTab products={products} vehicleCatalog={vehicleCatalog} />,
+              content: <CompatibilityCheckTab />,
             },
           ]}
         />
