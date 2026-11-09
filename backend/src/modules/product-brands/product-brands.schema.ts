@@ -18,7 +18,10 @@ export const createProductBrandSchema = registry.register(
     // A brand can sell into several unrelated category branches at once
     // (e.g. Alpinestars: gloves, jackets, helmets) — see
     // prisma/models/product-brand.prisma.
-    categoryIds: z.array(z.int().positive()).min(1),
+    // Upper bound: the whole category tree is ~150 categories, so 500 is
+    // never a real limit — it only stops an oversized array from turning
+    // into an unbounded `IN (...)` lookup and insert.
+    categoryIds: z.array(z.int().positive()).min(1).max(500),
     name: nameField,
     slug: slugField,
   }),

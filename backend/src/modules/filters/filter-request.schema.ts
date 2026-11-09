@@ -14,8 +14,10 @@ export type FilterEntry = z.infer<typeof filterEntrySchema>;
 // URL-encoded JSON array in a single query param — same pattern as
 // products' `attributeFilters` / vehicle-listing's `specFilters`, generalized
 // so every admin list endpoint parses it identically.
+// Bounded (entry count and raw length): it's parsed on public endpoints too.
 export const adminFiltersQuerySchema = z
   .string()
+  .max(20000)
   .optional()
   .transform((value, ctx) => {
     if (!value) return undefined;
@@ -26,7 +28,7 @@ export const adminFiltersQuerySchema = z
       ctx.addIssue({ code: "custom", message: "adminFilters არასწორი JSON-ია" });
       return z.NEVER;
     }
-    const result = z.array(filterEntrySchema).safeParse(parsed);
+    const result = z.array(filterEntrySchema).max(50).safeParse(parsed);
     if (!result.success) {
       ctx.addIssue({ code: "custom", message: "adminFilters არასწორი ფორმატია" });
       return z.NEVER;
